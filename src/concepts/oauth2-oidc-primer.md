@@ -25,19 +25,22 @@ every standard is a refinement of the same flow between them.
 ## The three roles
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#f8fafc","primaryTextColor":"#0f172a","primaryBorderColor":"#94a3b8","lineColor":"#94a3b8"}}}%%
 flowchart LR
-  RP[Relying Party<br/>your app] -->|"sends user to log in"| OP[OpenID Provider<br/>this library]
-  OP -->|"redirects back with code"| RP
-  RP -->|"trades code for tokens"| OP
-  OP -->|"returns ID token + access token"| RP
-  RP -->|"calls API with access token"| RS[Resource Server<br/>your API]
+  RP["<b>RP</b> — Relying Party / Client<br/>your app<br/><br/>Initiates login,<br/>holds tokens,<br/>calls APIs"]
+  OP["<b>OP</b> — OpenID Provider<br/>a.k.a. Authorization Server<br/><br/><b>go-oidc-provider is this</b><br/>HTTP server that authenticates<br/>users and mints tokens"]
+  RS["<b>RS</b> — Resource Server<br/>your API<br/><br/>Validates the access token<br/>and returns the data"]
+  RP <-->|"delegate auth / receive tokens"| OP
+  RP -->|"Bearer access token"| RS
+  style OP fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px,color:#0f172a
+  style RP fill:#f1f5f9,stroke:#64748b,color:#0f172a
+  style RS fill:#f1f5f9,stroke:#64748b,color:#0f172a
 ```
 
-| Role | What it is | What it does |
-|---|---|---|
-| **OP** (OpenID Provider, a.k.a. Authorization Server) | An HTTP server that owns user identity. | Authenticates the user, mints tokens. **`go-oidc-provider` is this.** |
-| **RP** (Relying Party, a.k.a. Client) | An app that wants to know who the user is. | Initiates the login, holds the access token, calls APIs. |
-| **RS** (Resource Server) | An API that serves data. | Validates the access token, returns the data. |
+The actual login steps (redirect to `/authorize`, code exchange, token
+retrieval) are spelled out in the [authorization code + PKCE
+flow](#the-most-common-flow-authorization-code--pkce) below. The diagram above
+is the static "who's responsible for what" view.
 
 ::: tip Same actor, different hat
 A single piece of software can wear two hats. Your "backend for frontend"

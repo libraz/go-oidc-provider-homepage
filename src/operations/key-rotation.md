@@ -72,10 +72,11 @@ the JWKS cache window so RPs that mid-rotation cached the old set
 don't reject a token they could have validated.
 
 ::: tip Rotation overlap signal
-The JWKS handler accepts a `RotationActive func() bool` predicate — when
-true, the response advertises a 5-minute `Cache-Control: public,
-max-age=300, must-revalidate` instead of the long-cache default
-(`max-age=86400, stale-while-revalidate=3600`). Set it during the
+Pass `op.WithJWKSRotationActive(predicate)` at provider construction —
+when the predicate returns true, the JWKS response advertises a
+5-minute `Cache-Control: public, max-age=300, must-revalidate` instead
+of the long-cache default (`max-age=86400,
+stale-while-revalidate=3600`). Hold the predicate true during the
 overlap window so RP caches refresh promptly. See
 [JWKS endpoint](/operations/jwks#rotation-cache-control).
 :::

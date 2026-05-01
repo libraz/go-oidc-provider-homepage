@@ -42,8 +42,8 @@ side, and refuses configurations that would break a transactional
 cluster (substores that must commit atomically together).
 
 > **Sources:**
-> - [`examples/08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold) — SQL + inmem for development.
-> - [`examples/09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) — MySQL + Redis for production.
+> - [`examples/08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold) — SQLite durable + inmem volatile, runs as a single `go run -tags example .` invocation.
+> - [`examples/09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) — MySQL durable + Redis volatile, shipped as a docker-compose stack pinned to `mysql:8.4` and `redis:7.4-alpine` so adapter contract tests and the example share one engine matrix.
 
 ## Architecture
 
@@ -87,8 +87,27 @@ provider, err := op.New(
   op.WithStore(combined),
   op.WithKeyset(myKeyset),
   op.WithCookieKey(myCookieKey),
+  op.WithStaticClients(op.PublicClient{
+    ID:           "demo-rp",
+    RedirectURIs: []string{"https://rp.example.com/callback"},
+    Scopes:       []string{"openid", "profile"},
+  }),
 )
 ```
+
+::: info Static client seeding through composite
+`op.WithStaticClients` accepts a `*composite.Store` directly. The
+composite deliberately does **not** satisfy `store.ClientRegistry`
+through a type assertion (a read-only routed `Clients` backend would
+otherwise be silently coerced into a registry); instead it exposes an
+optional `ClientRegistry()` accessor that `op.WithStaticClients`
+probes at wiring time. Embedders therefore do not need to seed
+against the durable backend before wrapping it in a composite. If
+the routed `Clients` backend is read-only the probe returns
+`(nil, false)` and `op.New` rejects the configuration with the same
+`store.ClientRegistry required` error a directly-supplied read-only
+store would produce.
+:::
 
 ## Redis safety floor
 

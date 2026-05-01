@@ -6,7 +6,7 @@ outline: 2
 
 # FAQ
 
-このページは「最初に見るべき場所」の最後の砦です。下に並んでいる質問は理屈ではなく、Maintainer が examples を書いたり Conformance ハーネスを回したりする途中で実際にハマったものばかりです。
+このページは「最初に見るべき場所」のひとつです。下に並んでいる質問は理屈ではなく、Maintainer が examples を書いたり Conformance ハーネスを回したりする途中で実際にハマったものばかりです。
 
 <ul class="faq-index">
   <li><a href="#setup-basics"><div class="faq-index-title">セットアップと基本</div><div class="faq-index-desc">必須 4 オプション、マウント先、Issuer 正規化、最小構成</div></a></li>
@@ -206,7 +206,9 @@ op.WithSPAUI(op.SPAUI{LoginMount: "/login", StaticDir: "./web/dist"})
 | `/login/state/{uid}` | prompt JSON（GET / POST / DELETE） |
 | `/login/assets/{path...}` | 静的アセット |
 
-SPA（React / Vue / Svelte / Angular / vanilla、フレームワーク不問）は `/login/state/{uid}` から prompt を fetch し、`{state_ref, values}` を `X-CSRF-Token` ヘッダ（`prompt.csrf_token` を echo する double-submit cookie）と共に POST、終端 `{type:"redirect", location}` エンベロープを `window.location.href` で辿ります。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) と [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login)。
+SPA（React / Vue / Svelte / Angular / vanilla、フレームワーク不問）は `/login/state/{uid}` から prompt を fetch し、`{state_ref, values}` を `X-CSRF-Token` ヘッダ（`prompt.csrf_token` を echo する double-submit cookie）と共に POST します。終端で返る `{type:"redirect", location}` エンベロープを `window.location.href` で辿れば完了です。
+
+詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) と [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login)。
 
 ::: details SPA-safe なエラー描画
 エラーページは CSP `default-src 'none'; style-src 'unsafe-inline'` の下で `<div id="op-error" data-code="..." data-description="...">` を出力するので、SPA ホストはマークアップを parse することなく selector で取得できます。
@@ -250,7 +252,9 @@ op.WithCORSOrigins("https://app.example.com")
 
 ### Back-Channel Logout の fan-out で一部の RP に届かない
 
-セッションが揮発ストアに置かれているケースで起こります。fan-out が走る前にセッションレコードが追い出された場合（Redis TTL がネットワーク分断中に切れたなど）、ライブラリはレコードを再構成できません。`op.AuditBCLNoSessionsForSubject` 監査イベントがそのギャップを記録し、設定済みの `op.SessionDurabilityPosture` と組み合わせることで、SOC ダッシュボードで「揮発配置における想定内のギャップ」と「永続配置における想定外のギャップ」を区別できます。揮発配置における best-effort は設計上の挙動です — 詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §10</a>。
+セッションが揮発ストアに置かれているケースで起こります。fan-out が走る前にセッションレコードが追い出された場合（Redis TTL がネットワーク分断中に切れたなど）、ライブラリはレコードを再構成できません。
+
+`op.AuditBCLNoSessionsForSubject` 監査イベントがそのギャップを記録し、`op.WithSessionDurabilityPosture` で設定したポスチャと組み合わせることで、SOC ダッシュボードで「揮発配置における想定内のギャップ」と「永続配置における想定外のギャップ」を区別できます。揮発配置における best-effort は設計上の挙動です — 詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §10</a>。
 
 <div id="native-loopback" class="faq-anchor"></div>
 
@@ -266,7 +270,9 @@ op.WithCORSOrigins("https://app.example.com")
 
 ### `op.WithPrometheus(...)` を設定したのに `/metrics` が無い
 
-ライブラリは `/metrics` を **マウントしません**。`op.WithPrometheus(reg)` は OP が絞り込んで保持するカウンタを、利用者が渡した registry に登録するだけです。HTTP ルートのマウントはルーター側の責務です — トレーシング（`otelhttp.NewMiddleware` を被せる側）も、リクエスト所要時間ヒストグラム（ミドルウェアを被せる側）も同じ分離方針です。OP は **OIDC 業務系の** カウンタ / スパン / 監査イベントのみを発行し、HTTP ライフサイクルの観測は組み込み側に委ねます。
+ライブラリは `/metrics` を **マウントしません**。`op.WithPrometheus(reg)` は OP が絞り込んで保持するカウンタを、利用者が渡した registry に登録するだけです。
+
+HTTP ルートのマウントはルーター側の責務です — トレーシング（`otelhttp.NewMiddleware` を被せる側）も、リクエスト所要時間ヒストグラム（ミドルウェアを被せる側）も同じ分離方針です。OP は **OIDC 業務系の** カウンタ / スパン / 監査イベントのみを発行し、HTTP ライフサイクルの観測は組み込み側に委ねます。
 
 詳細は [`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics)。
 

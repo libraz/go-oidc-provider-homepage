@@ -68,7 +68,7 @@ ETag は **シリアライズ後の JWKS 全体** に対するハッシュなの
 Cache-Control: public, max-age=300, must-revalidate
 ```
 
-ハンドラのコンストラクタに `RotationActive func() bool` という述語を渡すと有効になります。監督プロセスからローテーションシグナルを立てれば、ライブラリ側がそれに応じてキャッシュ制御を切り替えます。述語はリクエストのホットパスで評価されるので、軽量で並行安全にしてください。
+`op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語はリクエストのホットパスで評価されるので、軽量で並行安全にしてください。オプションを省略するか nil を渡すと、すべてのレスポンスで長いキャッシュが返ります。
 
 典型的な pattern:
 
@@ -79,15 +79,18 @@ rotationUntil.Store(time.Time{})
 // ローテーション開始時:
 rotationUntil.Store(time.Now().Add(24 * time.Hour))
 
-// ハンドラ側に渡す述語(ライブラリは JWKS ハンドラのコンストラクタで
-// 受け取る。Provider を自前で組むときは外側でラップする)。
 isRotating := func() bool {
     until, _ := rotationUntil.Load().(time.Time)
     return time.Now().Before(until)
 }
+
+provider, _ := op.New(
+    /* 必須オプション */
+    op.WithJWKSRotationActive(isRotating),
+)
 ```
 
-期間が過ぎると述語が false を返し、長いキャッシュに戻ります。
+期間が過ぎると述語が false を返し、長いキャッシュに戻ります。`op.WithJWKSRotationActive` を複数回呼ぶと最後の呼び出しが勝つので、supervisor が以前の option リストを組み立て直さずに述語を差し替えられます。
 
 ## RP のキャッシュ挙動
 

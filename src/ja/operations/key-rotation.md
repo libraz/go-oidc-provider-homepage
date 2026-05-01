@@ -59,7 +59,7 @@ liveHandler.Store(newProv)  // 通常は *atomic.Value または sync.Map
 つまり安全側の最低待機は **ローテーション後 24 時間** です。access token TTL を短く運用していても、ローテーション中に旧 set をキャッシュした RP が、検証可能なはずのトークンを弾かないよう、JWKS キャッシュウィンドウ分は待ってください。
 
 ::: tip ローテーション中であることのシグナル
-JWKS ハンドラは `RotationActive func() bool` を受け取ります。これが true の間は、長い既定キャッシュ(`public, max-age=86400, stale-while-revalidate=3600`) の代わりに 5 分の `public, max-age=300, must-revalidate` を返します。オーバーラップ期間中にこの述語を true にしておくと、RP のキャッシュが短い間隔で revalidate しに来てくれます。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。
+`op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語が true の間は、長い既定キャッシュ(`public, max-age=86400, stale-while-revalidate=3600`) の代わりに 5 分の `public, max-age=300, must-revalidate` を返します。オーバーラップ期間中にこの述語を true にしておくと、RP のキャッシュが短い間隔で revalidate しに来てくれます。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。
 :::
 
 ## Cookie 鍵のローテーション
@@ -80,10 +80,10 @@ if _, err := rand.Read(newKey); err != nil { /* abort */ }
 op.WithCookieKeys(newKey, oldKey)
 ```
 
-`WithCookieKeys` は復号用に旧鍵を残せるので、生きているセッションはユーザの再認証または session TTL 満了までそのまま継続します。発行済みセッションがすべて期限切れになった(または強制ログアウトを fan-out した)あとで、`oldKey` をスライスから外してください。
+`WithCookieKeys` は復号用に旧鍵を残せるので、有効なセッションはユーザの再認証または session TTL 満了までそのまま継続します。発行済みセッションがすべて期限切れになった(または強制ログアウトを fan-out した)あとで、`oldKey` をスライスから外してください。
 
 ::: warning 順序が重要
-`WithCookieKeys` の先頭が現行の暗号化鍵です。旧鍵を先頭にしてしまうと、**気付かれないうちに侵害済み鍵を現行に降格**させてしまいます。型ではなく規約での強制なので、ローテーション時はレビューを慎重にしてください。
+`WithCookieKeys` の先頭が現行の暗号化鍵です。旧鍵を先頭にしてしまうと、**気付かれないうちに侵害済み鍵を現行扱いに格下げ**してしまいます。型ではなく規約での強制なので、ローテーション時はレビューを慎重にしてください。
 :::
 
 ## MFA 暗号化鍵のローテーション

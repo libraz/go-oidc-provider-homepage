@@ -99,11 +99,11 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 DCR は `full` ではなく `partial` の表記ですが、`partial` の差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反する metadata を拒否します:
 
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
-- `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で reject し、サイレントな auto-fix は行わない。
+- `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って auto-fix することはありません。
 - `jwks` と `jwks_uri` は同時指定不可。URI 系 metadata（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`、`request_uris`）は絶対 URI、`https`、fragment 無しを要求。
 - `sector_identifier_uri` は登録時に GET で fetch し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証（OIDC Core §8.1）。fetch は 5 秒の timeout と 5 MiB の body cap で制限し、fetch 失敗または包含未達は `invalid_client_metadata`。
-- `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければならない。
-- `request_object_signing_alg` は `RS256` / `PS256` / `ES256` / `EdDSA` に限定。
+- `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
+- `request_object_signing_alg` は `RS256` / `PS256` / `ES256` / `EdDSA` に限定されます。
 
 ## 意図的な制約
 

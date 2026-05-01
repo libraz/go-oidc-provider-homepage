@@ -57,7 +57,9 @@ op.WithKeyset(op.Keyset{
 `Keyset` は `{KeyID, Signer}` レコードのスライスです。`Signer` には `crypto.Signer` を実装するもの（`*ecdsa.PrivateKey`、`*rsa.PrivateKey`、あるいは `crypto.Signer` を返す vault / KMS ハンドル）を渡します。
 
 ::: warning アルゴリズム allow-list
-ライブラリは `RS256`、`PS256`、`ES256`、`EdDSA` でのみ署名 / 検証します。**`HS*` と `none` は構造的に存在しません** — 列挙型に値が無く、`internal/jose.ParseAlgorithm` はそれらの文字列に `ok=false` を返します。これにより RFC 7519 §6 / RFC 8725 §2.1 の alg confusion 攻撃を if 文ではなく型レベルで閉じています。
+ライブラリは `RS256`、`PS256`、`ES256`、`EdDSA` でのみ署名 / 検証します。**`HS*` と `none` は構造的に存在しません** — 列挙型に値が無く、`internal/jose.ParseAlgorithm` はそれらの文字列に `ok=false` を返します。
+
+これにより RFC 7519 §6 / RFC 8725 §2.1 の alg confusion 攻撃を if 文ではなく型レベルで閉じています。
 :::
 
 ## `WithCookieKey`

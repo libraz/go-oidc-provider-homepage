@@ -168,7 +168,7 @@ internal/authn/CompiledLoginFlow
 
 ## Discovery document の組み立て
 
-`/.well-known/openid-configuration` は OP の実効設定から discovery document を組み立てます。アドバタイズされるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離は無く、それは以下が事実だからです:
+`/.well-known/openid-configuration` は OP の実効設定から discovery document を組み立てます。アドバタイズされるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです:
 
 - **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。
 - **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `FAPI2MessageSigning` が有効なときに FAPI の許可リストと交差します。

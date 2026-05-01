@@ -30,7 +30,7 @@ PostgreSQL 14+**.
 
 > **Sources:**
 > - [`examples/06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store) — SQLite quick start (CGO-free).
-> - [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) — MySQL with production-shaped pool.
+> - [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) — MySQL with production-shaped pool, paired with an in-process RP and shipped as a docker-compose stack.
 
 ## Why a sub-module
 
@@ -131,13 +131,56 @@ db.SetConnMaxLifetime(30 * time.Minute)
 `charset=utf8mb4` is required so 4-byte UTF-8 (emoji, CJK extensions in
 display names) round-trips through claim values without truncation.
 
+## Username + password credentials
+
+The SQL adapter implements `store.UserPasswordStore` (the same surface
+the inmem reference adapter exposes) so the built-in
+[`op.PrimaryPassword`](/use-cases/mfa-step-up) Step works against
+SQL with no glue code:
+
+```go
+flow := op.LoginFlow{
+  Primary: op.PrimaryPassword{Store: storage.UserPasswords()},
+}
+
+provider, err := op.New(
+  /* ... */
+  op.WithLoginFlow(flow),
+)
+```
+
+The schema adds two columns on `oidc_users`: a unique `username` lookup
+index (used by `FindByUsername`) and a PHC-encoded `password_hash`
+column (read by `ReadPasswordHash`). Hash encoding stays in the
+embedder's hands — the convenience writer
+`*sql.Store.PutUserWithPassword(ctx, user, username, hash)` accepts a
+hash produced by `op.HashPassword` (argon2id with the library
+defaults) and round-trips through the same upsert as `PutUser`:
+
+```go
+hash, _ := op.HashPassword("demo")
+_ = storage.PutUserWithPassword(ctx, &store.User{
+  Subject: "demo-user",
+  Claims:  map[string]any{"name": "Demo User"},
+}, "demo", hash)
+```
+
+Passing an empty username and `nil` hash clears the credential — useful
+when a user migrates to passkey-only. `ReadPasswordHash` returns
+`store.ErrNotFound` both when the subject is unknown and when the row
+exists but carries no password, so the login orchestrator surfaces an
+enumeration-safe response either way.
+
 ## Contract test harness
 
 The same contract test suite (`op/store/contract`) that exercises `inmem`
 runs against the SQL adapter under `go test -tags=testcontainers`,
 spinning up real MySQL / Postgres engines via testcontainers-go. So when
 the library says "the SQL adapter implements `Store`," it means against
-a real engine, not a mock.
+a real engine, not a mock. The pinned images (`mysql:8.4`,
+`postgres:16-alpine`) match the engine matrix the docker-compose stacks under
+`examples/07-mysql-store` and `examples/09-redis-volatile` use, so
+adapter-level and example-level integration share a single matrix.
 
 ## When to add Redis on top
 

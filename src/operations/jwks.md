@@ -81,10 +81,10 @@ shortened cache:
 Cache-Control: public, max-age=300, must-revalidate
 ```
 
-This is enabled by passing a `RotationActive func() bool` predicate
-to the handler. The library wires this for you when you signal
-rotation through your supervisor; the predicate runs on the request
-hot path so it must be cheap and concurrency-safe.
+Wire the predicate through `op.WithJWKSRotationActive(...)` at
+provider construction. The predicate runs on the request hot path,
+so it must be cheap and concurrency-safe. Omit the option (or pass
+nil) to leave the handler in long-cache mode for every response.
 
 A typical pattern:
 
@@ -95,16 +95,21 @@ rotationUntil.Store(time.Time{})
 // On rotation start:
 rotationUntil.Store(time.Now().Add(24 * time.Hour))
 
-// Handler-side predicate (the library accepts this on the JWKS handler
-// constructor; if you build a Provider yourself you typically wrap it).
 isRotating := func() bool {
     until, _ := rotationUntil.Load().(time.Time)
     return time.Now().Before(until)
 }
+
+provider, _ := op.New(
+    /* required options */
+    op.WithJWKSRotationActive(isRotating),
+)
 ```
 
 After the window passes, the predicate returns false and the long
-cache resumes.
+cache resumes. Repeated calls to `op.WithJWKSRotationActive` are
+last-wins, so a supervisor can swap predicates without rebuilding
+earlier option lists.
 
 ## RP cache behaviour
 

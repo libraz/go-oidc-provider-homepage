@@ -44,7 +44,7 @@ export default withMermaid(
         'link',
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&display=swap'
+          href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap'
         }
       ],
       ['script', { type: 'application/ld+json' }, JSON.stringify(softwareApplicationJsonLd)],

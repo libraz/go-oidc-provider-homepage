@@ -113,7 +113,7 @@ import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 ```
 
-リクエストのライフサイクルがスパンでカバーされます。エンドポイント内部の child span は現状 emit していません。「`/token` の中で PKCE 検証にどれだけかかったか」のような段階別の trace は、HTTP 層から見える粒度に留まります。
+リクエストのライフサイクルがスパンでカバーされます。エンドポイント内部の child span は現状は発火していません。「`/token` の中で PKCE 検証にどれだけかかったか」のような段階別の trace は、HTTP 層から見える粒度に留まります。
 
 ::: info 将来の tracing
 段階別スパンは計画していますが、pre-v1.0 の段階では公開表面を意図的に小さく保っています。同じカバレッジを高カーディナリティと引き換えに欲しい場合は、audit イベントカタログ(イベント単位の発火) を使えます。

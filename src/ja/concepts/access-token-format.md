@@ -93,7 +93,9 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 :::
 
 ::: info OP 側のストレージコストは **対称ではありません**
-既定の JWT 戦略（grant tombstone）は **発行時にデータベースへ書き込みを行わず**、失効した grant ごとに 1 行だけ書き込みます — 定常状態の行数は `O(失効した grant 数)` です。オプトインの JTI registry 戦略は発行ごとに 1 行（`jti` をキーにした shadow 行）を保持します。opaque 形式は常に発行ごとに 1 行（ハッシュ化した bearer ID をキーにした行）を保持します。「JWT も opaque もトークン 1 本ごとに 1 行」という説明は旧 JTI registry 既定の前提でした — 現在の既定では、JWT の発行経路は純粋な計算処理だけで完結します。詳細は下記の [JWT 失効戦略](#jwt-access-token-失効戦略) を参照。RS 側の差（JWT は RS にとってステートレス、opaque はそうではない）は変わりません。
+既定の JWT 戦略（grant tombstone）は **発行時にデータベースへ書き込みを行わず**、失効した grant ごとに 1 行だけ書き込みます — 定常状態の行数は `O(失効した grant 数)` です。オプトインの JTI registry 戦略は発行ごとに 1 行（`jti` をキーにした shadow 行）を保持します。opaque 形式は常に発行ごとに 1 行（ハッシュ化した bearer ID をキーにした行）を保持します。
+
+「JWT も opaque もトークン 1 本ごとに 1 行」という説明は旧 JTI registry 既定の前提でした — 現在の既定では、JWT の発行経路は純粋な計算処理だけで完結します。詳細は下記の [JWT 失効戦略](#jwt-access-token-失効戦略) を参照。RS 側の差（JWT は RS にとってステートレス、opaque はそうではない）は変わりません。
 :::
 
 ## 失効はどこに届くか — そして `/end_session` のギャップ
@@ -136,9 +138,13 @@ opaque AT を `/introspect` に問い合わせるとき、(a) 別クライアン
 「RS 側ステートレス検証」と「RS にも届く即時ログアウトカスケード」の両立は構造的に不可能です。どちらかを選ぶ必要があります。
 :::
 
-Refresh token のローテーションも関連する調整ポイントです。本ライブラリはどのローテーションでも新しい access token を発行しますが、JWT 形式では **旧 access token は `exp` まで生き残ります**（カスケードのギャップは access token TTL の範囲で閉じる設計）。一方 opaque 形式は、ローテーションのたびに opaque サブストアに対して `RevokeByGrant` を呼び、旧 access token も同時に失効させます — **漏洩した refresh token で旧 access token を再利用される窓は、事実上 clock skew まで縮みます**。
+Refresh token のローテーションも関連する調整ポイントです。本ライブラリはどのローテーションでも新しい access token を発行しますが、JWT 形式では **旧 access token は `exp` まで生き残ります**（カスケードのギャップは access token TTL の範囲で閉じる設計）。
 
-もうひとつのカスケードのきっかけは **RFC 6749 §4.1.2 の認可コード再利用検出** です。盗まれた code が二度目に提示された瞬間、その grant 配下の access token がすべて失効します — JWT 形式では grant tombstone を書き込み（オプトインの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。
+一方 opaque 形式は、ローテーションのたびに opaque サブストアに対して `RevokeByGrant` を呼び、旧 access token も同時に失効させます — **漏洩した refresh token で旧 access token を再利用される窓は、事実上 clock skew まで縮みます**。
+
+もうひとつのカスケードのきっかけは **RFC 6749 §4.1.2 の認可コード再利用検出** です。盗まれた code が二度目に提示された瞬間、その grant 配下の access token がすべて失効します。
+
+JWT 形式では grant tombstone を書き込み（オプトインの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。
 
 ## JWT access-token 失効戦略
 
