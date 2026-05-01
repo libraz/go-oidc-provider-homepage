@@ -3,47 +3,6 @@ layout: home
 title: go-oidc-provider — OpenID Connect Provider library for Go
 titleTemplate: false
 description: Mount an OIDC Provider (Authorization Server) on any Go http.Handler. Targets FAPI 2.0 Baseline / Message Signing.
-
-hero:
-  name: 'go-oidc-provider'
-  text: 'OIDC Provider you mount on http.Handler'
-  tagline: Authorization Server library for Go. PAR / JAR / DPoP / mTLS / PKCE built in. Targets FAPI 2.0 Baseline & Message Signing.
-  actions:
-    - theme: brand
-      text: View on GitHub
-      link: https://github.com/libraz/go-oidc-provider
-    - theme: alt
-      text: Quick Start
-      link: /getting-started/install
-    - theme: alt
-      text: Why this library
-      link: /why
-
-features:
-  - icon:
-      src: /icons/plug.svg
-    title: Embeds as http.Handler
-    details: '`op.New(...)` returns an `http.Handler`. Mount it on net/http, chi, gin — at any prefix. No framework lock-in, no global state.'
-  - icon:
-      src: /icons/shield.svg
-    title: FAPI 2.0 ready
-    details: Single `op.WithProfile(profile.FAPI2Baseline)` switch enables PAR + JAR + DPoP, locks the alg list, and tightens the discovery surface.
-  - icon:
-      src: /icons/key.svg
-    title: BYO storage
-    details: Plug into your existing users table. Tiny store interfaces — `inmem`, `sql`, `redis`, `composite` ship as adapters; DynamoDB planned.
-  - icon:
-      src: /icons/refresh-cw.svg
-    title: Refresh & rotation
-    details: Refresh tokens with reuse detection, configurable grace period, and a separate `offline_access` TTL bucket so stay-signed-in is observable.
-  - icon:
-      src: /icons/check-circle.svg
-    title: OFCS-tested
-    details: 'Regressed each release against the OpenID Foundation conformance suite — 138 PASSED, 0 FAILED across 3 plans (oidcc-basic, fapi2-baseline, fapi2-message-signing).'
-  - icon:
-      src: /icons/globe.svg
-    title: SPA-friendly
-    details: Headless interaction driver — drive login / consent / logout from a React SPA. CORS allowlist auto-derived from registered redirect_uris.
 ---
 
 ## Standard use cases
@@ -128,14 +87,24 @@ handler, _ := op.New(
 
 ```go
 import (
+  "context"
+
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
+  oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
+  oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
 )
 
-durable, _ := sql.Open(/* MySQL DSN */)
-volatile, _ := redis.Open(/* rediss:// */)
-combined  := composite.New(durable, volatile)
+durable, _  := oidcsql.New(db, oidcsql.MySQL())
+volatile, _ := oidcredis.New(context.Background(),
+  oidcredis.WithDSN("rediss://redis:6380/0"),
+  oidcredis.WithRedisAuth(redisUser, redisPassword),
+)
+combined, _ := composite.New(
+  composite.WithDefault(durable),
+  composite.With(composite.Sessions, volatile),
+  composite.With(composite.Interactions, volatile),
+  composite.With(composite.ConsumedJTIs, volatile),
+)
 
 handler, _ := op.New(
   op.WithStore(combined),

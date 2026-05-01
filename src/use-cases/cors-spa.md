@@ -58,9 +58,10 @@ op.New(
     "https://staging.example.com",
     "http://localhost:5173",          // local dev — Vite default
   ),
-  op.WithStaticClients(op.ClientSeed{
+  op.WithStaticClients(op.PublicClient{
     ID:           "spa-client",
     RedirectURIs: []string{"https://app.example.com/callback"},
+    Scopes:       []string{"openid", "profile"},
     /* ... */
   }),
 )
@@ -96,13 +97,17 @@ A SPA is a **public client** (`token_endpoint_auth_method=none`).
 It cannot keep a `client_secret`. It uses PKCE to compensate:
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                      "spa-client",
-  TokenEndpointAuthMethod: op.AuthNone,
-  GrantTypes:              []grant.Type{grant.AuthorizationCode, grant.RefreshToken},
-  RedirectURIs:            []string{"https://app.example.com/callback"},
+op.WithStaticClients(op.PublicClient{
+  ID:           "spa-client",
+  RedirectURIs: []string{"https://app.example.com/callback"},
+  Scopes:       []string{"openid", "profile"},
+  GrantTypes:   []string{"authorization_code", "refresh_token"},
 })
 ```
+
+`op.PublicClient` is the typed seed for SPAs / native apps; it sets
+`token_endpoint_auth_method=none` and `public_client=true` automatically
+so the embedder cannot accidentally ship a SPA with confidential auth.
 
 The OP refuses `code_challenge_method=plain` for any client — `S256`
 only — so the SPA's PKCE is real PKCE, not the legacy variant.

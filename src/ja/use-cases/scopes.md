@@ -37,12 +37,13 @@ op.WithScope(op.InternalScope("internal:audit")),
 `PublicScope`:
 - `scopes_supported` に掲載されます。
 - 同意画面にラベルが表示されます。
-- `AllowedScopes` に含めた任意の RP に発行できます。
+- 自身の seed の `Scopes` に列挙した任意の登録 RP に発行できます。
 
 `InternalScope`:
 - `scopes_supported` には **掲載されません**。
 - 同意画面にも **表示されません**（OP は同意フェーズをスキップします）。
-- RP が要求すれば発行はできます — 可視性フラグは「公開するかどうか」を制御するだけです。OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します。
+- 受理可否は `Scope.AllowedClients` で制御されます。空のリストはどの RP からも要求可能、要素を持つリストはそのリストに掲載されたクライアントのみ受理し、それ以外は RFC 6749 §5.2 の `invalid_scope` で拒否されます。
+- OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します — discovery document が OIDC Discovery 1.0 §3 に違反しないようにするためです。
 
 ::: tip OIDC 標準スコープ
 `openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **あなたの** scope カタログに焦点を当てています。
@@ -50,24 +51,24 @@ op.WithScope(op.InternalScope("internal:audit")),
 
 ## クライアント単位の許可リスト
 
-クライアントの `AllowedScopes` に scope を追加します:
+クライアントの `Scopes` に scope を追加します:
 
 ```go
 op.WithStaticClients(
-  op.ClientSeed{
-    ID:            "billing-app",
-    AllowedScopes: []string{"openid", "billing.read"},
-    /* ... */
+  op.PublicClient{
+    ID:           "billing-app",
+    RedirectURIs: []string{"https://billing.example.com/callback"},
+    Scopes:       []string{"openid", "billing.read"},
   },
-  op.ClientSeed{
-    ID:            "audit-dashboard",
-    AllowedScopes: []string{"openid", "internal:audit"},
-    /* ... */
+  op.PublicClient{
+    ID:           "audit-dashboard",
+    RedirectURIs: []string{"https://audit.example.com/callback"},
+    Scopes:       []string{"openid", "internal:audit"},
   },
 )
 ```
 
-カタログ未掲載の scope を要求するクライアントは `invalid_scope` で拒否されます — カタログとクライアント許可は **AND** です。
+クライアントが許可リストに無い scope を要求すると `invalid_scope` で拒否されます — カタログとクライアント許可は **AND** で評価されます。Internal scope は加えて `Scope.AllowedClients` との AND が掛かるため、その allow list に無いクライアントは scope を自身に列挙していても拒否されます。
 
 ## 確認
 
@@ -86,5 +87,5 @@ curl -s http://localhost:8080/.well-known/openid-configuration | jq .scopes_supp
 | シナリオ | 選択 |
 |---|---|
 | 同じ OP に社内管理アプリを乗せ、ユーザ向け discovery には隠したい | `InternalScope` |
-| 限定 allow-list でロールアウト中の β scope | `InternalScope` + クライアント別 `AllowedScopes` |
+| 限定 allow-list でロールアウト中の β scope | `InternalScope` + scope 自体の `AllowedClients` を埋める |
 | 全 scope を公開し誰でも要求できる API marketplace | すべて `PublicScope` |

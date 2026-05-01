@@ -61,6 +61,7 @@ sequenceDiagram
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/feature"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -76,20 +77,24 @@ provider, err := op.New(
   op.WithStore(inmem.New()),
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKey(opKeys.CookieKey),
-  op.WithProfile(profile.FAPI2Baseline), // <--- 1 行で切り替え
-  op.WithStaticClients(op.ClientSeed{
-    ID:                      demoClientID,
-    TokenEndpointAuthMethod: op.AuthPrivateKeyJWT,
-    RedirectURIs:            []string{demoRedirectURI},
-    GrantTypes:              []grant.Type{grant.AuthorizationCode, grant.RefreshToken},
-    JWKs:                    clientJWKs, // 公開 JWK Set を JSON で
+  op.WithProfile(profile.FAPI2Baseline), // <--- プロファイル切り替え
+  op.WithFeature(feature.DPoP),          // sender-constraint binding を選択
+  op.WithStaticClients(op.PrivateKeyJWTClient{
+    ID:            demoClientID,
+    JWKS:          clientJWKs, // 公開 JWK Set を JSON バイト列で
+    RedirectURIs:  []string{demoRedirectURI},
+    Scopes:        []string{"openid", "profile", "email"},
+    GrantTypes:    []string{"authorization_code", "refresh_token"},
+    ResponseTypes: []string{"code"},
   }),
 )
 ```
 
+`PrivateKeyJWTClient` は FAPI クライアント用の型付き seed で、`token_endpoint_auth_method=private_key_jwt` を自動でセットします。組み込み側でこのフィールドを書く必要はありません。同種の typed seed として `op.PublicClient` と `op.ConfidentialClient` があり、3 つすべてが `op.ClientSeed` を実装し、`WithStaticClients(seeds ...ClientSeed)` に渡せます。
+
 `WithProfile` 呼び出しは:
 
-1. `feature.PAR`、`feature.JAR`、`feature.DPoP` を自動有効化。
+1. `feature.PAR` と `feature.JAR` を自動有効化（sender-constraint の binding として `feature.DPoP` か `feature.MTLS` を選ぶのは組み込み側の責務で、`WithFeature` で明示する)。
 2. `token_endpoint_auth_methods_supported` を FAPI 2.0 §3.1.3 allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差。
 3. ID Token 署名 alg を `ES256`/`PS256` にロック、新規発行で `RS256` を拒否。
 4. `redirect_uri` の完全一致を強制（どこにもワイルドカード無し）。

@@ -84,12 +84,17 @@ returns 200.
 Per-client `BackchannelLogoutURI` opts the RP in:
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                   "rp-a",
-  /* ... */
-  BackchannelLogoutURI: "https://rp-a.example.com/oidc/backchannel-logout",
+op.WithStaticClients(op.PublicClient{
+  ID:                               "rp-a",
+  RedirectURIs:                     []string{"https://rp-a.example.com/callback"},
+  Scopes:                           []string{"openid", "profile"},
+  BackchannelLogoutURI:             "https://rp-a.example.com/oidc/backchannel-logout",
+  BackchannelLogoutSessionRequired: true, // request the "sid" claim on the logout token
 })
 ```
+
+The `BackchannelLogoutURI` field also exists on `op.ConfidentialClient`
+and `op.PrivateKeyJWTClient` — every typed seed accepts it.
 
 Library-wide knobs:
 

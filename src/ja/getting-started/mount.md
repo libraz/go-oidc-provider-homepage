@@ -7,29 +7,29 @@ description: net/http、chi、gin 等への op.Provider のマウント方法。
 
 `op.New` は `*op.Provider` を返し、その `ServeHTTP` メソッドにより標準 `http.Handler` として振る舞います。ライブラリは listener を **所有せず**、どのルータを使うかにも **依存しません**。
 
-## net/http
+## net/http、chi、gin にマウント
 
-```go
+::: code-group
+
+```go [net/http]
 mux := http.NewServeMux()
 mux.Handle("/", provider)
 http.ListenAndServe(":8080", mux)
 ```
 
-## chi
-
-```go
+```go [chi]
 r := chi.NewRouter()
 r.Mount("/", provider)
 http.ListenAndServe(":8080", r)
 ```
 
-## gin
-
-```go
+```go [gin]
 r := gin.New()
 r.Any("/*path", gin.WrapH(provider))
 http.ListenAndServe(":8080", r)
 ```
+
+:::
 
 ## prefix の下にマウント
 

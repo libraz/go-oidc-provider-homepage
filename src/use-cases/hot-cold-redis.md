@@ -66,20 +66,33 @@ cluster.
 
 ```go
 import (
+  "context"
+
   "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
+  oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
+  oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
 )
 
-durable, err := sql.Open(db, sql.Dialect{Driver: sql.DriverMySQL})
-volatile, err := redis.Open(redis.Options{
-  Addr:     "rediss://redis:6380",  // <-- TLS required by default
-  Password: redisPassword,
-})
+durable, err := oidcsql.New(db, oidcsql.MySQL())
 if err != nil { /* ... */ }
 
-combined, err := composite.New(durable, volatile)
+volatile, err := oidcredis.New(context.Background(),
+  oidcredis.WithDSN("rediss://redis:6380/0"), // TLS required by default
+  oidcredis.WithRedisAuth(redisUsername, redisPassword),
+)
+if err != nil { /* ... */ }
+
+// composite.New takes functional options. WithDefault routes every
+// Kind to the durable backend; With(kind, store) overrides the named
+// substore. composite.New rejects configurations that would split a
+// transactional cluster (composite.TxClusterKinds) across backends.
+combined, err := composite.New(
+  composite.WithDefault(durable),
+  composite.With(composite.Sessions, volatile),
+  composite.With(composite.Interactions, volatile),
+  composite.With(composite.ConsumedJTIs, volatile),
+)
 if err != nil { /* ... */ }
 
 provider, err := op.New(
@@ -112,12 +125,12 @@ store would produce.
 ## Redis safety floor
 
 ::: warning No plaintext Redis by default
-`redis.Open` **refuses to start** without TLS (`rediss://`) and AUTH.
+`redis.New` **refuses to start** without TLS (`rediss://`) and AUTH.
 The library does not let you ship a setup that flies your refresh-token
 chain across the wire in plaintext. The escape hatch
-`redis.WithDevModeAllowPlaintext()` exists for `examples/` runs and
-local development; using it in production is a security regression you
-have to type out by hand.
+`redis.WithDevModeAllowPlaintext(callback)` exists for `examples/`
+runs and local development; using it in production is a security
+regression you have to type out by hand.
 :::
 
 ## What goes where (default split)

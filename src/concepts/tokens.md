@@ -180,8 +180,8 @@ load-bearing on RS code, on operational latency, and on what
 
 ::: info Note on `aud`
 The access token's `aud` is **not** the `client_id`; it's the resource
-server's identifier (configured via the client's `AllowedAudiences`
-or by the resource indicator from RFC 8707).
+server's identifier (set via the client seed's `Resources []string`
+field, or via the RFC 8707 `resource` request parameter at runtime).
 :::
 
 ## UserInfo — "give me fresh claims for this access token"
@@ -221,14 +221,16 @@ valid.
 | `op.WithRefreshTokenOfflineTTL(d)` | Lifetime of `offline_access` refresh tokens. | inherits `WithRefreshTokenTTL` |
 | `op.WithClaimsSupported(...)` | Claims the OP can return. Surfaced in the discovery document. | — |
 | `op.WithClaimsParameterSupported(true)` | Honour the OIDC §5.5 `claims` request parameter. | off |
-| `op.WithStrictOfflineAccess()` | Reject refresh exchanges whose **originating** grant lacked `offline_access`. See callout below. | off |
+| `op.WithStrictOfflineAccess()` | Switch issuance and refresh exchange to the strict OIDC Core §11 reading: refresh tokens are issued only when the granted scope contains `offline_access`. See callout below. | off (lax — `openid` + client `refresh_token` grant suffices) |
 
 ::: details Why `WithStrictOfflineAccess`?
-Defence-in-depth on top of the issuance gate, which already requires
-`offline_access` since the recent client-metadata enforcement. Useful
-as a transition guard when migrating from older deployments where some
-refresh tokens may have been issued without the scope. New deployments
-do not need it; the default issuance path is already strict.
+The default (lax) reading of OIDC Core §11 lets the OP issue refresh
+tokens whenever the granted scope contains `openid` and the client's
+`GrantTypes` includes `refresh_token`; `offline_access` only governs
+consent-prompt UX and which TTL bucket applies. Pick the strict reading
+when you want consent prompts and the actual issuance gate to agree
+byte-for-byte on what the user authorised — at the cost of every RP
+that wants stay-signed-in behaviour explicitly requesting `offline_access`.
 :::
 
 ## Read next

@@ -3,47 +3,6 @@ layout: home
 title: go-oidc-provider — Go 用 OpenID Connect Provider ライブラリ
 titleTemplate: false
 description: 既存の Go アプリに http.Handler として OIDC Provider（Authorization Server）を組み込むライブラリ。FAPI 2.0 Baseline / Message Signing をターゲット。
-
-hero:
-  name: 'go-oidc-provider'
-  text: 'http.Handler として組み込める OIDC Provider'
-  tagline: Go 製の Authorization Server ライブラリ。PAR / JAR / DPoP / mTLS / PKCE 内蔵。FAPI 2.0 Baseline・Message Signing 対応を目標としています。
-  actions:
-    - theme: brand
-      text: GitHub で見る
-      link: https://github.com/libraz/go-oidc-provider
-    - theme: alt
-      text: クイックスタート
-      link: /ja/getting-started/install
-    - theme: alt
-      text: go-oidc-provider とは
-      link: /ja/why
-
-features:
-  - icon:
-      src: /icons/plug.svg
-    title: http.Handler として組み込み
-    details: '`op.New(...)` が `http.Handler` を返すだけ。net/http、chi、gin などお好みのルーターに、お好みの prefix でマウントできます。フレームワーク lock-in もグローバル状態もありません。'
-  - icon:
-      src: /icons/shield.svg
-    title: FAPI 2.0 を 1 行で
-    details: '`op.WithProfile(profile.FAPI2Baseline)` で PAR + JAR + DPoP を有効化、alg リストをロックし、discovery を絞り込みます。'
-  - icon:
-      src: /icons/key.svg
-    title: 既存ストレージに接続
-    details: 既存の users テーブルに合わせる小さな Store インターフェース。`inmem` / `sql` / `redis` / `composite` の参照アダプタを同梱、DynamoDB は予定。
-  - icon:
-      src: /icons/refresh-cw.svg
-    title: リフレッシュトークンのローテーション
-    details: 再利用検知付きで自動ローテーション、リトライ向けの grace 期間、`offline_access` の TTL を分離する仕組みで「ログイン状態の維持」を監査ログに残せます。
-  - icon:
-      src: /icons/check-circle.svg
-    title: OFCS 検査済み
-    details: 'OpenID Foundation の Conformance Suite で 3 plan・138 PASSED / 0 FAILED を維持。リリースごとに回帰検査します。'
-  - icon:
-      src: /icons/globe.svg
-    title: SPA フレンドリー
-    details: ヘッドレスな interaction driver でログイン・同意・ログアウトを React SPA から制御できます。CORS allowlist は登録済みの redirect_uri から自動導出。
 ---
 
 ## 代表的なユースケース
@@ -126,14 +85,24 @@ handler, _ := op.New(
 
 ```go
 import (
+  "context"
+
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
+  oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
+  oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
 )
 
-durable, _ := sql.Open(/* MySQL DSN */)
-volatile, _ := redis.Open(/* rediss:// */)
-combined  := composite.New(durable, volatile)
+durable, _  := oidcsql.New(db, oidcsql.MySQL())
+volatile, _ := oidcredis.New(context.Background(),
+  oidcredis.WithDSN("rediss://redis:6380/0"),
+  oidcredis.WithRedisAuth(redisUser, redisPassword),
+)
+combined, _ := composite.New(
+  composite.WithDefault(durable),
+  composite.With(composite.Sessions, volatile),
+  composite.With(composite.Interactions, volatile),
+  composite.With(composite.ConsumedJTIs, volatile),
+)
 
 handler, _ := op.New(
   op.WithStore(combined),

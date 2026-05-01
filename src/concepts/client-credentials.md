@@ -86,11 +86,12 @@ handler, err := op.New(
 A registered client opting in via `GrantTypes`:
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                      "service-a",
-  TokenEndpointAuthMethod: op.AuthClientSecretBasic, // or PrivateKeyJWT etc.
-  GrantTypes:              []grant.Type{grant.ClientCredentials},
-  AllowedScopes:           []string{"read:things", "write:things"},
+op.WithStaticClients(op.ConfidentialClient{
+  ID:         "service-a",
+  Secret:     "rotate-me",
+  AuthMethod: op.AuthClientSecretBasic, // or use op.PrivateKeyJWTClient instead for private_key_jwt
+  GrantTypes: []string{"client_credentials"},
+  Scopes:     []string{"read:things", "write:things"},
 })
 ```
 
@@ -111,7 +112,7 @@ client the ability to mint app-level tokens.
 `client_credentials` access tokens carry:
 
 - `iss` — the OP issuer
-- `aud` — the resource server identifier (set on `ClientSeed.AllowedAudiences` or default)
+- `aud` — the resource server identifier (the typed seeds carry a `Resources []string` field that lists permitted RFC 8707 resource indicators; with DCR, the equivalent `resources` metadata field)
 - `client_id` — the requesting client
 - **No `sub`** for purely-machine clients (or `sub = client_id` if you set `act_as_subject`)
 - `scope` — the granted subset of the requested scopes

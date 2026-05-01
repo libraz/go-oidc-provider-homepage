@@ -110,7 +110,7 @@ op.New(
 )
 ```
 
-`RiskAssessor` は試行ごとに `RiskScore` を返します。ライブラリは 4 段階の列挙（`RiskScoreLow`、`RiskScoreMedium`、`RiskScoreHigh`、`RiskScoreCritical`）を公開しています。組み込み側の assessor が、リスク評価サービスの出力をこの列挙値に変換します。
+`RiskAssessor` は試行ごとに `RiskScore` を返します。ライブラリは 4 段階の順序付き列挙（`RiskScoreNone` < `RiskScoreLow` < `RiskScoreMedium` < `RiskScoreHigh`）を公開しています。組み込み側の assessor が、リスク評価サービスの出力をこの列挙値に変換します。`RuleRisk(threshold, step)` は assessor の score が `threshold` 以上のときに発火します。
 
 ## RFC 9470 ACR step-up
 
@@ -160,3 +160,47 @@ op.New(
 各 step の **ストレージ** は組み込み側の責任です。ライブラリはユーザレコードもパスワードハッシュも所有しません。リファレンスの `inmem` アダプタは、例とテストには十分です。本番では、既存のユーザテーブルに合わせて `op/store/*` のサブストアを実装してください。
 
 完全カスタムな factor は `op.ExternalStep` を実装し、一意な `KindLabel` で rule リストに追加します。これは `examples/2x-*` 全体で踏襲しているパターンです。
+
+## TOTP factor の登録 (enrolment)
+
+`op.StepTOTP` は組み込み側がすでに永続化済みの `store.TOTPRecord` に対してコードを検証します。これと対になる登録経路は [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit) パッケージにあります。秘密鍵の生成、QR コードとして描画される `otpauth://` プロビジョニング URI、登録を確定する所有証明 (proof-of-possession) ステップを所有しています。
+
+```go
+import (
+  "github.com/libraz/go-oidc-provider/op/totpkit"
+)
+
+// 起動時に codec を 1 つだけ作り、同じ key bytes を
+// op.StepTOTP{EncryptionKey: keys.TOTPKey} と共有します。
+// 検証 / 登録の両側が同じ AES-256-GCM blob 形を produce / consume します。
+codec, err := totpkit.NewCodec(keys.TOTPKey /*, previousKey, ... */)
+
+// 1. primary 認証成功後、登録を開始。
+pending, err := totpkit.NewEnrolment(codec,
+  user.Subject,        // OP 内部の安定 user ID (AAD としてバインド)
+  "Example Identity",  // authenticator app に表示される issuer ラベル
+  user.Email,          // issuer の下に表示される account ラベル
+)
+// pending.OTPAuthURI    — HTML で QR コードとして描画
+// pending.SecretBase32  — 「手入力 (manual entry)」UX 用の表示
+// pending.Record        — 封緘済 TOTPRecord、まだ永続化してはいけない
+
+// 2. `pending` を短命な登録セッション (server-side row、cookie で参照)
+//    に置き、QR コードと手入力用 secret をユーザに表示します。
+
+// 3. ユーザが authenticator app の表示するコードを入力。
+record, err := totpkit.Confirm(codec, pending, submittedCode, time.Now())
+// totpkit.ErrCodeRejected の場合、`pending` は不変のままなので
+// フォームを再描画してユーザに retry させます。codec の保持期間を
+// 越えて鍵がローテーションされている場合は ErrDecrypt が発火します。
+
+// 4. 確定済 record を永続化。この瞬間から op.StepTOTP は同じ
+//    secret に対するコードを受理します。
+_ = storage.TOTPs().Put(ctx, record)
+```
+
+`totpkit` は意図的に HTTP 面に出てきません。HTML、QR 描画、登録セッションは組み込み側が所有します。`NewEnrolment` と `Confirm` のいずれも、`subject` を GCM の AAD (additional-authenticated-data) としてバインドします。あるユーザの登録 row を抜き出しても、別の subject では replay できません。GCM タグ検証が AAD 不一致で拒否します。検証経路も同じ AAD 形を使うので、両端で同じバインディングが効きます。
+
+デモ / CLI 用途の登録 (端末向け QR 描画、確定済 seed record の生成) には `examples/internal/seedkit` を参照してください。`//go:build example` タグで隔離されているため、QR 描画ライブラリがホストモジュールの `go.sum` に入りません。
+
+> **ソース:** [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — in-process OP+RP デモ。登録から RFC 9470 ACR step-up までを通しで実行します。

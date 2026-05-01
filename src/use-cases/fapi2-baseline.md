@@ -78,6 +78,7 @@ sequenceDiagram
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/feature"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -93,20 +94,30 @@ provider, err := op.New(
   op.WithStore(inmem.New()),
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKey(opKeys.CookieKey),
-  op.WithProfile(profile.FAPI2Baseline), // <--- the one switch
-  op.WithStaticClients(op.ClientSeed{
-    ID:                      demoClientID,
-    TokenEndpointAuthMethod: op.AuthPrivateKeyJWT,
-    RedirectURIs:            []string{demoRedirectURI},
-    GrantTypes:              []grant.Type{grant.AuthorizationCode, grant.RefreshToken},
-    JWKs:                    clientJWKs, // public JWK Set as JSON
+  op.WithProfile(profile.FAPI2Baseline), // <--- the profile switch
+  op.WithFeature(feature.DPoP),          // pick the sender-constraint binding
+  op.WithStaticClients(op.PrivateKeyJWTClient{
+    ID:            demoClientID,
+    JWKS:          clientJWKs, // public JWK Set as JSON bytes
+    RedirectURIs:  []string{demoRedirectURI},
+    Scopes:        []string{"openid", "profile", "email"},
+    GrantTypes:    []string{"authorization_code", "refresh_token"},
+    ResponseTypes: []string{"code"},
   }),
 )
 ```
 
+`PrivateKeyJWTClient` is the typed seed for FAPI clients — it forces
+`token_endpoint_auth_method=private_key_jwt` automatically, so the
+embedder never has to spell that field out. The companion typed seeds
+are `op.PublicClient` and `op.ConfidentialClient`; all three implement
+`op.ClientSeed` and feed `WithStaticClients(seeds ...ClientSeed)`.
+
 The `WithProfile` call:
 
-1. Enables `feature.PAR`, `feature.JAR`, and `feature.DPoP` automatically.
+1. Enables `feature.PAR` and `feature.JAR` automatically (the embedder
+   still picks the sender-constraint binding — `feature.DPoP` or
+   `feature.MTLS` — explicitly via `WithFeature`).
 2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0
    §3.1.3 allow-list (`private_key_jwt`, `tls_client_auth`,
    `self_signed_tls_client_auth`).

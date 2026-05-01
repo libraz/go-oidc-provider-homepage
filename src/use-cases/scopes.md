@@ -47,14 +47,18 @@ op.WithScope(op.InternalScope("internal:audit")),
 `PublicScope`:
 - Surfaces in `scopes_supported` of the discovery document.
 - Renders on the consent screen with its label.
-- Available to any registered RP that lists it in `AllowedScopes`.
+- Available to any registered RP that lists it in its seed's `Scopes`.
 
 `InternalScope`:
 - **Not** in `scopes_supported`.
 - **Not** rendered on consent (the OP issues it without prompting).
-- Still issuable when an RP requests it — the visibility flag only
-  controls advertisement, not authorisation. `op.New` rejects an
-  `InternalScope` that an OIDC standard scope name was passed to.
+- Acceptance is governed by `Scope.AllowedClients`: an empty list means
+  any RP may request it; a non-empty list scopes acceptance to the
+  named clients (any other client requesting the scope is rejected with
+  `invalid_scope` per RFC 6749 §5.2).
+- `op.New` rejects an `InternalScope` whose name collides with an OIDC
+  standard scope, so the discovery document never violates OIDC
+  Discovery 1.0 §3.
 
 ::: tip OIDC standard scopes
 `openid`, `profile`, `email`, `address`, `phone`, and `offline_access`
@@ -64,25 +68,27 @@ them. The example focuses on **your** scope catalogue.
 
 ## Per-client allow-list
 
-Add the scope to the client's `AllowedScopes`:
+Add the scope to the client's `Scopes`:
 
 ```go
 op.WithStaticClients(
-  op.ClientSeed{
-    ID:            "billing-app",
-    AllowedScopes: []string{"openid", "billing.read"},
-    /* ... */
+  op.PublicClient{
+    ID:           "billing-app",
+    RedirectURIs: []string{"https://billing.example.com/callback"},
+    Scopes:       []string{"openid", "billing.read"},
   },
-  op.ClientSeed{
-    ID:            "audit-dashboard",
-    AllowedScopes: []string{"openid", "internal:audit"},
-    /* ... */
+  op.PublicClient{
+    ID:           "audit-dashboard",
+    RedirectURIs: []string{"https://audit.example.com/callback"},
+    Scopes:       []string{"openid", "internal:audit"},
   },
 )
 ```
 
 A client requesting a scope it doesn't list gets `invalid_scope` —
-the catalogue and the per-client list are **AND**ed.
+the catalogue and the per-client list are **AND**ed. Internal scopes
+add a second AND with `Scope.AllowedClients`: a client absent from
+that list is rejected even if it lists the scope on its own seed.
 
 ## Verifying
 
@@ -101,5 +107,5 @@ curl -s http://localhost:8080/.well-known/openid-configuration | jq .scopes_supp
 | Scenario | Pick |
 |---|---|
 | Internal admin app on the same OP, want it hidden from user-facing discovery | `InternalScope` |
-| Beta scope you're rolling out to a small allow-list | `InternalScope` + per-client `AllowedScopes` |
+| Beta scope you're rolling out to a small allow-list | `InternalScope` + populate the scope's `AllowedClients` |
 | Public API marketplace where every scope is shoppable | All `PublicScope` |

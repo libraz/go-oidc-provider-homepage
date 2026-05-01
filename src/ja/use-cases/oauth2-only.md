@@ -39,7 +39,7 @@ op.New(
 | `scope=api:read` | 純粋 OAuth 2.0: `access_token` のみ、`id_token` なし |
 | `scope=`（空） | 拒否 — 少なくとも 1 つ scope が必要 |
 
-選択は **リクエスト単位** であって、全体一括の切り替えではありません。`AllowedScopes` に `openid` を含むクライアントは引き続き要求できますし、`AllowedScopes` に `openid` を含まないクライアントは恒久的に OAuth-only で動きます。
+選択は **リクエスト単位** であって、全体一括の切り替えではありません。`Scopes` 列挙に `openid` を含むクライアントは引き続き要求できますし、`Scopes` に `openid` を含まないクライアントは恒久的に OAuth-only で動きます。
 
 ## 副作用
 

@@ -41,11 +41,11 @@ the pattern. This library exposes it as a per-client allow-list.
 op.New(
   /* required options */
   op.WithFirstPartyClients("first-party-app", "internal-dashboard"),
-  op.WithStaticClients(op.ClientSeed{
-    ID:                      "first-party-app",
-    TokenEndpointAuthMethod: op.AuthNone,
-    GrantTypes:              []grant.Type{grant.AuthorizationCode, grant.RefreshToken},
-    RedirectURIs:            []string{"https://app.example.com/callback"},
+  op.WithStaticClients(op.PublicClient{
+    ID:           "first-party-app",
+    RedirectURIs: []string{"https://app.example.com/callback"},
+    Scopes:       []string{"openid", "profile", "email"},
+    GrantTypes:   []string{"authorization_code", "refresh_token"},
   }),
 )
 ```

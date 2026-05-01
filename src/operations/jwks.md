@@ -172,7 +172,7 @@ the configured JWKS path under your issuer + mount prefix. RPs fetch
 discovery once and follow the `jwks_uri` from there — there is no
 hard-coded path the OP relies on.
 
-You can override the path with `WithEndpoints(op.EndpointPaths{JWKS:
+You can override the path with `WithEndpoints(op.Endpoints{JWKS:
 "/keys"})` if you have a router conflict; the discovery document
 follows.
 

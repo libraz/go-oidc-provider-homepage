@@ -280,25 +280,25 @@ doesn't look for it.
 ::: details Selecting a strategy
 ```go
 // Default — RevocationStrategyGrantTombstone, no extra option needed.
-provider, err := op.New(ctx,
+provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithSigningKeys(keys),
-    op.WithClientStore(clients),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
 )
 
 // Pin the legacy per-jti registry model.
-provider, err := op.New(ctx,
+provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithSigningKeys(keys),
-    op.WithClientStore(clients),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
     op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry),
 )
 
 // Disable server-side JWT revocation (non-FAPI deployments only).
-provider, err := op.New(ctx,
+provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithSigningKeys(keys),
-    op.WithClientStore(clients),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
     op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone),
 )
 ```
@@ -344,10 +344,10 @@ dependency).
 Default — JWT for every audience:
 
 ```go
-provider, err := op.New(ctx,
+provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithSigningKeys(keys),
-    op.WithClientStore(clients),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
     // No format option — defaults to AccessTokenFormatJWT.
 )
 ```
@@ -355,10 +355,10 @@ provider, err := op.New(ctx,
 Switch every issued access token to opaque:
 
 ```go
-provider, err := op.New(ctx,
+provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithSigningKeys(keys),
-    op.WithClientStore(clients),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
     op.WithAccessTokenFormat(op.AccessTokenFormatOpaque),
 )
 ```
@@ -368,10 +368,10 @@ The map key is the canonical resource URI; the empty key is reserved —
 use `WithAccessTokenFormat` for the default audience.
 
 ```go
-provider, err := op.New(ctx,
+provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithSigningKeys(keys),
-    op.WithClientStore(clients),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
     op.WithAccessTokenFormatPerAudience(map[string]op.AccessTokenFormat{
         "https://api.internal.example.com": op.AccessTokenFormatOpaque,
         "https://reports.example.com":      op.AccessTokenFormatJWT,

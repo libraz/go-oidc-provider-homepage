@@ -71,13 +71,13 @@ provider, err := op.New(
     grant.ClientCredentials, // <-- enable service-to-service
   ),
 
-  op.WithStaticClients(op.ClientSeed{
-    ID:                      "service-a",
-    Secret:                  serviceASecret, // hashed; library handles comparison
-    TokenEndpointAuthMethod: op.AuthClientSecretBasic,
-    GrantTypes:              []grant.Type{grant.ClientCredentials},
-    AllowedScopes:           []string{"read:things", "write:things"},
-    AllowedAudiences:        []string{"https://api.b.example.com"},
+  op.WithStaticClients(op.ConfidentialClient{
+    ID:         "service-a",
+    Secret:     serviceASecret,            // plaintext; the seed hashes it via op.HashClientSecret
+    AuthMethod: op.AuthClientSecretBasic,
+    GrantTypes: []string{"client_credentials"},
+    Scopes:     []string{"read:things", "write:things"},
+    Resources:  []string{"https://api.b.example.com"}, // RFC 8707 audience pin
   }),
 )
 ```
@@ -108,13 +108,16 @@ A public client (`token_endpoint_auth_method=none`) can't use it.
 For higher-assurance deployments, use `private_key_jwt` (RFC 7523):
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                      "service-a",
-  TokenEndpointAuthMethod: op.AuthPrivateKeyJWT,
-  GrantTypes:              []grant.Type{grant.ClientCredentials},
-  JWKs:                    serviceAPublicJWKs, // public JWK Set
+op.WithStaticClients(op.PrivateKeyJWTClient{
+  ID:         "service-a",
+  JWKS:       serviceAPublicJWKs, // public JWK Set as JSON bytes
+  GrantTypes: []string{"client_credentials"},
 })
 ```
+
+The `PrivateKeyJWTClient` seed sets
+`token_endpoint_auth_method=private_key_jwt` automatically — there is
+no separate `AuthMethod` field to configure on this typed seed.
 
 Now Service A signs a JWT assertion with its private key for each token
 request:

@@ -115,9 +115,10 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 
 `op.WithProfile(profile.FAPI2Baseline)` は 2 つの `fapi2-*` plan が想定する設定を有効化します:
 
-- `feature.PAR` — `/par` がルート可能、`/authorize` で `request_uri` を受理
-- `feature.JAR`（Message Signing のみ） — `request` / `request_uri` を署名 JWT として検証
-- `feature.DPoP` — 送信者制約付き access token (`cnf.jkt`)、discovery は `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` を宣伝
+- `feature.PAR`（`FAPI2Baseline` で自動有効化） — `/par` がルート可能、`/authorize` で `request_uri` を受理
+- `feature.JAR`（`FAPI2Baseline` で自動有効化） — `request` / `request_uri` を署名 JWT として検証
+- `feature.JARM`（`FAPI2MessageSigning` で追加で自動有効化） — 認可レスポンスを JWT として署名
+- 送信者制約付き access token — 組み込み側が `WithFeature` で `feature.DPoP`（`cnf.jkt`）か `feature.MTLS`（`cnf.x5t#S256`）の **少なくとも 1 つ** を明示的に有効化する必要がある。どちらも有効化されていなければ `op.New` が構成を拒否。DPoP が有効なら discovery は `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` を宣伝
 - JOSE alg allow-list はコードベース全体で `RS256 / PS256 / ES256 / EdDSA` にロック、`HS*` と `none` は **構造的** に到達不能（`internal/jose/alg.go` 参照）
 - `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差
 - `redirect_uri` 完全一致を強制

@@ -1,26 +1,28 @@
 /* Site-wide font */
 :root {
-  --vp-font-family-base: 'IBM Plex Sans', system-ui, sans-serif;
-  --vp-font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  --vp-font-family-base: "IBM Plex Sans", system-ui, sans-serif;
+  --vp-font-family-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
 }
 
 /* ============================================================
- * Homepage design system: "Standards Track"
+ * Homepage design system: "Standards Track Datasheet"
  *
- * Engineering-blueprint aesthetic for the landing page only.
- * Deliberately diverges from the sibling docs site's defaults —
- * Prussian-blue accent on a dotted-grid backdrop, grotesque
- * display tagline (Bricolage Grotesque), bracketed "spec-table
- * cell" feature cards, and a low-opacity concentric-arc seal as
- * a hero corner mark. All rules scoped under `.VPHome` so
- * downstream content pages remain on the default theme.
+ * The landing page is a single composition: a wordmark, a
+ * one-line claim, a precise CTA row, a trust line, and a code
+ * panel that proves it's a real library — followed by a flat
+ * datasheet of capabilities. No decorative ornament; every
+ * element is load-bearing.
+ *
+ * Scoped under .VPHome / .op-* so doc pages stay on the
+ * default theme.
  * ============================================================ */
 
 .VPHome {
   --op-accent: #1e3a8a;
   --op-accent-soft: #2563eb;
-  --op-accent-tint: rgba(30, 58, 138, 0.10);
-  --op-grid: rgba(30, 58, 138, 0.10);
+  --op-accent-tint: rgba(30, 58, 138, 0.1);
+  --op-rule: rgba(15, 23, 42, 0.1);
+  --op-rule-strong: rgba(15, 23, 42, 0.18);
 
   --vp-c-brand-1: #1e3a8a;
   --vp-c-brand-2: #1e40af;
@@ -31,8 +33,9 @@
 .dark .VPHome {
   --op-accent: #93c5fd;
   --op-accent-soft: #bfdbfe;
-  --op-accent-tint: rgba(147, 197, 253, 0.12);
-  --op-grid: rgba(147, 197, 253, 0.10);
+  --op-accent-tint: rgba(147, 197, 253, 0.1);
+  --op-rule: rgba(255, 255, 255, 0.08);
+  --op-rule-strong: rgba(255, 255, 255, 0.16);
 
   --vp-c-brand-1: #93c5fd;
   --vp-c-brand-2: #60a5fa;
@@ -40,301 +43,448 @@
   --vp-c-brand-soft: rgba(147, 197, 253, 0.18);
 }
 
-/* Hero block: blueprint backdrop + concentric-arc verification seal */
-.VPHome .VPHero {
+/* ---- Hero ---- */
+
+.op-hero {
   position: relative;
-  overflow: hidden;
+  padding: 64px 24px 40px;
+  border-bottom: 1px solid var(--op-rule);
 }
 
-/* Dotted blueprint grid, faded toward the edges */
-.VPHome .VPHero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, var(--op-grid) 1px, transparent 1.2px);
-  background-size: 22px 22px;
-  pointer-events: none;
-  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 45%, black 35%, transparent 100%);
-  mask-image: radial-gradient(ellipse 70% 55% at 50% 45%, black 35%, transparent 100%);
-  z-index: 0;
-}
-
-/* Concentric-arc cryptographic seal in the upper-right corner.
- * Implemented as a CSS mask so the accent tint follows light/dark mode
- * via --op-accent instead of needing two encoded SVGs. */
-.VPHome .VPHero::after {
-  content: '';
-  position: absolute;
-  top: -110px;
-  right: -110px;
-  width: 480px;
-  height: 480px;
-  background-color: var(--op-accent);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none' stroke='black'%3E%3Ccircle cx='200' cy='200' r='190' stroke-width='1' stroke-dasharray='2 6' opacity='0.55'/%3E%3Ccircle cx='200' cy='200' r='150' stroke-width='1' opacity='0.8'/%3E%3Ccircle cx='200' cy='200' r='110' stroke-width='1' opacity='0.55'/%3E%3Cpath d='M 200 30 A 170 170 0 0 1 370 200' stroke-width='3'/%3E%3Cpath d='M 200 70 A 130 130 0 0 1 330 200' stroke-width='2' opacity='0.85'/%3E%3Cg stroke-width='1.5' opacity='0.75'%3E%3Cline x1='200' y1='20' x2='200' y2='40'/%3E%3Cline x1='200' y1='360' x2='200' y2='380'/%3E%3Cline x1='20' y1='200' x2='40' y2='200'/%3E%3Cline x1='360' y1='200' x2='380' y2='200'/%3E%3Cline x1='73' y1='73' x2='87' y2='87'/%3E%3Cline x1='313' y1='313' x2='327' y2='327'/%3E%3Cline x1='313' y1='87' x2='327' y2='73'/%3E%3Cline x1='73' y1='327' x2='87' y2='313'/%3E%3C/g%3E%3Cpath d='M 165 215 L 185 195 L 210 220 L 240 180' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none' stroke='black'%3E%3Ccircle cx='200' cy='200' r='190' stroke-width='1' stroke-dasharray='2 6' opacity='0.55'/%3E%3Ccircle cx='200' cy='200' r='150' stroke-width='1' opacity='0.8'/%3E%3Ccircle cx='200' cy='200' r='110' stroke-width='1' opacity='0.55'/%3E%3Cpath d='M 200 30 A 170 170 0 0 1 370 200' stroke-width='3'/%3E%3Cpath d='M 200 70 A 130 130 0 0 1 330 200' stroke-width='2' opacity='0.85'/%3E%3Cg stroke-width='1.5' opacity='0.75'%3E%3Cline x1='200' y1='20' x2='200' y2='40'/%3E%3Cline x1='200' y1='360' x2='200' y2='380'/%3E%3Cline x1='20' y1='200' x2='40' y2='200'/%3E%3Cline x1='360' y1='200' x2='380' y2='200'/%3E%3Cline x1='73' y1='73' x2='87' y2='87'/%3E%3Cline x1='313' y1='313' x2='327' y2='327'/%3E%3Cline x1='313' y1='87' x2='327' y2='73'/%3E%3Cline x1='73' y1='327' x2='87' y2='313'/%3E%3C/g%3E%3Cpath d='M 165 215 L 185 195 L 210 220 L 240 180' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  opacity: 0.32;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.dark .VPHome .VPHero::after {
-  opacity: 0.22;
+.op-hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: stretch;
 }
 
 @media (max-width: 960px) {
-  .VPHome .VPHero::after {
-    top: -160px;
-    right: -200px;
-    width: 380px;
-    height: 380px;
-    opacity: 0.18;
+  .op-hero {
+    padding: 44px 20px 28px;
+  }
+  .op-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
   }
 }
 
-/* Lift the hero content above the backdrop layers */
-.VPHome .VPHero .container {
-  position: relative;
-  z-index: 1;
-}
-
-/* Wordmark: monospace + brass + terminal-prompt sigil */
-.VPHome .VPHero .name {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace !important;
-  font-weight: 700;
-  font-size: 4rem !important;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  background: none !important;
-  -webkit-background-clip: initial !important;
-  background-clip: initial !important;
-  -webkit-text-fill-color: initial !important;
-  color: var(--op-accent) !important;
-}
-
-.VPHome .VPHero .name::before {
-  content: '▸';
-  display: inline-block;
-  margin-right: 0.32em;
-  color: var(--op-accent);
-  font-weight: 400;
-  font-size: 0.7em;
-  vertical-align: 0.18em;
-  opacity: 0.85;
-}
-
-/* Default VitePress caps `.VPHero .main` at 592px, which forces the
- * 16-char "go-oidc-provider" wordmark to wrap. Lift the cap so the
- * name can render on a single line at wide breakpoints. */
-.VPHero .container .main {
-  max-width: none;
-}
-
-@media (max-width: 768px) {
-  .VPHome .VPHero .name {
-    white-space: normal;
-    font-size: 2.4rem !important;
-  }
-  .VPHome .VPHero .name::before {
-    font-size: 0.6em;
-  }
-}
-
-/* Tagline (`.text`): variable grotesque display. Bricolage Grotesque
- * is tuned to a display optical size + medium-bold weight so it sits
- * between the JetBrains Mono wordmark and the IBM Plex body without
- * competing with either. Upright, no italic. */
-.VPHome .VPHero .text {
-  font-family: 'Bricolage Grotesque', 'IBM Plex Sans', system-ui, sans-serif !important;
-  font-variation-settings: 'opsz' 72, 'wght' 560;
-  font-style: normal;
-  font-weight: 560;
-  font-size: 1.85rem !important;
-  line-height: 1.2 !important;
-  letter-spacing: -0.018em;
-  margin-top: 18px !important;
-  color: var(--vp-c-text-1);
-}
-
-@media (max-width: 768px) {
-  .VPHome .VPHero .text {
-    font-size: 1.5rem !important;
-  }
-}
-
-/* Subtitle */
-.VPHome .VPHero .tagline {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 1rem !important;
-  line-height: 1.55;
-  max-width: 60ch;
-  color: var(--vp-c-text-2);
-  margin-top: 14px !important;
-}
-
-.VPHome .VPHero .actions {
+.op-hero-info {
   display: flex;
-  gap: 12px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  margin-top: 22px;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.VPHome .VPHero .VPButton {
-  min-width: 200px;
+.op-hero-wordmark {
+  font-family: var(--vp-font-family-mono);
+  font-size: 3.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--vp-c-text-1);
+  margin: 0;
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: initial;
+}
+
+@media (max-width: 768px) {
+  .op-hero-wordmark {
+    font-size: 2.4rem;
+  }
+}
+
+.op-hero-claim {
+  font-family: var(--vp-font-family-base);
+  font-size: 1.7rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.014em;
+  color: var(--vp-c-text-1);
+  margin: 24px 0 0;
+  max-width: 38ch;
+}
+
+.op-hero-claim code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.88em;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  padding: 0 1px;
+  color: var(--op-accent);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 768px) {
+  .op-hero-claim {
+    font-size: 1.4rem;
+    max-width: none;
+  }
+}
+
+.op-hero-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+  margin: 18px 0 0;
+  max-width: 56ch;
+}
+
+.op-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin-top: 30px;
+}
+
+.op-cta {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 4px;
-  letter-spacing: 0.01em;
-  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  font-family: var(--vp-font-family-base);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.VPHome .VPHero .VPButton.brand {
-  background-color: var(--op-accent);
-  border-color: var(--op-accent);
+.op-cta-primary {
+  height: 42px;
+  padding: 0 22px;
+  background: var(--op-accent);
+  color: #fff;
+  border: 1px solid var(--op-accent);
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+.op-cta-primary:hover {
+  background: var(--vp-c-brand-2);
+  border-color: var(--vp-c-brand-2);
   color: #fff;
 }
 
-.VPHome .VPHero .VPButton.brand:hover {
-  background-color: var(--vp-c-brand-2);
-  border-color: var(--vp-c-brand-2);
-  transform: translateY(-1px);
+.dark .op-cta-primary {
+  color: #0b1220;
 }
 
-.VPHome .VPHero .VPButton.alt {
-  border-color: var(--vp-c-divider);
+.dark .op-cta-primary:hover {
+  color: #0b1220;
+}
+
+.op-cta-link {
   color: var(--vp-c-text-1);
+  border-bottom: 1px solid var(--op-rule-strong);
+  padding: 4px 0 5px;
 }
 
-.VPHome .VPHero .VPButton.alt:hover {
-  border-color: var(--op-accent);
+.op-cta-link:hover {
   color: var(--op-accent);
-  transform: translateY(-1px);
+  border-bottom-color: var(--op-accent);
 }
 
-/* ---- Feature grid: spec-table cells with corner brackets ---- */
-
-.VPHome .VPFeatures {
-  position: relative;
-  z-index: 1;
+.op-hero-trust {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--vp-c-text-3);
+  margin: 32px 0 0;
+  white-space: normal;
 }
 
-.VPHome .VPFeature {
+/* ---- Hero code panel ---- */
+
+.op-hero-code {
   position: relative;
-  border-radius: 0 !important;
-  border: 1px solid var(--vp-c-divider);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--op-rule);
+  border-radius: 6px;
   background: var(--vp-c-bg-soft);
-  padding: 28px 22px 22px;
-  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
-  overflow: visible;
+  overflow: hidden;
+  font-family: var(--vp-font-family-mono);
+  align-self: stretch;
+  min-height: 100%;
 }
 
-/* Top-left bracket */
-.VPHome .VPFeature::before {
-  content: '';
+.op-hero-code::before,
+.op-hero-code::after {
+  content: "";
   position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.op-hero-code::before {
   top: -1px;
   left: -1px;
-  width: 14px;
-  height: 14px;
-  border-top: 2px solid var(--op-accent);
-  border-left: 2px solid var(--op-accent);
-  transition: width 0.22s ease, height 0.22s ease, border-color 0.22s ease;
-  pointer-events: none;
+  border-top: 1px solid var(--op-accent);
+  border-left: 1px solid var(--op-accent);
 }
 
-/* Bottom-right bracket */
-.VPHome .VPFeature::after {
-  content: '';
-  position: absolute;
+.op-hero-code::after {
   bottom: -1px;
   right: -1px;
-  width: 14px;
-  height: 14px;
-  border-bottom: 2px solid var(--op-accent);
-  border-right: 2px solid var(--op-accent);
-  transition: width 0.22s ease, height 0.22s ease, border-color 0.22s ease;
-  pointer-events: none;
+  border-bottom: 1px solid var(--op-accent);
+  border-right: 1px solid var(--op-accent);
 }
 
-.VPHome .VPFeature:hover {
-  border-color: var(--vp-c-text-3);
-  background: var(--vp-c-bg);
-  transform: translateY(-2px);
-}
-
-.VPHome .VPFeature:hover::before,
-.VPHome .VPFeature:hover::after {
-  width: 26px;
-  height: 26px;
-}
-
-.VPHome .VPFeature .box {
-  padding: 0;
-}
-
-.VPHome .VPFeature .icon {
+.op-hero-code-bar {
   display: flex;
-  justify-content: center;
   align-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 14px;
-  background: var(--op-accent-tint);
-  border-radius: 0;
-  color: var(--op-accent);
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--op-rule);
+  background: var(--vp-c-bg);
 }
 
-.VPHome .VPFeature .VPImage {
-  margin: 0;
-  width: 22px;
-  height: 22px;
-  /* Tints currentColor stroked SVGs to Prussian blue (#1e3a8a) */
-  filter: brightness(0) saturate(100%) invert(15%) sepia(80%) saturate(2200%) hue-rotate(218deg) brightness(86%) contrast(105%);
-}
-
-.dark .VPHome .VPFeature .VPImage {
-  /* Lighter blue (#93c5fd) for dark mode */
-  filter: brightness(0) saturate(100%) invert(82%) sepia(18%) saturate(820%) hue-rotate(180deg) brightness(101%) contrast(98%);
-}
-
-.VPHome .VPFeature .title {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0.005em;
-  color: var(--vp-c-text-1);
-  margin-bottom: 6px;
-}
-
-.VPHome .VPFeature .details {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  line-height: 1.55;
+.op-hero-code-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   color: var(--vp-c-text-2);
 }
 
-.VPHome .VPFeature .details code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-  font-size: 0.85em;
+.op-hero-code-lang {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   color: var(--op-accent);
+  opacity: 0.8;
+}
+
+.op-hero-code-body {
+  margin: 0;
+  padding: 22px 22px 24px;
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  color: var(--vp-c-text-1);
+  overflow-x: auto;
   background: transparent;
-  padding: 0 2px;
+  flex: 1;
 }
 
-/* Fallback for legacy uses outside the VPHome scope */
-.VPFeature .icon {
-  display: flex;
-  justify-content: center;
+.op-hero-code-body code {
+  font-family: inherit;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font-size: inherit;
 }
 
-.VPFeature .VPImage {
+.op-hero-code-body .tk-c {
+  color: var(--vp-c-text-3);
+  font-style: normal;
+}
+
+.op-hero-code-body .tk-fn {
+  color: var(--op-accent);
+  font-weight: 600;
+}
+
+.op-hero-code-body .tk-s {
+  color: var(--vp-c-text-2);
+}
+
+@media (max-width: 960px) {
+  .op-hero-code-body {
+    font-size: 0.8rem;
+    padding: 18px 16px 20px;
+  }
+}
+
+/* ---- Spec rows (replaces the features grid) ---- */
+
+.op-spec {
+  padding: 56px 24px 24px;
+}
+
+.op-spec-inner {
+  max-width: 1200px;
   margin: 0 auto;
+}
+
+/* Section header pairs an RFC-style kicker with a refined sans-serif
+ * title.  Two-line composition reads as a documentation section break,
+ * not a marketing feature heading. */
+.op-spec-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 28px;
+}
+
+.op-spec-kicker {
+  display: inline-block;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: var(--op-accent);
+  text-transform: uppercase;
+}
+
+.op-spec-heading {
+  font-family: var(--vp-font-family-base);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  line-height: 1.2;
+  color: var(--vp-c-text-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Spec list — anchor-as-row, datasheet typography, no glyphs.
+ * The hover affordance is a left-edge accent bar that fills in
+ * combined with a small padding shift; no background tint, so the
+ * row stays calm and the hover reads as "this row is active". */
+.op-spec-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--op-rule-strong);
+  border-bottom: 1px solid var(--op-rule-strong);
+}
+
+.op-spec-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 32px;
+  padding: 18px 4px 18px 16px;
+  border-top: 1px solid var(--op-rule);
+  text-decoration: none;
+  color: var(--vp-c-text-2);
+  transition:
+    color 0.15s ease,
+    padding-left 0.18s ease;
+}
+
+.op-spec-row:first-child {
+  border-top: 0;
+}
+
+.op-spec-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--op-accent);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.op-spec-row:hover {
+  color: var(--vp-c-text-1);
+  padding-left: 22px;
+}
+
+.op-spec-row:hover::before {
+  transform: scaleY(1);
+}
+
+.op-spec-key {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--op-accent);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.op-spec-desc {
+  font-family: var(--vp-font-family-base);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: inherit;
+}
+
+.op-spec-desc code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.86em;
+  font-weight: 500;
+  background: transparent;
+  padding: 0 1px;
+  border: 0;
+  color: var(--vp-c-text-1);
+  white-space: nowrap;
+}
+
+.op-spec-row:hover .op-spec-desc code {
+  color: var(--op-accent);
+}
+
+@media (max-width: 720px) {
+  .op-spec-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 16px 4px 16px 14px;
+  }
+  .op-spec-row:hover {
+    padding-left: 20px;
+  }
+  .op-spec-key {
+    font-size: 0.7rem;
+  }
+  .op-spec-desc {
+    font-size: 0.94rem;
+  }
+  .op-spec-desc code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Persistent license badge in the top nav, sits after the GitHub icon
+ * so source + license read as one block of provenance. Visible on every
+ * page so doc-page readers can find the license without the footer. */
+.op-nav-license {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--vp-c-text-3);
+  margin: 0 4px 0 12px;
+  padding: 2px 0 3px;
+  border-bottom: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.op-nav-license:hover {
+  color: var(--vp-c-text-1);
+  border-bottom-color: var(--vp-c-text-1);
+}
+
+@media (max-width: 767px) {
+  .op-nav-license {
+    display: none;
+  }
 }
 
 /* Replace VitePress's default "Aあ" language icon with a globe so the
@@ -354,7 +504,7 @@
 }
 
 .vp-doc ul > li::before {
-  content: '';
+  content: "";
   position: absolute;
   left: -1.1em;
   top: 0.65em;
@@ -379,10 +529,24 @@
   margin-top: 4px;
 }
 
+/* Body prose: a slightly tighter line-height than VitePress default
+ * for engineering content. 1.7 keeps long-form readability without
+ * the airy magazine feel of 1.75+. */
+.vp-doc p {
+  line-height: 1.7;
+}
+
 /* Code font unification */
 div[class*="language-"] code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace !important;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace !important;
   font-size: 0.875em;
+}
+
+/* Code blocks: hairline border so they sit as discrete spec panels
+ * rather than washing into the surrounding prose. */
+.vp-doc div[class*="language-"] {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
 }
 
 /* Status pills used in compliance tables.
@@ -397,7 +561,7 @@ div[class*="language-"] code {
   height: 18px;
   padding: 0 10px;
   border-radius: 999px;
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
   font-size: 0.72em;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -407,32 +571,32 @@ div[class*="language-"] code {
 }
 
 .status-pill.full {
-  background: rgba(34, 197, 94, 0.10);
-  border: 1px solid rgba(34, 197, 94, 0.40);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.4);
   color: #15803d;
 }
 
 .status-pill.partial {
   background: rgba(234, 179, 8, 0.12);
-  border: 1px solid rgba(234, 179, 8, 0.40);
+  border: 1px solid rgba(234, 179, 8, 0.4);
   color: #a16207;
 }
 
 .status-pill.planned {
-  background: rgba(59, 130, 246, 0.10);
-  border: 1px solid rgba(59, 130, 246, 0.40);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.4);
   color: #1d4ed8;
 }
 
 .status-pill.out {
   background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.40);
+  border: 1px solid rgba(148, 163, 184, 0.4);
   color: #475569;
 }
 
 .status-pill.refused {
-  background: rgba(239, 68, 68, 0.10);
-  border: 1px solid rgba(239, 68, 68, 0.40);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.4);
   color: #b91c1c;
 }
 
@@ -502,7 +666,7 @@ div[class*="language-"] code {
 }
 
 .vp-doc table th {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
   font-weight: 600;
   text-align: left;
 }
@@ -622,7 +786,7 @@ div[class*="language-"] code {
 .vp-doc blockquote strong:first-child {
   display: inline-block;
   margin-right: 0.5em;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
   font-size: 0.82em;
   letter-spacing: 0.02em;
   color: var(--vp-c-brand-1);
@@ -656,7 +820,7 @@ div[class*="language-"] code {
 /* "Why this library exists" callout — green tint to set apart the
  * one-paragraph pitch from the technical info blocks that follow. */
 .vp-doc .why-callout .custom-block.info {
-  background-color: rgba(34, 197, 94, 0.10);
+  background-color: rgba(34, 197, 94, 0.1);
   border-color: rgba(34, 197, 94, 0.35);
 }
 
@@ -701,7 +865,9 @@ div[class*="language-"] code {
   background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-1);
   text-decoration: none;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .vp-doc .faq-index a:hover {
@@ -710,7 +876,7 @@ div[class*="language-"] code {
 }
 
 .vp-doc .faq-index .faq-index-title {
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
   margin-bottom: 4px;
@@ -752,11 +918,14 @@ div[class*="language-"] code {
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .vp-doc a.doc-ref::before {
-  content: '↗';
+  content: "↗";
   display: inline-block;
   font-size: 0.95em;
   opacity: 0.6;

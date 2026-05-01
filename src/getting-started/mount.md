@@ -9,29 +9,29 @@ description: Mounting the op.Provider on net/http, chi, gin, and friends.
 `http.Handler`. The library does **not** own the listener and does **not**
 care which router you use.
 
-## net/http
+## Mount on net/http, chi, or gin
 
-```go
+::: code-group
+
+```go [net/http]
 mux := http.NewServeMux()
 mux.Handle("/", provider)
 http.ListenAndServe(":8080", mux)
 ```
 
-## chi
-
-```go
+```go [chi]
 r := chi.NewRouter()
 r.Mount("/", provider)
 http.ListenAndServe(":8080", r)
 ```
 
-## gin
-
-```go
+```go [gin]
 r := gin.New()
 r.Any("/*path", gin.WrapH(provider))
 http.ListenAndServe(":8080", r)
 ```
+
+:::
 
 ## Mount under a prefix
 

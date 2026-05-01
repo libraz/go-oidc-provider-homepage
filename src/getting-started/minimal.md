@@ -9,7 +9,9 @@ The shortest path to a running OP. The four required options are
 `WithIssuer`, `WithStore`, `WithKeyset`, and `WithCookieKey` — `op.New`
 returns an error if any are missing.
 
-```go
+::: code-group
+
+```go [net/http]
 package main
 
 import (
@@ -44,6 +46,84 @@ func main() {
   log.Fatal(http.ListenAndServe(":8080", handler))
 }
 ```
+
+```go [chi]
+package main
+
+import (
+  "crypto/ecdsa"
+  "crypto/elliptic"
+  "crypto/rand"
+  "log"
+  "net/http"
+
+  "github.com/go-chi/chi/v5"
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
+
+func main() {
+  priv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+  cookieKey := make([]byte, 32)
+  if _, err := rand.Read(cookieKey); err != nil {
+    log.Fatal(err)
+  }
+
+  handler, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithStore(inmem.New()),
+    op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
+    op.WithCookieKey(cookieKey),
+  )
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  r := chi.NewRouter()
+  r.Mount("/", handler)
+  log.Fatal(http.ListenAndServe(":8080", r))
+}
+```
+
+```go [gin]
+package main
+
+import (
+  "crypto/ecdsa"
+  "crypto/elliptic"
+  "crypto/rand"
+  "log"
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
+
+func main() {
+  priv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+  cookieKey := make([]byte, 32)
+  if _, err := rand.Read(cookieKey); err != nil {
+    log.Fatal(err)
+  }
+
+  handler, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithStore(inmem.New()),
+    op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
+    op.WithCookieKey(cookieKey),
+  )
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  r := gin.New()
+  r.Any("/*path", gin.WrapH(handler))
+  log.Fatal(http.ListenAndServe(":8080", r))
+}
+```
+
+:::
 
 ::: tip Production caveats
 - **Keys**: ephemeral here; load from a vault / KMS in production.

@@ -7,7 +7,9 @@ description: 約 30 行で動く OpenID Connect Provider。
 
 OP を起動する最短経路。必須 4 オプションは `WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKey` — どれかを欠くと `op.New` は error を返します。
 
-```go
+::: code-group
+
+```go [net/http]
 package main
 
 import (
@@ -42,6 +44,84 @@ func main() {
   log.Fatal(http.ListenAndServe(":8080", handler))
 }
 ```
+
+```go [chi]
+package main
+
+import (
+  "crypto/ecdsa"
+  "crypto/elliptic"
+  "crypto/rand"
+  "log"
+  "net/http"
+
+  "github.com/go-chi/chi/v5"
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
+
+func main() {
+  priv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+  cookieKey := make([]byte, 32)
+  if _, err := rand.Read(cookieKey); err != nil {
+    log.Fatal(err)
+  }
+
+  handler, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithStore(inmem.New()),
+    op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
+    op.WithCookieKey(cookieKey),
+  )
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  r := chi.NewRouter()
+  r.Mount("/", handler)
+  log.Fatal(http.ListenAndServe(":8080", r))
+}
+```
+
+```go [gin]
+package main
+
+import (
+  "crypto/ecdsa"
+  "crypto/elliptic"
+  "crypto/rand"
+  "log"
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
+
+func main() {
+  priv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+  cookieKey := make([]byte, 32)
+  if _, err := rand.Read(cookieKey); err != nil {
+    log.Fatal(err)
+  }
+
+  handler, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithStore(inmem.New()),
+    op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
+    op.WithCookieKey(cookieKey),
+  )
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  r := gin.New()
+  r.Any("/*path", gin.WrapH(handler))
+  log.Fatal(http.ListenAndServe(":8080", r))
+}
+```
+
+:::
 
 ::: tip 本番運用の注意
 - **鍵**: ここでは揮発性ですが、本番では vault / KMS から読み込むこと。

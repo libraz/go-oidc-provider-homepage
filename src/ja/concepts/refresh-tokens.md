@@ -77,20 +77,17 @@ OFCS のリフレッシュトークン回帰テストはローテーションと
 
 ## 発行の判定
 
-リフレッシュトークンが発行されるのは、次の **3 つすべて** が成り立つときだけです。
+デフォルトでは、リフレッシュトークンが発行されるのは次の **2 つ** が成り立つときだけです。
 
 1. クライアントの `GrantTypes` に `refresh_token` が含まれている。
 2. 付与された scope に `openid` が含まれている（本ライブラリでリフレッシュトークンは OIDC の構成要素として扱う）。
-3. 付与された scope に `offline_access` が含まれている（OIDC Core 1.0 §11）。
 
-3 つのうちひとつでも欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、**`refresh_token` フィールドは付きません** —「クライアントが `refresh_token` grant を持っていない」場合と同じ振る舞いです。アクセストークンが切れたら、RP は再度ユーザに認証を求めることになります。
+どちらか一方でも欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、**`refresh_token` フィールドは付きません** —「クライアントが `refresh_token` grant を持っていない」場合と同じ振る舞いです。アクセストークンが切れたら、RP は再度ユーザに認証を求めることになります。
 
-::: tip なぜ `offline_access` が判定の鍵なのか
-OIDC Core 1.0 §11 は `offline_access` を「ユーザがその場にいなくても RP に動き続けてほしいケース」に予約しています。これ以外の scope の組み合わせでリフレッシュトークンを返してしまうと、ユーザが同意した範囲を黙って越えて offline 動作が広がります。本ライブラリは発行段階でその経路を閉じておくので、監査ログと同意プロンプトが「ユーザが何を許可したか」について同じ事実を持てます。
-:::
+OIDC Core 1.0 §11 のデフォルト(緩やかな)解釈では、`offline_access` は **発行の判定** ではありません。同意プロンプトの UX とリフレッシュトークンの寿命バケット(`WithRefreshTokenTTL` か `WithRefreshTokenOfflineTTL`)を切り替えるだけです。`offline_access` を発行ゲートにしたい場合は `op.WithStrictOfflineAccess()` をオプトインしてください — 次のセクションを参照。
 
-::: details `op.WithStrictOfflineAccess` — リフレッシュ交換時の追加判定
-`op.WithStrictOfflineAccess()` も提供しています。発行段階の判定で `offline_access` が必須化されたあとは、このオプションは主に **判定が緩かった旧バージョンで発行されたリフレッシュトークンに対する移行ガード** として働きます — `grant_type=refresh_token` のリクエストが、元になった grant に `offline_access` を含んでいなかったときに拒否します。新規デプロイなら不要、旧バージョンからの移行であれば過渡期に有効化しておくと安全です。
+::: details `op.WithStrictOfflineAccess` — OIDC Core §11 の厳格解釈
+`op.WithStrictOfflineAccess()` を渡すと、発行とリフレッシュ交換の両方が §11 の厳格解釈に切り替わります — リフレッシュトークンは、付与された scope に `offline_access` が含まれているときに限り発行 / 受理されます。同意プロンプトの内容と発行判定をビット単位で揃えたいときに選んでください。代償として、ログイン状態を維持したい RP はすべて明示的に `offline_access` を要求する必要があります。
 
 このオプションは `op.WithOpenIDScopeOptional` と排他です（`openid` 自体が任意な構成では §11 に意味がないため、両方を同時指定すると `op.New` が拒否します）。
 :::

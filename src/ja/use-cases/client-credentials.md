@@ -63,13 +63,13 @@ provider, err := op.New(
     grant.ClientCredentials, // <-- サービス間を有効化
   ),
 
-  op.WithStaticClients(op.ClientSeed{
-    ID:                      "service-a",
-    Secret:                  serviceASecret, // ハッシュ済、ライブラリが比較
-    TokenEndpointAuthMethod: op.AuthClientSecretBasic,
-    GrantTypes:              []grant.Type{grant.ClientCredentials},
-    AllowedScopes:           []string{"read:things", "write:things"},
-    AllowedAudiences:        []string{"https://api.b.example.com"},
+  op.WithStaticClients(op.ConfidentialClient{
+    ID:         "service-a",
+    Secret:     serviceASecret,            // 平文。seed が op.HashClientSecret でハッシュ化する
+    AuthMethod: op.AuthClientSecretBasic,
+    GrantTypes: []string{"client_credentials"},
+    Scopes:     []string{"read:things", "write:things"},
+    Resources:  []string{"https://api.b.example.com"}, // RFC 8707 で audience を固定
   }),
 )
 ```
@@ -97,13 +97,14 @@ curl -s -u service-a:<secret> \
 高保証の deployment では `private_key_jwt`（RFC 7523）を使ってください:
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                      "service-a",
-  TokenEndpointAuthMethod: op.AuthPrivateKeyJWT,
-  GrantTypes:              []grant.Type{grant.ClientCredentials},
-  JWKs:                    serviceAPublicJWKs, // 公開 JWK Set
+op.WithStaticClients(op.PrivateKeyJWTClient{
+  ID:         "service-a",
+  JWKS:       serviceAPublicJWKs, // 公開 JWK Set を JSON バイト列で
+  GrantTypes: []string{"client_credentials"},
 })
 ```
+
+`PrivateKeyJWTClient` seed は `token_endpoint_auth_method=private_key_jwt` を自動でセットします。この typed seed には `AuthMethod` フィールドはありません。
 
 これで Service A はトークン要求毎に自分の秘密鍵で JWT assertion に署名:
 

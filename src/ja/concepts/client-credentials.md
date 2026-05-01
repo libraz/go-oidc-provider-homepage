@@ -69,11 +69,12 @@ handler, err := op.New(
 登録クライアントは `GrantTypes` でオプトインします。
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                      "service-a",
-  TokenEndpointAuthMethod: op.AuthClientSecretBasic, // または PrivateKeyJWT 等
-  GrantTypes:              []grant.Type{grant.ClientCredentials},
-  AllowedScopes:           []string{"read:things", "write:things"},
+op.WithStaticClients(op.ConfidentialClient{
+  ID:         "service-a",
+  Secret:     "rotate-me",
+  AuthMethod: op.AuthClientSecretBasic, // private_key_jwt の場合は op.PrivateKeyJWTClient を使う
+  GrantTypes: []string{"client_credentials"},
+  Scopes:     []string{"read:things", "write:things"},
 })
 ```
 
@@ -89,7 +90,7 @@ op.WithStaticClients(op.ClientSeed{
 `client_credentials` access token は次を持ちます:
 
 - `iss` — OP issuer
-- `aud` — resource server 識別子（`ClientSeed.AllowedAudiences` または default）
+- `aud` — resource server 識別子（typed seed の `Resources []string` フィールドで RFC 8707 のリソース識別子を許可する。DCR の場合は同等の `resources` メタデータ）
 - `client_id` — 要求元クライアント
 - **`sub` 無し**（純粋機械クライアント）または `sub = client_id`（`act_as_subject` 設定時）
 - `scope` — 要求 scope のうち付与された部分集合

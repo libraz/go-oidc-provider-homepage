@@ -12,7 +12,7 @@ outline: 2
 |---|---|---|---|
 | 運用ログ | リクエストエラー、設定の問題、起動時の状態 | `WithLogger(*slog.Logger)` | 構造化ログの送り先 |
 | audit イベント | 各プロトコル動作([カタログ](/ja/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC パイプライン |
-| metrics | OIDC の業務カウンタ | `WithPrometheus(prometheus.Registerer)` | `/metrics` ルート |
+| metrics | OIDC の業務カウンタ | `WithPrometheus(*prometheus.Registry)` | `/metrics` ルート |
 | tracing | リクエストスパン | 内蔵なし | `http.Handler` を `otelhttp.NewMiddleware` でラップ |
 
 ライブラリはこれらを意図的に分離しています。任意のサブセットだけを組み込むことができます。
@@ -34,7 +34,7 @@ op.New(
 - エンドポイント内部のエラー(典型的には `IsServerError(err)` が一致するもの — [エラーカタログ](/ja/reference/errors) を参照)。
 - ストアバックエンドの障害。
 
-`WithLogger` を渡さない場合は `slog.Default()` 経由でログを出します。
+`WithLogger` を渡さない場合、ライブラリはログを破棄します(`slog.Default()` へのフォールバックはしません)。渡した handler は redaction ミドルウェアで自動的にラップされ、OAuth/OIDC のシークレットらしい属性(`access_token`、`refresh_token`、`code`、`code_verifier`、`client_secret`、`state`、`nonce`、`dpop`、`authorization`、`cookie`、`set-cookie` …)は handler に到達する前にマスクされます。
 
 ## audit ログ
 

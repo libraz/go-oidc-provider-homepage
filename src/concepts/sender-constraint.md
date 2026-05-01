@@ -164,16 +164,19 @@ import (
 
 op.New(
   /* required options */
-  op.WithProfile(profile.FAPI2Baseline),     // forces sender constraint
-  op.WithFeature(feature.DPoP),               // enable DPoP
-  op.WithFeature(feature.MTLS),               // enable mTLS
+  op.WithProfile(profile.FAPI2Baseline),     // mandates sender constraint
+  op.WithFeature(feature.DPoP),               // enable DPoP — pick at least one
+  op.WithFeature(feature.MTLS),               // (and / or) enable mTLS
   op.WithMTLSProxy("X-SSL-Cert", trustedCIDRs),
   op.WithDPoPNonceSource(myNonceSource),     // optional, RFC 9449 §8
 )
 ```
 
-::: tip One profile, one switch
-`op.WithProfile(profile.FAPI2Baseline)` already auto-enables DPoP via
-the `RequiredAnyOf` set. Enabling `feature.MTLS` on top makes both
-constraint mechanisms available; the discovery document lists both.
+::: tip Profile mandates the requirement; the embedder picks the binding
+`op.WithProfile(profile.FAPI2Baseline)` auto-enables PAR and JAR, and
+imposes a `RequiredAnyOf` constraint that forces the embedder to enable
+**at least one** of `feature.DPoP` or `feature.MTLS` explicitly via
+`op.WithFeature`. `op.New` rejects the configuration at construction
+time if neither is enabled. Enable both to make both binding mechanisms
+available; the discovery document then lists both.
 :::

@@ -136,14 +136,14 @@ import (
 
 op.New(
   /* 必須オプション */
-  op.WithProfile(profile.FAPI2Baseline),     // 送信者制約を強制
-  op.WithFeature(feature.DPoP),               // DPoP 有効化
-  op.WithFeature(feature.MTLS),               // mTLS 有効化
+  op.WithProfile(profile.FAPI2Baseline),     // 送信者制約を必須化
+  op.WithFeature(feature.DPoP),               // DPoP 有効化 — 少なくとも 1 つ選ぶ
+  op.WithFeature(feature.MTLS),               // (および / または) mTLS 有効化
   op.WithMTLSProxy("X-SSL-Cert", trustedCIDRs),
   op.WithDPoPNonceSource(myNonceSource),     // 任意、RFC 9449 §8
 )
 ```
 
-::: tip 1 プロファイル、1 スイッチ
-`op.WithProfile(profile.FAPI2Baseline)` は `RequiredAnyOf` を経由して DPoP を自動有効化します。`feature.MTLS` を上乗せすると両制約方式が利用可能になり、discovery document に両方が出ます。
+::: tip プロファイルは要件を課す、binding は組み込み側が選ぶ
+`op.WithProfile(profile.FAPI2Baseline)` は PAR と JAR を自動有効化し、加えて `RequiredAnyOf` 制約を課します。組み込み側は `op.WithFeature` で `feature.DPoP` か `feature.MTLS` の **少なくとも 1 つ** を明示的に有効化する必要があります。どちらも有効化されていなければ、`op.New` が構築時に構成を拒否します。両方を有効化すれば両 binding が使えるようになり、discovery document にも両方が出ます。
 :::

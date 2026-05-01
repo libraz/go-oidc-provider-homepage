@@ -47,9 +47,10 @@ op.New(
     "https://staging.example.com",
     "http://localhost:5173",          // ローカル開発 — Vite デフォルト
   ),
-  op.WithStaticClients(op.ClientSeed{
+  op.WithStaticClients(op.PublicClient{
     ID:           "spa-client",
     RedirectURIs: []string{"https://app.example.com/callback"},
+    Scopes:       []string{"openid", "profile"},
     /* ... */
   }),
 )
@@ -79,13 +80,15 @@ CORS 層は `Access-Control-Allow-Credentials: true` を設定し、SPA の `fet
 SPA は **public クライアント**（`token_endpoint_auth_method=none`）です。`client_secret` を保管できません。代わりに PKCE を使います:
 
 ```go
-op.WithStaticClients(op.ClientSeed{
-  ID:                      "spa-client",
-  TokenEndpointAuthMethod: op.AuthNone,
-  GrantTypes:              []grant.Type{grant.AuthorizationCode, grant.RefreshToken},
-  RedirectURIs:            []string{"https://app.example.com/callback"},
+op.WithStaticClients(op.PublicClient{
+  ID:           "spa-client",
+  RedirectURIs: []string{"https://app.example.com/callback"},
+  Scopes:       []string{"openid", "profile"},
+  GrantTypes:   []string{"authorization_code", "refresh_token"},
 })
 ```
+
+`op.PublicClient` は SPA / native アプリ向けの typed seed で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。
 
 OP は全クライアントで `code_challenge_method=plain` を拒否 — `S256` のみ — なので SPA の PKCE は本物の PKCE、レガシー変種ではありません。
 

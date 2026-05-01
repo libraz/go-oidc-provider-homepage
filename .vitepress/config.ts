@@ -44,7 +44,7 @@ export default withMermaid(
         'link',
         {
           rel: 'stylesheet',
-          href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap'
+          href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap'
         }
       ],
       ['script', { type: 'application/ld+json' }, JSON.stringify(softwareApplicationJsonLd)],
@@ -218,9 +218,7 @@ export default withMermaid(
             '/use-cases/': [
               {
                 text: 'Use cases',
-                items: [
-                  { text: 'Index', link: '/use-cases/' }
-                ]
+                items: [{ text: 'Index', link: '/use-cases/' }]
               },
               {
                 text: 'Bootstrap',
@@ -349,8 +347,7 @@ export default withMermaid(
           socialLinks: [{ icon: 'github', link: githubUrl }],
           footer: {
             message:
-              'a personal project by <a href="https://libraz.net" target="_blank" rel="noopener">libraz</a>',
-            copyright: 'Apache-2.0'
+              'a personal project by <a href="https://libraz.net" target="_blank" rel="noopener">libraz</a>'
           }
         }
       },
@@ -649,8 +646,7 @@ export default withMermaid(
           socialLinks: [{ icon: 'github', link: githubUrl }],
           footer: {
             message:
-              '<a href="https://libraz.net" target="_blank" rel="noopener">libraz</a> による個人プロジェクト',
-            copyright: 'Apache-2.0'
+              'a personal project by <a href="https://libraz.net" target="_blank" rel="noopener">libraz</a>'
           }
         }
       }

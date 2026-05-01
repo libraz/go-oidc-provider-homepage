@@ -44,8 +44,8 @@ After this option:
 | `scope=`(empty) | Rejected — at least one scope must be requested |
 
 The choice is **per request**, not a global toggle. A client whose
-`AllowedScopes` includes `openid` can still request it; a client whose
-`AllowedScopes` omits `openid` stays in OAuth-only mode permanently.
+`Scopes` list includes `openid` can still request it; a client whose
+`Scopes` list omits `openid` stays in OAuth-only mode permanently.
 
 ## Side effects
 

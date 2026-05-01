@@ -12,7 +12,7 @@ Three streams cover what you need to see in production:
 |---|---|---|---|
 | Operational logs | request errors, config-time issues, startup state | `WithLogger(*slog.Logger)` | your structured-log destination |
 | Audit events | every protocol action ([catalog](/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC pipeline |
-| Metrics | OIDC business counters | `WithPrometheus(prometheus.Registerer)` | your `/metrics` route |
+| Metrics | OIDC business counters | `WithPrometheus(*prometheus.Registry)` | your `/metrics` route |
 | Tracing | request spans | none built-in | `otelhttp.NewMiddleware` around the `http.Handler` |
 
 The library deliberately keeps these decoupled — you can wire any
@@ -36,7 +36,13 @@ Operational logs cover:
   see [Error catalog](/reference/errors)).
 - Store backend failures.
 
-If `WithLogger` is omitted the library logs through `slog.Default()`.
+If `WithLogger` is omitted the library discards every record (no
+fallback to `slog.Default()`). The handler you pass is wrapped with
+the redaction middleware so OAuth/OIDC secret-shaped attributes
+(`access_token`, `refresh_token`, `code`, `code_verifier`,
+`client_secret`, `state`, `nonce`, `dpop`, `authorization`,
+`cookie`, `set-cookie`, …) are masked before they reach your
+handler.
 
 ## Audit logging
 

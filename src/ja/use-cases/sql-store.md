@@ -66,30 +66,33 @@ SQL アダプタは以下のテーブルを同梱します:
 
 ```go
 import (
-  _ "github.com/mattn/go-sqlite3" // または MySQL / Postgres driver
+  databasesql "database/sql"
+  _ "modernc.org/sqlite" // または MySQL / Postgres driver
 
   "github.com/libraz/go-oidc-provider/op"
-  "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
+  oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
 )
 
-db, err := stdsql.Open("sqlite3", "file:op.db?_journal=WAL&_busy_timeout=5000")
+db, err := databasesql.Open("sqlite", "file:op.db?_journal=WAL&_busy_timeout=5000")
 if err != nil { /* ... */ }
 
-store, err := sql.Open(db, sql.Dialect{
-  Driver: sql.DriverSQLite, // または DriverMySQL、DriverPostgres
-})
+storage, err := oidcsql.New(db, oidcsql.SQLite()) // または oidcsql.MySQL() / oidcsql.Postgres()
 if err != nil { /* ... */ }
+
+if err := storage.Migrate(context.Background()); err != nil {
+  /* ... */
+}
 
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(store),
+  op.WithStore(storage),
   op.WithKeyset(myKeyset),
   op.WithCookieKey(myCookieKey),
 )
 ```
 
 ::: tip マイグレーション
-アダプタは自身のスキーマ migration（バージョン管理付き）を同梱しています。最初のリクエストが届く前のデプロイ時に実行してください。具体的な API はサブモジュールの godoc にあります。
+`*sql.Store.Migrate(ctx)` がアクティブな dialect 用の同梱スキーマを適用します。最初のリクエストが届く前のデプロイ時に実行してください。`Schema()` は同じ DDL を文字列で返すので、自前の migration ツールに渡すこともできます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
 :::
 
 ## MySQL プールサイズ

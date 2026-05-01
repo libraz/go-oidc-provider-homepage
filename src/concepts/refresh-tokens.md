@@ -100,34 +100,31 @@ conventional refresh keeps a shorter rotation cadence.
 
 ## Issuance gate
 
-A refresh token is issued only when **all three** conditions hold:
+By default a refresh token is issued only when **both** conditions hold:
 
 1. The client lists `refresh_token` in its `GrantTypes`.
 2. The granted scope contains `openid` (refresh tokens are an OIDC
    construct in this library).
-3. The granted scope contains `offline_access` (OIDC Core 1.0 §11).
 
-Drop any of the three and the token endpoint succeeds with `access_token`
-+ `id_token` and **no `refresh_token` field** — exactly mirroring the
+Drop either and the token endpoint succeeds with `access_token` +
+`id_token` and **no `refresh_token` field** — exactly mirroring the
 "client has no refresh_token grant" path. The RP must re-authenticate
 the user when the access token expires.
 
-::: tip Why offline_access is the gate
-OIDC Core 1.0 §11 reserves `offline_access` for "the user wants the RP
-to keep working when they're not present". Treating any other scope mix
-as a refresh-token request quietly extends offline reach beyond what
-the user consented to. The library refuses that path at issuance, so
-your audit trail and consent prompts agree on what the user authorised.
-:::
+In the default (lax) reading of OIDC Core 1.0 §11, `offline_access` is
+**not** an issuance gate: it only governs consent-prompt UX and which
+TTL bucket the refresh token falls into (`WithRefreshTokenTTL` vs
+`WithRefreshTokenOfflineTTL`). To make `offline_access` a hard gate,
+opt in with `op.WithStrictOfflineAccess()` — see the section below.
 
-::: details `op.WithStrictOfflineAccess` — additional refresh-exchange gate
-The library also exposes `op.WithStrictOfflineAccess()`. With the
-issuance gate already requiring `offline_access`, the option is mostly
-defence-in-depth for refresh tokens **issued before the gate was
-tightened**: it rejects a refresh exchange (`grant_type=refresh_token`)
-whose originating grant did not carry `offline_access`. New deployments
-on this version do not need it; deployments migrating from a previous
-version where the gate was lax may want it as a transition guard.
+::: details `op.WithStrictOfflineAccess` — strict OIDC Core §11 reading
+`op.WithStrictOfflineAccess()` switches the issuance and refresh
+exchange paths to the strict §11 reading: refresh tokens are issued
+(and accepted on `grant_type=refresh_token`) only when the granted
+scope contains `offline_access`. Pick this when you want consent
+prompts and the actual issuance gate to agree byte-for-byte on what
+the user authorised — at the cost of every RP that wants stay-signed-in
+behaviour explicitly requesting `offline_access`.
 
 The option is mutually exclusive with `op.WithOpenIDScopeOptional`
 (strict §11 has no meaning when `openid` itself is optional) — the

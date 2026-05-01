@@ -145,9 +145,10 @@ the project uses pre-merge for security-relevant changes.
 `op.WithProfile(profile.FAPI2Baseline)` activates the configuration the
 two `fapi2-*` plans are built around:
 
-- `feature.PAR` — `/par` becomes routable; `request_uri` accepted at `/authorize`
-- `feature.JAR` (Message Signing only) — `request` / `request_uri` validated as signed JWTs
-- `feature.DPoP` — sender-constrained access tokens (`cnf.jkt`); discovery advertises `dpop_signing_alg_values_supported: ES256, EdDSA, PS256`
+- `feature.PAR` (auto-enabled by `FAPI2Baseline`) — `/par` becomes routable; `request_uri` accepted at `/authorize`
+- `feature.JAR` (auto-enabled by `FAPI2Baseline`) — `request` / `request_uri` validated as signed JWTs
+- `feature.JARM` (additionally auto-enabled by `FAPI2MessageSigning`) — authorization responses signed as JWTs
+- Sender-constrained access tokens — the embedder explicitly enables one of `feature.DPoP` (`cnf.jkt`) or `feature.MTLS` (`cnf.x5t#S256`) via `WithFeature`; `op.New` rejects the configuration if neither is enabled. Discovery advertises `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` when DPoP is enabled.
 - JOSE alg allow-list locked to `RS256 / PS256 / ES256 / EdDSA` codebase-wide; `HS*` and `none` are **structurally** unreachable (see `internal/jose/alg.go`)
 - `token_endpoint_auth_methods_supported` intersected with FAPI's allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`)
 - `redirect_uri` exact-string match enforced

@@ -130,9 +130,10 @@ op.New(
 ```
 
 The `RiskAssessor` returns a `RiskScore` per attempt. The library exposes
-the four-level enum (`RiskScoreLow`, `RiskScoreMedium`, `RiskScoreHigh`,
-`RiskScoreCritical`); your assessor translates whatever your provider
-returns onto it.
+the four-level ordered enum (`RiskScoreNone` < `RiskScoreLow` <
+`RiskScoreMedium` < `RiskScoreHigh`); your assessor translates whatever
+your provider returns onto it. `RuleRisk(threshold, step)` fires when
+the assessor's score meets or exceeds `threshold`.
 
 ## RFC 9470 ACR step-up
 
@@ -194,3 +195,61 @@ fine for examples and tests; in production you implement the
 For a fully custom factor, implement `op.ExternalStep` (see
 `op/step.go` godoc) and add it to the rule list with a unique
 `KindLabel`. This is the pattern across every `examples/2x-*`.
+
+## Enrolling a TOTP factor
+
+`op.StepTOTP` verifies codes against a `store.TOTPRecord` the embedder
+has already persisted. The complementary registration path lives in
+the [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit)
+package: it owns secret generation, the `otpauth://` provisioning
+URI rendered as a QR code, and the proof-of-possession step that
+marks an enrolment confirmed.
+
+```go
+import (
+  "github.com/libraz/go-oidc-provider/op/totpkit"
+)
+
+// Construct one codec at startup; share the same key bytes with
+// op.StepTOTP{EncryptionKey: keys.TOTPKey} so verify and enrolment
+// produce / consume the same AES-256-GCM blob shape.
+codec, err := totpkit.NewCodec(keys.TOTPKey /*, previousKey, ... */)
+
+// 1. After primary auth succeeds, kick off enrolment.
+pending, err := totpkit.NewEnrolment(codec,
+  user.Subject,        // OP-internal stable user ID (bound as AAD)
+  "Example Identity",  // issuer label shown by the authenticator app
+  user.Email,          // account label shown beneath the issuer
+)
+// pending.OTPAuthURI    — render this as a QR code in HTML
+// pending.SecretBase32  — show this for "manual entry" UX
+// pending.Record        — sealed TOTPRecord, NOT yet persistable
+
+// 2. Stash `pending` in a short-lived enrolment session (server-side
+//    row keyed by a cookie). Render the QR code and the manual-entry
+//    secret to the user.
+
+// 3. The user types the code their authenticator app displays.
+record, err := totpkit.Confirm(codec, pending, submittedCode, time.Now())
+// On totpkit.ErrCodeRejected, render the form again — `pending` is
+// unmutated and the user retries. ErrDecrypt fires when the key has
+// rotated past the codec's retention window.
+
+// 4. Persist the confirmed record. From this moment op.StepTOTP
+//    accepts codes against the same secret.
+_ = storage.TOTPs().Put(ctx, record)
+```
+
+`totpkit` deliberately stays out of the HTTP surface — the embedder
+owns the HTML, the QR rendering, and the enrolment session. Both
+`NewEnrolment` and `Confirm` bind the `subject` as GCM
+additional-authenticated-data, so a row exfiltrated from one user's
+enrolment cannot be replayed under a different subject. The verify
+path uses the same AAD shape, so the binding holds across both ends.
+
+For demo / CLI-only enrolment (terminal QR rendering, pre-confirmed
+seed records), see `examples/internal/seedkit` — it sits behind a
+`//go:build example` tag so the QR rendering library never enters
+the host module's `go.sum`.
+
+> **Source:** [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — in-process OP+RP demo that walks the full enrolment + RFC 9470 ACR step-up flow.
