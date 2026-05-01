@@ -5,9 +5,7 @@ description: A runnable OpenID Connect Provider in ~30 lines.
 
 # Minimal OP
 
-The shortest path to a running OP. The four required options are
-`WithIssuer`, `WithStore`, `WithKeyset`, and `WithCookieKey` — `op.New`
-returns an error if any are missing.
+The shortest path to a running OP. The four required options are `WithIssuer`, `WithStore`, `WithKeyset`, and `WithCookieKey` — `op.New` returns an error if any are missing.
 
 ::: code-group
 
@@ -146,13 +144,10 @@ cd go-oidc-provider
 go run -tags example ./examples/01-minimal
 ```
 
-The upstream `01-minimal` example uses `examples/internal/devkeys` for the
-ephemeral keys and `examples/internal/serve` for the listener boilerplate, so
-the `main.go` file stays focused on `op.New`.
+The upstream `01-minimal` example uses `examples/internal/devkeys` for the ephemeral keys and `examples/internal/serve` for the listener boilerplate, so the `main.go` file stays focused on `op.New`.
 
 ## Next
 
 - [Required options](/getting-started/required-options) — why these four.
 - [Mount on your router](/getting-started/mount) — `chi`, `gin`, …
-- [Use case: Minimal OP](/use-cases/minimal-op) — same example with a
-  registered client and an authenticator wired in.
+- [Use case: Minimal OP](/use-cases/minimal-op) — same example with a registered client and an authenticator wired in.

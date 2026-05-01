@@ -6,10 +6,7 @@ outline: 2
 
 # Architecture overview
 
-`op.New(...)` returns an `http.Handler` backed by an `http.ServeMux`.
-This page walks through what happens between request arrival and
-response — the packages involved, the order of validation, and the
-storage seams the embedder controls.
+`op.New(...)` returns an `http.Handler` backed by an `http.ServeMux`. This page walks through what happens between request arrival and response — the packages involved, the order of validation, and the storage seams the embedder controls.
 
 ## Package layout
 
@@ -33,15 +30,11 @@ internal/                   ← cannot be imported externally (Go visibility)
   discovery, scoperegistry, timex, i18n
 ```
 
-The boundary is enforced structurally: external code cannot reach into
-`internal/`. Every embedder-controlled seam (option, store interface,
-authenticator, audit subscriber) is in `op/` or one of its
-subpackages.
+The boundary is enforced structurally: external code cannot reach into `internal/`. Every embedder-controlled seam (option, store interface, authenticator, audit subscriber) is in `op/` or one of its subpackages.
 
 ## Handler graph
 
-`op.New` constructs a `*http.ServeMux` and mounts handlers on the
-configured paths (defaults shown):
+`op.New` constructs a `*http.ServeMux` and mounts handlers on the configured paths (defaults shown):
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#374151","primaryTextColor":"#fff","lineColor":"#888"}}}%%
@@ -72,11 +65,7 @@ flowchart TB
   style IX fill:#1f2937,color:#fff
 ```
 
-Endpoints gated by features (`PAR`, `Introspect`, `Revoke`,
-`DynamicRegistration`, `BackChannelLogout`) are mounted only when the
-corresponding `feature.*` is enabled or the corresponding option
-(`WithDynamicRegistration`) is supplied. The discovery document only
-advertises endpoints that are actually mounted.
+Endpoints gated by features (`PAR`, `Introspect`, `Revoke`, `DynamicRegistration`, `BackChannelLogout`) are mounted only when the corresponding `feature.*` is enabled or the corresponding option (`WithDynamicRegistration`) is supplied. The discovery document only advertises endpoints that are actually mounted.
 
 ## Cross-cutting middleware
 
@@ -89,8 +78,7 @@ Every handler is wrapped by:
 | **Cookie** | `internal/cookie` | `__Host-` prefix, AES-256-GCM, `SameSite=Lax` for session, `Strict` where compatible |
 | **CSRF** | `internal/csrf` | double-submit + Origin / Referer check on the consent / logout POST |
 
-These are not optional — they apply structurally regardless of which
-options the embedder set.
+These are not optional — they apply structurally regardless of which options the embedder set.
 
 ## Authorize → token lifecycle
 
@@ -124,13 +112,11 @@ sequenceDiagram
   OP->>RP: 200 { access_token, id_token, refresh_token? }
 ```
 
-`/par` and `/end_session` follow the same general shape; the
-sequence-diagram is the canonical happy path.
+`/par` and `/end_session` follow the same general shape; the sequence-diagram is the canonical happy path.
 
 ## LoginFlow internals
 
-`WithLoginFlow(LoginFlow{...})` is compiled at construction time into
-an internal pipeline:
+`WithLoginFlow(LoginFlow{...})` is compiled at construction time into an internal pipeline:
 
 ```
 LoginFlow {Primary, Rules[], Decider, Risk}
@@ -147,23 +133,17 @@ For each authorize request:
 
 1. `Primary.Begin` produces an `interaction.Step` (Prompt or Result).
 2. UI driver (HTML or React) renders the prompt; the user submits.
-3. `Primary.Continue` advances to a `Result` carrying the bound
-   `Identity`.
-4. Orchestrator builds a `LoginContext` (subject, scopes, completed
-   steps, risk score, ACR values).
+3. `Primary.Continue` advances to a `Result` carrying the bound `Identity`.
+4. Orchestrator builds a `LoginContext` (subject, scopes, completed steps, risk score, ACR values).
 5. `Decider` runs (if non-nil); a non-`Pass` decision short-circuits.
-6. Otherwise `Rules` evaluate in order; the first matching rule
-   whose `Step.Kind()` is not in `CompletedSteps` fires.
+6. Otherwise `Rules` evaluate in order; the first matching rule whose `Step.Kind()` is not in `CompletedSteps` fires.
 7. Loop until no rule fires; the session is then issued.
 
-See [Use case: Custom authenticator](/use-cases/custom-authenticator)
-for how to plug your own factor in via `ExternalStep`.
+See [Use case: Custom authenticator](/use-cases/custom-authenticator) for how to plug your own factor in via `ExternalStep`.
 
 ## Storage seams
 
-The library never reads or writes your `users` table directly. It
-talks to the `op.Store` interface which is the union of small
-substores:
+The library never reads or writes your `users` table directly. It talks to the `op.Store` interface which is the union of small substores:
 
 | Substore | What lives there | Adapter notes |
 |---|---|---|
@@ -182,43 +162,24 @@ substores:
 | `IATs` / `RATs` | DCR Initial / Registration Access Tokens | durable |
 | `EmailOTPs`, `TOTPs`, `Passkeys`, `Recovery` | per-user MFA factor records | durable |
 
-Volatile-eligible substores can live in a Redis tier behind the
-[`composite`](/use-cases/hot-cold-redis) adapter. The composite store
-enforces a single durable backend at construction time so a
-transactional cluster cannot split across two stores.
+Volatile-eligible substores can live in a Redis tier behind the [`composite`](/use-cases/hot-cold-redis) adapter. The composite store enforces a single durable backend at construction time so a transactional cluster cannot split across two stores.
 
-See [Architecture: storage tiering](/use-cases/hot-cold-redis) for
-production placement guidance.
+See [Architecture: storage tiering](/use-cases/hot-cold-redis) for production placement guidance.
 
 ## Discovery document assembly
 
-The discovery handler at `/.well-known/openid-configuration` builds
-its document from the OP's effective configuration. Every advertised
-field is the authoritative answer for what the OP will actually do —
-there is no drift between discovery and behaviour because:
+The discovery handler at `/.well-known/openid-configuration` builds its document from the OP's effective configuration. Every advertised field is the authoritative answer for what the OP will actually do — there is no drift between discovery and behaviour because:
 
-- **`response_types_supported`** is computed from
-  `WithGrants` + the FAPI profile.
-- **`token_endpoint_auth_methods_supported`** is intersected with the
-  FAPI allow-list when `WithProfile(profile.FAPI2Baseline)` /
-  `FAPI2MessageSigning` is active.
-- **`scopes_supported`** is the union of built-in scopes and
-  `WithScope` registrations.
-- **`code_challenge_methods_supported`** is always `["S256"]` —
-  `plain` is structurally absent.
-- **`request_object_signing_alg_values_supported`** is the JOSE
-  allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`).
-- **`dpop_signing_alg_values_supported`** is narrower (`ES256`,
-  `EdDSA`, `PS256`) — see
-  [FAQ § DPoP discovery](/faq#dpop-sender-constraint).
+- **`response_types_supported`** is computed from `WithGrants` + the FAPI profile.
+- **`token_endpoint_auth_methods_supported`** is intersected with the FAPI allow-list when `WithProfile(profile.FAPI2Baseline)` / `FAPI2MessageSigning` is active.
+- **`scopes_supported`** is the union of built-in scopes and `WithScope` registrations.
+- **`code_challenge_methods_supported`** is always `["S256"]` — `plain` is structurally absent.
+- **`request_object_signing_alg_values_supported`** is the JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`).
+- **`dpop_signing_alg_values_supported`** is narrower (`ES256`, `EdDSA`, `PS256`) — see [FAQ § DPoP discovery](/faq#dpop-sender-constraint).
 
 ## Where to read next
 
-- **[Options reference](/reference/options)** — every `op.With*` in one
-  table, with cross-links into the handler graph above.
-- **[Audit event catalog](/reference/audit-events)** — what fires from
-  each handler at each stage.
-- **[Custom authenticator](/use-cases/custom-authenticator)** — how
-  the orchestrator's pipeline calls into your code.
-- **[Hot/cold storage](/use-cases/hot-cold-redis)** — how the substore
-  tiering interacts with the volatile / durable boundary above.
+- **[Options reference](/reference/options)** — every `op.With*` in one table, with cross-links into the handler graph above.
+- **[Audit event catalog](/reference/audit-events)** — what fires from each handler at each stage.
+- **[Custom authenticator](/use-cases/custom-authenticator)** — how the orchestrator's pipeline calls into your code.
+- **[Hot/cold storage](/use-cases/hot-cold-redis)** — how the substore tiering interacts with the volatile / durable boundary above.

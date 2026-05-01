@@ -5,14 +5,9 @@ description: Plugging your own factor (hardware token, SMS, magic link, …) int
 
 # Custom authenticator
 
-The library ships built-in `Step` values for password, passkey, TOTP,
-email OTP, captcha, and recovery codes. For anything else — hardware
-tokens, SMS, magic links, proprietary device-trust factors — you
-implement the `op.Authenticator` interface and adapt it through
-`op.ExternalStep`.
+The library ships built-in `Step` values for password, passkey, TOTP, email OTP, captcha, and recovery codes. For anything else — hardware tokens, SMS, magic links, proprietary device-trust factors — you implement the `op.Authenticator` interface and adapt it through `op.ExternalStep`.
 
-This page walks through the contract, a worked example, and the
-common pitfalls.
+This page walks through the contract, a worked example, and the common pitfalls.
 
 ## When you need this
 
@@ -26,9 +21,7 @@ common pitfalls.
 | Add a custom risk gate | No — use `op.RuleRisk` + your own `RiskAssessor` |
 | Add a non-credential prompt (T&C, KYC) | No — use `op.Interaction` ([Terms / KYC use case]) |
 
-The seam: anything that **collects credentials and binds a subject**
-is an `Authenticator`. Anything that **runs after the subject is
-bound and emits prompts** is an `Interaction`.
+The seam: anything that **collects credentials and binds a subject** is an `Authenticator`. Anything that **runs after the subject is bound and emits prompts** is an `Interaction`.
 
 ## The interface
 
@@ -64,13 +57,11 @@ type Authenticator interface {
 }
 ```
 
-Implementations MUST be safe for concurrent use; the orchestrator
-dispatches across goroutines.
+Implementations MUST be safe for concurrent use; the orchestrator dispatches across goroutines.
 
 ## Worked example: SMS OTP
 
-The factor: collect a phone number, send a 6-digit code via SMS,
-verify the user's submitted code.
+The factor: collect a phone number, send a 6-digit code via SMS, verify the user's submitted code.
 
 ### 1. Implement `Authenticator`
 
@@ -192,14 +183,11 @@ op.New(
 )
 ```
 
-The dotted prefix on `KindLabel` (`myorg.sms_otp`) is **required** —
-the LoginFlow compiler rejects bare or built-in labels at construction
-time. Use your organisation identifier as the prefix.
+The dotted prefix on `KindLabel` (`myorg.sms_otp`) is **required** — the LoginFlow compiler rejects bare or built-in labels at construction time. Use your organisation identifier as the prefix.
 
 ### 3. Render the prompts in your UI
 
-The SPA receives the prompt at `/interaction/{uid}` as JSON when
-`WithSPAUI` is configured:
+The SPA receives the prompt at `/interaction/{uid}` as JSON when `WithSPAUI` is configured:
 
 ```json
 {
@@ -210,18 +198,13 @@ The SPA receives the prompt at `/interaction/{uid}` as JSON when
 }
 ```
 
-Render a phone input, POST `{ "phone": "+1..." }` back to the same
-endpoint. The next response carries the `myorg.sms.collect_code`
-prompt; render a code input, POST `{ "code": "123456" }`. The third
-response is a `Result` with the bound subject.
+Render a phone input, POST `{ "phone": "+1..." }` back to the same endpoint. The next response carries the `myorg.sms.collect_code` prompt; render a code input, POST `{ "code": "123456" }`. The third response is a `Result` with the bound subject.
 
-For HTML-driver setups, register a custom template that handles the
-two prompt types.
+For HTML-driver setups, register a custom template that handles the two prompt types.
 
 ## Contract requirements
 
-The orchestrator enforces these — getting them wrong is a programming
-error caught at compile-time of the LoginFlow or at first request:
+The orchestrator enforces these — getting them wrong is a programming error caught at compile-time of the LoginFlow or at first request:
 
 | Requirement | Why |
 |---|---|
@@ -235,8 +218,7 @@ error caught at compile-time of the LoginFlow or at first request:
 
 ## Testing
 
-Use the contract suite in `op/store/contract` for store
-implementations, and the orchestrator harness for authenticators:
+Use the contract suite in `op/store/contract` for store implementations, and the orchestrator harness for authenticators:
 
 ```go
 // Pseudocode — use the actual harness path from the source repo.
@@ -255,26 +237,17 @@ func TestSMSAuthenticator(t *testing.T) {
 
 ## Why this seam exists
 
-Earlier iterations of the library exposed only `Authenticator`
-directly. Embedders writing step-up flows ended up reimplementing
-"which factor runs when" inside their authenticator's `Begin` — which
-violates the orchestrator's invariant that one factor = one
-ceremony. Splitting the surface into:
+Earlier iterations of the library exposed only `Authenticator` directly. Embedders writing step-up flows ended up reimplementing "which factor runs when" inside their authenticator's `Begin` — which violates the orchestrator's invariant that one factor = one ceremony. Splitting the surface into:
 
 - `Step` — descriptor (what factor)
 - `Rule` — when it runs
 - `Decider` — short-circuit override
 - `Authenticator` — the actual ceremony
 
-…lets the orchestrator own the order and dedup, and lets your code
-own the factor mechanics. `ExternalStep` is the bridge for any
-`Authenticator` that doesn't fit the built-in `Step` types.
+…lets the orchestrator own the order and dedup, and lets your code own the factor mechanics. `ExternalStep` is the bridge for any `Authenticator` that doesn't fit the built-in `Step` types.
 
 ## See also
 
-- **[Architecture overview § LoginFlow internals](/reference/architecture#loginflow-internals)** —
-  what the orchestrator does with your authenticator.
-- **[MFA / step-up](/use-cases/mfa-step-up)** — composing built-in
-  Steps via `Rule`.
-- **[Audit event catalog § Login / MFA / step-up](/reference/audit-events#login-mfa-step-up)** —
-  what your authenticator emits when it succeeds or fails.
+- **[Architecture overview § LoginFlow internals](/reference/architecture#loginflow-internals)** — what the orchestrator does with your authenticator.
+- **[MFA / step-up](/use-cases/mfa-step-up)** — composing built-in Steps via `Rule`.
+- **[Audit event catalog § Login / MFA / step-up](/reference/audit-events#login-mfa-step-up)** — what your authenticator emits when it succeeds or fails.

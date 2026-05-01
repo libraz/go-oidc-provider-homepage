@@ -5,11 +5,7 @@ description: Serve OAuth 2.0 alongside OIDC. The same OP issues access-only toke
 
 # Use case — Plain OAuth 2.0
 
-OIDC Core 1.0 §3.1.2.1 requires the `openid` scope on every authorize
-request — without it, the OP must reject. That's the right default,
-but you may have non-OIDC RPs that just want a Bearer token to call
-your API. The library lets the same OP serve **both** shapes via a
-single relaxation.
+OIDC Core 1.0 §3.1.2.1 requires the `openid` scope on every authorize request — without it, the OP must reject. That's the right default, but you may have non-OIDC RPs that just want a Bearer token to call your API. The library lets the same OP serve **both** shapes via a single relaxation.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework
@@ -43,9 +39,7 @@ After this option:
 | `scope=api:read` | Plain OAuth 2.0: `access_token` only, no `id_token` |
 | `scope=`(empty) | Rejected — at least one scope must be requested |
 
-The choice is **per request**, not a global toggle. A client whose
-`Scopes` list includes `openid` can still request it; a client whose
-`Scopes` list omits `openid` stays in OAuth-only mode permanently.
+The choice is **per request**, not a global toggle. A client whose `Scopes` list includes `openid` can still request it; a client whose `Scopes` list omits `openid` stays in OAuth-only mode permanently.
 
 ## Side effects
 
@@ -59,9 +53,7 @@ The choice is **per request**, not a global toggle. A client whose
 
 ## Mutual exclusion
 
-`op.WithOpenIDScopeOptional` is **incompatible** with active FAPI 2.0
-profiles. FAPI 2.0 mandates OIDC; the constructor rejects the
-combination at build time.
+`op.WithOpenIDScopeOptional` is **incompatible** with active FAPI 2.0 profiles. FAPI 2.0 mandates OIDC; the constructor rejects the combination at build time.
 
 ```go
 op.New(
@@ -70,8 +62,7 @@ op.New(
 )
 ```
 
-`op.WithStrictOfflineAccess()` is also incompatible (strict mode has
-no meaning when `openid` itself is optional).
+`op.WithStrictOfflineAccess()` is also incompatible (strict mode has no meaning when `openid` itself is optional).
 
 ## When to use it
 

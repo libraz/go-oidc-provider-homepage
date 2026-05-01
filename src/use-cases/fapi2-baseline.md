@@ -7,30 +7,13 @@ description: One profile switch enables PAR, JAR, DPoP, ES256 lock, and the FAPI
 
 ## What is FAPI 2.0?
 
-**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC
-maintained by the OpenID Foundation. It picks a **strict subset** of
-the underlying specs and forbids the optional flexibility that
-attackers historically abused — for example, FAPI rejects `RS256`
-signatures in favour of `ES256`/`PS256`, requires PKCE on every
-authorization, mandates sender-constrained tokens (DPoP **or** mTLS),
-and forces RPs to send their authorize requests through PAR + JAR
-instead of as plain query strings.
+**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused — for example, FAPI rejects `RS256` signatures in favour of `ES256`/`PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and forces RPs to send their authorize requests through PAR + JAR instead of as plain query strings.
 
-The bar exists because banking, healthcare, and government deployments
-need a profile that can be audited against a checklist instead of "did
-you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which
-is still in use). FAPI 2.0 Baseline is the entry-level profile;
-FAPI 2.0 Message Signing adds JARM + DPoP nonce + RS-side proof
-signing.
+The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). FAPI 2.0 Baseline is the entry-level profile; FAPI 2.0 Message Signing adds JARM + DPoP nonce + RS-side proof signing.
 
-This library exposes Baseline as a **single profile switch**
-(`op.WithProfile(profile.FAPI2Baseline)`) that flips every required
-flag and refuses to start in any combination that would silently
-violate the profile.
+This library exposes Baseline as a **single profile switch** (`op.WithProfile(profile.FAPI2Baseline)`) that flips every required flag and refuses to start in any combination that would silently violate the profile.
 
-A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked
-through is at [FAPI 2.0 primer](/concepts/fapi). This page covers the
-wiring.
+A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is at [FAPI 2.0 primer](/concepts/fapi). This page covers the wiring.
 
 ::: details Specs referenced on this page
 - [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html) — Final
@@ -107,30 +90,17 @@ provider, err := op.New(
 )
 ```
 
-`PrivateKeyJWTClient` is the typed seed for FAPI clients — it forces
-`token_endpoint_auth_method=private_key_jwt` automatically, so the
-embedder never has to spell that field out. The companion typed seeds
-are `op.PublicClient` and `op.ConfidentialClient`; all three implement
-`op.ClientSeed` and feed `WithStaticClients(seeds ...ClientSeed)`.
+`PrivateKeyJWTClient` is the typed seed for FAPI clients — it forces `token_endpoint_auth_method=private_key_jwt` automatically, so the embedder never has to spell that field out. The companion typed seeds are `op.PublicClient` and `op.ConfidentialClient`; all three implement `op.ClientSeed` and feed `WithStaticClients(seeds ...ClientSeed)`.
 
 The `WithProfile` call:
 
-1. Enables `feature.PAR` and `feature.JAR` automatically (the embedder
-   still picks the sender-constraint binding — `feature.DPoP` or
-   `feature.MTLS` — explicitly via `WithFeature`).
-2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0
-   §3.1.3 allow-list (`private_key_jwt`, `tls_client_auth`,
-   `self_signed_tls_client_auth`).
-3. Locks the ID Token signing alg to `ES256`/`PS256` and rejects `RS256`
-   for new tokens.
+1. Enables `feature.PAR` and `feature.JAR` automatically (the embedder still picks the sender-constraint binding — `feature.DPoP` or `feature.MTLS` — explicitly via `WithFeature`).
+2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §3.1.3 allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
+3. Locks the ID Token signing alg to `ES256`/`PS256` and rejects `RS256` for new tokens.
 4. Forces `redirect_uri` exact match (no wildcards anywhere).
 
 ::: tip mTLS instead of DPoP
-The same profile leaves `RequiredAnyOf=[DPoP, MTLS]` — enable
-`feature.MTLS` instead of (or alongside) DPoP and configure
-`op.WithMTLSProxy(...)` for a TLS-terminating proxy. See
-[`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks)
-for FAPI-grade TLS helpers.
+The same profile leaves `RequiredAnyOf=[DPoP, MTLS]` — enable `feature.MTLS` instead of (or alongside) DPoP and configure `op.WithMTLSProxy(...)` for a TLS-terminating proxy. See [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) for FAPI-grade TLS helpers.
 :::
 
 ## Verifying the surface
@@ -159,10 +129,6 @@ Expected:
 
 ## Conformance
 
-The OFCS [`fapi2-security-profile-id2-test-plan`](/compliance/ofcs)
-exercises this exact wiring: 48 PASSED / 9 REVIEW (manual reviewer) /
-1 SKIPPED (RSA-key negative test that needs an additional client key) /
-**0 FAILED** in the latest baseline.
+The OFCS [`fapi2-security-profile-id2-test-plan`](/compliance/ofcs) exercises this exact wiring: 48 PASSED / 9 REVIEW (manual reviewer) / 1 SKIPPED (RSA-key negative test that needs an additional client key) / **0 FAILED** in the latest baseline.
 
-For the full OFCS picture and the REVIEW / SKIPPED breakdown, see
-[OFCS conformance status](/compliance/ofcs).
+For the full OFCS picture and the REVIEW / SKIPPED breakdown, see [OFCS conformance status](/compliance/ofcs).

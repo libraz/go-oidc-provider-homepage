@@ -7,21 +7,11 @@ description: Notify every RP server-to-server when a session ends — OIDC Back-
 
 ## What is "back-channel logout"?
 
-A user typically signs into multiple apps (RPs) through the same OP —
-"sign in with Acme" buttons all share one identity session. When the
-user clicks **log out** at one RP, the other RPs still hold their own
-local cookies; without coordination, the user looks signed in at app B
-even though they signed out at app A.
+A user typically signs into multiple apps (RPs) through the same OP — "sign in with Acme" buttons all share one identity session. When the user clicks **log out** at one RP, the other RPs still hold their own local cookies; without coordination, the user looks signed in at app B even though they signed out at app A.
 
-**Back-channel logout** is the OP-driven fan-out that closes that gap.
-Each RP registers a server-side callback URL with the OP. When the
-session ends, the OP **POSTs a signed `logout_token` directly to every
-RP** (server to server, behind the user's back — hence "back-channel").
-Each RP verifies the token and drops its local cookie.
+**Back-channel logout** is the OP-driven fan-out that closes that gap. Each RP registers a server-side callback URL with the OP. When the session ends, the OP **POSTs a signed `logout_token` directly to every RP** (server to server, behind the user's back — hence "back-channel"). Each RP verifies the token and drops its local cookie.
 
-The alternative — *front-channel* logout — embeds an `<iframe>` per RP
-and depends on third-party cookies, which modern browsers progressively
-break. Back-channel is the deployable choice.
+The alternative — *front-channel* logout — embeds an `<iframe>` per RP and depends on third-party cookies, which modern browsers progressively break. Back-channel is the deployable choice.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html)
@@ -31,13 +21,8 @@ break. Back-channel is the deployable choice.
 :::
 
 ::: details Quick refresher
-- **`logout_token`** — a short-lived JWT the OP signs and POSTs to each
-  RP, naming the subject (`sub`) or session (`sid`) that ended. It is
-  *not* an access token; the RP only verifies it and drops local state.
-- **SET (Security Event Token, RFC 8417)** — a JWT shape designed for
-  security event delivery. The `events` claim slots an event-type key
-  (here `http://schemas.openid.net/event/backchannel-logout`) so a
-  generic SET receiver can dispatch to the right handler.
+- **`logout_token`** — a short-lived JWT the OP signs and POSTs to each RP, naming the subject (`sub`) or session (`sid`) that ended. It is *not* an access token; the RP only verifies it and drops local state.
+- **SET (Security Event Token, RFC 8417)** — a JWT shape designed for security event delivery. The `events` claim slots an event-type key (here `http://schemas.openid.net/event/backchannel-logout`) so a generic SET receiver can dispatch to the right handler.
 :::
 
 > **Source:** [`examples/42-back-channel-logout`](https://github.com/libraz/go-oidc-provider/tree/main/examples/42-back-channel-logout)
@@ -65,8 +50,7 @@ sequenceDiagram
     OP->>RP_A: 302 post_logout_redirect_uri
 ```
 
-The OP signs a `logout_token` per RP and POSTs it to that RP's
-`backchannel_logout_uri`. The token contains:
+The OP signs a `logout_token` per RP and POSTs it to that RP's `backchannel_logout_uri`. The token contains:
 
 | Claim | Meaning |
 |---|---|
@@ -76,8 +60,7 @@ The OP signs a `logout_token` per RP and POSTs it to that RP's
 | `sub` or `sid` | Whose session ended |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
-The RP verifies the signature and `aud`, drops the local session, and
-returns 200.
+The RP verifies the signature and `aud`, drops the local session, and returns 200.
 
 ## Wiring
 
@@ -93,8 +76,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-The `BackchannelLogoutURI` field also exists on `op.ConfidentialClient`
-and `op.PrivateKeyJWTClient` — every typed seed accepts it.
+The `BackchannelLogoutURI` field also exists on `op.ConfidentialClient` and `op.PrivateKeyJWTClient` — every typed seed accepts it.
 
 Library-wide knobs:
 
@@ -109,10 +91,7 @@ op.New(
 ## SSRF defense
 
 ::: warning Private-network destinations are refused by default
-The deliverer **refuses** to POST to a `backchannel_logout_uri` whose
-host resolves to a loopback / link-local / RFC 1918 / IPv6 ULA address.
-Without this, an RP that can register an arbitrary URL becomes an SSRF
-oracle into the OP's internal network.
+The deliverer **refuses** to POST to a `backchannel_logout_uri` whose host resolves to a loopback / link-local / RFC 1918 / IPv6 ULA address. Without this, an RP that can register an arbitrary URL becomes an SSRF oracle into the OP's internal network.
 
 Embedders fronting their RPs with private DNS opt in:
 
@@ -120,18 +99,12 @@ Embedders fronting their RPs with private DNS opt in:
 op.WithBackchannelAllowPrivateNetwork(true)
 ```
 
-This must be a deliberate choice — the option is the visible site for
-the security trade-off.
+This must be a deliberate choice — the option is the visible site for the security trade-off.
 :::
 
 ## Volatile-store gap (and the audit event for it)
 
-Back-channel fan-out walks the OP's `SessionStore` to find every RP
-attached to the ending session. Under a **volatile** session store
-(Redis without persistence, Memcached, in-memory under maxmemory
-eviction), a session evicted between establishment and `/end_session`
-silently removes the rows the back-channel coordinator would walk —
-nothing fires for those RPs.
+Back-channel fan-out walks the OP's `SessionStore` to find every RP attached to the ending session. Under a **volatile** session store (Redis without persistence, Memcached, in-memory under maxmemory eviction), a session evicted between establishment and `/end_session` silently removes the rows the back-channel coordinator would walk — nothing fires for those RPs.
 
 The library surfaces the gap as an audit event:
 
@@ -139,16 +112,8 @@ The library surfaces the gap as an audit event:
 |---|---|
 | `op.AuditBCLNoSessionsForSubject` | The caller named a session (`/end_session` with `id_token_hint`, or `Provider.Logout` against a session-bearing subject) but the fan-out resolved zero RPs. |
 
-Under volatile placement this is the OIDC Back-Channel Logout 1.0 §2.7
-"best effort" floor; under durable placement it's an unexpected gap. The
-event extras carry the configured `op.SessionDurabilityPosture`
-(`SessionDurabilityVolatile` or `SessionDurabilityDurable`) so SOC
-dashboards distinguish the two without keying on the store-adapter type.
+Under volatile placement this is the OIDC Back-Channel Logout 1.0 §2.7 "best effort" floor; under durable placement it's an unexpected gap. The event extras carry the configured `op.SessionDurabilityPosture` (`SessionDurabilityVolatile` or `SessionDurabilityDurable`) so SOC dashboards distinguish the two without keying on the store-adapter type.
 
 ## Front-channel logout (a different mechanism)
 
-OIDC Front-Channel Logout 1.0 (browser-side iframe fan-out) is a
-separate spec the library does not currently implement. Back-channel is
-the more deployable choice: no third-party cookie dependency, works
-across origins, doesn't require the user's browser to be open at the
-moment fan-out happens.
+OIDC Front-Channel Logout 1.0 (browser-side iframe fan-out) is a separate spec the library does not currently implement. Back-channel is the more deployable choice: no third-party cookie dependency, works across origins, doesn't require the user's browser to be open at the moment fan-out happens.

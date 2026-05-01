@@ -5,11 +5,7 @@ description: The dominant OIDC flow, walked end-to-end with parameter glossary a
 
 # Authorization Code + PKCE
 
-The most common OIDC flow. Used by every web app, mobile app, SPA, and
-desktop app that logs a human in. PKCE (Proof Key for Code Exchange,
-RFC 7636) is mandatory in this library — both because OAuth 2.0 BCP
-(RFC 9700) and FAPI 2.0 require it, and because there's no plausible
-deployment in 2026 that benefits from disabling it.
+The most common OIDC flow. Used by every web app, mobile app, SPA, and desktop app that logs a human in. PKCE (Proof Key for Code Exchange, RFC 7636) is mandatory in this library — both because OAuth 2.0 BCP (RFC 9700) and FAPI 2.0 require it, and because there's no plausible deployment in 2026 that benefits from disabling it.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework (§5.2 error codes)
@@ -20,17 +16,10 @@ deployment in 2026 that benefits from disabling it.
 :::
 
 ::: details New to the vocabulary?
-- **Authorization code** — a one-time, opaque string the OP hands to the
-  RP via a browser redirect. The RP swaps it at `/token` for the actual
-  tokens.
-- **PKCE** ("pixie") — a small extra dance with `code_verifier` /
-  `code_challenge` that proves "the client redeeming this code is the
-  same one that started the flow." Stops a malicious app from stealing
-  a redirected code. Walked through in detail below.
-- **`state`** — a random opaque value the RP sends with the authorize
-  request and re-checks on the callback; CSRF defence for the redirect.
-- **`nonce`** — a random opaque value bound into the ID Token; replay
-  defence at the RP.
+- **Authorization code** — a one-time, opaque string the OP hands to the RP via a browser redirect. The RP swaps it at `/token` for the actual tokens.
+- **PKCE** ("pixie") — a small extra dance with `code_verifier` / `code_challenge` that proves "the client redeeming this code is the same one that started the flow." Stops a malicious app from stealing a redirected code. Walked through in detail below.
+- **`state`** — a random opaque value the RP sends with the authorize request and re-checks on the callback; CSRF defence for the redirect.
+- **`nonce`** — a random opaque value bound into the ID Token; replay defence at the RP.
 :::
 
 ## The full sequence
@@ -87,22 +76,18 @@ sequenceDiagram
 ## What PKCE prevents
 
 ::: details Walk-through: the attack PKCE blocks
-Without PKCE, a malicious app on the same device that controls a
-URI-handler for `myapp://` can intercept the authorization-code redirect:
+Without PKCE, a malicious app on the same device that controls a URI-handler for `myapp://` can intercept the authorization-code redirect:
 
 1. User logs in on the legit RP. OP issues `code=abc` to `myapp://callback`.
-2. Malicious app intercepts the redirect (race condition or universal-link
-   spoof) and reads `code=abc`.
+2. Malicious app intercepts the redirect (race condition or universal-link spoof) and reads `code=abc`.
 3. Malicious app posts `code=abc` to `/token` and gets tokens.
 
 PKCE binds the code to a **secret only the legitimate RP knows**:
 
-1. The legit RP generates a random `code_verifier` and sends only
-   `SHA256(code_verifier)` (the `code_challenge`) to `/authorize`.
+1. The legit RP generates a random `code_verifier` and sends only `SHA256(code_verifier)` (the `code_challenge`) to `/authorize`.
 2. The OP stores `code_challenge` alongside the issued code.
 3. At `/token`, the OP requires `code_verifier` and recomputes the SHA-256.
-4. The malicious app saw the code but never saw the verifier — its
-   `/token` call fails.
+4. The malicious app saw the code but never saw the verifier — its `/token` call fails.
 
 This works even when the RP can't store a client secret (SPA / native).
 :::
@@ -127,14 +112,9 @@ This works even when the RP can't store a client secret (SPA / native).
 
 ## Run the flow yourself
 
-`examples/03-fapi2` runs a FAPI 2.0 Baseline OP that demands PAR + JAR +
-DPoP + PKCE in one wiring. The OFCS conformance suite drives this exact
-sequence through ~129 modules in two FAPI plans;
-[OFCS status](/compliance/ofcs) shows the breakdown.
+`examples/03-fapi2` runs a FAPI 2.0 Baseline OP that demands PAR + JAR + DPoP + PKCE in one wiring. The OFCS conformance suite drives this exact sequence through ~129 modules in two FAPI plans; [OFCS status](/compliance/ofcs) shows the breakdown.
 
 ## Read next
 
-- [Sender constraint (DPoP / mTLS)](/concepts/sender-constraint) — how
-  PKCE upgrades to "the access token only works for the client that got it."
-- [Refresh tokens](/concepts/refresh-tokens) — what to do when the access
-  token expires.
+- [Sender constraint (DPoP / mTLS)](/concepts/sender-constraint) — how PKCE upgrades to "the access token only works for the client that got it."
+- [Refresh tokens](/concepts/refresh-tokens) — what to do when the access token expires.

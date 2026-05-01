@@ -6,15 +6,10 @@ outline: 2
 
 # Options reference
 
-Every public `op.With*` option, grouped by what it touches. The first
-four are constructor-required; everything else is optional and refines
-the defaults.
+Every public `op.With*` option, grouped by what it touches. The first four are constructor-required; everything else is optional and refines the defaults.
 
 ::: tip How to read this page
-Click the option name for the deep-dive page. The "Section" column tells
-you which discovery / endpoint surface the option moves. "Default" is
-empty when the option has no built-in default — supplying it is the
-only way to enable the behaviour.
+Click the option name for the deep-dive page. The "Section" column tells you which discovery / endpoint surface the option moves. "Default" is empty when the option has no built-in default — supplying it is the only way to enable the behaviour.
 :::
 
 ## Required (the four `op.New` refuses to start without)
@@ -124,18 +119,13 @@ only way to enable the behaviour.
 
 ## What you do *not* configure here
 
-These are deliberate non-options — see the linked design rationale for
-why each is fixed:
+These are deliberate non-options — see the linked design rationale for why each is fixed:
 
-- **JOSE algorithm allow-list** — fixed at `RS256` / `PS256` / `ES256` /
-  `EdDSA`. No flag widens it. See [Security posture §2](/security/posture#_2-the-jose-alg-list-is-a-closed-type).
+- **JOSE algorithm allow-list** — fixed at `RS256` / `PS256` / `ES256` / `EdDSA`. No flag widens it. See [Security posture §2](/security/posture#_2-the-jose-alg-list-is-a-closed-type).
 - **PKCE method** — `S256` only. `plain` is structurally rejected.
-- **Cookie scheme** — `__Host-` prefix, AES-256-GCM, double-submit CSRF
-  always on. See [Required options §WithCookieKey](/getting-started/required-options#withcookiekey).
-- **Random source** — `crypto/rand` only; `math/rand` is forbidden by
-  lint.
-- **`/metrics` mounting** — your router's job, not the library's. See
-  [Use case: Prometheus metrics](/use-cases/prometheus).
+- **Cookie scheme** — `__Host-` prefix, AES-256-GCM, double-submit CSRF always on. See [Required options §WithCookieKey](/getting-started/required-options#withcookiekey).
+- **Random source** — `crypto/rand` only; `math/rand` is forbidden by lint.
+- **`/metrics` mounting** — your router's job, not the library's. See [Use case: Prometheus metrics](/use-cases/prometheus).
 
 ## Verifying this list
 
@@ -150,6 +140,4 @@ grep -rhE '^func With[A-Z]' op/options.go op/options_authn.go \
   | sort -u
 ```
 
-The shape (function name + receiver + first parameter type) is the
-canonical reference; the godoc on each function is the authoritative
-contract.
+The shape (function name + receiver + first parameter type) is the canonical reference; the godoc on each function is the authoritative contract.

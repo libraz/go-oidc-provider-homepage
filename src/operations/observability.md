@@ -15,8 +15,7 @@ Three streams cover what you need to see in production:
 | Metrics | OIDC business counters | `WithPrometheus(*prometheus.Registry)` | your `/metrics` route |
 | Tracing | request spans | none built-in | `otelhttp.NewMiddleware` around the `http.Handler` |
 
-The library deliberately keeps these decoupled — you can wire any
-subset.
+The library deliberately keeps these decoupled — you can wire any subset.
 
 ## Structured logging
 
@@ -32,22 +31,14 @@ op.New(
 Operational logs cover:
 
 - Configuration warnings at boot.
-- Endpoint-internal errors (typically `IsServerError(err)` matches —
-  see [Error catalog](/reference/errors)).
+- Endpoint-internal errors (typically `IsServerError(err)` matches — see [Error catalog](/reference/errors)).
 - Store backend failures.
 
-If `WithLogger` is omitted the library discards every record (no
-fallback to `slog.Default()`). The handler you pass is wrapped with
-the redaction middleware so OAuth/OIDC secret-shaped attributes
-(`access_token`, `refresh_token`, `code`, `code_verifier`,
-`client_secret`, `state`, `nonce`, `dpop`, `authorization`,
-`cookie`, `set-cookie`, …) are masked before they reach your
-handler.
+If `WithLogger` is omitted the library discards every record (no fallback to `slog.Default()`). The handler you pass is wrapped with the redaction middleware so OAuth/OIDC secret-shaped attributes (`access_token`, `refresh_token`, `code`, `code_verifier`, `client_secret`, `state`, `nonce`, `dpop`, `authorization`, `cookie`, `set-cookie`, …) are masked before they reach your handler.
 
 ## Audit logging
 
-Audit events deserve a separate sink so they can be retained,
-indexed, and access-controlled differently from ops logs:
+Audit events deserve a separate sink so they can be retained, indexed, and access-controlled differently from ops logs:
 
 ```go
 auditFile, _ := os.OpenFile("/var/log/op/audit.jsonl",
@@ -60,15 +51,10 @@ op.New(
 )
 ```
 
-Each event is a JSON line with `msg = "<event.name>"`, plus the
-common attributes (`request_id`, `subject`, `client_id`, `extras`).
-See the [Audit event catalog](/reference/audit-events) for the full
-list.
+Each event is a JSON line with `msg = "<event.name>"`, plus the common attributes (`request_id`, `subject`, `client_id`, `extras`). See the [Audit event catalog](/reference/audit-events) for the full list.
 
 ::: tip One stream, multiple sinks
-A single `*slog.Logger` can fan out to file + Loki + Splunk via a
-multiplexing handler. The OP doesn't care; it just calls
-`logger.LogAttrs(...)`.
+A single `*slog.Logger` can fan out to file + Loki + Splunk via a multiplexing handler. The OP doesn't care; it just calls `logger.LogAttrs(...)`.
 :::
 
 ## Prometheus metrics
@@ -88,16 +74,13 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 go http.ListenAndServe("127.0.0.1:9090", mux)
 ```
 
-The library does not mount `/metrics` itself — you choose the route
-and the access boundary. The counters track the same surface as the
-audit catalog (a curated subset; see [`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics)).
+The library does not mount `/metrics` itself — you choose the route and the access boundary. The counters track the same surface as the audit catalog (a curated subset; see [`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics)).
 
 ### What the OP does NOT emit
 
 These belong in HTTP middleware, not in the OP:
 
-- HTTP request duration histograms — use `promhttp.InstrumentHandlerDuration`
-  around the OP handler.
+- HTTP request duration histograms — use `promhttp.InstrumentHandlerDuration` around the OP handler.
 - HTTP status code counters — same.
 - In-flight request gauge — same.
 
@@ -118,13 +101,11 @@ instrumented := promhttp.InstrumentHandlerInFlight(inFlight,
 http.Handle("/", instrumented)
 ```
 
-This separation lets you replace the HTTP layer (chi, gin, fiber)
-without touching the OP's metrics.
+This separation lets you replace the HTTP layer (chi, gin, fiber) without touching the OP's metrics.
 
 ## Tracing
 
-The OP exposes an `http.Handler`. Wrap it with OpenTelemetry's HTTP
-middleware once:
+The OP exposes an `http.Handler`. Wrap it with OpenTelemetry's HTTP middleware once:
 
 ```go
 import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -132,22 +113,15 @@ import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 ```
 
-Spans cover the request lifecycle. The library does not currently
-emit per-endpoint child spans — if you need per-stage traces (e.g.
-"how long did PKCE verification take inside `/token`") you'll see
-them only at the HTTP level today.
+Spans cover the request lifecycle. The library does not currently emit per-endpoint child spans — if you need per-stage traces (e.g. "how long did PKCE verification take inside `/token`") you'll see them only at the HTTP level today.
 
 ::: info Future tracing
-Per-stage spans are planned but pre-v1.0 the surface is intentionally
-small. The audit event catalog gives you the same coverage (per-event
-emission) at the cost of higher cardinality.
+Per-stage spans are planned but pre-v1.0 the surface is intentionally small. The audit event catalog gives you the same coverage (per-event emission) at the cost of higher cardinality.
 :::
 
 ## Request IDs
 
-The OP propagates request IDs from `X-Request-ID` and `Traceparent`
-headers into every audit event and operational log line. If neither
-header is present, the OP synthesises a UUID per request.
+The OP propagates request IDs from `X-Request-ID` and `Traceparent` headers into every audit event and operational log line. If neither header is present, the OP synthesises a UUID per request.
 
 To stamp the same ID on the response (so RP logs can correlate):
 
@@ -180,9 +154,7 @@ A minimum-viable production dashboard surfaces:
 | Active sessions | store query / metric you maintain | drop > 30 % |
 | JWKS request rate | HTTP middleware | tracks RP cache health |
 
-The first three are the highest-signal indicators of production
-trouble. The fourth catches storage drift; the last two catch
-RP-side regressions.
+The first three are the highest-signal indicators of production trouble. The fourth catches storage drift; the last two catch RP-side regressions.
 
 ## Log retention
 
@@ -192,5 +164,4 @@ RP-side regressions.
 | Audit | **as long as your compliance regime requires** — typically 1 – 7 years |
 | Metrics | 30 – 90 days at high resolution; rolled up indefinitely |
 
-Audit retention is the long-tail cost. Plan storage for it
-separately — the events are small but high-volume on a busy OP.
+Audit retention is the long-tail cost. Plan storage for it separately — the events are small but high-volume on a busy OP.

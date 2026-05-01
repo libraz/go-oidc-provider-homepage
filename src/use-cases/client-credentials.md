@@ -7,19 +7,11 @@ description: Backend-to-backend tokens, no end user, no consent.
 
 ## What is the `client_credentials` grant?
 
-OAuth 2.0 has four "grant types" — different ways for a client to
-obtain an access token. Three involve a human (`authorization_code`,
-`device_code`, the deprecated `password`); one does not.
+OAuth 2.0 has four "grant types" — different ways for a client to obtain an access token. Three involve a human (`authorization_code`, `device_code`, the deprecated `password`); one does not.
 
-**`client_credentials`** (RFC 6749 §4.4) is for the no-human case:
-service A holds a registered `client_id` + credential and exchanges
-them directly at `/token` for an access token. The token represents
-**the service itself**, not an end user — so there is no `id_token`,
-no `refresh_token` (re-issue is cheap), no consent prompt.
+**`client_credentials`** (RFC 6749 §4.4) is for the no-human case: service A holds a registered `client_id` + credential and exchanges them directly at `/token` for an access token. The token represents **the service itself**, not an end user — so there is no `id_token`, no `refresh_token` (re-issue is cheap), no consent prompt.
 
-This is the right grant for cron jobs, webhooks, microservice ↔
-microservice calls, and anything else where there's no browser and no
-end user.
+This is the right grant for cron jobs, webhooks, microservice ↔ microservice calls, and anything else where there's no browser and no end user.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §4.4 (`client_credentials`)
@@ -97,10 +89,7 @@ curl -s -u service-a:<secret> \
 ```
 
 ::: tip Confidential clients only
-`client_credentials` is restricted to clients with a real authentication
-credential (`client_secret_basic`, `client_secret_post`,
-`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
-A public client (`token_endpoint_auth_method=none`) can't use it.
+`client_credentials` is restricted to clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`). A public client (`token_endpoint_auth_method=none`) can't use it.
 :::
 
 ## Production-grade: `private_key_jwt` instead of basic
@@ -115,12 +104,9 @@ op.WithStaticClients(op.PrivateKeyJWTClient{
 })
 ```
 
-The `PrivateKeyJWTClient` seed sets
-`token_endpoint_auth_method=private_key_jwt` automatically — there is
-no separate `AuthMethod` field to configure on this typed seed.
+The `PrivateKeyJWTClient` seed sets `token_endpoint_auth_method=private_key_jwt` automatically — there is no separate `AuthMethod` field to configure on this typed seed.
 
-Now Service A signs a JWT assertion with its private key for each token
-request:
+Now Service A signs a JWT assertion with its private key for each token request:
 
 ```sh
 curl -s -d 'grant_type=client_credentials' \
@@ -131,22 +117,15 @@ curl -s -d 'grant_type=client_credentials' \
 ```
 
 ::: details FAPI 2.0 client_credentials
-With `op.WithProfile(profile.FAPI2Baseline)`, `client_secret_basic` is
-filtered out. `private_key_jwt` or mTLS becomes the only acceptable
-authentication. Stack `feature.DPoP` to additionally bind the issued
-access token to a client-held key.
+With `op.WithProfile(profile.FAPI2Baseline)`, `client_secret_basic` is filtered out. `private_key_jwt` or mTLS becomes the only acceptable authentication. Stack `feature.DPoP` to additionally bind the issued access token to a client-held key.
 :::
 
 ## Validating on the resource server
 
 Two paths:
 
-1. **Self-validate JWT** (RFC 9068) if you configured JWT access tokens.
-   Service B fetches `/jwks` once, caches it, and verifies signatures
-   locally.
-2. **Introspect** (RFC 7662) if access tokens are opaque. Service B posts
-   the token to `/introspect` and reads `active`, `scope`, `client_id`,
-   etc. from the JSON response.
+1. **Self-validate JWT** (RFC 9068) if you configured JWT access tokens. Service B fetches `/jwks` once, caches it, and verifies signatures locally.
+2. **Introspect** (RFC 7662) if access tokens are opaque. Service B posts the token to `/introspect` and reads `active`, `scope`, `client_id`, etc. from the JSON response.
 
 ```sh
 curl -s -u service-b:<secret> \
@@ -155,8 +134,5 @@ curl -s -u service-b:<secret> \
 ```
 
 ::: warning Introspect requires its own client
-The introspection endpoint authenticates the **caller** (Service B,
-the resource server). Register Service B as a confidential client too,
-so it can call `/introspect`. See [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials)
-for the full wiring.
+The introspection endpoint authenticates the **caller** (Service B, the resource server). Register Service B as a confidential client too, so it can call `/introspect`. See [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) for the full wiring.
 :::

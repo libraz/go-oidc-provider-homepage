@@ -6,10 +6,7 @@ outline: 2
 
 # Audit event catalog
 
-The OP emits structured audit events from a closed catalog defined in
-`op/audit.go`. Each event is a stable string identifier of shape
-`<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can
-pre-aggregate by area without parsing free-form messages.
+The OP emits structured audit events from a closed catalog defined in `op/audit.go`. Each event is a stable string identifier of shape `<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can pre-aggregate by area without parsing free-form messages.
 
 ## Subscribing
 
@@ -20,19 +17,12 @@ op.New(
 )
 ```
 
-`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a
-structured log entry where the `msg` is the event identifier (e.g.
-`"token.issued"`) and the attributes carry the request-id, subject,
-client-id, and an `extras` group with category-specific fields.
+`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry where the `msg` is the event identifier (e.g. `"token.issued"`) and the attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields.
 
-If `WithAuditLogger` is not supplied, audit events fall through to the
-logger configured by `WithLogger` (or `slog.Default()`).
+If `WithAuditLogger` is not supplied, audit events fall through to the logger configured by `WithLogger` (or `slog.Default()`).
 
 ::: tip Prometheus mirror
-A curated subset of these events is mirrored onto Prometheus counters
-when [`WithPrometheus`](/use-cases/prometheus) is configured. A single
-emission updates both the slog stream and the matching counter — there
-is no separate metrics emit step.
+A curated subset of these events is mirrored onto Prometheus counters when [`WithPrometheus`](/use-cases/prometheus) is configured. A single emission updates both the slog stream and the matching counter — there is no separate metrics emit step.
 :::
 
 ## Common attributes
@@ -50,8 +40,7 @@ Every event carries:
 
 ### Account management
 
-Most fire from out-of-band admin paths the OP does not host directly.
-The catalog exists so a single subscription point covers SOC dashboards.
+Most fire from out-of-band admin paths the OP does not host directly. The catalog exists so a single subscription point covers SOC dashboards.
 
 | Event | Fires when |
 |---|---|
@@ -139,21 +128,12 @@ Fire from the authorize-code path and the token endpoint.
 | `bcl.no_sessions_for_subject` | `/end_session` named a subject but no sessions resolved |
 
 ::: details `bcl.no_sessions_for_subject` rationale
-Under a volatile `SessionStore` (Redis without persistence, in-memory
-under maxmemory eviction) this event is the signal that a session was
-evicted between establishment and logout — narrowing OIDC Back-Channel
-Logout 1.0 §2.7's best-effort delivery floor to zero. INFO-level by
-design: under volatile placement the gap is expected; SOC tooling
-should alert on elevated rates rather than per-event. The event
-includes the configured `WithSessionDurabilityPosture` so dashboards
-can split "expected gap under volatile" from "unexpected gap under
-durable".
+Under a volatile `SessionStore` (Redis without persistence, in-memory under maxmemory eviction) this event is the signal that a session was evicted between establishment and logout — narrowing OIDC Back-Channel Logout 1.0 §2.7's best-effort delivery floor to zero. INFO-level by design: under volatile placement the gap is expected; SOC tooling should alert on elevated rates rather than per-event. The event includes the configured `WithSessionDurabilityPosture` so dashboards can split "expected gap under volatile" from "unexpected gap under durable".
 :::
 
 ### Defensive
 
-Fire from request-validation paths that detect abuse signals or
-operator-visible policy hits.
+Fire from request-validation paths that detect abuse signals or operator-visible policy hits.
 
 | Event | Fires when |
 |---|---|
@@ -185,11 +165,9 @@ Fire from `/register` and `/register/{client_id}`.
 Audit event names are part of the public API surface:
 
 - New events MAY be added in any minor release.
-- Existing event names are renamed only in a major release with a
-  deprecation notice.
+- Existing event names are renamed only in a major release with a deprecation notice.
 
-Pin your dashboards on the names; do not rely on the order or the
-extras shape for any field not documented here.
+Pin your dashboards on the names; do not rely on the order or the extras shape for any field not documented here.
 
 ## Verifying this list
 

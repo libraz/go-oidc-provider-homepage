@@ -5,10 +5,7 @@ description: A reference wiring that pulls together every option a typical embed
 
 # Use case — Comprehensive bundle
 
-`01-minimal` shows the smallest viable OP. `02-bundle` shows what a
-**production-shaped** OP wiring looks like end-to-end: login flow,
-MFA, captcha, risk, scope catalogue, trusted proxy normalisation,
-the recommended logger.
+`01-minimal` shows the smallest viable OP. `02-bundle` shows what a **production-shaped** OP wiring looks like end-to-end: login flow, MFA, captcha, risk, scope catalogue, trusted proxy normalisation, the recommended logger.
 
 > **Source:** [`examples/02-bundle/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/02-bundle)
 
@@ -28,10 +25,7 @@ the recommended logger.
 
 ## Use it as a checklist
 
-The example is intentionally long — its job is to be the page you copy
-from and delete the parts you don't need. If you find yourself writing
-a wiring from scratch, scan `02-bundle` first and confirm you didn't
-miss anything obvious.
+The example is intentionally long — its job is to be the page you copy from and delete the parts you don't need. If you find yourself writing a wiring from scratch, scan `02-bundle` first and confirm you didn't miss anything obvious.
 
 ```sh
 go run -tags example ./examples/02-bundle

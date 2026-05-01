@@ -5,10 +5,7 @@ description: Production-shaped scenarios with verified examples in the upstream 
 
 # Use cases
 
-Each card below maps to a runnable example under
-[`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples)
-in the source repo. Examples build behind the `example` build tag so they
-don't bloat your `go.sum` or get pulled into `go test ./...`:
+Each card below maps to a runnable example under [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) in the source repo. Examples build behind the `example` build tag so they don't bloat your `go.sum` or get pulled into `go test ./...`:
 
 ```sh
 go run -tags example ./examples/01-minimal
@@ -92,5 +89,4 @@ The example folders are grouped by topic, not by chronology:
 | 50–59 | operations: FAPI helpers, metrics, tracing, DPoP nonce         |
 | 60–69 | compliance (reserved — v1.x late)                              |
 
-(Reserved bands are placeholders for in-flight or v1.x work; the README
-in the source repo is the authoritative inventory.)
+(Reserved bands are placeholders for in-flight or v1.x work; the README in the source repo is the authoritative inventory.)

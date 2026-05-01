@@ -7,36 +7,21 @@ description: Run the OP against SQLite / MySQL / PostgreSQL via the database/sql
 
 ## What does the OP store, and why does it matter where?
 
-The OP holds rows the OAuth/OIDC specs require to be **persistent
-across restarts**:
+The OP holds rows the OAuth/OIDC specs require to be **persistent across restarts**:
 
-- **Refresh-token chains** (RFC 6749 §6, RFC 9700 §4.14) — losing them
-  signs every user out.
-- **Registered clients** (OIDC Dynamic Client Registration 1.0 / RFC
-  7591 when enabled, or static seeds otherwise) — losing them breaks
-  every RP.
-- **Sessions** (OIDC RP-Initiated Logout 1.0, Back-Channel Logout 1.0)
-  — needed to fan out logout to other RPs.
-- **Consent grants** (OIDC Core 1.0 §3.1.2.4) — losing them re-prompts
-  every user on every restart.
-- **Audit / introspection / revocation shadow rows** — the access-token
-  registry described in [Tokens](/concepts/tokens).
+- **Refresh-token chains** (RFC 6749 §6, RFC 9700 §4.14) — losing them signs every user out.
+- **Registered clients** (OIDC Dynamic Client Registration 1.0 / RFC 7591 when enabled, or static seeds otherwise) — losing them breaks every RP.
+- **Sessions** (OIDC RP-Initiated Logout 1.0, Back-Channel Logout 1.0) — needed to fan out logout to other RPs.
+- **Consent grants** (OIDC Core 1.0 §3.1.2.4) — losing them re-prompts every user on every restart.
+- **Audit / introspection / revocation shadow rows** — the access-token registry described in [Tokens](/concepts/tokens).
 
-The default `inmem` store loses everything on restart, which is fine
-for tests and demos but unsafe for production. The library ships
-[`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql),
-a `database/sql` adapter that targets **SQLite, MySQL 8.0+, and
-PostgreSQL 14+**.
+The default `inmem` store loses everything on restart, which is fine for tests and demos but unsafe for production. The library ships [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql), a `database/sql` adapter that targets **SQLite, MySQL 8.0+, and PostgreSQL 14+**.
 
-> **Sources:**
-> - [`examples/06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store) — SQLite quick start (CGO-free).
-> - [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) — MySQL with production-shaped pool, paired with an in-process RP and shipped as a docker-compose stack.
+> **Sources:** - [`examples/06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store) — SQLite quick start (CGO-free). - [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) — MySQL with production-shaped pool, paired with an in-process RP and shipped as a docker-compose stack.
 
 ## Why a sub-module
 
-The SQL adapter is published as a **separate Go module**, so its driver
-dependencies (the SQL driver, migration libraries) don't pollute your
-`go.sum` until you opt in:
+The SQL adapter is published as a **separate Go module**, so its driver dependencies (the SQL driver, migration libraries) don't pollute your `go.sum` until you opt in:
 
 ```sh
 go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
@@ -62,25 +47,12 @@ flowchart LR
   DB --> ...
 ```
 
-Every substore (`AuthCodeStore`, `RefreshTokenStore`, `ClientStore`,
-`SessionStore`, etc.) maps to a table.
+Every substore (`AuthCodeStore`, `RefreshTokenStore`, `ClientStore`, `SessionStore`, etc.) maps to a table.
 
 ::: info New substores
-The SQL adapter bundles tables for the opaque-access-token substore
-(`oidc_opaque_access_tokens`, populated only when
-`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or
-`op.WithAccessTokenFormatPerAudience(...)` is configured) and for the
-grant-revocation substore (`oidc_grant_revocations` plus
-`oidc_revoked_jtis`, the backing store for the default
-`RevocationStrategyGrantTombstone`). Both are part of the
-transactional cluster — they commit alongside the grant or refresh
-write that triggered them, so a half-committed cascade cannot leave a
-revoked grant next to a still-redeemable token.
+The SQL adapter bundles tables for the opaque-access-token substore (`oidc_opaque_access_tokens`, populated only when `op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or `op.WithAccessTokenFormatPerAudience(...)` is configured) and for the grant-revocation substore (`oidc_grant_revocations` plus `oidc_revoked_jtis`, the backing store for the default `RevocationStrategyGrantTombstone`). Both are part of the transactional cluster — they commit alongside the grant or refresh write that triggered them, so a half-committed cascade cannot leave a revoked grant next to a still-redeemable token.
 
-Embedders shipping a custom `Store` aggregator (rather than reusing
-the bundled adapters) MUST implement `OpaqueAccessTokens()` and
-`GrantRevocations()`. Returning `nil` is permitted when the matching
-option is never used; `op.New` fails fast otherwise.
+Embedders shipping a custom `Store` aggregator (rather than reusing the bundled adapters) MUST implement `OpaqueAccessTokens()` and `GrantRevocations()`. Returning `nil` is permitted when the matching option is never used; `op.New` fails fast otherwise.
 :::
 
 ## Code
@@ -113,17 +85,12 @@ provider, err := op.New(
 ```
 
 ::: tip Migrations
-`*sql.Store.Migrate(ctx)` applies the bundled schema for the active
-dialect. Run it at deploy time before the first request lands.
-`Schema()` returns the same DDL as a string for callers that want to
-hand it to their own migration tool. Schema files are embedded under
-[`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
+`*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect. Run it at deploy time before the first request lands. `Schema()` returns the same DDL as a string for callers that want to hand it to their own migration tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
 :::
 
 ## MySQL pool sizing
 
-[`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store)
-demonstrates a production-shaped DSN:
+[`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) demonstrates a production-shaped DSN:
 
 ```go
 db, err := stdsql.Open("mysql",
@@ -133,15 +100,11 @@ db.SetMaxIdleConns(8)
 db.SetConnMaxLifetime(30 * time.Minute)
 ```
 
-`charset=utf8mb4` is required so 4-byte UTF-8 (emoji, CJK extensions in
-display names) round-trips through claim values without truncation.
+`charset=utf8mb4` is required so 4-byte UTF-8 (emoji, CJK extensions in display names) round-trips through claim values without truncation.
 
 ## Username + password credentials
 
-The SQL adapter implements `store.UserPasswordStore` (the same surface
-the inmem reference adapter exposes) so the built-in
-[`op.PrimaryPassword`](/use-cases/mfa-step-up) Step works against
-SQL with no glue code:
+The SQL adapter implements `store.UserPasswordStore` (the same surface the inmem reference adapter exposes) so the built-in [`op.PrimaryPassword`](/use-cases/mfa-step-up) Step works against SQL with no glue code:
 
 ```go
 flow := op.LoginFlow{
@@ -154,13 +117,7 @@ provider, err := op.New(
 )
 ```
 
-The schema adds two columns on `oidc_users`: a unique `username` lookup
-index (used by `FindByUsername`) and a PHC-encoded `password_hash`
-column (read by `ReadPasswordHash`). Hash encoding stays in the
-embedder's hands — the convenience writer
-`*sql.Store.PutUserWithPassword(ctx, user, username, hash)` accepts a
-hash produced by `op.HashPassword` (argon2id with the library
-defaults) and round-trips through the same upsert as `PutUser`:
+The schema adds two columns on `oidc_users`: a unique `username` lookup index (used by `FindByUsername`) and a PHC-encoded `password_hash` column (read by `ReadPasswordHash`). Hash encoding stays in the embedder's hands — the convenience writer `*sql.Store.PutUserWithPassword(ctx, user, username, hash)` accepts a hash produced by `op.HashPassword` (argon2id with the library defaults) and round-trips through the same upsert as `PutUser`:
 
 ```go
 hash, _ := op.HashPassword("demo")
@@ -170,26 +127,12 @@ _ = storage.PutUserWithPassword(ctx, &store.User{
 }, "demo", hash)
 ```
 
-Passing an empty username and `nil` hash clears the credential — useful
-when a user migrates to passkey-only. `ReadPasswordHash` returns
-`store.ErrNotFound` both when the subject is unknown and when the row
-exists but carries no password, so the login orchestrator surfaces an
-enumeration-safe response either way.
+Passing an empty username and `nil` hash clears the credential — useful when a user migrates to passkey-only. `ReadPasswordHash` returns `store.ErrNotFound` both when the subject is unknown and when the row exists but carries no password, so the login orchestrator surfaces an enumeration-safe response either way.
 
 ## Contract test harness
 
-The same contract test suite (`op/store/contract`) that exercises `inmem`
-runs against the SQL adapter under `go test -tags=testcontainers`,
-spinning up real MySQL / Postgres engines via testcontainers-go. So when
-the library says "the SQL adapter implements `Store`," it means against
-a real engine, not a mock. The pinned images (`mysql:8.4`,
-`postgres:16-alpine`) match the engine matrix the docker-compose stacks under
-`examples/07-mysql-store` and `examples/09-redis-volatile` use, so
-adapter-level and example-level integration share a single matrix.
+The same contract test suite (`op/store/contract`) that exercises `inmem` runs against the SQL adapter under `go test -tags=testcontainers`, spinning up real MySQL / Postgres engines via testcontainers-go. So when the library says "the SQL adapter implements `Store`," it means against a real engine, not a mock. The pinned images (`mysql:8.4`, `postgres:16-alpine`) match the engine matrix the docker-compose stacks under `examples/07-mysql-store` and `examples/09-redis-volatile` use, so adapter-level and example-level integration share a single matrix.
 
 ## When to add Redis on top
 
-Hot data (interactions, consumed JTIs) churns fast and bloats the
-durable DB if you put it there. The next page,
-[Hot/cold + Redis](/use-cases/hot-cold-redis), shows how to route the
-volatile substores to Redis while keeping the durable substores on SQL.
+Hot data (interactions, consumed JTIs) churns fast and bloats the durable DB if you put it there. The next page, [Hot/cold + Redis](/use-cases/hot-cold-redis), shows how to route the volatile substores to Redis while keeping the durable substores on SQL.

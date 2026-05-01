@@ -9,11 +9,7 @@ description: Adding go-oidc-provider to a Go module.
 go get github.com/libraz/go-oidc-provider/op@latest
 ```
 
-The library targets **Go 1.25+** (matches the `go.mod` directive). The
-storage-adapter sub-modules under `op/storeadapter/sql` and
-`op/storeadapter/redis` already required Go 1.25 for their
-testcontainers-driven integration tests; the root module now matches that
-floor.
+The library targets **Go 1.25+** (matches the `go.mod` directive). The storage-adapter sub-modules under `op/storeadapter/sql` and `op/storeadapter/redis` already required Go 1.25 for their testcontainers-driven integration tests; the root module now matches that floor.
 
 ## Modules and sub-modules
 
@@ -26,22 +22,15 @@ floor.
 | `github.com/libraz/go-oidc-provider/op/storeadapter/composite` | Hot/cold splitter. |
 
 ::: tip Sub-modules
-The SQL and Redis adapters are published as Go sub-modules. You only pay the
-driver dependency cost on the modules that actually use them.
+The SQL and Redis adapters are published as Go sub-modules. You only pay the driver dependency cost on the modules that actually use them.
 :::
 
 ## Pre-v1.0
 
-The library is **pre-v1.0**. Public API may change in any minor release until
-`v1.0.0`. Breaking changes are tracked in
-[`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md).
-APIs whose godoc starts with `Experimental:` may change without a major bump
-even after v1.0.
+The library is **pre-v1.0**. Public API may change in any minor release until `v1.0.0`. Breaking changes are tracked in [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md). APIs whose godoc starts with `Experimental:` may change without a major bump even after v1.0.
 
 ## Next
 
 - [Minimal OP](/getting-started/minimal) — 30 lines, runnable with `go run`.
-- [Required options](/getting-started/required-options) — what `op.New` must
-  receive to refuse to start in an unsafe configuration.
-- [Mount on your router](/getting-started/mount) — how to put the handler on
-  `net/http`, `chi`, or `gin`.
+- [Required options](/getting-started/required-options) — what `op.New` must receive to refuse to start in an unsafe configuration.
+- [Mount on your router](/getting-started/mount) — how to put the handler on `net/http`, `chi`, or `gin`.

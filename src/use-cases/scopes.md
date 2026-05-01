@@ -7,18 +7,9 @@ description: Split scopes into discovery-visible (public) and admin-only (intern
 
 ## What is a "scope"?
 
-In OAuth 2.0 (RFC 6749 §3.3), a **scope** is a string the client adds
-to its `/authorize` request to say *what kind of access it wants* — for
-example `email`, `profile`, `billing.read`. The OP decides which
-scopes to grant; the access token carries the granted scopes; the
-resource server inspects them to authorise API calls.
+In OAuth 2.0 (RFC 6749 §3.3), a **scope** is a string the client adds to its `/authorize` request to say *what kind of access it wants* — for example `email`, `profile`, `billing.read`. The OP decides which scopes to grant; the access token carries the granted scopes; the resource server inspects them to authorise API calls.
 
-OIDC Core 1.0 §5.4 reserves the special scope `openid` (which switches
-the request from plain OAuth to OIDC) and the user-claim scopes
-`profile`, `email`, `address`, `phone`. Everything else is your own
-catalogue — and that catalogue is what this page lets you split into a
-**public** half (advertised + consented) and an **internal** half
-(usable by allow-listed clients but invisible to discovery).
+OIDC Core 1.0 §5.4 reserves the special scope `openid` (which switches the request from plain OAuth to OIDC) and the user-claim scopes `profile`, `email`, `address`, `phone`. Everything else is your own catalogue — and that catalogue is what this page lets you split into a **public** half (advertised + consented) and an **internal** half (usable by allow-listed clients but invisible to discovery).
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §3.3 (scope)
@@ -35,8 +26,7 @@ catalogue — and that catalogue is what this page lets you split into a
 
 ## The split
 
-`op.PublicScope(name, label)` and `op.InternalScope(name)` are
-constructors that return a `Scope` value. Pass each to `op.WithScope`:
+`op.PublicScope(name, label)` and `op.InternalScope(name)` are constructors that return a `Scope` value. Pass each to `op.WithScope`:
 
 ```go
 op.WithScope(op.PublicScope("billing.read",  "Read your billing history")),
@@ -52,18 +42,11 @@ op.WithScope(op.InternalScope("internal:audit")),
 `InternalScope`:
 - **Not** in `scopes_supported`.
 - **Not** rendered on consent (the OP issues it without prompting).
-- Acceptance is governed by `Scope.AllowedClients`: an empty list means
-  any RP may request it; a non-empty list scopes acceptance to the
-  named clients (any other client requesting the scope is rejected with
-  `invalid_scope` per RFC 6749 §5.2).
-- `op.New` rejects an `InternalScope` whose name collides with an OIDC
-  standard scope, so the discovery document never violates OIDC
-  Discovery 1.0 §3.
+- Acceptance is governed by `Scope.AllowedClients`: an empty list means any RP may request it; a non-empty list scopes acceptance to the named clients (any other client requesting the scope is rejected with `invalid_scope` per RFC 6749 §5.2).
+- `op.New` rejects an `InternalScope` whose name collides with an OIDC standard scope, so the discovery document never violates OIDC Discovery 1.0 §3.
 
 ::: tip OIDC standard scopes
-`openid`, `profile`, `email`, `address`, `phone`, and `offline_access`
-are auto-registered with built-in defaults; you don't need to declare
-them. The example focuses on **your** scope catalogue.
+`openid`, `profile`, `email`, `address`, `phone`, and `offline_access` are auto-registered with built-in defaults; you don't need to declare them. The example focuses on **your** scope catalogue.
 :::
 
 ## Per-client allow-list
@@ -85,10 +68,7 @@ op.WithStaticClients(
 )
 ```
 
-A client requesting a scope it doesn't list gets `invalid_scope` —
-the catalogue and the per-client list are **AND**ed. Internal scopes
-add a second AND with `Scope.AllowedClients`: a client absent from
-that list is rejected even if it lists the scope on its own seed.
+A client requesting a scope it doesn't list gets `invalid_scope` — the catalogue and the per-client list are **AND**ed. Internal scopes add a second AND with `Scope.AllowedClients`: a client absent from that list is rejected even if it lists the scope on its own seed.
 
 ## Verifying
 

@@ -5,22 +5,15 @@ description: How go-oidc-provider thinks about safety — five separate properti
 
 # Security posture
 
-This page lays out **how** the library tries to stay safe, and — equally
-important — **what kind of assurance it does and does not give you**.
+This page lays out **how** the library tries to stay safe, and — equally important — **what kind of assurance it does and does not give you**.
 
 ::: warning Set expectations
-go-oidc-provider is an OSS library maintained by a single individual
-developer in their spare time. It has **not** been independently
-audited, **not** received a paid pentest, and **not** been formally
-certified by the OpenID Foundation. The properties below describe what
-the codebase actively defends against; they are not equivalent to a
-third-party audit report.
+go-oidc-provider is an OSS library maintained by a single individual developer in their spare time. It has **not** been independently audited, **not** received a paid pentest, and **not** been formally certified by the OpenID Foundation. The properties below describe what the codebase actively defends against; they are not equivalent to a third-party audit report.
 :::
 
 ## Five separate properties
 
-When someone asks "is this safe?", the honest answer needs five
-sub-answers:
+When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 | # | Property | Evidence here |
 |---|---|---|
@@ -30,10 +23,7 @@ sub-answers:
 | 4 | **Supply-chain** — dependencies stay safe | `govulncheck` in CI, depguard, third-party manifest |
 | 5 | **Operational** — stays safe over time | SECURITY.md disclosure path, GitHub Security Advisories |
 
-> Conformance ≠ Security. An OFCS-passing OP can still be exploitable
-> (alg confusion, PKCE downgrade, redirect_uri partial match, timing
-> attacks on secret compare). The next sections describe how each
-> class is closed structurally rather than by runtime checks alone.
+> Conformance ≠ Security. An OFCS-passing OP can still be exploitable (alg confusion, PKCE downgrade, redirect_uri partial match, timing attacks on secret compare). The next sections describe how each class is closed structurally rather than by runtime checks alone.
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#374151","primaryTextColor":"#fff","lineColor":"#888"}}}%%
@@ -51,31 +41,19 @@ flowchart LR
 
 ## Structural defenses (what the codebase enforces by shape)
 
-These are not "we remembered to validate"; they are decisions made at
-the type / package boundary so the unsafe path does not exist.
+These are not "we remembered to validate"; they are decisions made at the type / package boundary so the unsafe path does not exist.
 
 ### 1. The constructor refuses zero-value boots
 
-`op.New(...)` returns `error` — not a "use defaults" handler — when any
-of the four required options is missing: `WithIssuer`, `WithStore`,
-`WithKeyset`, `WithCookieKey`. There is no usable zero-value `Provider`.
+`op.New(...)` returns `error` — not a "use defaults" handler — when any of the four required options is missing: `WithIssuer`, `WithStore`, `WithKeyset`, `WithCookieKey`. There is no usable zero-value `Provider`.
 
 ::: details Why this matters
-Most "default-on" framework libraries silently boot on missing config.
-This shape closes the class of "OP came up with no signing key /
-guessable cookie key / wrong issuer" errors before a single request is
-served. See `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKey` /
-`op.WithStore` for the build-time errors emitted on absence.
+Most "default-on" framework libraries silently boot on missing config. This shape closes the class of "OP came up with no signing key / guessable cookie key / wrong issuer" errors before a single request is served. See `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKey` / `op.WithStore` for the build-time errors emitted on absence.
 :::
 
 ### 2. The JOSE alg list is a closed type
 
-`internal/jose.Algorithm` enumerates only `RS256`, `PS256`, `ES256`,
-`EdDSA`. `none`, `HS256/384/512`, and any custom string fail
-`IsAllowed()`. `ParseAlgorithm` returns `ok=false` rather than a
-fallback. Because every signing / verifying path in the codebase
-imports through `internal/jose`, **algorithm-confusion attacks
-(RFC 7519 §6 / RFC 8725 §2.1) are structurally unreachable**.
+`internal/jose.Algorithm` enumerates only `RS256`, `PS256`, `ES256`, `EdDSA`. `none`, `HS256/384/512`, and any custom string fail `IsAllowed()`. `ParseAlgorithm` returns `ok=false` rather than a fallback. Because every signing / verifying path in the codebase imports through `internal/jose`, **algorithm-confusion attacks (RFC 7519 §6 / RFC 8725 §2.1) are structurally unreachable**.
 
 | Concern | Mitigation |
 |---|---|
@@ -85,39 +63,23 @@ imports through `internal/jose`, **algorithm-confusion attacks
 
 ### 3. `crypto/rand` only — never `math/rand`
 
-A repository-wide rule bans `math/rand`. The lint configuration backs
-it up. Every nonce, code, refresh token, authorization code, and
-DPoP server-nonce uses `crypto/rand`.
+A repository-wide rule bans `math/rand`. The lint configuration backs it up. Every nonce, code, refresh token, authorization code, and DPoP server-nonce uses `crypto/rand`.
 
 ### 4. `time.Now()` is funnelled through `internal/timex/`
 
-Direct `time.Now()` calls are forbidden. A `Clock` abstraction makes
-time injection at the boundary explicit and prevents replay-window
-tests from passing accidentally because clocks drift differently in
-tests.
+Direct `time.Now()` calls are forbidden. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
 
 ### 5. Errors go through a typed catalog
 
-`fmt.Errorf` cannot create an API-visible error. Every wire-emitted
-error is built from `op.Error` / catalog values, so error codes,
-status codes, and `WWW-Authenticate` shapes stay consistent — and
-information leakage is bounded by the catalog rather than free-form
-formatting.
+`fmt.Errorf` cannot create an API-visible error. Every wire-emitted error is built from `op.Error` / catalog values, so error codes, status codes, and `WWW-Authenticate` shapes stay consistent — and information leakage is bounded by the catalog rather than free-form formatting.
 
 ### 6. The `internal/` boundary is non-negotiable
 
-External code cannot import `internal/`. Anything that needs to be
-public has a stable public surface in `op/`, `op/profile/`,
-`op/feature/`, `op/grant/`, `op/store/`, `op/storeadapter/`. Embedders
-who want to "just patch the JAR verifier" cannot, by Go's package
-visibility rules.
+External code cannot import `internal/`. Anything that needs to be public has a stable public surface in `op/`, `op/profile/`, `op/feature/`, `op/grant/`, `op/store/`, `op/storeadapter/`. Embedders who want to "just patch the JAR verifier" cannot, by Go's package visibility rules.
 
 ### 7. ORM-agnostic by design
 
-The library never embeds an ORM (no GORM, no ent, no xo). Storage is
-through small `store.*Store` interfaces. Embedders implement them
-with whatever they already use. Side effect: there is no
-"surprise migration" — the library cannot mutate your DB behind your back.
+The library never embeds an ORM (no GORM, no ent, no xo). Storage is through small `store.*Store` interfaces. Embedders implement them with whatever they already use. Side effect: there is no "surprise migration" — the library cannot mutate your DB behind your back.
 
 ## Defensive features that ship enabled
 
@@ -159,9 +121,7 @@ Be loud about the limits. This is the part you should read twice.
 - ❌ **No CVE database entry yet** (see <a class="doc-ref" href="/security/disclosure">Disclosure policy</a>). The pre-v1.0 line has not had any reported security issue, so there is nothing to publish; that's the literal status, not "we don't bother".
 :::
 
-If you need any of those for compliance, this library is the wrong
-choice — at least until v1.0 and a formal audit. The honest framing
-costs nothing and prevents misuse.
+If you need any of those for compliance, this library is the wrong choice — at least until v1.0 and a formal audit. The honest framing costs nothing and prevents misuse.
 
 ## How to think about adoption
 
@@ -174,10 +134,6 @@ costs nothing and prevents misuse.
 
 ## Read next
 
-- **[Design judgments](/security/design-judgments)** — how the
-  library resolves conflicts between RFCs (PAR vs `request_uri`
-  reuse, refresh rotation vs RFC 9700 grace, alg list vs OIDC Core, …).
-- **[Disclosure policy](/security/disclosure)** — vulnerability
-  reporting, supported versions, CVE handling.
-- **[OFCS conformance](/compliance/ofcs)** — what conformance does and
-  does not prove.
+- **[Design judgments](/security/design-judgments)** — how the library resolves conflicts between RFCs (PAR vs `request_uri` reuse, refresh rotation vs RFC 9700 grace, alg list vs OIDC Core, …).
+- **[Disclosure policy](/security/disclosure)** — vulnerability reporting, supported versions, CVE handling.
+- **[OFCS conformance](/compliance/ofcs)** — what conformance does and does not prove.

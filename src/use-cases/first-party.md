@@ -7,20 +7,11 @@ description: Skip the consent prompt for clients you own — the OIDC §3.1.2.4 
 
 ## What is "first-party"?
 
-OIDC and OAuth 2.0 are designed for the **third-party** case: an
-external RP (some SaaS) wants access to the user's data held by your
-OP, so the user is asked, "Do you authorise SaaS-X to read your email
-on your behalf?". OIDC Core 1.0 §3.1.2.4 mandates this consent prompt
-to make the delegation explicit.
+OIDC and OAuth 2.0 are designed for the **third-party** case: an external RP (some SaaS) wants access to the user's data held by your OP, so the user is asked, "Do you authorise SaaS-X to read your email on your behalf?". OIDC Core 1.0 §3.1.2.4 mandates this consent prompt to make the delegation explicit.
 
-**First-party** clients are RPs you (the OP operator) own — your own
-mobile app, your own SPA, your own internal dashboard. The user is
-already in your trust boundary; asking "do you authorise Acme Corp to
-read your data" inside Acme Corp's own login flow is busywork.
+**First-party** clients are RPs you (the OP operator) own — your own mobile app, your own SPA, your own internal dashboard. The user is already in your trust boundary; asking "do you authorise Acme Corp to read your data" inside Acme Corp's own login flow is busywork.
 
-OAuth 2.0 has long left this exemption to the operator's discretion;
-the upcoming **OAuth 2.0 for First-Party Applications** draft formalises
-the pattern. This library exposes it as a per-client allow-list.
+OAuth 2.0 has long left this exemption to the operator's discretion; the upcoming **OAuth 2.0 for First-Party Applications** draft formalises the pattern. This library exposes it as a per-client allow-list.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent prompt)
@@ -50,35 +41,20 @@ op.New(
 )
 ```
 
-For listed client IDs, `/authorize` redirects back to the RP
-**immediately** after the login chain succeeds — no consent screen.
-A third-party client (not listed) still sees the consent prompt as
-normal.
+For listed client IDs, `/authorize` redirects back to the RP **immediately** after the login chain succeeds — no consent screen. A third-party client (not listed) still sees the consent prompt as normal.
 
 ## Audit
 
-The library still emits `op.AuditConsentGrantedFirstParty` for every
-skip, so the audit trail records "consent was implicit, the client is
-on the first-party list" rather than "consent silently happened".
-SOC dashboards split first-party from third-party grants on the
-event type.
+The library still emits `op.AuditConsentGrantedFirstParty` for every skip, so the audit trail records "consent was implicit, the client is on the first-party list" rather than "consent silently happened". SOC dashboards split first-party from third-party grants on the event type.
 
 ## Mutual exclusion
 
-`op.WithFirstPartyClients` is **incompatible** with active FAPI 2.0
-profiles. FAPI 2.0 §5.3.2.4 mandates explicit consent regardless of
-trust relationship. The constructor rejects the combination at build
-time — this is a deliberate trust-boundary decision, not an oversight.
+`op.WithFirstPartyClients` is **incompatible** with active FAPI 2.0 profiles. FAPI 2.0 §5.3.2.4 mandates explicit consent regardless of trust relationship. The constructor rejects the combination at build time — this is a deliberate trust-boundary decision, not an oversight.
 
 ## Production caveat
 
 ::: danger Trust extension
-Listing a client in `WithFirstPartyClients` is a deliberate trust
-extension. Production embedders MUST gate the list on a registry of
-clients owned by the embedder's organisation — typically a column on
-the client table consulted at boot, not a hard-coded slice. If a
-third-party client somehow gets onto the list, you've removed the
-user's veto.
+Listing a client in `WithFirstPartyClients` is a deliberate trust extension. Production embedders MUST gate the list on a registry of clients owned by the embedder's organisation — typically a column on the client table consulted at boot, not a hard-coded slice. If a third-party client somehow gets onto the list, you've removed the user's veto.
 :::
 
 ## Read next

@@ -6,10 +6,7 @@ outline: 2
 
 # Error catalog
 
-The OP returns errors from a closed catalog. There is no free-form
-`fmt.Errorf` reaching the wire — every emitted `error` either comes
-from `op.Error` (configuration / construction) or from one of the
-endpoint-internal code constants (request handling).
+The OP returns errors from a closed catalog. There is no free-form `fmt.Errorf` reaching the wire — every emitted `error` either comes from `op.Error` (configuration / construction) or from one of the endpoint-internal code constants (request handling).
 
 This page enumerates both.
 
@@ -24,18 +21,13 @@ Every wire-emitted error follows OAuth 2.0 / OIDC conventions:
 }
 ```
 
-- **`error`** is one of the codes below — machine-readable, never
-  localised, never wrapped.
-- **`error_description`** is a short hint for operators; it never
-  contains tokens, raw input, or stack traces.
+- **`error`** is one of the codes below — machine-readable, never localised, never wrapped.
+- **`error_description`** is a short hint for operators; it never contains tokens, raw input, or stack traces.
 
-For browser-facing endpoints (`/authorize`, `/end_session`) the same
-codes appear in:
+For browser-facing endpoints (`/authorize`, `/end_session`) the same codes appear in:
 
-- The `error` query / fragment parameter on the redirect (when
-  `redirect_uri` and `state` could be validated).
-- The HTML error page DOM (`<div id="op-error" data-code="..."
-  data-description="...">`) when no safe redirect exists.
+- The `error` query / fragment parameter on the redirect (when `redirect_uri` and `state` could be validated).
+- The HTML error page DOM (`<div id="op-error" data-code="..." data-description="...">`) when no safe redirect exists.
 
 ## Programmatic discrimination
 
@@ -48,9 +40,7 @@ if op.IsClientError(err) { /* 4xx-class */ }
 if op.IsServerError(err) { /* 5xx-class */ }
 ```
 
-Sentinel comparison uses pointer identity (Go's default `errors.Is`).
-Two distinct sentinels can share an OAuth code (e.g. multiple
-`configuration_error` sentinels) without being interchangeable.
+Sentinel comparison uses pointer identity (Go's default `errors.Is`). Two distinct sentinels can share an OAuth code (e.g. multiple `configuration_error` sentinels) without being interchangeable.
 
 ## Construction-time errors (`op.New`)
 
@@ -66,17 +56,12 @@ Returned by the constructor; the OP never starts.
 | `op.ErrDynamicRegistrationDisabled` | `configuration_error` | `Provider.IssueInitialAccessToken` called without `WithDynamicRegistration` |
 
 ::: tip Other config errors
-Profile / option conflicts (e.g. `WithProfile(FAPI2Baseline)` together
-with `WithAccessTokenFormat(Opaque)`) return an `*op.Error` with
-`Code = configuration_error` and a description naming the conflicting
-options. They are not pre-allocated sentinels — match on
-`op.IsServerError` or inspect `.Code`.
+Profile / option conflicts (e.g. `WithProfile(FAPI2Baseline)` together with `WithAccessTokenFormat(Opaque)`) return an `*op.Error` with `Code = configuration_error` and a description naming the conflicting options. They are not pre-allocated sentinels — match on `op.IsServerError` or inspect `.Code`.
 :::
 
 ## Authorize endpoint (`/authorize`)
 
-Browser-facing. Reach the user via redirect when `redirect_uri` could
-be validated, otherwise via the HTML error page.
+Browser-facing. Reach the user via redirect when `redirect_uri` could be validated, otherwise via the HTML error page.
 
 | Code | Spec | Typical cause |
 |---|---|---|
@@ -94,10 +79,7 @@ be validated, otherwise via the HTML error page.
 | `server_error` | OIDC Core §3.1.2.6 | internal failure |
 
 ::: warning Redirect URI mismatch is special
-`invalid_request: redirect_uri does not match a registered URI` is the
-**only** authorize-time error the OP refuses to redirect with — the
-URL is by definition untrusted. The user reaches the HTML error page.
-See [FAQ § Common errors](/faq#common-errors).
+`invalid_request: redirect_uri does not match a registered URI` is the **only** authorize-time error the OP refuses to redirect with — the URL is by definition untrusted. The user reaches the HTML error page. See [FAQ § Common errors](/faq#common-errors).
 :::
 
 ## Token endpoint (`/token`)
@@ -115,9 +97,7 @@ JSON. RFC 6749 §5.2 + RFC 9449 (DPoP).
 | `use_dpop_nonce` | 400 | DPoP §8 server nonce required; client must retry with `DPoP-Nonce` |
 | `server_error` | 500 | internal failure |
 
-`401 invalid_client` always carries
-`WWW-Authenticate: Basic realm="<issuer>"` (or `Bearer realm=...` for
-`/userinfo`) per RFC 6749 §5.2.
+`401 invalid_client` always carries `WWW-Authenticate: Basic realm="<issuer>"` (or `Bearer realm=...` for `/userinfo`) per RFC 6749 §5.2.
 
 ## UserInfo endpoint (`/userinfo`)
 
@@ -166,8 +146,7 @@ RFC 7591 / RFC 7592.
 
 ## End-session (`/end_session`)
 
-OIDC RP-Initiated Logout 1.0. Browser-facing; reaches the user via
-`post_logout_redirect_uri` redirect or the HTML error page.
+OIDC RP-Initiated Logout 1.0. Browser-facing; reaches the user via `post_logout_redirect_uri` redirect or the HTML error page.
 
 | Code | Trigger |
 |---|---|
@@ -198,5 +177,4 @@ grep -rhE '"[a-z_]+_[a-z_]+"' internal/*/error*.go \
   | grep -oE '"[a-z_]+_[a-z_]+"' | sort -u
 ```
 
-The output is the union of every wire code the endpoints emit; this
-page groups them by endpoint with the spec citation for each.
+The output is the union of every wire code the endpoints emit; this page groups them by endpoint with the spec citation for each.

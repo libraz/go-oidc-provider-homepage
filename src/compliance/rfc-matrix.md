@@ -6,8 +6,7 @@ pageClass: rfc-matrix-page
 
 # RFC compliance matrix
 
-Every standard the library actively cites in its code, mapped to the
-package that implements it and the option / feature that gates it.
+Every standard the library actively cites in its code, mapped to the package that implements it and the option / feature that gates it.
 
 ## Status legend
 
@@ -21,7 +20,7 @@ package that implements it and the option / feature that gates it.
 
 | Standard | Status | Where |
 |---|---|---|
-| **OpenID Connect Core 1.0** | <span class="status-pill full">full</span> | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo` |
+| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span> (`response_type=code` only; Aggregated and Distributed claim types §5.6.2 are not emitted; signed / encrypted UserInfo §5.3.2 is not implemented — UserInfo always returns `application/json`. See "Out of scope by design" below.) | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo` |
 | **OpenID Connect Discovery 1.0** | <span class="status-pill full">full</span> | `internal/discovery` |
 | **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span> (core flow, `sector_identifier_uri` fetch, `application_type=web` / `=native` redirect rules, JWKs / pairwise / response-type cross-checks, and PUT reserved-field rejection are enforced; `client_secret` is intentionally omitted from `GET /register/{id}` responses, `software_statement` is not accepted) | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
@@ -37,8 +36,8 @@ package that implements it and the option / feature that gates it.
 | **RFC 6750** Bearer Token Usage | <span class="status-pill full">full</span> | `internal/tokens` |
 | **RFC 6819** Threat Model & Security Considerations | <span class="status-pill full">full</span> (the BCP this library is built around) | whole codebase |
 | **RFC 7009** Token Revocation | <span class="status-pill full">full</span> (gated by `feature.Revoke`) | `internal/revokeendpoint` |
-| **RFC 7521** Assertion Framework | <span class="status-pill full">full</span> | `internal/clientauth` |
-| **RFC 7523** JWT Bearer Assertions for Client Auth | <span class="status-pill full">full</span> (`private_key_jwt`) | `internal/clientauth` |
+| **RFC 7521** Assertion Framework | <span class="status-pill full">full</span> (only the `private_key_jwt` profile; `client_secret_jwt` is intentionally not implemented) | `internal/clientauth` |
+| **RFC 7523** JWT Bearer Assertions for Client Auth | <span class="status-pill full">full</span> (`private_key_jwt`; `client_secret_jwt` is rejected at registration with `invalid_client_metadata`) | `internal/clientauth` |
 | **RFC 7591** Dynamic Client Registration | <span class="status-pill partial">partial</span> (gated by `feature.DynamicRegistration`; `software_statement` is rejected with `invalid_software_statement`) | `internal/registrationendpoint` |
 | **RFC 7592** DCR Management | <span class="status-pill partial">partial</span> (read / update / delete; PUT omission resets to server defaults rather than deleting fields, and the response only re-emits `client_secret` on a `none` → confidential auth-method upgrade or an explicit rotation request) | `internal/registrationendpoint` |
 | **RFC 7636** PKCE | <span class="status-pill full">full</span> (only `S256`; `plain` refused) | `internal/pkce` |
@@ -66,8 +65,9 @@ package that implements it and the option / feature that gates it.
 | RFC | Status | Where |
 |---|---|---|
 | **RFC 7515** JWS | <span class="status-pill full">full</span> | `internal/jose` |
+| **RFC 7516** JWE | <span class="status-pill out">out</span> — encrypted ID Token, UserInfo, Request Object (RFC 9101 §6.1), and Response Object (JARM §4.3) are all intentionally not implemented; the JOSE surface is JWS-only | — |
 | **RFC 7517** JWK | <span class="status-pill full">full</span> | `internal/jwks` |
-| **RFC 7518** JWA | <span class="status-pill partial">partial</span> — only `RS256`, `PS256`, `ES256`, `EdDSA` allowed; HS\* and `none` <span class="status-pill refused">refused</span> | `internal/jose` |
+| **RFC 7518** JWA | <span class="status-pill partial">partial</span> — issuance is `ES256` only; verification accepts `RS256`, `PS256`, `ES256`, `EdDSA`. HS\* and `none` <span class="status-pill refused">refused</span> | `internal/jose` |
 | **RFC 7519** JWT | <span class="status-pill full">full</span> | `internal/jose` |
 | **RFC 7638** JWK Thumbprint | <span class="status-pill full">full</span> (used by DPoP `cnf.jkt`) | `internal/dpop` |
 | **RFC 8037** Edwards-curve DSA / `EdDSA` | <span class="status-pill full">full</span> (Ed25519; Ed448 not enabled) | `internal/jose` |
@@ -101,10 +101,20 @@ package that implements it and the option / feature that gates it.
 | **RFC 8259** | JSON |
 | **RFC 9110** | HTTP semantics |
 
+## Out of scope by design
+
+A handful of OIDC Core / OAuth surfaces are intentionally not implemented. The library tracks each one as a row with `status: out-of-scope` in the scenario catalog (`test/scenarios/catalog/<feature>.yaml`) so the policy is auditable alongside the tests that pin everything else.
+
+- **`response_type` is `code` only.** Implicit (`id_token`, `id_token token`), hybrid (`code id_token`, ...), and `response_type=none` are not issued. RFC 9700 §1.4 deprecates the implicit grant; FAPI 2.0 mandates code. Discovery advertises `response_types_supported: ["code"]`.
+- **Bare `form_post` and `fragment` response modes never reach the response writer.** Only `query` and (when `feature.JARM` is on) the four `*.jwt` modes are wired. `form_post` is accepted at parameter validation for compatibility, but with no hybrid / implicit issuance there is nothing to put in the form body.
+- **Aggregated and Distributed claim types (OIDC Core §5.6.2) are not emitted.** Only Normal claims are produced; the `_claim_names` / `_claim_sources` keys never appear in tokens or UserInfo responses.
+- **Signed / encrypted UserInfo response (OIDC Core §5.3.2) is not implemented.** `GET /userinfo` always returns `application/json`; `userinfo_signed_response_alg` is not honoured.
+- **JWE / encryption family is not implemented.** Encrypted ID Tokens, encrypted UserInfo, encrypted Request Objects (RFC 9101 §6.1), and encrypted Response Objects (JARM §4.3) are all out of scope. See RFC 7516 in the JOSE family table above.
+- **`client_secret_jwt` is refused at registration.** Use `private_key_jwt` instead. The HMAC-shared-secret JWT profile is rejected with `invalid_client_metadata: token_endpoint_auth_method client_secret_jwt is not supported`.
+
 ## Verification
 
-The list is grepped from the live source under `op/` and `internal/`.
-You can audit it yourself:
+The list is grepped from the live source under `op/` and `internal/`. You can audit it yourself:
 
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
@@ -112,6 +122,4 @@ cd go-oidc-provider
 grep -rhoE 'RFC [0-9]+' op/ internal/ | sort -u
 ```
 
-The list above mirrors the output of that command, with the ones that
-are normative-for-the-library called out and the ones that are
-incidental references rolled up in "Other".
+The list above mirrors the output of that command, with the ones that are normative-for-the-library called out and the ones that are incidental references rolled up in "Other".

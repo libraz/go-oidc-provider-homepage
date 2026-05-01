@@ -7,14 +7,9 @@ description: Replace the built-in consent screen with your own HTML template —
 
 ## What is "consent" in OIDC?
 
-After the user authenticates, OIDC Core 1.0 §3.1.2.4 expects the OP to
-ask **the user — not the RP — whether to release the requested scopes**
-(`profile`, `email`, anything else the RP listed). The user clicks
-"Approve" or "Deny", and only then does the OP redirect back with a
-code. This page exists *between* login and the redirect.
+After the user authenticates, OIDC Core 1.0 §3.1.2.4 expects the OP to ask **the user — not the RP — whether to release the requested scopes** (`profile`, `email`, anything else the RP listed). The user clicks "Approve" or "Deny", and only then does the OP redirect back with a code. This page exists *between* login and the redirect.
 
-The default consent page works, but you almost certainly want it
-branded — your logo, your copy, your privacy / TOS links, your i18n.
+The default consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent prompt)
@@ -79,10 +74,7 @@ You only own the markup between the form open and close.
 
 ## CSP-safe
 
-The library's default CSP for the consent page is
-`default-src 'none'; style-src 'unsafe-inline'`. If you embed
-`<script>` or external assets, raise the policy explicitly via
-`op.WithConsentUI(op.ConsentUI{ContentSecurityPolicy: "..."})`.
+The library's default CSP for the consent page is `default-src 'none'; style-src 'unsafe-inline'`. If you embed `<script>` or external assets, raise the policy explicitly via `op.WithConsentUI(op.ConsentUI{ContentSecurityPolicy: "..."})`.
 
 ## When to use this vs. the SPA driver
 

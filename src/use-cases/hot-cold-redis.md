@@ -9,18 +9,10 @@ description: Route volatile substores to Redis, durable substores to SQL — the
 
 OPs hold two very different shapes of state:
 
-- **Cold (durable)** — long-lived rows you cannot afford to lose:
-  registered clients, user records, refresh-token chains, persistent
-  sessions.
-- **Hot (volatile)** — short-lived rows with high churn that are
-  acceptable to lose: in-flight `request_uri` from PAR (RFC 9126),
-  consumed JTI replay set (RFC 7519), interaction state for
-  half-completed logins.
+- **Cold (durable)** — long-lived rows you cannot afford to lose: registered clients, user records, refresh-token chains, persistent sessions.
+- **Hot (volatile)** — short-lived rows with high churn that are acceptable to lose: in-flight `request_uri` from PAR (RFC 9126), consumed JTI replay set (RFC 7519), interaction state for half-completed logins.
 
-Putting both in the same backend is wasteful: durable storage doesn't
-need the QPS the volatile state generates, and volatile storage doesn't
-need the durability guarantees the cold state requires. The composite
-adapter lets you split them.
+Putting both in the same backend is wasteful: durable storage doesn't need the QPS the volatile state generates, and volatile storage doesn't need the durability guarantees the cold state requires. The composite adapter lets you split them.
 
 ::: details Specs referenced on this page
 - [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126) — Pushed Authorization Requests (PAR — `request_uri` is volatile state)
@@ -36,14 +28,9 @@ adapter lets you split them.
 - **`jti`** — A unique JWT identifier (RFC 7519). The OP keeps a "consumed JTI" set per JWT-bearing surface (request objects, client assertions, DPoP proofs) to prevent replay. The set is ephemeral — short TTLs match each spec's reuse window — so volatile storage is the natural fit.
 :::
 
-`op/storeadapter/composite` is the splitter. It accepts a "durable"
-store and a "volatile" store, routes each substore to the appropriate
-side, and refuses configurations that would break a transactional
-cluster (substores that must commit atomically together).
+`op/storeadapter/composite` is the splitter. It accepts a "durable" store and a "volatile" store, routes each substore to the appropriate side, and refuses configurations that would break a transactional cluster (substores that must commit atomically together).
 
-> **Sources:**
-> - [`examples/08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold) — SQLite durable + inmem volatile, runs as a single `go run -tags example .` invocation.
-> - [`examples/09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) — MySQL durable + Redis volatile, shipped as a docker-compose stack pinned to `mysql:8.4` and `redis:7.4-alpine` so adapter contract tests and the example share one engine matrix.
+> **Sources:** - [`examples/08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold) — SQLite durable + inmem volatile, runs as a single `go run -tags example .` invocation. - [`examples/09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) — MySQL durable + Redis volatile, shipped as a docker-compose stack pinned to `mysql:8.4` and `redis:7.4-alpine` so adapter contract tests and the example share one engine matrix.
 
 ## Architecture
 
@@ -56,11 +43,7 @@ flowchart LR
   REDIS --> RDB[(Redis)]
 ```
 
-The composite store enforces a transactional-cluster invariant: substores
-that need to commit atomically together (e.g. `AuthCodeStore` and
-`RefreshTokenStore`) **must** be on the same backend. The composite
-constructor refuses configurations that would split a transactional
-cluster.
+The composite store enforces a transactional-cluster invariant: substores that need to commit atomically together (e.g. `AuthCodeStore` and `RefreshTokenStore`) **must** be on the same backend. The composite constructor refuses configurations that would split a transactional cluster.
 
 ## Code
 
@@ -109,28 +92,13 @@ provider, err := op.New(
 ```
 
 ::: info Static client seeding through composite
-`op.WithStaticClients` accepts a `*composite.Store` directly. The
-composite deliberately does **not** satisfy `store.ClientRegistry`
-through a type assertion (a read-only routed `Clients` backend would
-otherwise be silently coerced into a registry); instead it exposes an
-optional `ClientRegistry()` accessor that `op.WithStaticClients`
-probes at wiring time. Embedders therefore do not need to seed
-against the durable backend before wrapping it in a composite. If
-the routed `Clients` backend is read-only the probe returns
-`(nil, false)` and `op.New` rejects the configuration with the same
-`store.ClientRegistry required` error a directly-supplied read-only
-store would produce.
+`op.WithStaticClients` accepts a `*composite.Store` directly. The composite deliberately does **not** satisfy `store.ClientRegistry` through a type assertion (a read-only routed `Clients` backend would otherwise be silently coerced into a registry); instead it exposes an optional `ClientRegistry()` accessor that `op.WithStaticClients` probes at wiring time. Embedders therefore do not need to seed against the durable backend before wrapping it in a composite. If the routed `Clients` backend is read-only the probe returns `(nil, false)` and `op.New` rejects the configuration with the same `store.ClientRegistry required` error a directly-supplied read-only store would produce.
 :::
 
 ## Redis safety floor
 
 ::: warning No plaintext Redis by default
-`redis.New` **refuses to start** without TLS (`rediss://`) and AUTH.
-The library does not let you ship a setup that flies your refresh-token
-chain across the wire in plaintext. The escape hatch
-`redis.WithDevModeAllowPlaintext(callback)` exists for `examples/`
-runs and local development; using it in production is a security
-regression you have to type out by hand.
+`redis.New` **refuses to start** without TLS (`rediss://`) and AUTH. The library does not let you ship a setup that flies your refresh-token chain across the wire in plaintext. The escape hatch `redis.WithDevModeAllowPlaintext(callback)` exists for `examples/` runs and local development; using it in production is a security regression you have to type out by hand.
 :::
 
 ## What goes where (default split)
@@ -150,31 +118,13 @@ regression you have to type out by hand.
 | `PARStore` | volatile (Redis) |
 
 ::: info Why the new substores stay on the durable side
-`OpaqueAccessTokenStore` and `GrantRevocationStore` are part of the
-transactional cluster: their writes commit atomically with the grant
-or refresh-token write that triggered them. The Redis adapter returns
-`nil` from both accessors so the composite splitter cannot route them
-to a non-transactional backend; embedders who need either substore
-configure SQL on the durable side. A Redis-only deployment that never
-enables opaque AT and never needs server-side JWT revocation can leave
-both as `nil`.
+`OpaqueAccessTokenStore` and `GrantRevocationStore` are part of the transactional cluster: their writes commit atomically with the grant or refresh-token write that triggered them. The Redis adapter returns `nil` from both accessors so the composite splitter cannot route them to a non-transactional backend; embedders who need either substore configure SQL on the durable side. A Redis-only deployment that never enables opaque AT and never needs server-side JWT revocation can leave both as `nil`.
 :::
 
 ::: details Why SessionStore can be either
-A volatile session store (eviction under memory pressure, no replication
-guarantees) is acceptable for many deployments — the worst case is a
-user re-authenticating. Some embedders want stronger guarantees so they
-can audit log-in state through restarts. The library exposes the choice
-via `op.WithSessionDurabilityPosture(SessionDurabilityVolatile |
-SessionDurabilityDurable)` and propagates the value into back-channel
-logout audit events so SOC dashboards distinguish "expected gap under
-volatile placement" from "unexpected gap under durable placement."
+A volatile session store (eviction under memory pressure, no replication guarantees) is acceptable for many deployments — the worst case is a user re-authenticating. Some embedders want stronger guarantees so they can audit log-in state through restarts. The library exposes the choice via `op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` and propagates the value into back-channel logout audit events so SOC dashboards distinguish "expected gap under volatile placement" from "unexpected gap under durable placement."
 :::
 
 ## Observability
 
-The volatile-tier hit rate, cache evictions, and SQL pool stats are best
-exposed via the metrics each backend ships natively (`redis_*` exporter,
-your SQL pool's metrics) — the OP does not duplicate them. The OP emits
-*business* counters (token issuance, refresh rotation, audit events) on
-the registry you pass to `op.WithPrometheus`.
+The volatile-tier hit rate, cache evictions, and SQL pool stats are best exposed via the metrics each backend ships natively (`redis_*` exporter, your SQL pool's metrics) — the OP does not duplicate them. The OP emits *business* counters (token issuance, refresh rotation, audit events) on the registry you pass to `op.WithPrometheus`.

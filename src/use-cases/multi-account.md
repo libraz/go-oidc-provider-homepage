@@ -7,8 +7,7 @@ description: Two users, one browser. The OP keeps a chooser group and routes pro
 
 ## What is `prompt=select_account`?
 
-OIDC Core 1.0 §3.1.2.1 defines a `prompt` request parameter the RP
-sends with `/authorize`. Three values matter for this page:
+OIDC Core 1.0 §3.1.2.1 defines a `prompt` request parameter the RP sends with `/authorize`. Three values matter for this page:
 
 | `prompt=` | What it asks the OP to do |
 |---|---|
@@ -16,14 +15,9 @@ sends with `/authorize`. Three values matter for this page:
 | `login` | Force a fresh login even if a session is active. |
 | `select_account` | Show an account chooser — the user picks which account to continue with. |
 
-`select_account` is what the "switch account" button on big SaaS
-products fires. The user has multiple accounts signed in to the same
-OP browser session (work + personal, or alice + bob); the OP renders a
-list and lets them choose.
+`select_account` is what the "switch account" button on big SaaS products fires. The user has multiple accounts signed in to the same OP browser session (work + personal, or alice + bob); the OP renders a list and lets them choose.
 
-This library implements it as a **chooser group** in the session
-manager: a group of sessions the same browser is signed into, with
-APIs to add, switch between, and log out the whole set.
+This library implements it as a **chooser group** in the session manager: a group of sessions the same browser is signed into, with APIs to add, switch between, and log out the whole set.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.1 (`prompt` parameter), §3.1.2.4 (interaction with consent)
@@ -68,10 +62,7 @@ sequenceDiagram
 
 ## Wiring
 
-The library ships a built-in interaction for `prompt=select_account`
-that emits an `interaction.ChooserPromptData` envelope listing every
-account in the active chooser group. The SPA picks one and posts back
-the `SessionID`:
+The library ships a built-in interaction for `prompt=select_account` that emits an `interaction.ChooserPromptData` envelope listing every account in the active chooser group. The SPA picks one and posts back the `SessionID`:
 
 ```go
 op.New(

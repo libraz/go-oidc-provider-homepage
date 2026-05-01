@@ -52,9 +52,7 @@ handler, _ := op.New(
 ```
 
 ::: tip Why one switch is enough
-`op.WithProfile(profile.FAPI2Baseline)` activates the required features (`PAR`, `JAR`, `DPoP`),
-intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and
-tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
+`op.WithProfile(profile.FAPI2Baseline)` activates the required features (`PAR`, `JAR`, `DPoP`), intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
 :::
 
 ### 3. Issue tokens to backend services (no end user)
@@ -123,11 +121,9 @@ go get github.com/libraz/go-oidc-provider/op@latest
 ```
 
 ::: warning Pre-v1.0
-The library is pre-v1.0; minor releases may carry breaking changes. The
-public API stabilises at v1.0.0. See the [pre-v1.0 note in the README](https://github.com/libraz/go-oidc-provider#status).
+The library is pre-v1.0; minor releases may carry breaking changes. The public API stabilises at v1.0.0. See the [pre-v1.0 note in the README](https://github.com/libraz/go-oidc-provider#status).
 :::
 
 ## License & related
 
-Apache-2.0. Source: [`libraz/go-oidc-provider`](https://github.com/libraz/go-oidc-provider).
-Vulnerability disclosure: [SECURITY.md](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md).
+Apache-2.0. Source: [`libraz/go-oidc-provider`](https://github.com/libraz/go-oidc-provider). Vulnerability disclosure: [SECURITY.md](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md).

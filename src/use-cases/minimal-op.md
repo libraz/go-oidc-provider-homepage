@@ -5,10 +5,7 @@ description: Smallest runnable OP+RP pair — four required options, a single pa
 
 # Use case — Minimal OP
 
-You want a working Authorization Code + PKCE round-trip end-to-end with
-the absolute minimum option list. The upstream example brings the OP and
-a paired RP up in the same process so a browser can drive the full flow
-without any external setup.
+You want a working Authorization Code + PKCE round-trip end-to-end with the absolute minimum option list. The upstream example brings the OP and a paired RP up in the same process so a browser can drive the full flow without any external setup.
 
 > **Source:** [`examples/01-minimal/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal)
 
@@ -28,9 +25,7 @@ flowchart LR
   OP --> KS
 ```
 
-The library is one process. The store is in-memory. Keys are generated at
-boot. The example seeds one demo user (`demo`/`demo`) and registers a
-public client whose `redirect_uri` points back at the embedded RP.
+The library is one process. The store is in-memory. Keys are generated at boot. The example seeds one demo user (`demo`/`demo`) and registers a public client whose `redirect_uri` points back at the embedded RP.
 
 ## Code (essentials)
 
@@ -77,12 +72,7 @@ func main() {
 }
 ```
 
-The four required options (`WithIssuer`, `WithStore`, `WithKeyset`,
-`WithCookieKey`) on their own would let `/oidc/.well-known/openid-configuration`
-and `/oidc/jwks` answer; everything that depends on a user (authorize,
-token, userinfo) needs the `WithLoginFlow` + `WithStaticClients` pair.
-[`getting-started/minimal`](/getting-started/minimal) shows the four-option
-discovery-only shape if that is what you want.
+The four required options (`WithIssuer`, `WithStore`, `WithKeyset`, `WithCookieKey`) on their own would let `/oidc/.well-known/openid-configuration` and `/oidc/jwks` answer; everything that depends on a user (authorize, token, userinfo) needs the `WithLoginFlow` + `WithStaticClients` pair. [`getting-started/minimal`](/getting-started/minimal) shows the four-option discovery-only shape if that is what you want.
 
 ## What the OP exposes
 
@@ -97,9 +87,7 @@ The defaults mount under `/oidc` (override with `op.WithMountPrefix`):
 | `/oidc/userinfo` | UserInfo (RFC 6749 + OIDC Core §5.3) |
 | `/oidc/end_session` | RP-Initiated Logout 1.0 |
 
-Optional endpoints (`/par`, `/introspect`, `/revoke`, `/register`,
-`/interaction/*`, `/session/*`) only mount when their corresponding feature
-is enabled.
+Optional endpoints (`/par`, `/introspect`, `/revoke`, `/register`, `/interaction/*`, `/session/*`) only mount when their corresponding feature is enabled.
 
 ## What's missing for a real deployment
 
@@ -112,8 +100,7 @@ is enabled.
 | Single-factor (password only) | Add `RuleAlways(StepTOTP{...})` — see [MFA / step-up](/use-cases/mfa-step-up). |
 | Demo RP code in `examples/internal/rpkit` | Production RPs use `golang.org/x/oauth2` + `github.com/coreos/go-oidc/v3` directly. |
 
-[`examples/02-bundle`](https://github.com/libraz/go-oidc-provider/tree/main/examples/02-bundle)
-fills these in for a "comprehensive embedder" reference.
+[`examples/02-bundle`](https://github.com/libraz/go-oidc-provider/tree/main/examples/02-bundle) fills these in for a "comprehensive embedder" reference.
 
 ## Run it
 

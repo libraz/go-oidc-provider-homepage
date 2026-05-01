@@ -5,17 +5,13 @@ description: Compose authenticators and rules — TOTP always, captcha after N f
 
 # Use case — MFA / step-up
 
-The library's authentication layer is built from three primitives that
-compose:
+The library's authentication layer is built from three primitives that compose:
 
-- **`Authenticator`** — knows how to verify one factor (password, TOTP,
-  passkey, email-OTP, …).
+- **`Authenticator`** — knows how to verify one factor (password, TOTP, passkey, email-OTP, …).
 - **`Rule`** — decides whether a factor is **required** for this attempt.
 - **`LoginFlow`** — the ordered list of `(authenticator, rule)` pairs.
 
-Each authenticator runs only when its rule says yes. So "password
-always, TOTP always" is one flow; "password always, captcha after 3
-failures, TOTP if risk score is high" is another.
+Each authenticator runs only when its rule says yes. So "password always, TOTP always" is one flow; "password always, captcha after 3 failures, TOTP if risk score is high" is another.
 
 ::: details Specs referenced on this page
 - [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) — TOTP (Time-Based One-Time Password)
@@ -27,26 +23,13 @@ failures, TOTP if risk score is high" is another.
 :::
 
 ::: details Vocabulary refresher
-- **MFA** — Multi-Factor Authentication. The user proves more than one
-  factor (something they know / have / are) before the OP issues
-  tokens.
-- **Step-up** — when an RP needs higher assurance for a sensitive
-  operation, it asks for `acr_values=aalN`. If the current session is
-  below that, the OP runs an additional factor before issuing a
-  freshly-elevated `id_token`. Defined by RFC 9470.
-- **AAL (Authenticator Assurance Level)** — NIST's three-tier ladder:
-  AAL1 ≈ password, AAL2 ≈ password + something, AAL3 ≈ hardware-backed
-  proof-of-possession. Many OPs and RPs use these labels in `acr`.
-- **`amr` claim** — RFC 8176 enumerates standard reference values
-  (`pwd`, `otp`, `mfa`, `hwk`, `face`, `fpt`, …) so RPs can audit which
-  factors actually ran.
+- **MFA** — Multi-Factor Authentication. The user proves more than one factor (something they know / have / are) before the OP issues tokens.
+- **Step-up** — when an RP needs higher assurance for a sensitive operation, it asks for `acr_values=aalN`. If the current session is below that, the OP runs an additional factor before issuing a freshly-elevated `id_token`. Defined by RFC 9470.
+- **AAL (Authenticator Assurance Level)** — NIST's three-tier ladder: AAL1 ≈ password, AAL2 ≈ password + something, AAL3 ≈ hardware-backed proof-of-possession. Many OPs and RPs use these labels in `acr`.
+- **`amr` claim** — RFC 8176 enumerates standard reference values (`pwd`, `otp`, `mfa`, `hwk`, `face`, `fpt`, …) so RPs can audit which factors actually ran.
 :::
 
-> **Sources:**
-> - [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) — password + always-TOTP.
-> - [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — risk-driven step-up.
-> - [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — captcha after N failed attempts.
-> - [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up.
+> **Sources:** - [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) — password + always-TOTP. - [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — risk-driven step-up. - [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — captcha after N failed attempts. - [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up.
 
 ## Composition
 
@@ -64,10 +47,7 @@ flowchart TB
   SU --> Done
 ```
 
-`LoginFlow` is a struct with a `Primary` step and a list of `Rules`.
-Each rule is a `Rule` value built from a constructor like
-`op.RuleAlways(step)`, `op.RuleAfterFailedAttempts(n, step)`,
-`op.RuleRisk(threshold, step)`, or `op.RuleACR(acr, step)`.
+`LoginFlow` is a struct with a `Primary` step and a list of `Rules`. Each rule is a `Rule` value built from a constructor like `op.RuleAlways(step)`, `op.RuleAfterFailedAttempts(n, step)`, `op.RuleRisk(threshold, step)`, or `op.RuleACR(acr, step)`.
 
 ## Always TOTP
 
@@ -109,8 +89,7 @@ op.New(
 )
 ```
 
-The `LoginAttemptObserver` (passed via `op.WithLoginAttemptObserver`)
-counts failures per identifier. `RuleAfterFailedAttempts` reads that count.
+The `LoginAttemptObserver` (passed via `op.WithLoginAttemptObserver`) counts failures per identifier. `RuleAfterFailedAttempts` reads that count.
 
 ## Risk-based step-up
 
@@ -129,17 +108,11 @@ op.New(
 )
 ```
 
-The `RiskAssessor` returns a `RiskScore` per attempt. The library exposes
-the four-level ordered enum (`RiskScoreNone` < `RiskScoreLow` <
-`RiskScoreMedium` < `RiskScoreHigh`); your assessor translates whatever
-your provider returns onto it. `RuleRisk(threshold, step)` fires when
-the assessor's score meets or exceeds `threshold`.
+The `RiskAssessor` returns a `RiskScore` per attempt. The library exposes the four-level ordered enum (`RiskScoreNone` < `RiskScoreLow` < `RiskScoreMedium` < `RiskScoreHigh`); your assessor translates whatever your provider returns onto it. `RuleRisk(threshold, step)` fires when the assessor's score meets or exceeds `threshold`.
 
 ## RFC 9470 ACR step-up
 
-When the RP requests a higher Authentication Context Class
-(`acr_values=aal3`), the OP runs the step-up factor regardless of
-session state:
+When the RP requests a higher Authentication Context Class (`acr_values=aal3`), the OP runs the step-up factor regardless of session state:
 
 ```go
 flow := op.LoginFlow{
@@ -156,16 +129,11 @@ op.New(
 )
 ```
 
-If the user already authenticated at `aal2` earlier in the session, the
-RP requesting `acr_values=aal3` triggers an interactive step-up: the OP
-runs `passkeyAuth` to lift the session to `aal3` before redirecting back.
+If the user already authenticated at `aal2` earlier in the session, the RP requesting `acr_values=aal3` triggers an interactive step-up: the OP runs `passkeyAuth` to lift the session to `aal3` before redirecting back.
 
 ## Audit trail
 
-Each authenticator step emits a structured event from the
-`op.Audit*` catalog — `op.AuditLoginSuccess` / `op.AuditLoginFailed`,
-`op.AuditMFARequired` / `op.AuditMFASuccess` / `op.AuditMFAFailed`,
-`op.AuditStepUpRequired` / `op.AuditStepUpSuccess`. Each event records:
+Each authenticator step emits a structured event from the `op.Audit*` catalog — `op.AuditLoginSuccess` / `op.AuditLoginFailed`, `op.AuditMFARequired` / `op.AuditMFASuccess` / `op.AuditMFAFailed`, `op.AuditStepUpRequired` / `op.AuditStepUpSuccess`. Each event records:
 
 - `factor` (`pwd`, `otp`, `webauthn`, …)
 - `aal` (the AAL level reached)
@@ -187,23 +155,13 @@ The library ships ready-to-use steps for the common factors:
 | `op.StepRecoveryCode` | Single-use recovery codes | `store.RecoveryCodes()` |
 | `op.StepCaptcha` | hCaptcha / Turnstile / your verifier | n/a |
 
-The **storage** behind each step is yours — the library never owns
-user records or password hashes. The reference `inmem` adapter is
-fine for examples and tests; in production you implement the
-`op/store/*` substores against your existing user table.
+The **storage** behind each step is yours — the library never owns user records or password hashes. The reference `inmem` adapter is fine for examples and tests; in production you implement the `op/store/*` substores against your existing user table.
 
-For a fully custom factor, implement `op.ExternalStep` (see
-`op/step.go` godoc) and add it to the rule list with a unique
-`KindLabel`. This is the pattern across every `examples/2x-*`.
+For a fully custom factor, implement `op.ExternalStep` (see `op/step.go` godoc) and add it to the rule list with a unique `KindLabel`. This is the pattern across every `examples/2x-*`.
 
 ## Enrolling a TOTP factor
 
-`op.StepTOTP` verifies codes against a `store.TOTPRecord` the embedder
-has already persisted. The complementary registration path lives in
-the [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit)
-package: it owns secret generation, the `otpauth://` provisioning
-URI rendered as a QR code, and the proof-of-possession step that
-marks an enrolment confirmed.
+`op.StepTOTP` verifies codes against a `store.TOTPRecord` the embedder has already persisted. The complementary registration path lives in the [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit) package: it owns secret generation, the `otpauth://` provisioning URI rendered as a QR code, and the proof-of-possession step that marks an enrolment confirmed.
 
 ```go
 import (
@@ -240,16 +198,8 @@ record, err := totpkit.Confirm(codec, pending, submittedCode, time.Now())
 _ = storage.TOTPs().Put(ctx, record)
 ```
 
-`totpkit` deliberately stays out of the HTTP surface — the embedder
-owns the HTML, the QR rendering, and the enrolment session. Both
-`NewEnrolment` and `Confirm` bind the `subject` as GCM
-additional-authenticated-data, so a row exfiltrated from one user's
-enrolment cannot be replayed under a different subject. The verify
-path uses the same AAD shape, so the binding holds across both ends.
+`totpkit` deliberately stays out of the HTTP surface — the embedder owns the HTML, the QR rendering, and the enrolment session. Both `NewEnrolment` and `Confirm` bind the `subject` as GCM additional-authenticated-data, so a row exfiltrated from one user's enrolment cannot be replayed under a different subject. The verify path uses the same AAD shape, so the binding holds across both ends.
 
-For demo / CLI-only enrolment (terminal QR rendering, pre-confirmed
-seed records), see `examples/internal/seedkit` — it sits behind a
-`//go:build example` tag so the QR rendering library never enters
-the host module's `go.sum`.
+For demo / CLI-only enrolment (terminal QR rendering, pre-confirmed seed records), see `examples/internal/seedkit` — it sits behind a `//go:build example` tag so the QR rendering library never enters the host module's `go.sum`.
 
 > **Source:** [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — in-process OP+RP demo that walks the full enrolment + RFC 9470 ACR step-up flow.
