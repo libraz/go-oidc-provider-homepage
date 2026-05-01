@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://go-oidc-provider.libraz.net/sitemap.xml

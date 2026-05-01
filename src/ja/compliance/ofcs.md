@@ -1,0 +1,146 @@
+---
+title: OFCS 適合状況
+description: go-oidc-provider が OpenID Foundation Conformance Suite に対してどう走るか — 3 plans、最新スコア、設計上 fail させる module、REVIEW の意味。
+---
+
+# OFCS 適合状況
+
+`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、`cmd/op-demo` インスタンスに対して 3 つの plan を end-to-end で実行します。
+
+[ofcs]: https://gitlab.com/openid/conformance-suite
+[harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
+
+::: warning 個人開発、認証取得は無し
+これは個人開発者が維持するプロジェクトです。OpenID Foundation 会員費は支払っておらず、**形式的な OIDC 認証は取得していません**。本ページの数値は再現可能なスナップショット — `make conformance-baseline` で見たままが記録されます。これは有償の OpenID Foundation 認証の代替ではなく、そのように引用しないでください。
+:::
+
+## 何が検査されるか
+
+| Plan | カバー範囲 | プロファイル |
+|---|---|---|
+| `oidcc-basic-certification-test-plan` | 認可コード + PKCE、ID Token、UserInfo、refresh、discovery | OIDC Core 1.0 |
+| `fapi2-security-profile-id2-test-plan` | + PAR、送信者制約付き access token (DPoP)、厳格 alg list、`redirect_uri` 完全一致 | FAPI 2.0 Baseline |
+| `fapi2-message-signing-id1-test-plan` | + JAR（署名 authorization request）、JARM（署名 authorization response） | FAPI 2.0 Message Signing |
+
+## 最新 baseline
+
+スナップショット ID: `2026-04-30T11-50-08Z-post-error-html`<br/>
+リポジトリ SHA: [`ab23d3c`](https://github.com/libraz/go-oidc-provider/commit/ab23d3c44967d7353b176de1b71362f141a8c2df)
+
+| Plan                                       | PASSED | REVIEW | SKIPPED | FAILED | 合計 |
+|--------------------------------------------|-------:|-------:|--------:|-------:|------:|
+| `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |  **0** |    35 |
+| `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |  **0** |    58 |
+| `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |  **0** |    71 |
+| **合計**                                  | **138**| **21** |   **5** |  **0** | **164** |
+
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#0c5460","primaryTextColor":"#fff","primaryBorderColor":"#0c5460","lineColor":"#888"}}}%%
+pie showData
+  title 3 plans 計 164 modules
+  "PASSED" : 138
+  "REVIEW (手動ゲート)" : 21
+  "SKIPPED (設計上拒否)" : 5
+  "FAILED" : 0
+```
+
+## REVIEW と FAILED の違い
+
+OFCS には 4 つの終端状態があります: `PASSED`、`FAILED`、`REVIEW`、`SKIPPED`。**REVIEW はテスト失敗を意味しません。** 自動化では確認できない箇所を人間の運用者に確認してほしい、という意味です — 例「OP はここでログイン画面を表示したか？」。テストは実行され、スクリーンショットを撮り、誰かが OFCS UI で「review 済み」をクリックするまで `WAITING` に留まります。本ハーネスはそこに到達してエラーが出なければ `REVIEW` を記録します。
+
+::: details なぜ REVIEW を auto-pass しないか
+conformance suite は意図的にこれらの module を人間の判断にゲートしています。ヘッドレスで動く `cmd/op-demo` は「これがユーザに見えた画面です」というスクリーンショットを誠実にアップロードできません。ゲートを外して通してしまうのは、実際にチェックされた内容を偽ることになります。ハーネスは `REVIEW` のまま記録し、有償認証取得時は UI を見ながら通すことを前提にしています。
+:::
+
+## 現在 REVIEW の module
+
+### `oidcc-basic` plan (3)
+
+| Module | ゲート対象 |
+|---|---|
+| `oidcc-ensure-registered-redirect-uri` | OP が未登録 `redirect_uri` を拒否したことの手動確認 |
+| `oidcc-max-age-1` | `max_age=1` でユーザを再プロンプトしたことの手動確認 |
+| `oidcc-prompt-login` | `prompt=login` で再プロンプトしたことの手動確認 |
+
+### FAPI 2.0 plans (各 9、同集合)
+
+これらは全て、OP のエラーページのスクリーンショット upload か「ユーザが実際に再プロンプトされたか」の手動判断にゲートされます。ヘッドレスでも問題なく実行できますが、人間のサインオフが入るまでは `REVIEW` に留まります:
+
+- `fapi2-…-ensure-different-nonce-inside-and-outside-request-object`
+- `fapi2-…-ensure-different-state-inside-and-outside-request-object`
+- `fapi2-…-ensure-request-object-with-long-nonce`
+- `fapi2-…-ensure-request-object-with-long-state`
+- `fapi2-…-ensure-unsigned-authorization-request-without-using-par-fails`
+- `fapi2-…-par-attempt-reuse-request_uri`
+- `fapi2-…-par-attempt-to-use-expired-request_uri`
+- `fapi2-…-par-attempt-to-use-request_uri-for-different-client`
+- `fapi2-…-state-only-outside-request-object-not-used`
+
+OP は各ケースで正しい HTTP エラーを返します（負例テストの内部 assertion は通過）— OFCS が描画されたエラー UI を人間に inspect してもらいたいだけです。
+
+## 現在 SKIPPED の module — 理由
+
+| Module | 理由 |
+|---|---|
+| `fapi2-…-ensure-signed-client-assertion-with-RS256-fails` | プランで使う FAPI クライアントが `token_endpoint_auth_signing_alg=PS256` を登録しているため、OFCS はクライアント別 `RS256` 負例をスキップ。 |
+| `fapi2-message-signing-…-ensure-signed-request-object-with-RS256-fails` | 同様 — FAPI クライアントの `request_object_signing_alg=PS256` が `RS256` 負例を該当外にする。 |
+| `oidcc-ensure-request-object-with-redirect-uri` | `oidcc-basic` プランは JAR を有効化しないため、OP は discovery から `request_object_signing_alg_values_supported` を省略し OFCS はスキップ。 |
+| `oidcc-unsigned-request-object-supported-correctly-or-rejected-as-unsupported` | 同様 — JAR off、`request` パラメータ無し、OFCS スキップ。 |
+
+::: tip "SKIPPED" は意図的、「走らなかった」ではない
+OFCS のスキップ判定は、discovery とクライアント別メタデータが宣伝する内容に基づきます。プラン内の FAPI クライアントは `PS256` をトークンエンドポイント認証 / request object 署名 alg として宣言しているため、OFCS の「`RS256` は失敗すべき」プローブは適用外と判定され、「実際に走らせて pass を記録する」のではなく skipped になります。
+:::
+
+## 自分でベースラインを再現する
+
+```sh
+git clone https://github.com/libraz/go-oidc-provider.git
+cd go-oidc-provider
+make conformance-up
+make conformance-baseline LABEL=local-check
+ls conformance/baselines/   # JSON スナップショットがここに着地
+```
+
+ハーネスは:
+
+1. 自己署名 RSA-2048 証明書を生成（`scripts/conformance.sh certs`）。
+2. `https://localhost:8443` で OFCS Docker スタックを立ち上げ。
+3. `https://127.0.0.1:9443` で `cmd/op-demo` をビルド・起動。
+4. OFCS REST API 経由で 3 plan を seed。
+5. module 毎の pass/fail を決定論的 JSON に記録。
+
+`make conformance-baseline-diff` は 2 スナップショット間で `PASSED` を **失った** module があれば非ゼロ終了 — セキュリティ関連変更に対するプロジェクトのプリマージゲートです。
+
+## このコードベースでの FAPI 2.0 の意味
+
+`op.WithProfile(profile.FAPI2Baseline)` は 2 つの `fapi2-*` plan が想定する設定を有効化します:
+
+- `feature.PAR` — `/par` がルート可能、`/authorize` で `request_uri` を受理
+- `feature.JAR`（Message Signing のみ） — `request` / `request_uri` を署名 JWT として検証
+- `feature.DPoP` — 送信者制約付き access token (`cnf.jkt`)、discovery は `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` を宣伝
+- JOSE alg allow-list はコードベース全体で `RS256 / PS256 / ES256 / EdDSA` にロック、`HS*` と `none` は **構造的** に到達不能（`internal/jose/alg.go` 参照）
+- `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差
+- `redirect_uri` 完全一致を強制
+- クライアント別 `RequestObjectSigningAlg` / `TokenEndpointAuthSigningAlg` で各 FAPI クライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込みつつ、discovery doc にはコードベース全体のリストを掲載
+
+`WithProfile` 後にプロファイルと衝突するオプションを設定すると、`op.New(...)` は本番に partial-FAPI を出さず構築時エラーを返します。
+
+## ハーネスの構成ファイル
+
+| Path | 内容 |
+|---|---|
+| `conformance/README.md` | 運用 runbook |
+| `conformance/plans/*.json` | プランテンプレート（server / client / resource ブロック） |
+| `conformance/docker-compose.yml` | OFCS イメージ pin（`release-v5.1.9`） + JKS truststore 実装 |
+| `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
+| `tools/conformance/ofcs.py` | REST クライアント + ヘッドレス drive スクリプト |
+| `conformance/baselines/*.json` | 取得済スナップショット（gitignored — 環境依存） |
+
+## 明示しておく制限事項
+
+- **プランスイートのバージョン。** OFCS は `release-v5.1.9` に pin しています。新しい OFCS リリースで追加 / 改名されたテストは pin が上がるまで対象外です。
+- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。挙動確認は v5.1.9 でしか取れていません。
+- **本物の RP 証明書なし。** mTLS プラン枠は `conformance/certs/` の生成済み自己署名証明書を使っており、プランをインスタンス化できる程度に整えてあるだけです。本物の CA チェーン検証はしていません。
+- **OP インスタンス 1 個。** インスタンス間挙動（例: ストア共有の OP 2 個でのトークン introspection）は OFCS ではなく `test/scenarios` で検査します。
+
+conformance ハーネスは `test/scenarios/` 配下の in-process Spec Scenario Suite と並走します。前者はライブ OP に対して HTTP 経由で end-to-end に実行し、後者は同じプロトコル不変条件を in-process で実行します — 両方が緑であることをセキュリティ関連変更の前提にしています。

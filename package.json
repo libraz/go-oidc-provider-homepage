@@ -1,0 +1,39 @@
+{
+  "name": "go-oidc-provider-homepage",
+  "version": "1.0.0",
+  "description": "Homepage for go-oidc-provider",
+  "type": "module",
+  "homepage": "https://go-oidc-provider.libraz.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/libraz/go-oidc-provider-homepage.git"
+  },
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "lint": "biome check src .vitepress",
+    "format": "biome format --write src .vitepress"
+  },
+  "keywords": [
+    "openid-connect",
+    "oauth2",
+    "fapi",
+    "authorization-server",
+    "go"
+  ],
+  "author": "libraz <libraz@libraz.net>",
+  "license": "MIT",
+  "volta": {
+    "node": "22.21.1",
+    "yarn": "4.12.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.13",
+    "vitepress": "^1.6.4"
+  },
+  "dependencies": {
+    "mermaid": "^11.14.0",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  }
+}
