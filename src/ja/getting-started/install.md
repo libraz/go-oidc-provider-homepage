@@ -9,7 +9,7 @@ description: Go モジュールに go-oidc-provider を追加する。
 go get github.com/libraz/go-oidc-provider/op@latest
 ```
 
-ライブラリは **Go 1.23+** を対象にしています（`go.mod` の directive と一致）。
+ライブラリは **Go 1.25+** を対象にしています（`go.mod` の directive と一致）。`op/storeadapter/sql` と `op/storeadapter/redis` のストアアダプタサブモジュールは testcontainers ベースの結合テストのために以前から Go 1.25 を要求していたため、ルートモジュールも同じ最低ラインに揃えた形です。
 
 ## モジュールとサブモジュール
 
