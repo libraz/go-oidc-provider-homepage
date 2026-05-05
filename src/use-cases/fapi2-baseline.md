@@ -7,7 +7,7 @@ description: One profile switch enables PAR, JAR, DPoP, ES256 lock, and the FAPI
 
 ## What is FAPI 2.0?
 
-**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused — for example, FAPI rejects `RS256` signatures in favour of `ES256`/`PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and forces RPs to send their authorize requests through PAR + JAR instead of as plain query strings.
+**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused — for example, FAPI rejects `RS256` signatures in favour of `ES256`/`PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and forces RPs to send their authorize requests through PAR + JAR instead of as plain query strings (this library signs id_tokens with `ES256` only, so the anti-`RS256` clause is satisfied by construction).
 
 The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). FAPI 2.0 Baseline is the entry-level profile; FAPI 2.0 Message Signing adds JARM + DPoP nonce + RS-side proof signing.
 
@@ -34,7 +34,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 | Pushed Authorization Requests | RFC 9126 | `feature.PAR` auto-enabled by the profile. `request_uri` returned from `/par` is the only authorize entry. |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` required; `plain` rejected. |
 | Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | Profile flags `RequiredAnyOf=[DPoP, MTLS]`; the constructor refuses to start unless one is enabled. |
-| ES256 (or PS256) signing | RFC 7518 | Algorithm allow-list excludes `RS256` from FAPI surface; `none`/HS* never present. |
+| ES256 signing | RFC 7518 | `id_token_signing_alg_values_supported` is `["ES256"]` unconditionally; `RS256` / `none` / HS* never advertised. |
 | `redirect_uri` exact match | FAPI 2.0 §5.3 | No wildcards. Byte-identical comparison. |
 | `private_key_jwt` or mTLS client auth | FAPI 2.0 §3.1.3 | Token endpoint auth-method list intersected with FAPI allow-list. |
 
@@ -49,7 +49,7 @@ sequenceDiagram
     RP->>OP: POST /par<br/>Authorization: <client_assertion JWT><br/>scope=openid&...&code_challenge=...
     OP->>RP: 201 { request_uri: urn:ietf:params:oauth:request_uri:..., expires_in }
     RP->>OP: GET /authorize?<br/>request_uri=urn:...&client_id=...
-    OP->>OP: ES256 alg lock, redirect_uri exact match
+    OP->>OP: ES256 id_token signing, redirect_uri exact match
     OP-->>RP: (login + consent — or interaction-driven)
     OP->>RP: 302 redirect_uri?code=...&state=...
     RP->>OP: POST /token<br/>DPoP: <proof><br/>grant_type=authorization_code&code=...&code_verifier=...&<br/>client_assertion=<private_key_jwt>
@@ -76,7 +76,7 @@ provider, err := op.New(
   op.WithIssuer(demoIssuer),
   op.WithStore(inmem.New()),
   op.WithKeyset(opKeys.Keyset()),
-  op.WithCookieKey(opKeys.CookieKey),
+  op.WithCookieKeys(opKeys.CookieKey),
   op.WithProfile(profile.FAPI2Baseline), // <--- the profile switch
   op.WithFeature(feature.DPoP),          // pick the sender-constraint binding
   op.WithStaticClients(op.PrivateKeyJWTClient{
@@ -96,7 +96,7 @@ The `WithProfile` call:
 
 1. Enables `feature.PAR` and `feature.JAR` automatically (the embedder still picks the sender-constraint binding — `feature.DPoP` or `feature.MTLS` — explicitly via `WithFeature`).
 2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §3.1.3 allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
-3. Locks the ID Token signing alg to `ES256`/`PS256` and rejects `RS256` for new tokens.
+3. Keeps `id_token_signing_alg_values_supported = ["ES256"]` (the OP only ever advertises and signs `ES256` id_tokens; FAPI 2.0's anti-`RS256` clause is satisfied by construction).
 4. Forces `redirect_uri` exact match (no wildcards anywhere).
 
 ::: tip mTLS instead of DPoP
@@ -123,9 +123,11 @@ Expected:
   "request_parameter_supported": true,
   "dpop_signing_alg_values_supported": ["ES256", "EdDSA", "PS256"],
   "token_endpoint_auth_methods_supported": ["private_key_jwt"],
-  "id_token_signing_alg_values_supported": ["ES256", "PS256"]
+  "id_token_signing_alg_values_supported": ["ES256"]
 }
 ```
+
+The library publishes `["ES256"]` for `id_token_signing_alg_values_supported` regardless of profile (every issued id_token is signed `ES256`); the FAPI 2.0 §6.2.1 mandate against `RS256` is satisfied because `RS256` never appears on the OP's supported set in the first place. `dpop_signing_alg_values_supported` covers DPoP proof acceptance and is `["ES256", "EdDSA", "PS256"]`.
 
 ## Conformance
 

@@ -69,6 +69,22 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 | `acr` | Authentication Context Class Reference — assurance level the auth method provided. | OIDC Core §2 / RFC 9470 |
 | `amr` | Authentication Methods References — `pwd`, `otp`, `mfa`, `hwk`, etc. | RFC 8176 |
 
+::: details `acr` — what's that?
+**`acr`** (Authentication Context Class Reference) is a single string that names *how strong* the login was. Your OP decides the vocabulary; common values are `urn:mace:incommon:iap:silver`, NIST SP 800-63 levels, or the FAPI-style `urn:openbanking:psd2:sca`. The RP requests a minimum with `acr_values=...` on `/authorize`; if the user's session can't satisfy it, the OP either re-prompts (step-up, RFC 9470) or rejects the request. Don't confuse it with `amr` — `acr` is the *level*, `amr` is the *methods used to reach that level*.
+:::
+
+::: details `amr` — what's that?
+**`amr`** (Authentication Methods References, RFC 8176) is a JSON array of short strings describing *which factors* the user actually presented this session: `pwd` for password, `otp` for one-time code, `mfa` when more than one factor was used, `hwk` for hardware key, `face` for facial recognition, and so on. RPs typically read it for audit and policy ("require `mfa` for the admin console") rather than for trust decisions — that's what `acr` is for.
+:::
+
+::: details `auth_time` — what's that?
+**`auth_time`** is the Unix timestamp of when the user *authenticated to the OP*, which is **not** the same as `iat` (when *this* token was issued). A user who logged in an hour ago and just refreshed gets a fresh `iat` but the old `auth_time`. RPs use it to enforce a `max_age` policy ("force re-auth if it's been more than 30 minutes") and the OP enforces it server-side when the RP passes `max_age` on `/authorize`.
+:::
+
+::: details `azp` — what's that?
+**`azp`** (Authorized Party) is the `client_id` that *requested* the ID Token. It only matters when `aud` carries multiple values — in that case, `azp` disambiguates which of those audiences actually drove the authorize request. For the common single-RP case, `aud` is just `[client_id]` and `azp` is omitted. RPs should reject ID Tokens where `aud` has many entries and `azp` is missing or doesn't match their `client_id`.
+:::
+
 ::: details JWKS — what's that?
 **JWKS** (JSON Web Key Set, RFC 7517) is a JSON document the OP serves at `/jwks` (advertised via the discovery document). It lists the OP's **public** keys; RPs fetch it once, cache it, and use it to verify ID Token signatures offline. The OP rotates keys by adding the new key ahead of time and publishing it before signing with it, so RPs that re-fetch the JWKS find it.
 :::
@@ -136,6 +152,30 @@ The trade-off, the load shape, and the configuration knobs live on the dedicated
 The access token's `aud` is **not** the `client_id`; it's the resource server's identifier (set via the client seed's `Resources []string` field, or via the RFC 8707 `resource` request parameter at runtime).
 :::
 
+## Caching `/introspect` responses on the resource server
+
+The OP's response to `/introspect` (RFC 7662) is authoritative *at the moment it is issued*. Caching that response on the resource server is supported by the spec and is sometimes necessary for latency, but it changes the **revocation reach** of the token — the time between "this token was revoked at the OP" and "this RS will refuse it" widens to the cache TTL.
+
+| Caching strategy | Latency / OP load | Revocation gap |
+|---|---|---|
+| **No cache** — RS calls `/introspect` on every API call. | Highest latency on the RS hot path; OP `/introspect` becomes a per-call dependency. | Zero — every API call observes the OP's current state. |
+| **Long cache** (e.g. 5 minutes) | Lowest OP load; revocation does not propagate until the cache entry expires. | Up to the TTL — a logged-out user's token keeps working for the rest of the cache window. |
+| **Short cache** (≤ 60 seconds) | Bounded OP load; latency hit only on the first call per window. | Up to the TTL — short enough to make most operator security regimes happy, long enough to absorb a burst. |
+
+::: tip Recommended defaults
+- **Cache key is the access-token hash** (SHA-256 of the bearer string), never `client_id` alone — different sessions for the same client must not share a cache row.
+- **TTL ≤ 60 s** for security-sensitive APIs (account changes, financial actions, admin endpoints). 30 s is a reasonable default that bounds the gap to "less than the user notices."
+- **Invalidate on `op.AuditTokenRevoked`** if the RS subscribes to the OP's audit stream — that turns the bounded gap into "as fast as your audit pipeline propagates," which is usually sub-second.
+- **Don't cache for destructive actions.** Account deletion, fund transfers, role grants, irreversible writes — always revalidate against the OP. The latency cost is real but the alternative is "the user clicked logout, the attacker still drained the account during the cache window."
+:::
+
+This trade-off applies symmetrically to JWT access tokens with revocation enabled. JWT verification is offline against the JWKS — the RS does not have to call the OP at all — but **offline verification cannot see revocation**. The OP-served boundaries (`/introspect`, `/userinfo`) and the grant-tombstone consultation that lives behind them are the revocation source of truth (see [#19 in design judgments](/security/design-judgments#dj-19) for the tombstone strategy). An RS that wants the same revocation reach as `/userinfo` either:
+
+1. Calls `/introspect` (with one of the cache strategies above), or
+2. Subscribes to the OP audit stream and treats `op.AuditTokenRevoked` as a denylist source for offline JWT verification.
+
+Doing neither — pure offline JWT validation, no introspection, no audit subscription — means revocation propagates only at the next refresh-token rotation. That can be acceptable for low-risk APIs but it is a deliberate trade, not a default that the spec entitles you to.
+
 ## UserInfo — "give me fresh claims for this access token"
 
 A simple `GET /userinfo` (OIDC Core §5.3) with the access token. Returns a JSON document of the user's claims, scoped to whatever the access token's scopes allow.
@@ -167,6 +207,10 @@ For most apps, ID Token claims are enough. UserInfo is for the cases where you n
 | `op.WithClaimsSupported(...)` | Claims the OP can return. Surfaced in the discovery document. | — |
 | `op.WithClaimsParameterSupported(true)` | Honour the OIDC §5.5 `claims` request parameter. | off |
 | `op.WithStrictOfflineAccess()` | Switch issuance and refresh exchange to the strict OIDC Core §11 reading: refresh tokens are issued only when the granted scope contains `offline_access`. See callout below. | off (lax — `openid` + client `refresh_token` grant suffices) |
+
+::: details `offline_access` — what's that?
+**`offline_access`** is a standard OIDC scope (Core §11) that means "I want to keep working on the user's behalf when they're not present." In practice, it's the user-facing consent gate for issuing a refresh token. The OP typically shows a stronger consent prompt ("this app may act for you while you're away") and, in this library, routes the resulting refresh token to a separate TTL bucket (`WithRefreshTokenOfflineTTL`) so stay-signed-in flows can outlive everyday short-session refreshes.
+:::
 
 ::: details Why `WithStrictOfflineAccess`?
 The default (lax) reading of OIDC Core §11 lets the OP issue refresh tokens whenever the granted scope contains `openid` and the client's `GrantTypes` includes `refresh_token`; `offline_access` only governs consent-prompt UX and which TTL bucket applies. Pick the strict reading when you want consent prompts and the actual issuance gate to agree byte-for-byte on what the user authorised — at the cost of every RP that wants stay-signed-in behaviour explicitly requesting `offline_access`.

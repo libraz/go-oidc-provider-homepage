@@ -27,7 +27,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(myKeyset),     // クイックスタート: 揮発鍵の生成例あり
-    op.WithCookieKey(cookieKey), // 32 バイト — AES-256-GCM
+    op.WithCookieKeys(cookieKey), // 32 バイト — AES-256-GCM
   )
   if err != nil {
     log.Fatal(err)
@@ -45,7 +45,7 @@ handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(cookieKey),
+  op.WithCookieKeys(cookieKey),
   op.WithProfile(profile.FAPI2Baseline), // PAR + JAR + DPoP、ES256、alg ロック
   op.WithStaticClients(/* JWKS 付き private_key_jwt クライアント */),
 )
@@ -62,7 +62,7 @@ handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(cookieKey),
+  op.WithCookieKeys(cookieKey),
   op.WithGrants(grant.ClientCredentials, grant.AuthorizationCode, grant.RefreshToken),
 )
 ```
@@ -72,14 +72,18 @@ handler, _ := op.New(
 ### 4. ログイン・同意・ログアウトを SPA から駆動する
 
 ```go
+import "github.com/libraz/go-oidc-provider/op/interaction"
+
 handler, _ := op.New(
   /* 必須オプション */
-  op.WithSPAUI(op.SPAUI{ /* SPA エンドポイント */ }),
+  op.WithInteractionDriver(interaction.JSONDriver{}),
   op.WithCORSOrigins("https://app.example.com"),
 )
 ```
 
-> [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) と [ユースケース: SPA](/ja/use-cases/spa-custom-interaction) を参照。
+::: warning v0.9.x — UI オプションはまだ未実装
+`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は v1.0 向けに型だけ予約されており、現状で設定すると `op.New` が構成エラーを返します。UI マウントが着地するまでは、`interaction.JSONDriver` で JSON を返す構成にして、SPA shell は自前のルーターで配信してください。詳細は [ユースケース: SPA](/ja/use-cases/spa-custom-interaction)。
+:::
 
 ### 5. 永続ストアと揮発ストアを分離する
 

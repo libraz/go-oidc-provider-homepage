@@ -54,6 +54,17 @@ flowchart LR
 
 opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 文字にしたランダム識別子です。claim を一切運びません。RS は毎リクエストごとに OP の `/introspect`（RFC 7662）でトークンを解決します（あるいは結果を意図的に短い時間幅だけキャッシュします）。OP は **リクエストのホットパスに乗ります**。
 
+::: details `jti` — それは何か
+`jti` は JWT 標準 claim（RFC 7519 §4.1.7）の "JWT ID" です。トークンごとに付ける一意の識別子で、特定のトークンを参照・失効・重複排除するときに使います。JWT access token には `jti` が含まれ、OP は旧来の JTI registry 戦略でこれをキーにし、deny-list テーブルでも重複排除キーとして使います。opaque トークンには `jti` がありません — bearer 文字列自体がすでに一意の識別子になるからです。
+:::
+
+::: details `gid` — それは何か
+ライブラリ独自の JWT private claim で、**GrantID**（トークンが発行された認可 grant の OP 側識別子）を運びます。1 つの grant は典型的には「このユーザがこのクライアントに、この時刻に、このスコープで同意してログインした」に対応します。OP は `gid` があるおかげで、`jti` を 1 件ずつ追わなくても、grant 配下の access token を **tombstone 1 件の書き込みで一斉に失効** させられます。リソースサーバはこの claim を無視しなければなりません — OP 内部の関心事です。
+
+- **いつ気にすべきか:** introspection 連動の RS コードを書くときや JWT のバイト列を監査するときだけです。標準的な RFC 9068 検証器は `gid` を見ません。
+- **混同しがち:** `sid`（OIDC Core の session ID）。`sid` は **ユーザセッション** を、`gid` は **grant** を指します（1 セッションが複数 grant を持ちえます）。
+:::
+
 ::: tip 通信路上の見た目だけでは RS は形式を判別できない
 両形式とも `Authorization: Bearer <opaque-string>` として届きます。RFC 6750 は形式を区別しません。RS は audience やデプロイ側の取り決めで「この audience は opaque」「この audience は JWT」を知っている前提です — JWKS をどれと信じるかと同じ仕組みです。本ライブラリの discovery document は形式を **広告しません**。
 :::
@@ -70,7 +81,7 @@ opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 
 | ログアウト後の到達範囲 | OP のエンドポイント（userinfo / introspect）にだけ届く | 全 RS リクエストに届く |
 | Refresh ローテーション時の旧 access token | `exp` まで生き残る | ローテーションと同時に失効 |
 | トークン byte 列からの情報漏洩 | `sub`、`scope`、`aud`、`cnf`、`acr`、`gid` が露出 | 何も漏れない |
-| RS 側のデバッグ性 | JWT を decode すれば claim を直読できる | `/introspect` を呼び出す必要がある |
+| RS 側のデバッグ性 | JWT をデコードすれば claim を直読できる | `/introspect` を呼び出す必要がある |
 | 送信者制約（DPoP / mTLS） | JWT の `cnf` claim | OP 側のレコードから `cnf` を再構成 |
 
 この 2 つの列は「安全 vs 不安全」を並べたものではありません。どちらも誠実な設計であって、運用上の前提が違うだけです。次の 2 節では、実装者が見落としがちな「負荷」と「失効」の側面を掘り下げます。
@@ -102,7 +113,7 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 
 ここはトレードオフのうち最も見落とされがちな側面です。
 
-`/end_session`（および `/revoke`、code 再利用検出のカスケード）は subject の grant に紐付く全 access token に対して OP 側の行を revoked に反転させます。両形式ともこの反転は記録されます。問題は **誰が気付くか** です。
+`/end_session`（および `/revoke`、code 再利用検出のカスケード）は subject の grant に紐付くすべての access token に対し、OP 側のレコードを revoked 状態へ切り替えます。両形式ともこの切り替えは記録されますが、問題は **どの経路がそれに気付くか** です。
 
 **JWT 形式:**
 
@@ -146,9 +157,22 @@ Refresh token のローテーションも関連する調整ポイントです。
 
 JWT 形式では grant tombstone を書き込み（オプトインの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。
 
+::: details カスケード失効とは
+ここで言う「カスケード」は「1 回の失効イベントが、同じ grant から派生したすべての成果物に届く」という意味です。`/end_session` が 1 回鳴れば、OP は grant を revoked 状態にし、その瞬間からその grant 配下の access token / refresh token / shadow 行はすべて、OP に問い合わせるどの経路でも無効として扱われます。対比となる「リーフ失効」は「この特定のトークンだけ失効させ、同じ grant 配下のほかは有効に保つ」というやり方で、RFC 7009 の `/revocation` を 1 件の `jti` に対して使ったときの挙動がこれにあたります。
+:::
+
 ## JWT access-token 失効戦略
 
 JWT 経路にはもうひとつの調整ポイントがあります — **OP が失効状態をどう永続化するか** です。opaque トークンは検証側がレコード参照を必要とするため、ストレージは本質的にトークンごとです。したがってこの戦略は JWT のみに適用されます。
+
+::: details tombstone / shadow 行 / JTI registry とは
+失効戦略を語るときに出てくる、ストレージ層の語彙です。
+
+- **tombstone** — 「このキーで識別される対象は失効済み」を記録する 1 行。トークン本体は保存せず、grant ID と「失効した」事実だけを持ちます。検証はキー検索で tombstone テーブルを引きます。
+- **shadow 行** — 発行された各トークンを「影のように」追いかける行で、`jti` ごとに 1 行、`revoked_at` や監査用フィールドを持ちます。tombstone より重く（失効時ではなく発行時に書き込む）、その分すべてのトークンの完全な監査ログが残ります。
+- **JTI registry** — その shadow 行を保持するテーブルで、`jti` をキーにします。既定戦略では使いません — オプトインの `RevocationStrategyJTIRegistry` で使われます。
+- **いつ気にすべきか:** データベースのサイジングを行うときです。tombstone は `O(失効した grant 数)`、shadow 行は `O(発行レート × TTL)` で増えます。高負荷の OP では、千行単位と百万行単位の差になります。
+:::
 
 `go-oidc-provider` は 3 つの戦略を同梱しており、`op.WithAccessTokenRevocationStrategy` で選択します。既定は `RevocationStrategyGrantTombstone` です。旧来の `jti` ごとの方式は `RevocationStrategyJTIRegistry` として残してあり、必要な組み込み側は明示的に切り替えられます。
 
@@ -199,7 +223,9 @@ provider, err := op.New(
 いずれかの FAPI プロファイルと併用して `RevocationStrategyNone` を選ぶと `op.New` が失敗します。FAPI 2.0 Security Profile §5.3.2.2 はサーバ側の revocation を必須としており、本ライブラリは失効処理を無効化した構成での起動を拒否します。
 :::
 
-grant-tombstone 戦略は `Store.GrantRevocations()` が nil ではないサブストアを返す必要があり、JTI registry 戦略は `Store.AccessTokens()` を必要とします。設定ミスは最初の `/token` リクエストではなく、`op.New` の段階で表面化します。
+::: warning サブストアの存在は `op.New` で強制されます（BREAKING）
+既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が non-nil なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は最初の `/revoke` / refresh 再利用検出で半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI デプロイは `RevocationStrategyNone` に固定する選択肢があります）。
+:::
 
 ## 形式の選び方
 

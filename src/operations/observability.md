@@ -156,6 +156,47 @@ A minimum-viable production dashboard surfaces:
 
 The first three are the highest-signal indicators of production trouble. The fourth catches storage drift; the last two catch RP-side regressions.
 
+## Rate limiting and abuse signals
+
+The library does **not** ship a built-in rate limiter on `/authorize`, `/par`, `/token`, `/userinfo`, or any other public endpoint. There is no `WithRateLimit` knob to tune. Rate limiting is the operator's job — a reverse proxy (NGINX, Envoy, Traefik), an edge service (Cloudflare, Fastly), or middleware in front of `op.Handler()` is where per-IP / per-client request budgets belong. Pretending otherwise would set false expectations.
+
+What the library does emit is a set of audit events that an abuse pipeline can consume to score offenders, regardless of where the actual rate enforcement lives:
+
+| Audit event | Constant | What it tells you |
+|---|---|---|
+| `pkce.violation` | `op.AuditPKCEViolation` | The code exchange failed PKCE verification. Repeat from a single IP / client is a strong signal of an attacker probing a stolen authorization code. |
+| `redirect_uri.mismatch` | `op.AuditRedirectURIMismatch` | The presented `redirect_uri` did not match a registered URI. Repeat is reconnaissance against a known `client_id`. |
+| `client_authn.failure` | `op.AuditClientAuthnFailure` | Client authentication at `/token`, `/par`, `/introspect`, or `/revoke` failed. Bursts are credential brute-force. |
+| `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | The device-code verification page is being walked through user-code guesses. The `devicecodekit` enforces a built-in per-device-code lockout — see [Device Code](/use-cases/device-code) for the verification helper. |
+| `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | The CIBA polling counter has crossed the per-`auth_req_id` threshold. The library denies the request on the wire (`access_denied`) and emits the event so SOC tooling can correlate. |
+| `rate_limit.exceeded` | `op.AuditRateLimitExceeded` | Reserved for embedder-emitted events from your own rate-limit middleware. The library defines the constant so the audit catalog stays consistent across embedders, but does not fire it from internal paths. |
+| `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | Same shape — for embedder middleware to log explicit bypasses (allowlisted IP, internal probe, etc.). |
+
+The last two are intentionally a vocabulary the library shares with operator-side middleware, not internal events. If your reverse proxy or middleware enforces a budget and lets a request through (or rejects it), emit one of these against the same audit logger so the analytics pipeline sees a single coherent stream.
+
+::: tip Recommended pattern
+1. **Reverse proxy or edge service enforces a global rate** — for example, 100 requests/second/IP on `/token`, lower on `/par`. This is the actual mechanism that costs an attacker requests.
+2. **Audit pipeline alerts on bursts** of `pkce.violation`, `redirect_uri.mismatch`, and `client_authn.failure` from a single IP, ASN, or `client_id`. These are the high-signal events for "someone is poking the OP."
+3. **Per-client allow-lists reduce the attack surface upstream.** `WithCORSOrigins` and the `redirect_uris` registry both work as allowlists — the smaller they are, the less surface a misconfigured or compromised client exposes.
+:::
+
+### What the library locks out internally
+
+Three specific abuse paths have built-in lockouts because they don't fit a generic per-IP rate limiter — the abuser can rotate IPs cheaply, and the protected resource is a low-entropy code or a per-subject credential, not an arbitrary URL:
+
+- **Login brute force (cross-factor).** When `op.WithAuthnLockoutStore` is wired, every built-in second-factor `Step` (TOTP, email OTP, password) consults the same per-subject counter so an attacker pivoting between factors cannot double their guess budget. The login flow emits `op.AuditLoginFailed` on each failed step (and `op.AuditLoginSuccess` on the eventual win); the lockout layer is what keeps the failure stream from running unbounded.
+- **Device Code user-code brute force.** The `op.devicecodekit` package keeps a per-`device_code` strike counter. After enough mismatches it short-circuits the verification helper, and every strike emits `op.AuditDeviceCodeUserCodeBruteForce`. This is the only way to defend a user-typed short code without making the legitimate path painful.
+- **CIBA poll abuse.** The token endpoint counts how often a single `auth_req_id` is polled past its allowed cadence. Above the threshold, the request store's `Deny` is called with `reason="poll_abuse"`, the wire response becomes `access_denied`, and `op.AuditCIBAPollAbuseLockout` fires. This shuts a pathological RP down without a global rate limiter that would also penalise well-behaved RPs.
+
+Each of those gates emits its **own** dedicated audit event, **not** `rate_limit.exceeded` / `rate_limit.bypassed`. The split is deliberate:
+
+| Class | Who enforces | What event you see |
+|---|---|---|
+| Generic HTTP rate limiting (per-IP, per-endpoint, per-`client_id`) | Embedder middleware (reverse proxy, gateway, Go handler chain) | `op.AuditRateLimitExceeded` / `op.AuditRateLimitBypassed` — emitted by the embedder against the OP's audit logger |
+| Purpose-specific brute-force defence (login, user-code, poll cadence) | Library-internal | `op.AuditLoginFailed`, `op.AuditDeviceCodeUserCodeBruteForce`, `op.AuditCIBAPollAbuseLockout` |
+
+Everything else — bursts of failed PKCE, repeated `redirect_uri` mismatches, sustained `client_authn` failures — is observable through audit events but not enforced by the library. That is a deliberate split: the OP emits structured signals, the operator decides the response (block, throttle, page).
+
 ## Log retention
 
 | Stream | Typical retention |

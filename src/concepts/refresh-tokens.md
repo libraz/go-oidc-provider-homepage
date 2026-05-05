@@ -48,6 +48,16 @@ sequenceDiagram
 If a previously-rotated refresh token is presented again, the OP treats it as a stolen-credential signal and **revokes the entire chain** — both the stolen token and the legitimate token derived from it. Both parties have to re-authenticate. This is intentional: it's the strongest signal the OP can give that something has gone wrong.
 :::
 
+::: details Rotation, reuse detection, family revocation — what's that?
+Three terms that get used interchangeably in blog posts but mean different things in this codebase:
+
+- **Rotation** — the *normal* successful path. Each `grant_type=refresh_token` returns a new refresh token and invalidates the previous one. Single-use by default.
+- **Reuse detection** — the OP saw an already-rotated refresh token come back. That can only happen if it leaked, was caught by malware, or a confused client kept a copy. The library treats it as theft.
+- **Family revocation** (also called *chain revocation*) — the OP's response to reuse: every refresh token in the same lineage as the offending one is invalidated, including the legitimate descendant the real client is currently using. The next legitimate refresh fails, the user re-authenticates, and the attacker's stolen token is dead too.
+
+This is mandated by RFC 9700 §2.2.2 for public clients and is how the library treats every refresh chain regardless of client type.
+:::
+
 ## Grace period
 
 A racing legitimate client (e.g. a tab that double-fetched the same refresh) would otherwise hit reuse detection. `op.WithRefreshGracePeriod(d)` widens the rotation acceptance window:
@@ -57,6 +67,10 @@ op.WithRefreshGracePeriod(2 * time.Second)
 ```
 
 Within `d` seconds of a successful rotation, the previous token still returns the *same* new token (idempotent). After `d` seconds, replay is treated as theft.
+
+::: details Acceptance window — what's that, and why it's not a security hole
+The grace period is sometimes called an **acceptance window**: the OP accepts the previous refresh token *as if it were still current*, but only for the same idempotent answer it already gave the legitimate client. It's not a relaxation of single-use — the OP doesn't issue *new* tokens during the window, it just keeps replaying the *same* fresh pair to absorb retries from a flaky network. Once the window closes, the previous token reverts to "already rotated → reuse → revoke chain." Set it to negative to disable replay entirely (strict single-use); the cost is occasional false-positive chain revocations on mobile networks.
+:::
 
 ::: tip Default is 60 seconds
 The default grace period is **60 seconds** (`refresh.GraceTTLDefault`) — covers the typical mobile-network round-trip retry. Pass `op.WithRefreshGracePeriod(0)` to keep the default, a positive duration to widen it, or a negative value to disable grace entirely (strict single-use). The OFCS refresh-token regression test waits ~32 s between rotation and retry, so any grace below that range will regress conformance.

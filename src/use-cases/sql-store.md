@@ -52,7 +52,7 @@ Every substore (`AuthCodeStore`, `RefreshTokenStore`, `ClientStore`, `SessionSto
 ::: info New substores
 The SQL adapter bundles tables for the opaque-access-token substore (`oidc_opaque_access_tokens`, populated only when `op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or `op.WithAccessTokenFormatPerAudience(...)` is configured) and for the grant-revocation substore (`oidc_grant_revocations` plus `oidc_revoked_jtis`, the backing store for the default `RevocationStrategyGrantTombstone`). Both are part of the transactional cluster — they commit alongside the grant or refresh write that triggered them, so a half-committed cascade cannot leave a revoked grant next to a still-redeemable token.
 
-Embedders shipping a custom `Store` aggregator (rather than reusing the bundled adapters) MUST implement `OpaqueAccessTokens()` and `GrantRevocations()`. Returning `nil` is permitted when the matching option is never used; `op.New` fails fast otherwise.
+Embedders shipping a custom `Store` aggregator (rather than reusing the bundled adapters) MUST implement `OpaqueAccessTokens()` and `GrantRevocations()`. `OpaqueAccessTokens()` may return `nil` when neither `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` nor `WithAccessTokenFormatPerAudience` ever names an opaque audience. `GrantRevocations()` may return `nil` only when the embedder also pins `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI deployments only) — the default `RevocationStrategyGrantTombstone` strategy requires it at construction time. `op.New` fails fast otherwise.
 :::
 
 ## Code
@@ -80,7 +80,7 @@ provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(storage),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(myCookieKey),
+  op.WithCookieKeys(myCookieKey),
 )
 ```
 

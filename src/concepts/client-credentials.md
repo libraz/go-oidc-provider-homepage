@@ -56,7 +56,7 @@ handler, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(cookieKey),
+  op.WithCookieKeys(cookieKey),
   op.WithGrants(
     grant.AuthorizationCode, // for human users
     grant.RefreshToken,
@@ -92,10 +92,31 @@ A client only succeeds when both checks pass. This lets you run a single OP that
 - `iss` — the OP issuer
 - `aud` — the resource server identifier (the typed seeds carry a `Resources []string` field that lists permitted RFC 8707 resource indicators; with DCR, the equivalent `resources` metadata field)
 - `client_id` — the requesting client
-- **No `sub`** for purely-machine clients (or `sub = client_id` if you set `act_as_subject`)
+- `sub = client_id` — RFC 9068 §2.2 / FAPI 2.0 posture: the client is the subject acting on its own behalf
 - `scope` — the granted subset of the requested scopes
 
 When `op.WithFeature(feature.MTLS)` or DPoP is configured and the client presented a sender constraint, the token additionally carries the `cnf` (Confirmation, RFC 7800) claim binding it to that constraint.
+
+::: details Why `sub = client_id` here?
+In the user-facing flows, `sub` is the end-user's stable identifier. In `client_credentials` there is no end user, so RFC 9068 §2.2 requires the `sub` to equal the `client_id` — the *client itself* is acting as the subject. RSes that read `sub` to log "who did this" still get a stable identifier; they just need to know that for service tokens, that identifier is a registered service rather than a person. A common bug is to assume `sub` always points to a row in the user table; for service tokens it points to a row in the *client* table.
+:::
+
+::: details `aud` for `client_credentials` — what it means and how it's set
+**`aud`** is the resource server identifier — *not* the `client_id`, *not* the OP's issuer. It tells the RS "this token was minted for me to consume." The library populates it from:
+
+- The client's registered `Resources []string` (the allow-list of RFC 8707 resource indicators the client is permitted to ask for); or
+- The runtime `resource=...` request parameter (RFC 8707), if the client requests one within its allow-list.
+
+Without `Resources` configured and without a runtime `resource` parameter, the OP falls back to a deployment-defined default. RSes should reject tokens whose `aud` doesn't match their own identifier — that's the audience-restriction defence against a token stolen from an RS being replayed against a different RS.
+:::
+
+::: details Bearer vs sender-constrained — what's the difference?
+By default, `client_credentials` access tokens are **bearer** tokens (RFC 6750): "whoever holds it, can use it." A leaked bearer token works for the attacker until it expires.
+
+**Sender-constrained** access tokens (RFC 8705 mTLS or RFC 9449 DPoP) carry a `cnf` claim binding the token to a key the legitimate client holds. The RS verifies, on every API call, that the caller proves possession of that key. A leaked token is then useless without the matching private key — and the matching private key never leaves the client.
+
+For service-to-service traffic in regulated contexts (FAPI 2.0, PSD2, OBL), sender-constrained is the expected default. For internal-network service traffic where mTLS is already enforced at the mesh, plain bearer is often acceptable.
+:::
 
 ## See it run
 

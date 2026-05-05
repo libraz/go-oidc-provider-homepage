@@ -11,7 +11,7 @@ The library deliberately stays out of HTTP-lifecycle and infra concerns: there i
 
 | Page | When you need it |
 |---|---|
-| [Key rotation](/operations/key-rotation) | rotating signing keys (`Keyset`) and cookie keys (`WithCookieKey`) without dropping live sessions |
+| [Key rotation](/operations/key-rotation) | rotating signing keys (`Keyset`) and cookie keys (`WithCookieKeys`) without dropping live sessions |
 | [JWKS endpoint](/operations/jwks) | what `/jwks` advertises, cache headers, ETag, RP cache behaviour |
 | [Multi-instance deployment](/operations/multi-instance) | running more than one OP replica — DPoP nonce sharing, session placement, sticky vs round-robin |
 | [Observability](/operations/observability) | logging (`*slog.Logger`), tracing (`otelhttp` middleware), Prometheus, request-IDs |

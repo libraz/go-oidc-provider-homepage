@@ -37,7 +37,7 @@ The four required options have no safe default, so `op.New` refuses to boot with
 | `WithIssuer` | OP can't sign / namespace anything. |
 | `WithStore` | OP has nowhere to persist clients, codes, tokens. |
 | `WithKeyset` | OP can't sign ID tokens. |
-| `WithCookieKey` | OP can't seal session / CSRF cookies. |
+| `WithCookieKeys` | OP can't seal session / CSRF cookies. |
 
 The error names the missing piece, so a typo at boot is a build-time error, not a runtime mystery.
 
@@ -47,7 +47,7 @@ Generate a 32-byte cookie key with `crypto/rand` once per environment and feed i
 
 ### Where does the OP mount? Can I prefix it?
 
-Wherever you mount the returned `http.Handler`. The handler is prefix-agnostic — `mux.Handle("/oidc/", op.StripPrefix("/oidc", h))` works exactly like `mux.Handle("/", h)`. The discovery document embeds the issuer + mount prefix you configured, so RPs see consistent URLs regardless of where you mount.
+Wherever you mount the returned `http.Handler`. The default mount prefix is `/oidc`; pass `op.WithMountPrefix("/")` to mount at the root or `op.WithMountPrefix("/auth")` to relocate it. The discovery document embeds the issuer + mount prefix you configured, so RPs see consistent URLs regardless of where you mount.
 
 ### What's the smallest config that boots?
 
@@ -56,7 +56,7 @@ handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(myKeyset),
-    op.WithCookieKey(cookieKey), // 32 bytes
+    op.WithCookieKeys(cookieKey), // 32 bytes
 )
 ```
 
@@ -68,10 +68,11 @@ Really. RFC 9207 mix-up defence depends on byte-exact `iss` comparison across th
 
 - trailing slash (`https://op/` → no);
 - mixed-case scheme (`HTTPS://op` → no);
-- default port (`https://op:443` → no);
+- mixed-case host (`https://OP.example.com` → no);
+- default port (`https://op:443` → no, `http://127.0.0.1:80` → no);
 - fragment (`https://op#x` → no);
 - query (`https://op?x=1` → no);
-- `..` in the path.
+- non-canonical path (`..`, `.`, or duplicate slashes — checked via `path.Clean`).
 
 ::: details Why so strict?
 A single non-canonical character on either side of an RP's verification flips byte equality and breaks the mix-up defence silently. The error is at construction time so the misconfiguration can't reach production. See <a class="doc-ref" href="/security/design-judgments">Design judgments §9</a>.
@@ -85,12 +86,14 @@ A single non-canonical character on either side of an RP's verification flips by
 
 In one call, it tightens six knobs the spec mandates:
 
-- enables `feature.PAR` and `feature.DPoP`;
-- narrows `token_endpoint_auth_methods_supported` to the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`);
-- locks alg constraints to the FAPI subset;
-- enforces `redirect_uri` exact match (no wildcarding);
-- requires PKCE on every code request;
-- requires `state` OR `nonce` on every authorize request.
+| Knob | Effect |
+|---|---|
+| Feature flags | enables `feature.PAR` and `feature.DPoP` |
+| Client auth | narrows `token_endpoint_auth_methods_supported` to the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`) |
+| Alg constraints | locks signature algorithms to the FAPI subset |
+| `redirect_uri` | enforces exact match (no wildcarding) |
+| PKCE | required on every code request |
+| `state` / `nonce` | one of the two required on every authorize request |
 
 ::: warning Subsequent options that contradict the profile cause `op.New` to return an error.
 The profile is intentionally rigid — silently relaxing it would break the audit guarantee FAPI 2.0 buys you.
@@ -118,7 +121,7 @@ Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring
 That's the **rotation grace window**. The default is 60 seconds: if the rotation network round-trip dropped, presenting the previous refresh token within the window mints a fresh access token without rotating again. After the window, or if the chain was already revoked for reuse-detection, you get `invalid_grant`.
 
 ::: details Tune the window
-`op.WithRefreshGracePeriod(90 * time.Second)` widens it. `op.WithRefreshGracePeriod(-1)` disables grace entirely (strict single-use). See <a class="doc-ref" href="/security/design-judgments">Design judgments §2</a>.
+`op.WithRefreshGracePeriod(90 * time.Second)` widens it. `op.WithRefreshGracePeriod(0)` disables grace entirely (strict single-use); negative values are rejected at the option site. See <a class="doc-ref" href="/security/design-judgments">Design judgments §2</a>.
 :::
 
 ### Why didn't I get a refresh token?
@@ -150,7 +153,8 @@ OIDC Core 1.0 §11 leaves room for OPs to issue refresh tokens without `offline_
 **How.** The library ships an in-memory reference source and exposes the seam:
 
 ```go
-src := op.NewInMemoryDPoPNonceSource(ctx, rotate) // demo-grade
+src, err := op.NewInMemoryDPoPNonceSource(ctx, rotate) // demo-grade
+if err != nil { /* handle */ }
 op.WithDPoPNonceSource(src)
 ```
 
@@ -195,18 +199,16 @@ Because the transactional cluster invariant says all transactional substores (cl
 ### How do I drive login / consent from a SPA?
 
 ```go
-op.WithSPAUI(op.SPAUI{LoginMount: "/login", StaticDir: "./web/dist"})
+import "github.com/libraz/go-oidc-provider/op/interaction"
+
+op.WithInteractionDriver(interaction.JSONDriver{})
 ```
 
-mounts the SPA shell + JSON state surface — no outer mux required:
+The JSON driver returns each prompt (`login`, `consent.scope`, `chooser`, …) as JSON at the same `/interaction/{uid}` path the HTML driver uses. The SPA — React, Vue, Svelte, Angular, or vanilla — fetches the prompt, POSTs `{state_ref, values}` back with the `X-CSRF-Token` header echoing `prompt.csrf_token` (double-submit cookie), and follows the terminal `{type:"redirect", location}` envelope.
 
-| Path | Role |
-|---|---|
-| `/login/{uid}` | SPA shell (serves `index.html`) |
-| `/login/state/{uid}` | Prompt JSON (GET / POST / DELETE) |
-| `/login/assets/{path...}` | Static asset fan-out |
-
-The SPA — React, Vue, Svelte, Angular, or vanilla — fetches the prompt from `/login/state/{uid}`, POSTs `{state_ref, values}` back with the `X-CSRF-Token` header echoing `prompt.csrf_token` (double-submit cookie), and follows the terminal `{type:"redirect", location}` envelope. See [SPA / custom interaction](/use-cases/spa-custom-interaction) and [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login).
+::: warning UI mount options are not wired yet
+`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` are reserved for the v1.0 surface but currently cause `op.New` to return a configuration error. Until they land, mount your SPA shell + static assets on your own router and let the OP serve the prompt JSON. See [SPA / custom interaction](/use-cases/spa-custom-interaction) and [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login).
+:::
 
 ::: details SPA-safe error rendering
 Error pages emit `<div id="op-error" data-code="..." data-description="...">` under CSP `default-src 'none'; style-src 'unsafe-inline'`, so the SPA host queries by selector without parsing markup.
@@ -222,7 +224,10 @@ The library auto-derives the allowlist from registered redirect URIs when you do
 
 ### Can I customise the consent screen without forking the library?
 
-Yes. `op.WithConsentUI(template)` overrides the default consent HTML. For full control, ship a SPA via `op.WithSPAUI`. [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) shows the template seam.
+Not via `op.WithConsentUI` yet. The option is reserved for v1.0 and `op.New` rejects it today. Until it lands, your two working paths are:
+
+- **Stay on the bundled HTML driver and rebrand via locale bundles.** `op.WithLocale` overrides any consent string by key — the seed `en` / `ja` bundles cover the rendered surface and you ship overlays for the keys you care about. See [Use case: i18n / locale negotiation](/use-cases/i18n).
+- **Switch to the JSON driver and own the markup.** `op.WithInteractionDriver(interaction.JSONDriver{})` returns the consent prompt as JSON, and your own page (or SPA) renders it. See [SPA / custom interaction](/use-cases/spa-custom-interaction).
 
 <div id="auth-mfa" class="faq-anchor"></div>
 
@@ -258,7 +263,7 @@ This is expected when sessions live in a volatile store. If a session record was
 
 ### My CLI's `127.0.0.1:54312/cb` redirect_uri got rejected.
 
-Default redirect-URI matching is byte-exact (OAuth 2.1 / FAPI 2.0). Loopback port wildcarding (RFC 8252 §7.3) is **opt-in per client**: the registered `redirect_uris` list must contain a loopback URI, and the OP will then ignore port mismatch when scheme is `http`, host is `127.0.0.1` or `::1`, and path / query / fragment exact-match. `localhost` is **not** accepted (DNS rebinding surface). See <a class="doc-ref" href="/security/design-judgments">Design judgments §4</a>.
+Default redirect-URI matching is byte-exact (OAuth 2.1 / FAPI 2.0). Loopback port wildcarding (RFC 8252 §7.3) is **opt-in per client**: the registered `redirect_uris` list must contain a loopback URI, and the OP will then ignore port mismatch when scheme is `http`, the registered hostname is a loopback shape (`127.0.0.1`, `::1`, or — when registration-side opt-in is on — the textual `localhost`), the requested host matches the registered one, and path / query / fragment exact-match. The textual `localhost` is admitted only when the embedder opted in at registration time (`op.WithAllowLocalhostLoopback()` for web clients, `application_type=native` for native clients); deployments that need the strict literal-IP-only posture leave both opt-ins off. See <a class="doc-ref" href="/security/design-judgments">Design judgments §4</a>.
 
 <div id="observability" class="faq-anchor"></div>
 
@@ -276,12 +281,17 @@ A finite catalog (search `op.Audit*` constants in `op/audit.go`):
 
 | Category | Covers |
 |---|---|
-| `authorize.*` | authorize endpoint outcomes |
-| `token.*` | token issuance / refresh / revoke |
-| `session.*` | session lifecycle |
+| `login.*` / `mfa.*` / `step_up.*` | login flow factor outcomes |
+| `code.*` / `token.*` / `refresh.*` | code + token issuance / refresh / revoke |
+| `session.*` / `logout.*` / `bcl.*` | session and logout lifecycle |
 | `consent.*` | consent decisions |
-| `logout.*` | logout fan-out |
 | `dcr.*` | Dynamic Client Registration |
+| `device_authorization.*` / `device_code.*` | RFC 8628 |
+| `ciba.*` | OIDC CIBA |
+| `token_exchange.*` | RFC 8693 |
+| `client_authn.*` / `introspection.*` | client auth / introspection |
+| `account.*` / `federation.*` / `recovery.*` | account-management feed |
+| `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` | defensive signals |
 
 Every event carries `request-id`, `subject`, `client-id`, plus an `extras` map for category-specific fields. Subscribe via `op.WithAuditLogger(...)` (a `*slog.Logger`) — each event records as a structured log entry with the catalog name and `extras` attributes.
 

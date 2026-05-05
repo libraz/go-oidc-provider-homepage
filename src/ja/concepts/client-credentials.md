@@ -56,7 +56,7 @@ handler, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(cookieKey),
+  op.WithCookieKeys(cookieKey),
   op.WithGrants(
     grant.AuthorizationCode, // 人間ユーザ向け
     grant.RefreshToken,
@@ -92,10 +92,31 @@ op.WithStaticClients(op.ConfidentialClient{
 - `iss` — OP issuer
 - `aud` — resource server 識別子（typed seed の `Resources []string` フィールドで RFC 8707 のリソース識別子を許可する。DCR の場合は同等の `resources` メタデータ）
 - `client_id` — 要求元クライアント
-- **`sub` 無し**（純粋機械クライアント）または `sub = client_id`（`act_as_subject` 設定時）
+- `sub = client_id` — RFC 9068 §2.2 / FAPI 2.0 の慣習。クライアント自身が subject(自分自身として動く)
 - `scope` — 要求 scope のうち付与された部分集合
 
 `op.WithFeature(feature.MTLS)` または DPoP が設定されクライアントが送信者制約を提示した場合、トークンには加えて RFC 7800 の `cnf` (Confirmation) claim が乗りバインドされます。
+
+::: details なぜ `sub = client_id` なのか
+ユーザを伴うフローでは `sub` はエンドユーザの安定識別子です。`client_credentials` にはエンドユーザがいないので、RFC 9068 §2.2 が `sub` を `client_id` に等しくすることを要求しています — *クライアント自身* が subject として動いている、という建付けです。`sub` を見て「誰がやったか」を記録する RS は依然として安定識別子を得られますが、サービストークンの場合の識別子は人ではなく登録済みサービスを指す、という前提を持つ必要があります。よくあるバグは「`sub` は必ず user テーブルの行を指す」と思い込むこと — サービストークンでは *client* テーブルの行を指します。
+:::
+
+::: details `client_credentials` の `aud` — 意味と設定方法
+**`aud`** はリソースサーバの識別子です — `client_id` でも、OP の issuer でもありません。「このトークンは私が消費するために発行された」を RS に伝える値です。本ライブラリでは次から `aud` が決まります。
+
+- クライアント登録時の `Resources []string`（クライアントが要求してよい RFC 8707 リソース識別子の許可リスト）。または
+- ランタイムの `resource=...` リクエストパラメータ（RFC 8707）— 許可リストの範囲内であること。
+
+`Resources` が未設定でランタイムの `resource` パラメータも無い場合、OP はデプロイ定義のデフォルトにフォールバックします。RS は自分の識別子と一致しない `aud` を持つトークンを拒否するべきです — RS から盗まれたトークンを別の RS に再生される攻撃に対する audience-restriction 防御です。
+:::
+
+::: details bearer と送信者制約の違い
+デフォルトでは、`client_credentials` access token は **bearer** トークン（RFC 6750）です — 「持っている者が使える」。漏洩した bearer トークンは、有効期限まで攻撃者にも機能します。
+
+**送信者制約付き** access token（RFC 8705 mTLS、または RFC 9449 DPoP）は、`cnf` claim でトークンを正規クライアントが保持する鍵にバインドします。RS は API 呼び出しごとに、呼び出し元がその鍵を保有していることを証明させます。漏洩しても、対応する秘密鍵が無いと使えません — そして秘密鍵はクライアントの外に出ません。
+
+規制対応のサービス間通信（FAPI 2.0、PSD2、OBL）では送信者制約が標準的な既定値です。mesh 層で mTLS が強制されている内部サービス間通信では、素の bearer でも実用上問題ない場合があります。
+:::
 
 ## 動作確認
 

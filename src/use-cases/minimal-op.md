@@ -46,6 +46,11 @@ func main() {
   // seedUser hashes "demo"/"demo" via op.HashPassword and PUTs a
   // *store.User into st.UserPasswords(); see the example for the body.
 
+  // The upstream example uses opkit.DefaultLoginFlow(st.UserPasswords())
+  // from examples/internal/opkit — a thin wrapper that constructs the
+  // same value below. The public API is the LoginFlow struct shown here;
+  // import opkit only if you are reading the example's source, not for
+  // production code.
   flow := op.LoginFlow{
     Primary: op.PrimaryPassword{Store: st.UserPasswords()},
   }
@@ -54,7 +59,7 @@ func main() {
     op.WithIssuer("http://127.0.0.1:8080"),
     op.WithStore(st),
     op.WithKeyset(keys.Keyset()),
-    op.WithCookieKey(keys.CookieKey),
+    op.WithCookieKeys(keys.CookieKey),
     op.WithLoginFlow(flow),
     op.WithStaticClients(op.PublicClient{
       ID:           "demo-rp",
@@ -72,7 +77,7 @@ func main() {
 }
 ```
 
-The four required options (`WithIssuer`, `WithStore`, `WithKeyset`, `WithCookieKey`) on their own would let `/oidc/.well-known/openid-configuration` and `/oidc/jwks` answer; everything that depends on a user (authorize, token, userinfo) needs the `WithLoginFlow` + `WithStaticClients` pair. [`getting-started/minimal`](/getting-started/minimal) shows the four-option discovery-only shape if that is what you want.
+The four required options (`WithIssuer`, `WithStore`, `WithKeyset`, `WithCookieKeys`) on their own would let `/oidc/.well-known/openid-configuration` and `/oidc/jwks` answer; everything that depends on a user (authorize, token, userinfo) needs the `WithLoginFlow` + `WithStaticClients` pair. [`getting-started/minimal`](/getting-started/minimal) shows the four-option discovery-only shape if that is what you want.
 
 ## What the OP exposes
 

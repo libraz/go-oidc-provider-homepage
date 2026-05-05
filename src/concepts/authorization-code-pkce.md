@@ -73,6 +73,41 @@ sequenceDiagram
 | `grant_type=authorization_code` | `/token` | Selects this grant. |
 | Client auth | `/token` | One of `client_secret_basic`, `client_secret_post`, `private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`, or `none` (PKCE-only). |
 
+::: details `state` vs `nonce` — what's the difference?
+Both are random opaque values, both defend against replay-style attacks, but they protect different legs of the flow:
+
+- **`state`** travels on the **front channel** (browser query string). The RP stashes it in the user's session before redirecting and re-checks it on the callback. It defends the *redirect* against CSRF — an attacker can't forge a callback to your `/callback` and have your app accept it.
+- **`nonce`** travels in the **ID Token claim**. The RP stashes it in the user's session before redirecting and re-checks it after token exchange. It defends the *ID Token* against replay — an attacker can't reuse a stolen ID Token at a different RP, or at the same RP for a different login attempt.
+
+Use both. The OP rejects requests missing `state` for confidential clients in this library, and OIDC requires `nonce` whenever `response_type=code id_token` or `id_token` is involved.
+:::
+
+::: details `code_verifier` / `code_challenge` / `S256` — what's that?
+**`code_verifier`** is a high-entropy random string the RP generates and *keeps to itself*. RFC 7636 §4.1 mandates 43-128 URL-safe characters.
+
+**`code_challenge`** is what the RP sends to the OP at `/authorize`. With `code_challenge_method=S256`, it's `BASE64URL(SHA-256(code_verifier))` — a one-way hash. The OP can't reverse it; only the RP can prove ownership later by sending the verifier itself.
+
+**`S256`** is the SHA-256-based transform; it's the only `code_challenge_method` this library accepts. The legacy `plain` method (where challenge equals verifier) provides no protection against an attacker who reads the URL, so RFC 9700 forbids it for new deployments.
+:::
+
+::: details `redirect_uri` — strict exact-match, and why
+The `redirect_uri` on `/authorize` is checked **byte-for-byte** against the client's registered list — no tail-slash normalisation, no path-prefix matches, no wildcards. That strictness is on purpose: open-redirect bugs and "any subpath of `https://app.example.com/`" patterns are a well-trodden way to leak codes to attacker-controlled URLs. RFC 9700 §2.1 requires exact match, and this library enforces it. At `/token`, the RP must repeat the *same* `redirect_uri` it sent on `/authorize`; a mismatch returns `redirect_uri_mismatch`.
+:::
+
+::: details `response_type=code` — what's that?
+**`response_type=code`** asks for the **authorization code flow** — the OP returns a short-lived `code` on the redirect, and the RP swaps it at `/token` for the actual tokens. The alternatives (`token`, `id_token token`, `code id_token`, etc.) are legacy hybrid / implicit flows that OAuth 2.0 BCP (RFC 9700) discourages. This library implements `code` as the canonical path and treats hybrid forms as opt-in surface for compatibility, not new builds.
+:::
+
+::: details PAR — what's that, and when do I need it?
+**PAR** (Pushed Authorization Requests, RFC 9126) lets the RP POST the authorize parameters to a server-side `/par` endpoint *first*, get back a short-lived `request_uri`, then redirect the browser with just `?client_id=...&request_uri=...`. The benefits:
+
+- The full request never appears in browser history, server logs, or referrer headers.
+- Tampering at the user-agent boundary is moot — only the `request_uri` is exposed there.
+- Required by FAPI 2.0 Baseline. Optional (but worth opting in) elsewhere.
+
+Wire it via `op.WithFeature(feature.PAR)` and the discovery document advertises `pushed_authorization_request_endpoint`.
+:::
+
 ## What PKCE prevents
 
 ::: details Walk-through: the attack PKCE blocks

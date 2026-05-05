@@ -23,7 +23,7 @@ Each block follows the same shape: **the spec text**, **the conflict**, and **wh
 | [#6](#dj-6) | JAR `request=` replay defence | OP-side `jti` cache, evicted at `exp`; default-on with JAR |
 | [#7](#dj-7) | Profile constraint resolution | Disjunction via `*config` helpers; handlers see only `bool` |
 | [#8](#dj-8) | ACR / AAL — internal vs wire vocabulary | Two-layer model (internal AAL ladder + wire `acr` mapping) |
-| [#9](#dj-9) | Issuer identifier validation | `op.WithIssuer` rejects trailing slash, case mismatch, default port, fragment, … |
+| [#9](#dj-9) | Issuer identifier validation | `op.WithIssuer` rejects trailing slash, mixed-case scheme/host, default port, fragment, query, non-canonical path |
 | [#10](#dj-10) | Sessions in or out of the transactional cluster | Separate substore; volatile stores OK; BCL is best-effort under volatility |
 | [#11](#dj-11) | JOSE `alg=none` / HMAC family lockout | Closed enum in `internal/jose.Algorithm`; `none`/`HS*` not in the type |
 | [#12](#dj-12) | Discovery narrowing on profile | Built once at `op.New`; golden test catches drift |
@@ -89,7 +89,7 @@ Rotated refresh tokens stay accepted for `GraceTTL` (default 60 s) when the chai
 **Conflict:** The two readings disagree by construction. A CLI tool cannot pre-register every ephemeral OS-assigned port; a strict exact-match policy breaks the canonical native-app flow.
 
 ::: tip Decision
-Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation is **opt-in per client** via the registered `redirect_uris` listing a loopback URI; the OP then ignores port mismatch when scheme is `http`, host is `127.0.0.1` or `::1`, and path / query / fragment exact-match. `localhost` is **not** accepted (DNS rebinding surface). HTTPS loopback is not relaxed (no ACME on `127.0.0.1`).
+Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation is **opt-in per client** via the registered `redirect_uris` listing a loopback URI; the OP then ignores port mismatch when scheme is `http`, the registered hostname is one of the loopback shapes (`127.0.0.1`, `::1`, or the textual `localhost`), the requested host matches the registered host, and path / query / fragment exact-match. The textual `localhost` was added to the authorize-side wildcard set in v0.9.x to mirror the registration-side carve-out (DCR / OIDC Registration §2 already accepted it for native clients) — without it, a native app that registered `http://localhost/cb` would pass DCR but fail at `/authorize` once the OS handed it an ephemeral port. The `localhost` admission still depends on the embedder having opted in at registration via `op.WithAllowLocalhostLoopback()` for web clients (or `application_type=native` for native clients), so DNS-rebinding-sensitive deployments keep the strict literal-IP-only posture by leaving both opt-ins off. HTTPS loopback is not relaxed (no ACME on `127.0.0.1`).
 :::
 
 <a class="faq-anchor" id="dj-5"></a>
@@ -144,12 +144,12 @@ A two-layer model — `op/aal.go` for the internal AAL ladder, `op/acr.go` for t
 
 ## 9. Issuer identifier validation
 
-**Spec:** RFC 9207 says the OP MUST emit `iss` on authorization responses. OIDC Discovery 1.0 §3 implies the issuer is the OP's canonical identifier.
+**Spec:** RFC 9207 says the OP MUST emit `iss` on authorization responses. OIDC Discovery 1.0 §3 / RFC 8414 §3 / FAPI 2.0 §5.4 imply the issuer is the OP's canonical identifier — concatenated verbatim with `/.well-known/openid-configuration` to derive the discovery URL.
 
-**Conflict:** Real deployments commonly run with two URIs that look equivalent but differ by trailing slash, scheme case, or default port inclusion. RFC 9207 mix-up defence depends on byte-exact `iss` comparison; if the OP normalises the canonical form differently to the RP, mix-up defence fails.
+**Conflict:** Real deployments commonly run with two URIs that look equivalent but differ by trailing slash, scheme case, host case, or default port inclusion. RFC 9207 mix-up defence depends on byte-exact `iss` comparison across the OP and every RP; if the OP normalises the canonical form differently to the RP, mix-up defence fails silently.
 
 ::: tip Decision
-`op.WithIssuer` rejects URIs with trailing slash, scheme in mixed case, default port present, fragment, query, or path containing `..`. The same canonical form is reused for `iss` in every emitted artifact. `op.New` returns a build-time error rather than booting on a non-canonical issuer.
+`op.WithIssuer` rejects URIs with a trailing slash, a mixed-case scheme, a mixed-case host, a default port (`:443` for https, `:80` for http), a fragment, a query, or a non-canonical path (`..`, `.`, or duplicate slashes detected via `path.Clean`). The same canonical form is reused for `iss` in every emitted artifact, in the discovery document's own `issuer` field, and in the authorization-response `iss` parameter — so byte-exact comparison under RFC 9207 mix-up defence holds end-to-end. `op.New` returns a build-time error rather than booting on a non-canonical issuer.
 :::
 
 <a class="faq-anchor" id="dj-10"></a>

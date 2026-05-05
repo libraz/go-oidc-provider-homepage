@@ -1,149 +1,79 @@
 ---
-title: 送信者制約 (DPoP / mTLS)
-description: FAPI 2.0 が access token をクライアント保有鍵にバインドする仕組み — 盗難トークンで何が変わるか。
+title: 送信者制約 — 選定ガイド
+description: Bearer トークンと送信者制約付きトークン。DPoP と mTLS のどちらを選ぶかの判断軸。
 ---
 
-# 送信者制約 — DPoP / mTLS
+# 送信者制約 — DPoP と mTLS の選び方
 
-保護のない Bearer トークンは **bearer-authoritative** です — バイト列を持つ者が API を呼べてしまいます。トークンが漏れる（ログ、中継、ブラウザ拡張）と、漏らした側はトークン期限まで全アクセス権を持ちます。
+保護のない bearer トークンは **bearer-authoritative** です — バイト列を持つ者が API を呼べてしまいます。トークンが漏れると(ログ、中継 proxy、ブラウザ拡張、サードパーティ SDK)、漏らした側は有効期限まで全アクセス権を握ります。
 
-**送信者制約付き** access token は、正規クライアントが保有する鍵にバインドされます。トークンが漏れても、鍵を一緒に盗まないと使えません。
+**送信者制約付き** access token は、正規クライアントが保有する鍵にバインドされます。バイト列が漏れても、攻撃者は鍵を一緒に盗まないと使えません。本ページは選定ガイドです — それぞれの仕組みは [DPoP](/concepts/dpop) と [mTLS](/concepts/mtls) の専用ページに分かれています。
 
-::: details このページで触れる仕様
-- [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP (Demonstrating Proof of Possession)
-- [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
-- [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800) — Confirmation (`cnf`) claim
-- [RFC 8725](https://datatracker.ietf.org/doc/html/rfc8725) — JWT Best Current Practices
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+::: details トークン replay とは何か
+攻撃者が漏洩した有効な access token(ログや侵害された proxy など)を、自分のマシンから再送して API を呼ぶ攻撃です。RS は構文的に有効なトークンを見て応答してしまいます。送信者制約があれば、攻撃者は対応する鍵も提示する必要があり、構造的に replay が成立しません。
 :::
 
-::: details 用語の補足
-- **Bearer トークン** — 持っている人に権限を与えるトークン（RFC 6750）。`Authorization: Bearer <token>` で送る。鍵は必要ない。
-- **`cnf` claim**（"confirmation"、RFC 7800） — access token の中に入るフィールドで、正規クライアントが保有する鍵を記録します。RS は呼び出し側が一致する鍵を使っているかを `cnf` で確認します。
-- **thumbprint** — 公開鍵（または X.509 証明書）の SHA-256 ハッシュ。`cnf` の中で安定した短い識別子として使われます。
+::: details proof-of-possession とは
+「トークンのバイト列だけでなく、対応する鍵を保有していることを示してください」という考え方の総称です。DPoP / mTLS、それより古い holder-of-key トークンなどはすべて proof-of-possession 方式です。本ライブラリの DPoP / mTLS は、この考え方の現代的な OAuth ネイティブ実装になります。
 :::
 
-本ライブラリには 2 つの方式があり、いずれも RFC に裏打ちされています:
+## 2026 年に bearer トークンを残すリスク
 
-- **DPoP**（Demonstrating Proof of Possession、RFC 9449） — クライアントがリクエストごとに小さな proof JWT を秘密鍵で署名。通常の HTTPS で動作。
-- **mTLS**（Mutual TLS、RFC 8705） — クライアントが TLS ハンドシェイクで X.509 証明書を提示し、OP が発行トークンを証明書 thumbprint にバインド。
+トークン漏洩は仮想の話ではありません:
 
-FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトークンを要求し、本ライブラリは両方を受理します。
+- **ログ** — リバースプロキシのアクセスログ、アプリログ、observability パイプラインは、明示的に剥がさない限り `Authorization` ヘッダを残しがちです。ログに残った bearer は TTL いっぱい再利用できてしまいます。
+- **ブラウザ拡張・SDK** — ブラウザ拡張はページと同じプロセス境界の中で動作するため、ページが付ける任意のヘッダを読めます。モバイル SDK もアプリと同じプロセス内に居ます。
+- **侵害された中継** — CDN エッジや proxy が 1 つでも侵害されれば、そこを通るすべてのリクエストが攻撃者の手に渡ります。bearer トークンは収穫対象として最も価値があります。
+- **stage-and-fire** — 開発者のマシンに一時的にアクセスできた攻撃者は、トークンをコピーして後日インターネット側から使えます。
 
-## DPoP — 動作
+構造的な解は、バイト列だけでは不十分にすることです。送信者制約は、すべてのリクエストを正規クライアントが保有する鍵に紐付けることでこれを達成します。漏洩自体は依然として起きますが、漏洩が API 侵害に繋がらなくなります。
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant RP as RP (priv_dpop 保有)
-    participant OP
-    participant RS
-
-    RP->>RP: DPoP proof JWT 構築<br/>{ jti, htm:POST, htu:.../token, iat }<br/>headers: { typ:dpop+jwt, alg:ES256, jwk: pub_dpop }<br/>priv_dpop で署名
-    RP->>OP: POST /token<br/>DPoP: <proof><br/>...
-    OP->>OP: proof 検証: htm/htu/jti ユニーク、iat 新鮮、jwk が alg と一致
-    OP->>OP: access_token.cnf.jkt = SHA-256(jwk thumbprint) をバインド
-    OP->>RP: 200 { access_token, ... }<br/>token_type: DPoP
-    RP->>RP: API 呼び出し用に新しい DPoP proof 構築
-    RP->>RS: GET /api<br/>Authorization: DPoP <access_token><br/>DPoP: <method+url 用 proof>
-    RS->>RS: proof 検証 + token の cnf.jkt が proof.jwk と一致
-    RS->>RP: 200
-```
-
-リクエスト毎にクライアントは *新しい* DPoP proof を作ります（異なる `jti`、異なる `htm`/`htu`）。RS は次のものを拒否します:
-
-- token の `cnf.jkt` と一致しない鍵で署名された proof。
-- 再利用された `jti`。
-- 異なる method または URL の proof。
-- freshness 窓外の `iat` を持つ proof。
-
-::: details DPoP nonce (RFC 9449 §8)
-高セキュリティ deployment では、OP が DPoP proof 内のサーバ供給 nonce を要求できます。最初のリクエストは `DPoP-Nonce: <nonce>` と `use_dpop_nonce` エラーを返し、クライアントは次の proof に nonce を埋めて再試行します。これによりオフライン事前計算 proof が無効化されます。
-
-`op.WithDPoPNonceSource(source)` で nonce 生成器を差し込みます（in-memory または分散）。FAPI 2.0 Message Signing は nonce を強制し、Baseline は許可。詳細は [`examples/51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce)。
+::: tip 送信者制約と TLS の違い
+TLS は通信路上のトークンを保護します。一度アプリ層(OP、RS、ロギング middleware、デバッグエンドポイント)に届いた bearer トークンは平文で、それらの場所のいずれかから漏れる可能性が残ります。送信者制約はトークンを end-to-end で守ります。
 :::
 
-## mTLS — 動作
+## 本ライブラリの 2 つのバインド方式
 
-TLS ハンドシェイク自体がクライアントを認証します。
+**DPoP**(RFC 9449)は、クライアントがリクエスト毎に自分の鍵で署名する方式です。proof は小さな JWT(`htm`、`htu`、`iat`、`jti`、任意の `ath` と `nonce`)で、HTTP ヘッダ `DPoP:` に乗せます。プレーン HTTPS で動作し、TLS クライアント証明書を要しません。詳細は [DPoP](/concepts/dpop) を参照してください。
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant RP as RP (X.509 cert + 秘密鍵)
-    participant LB as TLS 終端<br/>(リバースプロキシ)
-    participant OP
-    participant RS
+**mTLS**(RFC 8705)は、TLS ハンドシェイクで提示した X.509 証明書にトークンをバインドする方式です。OP は証明書の SHA-256 thumbprint を `cnf.x5t#S256` として発行 token に書き込み、リソースサーバは観測した証明書の thumbprint を照合します。詳細は [mTLS](/concepts/mtls) を参照してください。
 
-    RP->>LB: クライアント証明書付き TLS ハンドシェイク
-    LB->>OP: X-Forwarded-Client-Cert: <DER/PEM><br/>POST /token ...
-    OP->>OP: クライアント証明書チェーンを検証（または self-signed JWK と照合）
-    OP->>OP: access_token.cnf.x5t#S256 = SHA-256(cert) をバインド
-    OP->>RP: 200 { access_token, ... }
-    RP->>RS: TLS ハンドシェイク（同クライアント証明書）
-    RS->>RS: 証明書 thumbprint が token.cnf.x5t#S256 と一致するか検証
-    RS->>RP: 200
-```
+## 比較
 
-RFC 8705 のサブモード 2 つ:
-
-- `tls_client_auth` — PKI 発行証明書、OP がトラストストアに対してチェーン検証。
-- `self_signed_tls_client_auth` — クライアントが公開 JWK を登録、OP が証明書の公開鍵と照合。
-
-::: warning mTLS Proxy ヘッダ
-OP はほぼ常に TLS 終端 proxy（nginx / envoy / クラウド LB）の **背後** で動きます。proxy が検証済みクライアント証明書をヘッダで渡します。`op.WithMTLSProxy(headerName, trustedCIDRs)` で両方を設定:
-
-```go
-op.WithMTLSProxy("X-SSL-Cert", []string{"10.0.0.0/8"})
-```
-
-CIDR リストで信頼 proxy 範囲を pin し、その範囲外からの偽造ヘッダ付きリクエストを拒否します。
-:::
-
-## どちらを使うか
-
-| シナリオ | DPoP | mTLS |
+| 観点 | DPoP | mTLS |
 |---|---|---|
-| Public クライアント（SPA / モバイル） | ✅ — クライアントが鍵をメモリ / セキュアストレージに保持。 | ❌ — public OP に対してクライアントが mTLS を確立できない。 |
-| Confidential クライアント（サービス間） | ✅ | ✅ |
-| クライアント身元用 PKI が既にデプロイ済 | 可 | ✅ — それを再利用。 |
-| クライアント証明書を配布したくない | ✅ | ❌ |
-| リクエスト単位のリクエストバインド（htm/htu） | ✅ — proof が method + URL を含む。 | ⚠️ — チャネルのみがバインドされる。 |
-| FAPI 2.0 Baseline | ✅ | ✅ |
-| FAPI 2.0 Message Signing | ✅ | ✅ |
+| 仕様 | RFC 9449 | RFC 8705 |
+| 鍵媒体 | クライアントが保持する秘密鍵(署名できる任意の機器) | クライアント TLS 証明書(PKI 発行 / 自己署名) |
+| ブラウザ対応 | 可(SPA、モバイル、JWT を署名できるあらゆる主体) | 弱 — ブラウザはクライアント証明書を実用的に提示できない |
+| リクエスト毎の追加成果物 | アプリ側で署名する fresh な JWS proof | なし(TLS 層でバインド) |
+| proxy / TLS 終端への依存 | なし — プレーン HTTPS で動く | 終端側が証明書をヘッダで前送りする必要あり |
+| `cnf` メンバ | `cnf.jkt`(JWK thumbprint) | `cnf.x5t#S256`(X.509 thumbprint) |
+| refresh token バインド既定 | public はバインド、confidential は非バインド([設計判断 #15](/security/design-judgments#dj-15)) | クライアントが token endpoint で mTLS を使ったときにバインド |
+| バインドを越えた replay 防御 | `jti` キャッシュ、`iat` 窓、任意のサーバ nonce | TLS セッション再利用 + 証明書 thumbprint 照合 |
+| FAPI 2.0 Baseline 受理 | 可 | 可 |
+| FAPI 2.0 Message Signing | 可(§8 / §9 nonce 併用) | 可 |
 
-混在環境では両方を有効化 — OP が discovery 両方を出し、クライアントがリクエスト毎に選びます。
+FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトークンを要求し、本ライブラリは両方を受理します。`op.WithProfile(profile.FAPI2Baseline)` は `[feature.DPoP, feature.MTLS]` に対する `RequiredAnyOf` を課し、いずれも有効化されていなければ構築時に構成を拒否します。
 
-## トークンが漏れたとき何が変わるか
+## 使い分けの指針
 
-保護のない Bearer:
-- 漏らした側がトークンを `exp` まで replay できてしまいます。
+選択は、既存インフラから自然に決まることが多いです:
 
-DPoP バインド:
-- 漏らした側は `cnf.jkt` に対応する秘密鍵も必要です。それが無ければ proof チェックで全 API 呼び出しが失敗します。
+- **SPA、モバイル、ブラウザ駆動のクライアント →** DPoP。ブラウザはクライアント証明書を確実には提示できず、モバイルでの証明書プロビジョニングも UX が悪いためです。DPoP の鍵はメモリかプラットフォームのセキュアストレージに置けます。
+- **ファーストパーティ API(両端を自分で制御) →** DPoP。運用負荷が低く、PKI が不要です。
+- **内部 CA を運用済みのバックエンドサービス →** mTLS。既存 PKI を再利用でき、新しい鍵管理面を増やしません。
+- **B2B サービスメッシュ、オープンバンキング、規制環境 →** mTLS。多くのケースで規制側がネットワーク層で既に mTLS を要求しており、RFC 8705 はその上に token バインドを重ねるだけで済みます。
+- **異種混在環境(SPA + バックエンド) →** 両方を有効化。OP が discovery で両方を出し、クライアントごとに使えるほうを選びます。
 
-mTLS バインド:
-- 漏らした側は X.509 証明書 **と** その秘密鍵も必要です — `cnf.x5t#S256` と一致する thumbprint の TLS セッションを再確立できなければ通りません。
+迷ったら DPoP を既定にしてください。前提となるインフラが少なく、どのクライアント環境でも動きます。
 
-## 実装サマリ
+## さらに読む
 
-```go
-import (
-  "github.com/libraz/go-oidc-provider/op"
-  "github.com/libraz/go-oidc-provider/op/profile"
-  "github.com/libraz/go-oidc-provider/op/feature"
-)
+- [DPoP (RFC 9449)](/concepts/dpop) — proof の構造、replay 防御、`cnf.jkt`、サーバ nonce、public / confidential での refresh バインド差。
+- [mTLS (RFC 8705)](/concepts/mtls) — サブモード(`tls_client_auth` と `self_signed_tls_client_auth`)、`cnf.x5t#S256`、リバースプロキシ構成。
 
-op.New(
-  /* 必須オプション */
-  op.WithProfile(profile.FAPI2Baseline),     // 送信者制約を必須化
-  op.WithFeature(feature.DPoP),               // DPoP 有効化 — 少なくとも 1 つ選ぶ
-  op.WithFeature(feature.MTLS),               // (および / または) mTLS 有効化
-  op.WithMTLSProxy("X-SSL-Cert", trustedCIDRs),
-  op.WithDPoPNonceSource(myNonceSource),     // 任意、RFC 9449 §8
-)
-```
+## 次に読む
 
-::: tip プロファイルは要件を課す、binding は組み込み側が選ぶ
-`op.WithProfile(profile.FAPI2Baseline)` は PAR と JAR を自動有効化し、加えて `RequiredAnyOf` 制約を課します。組み込み側は `op.WithFeature` で `feature.DPoP` か `feature.MTLS` の **少なくとも 1 つ** を明示的に有効化する必要があります。どちらも有効化されていなければ、`op.New` が構築時に構成を拒否します。両方を有効化すれば両 binding が使えるようになり、discovery document にも両方が出ます。
-:::
+- [ユースケース: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — 送信者制約を有効化した完全な組み込み例。
+- [DPoP nonce フロー](/use-cases/dpop-nonce) — RFC 9449 §8 / §9 のサーバ供給 nonce パイプライン。
+- [設計判断](/security/design-judgments) — public / confidential での refresh バインド差を含む、解決済みの仕様間トレードオフ。

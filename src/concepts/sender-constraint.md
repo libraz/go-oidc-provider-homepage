@@ -1,149 +1,79 @@
 ---
-title: Sender constraint (DPoP / mTLS)
-description: How FAPI 2.0 binds an access token to a client-held key — and what changes for stolen tokens.
+title: Sender constraint — selection guide
+description: Bearer tokens vs sender-constrained tokens. How to pick between DPoP and mTLS for your deployment.
 ---
 
-# Sender constraint — DPoP / mTLS
+# Sender constraint — DPoP vs mTLS
 
-A bare Bearer token is **bearer-authoritative**: whoever has the bytes can call the API. If the token leaks (logs, intermediary, browser extension), the leaker has full access until the token expires.
+A bare bearer token is **bearer-authoritative**: whoever has the bytes can call the API. If the token leaks (logs, intermediary proxy, browser extension, third-party SDK) the leaker has full access until the token expires.
 
-A **sender-constrained** access token is bound to a key that the legitimate client holds. Even if the token leaks, the leaker cannot use it without also stealing the key.
+A **sender-constrained** access token is bound to a key the legitimate client holds. Even if the bytes leak, the leaker cannot use the token without also stealing the key. This page is the selection guide; the mechanics live on the dedicated pages for [DPoP](/concepts/dpop) and [mTLS](/concepts/mtls).
 
-::: details Specs referenced on this page
-- [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP (Demonstrating Proof of Possession)
-- [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
-- [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800) — Confirmation (`cnf`) claim
-- [RFC 8725](https://datatracker.ietf.org/doc/html/rfc8725) — JWT Best Current Practices
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+::: details Token replay — what is it?
+A leaker captures a valid access token (e.g. from a log file or a compromised proxy) and re-sends it from their own machine to call the API. The RS sees a syntactically valid token and serves the request. Sender constraint makes replay structurally impossible — the leaker would also have to present the matching key on the same request.
 :::
 
-::: details Quick refresher
-- **Bearer token** — any token that grants whoever holds it. Sent as `Authorization: Bearer <token>` (RFC 6750). No key required to use it.
-- **`cnf` claim** ("confirmation", RFC 7800) — a field inside the access token that records the key the legitimate client holds. The RS consults it to verify the caller is using the matching key.
-- **Thumbprint** — a SHA-256 hash of a public key (or X.509 certificate), used as a stable, short identifier inside `cnf`.
+::: details Proof-of-possession — what is it?
+The general term for "show me you hold the key, not just the token bytes." DPoP, mTLS, and the older holder-of-key tokens are all proof-of-possession schemes. The library's DPoP / mTLS flows are the modern OAuth-native expressions of this idea.
 :::
 
-There are two mechanisms in this library, both backed by RFCs:
+## Why bearer tokens are risky in 2026
 
-- **DPoP** (Demonstrating Proof of Possession, RFC 9449) — the client signs a small JWT proof per request with a private key. Works over ordinary HTTPS.
-- **mTLS** (Mutual TLS, RFC 8705) — the client presents an X.509 certificate during the TLS handshake, and the OP binds the issued token to the certificate's thumbprint.
+Token leakage is no longer hypothetical:
 
-FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both.
+- **Logs.** Reverse-proxy access logs, application logs, and observability pipelines routinely capture the `Authorization` header unless explicitly stripped. A bearer token surviving in a log file is reusable for the rest of its TTL.
+- **Browser extensions and SDKs.** Modern browsers run extensions inside the same process boundary as the page; a malicious extension can read every header the page sets. Mobile SDKs sit in the same process as the app.
+- **Compromised intermediaries.** A single compromised CDN edge or proxy gains access to every request flowing through it. Bearer tokens are the most useful artefact to harvest.
+- **Stage-and-fire.** An attacker with brief access to a developer's machine can copy a token and use it later from anywhere on the internet.
 
-## DPoP — how it works
+The structural fix is to make the bytes alone insufficient. Sender constraint achieves this by tying every request to a key the legitimate client controls. The leak still happens; it just no longer compromises the API.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant RP as RP (holds priv_dpop)
-    participant OP
-    participant RS
-
-    RP->>RP: build DPoP proof JWT<br/>{ jti, htm:POST, htu:.../token, iat }<br/>headers: { typ:dpop+jwt, alg:ES256, jwk: pub_dpop }<br/>signed with priv_dpop
-    RP->>OP: POST /token<br/>DPoP: <proof><br/>...
-    OP->>OP: verify proof: htm/htu/jti unique, iat fresh, jwk matches alg
-    OP->>OP: bind access_token.cnf.jkt = SHA-256(jwk thumbprint)
-    OP->>RP: 200 { access_token, ... }<br/>token_type: DPoP
-    RP->>RP: build new DPoP proof for the API call
-    RP->>RS: GET /api<br/>Authorization: DPoP <access_token><br/>DPoP: <proof for this method+url>
-    RS->>RS: verify proof + verify token's cnf.jkt matches proof.jwk
-    RS->>RP: 200
-```
-
-Per request, the client makes a *fresh* DPoP proof (different `jti`, different `htm`/`htu`). The RS rejects:
-
-- A proof signed with a key that doesn't match the token's `cnf.jkt`.
-- A reused `jti`.
-- A proof for a different method or URL.
-- A proof with an `iat` outside the freshness window.
-
-::: details DPoP nonce (RFC 9449 §8)
-For high-security deployments, the OP can require a server-supplied nonce inside DPoP proofs. The first request returns `DPoP-Nonce: <nonce>` and `use_dpop_nonce` error; the client retries with the nonce embedded in the next proof. This prevents pre-computed proofs from being staged offline.
-
-`op.WithDPoPNonceSource(source)` plugs in the nonce generator (in-memory or distributed). FAPI 2.0 Message Signing forces nonce on; FAPI 2.0 Baseline allows it. See [`examples/51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce).
+::: tip Sender constraint vs TLS
+TLS protects the token while it is on the wire. Once the request reaches the application — the OP, the RS, a logging middleware, a debug endpoint — the bearer token is in plaintext and any of those points can leak it. Sender constraint protects the token end-to-end.
 :::
 
-## mTLS — how it works
+## Two ways to bind in this library
 
-The TLS handshake itself authenticates the client.
+**DPoP (RFC 9449)** binds the token to a key the client signs with on every request. The proof is a small JWT (`htm`, `htu`, `iat`, `jti`, optional `ath` and `nonce`) attached as a `DPoP:` HTTP header. Works over plain HTTPS and does not require the client to hold a TLS certificate. Read [DPoP](/concepts/dpop) for the full mechanics.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant RP as RP (X.509 cert + priv key)
-    participant LB as TLS terminator<br/>(reverse proxy)
-    participant OP
-    participant RS
+**mTLS (RFC 8705)** binds the token to the X.509 certificate the client presented during the TLS handshake. The OP records a SHA-256 thumbprint of the certificate as `cnf.x5t#S256` on the issued token, and the resource server verifies that the cert presented to it has the same thumbprint. Read [mTLS](/concepts/mtls) for the full mechanics.
 
-    RP->>LB: TLS handshake with client cert
-    LB->>OP: X-Forwarded-Client-Cert: <DER/PEM><br/>POST /token ...
-    OP->>OP: verify client cert chain (or self-signed JWK match)
-    OP->>OP: bind access_token.cnf.x5t#S256 = SHA-256(cert)
-    OP->>RP: 200 { access_token, ... }
-    RP->>RS: TLS handshake (same client cert)
-    RS->>RS: verify cert thumbprint matches token.cnf.x5t#S256
-    RS->>RP: 200
-```
+## Comparison
 
-Two RFC 8705 sub-modes:
-
-- `tls_client_auth` — PKI-issued certificate, OP validates the chain against a trust store.
-- `self_signed_tls_client_auth` — the client registers its public JWK, and the OP matches the cert's public key against it.
-
-::: warning mTLS proxy header
-The OP almost always runs **behind** a TLS-terminating proxy (nginx / envoy / cloud LB). The proxy passes the verified client cert in a header. `op.WithMTLSProxy(headerName, trustedCIDRs)` configures both:
-
-```go
-op.WithMTLSProxy("X-SSL-Cert", []string{"10.0.0.0/8"})
-```
-
-The CIDR list pins the trusted proxy ranges so a request from outside those ranges with a forged header is rejected.
-:::
-
-## When to use which
-
-| Scenario | DPoP | mTLS |
+| Aspect | DPoP | mTLS |
 |---|---|---|
-| Public client (SPA / mobile) | ✅ — client holds the key in memory / secure storage. | ❌ — clients can't establish mTLS to a public OP. |
-| Confidential client (server-to-server) | ✅ | ✅ |
-| Already-deployed PKI for client identity | possibly | ✅ — reuse it. |
-| Want to avoid distributing client certs | ✅ | ❌ |
-| Per-request request-binding (htm/htu) | ✅ — proof carries method + URL. | ⚠️ — only the channel is bound. |
-| FAPI 2.0 Baseline | ✅ | ✅ |
-| FAPI 2.0 Message Signing | ✅ | ✅ |
+| Spec | RFC 9449 | RFC 8705 |
+| Key material | Client-held private key, any device that can sign | Client TLS certificate (PKI-issued or self-signed) |
+| Browser support | Yes (SPA, mobile, anything that can sign a JWT) | Poor — browsers cannot easily present client certs |
+| Per-request artefact | Fresh JWS proof, signed in the application | Nothing extra — the binding lives at the TLS layer |
+| Proxy / TLS terminator dependency | None — works over plain HTTPS | Requires the terminator to forward the cert in a header |
+| `cnf` member | `cnf.jkt` (JWK thumbprint) | `cnf.x5t#S256` (X.509 thumbprint) |
+| Refresh token binding (default) | Bound for public clients, unbound for confidential ([Design judgment #15](/security/design-judgments#dj-15)) | Bound when the client uses mTLS at the token endpoint |
+| Replay defense beyond binding | `jti` cache, `iat` window, optional server nonce | TLS session reuse + cert thumbprint match |
+| FAPI 2.0 Baseline acceptance | Yes | Yes |
+| FAPI 2.0 Message Signing | Yes (with §8 / §9 nonce) | Yes |
 
-For a mixed estate, enable both — the OP advertises both in discovery and the client picks per request.
+FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]` and rejects the configuration at construction time if neither is enabled.
 
-## What changes when a token leaks
+## Choosing between them
 
-Bare bearer:
-- Leaker can replay the token until `exp`.
+The decision usually falls out of the existing infrastructure:
 
-DPoP-bound:
-- Leaker also needs the private key matching `cnf.jkt`. Without it, every API call fails the proof check.
+- **SPA, mobile, or any browser-driven client →** DPoP. Browsers cannot reliably present client certificates; mobile certificate provisioning is a poor UX. DPoP keys live in memory or in the platform's secure storage.
+- **First-party API where you control both ends →** DPoP. Lower operational overhead; no PKI required.
+- **Backend services with an established internal CA →** mTLS. Reuse the existing PKI infrastructure rather than introducing a new key-management surface.
+- **B2B service mesh, open banking, regulated environment →** mTLS, often because the regulator already mandates it at the network layer. RFC 8705 layers token binding on top without changing the wire.
+- **Heterogeneous estate (some SPAs, some backends) →** Both. Enable both features; the OP advertises them in discovery and each client picks the mechanism it can use.
 
-mTLS-bound:
-- Leaker also needs the X.509 certificate **and** its private key to re-establish a TLS session whose thumbprint matches `cnf.x5t#S256`.
+If you are not sure which one fits, default to DPoP. It carries fewer infrastructure prerequisites and works in every client environment.
 
-## Wiring summary
+## Read more
 
-```go
-import (
-  "github.com/libraz/go-oidc-provider/op"
-  "github.com/libraz/go-oidc-provider/op/profile"
-  "github.com/libraz/go-oidc-provider/op/feature"
-)
+- [DPoP (RFC 9449)](/concepts/dpop) — proof structure, replay defenses, `cnf.jkt`, server nonce, public / confidential refresh-binding split.
+- [mTLS (RFC 8705)](/concepts/mtls) — sub-modes (`tls_client_auth` vs `self_signed_tls_client_auth`), `cnf.x5t#S256`, reverse-proxy wiring.
 
-op.New(
-  /* required options */
-  op.WithProfile(profile.FAPI2Baseline),     // mandates sender constraint
-  op.WithFeature(feature.DPoP),               // enable DPoP — pick at least one
-  op.WithFeature(feature.MTLS),               // (and / or) enable mTLS
-  op.WithMTLSProxy("X-SSL-Cert", trustedCIDRs),
-  op.WithDPoPNonceSource(myNonceSource),     // optional, RFC 9449 §8
-)
-```
+## Read next
 
-::: tip Profile mandates the requirement; the embedder picks the binding
-`op.WithProfile(profile.FAPI2Baseline)` auto-enables PAR and JAR, and imposes a `RequiredAnyOf` constraint that forces the embedder to enable **at least one** of `feature.DPoP` or `feature.MTLS` explicitly via `op.WithFeature`. `op.New` rejects the configuration at construction time if neither is enabled. Enable both to make both binding mechanisms available; the discovery document then lists both.
-:::
+- [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — full wiring with sender constraint enabled.
+- [DPoP nonce flow](/use-cases/dpop-nonce) — RFC 9449 §8 / §9 server-supplied nonce pipeline.
+- [Design judgments](/security/design-judgments) — the public / confidential refresh-binding split and other resolved spec tensions.

@@ -54,6 +54,17 @@ flowchart LR
 
 The opaque token is a 32-byte random identifier (base64url, 43 characters). It carries no claims. The RS resolves the token by calling the OP's `/introspect` endpoint (RFC 7662) on every request — or caches the result for a short, deliberate window. The OP is **on the request hot path**.
 
+::: details `jti` — what is it?
+`jti` is a standard JWT claim (RFC 7519 §4.1.7) — "JWT ID." A unique identifier per token, used to reference, revoke, or deduplicate that specific token. JWT access tokens carry a `jti`; the OP uses it as the key in the legacy JTI registry strategy and as the deduplication key in the deny-list table. Opaque tokens don't have a `jti` because the bearer string itself is already a unique identifier.
+:::
+
+::: details `gid` — what is it?
+A library-private JWT claim that holds the **GrantID** — the OP-side identifier of the authorization grant the token was issued under. One grant typically maps to "this user logged into this client at this time, with this scope set." The OP needs `gid` to revoke *every* access token under a grant in one tombstone write, instead of chasing each `jti` individually. Resource servers MUST ignore the claim — it's an OP-internal concern.
+
+- **When to care:** only if you're writing introspection-aware RS code or auditing the JWT bytes. Standard RFC 9068 verifiers won't see it.
+- **Easy to confuse with:** `sid` (session ID, OIDC Core) — `sid` references the *user session*, `gid` references the *grant* (a session can issue multiple grants).
+:::
+
 ::: tip The wire shape gives the RS no hint
 Both formats arrive as `Authorization: Bearer <opaque-string>`. RFC 6750 makes no distinction. The RS knows which format to expect because the deployment told it — typically by audience, the same way the RS already knows which JWKS to trust. The library's discovery document does **not** advertise the format.
 :::
@@ -140,9 +151,22 @@ Refresh-token rotation is the related soft handle. The library always issues a n
 
 The other cascade source is **authorization-code re-use detection (RFC 6749 §4.1.2)**. The moment a stolen code is presented twice, every access token under its grant is retired — JWT format writes a grant tombstone (or flips registry rows under the opt-in JTI strategy); opaque format flips opaque-store rows. Both propagate with the same visibility shown in the diagrams above. `/end_session` is not the only trigger.
 
+::: details Cascade revocation — what is it?
+"Cascade" here means: one revocation event reaches every artefact that descends from the same grant. If `/end_session` fires once, the OP marks the grant revoked, and from that moment every access token, every refresh token, and every shadow row under that grant is treated as invalid wherever the OP is consulted. The opposite would be "leaf revocation" — revoke this one specific token, leave its siblings alive — which is what RFC 7009 `/revocation` does for a single `jti`.
+:::
+
 ## JWT access-token revocation strategy
 
 The JWT path has its own knob — **how the OP persists revocation state**. Opaque tokens are intrinsically per-token in storage (the verifier needs the row), so the strategy applies to JWT only.
+
+::: details Tombstone, shadow row, JTI registry — what are these?
+Storage-layer vocabulary that shows up when discussing revocation strategies.
+
+- **Tombstone** — a single row that records "the thing identified by this key is dead." The token itself isn't stored; only its grant ID and the fact that it's revoked. Verification reads the tombstone table by key.
+- **Shadow row** — a row that "shadows" each issued token: one row per `jti` that carries `revoked_at`, audit fields, and so on. Heavier than a tombstone (one write per issuance, not per revocation), but it gives you a full audit log of every token that ever existed.
+- **JTI registry** — the table that holds those shadow rows, keyed by `jti`. The default strategy *doesn't* use it; the opt-in `RevocationStrategyJTIRegistry` does.
+- **When to care:** when sizing the database. Tombstones grow `O(revoked grants)`, shadow rows grow `O(issuance_rate × TTL)`. For a high-traffic OP that is the difference between thousands and millions of rows.
+:::
 
 `go-oidc-provider` ships three strategies, selected via `op.WithAccessTokenRevocationStrategy`. The default (`RevocationStrategyGrantTombstone`) has been the baseline since the strategy abstraction landed; the legacy per-`jti` model is preserved behind `RevocationStrategyJTIRegistry` for embedders that need it.
 
@@ -193,7 +217,9 @@ provider, err := op.New(
 Selecting `RevocationStrategyNone` together with any FAPI profile fails at `op.New`. FAPI 2.0 Security Profile §5.3.2.2 mandates server-side revocation; the library refuses to boot a configuration that disables it.
 :::
 
-The grant-tombstone strategy needs `Store.GrantRevocations()` to return a non-nil substore; the JTI-registry strategy needs `Store.AccessTokens()`. Misconfigurations surface at `op.New`, not on the first `/token` request.
+::: warning Substore presence is enforced at `op.New` (BREAKING)
+The default `RevocationStrategyGrantTombstone` requires `Store.GrantRevocations()` to return a non-nil substore; `RevocationStrategyJTIRegistry` requires `Store.AccessTokens()`. Both gates run at construction time, so a missing substore now surfaces as a configuration error from `op.New` instead of a silent half-wired cascade at the first `/revoke` / refresh-replay event. The bundled `inmem`, `sql`, and composite adapters all return both substores; embedders shipping a custom `Store` aggregator MUST implement them (or pin `RevocationStrategyNone` outside FAPI when no revocation is needed).
+:::
 
 ## Choosing a format
 

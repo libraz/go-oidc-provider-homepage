@@ -5,6 +5,10 @@ description: Two users, one browser. The OP keeps a chooser group and routes pro
 
 # Use case — Multi-account chooser
 
+::: warning v0.9.x — chooser template option not wired yet
+The session manager APIs and the bundled chooser interaction described below ship today. The `op.WithChooserUI` option that lets you swap in a custom template, however, is reserved for the v1.0 surface and currently causes `op.New` to return a configuration error. Until the runtime mount lands, leave the option unset and rely on the bundled chooser template.
+:::
+
 ## What is `prompt=select_account`?
 
 OIDC Core 1.0 §3.1.2.1 defines a `prompt` request parameter the RP sends with `/authorize`. Three values matter for this page:
@@ -62,14 +66,7 @@ sequenceDiagram
 
 ## Wiring
 
-The library ships a built-in interaction for `prompt=select_account` that emits an `interaction.ChooserPromptData` envelope listing every account in the active chooser group. The SPA picks one and posts back the `SessionID`:
-
-```go
-op.New(
-  /* required options */
-  op.WithChooserUI(op.ChooserUI{Template: chooserTmpl}), // optional — default template ships
-)
-```
+The library ships a built-in interaction for `prompt=select_account` that emits an `interaction.ChooserPromptData` envelope listing every account in the active chooser group. With the default HTML driver, the bundled template renders the list and the user POSTs back the `SessionID`. With the JSON driver (`op.WithInteractionDriver(interaction.JSONDriver{})`), the SPA receives the same envelope as JSON and posts back the `SessionID`.
 
 The session manager exposes the orchestration:
 

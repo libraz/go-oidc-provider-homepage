@@ -7,6 +7,38 @@ description: A from-scratch explainer of OAuth 2.0 roles and what OpenID Connect
 
 If you're new to authentication and authorization, the standards stack looks like an alphabet soup: OAuth, OIDC, JWT, OP, RP, RS, PAR, JAR, JARM, DPoP, mTLS, PKCE, FAPI. The good news: there are **only three roles**, and almost every standard is a refinement of the same flow between them.
 
+::: details Acronym cheat sheet (open me first)
+**The three roles**
+- **OP** (OpenID Provider) — the server that authenticates users and issues tokens. `go-oidc-provider` is this. Also called **AS** (Authorization Server) in pure-OAuth contexts.
+- **RP** (Relying Party) — the client app that uses the OP to log users in. Also called **Client**.
+- **RS** (Resource Server) — the API that accepts the access token and returns data.
+
+**Tokens and crypto**
+- **JWT** (JSON Web Token, RFC 7519) — `header.payload.signature` JSON, base64url-encoded. Self-describing, signature-verifiable.
+- **JWS** (JSON Web Signature, RFC 7515) — the signing scheme JWTs use.
+- **JWE** (JSON Web Encryption, RFC 7516) — encrypted variant; outer envelope wraps an inner JWS.
+- **JWK** / **JWKS** (RFC 7517) — JSON Web Key / Key **Set**. The OP's public keys, fetched from `/jwks`.
+- **PKCE** (RFC 7636) — proof of possession on the authorization code; stops code-interception attacks. Pronounced "pixie."
+
+**Profile / hardening acronyms**
+- **PAR** (RFC 9126) — Pushed Authorization Request. The RP POSTs the authorize request to the OP first; the browser only carries a `request_uri` reference.
+- **JAR** (RFC 9101) — JWT-Secured Authorization Request. The authorize request is itself a signed JWT.
+- **JARM** (OpenID FAPI) — JWT-Secured Authorization Response Mode. The authorize **response** is a signed JWT.
+- **DPoP** (RFC 9449) — Demonstrating Proof of Possession. Binds a token to a key the client holds, on every request.
+- **mTLS** (RFC 8705) — mutual TLS. Same idea as DPoP, but the binding is the client's TLS certificate.
+- **FAPI** (Financial-grade API) — the OpenID profile that pins all of the above into one set.
+- **CIBA** — Client-Initiated Backchannel Authentication. Push-to-phone flow, no browser on the device.
+
+**Identity claims you'll see early**
+- **`sub`** — Subject. The user's opaque identifier on this OP.
+- **`aud`** — Audience. Who the token is for.
+- **`iss`** — Issuer. The OP that signed the token.
+- **`scope`** — space-separated permission list (`openid profile email`).
+- **`acr`** (Authentication Context Class Reference) — assurance level the auth method provided. Used by step-up.
+- **`amr`** (Authentication Methods References) — RFC 8176 codes for the factors actually used (`pwd`, `otp`, `mfa`, `hwk`, `face`, `fpt`).
+- **`cnf`** — confirmation. The key the token is bound to (DPoP `jkt` thumbprint or mTLS `x5t#S256`).
+:::
+
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework
 - [RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750) — Bearer Token Usage
@@ -70,7 +102,7 @@ The trade-off is "every request hits the OP" vs "OP loses fine-grained revocatio
 
 | Token | Lifetime | What it is | Where it goes |
 |---|---|---|---|
-| **Authorization code** | Seconds | Single-use opaque string. | Server-to-server: RP → OP `/token`. |
+| **Authorization code** | Seconds (default 60s) | Single-use opaque string. | Server-to-server: RP → OP `/token`. |
 | **Access token** | Minutes (default 5 min) | The thing you put on `Authorization: Bearer …` to call APIs. JWT or opaque. | RP → RS. |
 | **Refresh token** | Days–weeks (30d default) | Long-lived; lets the RP get a new access token without re-authenticating. | RP → OP `/token`. |
 | **ID Token** | Minutes (matches access) | Signed JWT proving who the user is. *Never* sent to APIs. | OP → RP, consumed inside the RP. |
@@ -115,6 +147,10 @@ The "+ PKCE" piece (steps highlighted via `code_challenge`/`code_verifier`) is w
 | **Issuer (`iss`)** | The OP that signed the token. RP and RS both check it matches their expectation. |
 | **JWKS** | JSON Web Key Set — the OP's public keys, fetched from `/jwks`. RPs use this to verify ID Tokens. |
 | **Discovery document** | `/.well-known/openid-configuration` — a JSON catalog of every endpoint, supported scope, supported algorithm, etc. |
+
+::: details `acr` and `amr` in one paragraph
+`acr` says **how strong** the authentication was (an assurance-level label like `aal2`); `amr` says **which factors** were used (`["pwd","otp"]`). RPs that need elevated assurance for sensitive operations request a higher `acr` via `acr_values`; the OP runs step-up authentication and re-issues the ID Token. RFC 8176 catalogs the standard `amr` codes; RFC 9470 standardises step-up via `WWW-Authenticate: error="insufficient_user_authentication"`. See [MFA / step-up](/use-cases/mfa-step-up) for wiring.
+:::
 
 ## What FAPI 2.0 adds
 

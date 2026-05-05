@@ -7,7 +7,7 @@ description: 1 つのプロファイル切替で PAR、JAR、DPoP、ES256 ロッ
 
 ## FAPI 2.0 とは
 
-**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 + OIDC のプロファイルです。基盤となる仕様の **厳しいサブセット** を選び、攻撃者に長年悪用されてきた任意性を禁じます — 例えば `RS256` を弾いて `ES256` / `PS256` を必須化、PKCE をすべての認可で必須化、送信者制約付きトークン（DPoP **または** mTLS）を必須化、RP の `/authorize` 要求を生のクエリ文字列ではなく PAR + JAR で送らせる、などです。
+**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 + OIDC のプロファイルです。基盤となる仕様の **厳しいサブセット** を選び、攻撃者に長年悪用されてきた任意性を禁じます — 例えば `RS256` を弾いて `ES256` / `PS256` を必須化、PKCE をすべての認可で必須化、送信者制約付きトークン（DPoP **または** mTLS）を必須化、RP の `/authorize` 要求を生のクエリ文字列ではなく PAR + JAR で送らせる、などです（本ライブラリは id_token を `ES256` のみで署名するため、anti-`RS256` 条項は構造的に満たされます）。
 
 このバーが要求される理由は、銀行・医療・行政の運用が「フラグを全部覚えていますか？」ではなく「チェックリストに対して監査可能か」を要求するからです。FAPI 2.0 は FAPI 1.0（こちらも依然現役）の後継。FAPI 2.0 Baseline はエントリーレベル、FAPI 2.0 Message Signing が JARM + DPoP nonce + RS 側の proof 署名を追加する上位層です。
 
@@ -34,7 +34,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 | Pushed Authorization Requests | RFC 9126 | プロファイルが `feature.PAR` を自動有効化。`/par` の `request_uri` が唯一の authorize 入口。 |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` 必須、`plain` 拒否。 |
 | 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | プロファイルが `RequiredAnyOf=[DPoP, MTLS]` を立て、どちらかが有効でなければ起動を拒否。 |
-| ES256（または PS256）署名 | RFC 7518 | アルゴリズム allow-list が FAPI 公開面から `RS256` を除外、`none`/`HS*` はそもそも存在しない。 |
+| ES256 署名 | RFC 7518 | `id_token_signing_alg_values_supported` は無条件で `["ES256"]`。`RS256` / `none` / `HS*` はそもそも公告しない。 |
 | `redirect_uri` 完全一致 | FAPI 2.0 §5.3 | ワイルドカード無し、バイト一致比較。 |
 | `private_key_jwt` または mTLS クライアント認証 | FAPI 2.0 §3.1.3 | token endpoint auth-method リストを FAPI allow-list と交差。 |
 
@@ -49,7 +49,7 @@ sequenceDiagram
     RP->>OP: POST /par<br/>Authorization: <client_assertion JWT><br/>scope=openid&...&code_challenge=...
     OP->>RP: 201 { request_uri: urn:ietf:params:oauth:request_uri:..., expires_in }
     RP->>OP: GET /authorize?<br/>request_uri=urn:...&client_id=...
-    OP->>OP: ES256 alg lock、redirect_uri 完全一致
+    OP->>OP: ES256 で id_token を署名、redirect_uri 完全一致
     OP-->>RP: （ログイン + 同意 — または interaction 駆動）
     OP->>RP: 302 redirect_uri?code=...&state=...
     RP->>OP: POST /token<br/>DPoP: <proof><br/>grant_type=authorization_code&code=...&code_verifier=...&<br/>client_assertion=<private_key_jwt>
@@ -76,7 +76,7 @@ provider, err := op.New(
   op.WithIssuer(demoIssuer),
   op.WithStore(inmem.New()),
   op.WithKeyset(opKeys.Keyset()),
-  op.WithCookieKey(opKeys.CookieKey),
+  op.WithCookieKeys(opKeys.CookieKey),
   op.WithProfile(profile.FAPI2Baseline), // <--- プロファイル切り替え
   op.WithFeature(feature.DPoP),          // sender-constraint binding を選択
   op.WithStaticClients(op.PrivateKeyJWTClient{
@@ -96,7 +96,7 @@ provider, err := op.New(
 
 1. `feature.PAR` と `feature.JAR` を自動有効化（sender-constraint の binding として `feature.DPoP` か `feature.MTLS` を選ぶのは組み込み側の責務で、`WithFeature` で明示する)。
 2. `token_endpoint_auth_methods_supported` を FAPI 2.0 §3.1.3 allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差。
-3. ID Token 署名 alg を `ES256`/`PS256` にロック、新規発行で `RS256` を拒否。
+3. `id_token_signing_alg_values_supported = ["ES256"]` を維持(OP は ES256 でしか id_token を署名・公告しないため、FAPI 2.0 の anti-`RS256` 条項は構造的に満たされる)。
 4. `redirect_uri` の完全一致を強制（どこにもワイルドカード無し）。
 
 ::: tip DPoP の代わりに mTLS
@@ -123,9 +123,11 @@ curl -s http://localhost:8080/.well-known/openid-configuration | jq '{
   "request_parameter_supported": true,
   "dpop_signing_alg_values_supported": ["ES256", "EdDSA", "PS256"],
   "token_endpoint_auth_methods_supported": ["private_key_jwt"],
-  "id_token_signing_alg_values_supported": ["ES256", "PS256"]
+  "id_token_signing_alg_values_supported": ["ES256"]
 }
 ```
+
+`id_token_signing_alg_values_supported` はプロファイルに関係なく `["ES256"]` のみで、OP が発行する id_token はすべて `ES256` 署名です。FAPI 2.0 §6.2.1 の anti-`RS256` 条項は OP 側の対応 alg に `RS256` が一切含まれないことで構造的に満たされます。`dpop_signing_alg_values_supported` は DPoP proof 受理用で `["ES256", "EdDSA", "PS256"]` です。
 
 ## 適合状況
 

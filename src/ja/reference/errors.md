@@ -52,7 +52,7 @@ sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性
 | `op.ErrIssuerInvalid` | `configuration_error` | issuer が absolute https でない、または query / fragment を持つ |
 | `op.ErrStoreRequired` | `configuration_error` | `WithStore` を渡していない |
 | `op.ErrKeysetRequired` | `configuration_error` | `WithKeyset` を渡していない、または空 |
-| `op.ErrCookieKeysRequired` | `configuration_error` | `authorization_code` grant が有効なのに `WithCookieKey` / `WithCookieKeys` を渡していない |
+| `op.ErrCookieKeysRequired` | `configuration_error` | `authorization_code` grant が有効なのに `WithCookieKeys` を渡していない |
 | `op.ErrDynamicRegistrationDisabled` | `configuration_error` | `WithDynamicRegistration` 無しで `Provider.IssueInitialAccessToken` を呼んだ |
 
 ::: tip 他の設定エラー

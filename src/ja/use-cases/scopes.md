@@ -49,6 +49,30 @@ op.WithScope(op.InternalScope("internal:audit")),
 `openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **あなたの** scope カタログに焦点を当てています。
 :::
 
+## カスタム claim を `Scope.Claims` で開示する
+
+カスタム scope は、`Scope.Claims` スライスに claim 名を列挙することで、その scope が `/userinfo` で開示する claim を宣言できます。scope が granted されると、OP は標準 OIDC マッピングと並んで、宣言された claim 名を `/userinfo` 応答に乗せます:
+
+```go
+op.WithScope(op.Scope{
+    Name:        "billing.read",
+    Title:       "請求情報",
+    Description: "請求履歴の閲覧",
+    Claims:      []string{"billing_tier", "billing_account_id"},
+    Public:      true,
+}),
+```
+
+クライアントに `billing.read` が granted されると、`/userinfo` 応答には `profile` / `email` 等が解放するものに加えて `billing_tier` と `billing_account_id` が乗ります — `UserStore`(または interaction driver に組み込まれた claim resolver) が当該 subject に対してその claim 名を実際に提供している場合に限ります。
+
+::: tip v0.9.x で開示が有効になりました
+旧バージョンの `Scope.Claims` は同意画面の「この scope はこれを開示します」表示のためだけに使われており、フィールドは意図を文書化していたものの runtime は `/userinfo` での開示に反映していませんでした。v0.9.x からは設定済カタログを runtime の scope → claim 名マップに射影するようになり、granted されたカスタム scope が宣言済 claim を自動で `/userinfo` に開示します。同じ目的で out-of-band な hook を自前で組んでいた組み込み側はそれを外せます。
+:::
+
+::: info OIDC 標準 scope は影響を受けません
+`profile` / `email` / `address` / `phone` は OIDC Core §5.4 で定義されている claim マッピングをそのまま保ちます。`Scope.Claims` はカスタム scope のための hook です — 通常運用で標準 scope の claim 集合を上書きする必要はありません。標準 scope の `Public: true` を外すと `op.New` が拒否します。
+:::
+
 ## クライアント単位の許可リスト
 
 クライアントの `Scopes` に scope を追加します:

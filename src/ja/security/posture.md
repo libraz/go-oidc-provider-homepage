@@ -45,21 +45,21 @@ flowchart LR
 
 ### 1. コンストラクタはゼロ値起動を拒否する
 
-`op.New(...)` は `error` を返します — 必須 4 オプション（`WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKey`）のいずれかが欠けるとビルド時にエラー。利用可能なゼロ値の `Provider` は存在しません。
+`op.New(...)` は `error` を返します — 必須オプションが欠けるとエラーで弾かれます。`WithIssuer` と `WithStore` は無条件で必須、`WithKeyset` はトークン署名・検証を伴うフローを有効にした時点で必須、`WithCookieKeys` は `authorization_code` grant を有効にした時点で必須です。利用可能なゼロ値の `Provider` は存在しません。
 
 ::: details なぜ重要か
-多くの「デフォルト ON」型のフレームワークは設定不足でも気付かれずに起動します。本ライブラリの設計では「OP が立ち上がったが署名鍵がない / 推測可能な cookie 鍵 / 誤った issuer」といったクラスのバグを、最初の 1 リクエストが届く前に閉じます。詳細は `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKey` / `op.WithStore` の不在時に出るビルド時エラーを参照してください。
+多くの「デフォルト ON」型のフレームワークは設定不足でも気付かれずに起動します。本ライブラリの設計では「OP が立ち上がったが署名鍵がない / 推測可能な cookie 鍵 / 誤った issuer」といったクラスのバグを、最初の 1 リクエストが届く前に閉じます。詳細は `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` の不在時に出るビルド時エラーを参照してください。
 :::
 
 ### 2. JOSE の alg リストは閉じた型
 
-`internal/jose.Algorithm` は `RS256`、`PS256`、`ES256`、`EdDSA` の 4 値のみを列挙しています。`none`、`HS256/384/512`、その他の文字列は `IsAllowed()` で false を返します。`ParseAlgorithm` は不明値に対してフォールバックせず、`ok=false` を返します。コードベース内のすべての署名 / 検証経路は `internal/jose` を経由するので、**alg 混同攻撃（RFC 7519 §6 / RFC 8725 §2.1）は構造的に到達できません**。
+`internal/jose.Algorithm` は `RS256`、`PS256`、`ES256`、`EdDSA` の 4 値のみを列挙しています。`none`、`HS256/384/512`、その他の文字列は `IsAllowed()` で false を返します。`ParseAlgorithm` は不明値に対してフォールバックせず、`ok=false` を返します。生 go-jose ハンドルを保持する `internal/jar`、`internal/dpop`、`internal/mtls`、`internal/backchannel`、`internal/jarm` などの経路も含めて、すべての署名 / 検証パスは入力された `alg` をこの閉じた型でゲートしているので、**alg 混同攻撃（RFC 7519 §6 / RFC 8725 §2.1）は構造的に到達できません**。
 
 | 想定リスク | 緩和策 |
 |---|---|
 | JWT ライブラリが `alg=none` を受理 | `Algorithm(s)` は不明値・空文字を拒否 |
 | 公開鍵経路で `HS256` を受理 | `HS*` は型に存在しない |
-| 配置ごとの alg「フィーチャーフラグ」 | depguard が `internal/jose/` 外からの JOSE ライブラリ直接 import を禁止 |
+| 配置ごとの alg「フィーチャーフラグ」 | depguard の `jose-isolation` ルールで `go-jose/v4` を直接 import できるパッケージを allow-list で固定。新規呼び出し元は意図的に追加する必要がある |
 
 ### 3. `crypto/rand` のみ — `math/rand` 禁止
 
@@ -92,16 +92,16 @@ flowchart LR
 | 認可応答に `iss` を付与 | `internal/authorize` | RFC 9207 |
 | `redirect_uri` 完全一致（既定で完全一致） | `internal/authorize` | OAuth 2.1、RFC 8252 |
 | ループバック redirect の制約強化 | `internal/registrationendpoint`、`internal/authorize` | RFC 8252 |
-| Back-Channel Logout の SSRF 防御（RFC 1918 拒否リスト） | `internal/backchannel` | OIDC Back-Channel Logout 1.0 |
+| Back-Channel Logout の SSRF 防御（loopback / link-local / RFC 1918 / IPv6 ULA 拒否リスト） | `internal/backchannel` | OIDC Back-Channel Logout 1.0 |
 | OP 側の request_object replay 対策（`jti`） | `internal/jar` | RFC 9101 §10.8 |
 | 各検証経路でのアルゴリズム allow-list | `internal/jose` | RFC 8725 |
-| Issuer 正規化（末尾スラッシュなどの揺れを防ぐ） | `op/op.go` | RFC 9207 |
+| Issuer 正規化（末尾スラッシュなどの揺れを防ぐ） | `op/options_validate.go` | RFC 9207 |
 
 ## ツールチェーン
 
 | 階層 | ツール | 場所 |
 |---|---|---|
-| Lint | `golangci-lint v2`（errcheck、govet、staticcheck、unused、**gosec**、errorlint、revive、depguard など） | `.golangci.yaml` |
+| Lint | `golangci-lint v2`（errcheck、govet、staticcheck、unused、**gosec**、errorlint、revive、depguard など） | `.golangci.yml` |
 | 脆弱性スキャン | `govulncheck` | `scripts/govulncheck.sh` |
 | Fuzz | Go 標準 `Fuzz*`（`make fuzz` / `scripts/fuzz.sh 30s`） | `internal/jose`、`internal/jar`、`internal/dpop`、`internal/pkce`、`internal/jwks` などにターゲット |
 | ライセンス | `go-licenses` | `scripts/licenses.sh` |
@@ -127,7 +127,7 @@ flowchart LR
 
 | 状況 | 判断 |
 |---|---|
-| 自社プロダクトの内部 OP を作る | 適合します。タグで pin し、自社 CI で `govulncheck`、GHSA を購読してください |
+| 自社プロダクトの内部 OP を作る | 適合します。`go.mod` でバージョンタグを固定し、自社 CI で `govulncheck` を回し、GHSA を購読してください |
 | 公衆向け、価値の高いフロー（銀行グレード FAPI） | このライブラリは出発点として使い、第三者監査を入れて findings を還元する形を推奨 |
 | コンプライアンス上の都合で認証取得済み IdP を置換する | 推奨しません — v1.0 と引用可能な監査結果が揃うまでは控えてください |
 | 実 OP のコードベースで OIDC の仕組みを学ぶ | 最適。構造的防御自体が学習コンテンツになります |

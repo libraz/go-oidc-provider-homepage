@@ -1,6 +1,6 @@
 ---
 title: 鍵ローテーション
-description: 署名鍵と cookie 鍵を、生きているセッションを切らずにローテーションする方法。
+description: 署名鍵と cookie 鍵を、有効なセッションを切らずにローテーションする方法。
 outline: 2
 ---
 
@@ -9,7 +9,7 @@ outline: 2
 ローテーションする鍵は 2 種類で、サイクルもそれぞれ違います:
 
 - **署名鍵**(`op.Keyset`) — ID token、JWT access token、JARM、userinfo JWT を署名する ECDSA P-256 秘密鍵。公開側は `/jwks` に載ります。
-- **Cookie 鍵**(`op.WithCookieKey` / `WithCookieKeys`) — session / CSRF cookie を封緘する 32 byte の AES-256-GCM 鍵。
+- **Cookie 鍵**(`op.WithCookieKeys`) — session / CSRF cookie を封緘する 32 byte の AES-256-GCM 鍵。
 
 どちらも、新しい `*Provider` を構築してハンドラをアトミックに差し替える形でローテーションします。スライスをその場で書き換える API はありません。
 
@@ -38,7 +38,7 @@ newProv, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithStore(myStore),
     op.WithKeyset(ks),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
     /* ...残りのオプション... */
 )
 if err != nil { /* 旧 provider を残してアラート */ }
@@ -88,7 +88,7 @@ op.WithCookieKeys(newKey, oldKey)
 
 ## MFA 暗号化鍵のローテーション
 
-`WithMFAEncryptionKey` / `WithMFAEncryptionKeys` も cookie 鍵と同じ「先頭が現行、以降が過去」の形に従います。32 byte 鍵で TOTP のシークレットを保存時暗号化(AES-256-GCM、subject 識別子を AAD にバインド)します。
+`WithMFAEncryptionKeys` も cookie 鍵と同じ「先頭が現行、以降が過去」の形に従います。32 byte 鍵で TOTP のシークレットを保存時暗号化(AES-256-GCM、subject 識別子を AAD にバインド)します。
 
 ```go
 op.WithMFAEncryptionKeys(currentKey, previousKey)
@@ -107,7 +107,7 @@ op.WithMFAEncryptionKeys(currentKey, previousKey)
 
 1. `curl https://op.example.com/jwks` で、新しい `kid` が出ていて退役した `kid` がまだ並んでいるか(撤去工程を完了するまでは並んでいるべき)を確認します。
 2. 新しいトークンの `kid` ヘッダが新鍵を指しているか確認します: `echo "<jwt>" | cut -d. -f1 | base64 -d | jq .kid`。
-3. `token.issued` audit イベントの extras に新しい `kid` が出ていることを確認します。
+3. 切り替え(cut-over)後に `key.retired_kid_presented` 監査イベントが新たに発火していないことを確認します(退役済みの `kid` を持つ JWS / JWE が届いた場合だけ発火するイベントなので、沈黙が成功シグナルです)。
 4. ローテーション前に発行されたブラウザセッションが、`/userinfo` をきちんと通ること(cookie 鍵側の復号が壊れていないこと)を確認します。
 
 ## なぜその場で書き換えず、新しい `Provider` を作るのか
@@ -116,6 +116,6 @@ op.WithMFAEncryptionKeys(currentKey, previousKey)
 
 - すべてのオプション衝突チェックが再走します(typo を載せたまま動かすことができません)。
 - 検証パスがアトミックに差し替わります(中途半端なローテーション状態が発生しません)。
-- 監督プロセス側のログ / audit に明示的なイベントが残ります(プロセス内部で暗黙にミューテーションするのとは違います)。
+- 監督プロセス側のログ / 監査記録に明示的なイベントが残ります(プロセス内部で暗黙に状態変更が走るのとは違います)。
 
 監督プロセス側の pattern は十分小さく、安全性のメリットに見合う冗長さだと判断しています。

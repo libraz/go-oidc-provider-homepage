@@ -5,7 +5,7 @@ description: A runnable OpenID Connect Provider in ~30 lines.
 
 # Minimal OP
 
-The shortest path to a running OP. The four required options are `WithIssuer`, `WithStore`, `WithKeyset`, and `WithCookieKey` — `op.New` returns an error if any are missing.
+The shortest path to a running OP. The four required options are `WithIssuer`, `WithStore`, `WithKeyset`, and `WithCookieKeys` — `op.New` returns an error if any are missing.
 
 ::: code-group
 
@@ -36,7 +36,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
   )
   if err != nil {
     log.Fatal(err)
@@ -71,7 +71,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
   )
   if err != nil {
     log.Fatal(err)
@@ -109,7 +109,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
   )
   if err != nil {
     log.Fatal(err)

@@ -46,6 +46,10 @@ func main() {
   // seedUser は op.HashPassword で "demo"/"demo" をハッシュし、
   // *store.User を st.UserPasswords() に PUT する（実装は example を参照）。
 
+  // upstream の例は examples/internal/opkit の opkit.DefaultLoginFlow(st.UserPasswords())
+  // を使っています。これは下と同じ値を構築する thin wrapper で、公開 API は下の
+  // LoginFlow 構造体です。opkit を import するのは example のソースを読むときだけで、
+  // 本番コードで使うものではありません。
   flow := op.LoginFlow{
     Primary: op.PrimaryPassword{Store: st.UserPasswords()},
   }
@@ -54,7 +58,7 @@ func main() {
     op.WithIssuer("http://127.0.0.1:8080"),
     op.WithStore(st),
     op.WithKeyset(keys.Keyset()),
-    op.WithCookieKey(keys.CookieKey),
+    op.WithCookieKeys(keys.CookieKey),
     op.WithLoginFlow(flow),
     op.WithStaticClients(op.PublicClient{
       ID:           "demo-rp",
@@ -72,7 +76,7 @@ func main() {
 }
 ```
 
-必須 4 オプション（`WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKey`）だけでは `/oidc/.well-known/openid-configuration` と `/oidc/jwks` は応答しますが、ユーザに依存するエンドポイント（authorize / token / userinfo）は `WithLoginFlow` と `WithStaticClients` のペアが必要です。discovery のみの 4 オプション形は [`getting-started/minimal`](/ja/getting-started/minimal) を参照してください。
+必須 4 オプション（`WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKeys`）だけでは `/oidc/.well-known/openid-configuration` と `/oidc/jwks` は応答しますが、ユーザに依存するエンドポイント（authorize / token / userinfo）は `WithLoginFlow` と `WithStaticClients` のペアが必要です。discovery のみの 4 オプション形は [`getting-started/minimal`](/ja/getting-started/minimal) を参照してください。
 
 ## OP が公開するもの
 

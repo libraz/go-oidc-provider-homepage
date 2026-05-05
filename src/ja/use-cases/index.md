@@ -31,6 +31,22 @@ go run -tags example ./examples/01-minimal
 | OIDC と並走する純粋 OAuth 2.0 | [`15-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/15-oauth2-only) | [OAuth 2.0（openid なし）](/ja/use-cases/oauth2-only) |
 | DPoP サーバ nonce フロー | [`51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) | [DPoP nonce フロー](/ja/use-cases/dpop-nonce) |
 
+### Grant — 既定外 URN
+
+| ユースケース | 例 | ページ |
+|---|---|---|
+| カスタム grant_type URN | [`19-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/19-custom-grant) | [Custom Grant](/ja/use-cases/custom-grant) |
+| Device Code（RFC 8628） | [`30-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-device-code-cli) | [Device Code](/ja/use-cases/device-code) |
+| CIBA poll mode | [`31-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-ciba-pos) | [CIBA](/ja/use-cases/ciba) |
+| Token Exchange（RFC 8693） | [`32-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-token-exchange-delegation) | [Token Exchange](/ja/use-cases/token-exchange) |
+
+### 暗号化 / subject
+
+| ユースケース | 例 | ページ |
+|---|---|---|
+| Pairwise subject（OIDC Core §8.1） | [`33-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-pairwise-saas) | [Pairwise subject](/ja/use-cases/pairwise-subject) |
+| Encrypted id_token（JWE） | [`34-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-encrypted-id-token) | [JWE 暗号化](/ja/use-cases/jwe-encryption) |
+
 ### UI
 
 | ユースケース | 例 | ページ |
@@ -79,14 +95,14 @@ go run -tags example ./examples/01-minimal
 
 例フォルダはトピック別にグループ化されています（時系列ではない）。
 
-| 帯  | トピック                                                          |
-|-------|----------------------------------------------------------------|
-| 00–09 | bootstrap、grant variants、storage adapter                    |
-| 10–19 | UI、scope、SPA、locale、claims request、CORS                  |
-| 20–29 | MFA と認証ルール（TOTP / risk / captcha / step-up）            |
-| 30–39 | identity federation（予約 — v1.x）                            |
-| 40–49 | governance: first-party、DCR、back-channel logout              |
-| 50–59 | operations: FAPI helpers、metrics、tracing、DPoP nonce         |
-| 60–69 | compliance（予約 — v1.x 後期）                              |
+| 帯  | トピック                                                                       |
+|-------|------------------------------------------------------------------------------|
+| 00–09 | bootstrap、grant variants、storage adapter                                   |
+| 10–19 | UI、scope、SPA、locale、claims request、CORS、custom grant、BYO              |
+| 20–29 | MFA と認証ルール（TOTP / risk / captcha / step-up）                          |
+| 30–39 | 既定外 grant + 暗号化（device code、CIBA、token exchange、JWE）              |
+| 40–49 | governance: first-party、DCR、back-channel logout                            |
+| 50–59 | operations: FAPI helpers、metrics、tracing、DPoP nonce                       |
+| 60–69 | compliance（予約 — v1.x 後期）                                               |
 
 （予約帯は in-flight / v1.x 作業のプレースホルダ。ソースリポジトリの README が一次インベントリです。）

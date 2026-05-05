@@ -82,7 +82,7 @@ provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(combined),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(myCookieKey),
+  op.WithCookieKeys(myCookieKey),
   op.WithStaticClients(op.PublicClient{
     ID:           "demo-rp",
     RedirectURIs: []string{"https://rp.example.com/callback"},
@@ -112,17 +112,17 @@ provider, err := op.New(
 | `AccessTokenRegistry` | durable (SQL — populated only under `RevocationStrategyJTIRegistry`) |
 | `OpaqueAccessTokenStore` | durable (SQL — populated only when opaque AT format is configured) |
 | `GrantRevocationStore` | durable (SQL — backs the default grant-tombstone revocation) |
-| `SessionStore` | durable (SQL) by default; opt into volatile via `WithSessionDurabilityPosture` |
+| `SessionStore` | route to either tier with `composite.With(composite.Sessions, ...)`; declare your placement intent via `WithSessionDurabilityPosture` (default `SessionDurabilityVolatile`) so the back-channel logout audit signal classifies expected vs unexpected gaps |
 | `InteractionStore` | volatile (Redis) |
 | `ConsumedJTIStore` | volatile (Redis) |
 | `PARStore` | volatile (Redis) |
 
 ::: info Why the new substores stay on the durable side
-`OpaqueAccessTokenStore` and `GrantRevocationStore` are part of the transactional cluster: their writes commit atomically with the grant or refresh-token write that triggered them. The Redis adapter returns `nil` from both accessors so the composite splitter cannot route them to a non-transactional backend; embedders who need either substore configure SQL on the durable side. A Redis-only deployment that never enables opaque AT and never needs server-side JWT revocation can leave both as `nil`.
+`OpaqueAccessTokenStore` and `GrantRevocationStore` are part of the transactional cluster: their writes commit atomically with the grant or refresh-token write that triggered them. The Redis adapter returns `nil` from both accessors so the composite splitter cannot route them to a non-transactional backend; embedders who need either substore configure SQL on the durable side. The default revocation strategy (`RevocationStrategyGrantTombstone`) requires `GrantRevocations()` to be non-nil at `op.New`, so a Redis-only deployment that wants to leave the durable side empty must explicitly pin `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI only — FAPI profiles reject `None`).
 :::
 
 ::: details Why SessionStore can be either
-A volatile session store (eviction under memory pressure, no replication guarantees) is acceptable for many deployments — the worst case is a user re-authenticating. Some embedders want stronger guarantees so they can audit log-in state through restarts. The library exposes the choice via `op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` and propagates the value into back-channel logout audit events so SOC dashboards distinguish "expected gap under volatile placement" from "unexpected gap under durable placement."
+A volatile session store (eviction under memory pressure, no replication guarantees) is acceptable for many deployments — the worst case is a user re-authenticating. Some embedders want stronger guarantees so they can audit log-in state through restarts. Routing is the embedder's call (set via `composite.With(composite.Sessions, durable_or_volatile_store)`); `op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` is a *declaration* the library does not enforce — it just propagates the value into the back-channel logout `bcl.no_sessions_for_subject` audit event so SOC dashboards distinguish "expected gap under volatile placement" from "unexpected gap under durable placement."
 :::
 
 ## Observability

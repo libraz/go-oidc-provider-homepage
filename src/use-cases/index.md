@@ -31,6 +31,22 @@ Every example folder maps to one of the use-case pages below.
 | Plain OAuth 2.0 alongside OIDC | [`15-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/15-oauth2-only) | [OAuth 2.0 (no openid)](/use-cases/oauth2-only) |
 | DPoP server nonce flow | [`51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) | [DPoP nonce flow](/use-cases/dpop-nonce) |
 
+### Grants — non-default URNs
+
+| Use case | Example | Page |
+|---|---|---|
+| Custom grant_type URN | [`19-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/19-custom-grant) | [Custom Grant](/use-cases/custom-grant) |
+| Device code (RFC 8628) | [`30-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-device-code-cli) | [Device Code](/use-cases/device-code) |
+| CIBA poll mode | [`31-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-ciba-pos) | [CIBA](/use-cases/ciba) |
+| Token Exchange (RFC 8693) | [`32-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-token-exchange-delegation) | [Token Exchange](/use-cases/token-exchange) |
+
+### Crypto & subjects
+
+| Use case | Example | Page |
+|---|---|---|
+| Pairwise subject (OIDC Core §8.1) | [`33-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-pairwise-saas) | [Pairwise subject](/use-cases/pairwise-subject) |
+| Encrypted id_token (JWE) | [`34-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-encrypted-id-token) | [JWE encryption](/use-cases/jwe-encryption) |
+
 ### UI
 
 | Use case | Example | Page |
@@ -79,14 +95,14 @@ Every example folder maps to one of the use-case pages below.
 
 The example folders are grouped by topic, not by chronology:
 
-| Band  | Topic                                                          |
-|-------|----------------------------------------------------------------|
-| 00–09 | bootstrap, grant variants, storage adapters                    |
-| 10–19 | UI, scopes, SPA, locale, claims request, CORS                  |
-| 20–29 | MFA and authentication rules (TOTP / risk / captcha / step-up) |
-| 30–39 | identity federation (reserved — v1.x)                          |
-| 40–49 | governance: first-party, DCR, back-channel logout              |
-| 50–59 | operations: FAPI helpers, metrics, tracing, DPoP nonce         |
-| 60–69 | compliance (reserved — v1.x late)                              |
+| Band  | Topic                                                                |
+|-------|----------------------------------------------------------------------|
+| 00–09 | bootstrap, grant variants, storage adapters                          |
+| 10–19 | UI, scopes, SPA, locale, claims request, CORS, custom grant, BYO     |
+| 20–29 | MFA and authentication rules (TOTP / risk / captcha / step-up)       |
+| 30–39 | non-default grants + crypto (device code, CIBA, token exchange, JWE) |
+| 40–49 | governance: first-party, DCR, back-channel logout                    |
+| 50–59 | operations: FAPI helpers, metrics, tracing, DPoP nonce               |
+| 60–69 | compliance (reserved — v1.x late)                                    |
 
 (Reserved bands are placeholders for in-flight or v1.x work; the README in the source repo is the authoritative inventory.)

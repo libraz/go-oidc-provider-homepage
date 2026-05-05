@@ -45,6 +45,30 @@ op.WithScope(op.InternalScope("internal:audit")),
 - Acceptance is governed by `Scope.AllowedClients`: an empty list means any RP may request it; a non-empty list scopes acceptance to the named clients (any other client requesting the scope is rejected with `invalid_scope` per RFC 6749 §5.2).
 - `op.New` rejects an `InternalScope` whose name collides with an OIDC standard scope, so the discovery document never violates OIDC Discovery 1.0 §3.
 
+## Releasing custom claims via `Scope.Claims`
+
+A custom scope can declare which `/userinfo` claim names it unlocks by populating the `Scope.Claims` slice. When the scope is granted, the OP releases those claim names from the `/userinfo` response alongside the standard OIDC mappings:
+
+```go
+op.WithScope(op.Scope{
+    Name:        "billing.read",
+    Title:       "Billing",
+    Description: "Read your billing history",
+    Claims:      []string{"billing_tier", "billing_account_id"},
+    Public:      true,
+}),
+```
+
+When a client is granted `billing.read`, the `/userinfo` response surfaces `billing_tier` and `billing_account_id` (in addition to whatever `profile`, `email`, etc. release) — provided your `UserStore` (or the claim resolver wired into the interaction driver) actually carries those claim names for the subject.
+
+::: tip Released since v0.9.x
+Earlier builds populated `Scope.Claims` only for the consent prompt's "this scope grants…" copy; the field documented intent but the runtime never honoured it for `/userinfo` release. v0.9.x projects the configured catalogue onto a runtime scope → claim-name map so granted custom scopes now release their declared claims through `/userinfo` automatically. Embedders who hand-rolled out-of-band release hooks for the same purpose can drop them.
+:::
+
+::: info Standard OIDC scopes are unaffected
+`profile`, `email`, `address`, `phone` keep their RFC-defined claim mappings (OIDC Core §5.4). `Scope.Claims` is the custom-scope hook — overriding a standard scope's claims is not necessary in normal usage, and unsetting `Public: true` on the standard scopes is rejected at `op.New`.
+:::
+
 ::: tip OIDC standard scopes
 `openid`, `profile`, `email`, `address`, `phone`, and `offline_access` are auto-registered with built-in defaults; you don't need to declare them. The example focuses on **your** scope catalogue.
 :::

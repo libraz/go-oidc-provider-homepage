@@ -76,7 +76,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`BackchannelLogoutURI` フィールドは `op.ConfidentialClient` と `op.PrivateKeyJWTClient` にも同じ名前で存在します — どの typed seed からも opt-in できます。
+`BackchannelLogoutURI` フィールドは `op.ConfidentialClient` と `op.PrivateKeyJWTClient` にも同じ名前で存在します — いずれの型付き seed からもオプトインできます。
 
 ライブラリ全体のオプション:
 

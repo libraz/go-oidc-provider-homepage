@@ -20,13 +20,14 @@ pageClass: rfc-matrix-page
 
 | 仕様 | ステータス | 場所 |
 |---|---|---|
-| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span>（`response_type` は `code` のみ。Aggregated / Distributed claim types §5.6.2 は emit せず、Signed / Encrypted UserInfo §5.3.2 も未実装で UserInfo は常に `application/json`。詳細は下の「設計上の対象外」セクション） | `op/`、`internal/authorize`、`internal/tokenendpoint`、`internal/userinfo` |
+| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span>（`response_type` は `code` のみ。Aggregated / Distributed claim types §5.6.2 は emit せず、pairwise sub §8.1 は `op.WithPairwiseSubject` で実装済み。詳細は下の「設計上の対象外」セクション） | `op/`、`internal/authorize`、`internal/tokenendpoint`、`internal/userinfo`、`internal/sector` |
 | **OpenID Connect Discovery 1.0** | <span class="status-pill full">full</span> | `internal/discovery` |
-| **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span>（主要フロー、`sector_identifier_uri` の fetch、`application_type=web` / `=native` ごとの redirect URI 規則、JWKs / pairwise / response_type のクロスチェック、PUT の reserved field 拒否までを強制。`GET /register/{id}` の応答からは `client_secret` を意図的に除外、`software_statement` も非対応） | `internal/registrationendpoint` |
+| **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span>（主要フロー、`sector_identifier_uri` の fetch、`application_type=web` / `=native` ごとの redirect URI 規則、JWKs / pairwise / response_type のクロスチェック、PUT の reserved field 拒否、`post_logout_redirect_uris` の往復、5 種の JWE alg/enc encrypted-response メタデータまでを強制。`GET /register/{id}` の応答からは `client_secret` を意図的に除外、`software_statement` も非対応） | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
 | **OpenID Connect Back-Channel Logout 1.0** | <span class="status-pill full">full</span> | `internal/backchannel` |
 | **OpenID Connect Front-Channel Logout 1.0** | <span class="status-pill planned">planned</span> | — |
 | **OpenID Connect Session Management 1.0** | <span class="status-pill out">out</span>（サードパーティ cookie 依存のため。Back-Channel を推奨） | — |
+| **OpenID Connect CIBA Core 1.0** | <span class="status-pill partial">partial</span>（poll 配信のみ。ping / push は v2+ で対応） | `internal/ciba`、`internal/cibaendpoint`、`op.WithCIBA` |
 
 ## OAuth 2.0 系 RFC
 
@@ -46,8 +47,9 @@ pageClass: rfc-matrix-page
 | **RFC 8252** OAuth 2.0 for Native Apps | <span class="status-pill full">full</span>（loopback 制約を強制） | `internal/registrationendpoint`、`internal/authorize` |
 | **RFC 8414** Authorization Server Metadata | <span class="status-pill full">full</span> | `internal/discovery` |
 | **RFC 8485** Vectors of Trust | <span class="status-pill partial">partial</span>（ACR/AAL マッピング経由で消費） | `op/aal.go`、`op/acr.go` |
-| **RFC 8628** Device Authorization Grant | <span class="status-pill planned">planned</span>（`grant.DeviceCode` 定数あり、未実装） | — |
-| **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill full">full</span>（`feature.MTLS` でゲート） | `internal/mtls` |
+| **RFC 8628** Device Authorization Grant | <span class="status-pill full">full</span>（`op.WithDeviceCodeGrant` でゲート。`slow_down` ladder は `LastPolledAt` と原子的に永続化、`op/devicecodekit` が brute-force gate と revoke 用 audit hook を同梱） | `internal/devicecode`、`internal/devicecodeendpoint`、`op/devicecodekit` |
+| **RFC 8693** OAuth 2.0 Token Exchange | <span class="status-pill full">full</span>（`op.RegisterTokenExchange` でゲート。actor が subject と異なる場合は act chain 必須、cnf はリクエストの DPoP / mTLS で再 bind） | `internal/customgrant/tokenexchange` |
+| **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill full">full</span>（`feature.MTLS` でゲート。`mtls_endpoint_aliases` を discovery で公開） | `internal/mtls` |
 | **RFC 8707** Resource Indicators | <span class="status-pill full">full</span> | `internal/tokenendpoint` |
 | **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span>（alg allow-list、typ チェック） | `internal/jose` |
 | **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill full">full</span> | `internal/tokens` |
@@ -58,14 +60,14 @@ pageClass: rfc-matrix-page
 | **RFC 9449** DPoP | <span class="status-pill full">full</span>（§8 nonce フロー含む。`feature.DPoP` でゲート） | `internal/dpop`、`op.WithDPoPNonceSource` |
 | **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> | `op/rule.go`（`RuleACR`） |
 | **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill full">full</span> | コードベース全体 |
-| **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill planned">planned</span> | — |
+| **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span>（既定は signed JWT。client の `introspection_encrypted_response_alg` / `_enc` メタデータに応じて JWE で wrap） | `internal/introspectendpoint`、`internal/jose` |
 
 ## JOSE 系
 
 | RFC | ステータス | 場所 |
 |---|---|---|
 | **RFC 7515** JWS | <span class="status-pill full">full</span> | `internal/jose` |
-| **RFC 7516** JWE | <span class="status-pill out">out</span> — 暗号化 ID Token、暗号化 UserInfo、暗号化 Request Object（RFC 9101 §6.1）、暗号化 Response Object（JARM §4.3）はいずれも意図的に未実装。JOSE まわりは JWS のみ | — |
+| **RFC 7516** JWE | <span class="status-pill partial">partial</span> — 閉じた許可リスト（`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`）。inbound JWE request_object（JAR / PAR §6.1）、outbound JWE id_token、JWT-shape userinfo、JARM authorization 応答、RFC 9701 introspection 応答を実装済み。`RSA1_5` は <span class="status-pill refused">refused</span>（CVE-2017-11424 padding oracle）。`RSA-OAEP-384/512`、`dir`、対称鍵のみの `A*KW` は v2+ で対応 | `internal/jose`、`op.WithEncryptionKeyset` |
 | **RFC 7517** JWK | <span class="status-pill full">full</span> | `internal/jwks` |
 | **RFC 7518** JWA | <span class="status-pill partial">partial</span> — 発行は `ES256` のみ。検証は `RS256`、`PS256`、`ES256`、`EdDSA` を受理。`HS*` と `none` は <span class="status-pill refused">refused</span> | `internal/jose` |
 | **RFC 7519** JWT | <span class="status-pill full">full</span> | `internal/jose` |
@@ -79,8 +81,8 @@ pageClass: rfc-matrix-page
 | **FAPI 2.0 Baseline** | <span class="status-pill full">full</span>（継続回帰検査。[OFCS](/ja/compliance/ofcs) 参照） | `op.WithProfile(profile.FAPI2Baseline)` |
 | **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span>（継続回帰検査） | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | —（FAPI 2.0 を使用） |
-| **FAPI-CIBA** | <span class="status-pill planned">planned</span>（v1.x） | `profile.FAPICIBA`（定数あり） |
-| **OpenID iGov High** | <span class="status-pill planned">planned</span>（v2） | `profile.IGovHigh`（定数あり） |
+| **FAPI-CIBA** | <span class="status-pill full">full</span>（poll mode。`JAR` + `DPoP\|MTLS` 必須、access TTL 10 分上限、FAPI 2.0 client-auth セット、`requested_expiry` ≤ 600 秒、JAR `iss` / `aud` / `exp` / `nbf` 必須、request-object 寿命 ≤ 60 分（FAPI 2.0 Message Signing §5.6）、access-token revocation 必須） | `op.WithProfile(profile.FAPICIBA)` |
+| **OpenID iGov High** | <span class="status-pill planned">planned</span>（v2） | `profile.IGovHigh`（定数あり。ランタイム制約が未着地のため、現状で `op.WithProfile(profile.IGovHigh)` を渡すと `op.New` が拒否） |
 
 ## その他、ライブラリが参照する RFC
 
@@ -106,11 +108,20 @@ pageClass: rfc-matrix-page
 OIDC Core や周辺 OAuth 仕様には登場するものの、本ライブラリでは意図的に実装していない項目があります。隣接リポジトリの `test/scenarios/catalog/<feature>.yaml` に `status: out-of-scope` 行として記録され、ほかのテストと同じ場所で棚卸しできるようになっています。
 
 - **`response_type` は `code` のみ。** Implicit（`id_token`、`id_token token`）、hybrid（`code id_token` ほか）、`response_type=none` はいずれも発行しません。RFC 9700 §1.4 が implicit grant を非推奨化しており、FAPI 2.0 は code を必須としています。Discovery も `response_types_supported: ["code"]` だけを広告します。
-- **bare `form_post` と `fragment` は応答配信に到達しません。** 実際に動いている配信路は `query` と（`feature.JARM` 有効時）4 種の `*.jwt` モードだけです。`form_post` の値はパラメータ検証では互換のため受理しますが、hybrid / implicit を発行しないため form の本文に入れる内容がありません。
+- **`fragment` response mode は配信路として実装していません。** `code` のみの発行では URL fragment に入れるものがないためです。`query` と `form_post` は両方とも実装されています（`form_post` は OIDC Core Form Post Response Mode 1.0 に従って自動送信 HTML フォームを返します）。`feature.JARM` を有効にすると 4 種の `*.jwt` バリアントも配線されます。Discovery は既定で `response_modes_supported: ["query", "form_post"]` を広告し、JARM 有効時には `*.jwt` モードを追加で広告します。
 - **Aggregated / Distributed claim types（OIDC Core §5.6.2）は emit しません。** Normal claim のみを出力します。`_claim_names` / `_claim_sources` といったキーはトークンにも UserInfo 応答にも一切登場しません。
-- **Signed / Encrypted UserInfo response（OIDC Core §5.3.2）は未実装。** `GET /userinfo` は常に `application/json` で応答します。`userinfo_signed_response_alg` は読みません。
-- **JWE / 暗号化系は未実装。** 暗号化 ID Token、暗号化 UserInfo、暗号化 Request Object（RFC 9101 §6.1）、暗号化 Response Object（JARM §4.3）はいずれも対象外です。詳細は上の JOSE 系の表の RFC 7516 を参照してください。
 - **`client_secret_jwt` は登録時点で拒否します。** 代わりに `private_key_jwt` を使ってください。HMAC 共有秘密 JWT プロファイルは `invalid_client_metadata: token_endpoint_auth_method client_secret_jwt is not supported` で拒否されます。
+- **JWE alg / enc の許可リストは閉じています。** v0.9.1 で実装したのは `RSA-OAEP-256` + `ECDH-ES{,+A128KW,+A256KW}`（key-wrap）と `A{128,256}GCM`（content）。`WithSupportedEncryptionAlgs` は **狭める** だけで、広げることはできません。`RSA1_5` は永続的に拒否（CVE-2017-11424）。`RSA-OAEP-384` / `RSA-OAEP-512`、`dir`、対称鍵のみの `A*KW` は v2+ で対応します。
+- **CIBA の push / ping 配信モードは未実装。** Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告するので、クライアント側からこの 2 モードを negotiate することはできません。
+- **Custom-grant の refresh token は拒否します。** `CustomGrantResponse.RefreshToken` を非空で返すと `server_error` に集約されます。同梱の token-exchange ハンドラだけは grant_type URN がゲート前にチェックされるため例外です。handler 発行 refresh token の lineage 永続化と rotation は v2+ の設計課題です。
+
+## 範囲外(意図的)
+
+OAuth / OIDC 圏のすべての RFC が OP の責務というわけではありません。以下は意図的に対応していない仕様で、リソースサーバ・クライアント SDK・その他のレイヤが受け持つべき領域です。
+
+| 仕様 | 対応状況 | 備考 |
+|---|---|---|
+| **RFC 9421 — HTTP Message Signatures** | <span class="status-pill out">out</span> | リソースサーバ(API 保護)側の関心事であり、OP の責務ではありません。OP 側の対応する仕組みは、認可リクエスト署名に JAR (RFC 9101)、認可レスポンス署名に JARM、`/token` と `/userinfo` の所持証明に DPoP (RFC 9449) です。RS 側の HTTP 署名は組み込み側で実装してください。 |
 
 ## 検証方法
 

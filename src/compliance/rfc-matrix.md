@@ -20,13 +20,14 @@ Every standard the library actively cites in its code, mapped to the package tha
 
 | Standard | Status | Where |
 |---|---|---|
-| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span> (`response_type=code` only; Aggregated and Distributed claim types §5.6.2 are not emitted; signed / encrypted UserInfo §5.3.2 is not implemented — UserInfo always returns `application/json`. See "Out of scope by design" below.) | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo` |
+| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span> (`response_type=code` only; Aggregated and Distributed claim types §5.6.2 are not emitted; pairwise sub §8.1 is now wired via `op.WithPairwiseSubject`. See "Out of scope by design" below.) | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo`, `internal/sector` |
 | **OpenID Connect Discovery 1.0** | <span class="status-pill full">full</span> | `internal/discovery` |
-| **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span> (core flow, `sector_identifier_uri` fetch, `application_type=web` / `=native` redirect rules, JWKs / pairwise / response-type cross-checks, and PUT reserved-field rejection are enforced; `client_secret` is intentionally omitted from `GET /register/{id}` responses, `software_statement` is not accepted) | `internal/registrationendpoint` |
+| **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span> (core flow, `sector_identifier_uri` fetch, `application_type=web` / `=native` redirect rules, JWKs / pairwise / response-type cross-checks, PUT reserved-field rejection, `post_logout_redirect_uris` round-trip, and the five JWE alg/enc encrypted-response families are enforced; `client_secret` is intentionally omitted from `GET /register/{id}` responses, `software_statement` is not accepted) | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
 | **OpenID Connect Back-Channel Logout 1.0** | <span class="status-pill full">full</span> | `internal/backchannel` |
 | **OpenID Connect Front-Channel Logout 1.0** | <span class="status-pill planned">planned</span> | — |
 | **OpenID Connect Session Management 1.0** | <span class="status-pill out">out</span> (third-party-cookie-dependent; back-channel preferred) | — |
+| **OpenID Connect CIBA Core 1.0** | <span class="status-pill partial">partial</span> (poll delivery only; ping / push deferred to v2+) | `internal/ciba`, `internal/cibaendpoint`, `op.WithCIBA` |
 
 ## OAuth 2.0 core RFCs
 
@@ -46,8 +47,9 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **RFC 8252** OAuth 2.0 for Native Apps | <span class="status-pill full">full</span> (loopback hardening enforced) | `internal/registrationendpoint`, `internal/authorize` |
 | **RFC 8414** Authorization Server Metadata | <span class="status-pill full">full</span> | `internal/discovery` |
 | **RFC 8485** Vectors of Trust | <span class="status-pill partial">partial</span> (consumed via ACR/AAL mapping) | `op/aal.go`, `op/acr.go` |
-| **RFC 8628** Device Authorization Grant | <span class="status-pill planned">planned</span> (`grant.DeviceCode` reserved; not yet wired) | — |
-| **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill full">full</span> (gated by `feature.MTLS`) | `internal/mtls` |
+| **RFC 8628** Device Authorization Grant | <span class="status-pill full">full</span> (gated by `op.WithDeviceCodeGrant`; `slow_down` ladder persisted atomically with `LastPolledAt`; `op/devicecodekit` ships the brute-force gate + revoke audit hook) | `internal/devicecode`, `internal/devicecodeendpoint`, `op/devicecodekit` |
+| **RFC 8693** OAuth 2.0 Token Exchange | <span class="status-pill full">full</span> (gated by `op.RegisterTokenExchange`; act chain mandatory whenever actor differs from subject; cnf rebinding to request's verified DPoP / mTLS) | `internal/customgrant/tokenexchange` |
+| **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill full">full</span> (gated by `feature.MTLS`; `mtls_endpoint_aliases` now published in discovery) | `internal/mtls` |
 | **RFC 8707** Resource Indicators | <span class="status-pill full">full</span> | `internal/tokenendpoint` |
 | **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span> (alg allow-list, type checks) | `internal/jose` |
 | **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill full">full</span> | `internal/tokens` |
@@ -58,14 +60,14 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **RFC 9449** DPoP | <span class="status-pill full">full</span> incl. §8 nonce flow (gated by `feature.DPoP`) | `internal/dpop`, `op.WithDPoPNonceSource` |
 | **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> | `op/rule.go` (`RuleACR`) |
 | **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill full">full</span> | whole codebase |
-| **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill planned">planned</span> | — |
+| **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span> (signed JWT default; JWE-wrapped per client `introspection_encrypted_response_alg` / `_enc` metadata) | `internal/introspectendpoint`, `internal/jose` |
 
 ## JOSE family
 
 | RFC | Status | Where |
 |---|---|---|
 | **RFC 7515** JWS | <span class="status-pill full">full</span> | `internal/jose` |
-| **RFC 7516** JWE | <span class="status-pill out">out</span> — encrypted ID Token, UserInfo, Request Object (RFC 9101 §6.1), and Response Object (JARM §4.3) are all intentionally not implemented; the JOSE surface is JWS-only | — |
+| **RFC 7516** JWE | <span class="status-pill partial">partial</span> — closed allow-list (`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`). Inbound JWE request_object (JAR / PAR §6.1), outbound JWE id_token, JWT-shape userinfo, JARM authorization response, and RFC 9701 introspection response wired. `RSA1_5` <span class="status-pill refused">refused</span> (CVE-2017-11424 padding oracle); `RSA-OAEP-384/512`, `dir`, symmetric-only `A*KW` deferred to v2+ | `internal/jose`, `op.WithEncryptionKeyset` |
 | **RFC 7517** JWK | <span class="status-pill full">full</span> | `internal/jwks` |
 | **RFC 7518** JWA | <span class="status-pill partial">partial</span> — issuance is `ES256` only; verification accepts `RS256`, `PS256`, `ES256`, `EdDSA`. HS\* and `none` <span class="status-pill refused">refused</span> | `internal/jose` |
 | **RFC 7519** JWT | <span class="status-pill full">full</span> | `internal/jose` |
@@ -79,8 +81,8 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **FAPI 2.0 Baseline** | <span class="status-pill full">full</span> (continuously regressed; see [OFCS](/compliance/ofcs)) | `op.WithProfile(profile.FAPI2Baseline)` |
 | **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span> (continuously regressed) | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | — (use FAPI 2.0) |
-| **FAPI-CIBA** | <span class="status-pill planned">planned</span> for v1.x | `profile.FAPICIBA` (constant exists) |
-| **OpenID iGov High** | <span class="status-pill planned">planned</span> for v2 | `profile.IGovHigh` (constant exists) |
+| **FAPI-CIBA** | <span class="status-pill full">full</span> (poll mode; enforces `JAR` + `DPoP\|MTLS`, 10-min access TTL, FAPI 2.0 client-auth set, `requested_expiry` ≤ 600 s, JAR `iss` / `aud` / `exp` / `nbf` required, request-object lifetime ≤ 60 min per FAPI 2.0 Message Signing §5.6, access-token revocation required) | `op.WithProfile(profile.FAPICIBA)` |
+| **OpenID iGov High** | <span class="status-pill planned">planned</span> for v2 | `profile.IGovHigh` (constant exists; `op.New` rejects it today because the runtime constraints have not landed) |
 
 ## Other RFCs the library cites
 
@@ -106,11 +108,20 @@ Every standard the library actively cites in its code, mapped to the package tha
 A handful of OIDC Core / OAuth surfaces are intentionally not implemented. The library tracks each one as a row with `status: out-of-scope` in the scenario catalog (`test/scenarios/catalog/<feature>.yaml`) so the policy is auditable alongside the tests that pin everything else.
 
 - **`response_type` is `code` only.** Implicit (`id_token`, `id_token token`), hybrid (`code id_token`, ...), and `response_type=none` are not issued. RFC 9700 §1.4 deprecates the implicit grant; FAPI 2.0 mandates code. Discovery advertises `response_types_supported: ["code"]`.
-- **Bare `form_post` and `fragment` response modes never reach the response writer.** Only `query` and (when `feature.JARM` is on) the four `*.jwt` modes are wired. `form_post` is accepted at parameter validation for compatibility, but with no hybrid / implicit issuance there is nothing to put in the form body.
+- **`fragment` response mode is not wired.** With `code`-only issuance there is nothing to put in the URL fragment. `query` and `form_post` are both implemented (the latter renders an auto-submitting HTML form per OIDC Core Form Post Response Mode 1.0); when `feature.JARM` is on, the four `*.jwt` variants are also wired. Discovery advertises `response_modes_supported: ["query", "form_post"]` by default and appends `*.jwt` modes when JARM is enabled.
 - **Aggregated and Distributed claim types (OIDC Core §5.6.2) are not emitted.** Only Normal claims are produced; the `_claim_names` / `_claim_sources` keys never appear in tokens or UserInfo responses.
-- **Signed / encrypted UserInfo response (OIDC Core §5.3.2) is not implemented.** `GET /userinfo` always returns `application/json`; `userinfo_signed_response_alg` is not honoured.
-- **JWE / encryption family is not implemented.** Encrypted ID Tokens, encrypted UserInfo, encrypted Request Objects (RFC 9101 §6.1), and encrypted Response Objects (JARM §4.3) are all out of scope. See RFC 7516 in the JOSE family table above.
 - **`client_secret_jwt` is refused at registration.** Use `private_key_jwt` instead. The HMAC-shared-secret JWT profile is rejected with `invalid_client_metadata: token_endpoint_auth_method client_secret_jwt is not supported`.
+- **JWE alg / enc allow-list is closed.** v0.9.1 ships `RSA-OAEP-256` + `ECDH-ES{,+A128KW,+A256KW}` for key-wrap and `A{128,256}GCM` for content. `WithSupportedEncryptionAlgs` can narrow but not extend. `RSA1_5` is permanently rejected (CVE-2017-11424); `RSA-OAEP-384` / `RSA-OAEP-512`, `dir`, and symmetric-only `A*KW` are deferred to v2+.
+- **CIBA push and ping delivery modes** are not implemented. Discovery advertises `backchannel_token_delivery_modes_supported: ["poll"]` exclusively so a client cannot negotiate them.
+- **Custom-grant refresh tokens are rejected.** A `CustomGrantResponse.RefreshToken` non-empty value collapses to `server_error`. The in-tree token-exchange handler is exempt — its grant_type URN is checked before the gate fires. Lineage-tracked persistence + rotation for handler-issued refresh tokens is a v2+ design item.
+
+## Out of scope (intentional)
+
+Not every RFC in the OAuth / OIDC sphere is the OP's responsibility. The library deliberately doesn't ship support for the following — they belong to the resource server, the client SDK, or other layers.
+
+| RFC / Spec | Status | Notes |
+|---|---|---|
+| **RFC 9421 — HTTP Message Signatures** | <span class="status-pill out">out</span> | Resource-server (API protection) concern, not OP. The OP-side equivalents are JAR (RFC 9101) for signed authorization requests, JARM for signed authorization responses, and DPoP (RFC 9449) for proof-of-possession on `/token` and `/userinfo`. RS-side HTTP signing is the embedder's responsibility. |
 
 ## Verification
 

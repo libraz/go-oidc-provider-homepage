@@ -27,7 +27,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(myKeyset),    // see Quick Start: ephemeral key generation
-    op.WithCookieKey(cookieKey), // 32 bytes — AES-256-GCM
+    op.WithCookieKeys(cookieKey), // 32 bytes — AES-256-GCM
   )
   if err != nil {
     log.Fatal(err)
@@ -45,7 +45,7 @@ handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(cookieKey),
+  op.WithCookieKeys(cookieKey),
   op.WithProfile(profile.FAPI2Baseline), // PAR + JAR + DPoP, ES256, alg lock
   op.WithStaticClients(/* private_key_jwt client with JWKS */),
 )
@@ -62,7 +62,7 @@ handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(cookieKey),
+  op.WithCookieKeys(cookieKey),
   op.WithGrants(grant.ClientCredentials, grant.AuthorizationCode, grant.RefreshToken),
 )
 ```
@@ -72,14 +72,18 @@ handler, _ := op.New(
 ### 4. Drive login / consent / logout from an SPA
 
 ```go
+import "github.com/libraz/go-oidc-provider/op/interaction"
+
 handler, _ := op.New(
   /* required options */
-  op.WithSPAUI(op.SPAUI{ /* SPA endpoints */ }),
+  op.WithInteractionDriver(interaction.JSONDriver{}),
   op.WithCORSOrigins("https://app.example.com"),
 )
 ```
 
-> See [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) and [Use case: SPA](/use-cases/spa-custom-interaction).
+::: warning v0.9.x — UI options not yet wired
+`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` are reserved for v1.0; calling them today makes `op.New` return a configuration error. Drive your SPA via `interaction.JSONDriver` and serve the SPA shell from your own router until the UI mounts land. See [Use case: SPA](/use-cases/spa-custom-interaction).
+:::
 
 ### 5. Persist on a real database, split hot from cold
 

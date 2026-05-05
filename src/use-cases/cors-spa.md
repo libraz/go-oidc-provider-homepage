@@ -95,3 +95,37 @@ The OP refuses `code_challenge_method=plain` for any client — `S256` only — 
 ## OP-issued cookies and cross-site
 
 Even with CORS allowing the origin, the OP's session cookie is set on **op.example.com** — that's where it lives. The SPA on **app.example.com** cannot read or write it directly. The session cookie's job is to keep the user signed in at the OP across `/authorize` redirects; the SPA's session lives in the SPA's own cookie or storage.
+
+## Per-endpoint CORS guidance
+
+The previous table records which endpoints the library *wraps* with the strict CORS handler. That is an upper bound — every wrapped endpoint can answer a cross-origin request when the origin is allowlisted. The lower bound — which endpoints actually *need* CORS for a typical deployment — is narrower and depends on who calls the endpoint from a browser.
+
+The allowlist is the union of two sources: explicit entries from `WithCORSOrigins` and the origin of every `redirect_uri` registered through the client store. So registering a SPA client with `RedirectURIs: []string{"https://app.example.com/callback"}` already contributes `https://app.example.com` to the CORS allowlist; `WithCORSOrigins` is for the cases where a browser-side origin does not appear as a `redirect_uri` (a separate admin SPA, a status page, a localhost dev origin).
+
+| Endpoint | Does a browser typically call it? | CORS needed in practice? |
+|---|---|---|
+| `/authorize` | No — full-page redirect, never XHR. | No. |
+| `/token` | Yes for SPAs (PKCE code exchange via `fetch`). | Yes for SPAs; no for backend RPs. |
+| `/userinfo` | Yes for SPAs (`Authorization: Bearer` from JS). | Yes for SPAs. |
+| `/jwks` | Yes — RP SDKs running in the browser fetch it. | Yes (commonly). |
+| `/.well-known/openid-configuration` | Yes — discovery via `fetch` is widespread. | Yes. |
+| `/introspect` | No — RFC 7662 is RS → OP, server-to-server. | Usually no. |
+| `/revoke` | Maybe — only if the SPA itself initiates revocation. | Depends on the SPA design. |
+| `/par` | No — RP backend pushes the auth request. | No. |
+| `/bc-authorize` | No — CIBA initiation is server-side. | No. |
+| `/device_authorization` | No — device-flow start is server-side. | No. |
+| `/register` (Dynamic Client Registration) | No by default. | Only if you intentionally expose DCR to a SPA. |
+| `/end_session` | No — full-page redirect or back-channel. | No. |
+
+The library wraps several "no" endpoints with `strictCORS` anyway because the cost of wrapping is low and it future-proofs against tooling that does call them from JS (admin consoles, browser-based test harnesses). You don't have to add the origin to your allowlist if you don't intend to use them from the browser; without an allowlist match the strict layer responds with no `Access-Control-Allow-*` headers and the browser refuses the response — which is the correct outcome.
+
+::: tip Audit signal for cross-origin traffic
+The strict CORS layer emits `op.AuditCORSPreflightAllowed` (`cors.preflight.allowed`) every time it admits an `OPTIONS` preflight from an allowlisted origin. SOC dashboards that observe only the actual (non-preflight) request can otherwise miss cross-origin activity entirely, because the preflight is short-circuited at 204 before any inner handler runs. Treat this event as a baseline for "legitimate CORS traffic": a sudden absence on a normally-busy endpoint usually points at a misconfigured `WithCORSOrigins` change, while a sudden burst from an unfamiliar origin is worth checking against your `redirect_uris` registry.
+:::
+
+### Pitfalls when wiring the SPA
+
+- **`credentials: 'include'` requires a specific origin, not `*`.** Browsers refuse to send cookies on a CORS request whose response carries `Access-Control-Allow-Origin: *`. The library never returns `*` for an allowlisted origin — the strict layer echoes the requesting `Origin` verbatim and pairs it with `Access-Control-Allow-Credentials: true`. The SPA can therefore call `fetch(url, { credentials: 'include' })` against `/userinfo` and the browser will accept the response. If you see "credentials flag is true, but Access-Control-Allow-Credentials is not 'true'" in DevTools, the request hit the public-CORS profile (`/jwks`, `/.well-known/openid-configuration`) — those endpoints intentionally serve `*` and do not allow credentials, because no browser-side caller needs cookies for them.
+- **Wildcard origins are a configuration mistake, not a knob.** `WithCORSOrigins` validates each entry as a real origin and rejects `*` at boot — there is no "allow everything" setting. Make the list explicit: every SPA host, every staging host, every localhost dev port. Embedders frequently forget the `:5173` port for Vite or the `:3000` port for Next.js dev — the browser treats a different port as a different origin, so each must appear separately.
+- **A redirect URI registered as `http://localhost:5173/callback` contributes `http://localhost:5173` to the allowlist automatically.** You don't need to repeat it in `WithCORSOrigins`. Repeating it is harmless (duplicates are de-duped) but adds noise.
+- **The OP's session cookie lives on the OP's origin, not the SPA's.** CORS allows the SPA to receive a response, but it does not let the SPA read or write `op.example.com` cookies. The SPA's own session state belongs in the SPA's storage — see "OP-issued cookies and cross-site" above.

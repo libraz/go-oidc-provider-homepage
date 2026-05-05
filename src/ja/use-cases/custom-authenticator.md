@@ -109,12 +109,12 @@ func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (i
         if phone == "" {
             return interaction.Step{}, fmt.Errorf("phone required")
         }
-        // 定数時間で lookup する。登録済みと未登録の番号でレスポンス
-        // 形状とタイミングを一致させてください（ユーザの存在を漏らさ
-        // ないため）。
+        // 定数時間で照会する。登録済み番号と未登録番号で、応答の
+        // 形とタイミングを一致させてください(ユーザの存在を漏らさ
+        // ないため)。
         subject, _ := a.UserStore.LookupByPhone(ctx, phone)
 
-        // subject が空でもコードは常に dispatch する（情報漏えい対策）。
+        // subject が空でもコードは常に送信する(情報漏えい対策)。
         code, err := generate6DigitCode()
         if err != nil {
             return interaction.Step{}, err
@@ -188,7 +188,7 @@ op.New(
 
 ### 3. SPA でプロンプトを描画する
 
-`WithSPAUI` 構成下では、SPA は `/interaction/{uid}` でプロンプトを JSON として受け取ります:
+JSON ドライバ(`op.WithInteractionDriver(interaction.JSONDriver{})`)構成下では、SPA は `/interaction/{uid}` でプロンプトを JSON として受け取ります:
 
 ```json
 {
@@ -238,12 +238,12 @@ func TestSMSAuthenticator(t *testing.T) {
 
 ## この差し込み口が存在する理由
 
-ライブラリの初期は `Authenticator` を直接公開していました。step-up フローを書く組み込み側は、authenticator の `Begin` の中で「次にどの factor を走らせるか」を再実装することになり、これはオーケストレータの不変条件「1 factor = 1 ステップ」に反していました。次の 4 要素に分解したことで、整理が付きました:
+ライブラリの初期は `Authenticator` を直接公開していました。step-up フローを書く組み込み側は、authenticator の `Begin` の中で「次にどの factor を実行するか」を毎回再実装することになり、オーケストレータの不変条件「1 factor = 1 ステップ」と相性が悪い構造でした。これを次の 4 要素に分解したことで整理が付きました:
 
-- `Step` — descriptor（どの factor か）
-- `Rule` — いつ走るか
-- `Decider` — short-circuit override
-- `Authenticator` — 実際のフロー
+- `Step` — どの factor かを示すディスクリプタ
+- `Rule` — どの条件下で起動するか
+- `Decider` — 早期確定のための上書き判断
+- `Authenticator` — 実際の認証フロー本体
 
 オーケストレータが順序と重複排除を所有し、自前コードは factor の仕組みを所有できるようになりました。`ExternalStep` は、組み込み `Step` のいずれにも嵌らない `Authenticator` を橋渡しします。
 

@@ -52,7 +52,7 @@ Returned by the constructor; the OP never starts.
 | `op.ErrIssuerInvalid` | `configuration_error` | issuer is not absolute https, or has query / fragment |
 | `op.ErrStoreRequired` | `configuration_error` | `WithStore` not supplied |
 | `op.ErrKeysetRequired` | `configuration_error` | `WithKeyset` not supplied or empty |
-| `op.ErrCookieKeysRequired` | `configuration_error` | `WithCookieKey` / `WithCookieKeys` missing while `authorization_code` grant is enabled |
+| `op.ErrCookieKeysRequired` | `configuration_error` | `WithCookieKeys` missing while `authorization_code` grant is enabled |
 | `op.ErrDynamicRegistrationDisabled` | `configuration_error` | `Provider.IssueInitialAccessToken` called without `WithDynamicRegistration` |
 
 ::: tip Other config errors

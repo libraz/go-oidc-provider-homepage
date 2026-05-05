@@ -187,7 +187,7 @@ The dotted prefix on `KindLabel` (`myorg.sms_otp`) is **required** — the Login
 
 ### 3. Render the prompts in your UI
 
-The SPA receives the prompt at `/interaction/{uid}` as JSON when `WithSPAUI` is configured:
+The SPA receives the prompt at `/interaction/{uid}` as JSON when the JSON interaction driver is configured (`op.WithInteractionDriver(interaction.JSONDriver{})`):
 
 ```json
 {

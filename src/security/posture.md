@@ -45,21 +45,21 @@ These are not "we remembered to validate"; they are decisions made at the type /
 
 ### 1. The constructor refuses zero-value boots
 
-`op.New(...)` returns `error` — not a "use defaults" handler — when any of the four required options is missing: `WithIssuer`, `WithStore`, `WithKeyset`, `WithCookieKey`. There is no usable zero-value `Provider`.
+`op.New(...)` returns `error` — not a "use defaults" handler — when a required option is missing. `WithIssuer` and `WithStore` are unconditionally required; `WithKeyset` is required as soon as any flow that signs or verifies tokens is enabled; `WithCookieKeys` is required whenever the `authorization_code` grant is enabled. There is no usable zero-value `Provider`.
 
 ::: details Why this matters
-Most "default-on" framework libraries silently boot on missing config. This shape closes the class of "OP came up with no signing key / guessable cookie key / wrong issuer" errors before a single request is served. See `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKey` / `op.WithStore` for the build-time errors emitted on absence.
+Most "default-on" framework libraries silently boot on missing config. This shape closes the class of "OP came up with no signing key / guessable cookie key / wrong issuer" errors before a single request is served. See `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` for the build-time errors emitted on absence.
 :::
 
 ### 2. The JOSE alg list is a closed type
 
-`internal/jose.Algorithm` enumerates only `RS256`, `PS256`, `ES256`, `EdDSA`. `none`, `HS256/384/512`, and any custom string fail `IsAllowed()`. `ParseAlgorithm` returns `ok=false` rather than a fallback. Because every signing / verifying path in the codebase imports through `internal/jose`, **algorithm-confusion attacks (RFC 7519 §6 / RFC 8725 §2.1) are structurally unreachable**.
+`internal/jose.Algorithm` enumerates only `RS256`, `PS256`, `ES256`, `EdDSA`. `none`, `HS256/384/512`, and any custom string fail `IsAllowed()`. `ParseAlgorithm` returns `ok=false` rather than a fallback. Every signing / verifying path — including the packages that hold raw go-jose handles (`internal/jar`, `internal/dpop`, `internal/mtls`, `internal/backchannel`, `internal/jarm`, …) — gates the inbound `alg` through this closed type, so **algorithm-confusion attacks (RFC 7519 §6 / RFC 8725 §2.1) are structurally unreachable**.
 
 | Concern | Mitigation |
 |---|---|
 | `alg=none` accepted by a JWT lib | `Algorithm(s)` rejects unknown / empty values |
 | `HS256` with public-key trust path | `HS*` not in the type at all |
-| Per-deployment alg "feature flag" creep | depguard forbids importing the underlying JOSE library outside `internal/jose/` |
+| Per-deployment alg "feature flag" creep | depguard `jose-isolation` rule pins the set of packages allowed to import `go-jose/v4` directly; a new caller has to be added to the allow-list intentionally |
 
 ### 3. `crypto/rand` only — never `math/rand`
 
@@ -92,16 +92,16 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | `iss` in authorization response | `internal/authorize` | RFC 9207 |
 | `redirect_uri` exact match (configurable; default exact) | `internal/authorize` | OAuth 2.1, RFC 8252 |
 | Loopback redirect hardening | `internal/registrationendpoint`, `internal/authorize` | RFC 8252 |
-| Back-channel logout SSRF defense (RFC 1918 deny-list) | `internal/backchannel` | OIDC Back-Channel Logout 1.0 |
+| Back-channel logout SSRF defense (loopback / link-local / RFC 1918 / IPv6 ULA deny-list) | `internal/backchannel` | OIDC Back-Channel Logout 1.0 |
 | OP-side request_object replay (`jti`) | `internal/jar` | RFC 9101 §10.8 |
 | Algorithm allow-list at every verify path | `internal/jose` | RFC 8725 |
-| Issuer canonicalisation / no trailing slash drift | `op/op.go` | RFC 9207 |
+| Issuer canonicalisation / no trailing slash drift | `op/options_validate.go` | RFC 9207 |
 
 ## Tooling
 
 | Tier | Tool | Where |
 |---|---|---|
-| Lint | `golangci-lint v2` (errcheck, govet, staticcheck, unused, **gosec**, errorlint, revive, depguard, …) | `.golangci.yaml` |
+| Lint | `golangci-lint v2` (errcheck, govet, staticcheck, unused, **gosec**, errorlint, revive, depguard, …) | `.golangci.yml` |
 | Vuln scan | `govulncheck` | `scripts/govulncheck.sh` |
 | Fuzz | Go native `Fuzz*` (run `make fuzz` or `scripts/fuzz.sh 30s`) | targets across `internal/jose`, `internal/jar`, `internal/dpop`, `internal/pkce`, `internal/jwks` |
 | License | `go-licenses` | `scripts/licenses.sh` |

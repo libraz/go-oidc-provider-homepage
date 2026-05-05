@@ -55,7 +55,7 @@ provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(myCookieKey),
+  op.WithCookieKeys(myCookieKey),
 
   op.WithGrants(
     grant.AuthorizationCode, // for human users

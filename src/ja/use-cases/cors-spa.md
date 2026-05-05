@@ -95,3 +95,37 @@ OP は全クライアントで `code_challenge_method=plain` を拒否 — `S256
 ## OP 発行 cookie とクロスサイト
 
 CORS で origin を許可しても、OP のセッション cookie は **op.example.com** に設定されます — それがその cookie の保管場所です。**app.example.com** の SPA はそれを直接読み書きできません。OP のセッション cookie の役割は `/authorize` リダイレクトを跨いでユーザを OP にログインさせ続けることです。SPA のセッションは SPA 自身の cookie / storage に保管されます。
+
+## エンドポイント別の CORS の効き方
+
+直前の表は、ライブラリが strict CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が allowlist にあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的なデプロイで *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
+
+allowlist は 2 つの集合の和です。`WithCORSOrigins` で明示した entries と、クライアントストアに登録された全 `redirect_uri` の origin です。SPA クライアントを `RedirectURIs: []string{"https://app.example.com/callback"}` で登録すれば、`https://app.example.com` は自動で CORS allowlist に入ります。`WithCORSOrigins` は、`redirect_uri` として登場しない browser-side origin（別の管理用 SPA、ステータスページ、localhost 開発 origin など）のためにあります。
+
+| Endpoint | ブラウザから呼ぶか? | 実運用で CORS が必要か? |
+|---|---|---|
+| `/authorize` | 呼ばない — フルページリダイレクトであって XHR ではない。 | 不要。 |
+| `/token` | SPA は呼ぶ（`fetch` で PKCE のコード交換）。 | SPA では必要、サーバサイドの RP では不要。 |
+| `/userinfo` | SPA は呼ぶ（JS から `Authorization: Bearer`）。 | SPA では必要。 |
+| `/jwks` | 呼ぶ — ブラウザで動く RP SDK がフェッチ。 | 必要(よくある)。 |
+| `/.well-known/openid-configuration` | 呼ぶ — `fetch` での discovery 取得は広く行われる。 | 必要。 |
+| `/introspect` | 呼ばない — RFC 7662 は RS → OP のサーバ間通信。 | 通常不要。 |
+| `/revoke` | 場合による — SPA 自身が失効を起動する設計のときのみ。 | SPA の設計次第。 |
+| `/par` | 呼ばない — authorize 要求は RP バックエンドが push。 | 不要。 |
+| `/bc-authorize` | 呼ばない — CIBA の起動はサーバサイド。 | 不要。 |
+| `/device_authorization` | 呼ばない — デバイスフローの起動はサーバサイド。 | 不要。 |
+| `/register`（Dynamic Client Registration） | 既定では呼ばない。 | DCR を意図的に SPA に開放する場合のみ。 |
+| `/end_session` | 呼ばない — フルページリダイレクトかバックチャネル。 | 不要。 |
+
+ライブラリは「不要」側のいくつかのエンドポイントも `strictCORS` でラップしています。ラップのコストが小さく、JS から呼ぶ可能性のあるツール（管理コンソール、ブラウザベースのテストハーネス）に対する将来耐性を確保したいためです。ブラウザから使う予定がないなら、それらの origin を allowlist に追加する必要はありません。allowlist にマッチしない場合、strict 層は `Access-Control-Allow-*` ヘッダを 1 つも返さず、ブラウザはレスポンスを拒否します — これが正しい挙動です。
+
+::: tip cross-origin トラフィックの監査シグナル
+strict CORS 層は、allowlist に載った origin から `OPTIONS` preflight を受理するたびに `op.AuditCORSPreflightAllowed`（`cors.preflight.allowed`）を発火します。ダッシュボードが actual（preflight ではない方の）リクエストだけを観測している場合、cross-origin の活動を完全に見落とすことがあります — preflight は 204 で短絡され、内側のハンドラに到達しないためです。このイベントを「正規 CORS トラフィック」のベースラインとして扱ってください。普段は活発なエンドポイントで突然このイベントが消えたら `WithCORSOrigins` の設定変更ミスを疑う合図、見覚えのない origin から急増したら `redirect_uris` レジストリと突き合わせる合図です。
+:::
+
+### SPA を組み込む際の落とし穴
+
+- **`credentials: 'include'` には `*` ではなく特定の origin が必要。** ブラウザは `Access-Control-Allow-Origin: *` を返すレスポンスに対して cookie を送らない仕様です。本ライブラリは allowlist にマッチした origin に対しては `*` を返さず、strict 層は要求された `Origin` をそのままエコーし、`Access-Control-Allow-Credentials: true` と組み合わせて返します。SPA は `fetch(url, { credentials: 'include' })` で `/userinfo` を呼べ、ブラウザはレスポンスを受け入れます。DevTools で「credentials flag is true, but Access-Control-Allow-Credentials is not 'true'」と出た場合は、リクエストが public CORS プロファイル（`/jwks`、`/.well-known/openid-configuration`）に当たっています — これらのエンドポイントは意図的に `*` を返し、credentials を許可しません（cookie が要る browser-side 呼び出し元が無いため）。
+- **ワイルドカード origin は設定ミスであって、選択肢ではない。** `WithCORSOrigins` は各 entry を実 origin として検証し、起動時に `*` を拒否します — 「全部許可」設定はそもそも存在しません。allowlist は明示的に組み立ててください。本番 SPA、ステージング、localhost の各開発ポート全部です。組み込み側はしばしば Vite の `:5173` や Next.js dev の `:3000` を忘れます — ブラウザはポートが違えば別 origin として扱うので、ポートごとに個別 entry が必要です。
+- **`http://localhost:5173/callback` を redirect URI として登録すると `http://localhost:5173` は自動で allowlist に載る。** `WithCORSOrigins` で重ねて指定する必要はありません。重複しても無害（重複除去されます）ですが、設定がノイジーになるだけです。
+- **OP のセッション cookie は OP の origin にのみ存在し、SPA の origin には無い。** CORS は SPA がレスポンスを受け取ることは許可しますが、SPA が `op.example.com` の cookie を読み書きできるようにするわけではありません。SPA 自身のセッション状態は SPA 側のストレージに保管します — 「OP 発行 cookie とクロスサイト」節を参照。

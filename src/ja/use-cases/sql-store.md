@@ -59,7 +59,7 @@ SQL アダプタは以下のテーブルを同梱します:
 
 どちらもトランザクションクラスタの一部で、起点となる grant / refresh の書き込みと同時にコミットされます — カスケードが途中で切れて「失効した grant の隣に、まだ引き換え可能なトークンが残る」状況にはなりません。
 
-同梱アダプタを使わずカスタムの `Store` 実装をシップする場合は、`OpaqueAccessTokens()` と `GrantRevocations()` の実装が **必須** です。対応するオプションを利用しない限り `nil` を返してかまいません。オプションを有効化しているのに該当アクセサが `nil` の場合は、`op.New` が起動時に検出して構成を拒否します。
+同梱アダプタを使わずカスタムの `Store` 実装をシップする場合は、`OpaqueAccessTokens()` と `GrantRevocations()` の実装が **必須** です。`OpaqueAccessTokens()` は `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` も `WithAccessTokenFormatPerAudience` も opaque audience を指さない限り `nil` を返してかまいません。`GrantRevocations()` を `nil` にできるのは、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示している場合だけです(非 FAPI デプロイ専用) — 既定の `RevocationStrategyGrantTombstone` は構築時にこのサブストアを必須とします。それ以外は `op.New` が構成エラーを返します。
 :::
 
 ## コード
@@ -87,7 +87,7 @@ provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(storage),
   op.WithKeyset(myKeyset),
-  op.WithCookieKey(myCookieKey),
+  op.WithCookieKeys(myCookieKey),
 )
 ```
 
@@ -144,7 +144,7 @@ _ = storage.PutUserWithPassword(ctx, &store.User{
 
 `inmem` を検査する同じ contract test suite (`op/store/contract`) が、SQL アダプタに対しても `go test -tags=testcontainers` で testcontainers-go 経由の実 MySQL / Postgres を起動して実行されます。「SQL アダプタは `Store` interface を実装する」というライブラリの主張は、モックではなく実エンジンに対して検証されたものです。
 
-pin されているイメージ（`mysql:8.4`、`postgres:16-alpine`）は、`examples/07-mysql-store` および `examples/09-redis-volatile` の docker-compose スタックが使うエンジンマトリクスと揃えてあるので、アダプタレベルと example レベルの統合検証が同じマトリクスを共有します。
+固定しているイメージ(`mysql:8.4`、`postgres:16-alpine`)は、`examples/07-mysql-store` および `examples/09-redis-volatile` の docker-compose スタックが使うエンジンマトリクスと揃えてあるので、アダプタレベルと example レベルの統合検証で同じ組み合わせを共有できます。
 
 ## いつ Redis を載せるか
 

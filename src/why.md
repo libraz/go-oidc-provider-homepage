@@ -54,15 +54,19 @@ The `__Host-` prefix, no Domain, Path=`/`, Secure, AES-256-GCM, double-submit CS
 The library bakes in:
 
 - `__Host-` cookie prefix (no Domain, Path=`/`, Secure)
-- AES-256-GCM encryption (cookie key supplied via `op.WithCookieKey`)
+- AES-256-GCM encryption (cookie key supplied via `op.WithCookieKeys`)
 - Double-submit CSRF + Origin / Referer check on the consent / logout POST
 - SameSite=`Lax` for the session cookie, `Strict` where compatible
 
-You don't write any of this. You generate one 32-byte key, hand it to `WithCookieKey`, and the cookie scheme is correct.
+You don't write any of this. You generate one 32-byte key, hand it to `WithCookieKeys`, and the cookie scheme is correct.
 
 ### "I want to drive UI from a SPA"
 
-`op.WithSPAUI(...)` swaps the default HTML driver for a JSON one — the SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}/...` for the prompts and posts back signed responses.
+`op.WithInteractionDriver(interaction.JSONDriver{})` swaps the default HTML driver for a JSON one — the SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}/...` for the prompts and posts back signed responses. Mount the SPA shell on your own router; the OP serves the JSON state surface.
+
+::: warning UI mounts (`op.WithSPAUI` / `WithConsentUI` / `WithChooserUI`) are not wired yet
+The option shapes are reserved for the v1.0 surface but the runtime mounts have not landed. Calling any of them today causes `op.New` to return a configuration error. Use `interaction.JSONDriver` plus your own router for now; see [Use case: SPA / custom interaction](/use-cases/spa-custom-interaction) for the working pattern.
+:::
 
 ::: info SPA-safe error rendering
 Error pages emit `<div id="op-error" data-code="..." data-description="...">` so the SPA host can `document.querySelector('#op-error')` without parsing markup, under CSP `default-src 'none'; style-src 'unsafe-inline'`.

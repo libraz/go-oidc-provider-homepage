@@ -10,16 +10,16 @@ The OP is stateless across HTTP requests; every replica reads and writes through
 
 ## What's shared automatically
 
-Anything that lives in your `op.Store` is shared by construction. The durable substores (clients, codes, refresh tokens, access tokens, grants, IATs) hit a single backend (SQL or your own implementation) across every replica.
+Anything that lives in your `op.Store` is shared by construction. The durable substores (clients, codes, refresh tokens, access tokens, grants, IATs, PARs) hit a single backend (SQL or your own implementation) across every replica — `composite.PushedAuthRequests` is part of `composite.TxClusterKinds`, so the splitter refuses to route it off the durable anchor.
 
-Volatile substores (sessions, interactions, JAR `jti` registry, PARs, DPoP server-nonce cache) are eligible for a Redis tier — see [Hot/cold split](/use-cases/hot-cold-redis).
+Volatile substores eligible for a Redis tier are `Sessions`, `Interactions`, and `ConsumedJTIs` (the JAR / DPoP / private_key_jwt replay set) — see [Hot/cold split](/use-cases/hot-cold-redis). The DPoP server-nonce store is a separate seam wired through `op.WithDPoPNonceSource`, not a substore.
 
 ## What needs explicit attention
 
 | Concern | Single replica | N replicas |
 |---|---|---|
 | DPoP server nonce | in-memory reference source ships with the library | needs distributed source |
-| Session cookies | encrypted with `WithCookieKey`; shared across replicas as long as the key matches | same — every replica must share the cookie key |
+| Session cookies | encrypted with `WithCookieKeys`; shared across replicas as long as the key matches | same — every replica must share the cookie key |
 | Interaction state (`/interaction/{uid}`) | typically in-memory | needs Redis or sticky sessions |
 | Rate limiting | upstream / out-of-process | upstream / out-of-process |
 | OFCS conformance harness | runs against one OP | runs against one OP — point at one replica or the load balancer |
@@ -35,11 +35,12 @@ Two paths:
 
 ```go
 // Sketch — wrap a Redis-backed implementation behind the seam.
+// op.DPoPNonceSource is two methods; the source decides its own
+// rotation cadence and validity window.
 type redisNonces struct{ rdb *redis.Client }
 
-func (r *redisNonces) Issue(ctx context.Context, /* ... */) (string, error) { /* ... */ }
-func (r *redisNonces) Validate(ctx context.Context, /* ... */) error        { /* ... */ }
-func (r *redisNonces) Rotate(ctx context.Context, /* ... */)                { /* ... */ }
+func (r *redisNonces) IssueNonce() string         { /* ... */ }
+func (r *redisNonces) Validate(nonce string) bool { /* ... */ }
 
 op.WithDPoPNonceSource(&redisNonces{rdb: client})
 ```
@@ -68,14 +69,14 @@ The Redis adapter's `InteractionStore` is volatile-eligible and lives in the vol
 
 ## Cookie key consistency
 
-Every replica MUST share the same `WithCookieKey` / `WithCookieKeys` slice. A replica that decrypts with a different key returns `invalid_session` for cookies it didn't encrypt — at scale this looks like random user logouts.
+Every replica MUST share the same `WithCookieKeys` slice. A replica that decrypts with a different key returns `invalid_session` for cookies it didn't encrypt — at scale this looks like random user logouts.
 
 Source the key from your secret manager and inject it identically into every replica:
 
 ```go
 key, err := loadFromSecretManager("/op/cookie/current")
 if err != nil { log.Fatal(err) }
-op.WithCookieKey(key)
+op.WithCookieKeys(key)
 ```
 
 Rotation across N replicas: deploy `WithCookieKeys(new, old)` to every replica simultaneously, then deploy `WithCookieKeys(new)` after the overlap window. See [Key rotation](/operations/key-rotation).

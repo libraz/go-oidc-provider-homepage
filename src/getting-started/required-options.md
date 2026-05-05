@@ -12,7 +12,7 @@ description: The four options op.New refuses to start without — and why each o
 | [`op.WithIssuer`](#withissuer) | Defines the JWT `iss` claim, the discovery URL, and the cookie scope. Wrong here, every downstream check is wrong. |
 | [`op.WithStore`](#withstore) | Where authcodes, sessions, refresh chains, JTI replay sets, and clients live. The library is storage-agnostic; without a store it has nowhere to put state. |
 | [`op.WithKeyset`](#withkeyset) | The signing keys for ID tokens / JWT access tokens / JARM. The library refuses to mint tokens without a `crypto.Signer` whose algorithm is on the allow-list. |
-| [`op.WithCookieKey`](#withcookiekey) | 32 bytes of random material used as an AES-256-GCM key for cookie payloads. Session and CSRF cookies are encrypted, not just signed. |
+| [`op.WithCookieKeys`](#withcookiekeys) | 32 bytes of random material used as an AES-256-GCM key for cookie payloads. Session and CSRF cookies are encrypted, not just signed. |
 
 ## `WithIssuer`
 
@@ -21,9 +21,9 @@ op.WithIssuer("https://op.example.com")
 ```
 
 ::: warning OIDC Discovery 1.0 §3 / FAPI 2.0 §5.4
-The issuer must be `https://`, must not have a trailing slash, must not carry a query string or fragment. Loopback hosts (`127.0.0.1`, `[::1]`) are exempted from the `https://` requirement so localhost dev works.
+The issuer must be `https://`, must not have a trailing slash, must not carry a query string or fragment. The scheme and host must be all-lowercase, no default port may appear (`:443` for https, `:80` for http), and the path must be canonical (no `..`, `.`, or duplicate slashes). Loopback IP literals (`127.0.0.0/8`, `[::1]`) are exempted from the `https://` requirement so localhost dev works; the textual host `localhost` is **not** in the carve-out (DNS hijack risk per RFC 8252 §7.3).
 
-`internal/discovery.ValidateIssuer` enforces the shape as defense-in-depth over the option setter. A typo (e.g. trailing slash) will fail `op.New`, not silently produce a discovery document RPs reject.
+`internal/discovery.ValidateIssuer` enforces the shape as defense-in-depth over the option setter. A typo (trailing slash, `:443`, uppercase host, etc.) will fail `op.New`, not silently produce a discovery document RPs reject. The strictness is what makes RFC 9207 byte-exact mix-up defence hold end-to-end. See [Issuer](/concepts/issuer) for the full canonical-form discussion.
 :::
 
 ## `WithStore`
@@ -60,12 +60,12 @@ A `Keyset` is a slice of `{KeyID, Signer}` records. `Signer` is anything that im
 The library only signs and verifies with `RS256`, `PS256`, `ES256`, and `EdDSA`. **`HS*` and `none` are structurally absent** — there is no enum value for them and `internal/jose.ParseAlgorithm` returns `ok=false` for those strings. This closes RFC 7519 §6 / RFC 8725 §2.1 algorithm-confusion attacks at the type level, not via runtime if-statements.
 :::
 
-## `WithCookieKey`
+## `WithCookieKeys`
 
 ```go
 key := make([]byte, 32) // exactly 32 bytes
 if _, err := rand.Read(key); err != nil { /* … */ }
-op.WithCookieKey(key)
+op.WithCookieKeys(key)
 
 // Multi-key rotation:
 op.WithCookieKeys(currentKey, previousKey)

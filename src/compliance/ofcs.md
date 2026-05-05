@@ -42,6 +42,63 @@ pie showData
   "FAILED" : 0
 ```
 
+## What each test plan covers
+
+Each OFCS test plan exercises a specific spec profile. The tables below map every plan to the library options that turn on the relevant code paths and to the doc pages where that surface is documented, so embedders can verify their own deployments expose the same configuration the suite asserts against.
+
+### `oidcc-basic-certification-test-plan` — OIDC Core 1.0
+
+| What it tests | Library option to enable | Doc page |
+|---|---|---|
+| Authorization Code flow + PKCE | enabled by default | [/concepts/authorization-code-pkce](/concepts/authorization-code-pkce) |
+| ID Token issuance + claims | enabled by default | [/concepts/tokens](/concepts/tokens) |
+| UserInfo endpoint | enabled by default | [/concepts/tokens](/concepts/tokens) |
+| Discovery (`/.well-known/openid-configuration`) | enabled by default | [/concepts/discovery](/concepts/discovery) |
+| JWKS publication | enabled by default | [/operations/jwks](/operations/jwks) |
+| Refresh tokens + rotation | enabled by default; long-lived refresh requires the `offline_access` scope | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
+| Standard scopes (`profile`, `email`, `address`, `phone`) | `op.WithScope(...)` once per scope | [/concepts/scopes-and-claims](/concepts/scopes-and-claims) |
+| Public / pairwise subjects | `op.WithPairwiseSubject(salt)` for pairwise; per-client `SubjectType` selects which one applies | [/use-cases/pairwise-subject](/use-cases/pairwise-subject) |
+
+### `fapi2-security-profile-id2-test-plan` — FAPI 2.0 Baseline
+
+| What it tests | Library option to enable | Doc page |
+|---|---|---|
+| PAR (RFC 9126) | `op.WithProfile(profile.FAPI2Baseline)` implies `feature.PAR` | [/concepts/fapi](/concepts/fapi), [/use-cases/fapi2-baseline](/use-cases/fapi2-baseline) |
+| JAR (RFC 9101) | profile implies `feature.JAR` | [/concepts/fapi](/concepts/fapi) |
+| `S256` PKCE enforcement | profile-enforced | [/concepts/authorization-code-pkce](/concepts/authorization-code-pkce) |
+| `iss` in authorization response (RFC 9207) | profile-enforced | [/concepts/issuer](/concepts/issuer) |
+| `ES256` / `PS256` for ID Token signing | profile-enforced | [/concepts/jose-basics](/concepts/jose-basics) |
+| Refusal of `RS256` (FAPI), `HS*`, `none` | closed alg type at `internal/jose/alg.go` | [/security/design-judgments](/security/design-judgments) |
+| `private_key_jwt` or `tls_client_auth` | profile-enforced (intersected with FAPI allow-list) | [/concepts/client-types](/concepts/client-types) |
+| DPoP or mTLS sender constraint | `op.WithFeature(feature.DPoP)` or `op.WithFeature(feature.MTLS)` (at least one is mandatory under FAPI 2.0) | [/concepts/sender-constraint](/concepts/sender-constraint), [/concepts/dpop](/concepts/dpop), [/concepts/mtls](/concepts/mtls) |
+| `redirect_uri` exact match | profile-enforced | [/concepts/redirect-uri](/concepts/redirect-uri) |
+| Refresh token rotation + reuse detection | enabled by default | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
+
+### `fapi2-message-signing-id1-test-plan` — FAPI 2.0 Message Signing
+
+Message Signing layers signed authorization responses on top of Baseline. Everything the Baseline plan asserts also runs here — switch the profile constant and JARM activates automatically.
+
+| What it tests | Library option to enable | Doc page |
+|---|---|---|
+| Everything from FAPI 2.0 Baseline (above) | `op.WithProfile(profile.FAPI2MessageSigning)` | (as above) |
+| Signed authorization response (JARM) | profile implies `feature.JARM` | [/concepts/fapi](/concepts/fapi) (JARM section) |
+| Signed ID Token in token response | profile-enforced | [/concepts/tokens](/concepts/tokens) |
+| Request object signing (`PS256` / `ES256`) | profile-enforced | [/concepts/fapi](/concepts/fapi) |
+
+### How REVIEW and SKIPPED categorize
+
+- **REVIEW** — the test ran, but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture honestly (consent UI strings, error page screenshots, certificate chain confirmation). Not a failure.
+- **SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
+- **FAILED** — observed behaviour diverged from the spec. We currently track **0 failures** across all three plans.
+
+### How to reproduce the conformance run yourself
+
+1. Stand up an OP with the relevant profile wired in — `op.WithProfile(profile.FAPI2Baseline)` for the security profile, `op.WithProfile(profile.FAPI2MessageSigning)` for message signing, or no `WithProfile` for the OIDC Core plan.
+2. Register the plan against an OFCS deployment. The conformance suite is operated by the OpenID Foundation; the source repo's `conformance/` directory contains plan templates and a pinned Docker image that brings up a local copy.
+3. Drive the plan. The harness pokes `/authorize`, `/par`, `/token`, `/userinfo`, `/jwks`, and the rest of the discovered endpoints through every required code path, then writes a JSON snapshot you can diff against the recorded baseline.
+
+The detailed runbook (`make` targets, the JSON snapshot layout, the diff gate) is in [Reproducing the baseline yourself](#reproducing-the-baseline-yourself) below.
+
 ## REVIEW vs FAILED — the distinction
 
 OFCS has four terminal states: `PASSED`, `FAILED`, `REVIEW`, `SKIPPED`. **REVIEW does not mean a test failed.** It means the test wants a human operator to confirm something the automation cannot — for example, "did the OP show a login screen here?" The test runs, takes screenshots, then sits in a `WAITING` state until someone in the OFCS UI clicks "reviewed". Our headless runner records `REVIEW` when the test reached that state without erroring.

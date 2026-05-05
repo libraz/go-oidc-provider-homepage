@@ -5,7 +5,7 @@ description: 約 30 行で動く OpenID Connect Provider。
 
 # 最小構成 OP
 
-OP を起動する最短経路。必須 4 オプションは `WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKey` — どれかを欠くと `op.New` は error を返します。
+OP を起動する最短経路。必須 4 オプションは `WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKeys` — どれかを欠くと `op.New` は error を返します。
 
 ::: code-group
 
@@ -36,7 +36,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
   )
   if err != nil {
     log.Fatal(err)
@@ -71,7 +71,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
   )
   if err != nil {
     log.Fatal(err)
@@ -109,7 +109,7 @@ func main() {
     op.WithIssuer("https://op.example.com"),
     op.WithStore(inmem.New()),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
   )
   if err != nil {
     log.Fatal(err)

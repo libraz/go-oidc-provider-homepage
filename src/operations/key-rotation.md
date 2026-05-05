@@ -9,7 +9,7 @@ outline: 2
 Two distinct keys rotate on different cadences:
 
 - **Signing keys** (`op.Keyset`) — the ECDSA P-256 private keys used to sign ID tokens, JWT access tokens, JARM, and userinfo JWTs. Public half lives in `/jwks`.
-- **Cookie keys** (`op.WithCookieKey` / `WithCookieKeys`) — the 32-byte AES-256-GCM keys used to seal session and CSRF cookies.
+- **Cookie keys** (`op.WithCookieKeys`) — the 32-byte AES-256-GCM keys used to seal session and CSRF cookies.
 
 Both are rotated by constructing a new `*Provider` and atomically swapping the handler. The library never mutates the slice in place.
 
@@ -38,7 +38,7 @@ newProv, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithStore(myStore),
     op.WithKeyset(ks),
-    op.WithCookieKey(cookieKey),
+    op.WithCookieKeys(cookieKey),
     /* ... rest of options ... */
 )
 if err != nil { /* retain old provider, alert */ }
@@ -88,7 +88,7 @@ The first key in `WithCookieKeys` is the active encryption key. Putting the old 
 
 ## MFA encryption key rotation
 
-`WithMFAEncryptionKey` / `WithMFAEncryptionKeys` follow the same "current first, previous in tail" shape as cookie keys. The 32-byte key seals TOTP secrets at rest (AES-256-GCM, with the subject identifier as additional authenticated data).
+`WithMFAEncryptionKeys` follows the same "current first, previous in tail" shape as cookie keys. The 32-byte key seals TOTP secrets at rest (AES-256-GCM, with the subject identifier as additional authenticated data).
 
 ```go
 op.WithMFAEncryptionKeys(currentKey, previousKey)
@@ -107,7 +107,7 @@ After every rotation:
 
 1. `curl https://op.example.com/jwks` — confirm the new `kid` is present and the retired `kid` is still listed (unless you've completed the drop step).
 2. New token `kid` header points at the new key: `echo "<jwt>" | cut -d. -f1 | base64 -d | jq .kid`.
-3. `token.issued` audit events show the new `kid` in extras.
+3. No `key.retired_kid_presented` audit events fire after the cut-over (the OP emits this event whenever a JWS / JWE arrives carrying a `kid` whose retirement deadline has passed — silence is the success signal).
 4. Browser sessions established before rotation still resolve at the `/userinfo` endpoint (cookie key rotation didn't break decrypt).
 
 ## Why a new `Provider` instead of a mutate-in-place API

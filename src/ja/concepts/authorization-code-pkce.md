@@ -73,6 +73,41 @@ sequenceDiagram
 | `grant_type=authorization_code` | `/token` | この grant を選択。 |
 | Client auth | `/token` | `client_secret_basic` / `client_secret_post` / `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` / `none`（PKCE のみ）のいずれか。 |
 
+::: details `state` と `nonce` の違い
+両方ともランダムな opaque 値で、両方とも replay 系攻撃を防ぎますが、守る経路が違います。
+
+- **`state`** は **フロントチャネル**（ブラウザのクエリ文字列）を流れる値です。RP はリダイレクト前にユーザのセッションに保存し、コールバック時に突き合わせます。守るのは *リダイレクト* 経路の CSRF — 攻撃者が `/callback` に偽コールバックを投げてアプリに受理させる、を阻止します。
+- **`nonce`** は **ID Token の claim** に乗ります。RP はリダイレクト前にユーザセッションに保存し、トークン交換後に突き合わせます。守るのは *ID Token* のリプレイ — 盗まれた ID Token を別 RP で、あるいは同じ RP の別ログイン試行で再利用させない、を阻止します。
+
+両方使ってください。本ライブラリは confidential client で `state` 欠落のリクエストを拒否しますし、OIDC は `response_type=code id_token` や `id_token` を使うときには `nonce` 必須です。
+:::
+
+::: details `code_verifier` / `code_challenge` / `S256` とは
+**`code_verifier`** は RP が生成して *自分だけが持っている* 高エントロピのランダム文字列です。RFC 7636 §4.1 で 43〜128 文字の URL セーフ文字と定められています。
+
+**`code_challenge`** は RP が `/authorize` で OP に送る値です。`code_challenge_method=S256` の場合、`BASE64URL(SHA-256(code_verifier))` — つまり一方向ハッシュです。OP には逆算できず、後で `/token` に verifier 本体を送ったときに RP の所有を証明できる形になります。
+
+**`S256`** は SHA-256 ベースの変換で、本ライブラリが受理する唯一の `code_challenge_method` です。古い `plain` 方式（challenge と verifier が同じ）は URL を読める攻撃者には何の保護にもならないので、RFC 9700 が新規構築での使用を禁止しています。
+:::
+
+::: details `redirect_uri` — 完全一致が必須な理由
+`/authorize` の `redirect_uri` は、クライアントの登録リストに対して **バイト単位** で照合されます — 末尾スラッシュの正規化なし、パスプレフィックス一致なし、ワイルドカードなし。この厳格さは意図的です: open-redirect バグや「`https://app.example.com/` のサブパスならどれでも」式の登録は、コードを攻撃者が制御する URL に漏らす経路として何度も悪用されてきました。RFC 9700 §2.1 が完全一致を要求しており、本ライブラリも強制します。`/token` では RP が `/authorize` で送ったのと *同じ* `redirect_uri` を再送する必要があり、ずれると `redirect_uri_mismatch` を返します。
+:::
+
+::: details `response_type=code` とは
+**`response_type=code`** は **認可コードフロー** を要求します — OP がリダイレクトで短寿命の `code` を返し、RP がそれを `/token` で実トークンに交換するパターンです。代替の `token`、`id_token token`、`code id_token` などは古い hybrid / implicit フローで、OAuth 2.0 BCP（RFC 9700）が非推奨としています。本ライブラリは `code` を正規経路として実装し、hybrid 形式は互換性のためのオプトイン表面にとどめています — 新規構築向けではありません。
+:::
+
+::: details PAR とは何か、いつ必要になるか
+**PAR**（Pushed Authorization Requests、RFC 9126）は、RP が authorize パラメータを *先に* サーバ側の `/par` エンドポイントに POST し、短寿命の `request_uri` を受け取って、ブラウザは `?client_id=...&request_uri=...` だけでリダイレクトする方式です。利点:
+
+- リクエスト全体がブラウザ履歴・サーバログ・referrer に残らない。
+- ユーザエージェント境界での改竄が無効化される — そこに露出するのは `request_uri` だけ。
+- FAPI 2.0 Baseline では必須。それ以外でもオプトインする価値あり。
+
+`op.WithFeature(feature.PAR)` で有効化すると、discovery document の `pushed_authorization_request_endpoint` に出ます。
+:::
+
 ## PKCE が防ぐもの
 
 ::: details 解説: PKCE が防ぐ攻撃

@@ -1,15 +1,19 @@
 ---
 title: Custom consent UI
-description: Replace the built-in consent screen with your own HTML template — branded copy, layout, i18n.
+description: The op.WithConsentUI option shape is reserved for v1.0; today, customise consent via locale bundles or the JSON driver.
 ---
 
 # Use case — Custom consent UI
+
+::: warning v0.9.x — `op.WithConsentUI` is not wired yet
+The option type stays public so future plans can refer to it, but `op.New` returns a configuration error if you pass it today. The handler that would render embedder-supplied consent templates is reserved for the v1.0 surface and has not landed. Use one of the two paths below instead.
+:::
 
 ## What is "consent" in OIDC?
 
 After the user authenticates, OIDC Core 1.0 §3.1.2.4 expects the OP to ask **the user — not the RP — whether to release the requested scopes** (`profile`, `email`, anything else the RP listed). The user clicks "Approve" or "Deny", and only then does the OP redirect back with a code. This page exists *between* login and the redirect.
 
-The default consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n.
+The bundled consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n. Until `op.WithConsentUI` lands, the working paths are locale bundle overlays (small changes) or the JSON driver (full SPA control).
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent prompt)
@@ -19,72 +23,63 @@ The default consent page works, but you almost certainly want it branded — you
 
 ::: details Vocabulary refresher
 - **Consent screen** — The page between login and the redirect-back-with-code where the user approves the scopes a particular RP is requesting. The OP decides what data to ask about; the user decides whether to release it.
-- **CSRF token** — A per-session secret embedded in a form so a hostile third-party site cannot trick the browser into submitting "Approve" on the user's behalf. The OP issues and validates the token; your template's only job is to echo it back in the POST body.
-- **Content Security Policy (CSP)** — A response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page may load. The OP renders the consent page under a strict default policy that blocks `<script>`, inline event handlers, and external assets, so a hostile RP `client_name` cannot escalate into XSS.
+- **CSRF token** — A per-session secret embedded in a form so a hostile third-party site cannot trick the browser into submitting "Approve" on the user's behalf. The OP issues and validates the token; SPA / template only echo it back in the POST body or the `X-CSRF-Token` header.
+- **Content Security Policy (CSP)** — A response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page may load. The OP renders the bundled consent page under a strict default policy that blocks `<script>`, inline event handlers, and external assets, so a hostile RP `client_name` cannot escalate into XSS.
 :::
 
-> **Source:** [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui)
+## Path 1 — Locale bundle overlay (minor copy / i18n)
 
-## The seam
+If you only need to change the strings (translated copy, brand voice, partial translations), `op.WithLocale` overlays your keys on top of the seed `en` / `ja` bundles at key granularity. The bundled consent page picks up the overlay automatically.
 
 ```go
-import "html/template"
-
-tmpl := template.Must(template.New("consent").Parse(`
-  <!DOCTYPE html>
-  <html><body>
-    <h1>{{.Client.Name}} wants the following permissions</h1>
-    <ul>{{range .Scopes}}<li>{{.Description}}</li>{{end}}</ul>
-    <form method="POST">
-      <input type="hidden" name="csrf" value="{{.CSRFToken}}">
-      <button name="action" value="approve">Approve</button>
-      <button name="action" value="deny">Deny</button>
-    </form>
-  </body></html>
-`))
+brandJa, _ := op.LocaleBundleFromMap("ja", map[string]string{
+  "consent.title":                       "Acme へのアクセス許可",
+  "consent.scope.profile.description":   "プロフィール情報の参照",
+})
 
 op.New(
   /* required options */
-  op.WithConsentUI(op.ConsentUI{Template: tmpl}),
+  op.WithLocale(brandJa),
 )
 ```
 
-The library passes a canonical context to your template:
+Bundle keys follow the surface they render — see [Use case: i18n / locale negotiation](/use-cases/i18n) for the catalogue and the resolution chain.
 
-| Field | Type | Purpose |
-|---|---|---|
-| `Client` | `store.Client` | Display name, logo URI, etc. |
-| `Scopes` | `[]op.Scope` | Granted scopes with their human descriptions |
-| `CSRFToken` | `string` | **Must** be embedded in the form post body |
-| `User` | `op.Identity` | Subject + claim shape |
+This path keeps the bundled HTML driver, the bundled CSP, and the bundled CSRF / cookie scheme. You only change strings.
 
-Everything else — layout, CSS, i18n — is yours.
+## Path 2 — JSON driver (full markup control)
 
-## What you don't have to write
+If you need to own the markup (custom layout, brand assets, framework-rendered consent), switch to the JSON driver. The OP returns the consent prompt as `{ type: "consent.scope", data: { scopes: [...] }, csrf_token, ... }` JSON; your page or SPA renders it and posts the user's choice back.
+
+```go
+import "github.com/libraz/go-oidc-provider/op/interaction"
+
+op.New(
+  /* required options */
+  op.WithInteractionDriver(interaction.JSONDriver{}),
+)
+```
+
+The SPA echoes `prompt.csrf_token` into the `X-CSRF-Token` header on submission; the OP compares against the `__Host-oidc_csrf` cookie (double-submit pattern). See [SPA / custom interaction](/use-cases/spa-custom-interaction) for the worked end-to-end flow.
+
+## What you don't have to write either way
 
 | Concern | Owned by the OP |
 |---|---|
-| CSRF token generation / validation | ✅ |
-| Origin / Referer check on the POST | ✅ |
-| Cookie scope (`__Host-`, `Secure`, `SameSite`) | ✅ |
-| Session lookup / consent persistence | ✅ |
-| Rendering the redirect back to the RP after approval | ✅ |
+| CSRF token generation / validation | yes |
+| Origin / Referer check on the POST | yes |
+| Cookie scope (`__Host-`, `Secure`, `SameSite`) | yes |
+| Session lookup / consent persistence | yes |
+| Rendering the redirect back to the RP after approval | yes |
 
-You only own the markup between the form open and close.
+The locale bundle path keeps the bundled CSP (`default-src 'none'; style-src 'unsafe-inline'`) and the rendered HTML; the JSON driver path lets your own page set the CSP it needs.
 
-## CSP-safe
+## When `op.WithConsentUI` lands (v1.0)
 
-The library's default CSP for the consent page is `default-src 'none'; style-src 'unsafe-inline'`. If you embed `<script>` or external assets, raise the policy explicitly via `op.WithConsentUI(op.ConsentUI{ContentSecurityPolicy: "..."})`.
-
-## When to use this vs. the SPA driver
-
-| Need | Pick |
-|---|---|
-| Just rebrand the consent page, keep server-rendered HTML | `WithConsentUI` |
-| Full SPA — login, consent, logout in your SPA (React, Vue, …) | `WithSPAUI` (see [SPA / custom interaction](/use-cases/spa-custom-interaction)) |
-| JSON-only consent endpoint, custom front-end framework | Swap `interaction.JSONDriver{}` |
+The reserved option ships an embedder-supplied `*html/template.Template` and a canonical context (`Client`, `Scopes`, `CSRFToken`, `User`). Until the handler is wired, the template never executes, so `op.New` rejects the option at construction time rather than letting embedders believe their template is rendering. Pages that previously used `WithConsentUI` should pick one of the two paths above for now and revisit when v1.0 lands.
 
 ## Read next
 
-- [SPA / custom interaction](/use-cases/spa-custom-interaction) — full SPA wiring.
+- [SPA / custom interaction](/use-cases/spa-custom-interaction) — full SPA wiring on the JSON driver.
+- [i18n / locale negotiation](/use-cases/i18n) — the locale bundle overlay path.
 - [CORS for SPA](/use-cases/cors-spa) — when your front-end is on another origin.
