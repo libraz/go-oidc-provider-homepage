@@ -1,13 +1,14 @@
 ---
 title: OFCS conformance status
-description: How go-oidc-provider runs against the OpenID Foundation Conformance Suite — the three plans, the latest results, the modules that fail-by-design, and what REVIEW means.
+description: How go-oidc-provider runs against the OpenID Foundation Conformance Suite — the four plans, the latest results, the modules that fail-by-design, and what REVIEW means.
 ---
 
 # OFCS conformance status
 
-`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and runs three plans end-to-end against a `cmd/op-demo` instance.
+`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and runs four plans end-to-end against a `cmd/op-demo` instance.
 
-[ofcs]: https://gitlab.com/openid/conformance-suite [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
+[ofcs]: https://gitlab.com/openid/conformance-suite
+[harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
 
 ::: warning Personal project, not certified
 This is a personal project maintained by an individual developer. No OpenID Foundation membership fee is paid and **no formal OIDC certification** is held. The numbers on this page are reproducible snapshots — `make conformance-baseline` records exactly what you see. They are not a substitute for a paid OpenID Foundation certification and should not be cited as one.
@@ -20,26 +21,29 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 | `oidcc-basic-certification-test-plan` | Authorization Code + PKCE, ID Token, UserInfo, refresh, discovery | OIDC Core 1.0 |
 | `fapi2-security-profile-id2-test-plan` | + PAR, sender-constrained access tokens (DPoP), strict alg list, `redirect_uri` exact match | FAPI 2.0 Baseline |
 | `fapi2-message-signing-id1-test-plan` | + JAR (signed authorization request), JARM (signed authorization response) | FAPI 2.0 Message Signing |
+| `fapi-ciba-id1-test-plan` | Client-Initiated Backchannel Authentication (poll mode), mTLS-bound tokens | FAPI-CIBA |
 
 ## Latest baseline
 
-Snapshot ID: `2026-04-30T11-50-08Z-post-error-html`<br/> Repository SHA: [`ab23d3c`](https://github.com/libraz/go-oidc-provider/commit/ab23d3c44967d7353b176de1b71362f141a8c2df)
+Snapshot ID: `2026-05-06T12-13-25Z-v0.9.1-rc20-final-4plan`<br/> Repository SHA: [`592ab48`](https://github.com/libraz/go-oidc-provider/commit/592ab48fa071b39e0f0c8265a49fac5b09940bed)<br/> OFCS image: `release-v5.1.42`
 
-| Plan                                       | PASSED | REVIEW | SKIPPED | FAILED | Total |
-|--------------------------------------------|-------:|-------:|--------:|-------:|------:|
-| `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |  **0** |    35 |
-| `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |  **0** |    58 |
-| `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |  **0** |    71 |
-| **Total**                                  | **138**| **21** |   **5** |  **0** | **164** |
+| Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | Total |
+|--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
+| `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |       0 |  **0** |    35 |
+| `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |  **0** |    58 |
+| `fapi2-message-signing-id1-test-plan`      |     59 |      9 |       2 |       0 |  **1** |    71 |
+| `fapi-ciba-id1-test-plan`                  |     31 |      0 |       3 |       1 |  **0** |    35 |
+| **Total**                                  | **168**| **21** |   **8** |   **1** |  **1** | **199** |
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#0c5460","primaryTextColor":"#fff","primaryBorderColor":"#0c5460","lineColor":"#888"}}}%%
 pie showData
-  title 164 modules across 3 plans
-  "PASSED" : 138
+  title 199 modules across 4 plans
+  "PASSED" : 168
   "REVIEW (manual gate)" : 21
-  "SKIPPED (refused by design)" : 5
-  "FAILED" : 0
+  "SKIPPED (refused by design)" : 8
+  "WARNING (advisory)" : 1
+  "FAILED" : 1
 ```
 
 ## What each test plan covers
@@ -85,11 +89,26 @@ Message Signing layers signed authorization responses on top of Baseline. Everyt
 | Signed ID Token in token response | profile-enforced | [/concepts/tokens](/concepts/tokens) |
 | Request object signing (`PS256` / `ES256`) | profile-enforced | [/concepts/fapi](/concepts/fapi) |
 
-### How REVIEW and SKIPPED categorize
+### `fapi-ciba-id1-test-plan` — FAPI-CIBA (Client-Initiated Backchannel Authentication)
+
+The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authentication grant: an authentication request initiated by the client, completed asynchronously on the user's authentication device (push notification, IVR, etc.), and consumed back via a polling token request. The OP runs in poll mode, FAPI-CIBA inherits FAPI 1.0's hardcoded `tls_client_certificate_bound_access_tokens` requirement so mTLS sender constraint is mandatory.
+
+| What it tests | Library option to enable | Doc page |
+|---|---|---|
+| `/bc-authorize` endpoint + `auth_req_id` | `op.WithCIBA(op.WithCIBAHintResolver(...))` | [/use-cases/ciba](/use-cases/ciba) |
+| Hint resolution (`login_hint` / `id_token_hint` / `login_hint_token`) | embedder-supplied `HintResolver` | [/use-cases/ciba](/use-cases/ciba) |
+| Polling discipline (`authorization_pending` / `slow_down`) | enabled by default; `op.WithCIBAPollInterval(...)` overrides advertised interval | [/use-cases/ciba](/use-cases/ciba) |
+| Poll-abuse lockout cap | default `5` strikes; `op.WithCIBAMaxPollViolations(n)` raises or lowers the cap | [/use-cases/ciba](/use-cases/ciba) |
+| `tls_client_certificate_bound_access_tokens` (FAPI-CIBA mandate) | `op.WithProfile(profile.FAPICIBA)` implies `feature.MTLS` | [/concepts/mtls](/concepts/mtls) |
+| Signed `request` object on `/bc-authorize` | `op.WithFeature(feature.JAR)` (auto under FAPI-CIBA) | [/concepts/fapi](/concepts/fapi) |
+| Bound `request_object` `iat` and `exp` claims (FAPI-CIBA §5.2.2) | profile-enforced | [/concepts/fapi](/concepts/fapi) |
+
+### How REVIEW, SKIPPED, WARNING, and FAILED categorize
 
 - **REVIEW** — the test ran, but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture honestly (consent UI strings, error page screenshots, certificate chain confirmation). Not a failure.
 - **SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
-- **FAILED** — observed behaviour diverged from the spec. We currently track **0 failures** across all three plans.
+- **WARNING** — the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. We currently see one (`fapi-ciba-id1-refresh-token`) — see the section below.
+- **FAILED** — observed behaviour diverged from the spec. We currently track **1 failure** (`fapi2-message-signing-id1` refresh-token DPoP-nonce-retry path) — see the section below.
 
 ### How to reproduce the conformance run yourself
 
@@ -119,7 +138,7 @@ The conformance suite gates these modules on human judgment by design. A `cmd/op
 
 ### FAPI 2.0 plans (9 each, same set)
 
-These all gate on a screenshot upload of the OP's error page or a manual "is the user actually re-prompted" judgment. They run cleanly headless but stay `REVIEW` until human sign-off:
+These all gate on a screenshot upload of the OP's error page or a manual "is the user actually re-prompted" judgment. They run cleanly headless but stay `REVIEW` until human sign-off (the same nine names appear on both `fapi2-security-profile-id2` and `fapi2-message-signing-id1`, totalling 18 across the two plans):
 
 - `fapi2-…-ensure-different-nonce-inside-and-outside-request-object`
 - `fapi2-…-ensure-different-state-inside-and-outside-request-object`
@@ -133,12 +152,35 @@ These all gate on a screenshot upload of the OP's error page or a manual "is the
 
 The OP returns the right HTTP error in every case (the negative tests pass their internal assertions); OFCS just wants a human to inspect the rendered error UI.
 
+## Modules currently in WARNING
+
+### `fapi-ciba-id1-test-plan` (1)
+
+| Module | What the warning says |
+|---|---|
+| `fapi-ciba-id1-refresh-token` | The OP issued a refresh token to the CIBA flow but its discovery document does not list `refresh_token` in `grant_types_supported`. The refresh path itself works (the test reaches a terminal PASS on its assertions); the advisory is a doc/discovery-metadata consistency observation. |
+
+## Modules currently FAILED — and why
+
+### `fapi2-message-signing-id1-test-plan` (1)
+
+| Module | What it is |
+|---|---|
+| `fapi2-security-profile-id2-refresh-token` | OFCS triggers a `use_dpop_nonce` 400 on a refresh-token request, then retries the same request with the supplied nonce attached to a fresh DPoP proof. The OFCS retry reuses the **same** `client_assertion` (with the same `jti`) — and the OP's clientauth path treats that as a JTI replay and returns `invalid_client`. |
+
+The FAPI 2.0 spec is silent on whether a `client_assertion` `jti` should be considered consumed when the token endpoint returns a transient `use_dpop_nonce` challenge. Our current reading is strict: any `jti` we have observed is consumed regardless of the request outcome. OFCS's expectation is the more permissive one: `jti` should only be consumed when the assertion successfully advanced state. We track this as a known follow-up; the safe-by-default fix (admit a `jti` re-use in the narrow window between a `use_dpop_nonce` 400 and the retry) is not yet implemented.
+
+The same module on the `fapi2-security-profile-id2-test-plan` PASSES because that plan's flow does not trigger the DPoP nonce retry path.
+
 ## Modules currently SKIPPED — and why
 
 | Module | Reason |
 |---|---|
-| `fapi2-…-ensure-signed-client-assertion-with-RS256-fails` | The FAPI client used in the plan registers `token_endpoint_auth_signing_alg=PS256`, so OFCS skips the per-client `RS256` negative test. |
+| `fapi2-…-ensure-signed-client-assertion-with-RS256-fails` (×2) | The FAPI client used in the plan registers `token_endpoint_auth_signing_alg=PS256`, so OFCS skips the per-client `RS256` negative test on both fapi2 plans. |
 | `fapi2-message-signing-…-ensure-signed-request-object-with-RS256-fails` | Same — the FAPI client's `request_object_signing_alg=PS256` makes the `RS256` negative test inapplicable. |
+| `fapi-ciba-id1-ensure-request-object-signature-algorithm-is-RS256-fails` | The FAPI-CIBA client registers `request_object_signing_alg=PS256`. |
+| `fapi-ciba-id1-ensure-client-assertion-signature-algorithm-in-backchannel-authorization-request-is-RS256-fails` | Same — `token_endpoint_auth_signing_alg=PS256` on the CIBA client. |
+| `fapi-ciba-id1-ensure-client-assertion-signature-algorithm-in-token-endpoint-request-is-RS256-fails` | Same. |
 | `oidcc-ensure-request-object-with-redirect-uri` | The `oidcc-basic` plan does not enable JAR; the OP omits `request_object_signing_alg_values_supported` from discovery and OFCS skips. |
 | `oidcc-unsigned-request-object-supported-correctly-or-rejected-as-unsupported` | Same — JAR off, no `request` parameter, OFCS skips. |
 
@@ -161,7 +203,7 @@ The harness:
 1. Generates self-signed RSA-2048 certs (`scripts/conformance.sh certs`).
 2. Brings up the OFCS Docker stack at `https://localhost:8443`.
 3. Builds and runs `cmd/op-demo` at `https://127.0.0.1:9443`.
-4. Seeds the three plans via the OFCS REST API.
+4. Seeds the four plans via the OFCS REST API.
 5. Records pass/fail per module to a deterministic JSON file.
 
 `make conformance-baseline-diff` exits non-zero on any module that **lost** `PASSED` between two snapshots — that is the regression gate the project uses pre-merge for security-relevant changes.
@@ -187,15 +229,15 @@ If you set conflicting options after `WithProfile`, `op.New(...)` returns a buil
 |---|---|
 | `conformance/README.md` | Operator runbook |
 | `conformance/plans/*.json` | Plan templates (server / client / resource blocks) |
-| `conformance/docker-compose.yml` | OFCS image pin (`release-v5.1.9`) + JKS truststore wiring |
+| `conformance/docker-compose.yml` | OFCS image pin (`release-v5.1.42`) + JKS truststore wiring |
 | `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
 | `tools/conformance/ofcs.py` | REST client + headless drive script |
 | `conformance/baselines/*.json` | Captured snapshots (gitignored — environment-specific) |
 
 ## Caveats worth naming
 
-- **Plan suite version.** OFCS is pinned to `release-v5.1.9`. Tests added or renamed in newer OFCS releases are not covered until the pin is bumped.
-- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. Behaviour confirmed against v5.1.9 only.
+- **Plan suite version.** OFCS is pinned to `release-v5.1.42`. Tests added or renamed in newer OFCS releases are not covered until the pin is bumped.
+- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. Behaviour confirmed against v5.1.42 only.
 - **No real RP cert.** The mTLS plan slots use generated self-signed certs at `conformance/certs/` so the plan can be instantiated. No real CA chain is exercised.
 - **Single OP instance.** Cross-instance behaviour (e.g. token introspection across two OPs sharing a store) is exercised by `test/scenarios`, not OFCS.
 
