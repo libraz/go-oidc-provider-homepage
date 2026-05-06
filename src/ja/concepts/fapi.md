@@ -62,7 +62,7 @@ FAPI 1.0 にはバンドが 2 つありました。**Read-Only** はデータ取
 FAPI 2.0 は 2 段構成です。
 
 ::: tip Baseline — 必須要件の最低ライン
-Pushed Authorization Requests（PAR）、PKCE、DPoP **または** mTLS、ES256 / PS256 署名、`redirect_uri` の完全一致、`private_key_jwt` / mTLS でのクライアント認証。**いずれの FAPI 2.0 deployment にも求められる最低水準** です。
+Pushed Authorization Requests（PAR）、PKCE、DPoP **または** mTLS、OP 発行物の ES256 署名、FAPI-safe なクライアント側署名アルゴリズム、`redirect_uri` の完全一致、`private_key_jwt` / mTLS でのクライアント認証。**いずれの FAPI 2.0 deployment にも求められる最低水準** です。
 :::
 
 ::: tip Message Signing — 非否認性
@@ -110,7 +110,7 @@ FAPI 2.0 Message Signing で必須。
 :::
 
 ::: details ES256 / PS256 — なぜ RS256 ではないのか
-RS256（RSA-SHA256、PKCS#1 v1.5 パディング）は padding-oracle 攻撃や鍵混同攻撃に対して構造的に脆弱です。OIDC Core では今も許容されていますが、FAPI 2.0 では禁じられています。PS256（RSA-PSS）と ES256（P-256 上の ECDSA）が安全な代替です。`go-oidc-provider` は FAPI プロファイル下で ES256 / EdDSA / PS256 を受理し、RS256 はサーフェスから外します。
+RS256（RSA-SHA256、PKCS#1 v1.5 パディング）は padding-oracle 攻撃や鍵混同攻撃に対して構造的に脆弱です。OIDC Core では今も許容されていますが、FAPI 2.0 では禁じられています。PS256（RSA-PSS）と ES256（P-256 上の ECDSA）が安全な代替です。`go-oidc-provider` は OP 発行 JWT を ES256 のみで署名し、FAPI 下のクライアント署名オブジェクトでは絞り込まれた allow-list（`PS256`、`ES256`、`EdDSA`）を使います。RS256 は FAPI のサーフェスから外れます。
 :::
 
 ::: details アルゴリズム allow-list — なぜ「ネゴ」ではなく「リスト」なのか
@@ -139,7 +139,7 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 | **OIDC Core 1.0** | 必須 | 必須 | 必須 |
 | **PKCE — `S256` のみ (RFC 7636)** | 必須 | 必須 | 対象外（CIBA はフロントチャネルなし）|
 | **PAR (RFC 9126)** | 必須 | 必須 | 対象外（CIBA は `/bc-authorize` に POST）|
-| **JAR (RFC 9101)** — 署名付き request object | 必須 | 必須（`PS256` または `ES256`）| 必須 |
+| **JAR (RFC 9101)** — 署名付き request object | 必須（`PS256`、`ES256`、`EdDSA`）| 必須（`PS256`、`ES256`、`EdDSA`）| 必須 |
 | **JARM** — 署名付き authorize 応答 | 任意 | 必須 | 対象外（CIBA はフロントチャネルなし）|
 | **DPoP (RFC 9449) または mTLS (RFC 8705)** | いずれか必須 | いずれか必須 | いずれか必須 |
 | **Resource Indicators (RFC 8707)** | 任意 | 任意 | 任意 |
@@ -147,7 +147,7 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 | **OAuth 2.0 Security BCP (RFC 9700)** | 必須 | 必須 | 必須 |
 | **Token endpoint クライアント認証** | `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` | 同左 | 同左 |
 | **`client_secret_basic` / `_post` / `_jwt`** | 禁止 | 禁止 | 禁止 |
-| **ID トークン署名 alg** | `PS256` / `ES256` / `EdDSA` | 同左 | 同左 |
+| **ID トークン署名 alg** | `ES256` | 同左 | 同左 |
 | **`alg=none`** | 禁止 | 禁止 | 禁止 |
 | **`RS256`（旧来の RSA-PKCS1v15）**| 禁止 | 禁止 | 禁止 |
 | **`HS256` などの HMAC 系 alg** | 禁止 | 禁止 | 禁止 |
@@ -163,7 +163,7 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 
 **なぜ JARM は Message Signing で必須、Baseline では任意なのか。** Message Signing の主目的は「**応答** の署名」であり、要求の署名だけではありません。完全な非否認性（nonrepudiation）を提供するのがこのバンドの役割で、authorize 応答はその契約の半分を占めています。Baseline は PAR で通信路の安全性を担保すれば足り、応答署名は 2 つ目のバンドで追加される、という整理になります。
 
-**本ライブラリにおける「禁止」の意味。** プロファイルゲートはリクエスト時ではなく `op.New` の段階で発火します — Baseline プロファイルの OP は `client_secret_basic` クライアントを登録できず、ID トークン署名 alg として `RS256` を広告できず、構成が受理される前に 1 つもトークンを発行しません。alg 禁止を支える closed enum 設計は設計判断 [#11](/ja/security/design-judgments#dj-11) に、DPoP / mTLS の disjunction を全ハンドラに対して一様に解決する `*config` ヘルパー方式は [#7](/ja/security/design-judgments#dj-7) に記録されています。
+**本ライブラリにおける「禁止」の意味。** プロファイルゲートはリクエスト時ではなく `op.New` の段階で発火します — Baseline プロファイルの OP は `client_secret_basic` クライアントを登録できず、ID トークン署名 alg として `ES256` 以外を広告できず、構成が受理される前に 1 つもトークンを発行しません。alg 禁止を支える closed enum 設計は設計判断 [#11](/ja/security/design-judgments#dj-11) に、DPoP / mTLS の disjunction を全ハンドラに対して一様に解決する `*config` ヘルパー方式は [#7](/ja/security/design-judgments#dj-7) に記録されています。
 
 ### 続きはこちら
 
@@ -188,10 +188,11 @@ op.New(
 
 `WithProfile` は次をまとめて行います:
 
-1. `feature.PAR` / `feature.JAR` / `feature.DPoP` を自動有効化。
+1. `feature.PAR` / `feature.JAR` を自動有効化。
 2. `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差。
-3. ID トークン署名 alg を `ES256` / `PS256` にロック、`RS256` での新規発行を拒否。
-4. `redirect_uri` の完全一致を強制。
+3. `feature.DPoP` または `feature.MTLS` の少なくとも一方を送信者制約として要求。
+4. OP 発行 ID トークンを `ES256` にロックし、P-256 でない OP 署名鍵を拒否。
+5. `redirect_uri` の完全一致を強制。
 
 プロファイルと矛盾するオプションを後から重ねると `op.New` が起動を拒否します — partial-FAPI な構成がレビューを抜けて本番に出ることはありません。
 

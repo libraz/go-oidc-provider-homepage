@@ -17,7 +17,7 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 This page is a flat reference of every public `op.With*`. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
 
 - **You're booting a fresh OP for the first time** → start with the four required options: [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
-- **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
+- **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). `profile.IGovHigh` is reserved and rejected today. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
 - **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. PKCE is on by default; `DynamicRegistration` is activated implicitly by `WithDynamicRegistration`.
 - **You want to restrict the grant types accepted at `/token`** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`. The convenience options `WithDeviceCodeGrant()`, `WithCIBA(...)`, `WithCustomGrant(...)`, and `RegisterTokenExchange(...)` mount the additional endpoints those grants need.
 - **You want sender-constrained access tokens** → DPoP path: `WithFeature(feature.DPoP)` plus optional `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`. mTLS path: `WithFeature(feature.MTLS)` plus optional `WithMTLSProxy(headerName, trustedCIDRs)`. See [Concepts: sender-constrained tokens](/concepts/sender-constraint), [DPoP](/concepts/dpop), [mTLS](/concepts/mtls), and [Use case: DPoP nonce](/use-cases/dpop-nonce).
@@ -51,7 +51,7 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 | `WithProfile` | `profile.Profile` | activates a security profile in one switch (FAPI 2.0 Baseline / Message Signing / FAPI-CIBA). `profile.IGovHigh` is reserved for v2+ and currently rejected at `op.New` because its runtime constraints have not landed. | none |
 | `WithFeature` | `feature.Flag` (one per call; repeatable) | enables PAR / DPoP / mTLS / JAR / JARM / introspect / revoke individually | conservative defaults |
 | `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token` | `authorization_code`, `refresh_token` |
-| `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `offline_access` |
+| `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `address`, `phone`, `offline_access` |
 | `WithOpenIDScopeOptional` | _(no args)_ | makes pure-OAuth2 (`scope` without `openid`) acceptable | required |
 | `WithStrictOfflineAccess` | _(no args)_ | gates `refresh_token` issuance behind explicit `offline_access` consent | lax (refresh on any `openid` grant) |
 
@@ -109,10 +109,10 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 |---|---|---|---|
 | `WithEndpoints` | `op.Endpoints` (struct: per-endpoint path overrides) | overrides default endpoint paths | spec defaults |
 | `WithMountPrefix` | `string` (must start with `/`; pass `/` for root) | embeds an issuer-relative path prefix | `/oidc` |
-| `WithClaimsSupported` | `...string` (variadic) | populates `claims_supported` in discovery | derived |
-| `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported` | false |
+| `WithClaimsSupported` | `...string` (variadic) | populates `claims_supported` in discovery | omitted |
+| `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported`; `false` also makes authorize / PAR ignore `claims` payloads after malformed JSON has been rejected | true |
 | `WithACRValuesSupported` | `...string` (variadic) | publishes `acr_values_supported`; FAPI / eIDAS / NIST 800-63 deployments use this to advertise honored ACR values | empty (omitted from discovery) |
-| `WithDiscoveryMetadata` | `op.DiscoveryMetadata` (`map[string]any`) | injects extra non-OIDC keys (federation, custom registration metadata) into the discovery document | none |
+| `WithDiscoveryMetadata` | `op.DiscoveryMetadata` (typed `service_documentation`, policy / TOS / UI locale / mTLS alias fields plus `Extra map[string]any`) | injects RFC 8414 / OIDC Discovery metadata not owned by the OP; `Extra` keys that collide with OP-controlled fields are rejected | none |
 | `WithJWKSRotationActive` | `func() bool` | predicate that flips JWKS `Cache-Control` to short-cache during a rotation window | always long-cache |
 
 ## Subject strategy
@@ -130,7 +130,7 @@ See [Use case: pairwise subject](/use-cases/pairwise-subject).
 |---|---|---|---|
 | `WithDeviceCodeGrant` | _(no args)_ | enables the RFC 8628 device-authorization grant; mounts `/device_authorization` and registers the URN at `/token` | disabled |
 | `WithDeviceVerificationURI` | `string` (absolute URL) | overrides the verification URI advertised on the device's display (default `<issuer>/device`) | derived |
-| `WithCIBA` | `...op.CIBAOption` | enables CIBA poll mode; mounts `/bc-authorize` and registers the CIBA URN. Sub-options: `WithCIBAHintResolver` (required), `WithCIBADefaultExpiresIn`, `WithCIBAMaxExpiresIn`, `WithCIBAPollInterval` | disabled |
+| `WithCIBA` | `...op.CIBAOption` | enables CIBA poll mode; mounts `/bc-authorize` and registers the CIBA URN. Sub-options: `WithCIBAHintResolver` (required), `WithCIBADefaultExpiresIn`, `WithCIBAMaxExpiresIn`, `WithCIBAPollInterval`, `WithCIBAMaxPollViolations` | disabled |
 | `WithCustomGrant` | `op.CustomGrantHandler` | registers an embedder-defined `grant_type` URN at `/token`; the handler returns a verbatim access token or a `BoundAccessToken` request the OP signs | none |
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | enables the RFC 8693 token-exchange grant; the policy decides admission per request and may narrow OP-computed defaults | disabled |
 
@@ -151,9 +151,12 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 |---|---|---|---|
 | `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | header-based mTLS termination at edge | none |
 | `WithTrustedProxies` | `...string` (CIDRs) | resolves `X-Forwarded-*` / `Forwarded` to real client IP | none |
+| `WithTrustedProxyHosts` | `...string` (hostnames) | extends the `X-Forwarded-Host` allowlist beyond the canonical issuer host when trusted proxy CIDRs are configured | issuer host only |
 | `WithAllowLocalhostLoopback` | _(no args)_ | accepts `http://127.0.0.1` issuer in dev | strict (HTTPS only) |
 | `WithAllowPrivateNetworkJWKS` | _(no args)_ | permits client JWKS hosted on RFC 1918 (test only) | denied |
 | `WithAllowPrivateNetworkJAR` | _(no args)_ | permits `request_uri` hosted on RFC 1918 (test only) | denied |
+| `WithAllowPrivateNetworkSector` | _(no args)_ | permits `sector_identifier_uri` hosted on RFC 1918 during dynamic registration (test / private RP networks only) | denied |
+| `WithJWKSHTTPTransport` | `http.RoundTripper` | custom transport for RP-controlled JWKS fetches used by JAR and `private_key_jwt`, while preserving the dial-time SSRF gate | system-trust transport |
 | `WithBackchannelAllowPrivateNetwork` | `bool` | permits `backchannel_logout_uri` on RFC 1918 (test only) | false |
 | `WithBackchannelLogoutHTTPClient` | `*http.Client` | HTTP client for back-channel logout fan-out | default |
 | `WithBackchannelLogoutTimeout` | `time.Duration` | per-RP fan-out timeout | 5 s |

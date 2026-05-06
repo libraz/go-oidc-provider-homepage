@@ -11,7 +11,7 @@ description: The four options op.New refuses to start without — and why each o
 |---|---|
 | [`op.WithIssuer`](#withissuer) | Defines the JWT `iss` claim, the discovery URL, and the cookie scope. Wrong here, every downstream check is wrong. |
 | [`op.WithStore`](#withstore) | Where authcodes, sessions, refresh chains, JTI replay sets, and clients live. The library is storage-agnostic; without a store it has nowhere to put state. |
-| [`op.WithKeyset`](#withkeyset) | The signing keys for ID tokens / JWT access tokens / JARM. The library refuses to mint tokens without a `crypto.Signer` whose algorithm is on the allow-list. |
+| [`op.WithKeyset`](#withkeyset) | The signing keys for ID tokens / JWT access tokens / JARM. The library refuses to mint tokens without an ECDSA P-256 `crypto.Signer` that can produce `ES256` signatures. |
 | [`op.WithCookieKeys`](#withcookiekeys) | 32 bytes of random material used as an AES-256-GCM key for cookie payloads. Session and CSRF cookies are encrypted, not just signed. |
 
 ## `WithIssuer`
@@ -54,10 +54,10 @@ op.WithKeyset(op.Keyset{
 })
 ```
 
-A `Keyset` is a slice of `{KeyID, Signer}` records. `Signer` is anything that implements `crypto.Signer` (so `*ecdsa.PrivateKey`, `*rsa.PrivateKey`, or a vault/KMS handle that returns a `crypto.Signer`).
+A `Keyset` is a slice of `{KeyID, Signer}` records. `Signer` must implement `crypto.Signer` and expose an ECDSA P-256 public key. A vault / KMS handle is fine as long as the public key is P-256 and signatures verify as `ES256`; RSA and Ed25519 OP signing keys are rejected at `op.New`.
 
 ::: warning Algorithm allow-list
-The library only signs and verifies with `RS256`, `PS256`, `ES256`, and `EdDSA`. **`HS*` and `none` are structurally absent** — there is no enum value for them and `internal/jose.ParseAlgorithm` returns `ok=false` for those strings. This closes RFC 7519 §6 / RFC 8725 §2.1 algorithm-confusion attacks at the type level, not via runtime if-statements.
+OP-issued JWTs are signed with `ES256` only. Inbound JOSE verification for client assertions, JAR request objects, and DPoP proofs uses the library's closed allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) where each protocol permits it. **`HS*` and `none` are structurally absent** — there is no enum value for them and `internal/jose.ParseAlgorithm` returns `ok=false` for those strings. This closes RFC 7519 §6 / RFC 8725 §2.1 algorithm-confusion attacks at the type level, not via runtime if-statements.
 :::
 
 ## `WithCookieKeys`

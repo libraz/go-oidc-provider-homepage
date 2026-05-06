@@ -145,7 +145,7 @@ op.New(
 )
 ```
 
-`op.WithProfile(profile.FAPI2Baseline)` は `feature.DPoP` を(PAR、JAR と一緒に)自動有効化し、加えて `feature.DPoP` か `feature.MTLS` のうち少なくとも 1 つを明示的に有効化することを `RequiredAnyOf` 制約で求めます。FAPI プロファイル下で改めて `feature.DPoP` を渡しても no-op で、`op.New` が構築時に組み合わせを検証します。
+`op.WithProfile(profile.FAPI2Baseline)` は PAR と JAR を自動有効化したうえで、`feature.DPoP` と `feature.MTLS` に対する `RequiredAnyOf` 制約を課します。組み込み側は送信者制約として少なくとも一方を明示的に有効化する必要があり、`op.New` が構築時に組み合わせを検証します。
 
 ## DPoP が向いているケース
 

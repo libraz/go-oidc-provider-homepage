@@ -72,6 +72,25 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 
 `op.WithDynamicRegistration` implicitly activates `feature.DynamicRegistration`, mounts `/register`, and surfaces `registration_endpoint` in the discovery document.
 
+## Open registration and default scope
+
+When `RegistrationOption.Open` is `true`, the OP accepts `POST /register` without an Initial Access Token — anyone reachable on the network can mint a client. The library narrows the resulting trust by **persisting an empty scope set whenever the request omits `scope`**: such a client cannot ask for any scope at `/authorize` until it updates its registration.
+
+```go
+op.WithDynamicRegistration(op.RegistrationOption{
+  Open:                          true,
+  AllowedGrantTypes:             []string{"authorization_code", "refresh_token"},
+  AllowedResponseTypes:          []string{"code"},
+  OpenRegistrationDefaultScopes: []string{"openid"}, // baseline for scopeless POSTs
+})
+```
+
+`OpenRegistrationDefaultScopes` is the opt-in baseline. Each entry MUST already be in the OP's scope catalog (the four built-ins plus anything added via `WithScope(...)`); unknown values fail at `op.New`. The IAT-bound path is unchanged — when an Initial Access Token is presented, `store.InitialAccessToken.AllowedScopes` still wins.
+
+::: warning Pre-v0.9.x: open-registration scope default
+Earlier releases inherited the OP-wide discovery scope list when an open POST omitted `scope`, so a freshly registered client could hit `/authorize` with `openid profile email …` immediately. The current default is the empty slice — embedders that relied on the legacy behaviour must set `OpenRegistrationDefaultScopes` explicitly.
+:::
+
 ## Authentication-context client metadata
 
 Three client-metadata fields shape `/authorize` defaults and the `auth_time` claim of the resulting `id_token`. They are accepted both from DCR registration (RFC 7591) and from `op.ClientSeed` static seeds; the OP enforces them at request time.
@@ -100,7 +119,8 @@ The DCR surface is `partial` rather than `full`, but the partial label captures 
 
 - `redirect_uris` shape per `application_type` (see the warning above), with no fragments and absolute URLs only.
 - `grant_types` and `response_types` are cross-checked against the OIDC Core §3 / OIDC Registration §2 combination table; an inconsistent pair is rejected with `invalid_client_metadata` rather than silently auto-fixed.
-- `jwks` and `jwks_uri` are mutually exclusive; URI-bearing metadata fields (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `jwks_uri`, `sector_identifier_uri`, `initiate_login_uri`, `request_uris`) must be absolute, `https`, and fragment-free.
+- `jwks` and `jwks_uri` are mutually exclusive; URI-bearing metadata fields (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `jwks_uri`, `sector_identifier_uri`, `initiate_login_uri`) must be absolute, `https`, and fragment-free. Userinfo segments (`https://user:pass@host/...`) are rejected. **Exception:** `request_uris` admit a fragment because OIDC Core §6.2 RECOMMENDS the base64url-encoded SHA-256 hash of the request file there so caches can detect content changes; every other shape rule (absolute, `https`, host required, no userinfo) still applies.
+- `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host. `backchannel_logout_session_required=true` paired with an empty `backchannel_logout_uri` is rejected as `invalid_client_metadata` so a client cannot opt into `sid` delivery without a destination.
 - `sector_identifier_uri` is fetched at registration time and the document MUST be a JSON array of strings that contains every registered `redirect_uri` (OIDC Core §8.1). The fetch is bounded to a 5 s timeout and a 5 MiB body; failure or containment mismatch produces `invalid_client_metadata`.
 - `subject_type=pairwise` without `sector_identifier_uri` requires every `redirect_uri` host to match.
 - `request_object_signing_alg` is restricted to `RS256` / `PS256` / `ES256` / `EdDSA`.
@@ -113,6 +133,7 @@ The remaining gap to a `full` claim is design choice, not pending work. The reas
 - **PUT omission resets to server defaults, not deletion.** A `PUT /register/{client_id}` that omits `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, or `id_token_signed_response_alg` reapplies the OP default for that field; optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, …) becomes empty.
 - **PUT only re-emits `client_secret` on (a) `none` → confidential auth-method upgrade or (b) explicit rotation request.** The body of a routine metadata edit does not include the secret.
 - **PUT body MUST NOT include server-managed fields.** `registration_access_token`, `registration_client_uri`, `client_secret_expires_at`, and `client_id_issued_at` cause `400 invalid_request`. A `client_secret` value that does not match the authenticated client also returns `400`.
+- **`backchannel_logout_uri` and `backchannel_logout_session_required` round-trip end-to-end.** Both fields are persisted on `POST /register`, returned on `GET /register/{client_id}`, and overwritable through `PUT /register/{client_id}`. Earlier releases silently dropped them on the management surface, leaving back-channel-logout-bound clients unable to update their delivery shape via RFC 7592.
 - **`software_statement` (RFC 7591 §2.3) is not accepted in v1.0.** A request that includes the field returns `invalid_software_statement`. Federation / trust-chain support is out of scope for v1.0.
 
 ## Read / update / delete

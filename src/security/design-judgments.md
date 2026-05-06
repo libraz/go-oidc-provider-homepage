@@ -8,35 +8,62 @@ description: Where the library's behaviour is the result of a deliberate read of
 Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authorization server may". Several places need an explicit reading because the literature disagrees with itself, or because a literal reading collides with another spec. This page lists those calls.
 
 ::: tip How to read this page
-Each block follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The decision sits in the green callout; the prose above it is the spec text and the conflict. Look at the cited package paths under `op/` and `internal/` for the implementation details.
+Start with the decision map for the surface you are changing. Each detailed entry then follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The decision sits in the green callout; cited package paths under `op/` and `internal/` point to the implementation.
 :::
 
-## Quick index
+## Decision map
 
-| # | Theme | Decision in one line |
+### Protocol profiles and discovery
+
+| Decision | Surface | Short answer |
 |---|---|---|
-| [#1](#dj-1) | PAR `request_uri` one-time-use timing | Find at `/authorize`, Consume at code emission |
-| [#2](#dj-2) | Refresh-token rotation grace window | 60 s grace by default; chain reuse retires the chain |
-| [#3](#dj-3) | `offline_access` — gate or UX signal | **Gate** (`openid` + `offline_access` + `refresh_token` all required) |
-| [#4](#dj-4) | RFC 8252 §7.3 loopback redirect port handling | Default exact-match; opt-in per client allows port mismatch on `127.0.0.1`/`[::1]` only |
-| [#5](#dj-5) | Session Management 1.0 / Front-Channel Logout 1.0 | **Not implemented**; superseded by Back-Channel Logout 1.0 |
-| [#6](#dj-6) | JAR `request=` replay defence | OP-side `jti` cache, evicted at `exp`; default-on with JAR |
 | [#7](#dj-7) | Profile constraint resolution | Disjunction via `*config` helpers; handlers see only `bool` |
-| [#8](#dj-8) | ACR / AAL — internal vs wire vocabulary | Two-layer model (internal AAL ladder + wire `acr` mapping) |
-| [#9](#dj-9) | Issuer identifier validation | `op.WithIssuer` rejects trailing slash, mixed-case scheme/host, default port, fragment, query, non-canonical path |
-| [#10](#dj-10) | Sessions in or out of the transactional cluster | Separate substore; volatile stores OK; BCL is best-effort under volatility |
-| [#11](#dj-11) | JOSE `alg=none` / HMAC family lockout | Closed enum in `internal/jose.Algorithm`; `none`/`HS*` not in the type |
-| [#12](#dj-12) | Discovery narrowing on profile | Built once at `op.New`; golden test catches drift |
-| [#13](#dj-13) | `client_assertion` audience — FAPI 2.0 vs OIDC Core | Accept both shapes via `Audience` + `AuxAudiences` |
-| [#14](#dj-14) | PKCE — `plain` vs `S256` | `S256`-only across all profiles; `plain` rejected by policy |
+| [#8](#dj-8) | ACR / AAL vocabulary | Two-layer model: internal AAL ladder plus wire `acr` mapping |
+| [#12](#dj-12) | Discovery narrowing on profile | Built once from construction inputs; golden tests catch drift |
+| [#13](#dj-13) | `client_assertion` audience | Accept FAPI and OIDC Core shapes via `Audience` + `AuxAudiences` |
+| [#25](#dj-25) | DPoP nonce vs `client_assertion` replay | Verify the DPoP nonce before consuming assertion `jti` |
+| [#26](#dj-26) | CIBA / FAPI-CIBA polling and errors | Poll mode only; bounded slow-down strikes; CIBA JAR failures collapse to `invalid_request` |
+
+### Tokens, grants, and revocation
+
+| Decision | Surface | Short answer |
+|---|---|---|
+| [#2](#dj-2) | Refresh-token rotation grace window | 60 s grace by default; chain reuse retires the chain |
+| [#3](#dj-3) | `offline_access` — gate or UX signal | Default: TTL/UX signal; `WithStrictOfflineAccess()` makes it the issuance and exchange gate |
 | [#15](#dj-15) | DPoP refresh-token binding policy | Bind for public clients, leave unbound for confidential |
-| [#16](#dj-16) | Introspection — same-client gate + inactive shape | Cross-client lookup collapses to the uniform `{"active": false}` |
+| [#16](#dj-16) | Introspection same-client gate | Cross-client lookup collapses to the uniform `{"active": false}` |
 | [#17](#dj-17) | `/end_session` access-token cascade scope | Cascade by default when registry/opaque substores are wired |
 | [#18](#dj-18) | Access-token format default | JWT default; opaque opt-in; per-RFC 8707-resource override |
-| [#19](#dj-19) | JWT access-token revocation strategy default | Grant-tombstone default — zero rows on issuance, `O(revoked grants)` at the rest; FAPI rejects "no revocation" |
-| [#20](#dj-20) | DCR `client_secret` storage and disclosure | Hash-only at rest; plaintext returned only on `POST /register` and on PUT-driven rotation; `GET /register/{id}` never re-emits it |
-| [#21](#dj-21) | RFC 7592 PUT omission semantics | Omitted defaulted fields reset to server defaults; omitted optional metadata becomes empty; deletion semantics not implemented |
-| [#22](#dj-22) | `sector_identifier_uri` fetch bounds and native loopback | Fetched once at registration with a 5 s / 5 MiB cap; native `application_type` accepts all three loopback hosts unconditionally |
+| [#19](#dj-19) | JWT access-token revocation strategy default | Grant-tombstone default; FAPI rejects "no revocation" |
+
+### Registration, issuer, and outbound fetch
+
+| Decision | Surface | Short answer |
+|---|---|---|
+| [#4](#dj-4) | RFC 8252 loopback redirect port handling | Default exact-match; native loopback wildcard is a narrow opt-in |
+| [#9](#dj-9) | Issuer identifier validation | Reject non-canonical issuer shapes at construction time |
+| [#20](#dj-20) | DCR `client_secret` storage and disclosure | Hash-only at rest; plaintext is a one-time response artifact |
+| [#21](#dj-21) | RFC 7592 PUT omission semantics | Defaulted fields reset; optional metadata clears |
+| [#22](#dj-22) | `sector_identifier_uri` fetch bounds | One bounded fetch; native clients accept all OIDC loopback hosts |
+| [#23](#dj-23) | Outbound JWKS / metadata fetch SSRF boundary | Custom transports may widen trust, but the dial-time SSRF gate stays in place |
+| [#24](#dj-24) | Open DCR omitted `scope` | Default to no scopes unless `OpenRegistrationDefaultScopes` is configured |
+
+### Browser, session, and UI boundaries
+
+| Decision | Surface | Short answer |
+|---|---|---|
+| [#5](#dj-5) | Session Management / Front-Channel Logout | Not implemented; RP-Initiated Logout + Back-Channel Logout are the supported substitutes |
+| [#10](#dj-10) | Sessions in or out of the transactional cluster | Separate substore; volatile stores OK; BCL is best-effort under volatility |
+
+### JOSE and request objects
+
+| Decision | Surface | Short answer |
+|---|---|---|
+| [#1](#dj-1) | PAR `request_uri` one-time-use timing | Find at `/authorize`, consume at code emission |
+| [#6](#dj-6) | JAR `request=` replay defence | OP-side `jti` cache, evicted at `exp`; default-on with JAR |
+| [#11](#dj-11) | JOSE `alg=none` / HMAC lockout | Closed enum; `none` and `HS*` do not exist in the accepted type |
+| [#14](#dj-14) | PKCE `plain` vs `S256` | `S256`-only across all profiles |
+| [#27](#dj-27) | JWE allow-list and nesting cap | Closed `alg`/`enc` allow-list; total JOSE nesting capped at 10 layers |
 
 <a class="faq-anchor" id="dj-1"></a>
 
@@ -77,7 +104,9 @@ Rotated refresh tokens stay accepted for `GraceTTL` (default 60 s) when the chai
 **Conflict:** Reading (a) suggests refresh tokens are issued whenever the client is granted the `refresh_token` grant; the scope only governs consent UX. Reading (b) suggests `offline_access` is the canonical scope for refresh issuance and the consent gate is secondary. Other OPs split — some treat `offline_access` as mandatory, others as a UX-only marker.
 
 ::: tip Decision
-**`offline_access` is the gate.** Refresh tokens are issued only when **all three** hold: (i) the granted scope contains `openid`, (ii) the granted scope contains `offline_access`, and (iii) the client's `GrantTypes` includes `refresh_token`. The narrower interpretation matches reading (b) and ensures the audit trail and the user-facing consent prompt agree on what offline reach the user authorised. `op.WithRefreshTokenOfflineTTL` continues to let operators give offline chains a longer rotation lifetime. The defence-in-depth `op.WithStrictOfflineAccess()` option additionally rejects refresh **exchange** for tokens whose originating grant did not carry `offline_access` — useful as a transition guard when upgrading from older library versions where the issuance gate was laxer.
+**Default: `offline_access` is a UX and TTL signal, not the refresh-token issuance gate.** Refresh tokens are issued when the granted scope contains `openid` and the client's `GrantTypes` includes `refresh_token`. If the grant also carries `offline_access`, `op.WithRefreshTokenOfflineTTL` may place that chain in the offline lifetime bucket and the consent/audit surface can reflect the offline reach the user authorised.
+
+Embedders that want the strict §11 reading pass `op.WithStrictOfflineAccess()`. In that mode, refresh-token issuance additionally requires `offline_access`, and `grant_type=refresh_token` rejects a token whose originating grant did not carry `offline_access` with `invalid_grant`. The option is incompatible with `op.WithOpenIDScopeOptional()` because §11 has no coherent meaning outside OIDC requests. Implemented in `op/options_features.go`, `internal/tokenendpoint/strict_offline_test.go`, and the refresh issuance path.
 :::
 
 <a class="faq-anchor" id="dj-4"></a>
@@ -340,4 +369,72 @@ The spec fixes neither a timeout nor a body cap. OIDC Registration §2 lists `lo
 **Fetch is bounded to a 5 s timeout, a 5 MiB body cap, HTTPS only, no caching, no later re-fetch.** Failure or containment mismatch produces `400 invalid_client_metadata`; the cause goes to the audit log but never to the response body so upstream details (host, TLS state, partial bytes) do not leak.
 
 For loopback hosts, the registration layer splits on `application_type`. Web clients (the default) accept `127.0.0.1` and `[::1]` over `http`; the textual `localhost` is rejected unless the embedder explicitly opts in via `op.WithAllowLocalhostLoopback()`. Native clients (`application_type=native`) accept all three loopback hosts unconditionally per OIDC Registration §2, plus claimed `https` redirects and reverse-DNS custom URI schemes (`com.example.app:/cb`) per RFC 8252 §7.1. Custom schemes that lack a `.` are rejected because non-reverse-DNS schemes collide across applications. The authorize-time port wildcard for loopback URIs is governed by a separate per-client opt-in (#dj-4) and composes with this rule without overlap. Implemented in `internal/registrationendpoint/sector_identifier.go` and `internal/registrationendpoint/metadata.go` (`validateRedirectURI` / `validateNativeRedirectURIScheme`).
+:::
+
+<a class="faq-anchor" id="dj-23"></a>
+
+## 23. Outbound JWKS / metadata fetch SSRF boundary
+
+**Spec:** OIDC Dynamic Registration, JAR, private_key_jwt, pairwise subjects, and Back-Channel Logout all let RP-controlled metadata point the OP at outbound URLs. Those specs define what has to be fetched, but they do not define a common SSRF envelope for private networks, loopback, DNS rebinding, or custom TLS roots.
+
+**Conflict:** A deployment often needs a custom transport for conformance runners, internal CAs, or RP networks that are not publicly trusted. Letting a caller replace the HTTP client wholesale would also let them accidentally remove the dial-time SSRF guard. Refusing custom transports keeps the guard simple but makes otherwise valid deployments impossible.
+
+::: tip Decision
+**Outbound trust and outbound reachability are separate knobs.** `op.WithJWKSHTTPTransport` lets embedders supply TLS trust and transport settings for RP JWKS fetches, but the package rewires the transport's `DialContext` so the SSRF deny-list still runs at connect time. Private-network admission remains controlled by the explicit `WithAllowPrivateNetworkJWKS` / `WithAllowPrivateNetworkJAR` style policy knobs; a custom transport alone never widens the network boundary.
+
+The same bounded-fetch posture is used for JAR JWKS, client-auth JWKS, `sector_identifier_uri`, and Back-Channel Logout destinations: URL-shape validation first, dial-time network checks second, bounded response handling third. Implemented in `op/options_session.go`, `internal/netsec`, `internal/securefetch`, `internal/jar`, `internal/endpointsupport/clientauth.go`, and `internal/registrationendpoint/sector_identifier.go`.
+:::
+
+<a class="faq-anchor" id="dj-24"></a>
+
+## 24. Open DCR omitted `scope`
+
+**Spec:** RFC 7591 makes `scope` optional in registration metadata. In an IAT-bound registration flow, the issuer of the Initial Access Token is operator code and may attach an explicit `AllowedScopes` policy. In open registration, there is no such operator-issued per-request envelope.
+
+**Conflict:** Treating omitted `scope` as "all public scopes" makes a no-body open-registration POST surprisingly powerful. Treating it as "no scopes" is safer, but clients that expect the historical OP-wide default must now ask for scope explicitly or the embedder must configure a replacement default.
+
+::: tip Decision
+**Open registration defaults omitted `scope` to an empty registered scope set.** A later `/authorize` request that asks for scopes the client did not register is rejected as `invalid_scope`. Embedders that intentionally want a public default opt in via `RegistrationOption.OpenRegistrationDefaultScopes`, which is validated against the OP scope registry at construction time.
+
+The IAT-bound path keeps the broader operator-trusted default: if the IAT has no `AllowedScopes`, the request can default from the public scope registry. Implemented in `op/registration.go`, `op/options_validate.go`, `internal/registrationendpoint/handler.go`, `internal/registrationendpoint/register.go`, and `internal/registrationendpoint/metadata_validate.go`.
+:::
+
+<a class="faq-anchor" id="dj-25"></a>
+
+## 25. DPoP nonce challenge before `client_assertion` replay consumption
+
+**Spec:** RFC 9449 lets an AS challenge a token request with `use_dpop_nonce`; the client then retries with a fresh DPoP proof. RFC 7523 requires replay protection for JWT client assertions through `jti` / time-window checks.
+
+**Conflict:** If the token endpoint authenticates the client first, the first request consumes the `client_assertion` `jti` and then returns `use_dpop_nonce`. A client that retries the same form body with only the DPoP proof changed then fails as `invalid_client` / assertion replay, even though the nonce challenge is the expected RFC 9449 recovery path.
+
+::: tip Decision
+**DPoP nonce validation runs before client authentication on token and PAR paths.** A missing or stale DPoP nonce produces the nonce challenge without burning the form-borne `client_assertion`. Once the DPoP proof is acceptable, the normal private_key_jwt replay cache consumes the assertion exactly once. Implemented in `internal/tokenendpoint/authcode.go`, the refresh-token token path, `internal/parendpoint/par.go`, and pinned by `internal/tokenendpoint/refresh_dpop_nonce_pkjwt_test.go`.
+:::
+
+<a class="faq-anchor" id="dj-26"></a>
+
+## 26. CIBA / FAPI-CIBA polling and error taxonomy
+
+**Spec:** CIBA Core 1.0 defines poll, ping, and push modes, `slow_down`, and a general §13 error vocabulary. It leaves the poll-abuse lockout threshold implementation-defined. FAPI-CIBA layers signed request-object requirements on top of CIBA but conformance modules still expect CIBA-shaped wire errors.
+
+**Conflict:** A strict poll ladder without a cap lets a client ignore `slow_down` until `auth_req_id` expiry. A hard-coded low cap protects production but can break OFCS modules that intentionally exercise repeated polling. Separately, surfacing detailed JAR parser errors from `/bc-authorize` would be helpful for debugging but leaks a JOSE-specific taxonomy through a CIBA endpoint that expects `invalid_request`.
+
+::: tip Decision
+**The library implements CIBA poll mode only and applies a bounded slow-down strike counter.** The default cap is 5 violations; `op.WithCIBAMaxPollViolations(n)` raises or lowers it, `0` means the library default, and `255` effectively disables lockout because the counter is `uint8`. Production deployments should keep a finite cap.
+
+At `/bc-authorize`, duplicate single-valued parameters are rejected and request-object failures map to `invalid_request` per CIBA Core §13. Under FAPI-CIBA, the JAR verifier requires `iat`, caps request-object lifetime at 60 minutes, and accepts RP JWKS fetched through the same SSRF-bounded fetcher as the rest of the OP. Implemented in `op/options_ciba.go`, `internal/ciba/polling.go`, `internal/cibaendpoint`, `internal/jar`, and `op/op_builders.go`.
+:::
+
+<a class="faq-anchor" id="dj-27"></a>
+
+## 27. JWE allow-list and JOSE nesting cap
+
+**Spec:** RFC 7516 and RFC 7519 allow a broad set of JWE algorithms and nested JWT shapes. In principle, a JWT can be a JWE wrapping another JWE wrapping another JWT, and so on.
+
+**Conflict:** Accepting every JOSE shape supported by a general-purpose library widens the cryptographic surface beyond what the OP needs. A per-layer plaintext cap protects memory for each decryption, but it does not by itself bound an attacker-controlled nesting chain.
+
+::: tip Decision
+**JWE is closed by policy and nested JOSE traversal is capped.** The OP accepts only its explicit `alg` and `enc` allow-lists, rejects unknown `crit`, caps decrypted plaintext at 1 MiB, and rejects the 11th JOSE layer with `ErrJWENestingTooDeep`. A normal encrypted request object is two layers at most (JWE wrapping JWS), so the 10-layer ceiling leaves room for future protocol shapes without making recursion unbounded.
+
+Implemented in `internal/jose/jwe.go`, wired through JAR / PAR verification, and pinned by `internal/jar/verify_jwe_test.go` plus scenario coverage for deeply nested encrypted request objects.
 :::

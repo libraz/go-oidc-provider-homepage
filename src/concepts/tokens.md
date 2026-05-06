@@ -205,7 +205,7 @@ For most apps, ID Token claims are enough. UserInfo is for the cases where you n
 | `op.WithRefreshTokenTTL(d)` | Lifetime of refresh tokens. | 30 days |
 | `op.WithRefreshTokenOfflineTTL(d)` | Lifetime of `offline_access` refresh tokens. | inherits `WithRefreshTokenTTL` |
 | `op.WithClaimsSupported(...)` | Claims the OP can return. Surfaced in the discovery document. | — |
-| `op.WithClaimsParameterSupported(true)` | Honour the OIDC §5.5 `claims` request parameter. | off |
+| `op.WithClaimsParameterSupported(false)` | Stop advertising and honoring the OIDC §5.5 `claims` request parameter after malformed JSON has been rejected. | on |
 | `op.WithStrictOfflineAccess()` | Switch issuance and refresh exchange to the strict OIDC Core §11 reading: refresh tokens are issued only when the granted scope contains `offline_access`. See callout below. | off (lax — `openid` + client `refresh_token` grant suffices) |
 
 ::: details `offline_access` — what's that?

@@ -270,7 +270,7 @@ provider, err := op.New(
 ```
 
 ::: details RFC 8707 resource indicator ごとに混成させる例
-マップキーは正規化された resource URI。空キーは予約済 — 既定 audience 用には `WithAccessTokenFormat` を使います。
+マップキーは resource URI。空キーは予約済 — 既定 audience 用には `WithAccessTokenFormat` を使います。
 
 ```go
 provider, err := op.New(
@@ -283,6 +283,8 @@ provider, err := op.New(
     }),
 )
 ```
+
+各キーは構築時に正規化されます(scheme と host を小文字化、default port を除去、末尾スラッシュを揃える)。`/token` も `resource=` の生入力を同じヘルパで正規化してからマップ参照するので、登録済みキーと case や末尾スラッシュだけ違うリクエストでも正しい format が選ばれます。同じ値に正規化される 2 つのキーは構成エラーで拒否されます。fragment と `userinfo` セグメントはどのキーでも禁止です — RFC 8707 §2 が resource indicator にこれらを許していません。
 :::
 
 ::: tip 構築時ガード

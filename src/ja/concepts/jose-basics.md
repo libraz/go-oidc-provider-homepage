@@ -144,7 +144,7 @@ JOSE のアルゴリズムレジストリには 2 つの攻撃クラスが住ん
 
 | 用途 | アルゴリズム |
 |---|---|
-| 発行（出力 JWS の署名） | `ES256`（デフォルト）、`PS256`、`EdDSA`。 |
+| OP 発行（ID トークン、JWT アクセストークン、JARM の出力署名） | `ES256` のみ。`WithKeyset` は P-256 でない署名鍵を `op.New` で拒否します。 |
 | 検証（入力 JWS） | `RS256`、`PS256`、`ES256`、`EdDSA`。`RS256` を検証側で受理しているのは、OIDC Core 1.0 §10.1 が ID トークン検証で MUST-implement と定めているためです。 |
 
 この 4 つが `internal/jose.Algorithm` の閉じた enum です。型のゼロ値デフォルトはなく、より広いレジストリへのフォールバックもありません。`depguard` の lint ルールが、`internal/jose/` の外で背後の JOSE パッケージを import することを禁じているので、将来のコード経路が `none` や `HS*` を不意に再導入することもありません。完全な背景は [設計判断 #11](/ja/security/design-judgments#dj-11) を参照。

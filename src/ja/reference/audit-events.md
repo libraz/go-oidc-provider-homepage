@@ -19,7 +19,7 @@ op.New(
 
 `op.WithAuditLogger` は `*slog.Logger` を受け取ります。各イベントは、`msg` がイベント識別子(たとえば `"token.issued"`)で、属性に `request_id` / `subject` / `client_id` とカテゴリ固有のフィールドを持つ `extras` グループが付いた、構造化ログのエントリとして記録されます。
 
-`WithAuditLogger` を渡さない場合は、`WithLogger` で設定したロガー (または `slog.Default()`)に流れます。
+`WithAuditLogger` を渡さない場合は、`WithLogger` で設定したロガーに流れます。どちらも渡していない場合、監査イベントは破棄されます。
 
 ::: tip Prometheus にも同時に送る
 [`WithPrometheus`](/ja/use-cases/prometheus) を併用すると、これらのイベントの厳選サブセットが Prometheus カウンタにも反映されます。1 回の発火で slog のストリームと該当カウンタの両方が更新されるので、metrics 用の追加発火はありません。
@@ -150,8 +150,8 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditRateLimitExceeded` | レートリミッタがリクエストを拒否した | warn | — |
-| `AuditRateLimitBypassed` | bypass トークンを消費した(運用者による上書き) | warn | — |
+| `AuditRateLimitExceeded` | レートリミッタがリクエストを拒否した — **組み込み側が発火** する語彙。本ライブラリは汎用の per-IP / per-endpoint HTTP throttle を実装しません | warn | — |
+| `AuditRateLimitBypassed` | bypass トークンを消費した(運用者による上書き) — **組み込み側が発火** する語彙。スコープは `AuditRateLimitExceeded` と同じ | warn | — |
 | `AuditPKCEViolation` | PKCE verifier の不一致 / `plain` の拒否 / FAPI 下での不在 | alert | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
 | `AuditRedirectURIMismatch` | redirect URI が登録リストに不一致 | warn | [ガイド: redirect URI](/ja/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | 旧 alg のパスに到達した(テレメトリ目的。verifier 側では拒否) | warn | [ガイド: JOSE basics](/ja/concepts/jose-basics) |

@@ -34,7 +34,6 @@ This is most useful for two cases:
 ```go
 op.New(
   /* required options */
-  op.WithClaimsParameterSupported(true),
   op.WithClaimsSupported(
     "sub", "iss", "aud", "exp", "iat",
     "email", "email_verified",
@@ -43,6 +42,8 @@ op.New(
   ),
 )
 ```
+
+`claims_parameter_supported` defaults to `true`; pass `op.WithClaimsParameterSupported(false)` only when you want to stop advertising and honoring `claims` requests.
 
 The discovery document then advertises:
 

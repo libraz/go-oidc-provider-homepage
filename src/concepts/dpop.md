@@ -145,7 +145,7 @@ op.New(
 )
 ```
 
-`op.WithProfile(profile.FAPI2Baseline)` auto-enables `feature.DPoP` (alongside PAR and JAR) and imposes a `RequiredAnyOf` constraint that forces the embedder to enable at least one of `feature.DPoP` or `feature.MTLS`. Adding `feature.DPoP` explicitly under that profile is a no-op; `op.New` validates the combination at construction time.
+`op.WithProfile(profile.FAPI2Baseline)` auto-enables PAR and JAR, then imposes a `RequiredAnyOf` constraint over `feature.DPoP` and `feature.MTLS`. The embedder must explicitly enable at least one of those sender-constraint features; `op.New` validates the combination at construction time.
 
 ## When DPoP shines
 

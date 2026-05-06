@@ -62,7 +62,7 @@ FAPI 1.0 had two bands. **Read-Only** was for use cases that only retrieved data
 FAPI 2.0 has two bands:
 
 ::: tip Baseline — the floor
-Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS, ES256 / PS256 signing, exact `redirect_uri` matching, `private_key_jwt` / mTLS client authentication. This is the floor for any FAPI 2.0 deployment.
+Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, `private_key_jwt` / mTLS client authentication. This is the floor for any FAPI 2.0 deployment.
 :::
 
 ::: tip Message Signing — non-repudiation
@@ -110,7 +110,7 @@ Both bind the issued access token to a key the legitimate client holds, so a lea
 :::
 
 ::: details ES256 / PS256 — why not RS256?
-RS256 (RSA-SHA256, PKCS#1 v1.5 padding) is structurally vulnerable to padding-oracle and key-confusion attacks. It's still allowed by OIDC Core but not by FAPI 2.0. PS256 (RSA-PSS) and ES256 (ECDSA on P-256) are the secure replacements. `go-oidc-provider` accepts ES256, EdDSA, and PS256 under the FAPI profile; RS256 is dropped from the surface.
+RS256 (RSA-SHA256, PKCS#1 v1.5 padding) is structurally vulnerable to padding-oracle and key-confusion attacks. It's still allowed by OIDC Core but not by FAPI 2.0. PS256 (RSA-PSS) and ES256 (ECDSA on P-256) are the secure replacements. `go-oidc-provider` signs OP-issued JWTs with ES256 only, while client-signed objects under FAPI use the narrowed allow-list (`PS256`, `ES256`, `EdDSA`). RS256 is dropped from the FAPI surface.
 :::
 
 ::: details Algorithm allow-list — why a list and not "negotiate"?
@@ -139,7 +139,7 @@ FAPI is a *profile* — it does not reinvent OAuth or OIDC. It tightens which ex
 | **OIDC Core 1.0** | required | required | required |
 | **PKCE — `S256` only (RFC 7636)** | required | required | n/a (CIBA has no front-channel) |
 | **PAR (RFC 9126)** | required | required | n/a (CIBA posts to `/bc-authorize`) |
-| **JAR (RFC 9101)** — signed request object | required | required (`PS256` or `ES256`) | required |
+| **JAR (RFC 9101)** — signed request object | required (`PS256`, `ES256`, or `EdDSA`) | required (`PS256`, `ES256`, or `EdDSA`) | required |
 | **JARM** — signed authorization response | optional | required | n/a (CIBA has no front-channel) |
 | **DPoP (RFC 9449) OR mTLS (RFC 8705)** | one of the two required | one of the two required | one of the two required |
 | **Resource Indicators (RFC 8707)** | optional | optional | optional |
@@ -147,7 +147,7 @@ FAPI is a *profile* — it does not reinvent OAuth or OIDC. It tightens which ex
 | **OAuth 2.0 Security BCP (RFC 9700)** | required | required | required |
 | **Token-endpoint client auth** | `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` | same | same |
 | **`client_secret_basic` / `_post` / `_jwt`** | forbidden | forbidden | forbidden |
-| **ID Token signing alg** | `PS256`, `ES256`, or `EdDSA` | same | same |
+| **ID Token signing alg** | `ES256` | same | same |
 | **`alg=none`** | forbidden | forbidden | forbidden |
 | **`RS256` (legacy RSA-PKCS1v15)** | forbidden | forbidden | forbidden |
 | **`HS256` and other HMAC alg** | forbidden | forbidden | forbidden |
@@ -163,7 +163,7 @@ A few of those rows deserve a short prose note.
 
 **Why JARM is required for Message Signing but optional for Baseline.** Message Signing's whole purpose is signed *responses*, not just signed requests — it is the band that gives full non-repudiation, and the authorize response is half of that contract. Baseline gets channel security from PAR; the optional response signing is what the second band adds.
 
-**What "forbidden" means in this library.** The profile gating is enforced at `op.New` time, not at request time: a Baseline-profile OP cannot register a `client_secret_basic` client, cannot advertise `RS256` for ID Token signing, and cannot serve a single token before the constructor has accepted the configuration. The closed-enum design behind the alg refusal is recorded as design judgment [#11](/security/design-judgments#dj-11); the disjunction-and-helper architecture that resolves DPoP-or-mTLS uniformly across handlers is [#7](/security/design-judgments#dj-7).
+**What "forbidden" means in this library.** The profile gating is enforced at `op.New` time, not at request time: a Baseline-profile OP cannot register a `client_secret_basic` client, cannot advertise anything but `ES256` for ID Token signing, and cannot serve a single token before the constructor has accepted the configuration. The closed-enum design behind the alg refusal is recorded as design judgment [#11](/security/design-judgments#dj-11); the disjunction-and-helper architecture that resolves DPoP-or-mTLS uniformly across handlers is [#7](/security/design-judgments#dj-7).
 
 ### See also
 
@@ -188,10 +188,11 @@ op.New(
 
 The profile call:
 
-1. Auto-enables `feature.PAR`, `feature.JAR`, and `feature.DPoP`.
+1. Auto-enables `feature.PAR` and `feature.JAR`.
 2. Intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
-3. Locks ID Token signing alg to `ES256` / `PS256`; rejects new issuance under `RS256`.
-4. Forces exact-match `redirect_uri` comparison.
+3. Requires at least one sender-constraint feature: `feature.DPoP` or `feature.MTLS`.
+4. Locks OP-issued ID Tokens to `ES256`; rejects non-P-256 OP signing keys.
+5. Forces exact-match `redirect_uri` comparison.
 
 Conflicting options layered on top cause `op.New` to refuse to start — partial-FAPI never escapes review.
 

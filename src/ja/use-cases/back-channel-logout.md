@@ -93,6 +93,8 @@ op.New(
 ::: warning デフォルトでプライベートネットワーク宛先を拒否
 配送処理は、host が loopback / link-local / RFC 1918 / IPv6 ULA に解決される `backchannel_logout_uri` への POST を **拒否** します。これがないと、任意 URL を登録できる RP が OP の内部ネットワークへの SSRF オラクルになります。
 
+dial 段階の deny-list の手前に、登録時に URL の形を判定するゲートが重なっています。`backchannel_logout_uri` は `https` 必須、fragment 不可、userinfo 不可、host 必須 — `https://attacker:internal@rp.example.com/...` も `https://rp.example.com/cb#anchor` も `invalid_client_metadata` で弾かれます。`backchannel_logout_session_required=true` と空の URI の組み合わせも拒否します。配送先を持たないクライアントが `sid` 配送にオプトインできないようにするためです。
+
 RP を private DNS で前段するときはオプトインを明示します。
 
 ```go
@@ -116,4 +118,4 @@ Back-channel fan-out は OP の `SessionStore` を辿り、終了セッション
 
 ## フロントチャネルログアウト（別の機構）
 
-OIDC Front-Channel Logout 1.0（ブラウザ側 iframe fan-out）は別仕様で、ライブラリは現在実装していません。Back-channel の方がデプロイしやすい選択です — 第三者 cookie に依存せず、origin を跨いで動作し、fan-out 時にユーザのブラウザが開いている必要もありません。
+OIDC Front-Channel Logout 1.0（ブラウザ側 iframe fan-out）は別仕様で、ライブラリは意図的に実装していません。Back-channel がデプロイ可能な選択です — 第三者 cookie に依存せず、origin を跨いで動作し、fan-out 時にユーザのブラウザが開いている必要もありません。

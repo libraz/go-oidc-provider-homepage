@@ -38,8 +38,8 @@ A representative subset of the fields a beginner will actually see and use. Ever
 | `grant_types_supported` | Grant types the OP accepts at `/token`: `authorization_code`, `refresh_token`, `client_credentials`, … |
 | `response_types_supported` | Response types `/authorize` accepts. The library advertises only `code` (the OIDC Core "code flow"). |
 | `response_modes_supported` | How `/authorize` returns the result: `query`, `fragment`, `form_post`, `jwt` (JARM). |
-| `id_token_signing_alg_values_supported` | JWS algorithms used to sign ID Tokens. The library publishes a closed set: `RS256`, `PS256`, `ES256`, `EdDSA`. |
-| `request_object_signing_alg_values_supported` | JWS algorithms accepted on JAR `request=` parameters. Same closed set. |
+| `id_token_signing_alg_values_supported` | JWS algorithms used to sign ID Tokens. The library publishes `ES256` only because OP signing keys are ECDSA P-256. |
+| `request_object_signing_alg_values_supported` | JWS algorithms accepted on JAR `request=` parameters: `RS256`, `PS256`, `ES256`, `EdDSA`. |
 | `token_endpoint_auth_methods_supported` | How the RP authenticates at `/token`: `private_key_jwt`, `client_secret_basic`, `client_secret_post`, `tls_client_auth`, `none` (public clients). |
 | `code_challenge_methods_supported` | PKCE transformations. The library advertises **only** `S256`. |
 | `subject_types_supported` | `public` and (when `op.WithPairwiseSubject(...)` is wired) `pairwise`. |
@@ -47,7 +47,7 @@ A representative subset of the fields a beginner will actually see and use. Ever
 | `scopes_supported` | Scopes the OP recognises. Includes the standard OIDC scopes plus any registered with `op.WithScope(...)`. |
 | `dpop_signing_alg_values_supported` | Present only when the DPoP feature (RFC 9449) is enabled. |
 | `require_pushed_authorization_requests` | Set to `true` only under FAPI 2.0 profiles, which mandate PAR. |
-| `claims_parameter_supported` | Set to `true` only when the embedder explicitly opts in via `op.WithClaimsParameterSupported(true)`. |
+| `claims_parameter_supported` | Defaults to `true`; pass `op.WithClaimsParameterSupported(false)` to stop advertising and honoring OIDC §5.5 `claims` requests. |
 
 ::: details `_supported` fields are advertisements, not policy
 A `_supported` list is what the OP **will accept** — not what every client must use. A client may use a subset. The OP rejects anything outside the list.
@@ -65,7 +65,7 @@ A typical RP SDK does the following on first start:
 The library helps here in two ways. First, the discovery document and the JWKS are stable as long as no rotation is in flight: caches at the RP can be long-lived. Second, when the operator is mid-rotation, the embedder signals it via `op.WithJWKSRotationActive(predicate)` — the library then returns a short `Cache-Control: max-age` on the JWKS so RPs that re-fetch see the new key. The discovery document itself is built once at `op.New` time, not per request, so its content does not drift across instances.
 
 ::: tip Discovery is RP-side cache, not OP-side cache
-The OP rebuilds the document from in-memory state on every request (cheap). The expensive operation — JWS verification of an ID Token using a recently-rotated key — is what discovery cache invalidation is really about. See [JWKS rotation](/operations/key-rotation).
+The OP builds and marshals the discovery document when the provider is mounted, then serves the cached JSON body for the handler's lifetime. The expensive operation — JWS verification of an ID Token using a recently-rotated key — is what discovery cache invalidation is really about. See [JWKS rotation](/operations/key-rotation).
 :::
 
 ## How this library builds it
@@ -76,12 +76,12 @@ A discovery golden test in the repository asserts the document shape per profile
 
 ## What the library does NOT advertise
 
-The library narrows the discovery document at three places, deliberately:
+The library narrows the discovery document deliberately:
 
 - **No `none` alg.** `id_token_signing_alg_values_supported` and `request_object_signing_alg_values_supported` never contain `none`. The underlying type does not include it (see [JOSE basics](/concepts/jose-basics) and [design judgment #11](/security/design-judgments#dj-11)).
 - **No HMAC-family alg for ID Tokens.** `HS256` / `HS384` / `HS512` are not advertised. The alg-confusion attack class needs them to be reachable; closing the type closes the attack.
 - **No `request_uri` indication when PAR is off.** `request_uri_parameter_supported` and `pushed_authorization_request_endpoint` only appear when the embedder wired PAR.
-- **`claims_parameter_supported` defaults to `false`.** The OIDC §5.5 `claims` request parameter is opt-in via `op.WithClaimsParameterSupported(true)` — the discovery document tells RPs whether the OP will honour it.
+- **`claims_parameter_supported` defaults to `true`, but can be disabled.** Passing `op.WithClaimsParameterSupported(false)` makes the discovery document omit OIDC §5.5 support and makes authorize / PAR ignore `claims` payloads after malformed JSON has been rejected.
 - **No `frontchannel_logout_supported` or `check_session_iframe`.** Front-Channel Logout 1.0 / Session Management 1.0 are not implemented; the discovery document is silent about them. Embedders use Back-Channel Logout 1.0 instead — see [design judgment #5](/security/design-judgments#dj-5).
 
 ::: warning Discovery is a contract surface

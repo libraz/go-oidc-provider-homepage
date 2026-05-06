@@ -264,7 +264,7 @@ provider, err := op.New(
 ```
 
 ::: details Mix formats per RFC 8707 resource indicator
-The map key is the canonical resource URI; the empty key is reserved — use `WithAccessTokenFormat` for the default audience.
+The map key is a resource URI; the empty key is reserved — use `WithAccessTokenFormat` for the default audience.
 
 ```go
 provider, err := op.New(
@@ -277,6 +277,8 @@ provider, err := op.New(
     }),
 )
 ```
+
+Each key is canonicalised at construction time (scheme and host lowercased, default port stripped, trailing slash normalised) and stored in canonical form. The token endpoint canonicalises every wire-form `resource=` value through the same helper before the map lookup, so a request that differs from the registered key only by case or trailing slash still selects the correct format. Two keys that canonicalise to the same value are rejected as a configuration error. Fragments and `userinfo` segments are forbidden in any key — RFC 8707 §2 prohibits them in resource indicators.
 :::
 
 ::: tip Construction-time guard

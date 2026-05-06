@@ -209,7 +209,7 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 | `op.WithRefreshTokenTTL(d)` | リフレッシュトークン寿命 | 30 日 |
 | `op.WithRefreshTokenOfflineTTL(d)` | `offline_access` リフレッシュトークン寿命 | `WithRefreshTokenTTL` 継承 |
 | `op.WithClaimsSupported(...)` | OP が返せる claim の列挙。discovery document に出る | — |
-| `op.WithClaimsParameterSupported(true)` | OIDC §5.5 の `claims` 要求パラメータを解釈してトークンに反映 | off |
+| `op.WithClaimsParameterSupported(false)` | OIDC §5.5 の `claims` 要求パラメータを広告せず、malformed JSON の拒否後は処理しない | on |
 | `op.WithStrictOfflineAccess()` | 発行とリフレッシュ交換を OIDC Core §11 の厳格解釈に切り替え、`offline_access` が granted scope に含まれているときに限りリフレッシュトークンを発行・受理する（下の callout 参照） | off（緩い設定。`openid` + クライアントの `refresh_token` grant で発行）|
 
 ::: details `offline_access` とは

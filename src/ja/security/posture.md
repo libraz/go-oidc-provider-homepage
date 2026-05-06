@@ -53,7 +53,7 @@ flowchart LR
 
 ### 2. JOSE の alg リストは閉じた型
 
-`internal/jose.Algorithm` は `RS256`、`PS256`、`ES256`、`EdDSA` の 4 値のみを列挙しています。`none`、`HS256/384/512`、その他の文字列は `IsAllowed()` で false を返します。`ParseAlgorithm` は不明値に対してフォールバックせず、`ok=false` を返します。生 go-jose ハンドルを保持する `internal/jar`、`internal/dpop`、`internal/mtls`、`internal/backchannel`、`internal/jarm` などの経路も含めて、すべての署名 / 検証パスは入力された `alg` をこの閉じた型でゲートしているので、**alg 混同攻撃（RFC 7519 §6 / RFC 8725 §2.1）は構造的に到達できません**。
+`internal/jose.Algorithm` は `RS256`、`PS256`、`ES256`、`EdDSA` の 4 値のみを列挙しています。`none`、`HS256/384/512`、その他の文字列は `IsAllowed()` で false を返します。`ParseAlgorithm` は不明値に対してフォールバックせず、`ok=false` を返します。生 go-jose ハンドルを保持する `internal/jar`、`internal/dpop`、`internal/mtls`、`internal/backchannel` などの経路も含めて、すべての入力 JWS 検証パスは入力された `alg` をこの閉じた型でゲートします。OP 発行 JWT の署名はさらに狭く、`WithKeyset` は ECDSA P-256 鍵だけを受理し、discovery は `ES256` を広告します。**alg 混同攻撃（RFC 7519 §6 / RFC 8725 §2.1）は構造的に到達できません**。
 
 | 想定リスク | 緩和策 |
 |---|---|
@@ -87,15 +87,20 @@ flowchart LR
 |---|---|---|
 | `__Host-` cookie、AES-256-GCM、double-submit CSRF、Origin/Referer チェック | `internal/cookie`、`internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
 | `authorization_code` grant に PKCE 必須、`plain` は拒否 | `internal/pkce` | RFC 7636 |
-| リフレッシュトークンのローテーション + 再利用検知（chain revoke） | `internal/grants/refresh` | RFC 9700 §4.14 |
-| 送信者制約付きトークン（DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`） | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
+| リフレッシュトークンのローテーション + 再利用検知(chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14 |
+| 送信者制約付きトークン(DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`) | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
 | 認可応答に `iss` を付与 | `internal/authorize` | RFC 9207 |
-| `redirect_uri` 完全一致（既定で完全一致） | `internal/authorize` | OAuth 2.1、RFC 8252 |
+| `redirect_uri` 完全一致(既定で完全一致) | `internal/authorize` | OAuth 2.1、RFC 8252 |
 | ループバック redirect の制約強化 | `internal/registrationendpoint`、`internal/authorize` | RFC 8252 |
-| Back-Channel Logout の SSRF 防御（loopback / link-local / RFC 1918 / IPv6 ULA 拒否リスト） | `internal/backchannel` | OIDC Back-Channel Logout 1.0 |
-| OP 側の request_object replay 対策（`jti`） | `internal/jar` | RFC 9101 §10.8 |
+| outbound HTTP envelope(許可 scheme、body 上限、Accept、timeout、redirect、cache)を JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout 配送に適用。dial 段階で loopback / link-local / RFC 1918 / IPv6 ULA を拒否し、`BaseTransport` が `*http.Transport` 以外なら URL ゲートでフォールバック | `internal/securefetch`、`internal/netsec` | OWASP SSRF、OIDC Back-Channel Logout 1.0 |
+| OP 側の request_object replay 対策(`jti`) | `internal/jar` | RFC 9101 §10.8 |
 | 各検証経路でのアルゴリズム allow-list | `internal/jose` | RFC 8725 |
-| Issuer 正規化（末尾スラッシュなどの揺れを防ぐ） | `op/options_validate.go` | RFC 9207 |
+| Issuer 正規化(末尾スラッシュなどの揺れを防ぐ) | `op/options_validate.go` | RFC 9207 |
+| Resource indicator の正規化(scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否)を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の allow-list に適用 | `internal/resourceindicator` | RFC 8707 §2 |
+| `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否(RFC 8707 の `resource=` のみ例外)。credentials を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
+| Argon2id パラメータを OWASP 2024 ベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
+| DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
+| 有効化した grant / feature が要求するサブストアを wired store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 
 ## ツールチェーン
 

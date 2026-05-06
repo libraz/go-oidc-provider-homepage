@@ -46,13 +46,14 @@ handler, _ := op.New(
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(cookieKey),
-  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR + DPoP, ES256, alg lock
+  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR, ES256, FAPI narrowing
+  op.WithFeature(feature.DPoP),           // or feature.MTLS
   op.WithStaticClients(/* private_key_jwt client with JWKS */),
 )
 ```
 
 ::: tip Why one switch is enough
-`op.WithProfile(profile.FAPI2Baseline)` activates the required features (`PAR`, `JAR`, `DPoP`), intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
+`op.WithProfile(profile.FAPI2Baseline)` activates the profile-required features (`PAR`, `JAR`), intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, requires DPoP or mTLS, and tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
 :::
 
 ### 3. Issue tokens to backend services (no end user)

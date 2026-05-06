@@ -111,7 +111,7 @@ JARM is never the only mitigation against a particular CVE class. The role it pl
 
 JARM is gated by `feature.JARM` (see `op/feature/feature.go`). Two ways to enable it:
 
-**Profile-driven.** `op.WithProfile(profile.FAPI2MessageSigning)` adds JARM to the required feature set alongside PAR and JAR (`op/profile/constraints.go` — `RequiredAnyOf`). The build-time validator refuses to construct an OP under this profile without `feature.JARM`.
+**Profile-driven.** `op.WithProfile(profile.FAPI2MessageSigning)` adds JARM to the required feature set alongside PAR and JAR (`op/profile/constraints.go` — `RequiredFeatures`). The build-time validator refuses to construct an OP under this profile without `feature.JARM`.
 
 ```go
 import (

@@ -39,9 +39,10 @@ provider, err := op.New(
 
   op.WithCIBA(
     op.WithCIBAHintResolver(myHintResolver),
-    op.WithCIBAPollInterval(5 * time.Second),    // optional; default 5s
-    op.WithCIBADefaultExpiresIn(10 * time.Minute), // optional; default 10min
-    op.WithCIBAMaxExpiresIn(15 * time.Minute),     // optional cap on `requested_expiry`
+    op.WithCIBAPollInterval(5 * time.Second),       // optional; default 5s
+    op.WithCIBADefaultExpiresIn(10 * time.Minute),  // optional; default 10min
+    op.WithCIBAMaxExpiresIn(15 * time.Minute),      // optional cap on `requested_expiry`
+    op.WithCIBAMaxPollViolations(8),                // optional; raise above the 5-strike default
   ),
 
   op.WithStaticClients(op.ConfidentialClient{
@@ -184,8 +185,9 @@ If your RP currently reads `amr` from a CIBA id_token, expect an empty / absent 
 - `MaxAccessTokenTTL` = 10 min.
 - Client authentication = `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` (the FAPI 2.0 set; `client_secret_basic` rejected).
 - `RequiresAccessTokenRevocation` = true.
-- JAR enforcement on `/bc-authorize`: `iss` / `aud` / `exp` / `nbf` are required; the request-object lifetime is capped at 60 minutes (FAPI 2.0 Message Signing §5.6).
+- JAR enforcement on `/bc-authorize`: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` are all required; the request-object lifetime is capped at 60 minutes (FAPI 2.0 Message Signing §5.6). FAPI 2.0 Baseline and Message Signing keep `jti` optional (the v0.9.x relaxation that admits jti-less request objects under FAPI applies to those two profiles only); FAPI-CIBA opts back into the strict shape.
 - `requested_expiry > 600s` is a hard `invalid_request` (FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 ten-minute cap). Vanilla CIBA keeps the silent-clamp posture.
+- Every JAR failure at `/bc-authorize` (signature mismatch, unsupported alg, missing required claim, fetch failure on `request_uri`, …) maps to `400 invalid_request` per CIBA Core §13. The vanilla `/authorize` JAR pipeline keeps its richer error vocabulary; CIBA collapses it because the spec leaves no room for a finer breakdown on the back-channel surface.
 
 When `op.WithACRValuesSupported(...)` is non-empty, the endpoint validates each requested `acr_values` entry against the published list. Empty list keeps the legacy permissive posture.
 
@@ -197,11 +199,17 @@ Same shape as the device-code grant:
 |---|---|
 | `400 authorization_pending` | User has not approved yet. Poll again after the negotiated interval. |
 | `400 slow_down` | Polled too fast. Honour the elevated interval (server persists it). |
-| `400 access_denied` | User denied (or admin revoked). Stop polling. |
-| `400 expired_token` | `auth_req_id` outlived its lifetime. Stop polling. |
+| `400 access_denied` | User denied, admin revoked, or the poll-abuse cap (`WithCIBAMaxPollViolations`, default 5) tripped. Stop polling. |
+| `400 expired_token` | `auth_req_id` outlived its lifetime (TTL elapse only — RFC 6749 §5.2 / CIBA Core §11). Stop polling. |
+| `400 invalid_grant` | `auth_req_id` was already redeemed. The grant is gone; do not retry with the same handle. |
 | `200 { access_token, ... }` | Approved. |
 
-The `ciba.poll_abuse.lockout` audit event fires when poll cadence sustained well below the negotiated interval; the request is then locked out.
+The OP tracks "polled before the negotiated interval elapsed" as a strike against the `auth_req_id`. Once the strike count reaches the cap (default 5), the request is locked out — every subsequent poll returns `400 access_denied` and the `ciba.poll_abuse.lockout` audit event fires. `op.WithCIBAMaxPollViolations(n uint8)` raises or lowers the cap when a profile or conformance harness demands more headroom; `n=0` falls back to the library default, `n=255` effectively disables the lockout for diagnostic builds.
+
+::: info Duplicate single-valued parameters at `/bc-authorize`
+A request that repeats `client_id`, `login_hint`, `id_token_hint`, `login_hint_token`, `binding_message`, `requested_expiry`, `acr_values`, `scope`, `user_code`, or `client_assertion` is refused with `400 invalid_request` per CIBA Core §13. Only RFC 8707 `resource=` may legitimately appear more than once. The token endpoint, `/end_session`, and `/revoke` apply the same rule to their respective single-valued parameters.
+:::
+
 
 ## See it run
 

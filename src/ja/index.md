@@ -46,13 +46,14 @@ handler, _ := op.New(
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(cookieKey),
-  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR + DPoP、ES256、alg ロック
+  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR、ES256、FAPI 絞り込み
+  op.WithFeature(feature.DPoP),           // または feature.MTLS
   op.WithStaticClients(/* JWKS 付き private_key_jwt クライアント */),
 )
 ```
 
 ::: tip プロファイル 1 行で済む理由
-`op.WithProfile(profile.FAPI2Baseline)` だけで、必要な feature（`PAR`、`JAR`、`DPoP`）の有効化、`token_endpoint_auth_methods_supported` の FAPI allow-list との絞り込み、discovery の引き締めまでまとめて行います。詳細は [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)。
+`op.WithProfile(profile.FAPI2Baseline)` だけで、プロファイル必須 feature（`PAR`、`JAR`）の有効化、`token_endpoint_auth_methods_supported` の FAPI allow-list との絞り込み、DPoP または mTLS の要求、discovery の引き締めまでまとめて行います。詳細は [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)。
 :::
 
 ### 3. バックエンド向けトークンを発行する（エンドユーザなし）

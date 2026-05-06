@@ -10,7 +10,7 @@ Every standard the library actively cites in its code, mapped to the package tha
 
 ## Status legend
 
-<span class="status-pill full">full</span> implements the spec end-to-end.<br/>
+<span class="status-pill full">full</span> implements the OP-facing surface the library claims for that spec end-to-end.<br/>
 <span class="status-pill partial">partial</span> implements the parts the OP needs; some optional sections are out of scope by design.<br/>
 <span class="status-pill planned">planned</span> in the spec list, not landed yet.<br/>
 <span class="status-pill out">out</span> out-of-scope; structurally not the library's concern.<br/>
@@ -25,7 +25,7 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span> (core flow, `sector_identifier_uri` fetch, `application_type=web` / `=native` redirect rules, JWKs / pairwise / response-type cross-checks, PUT reserved-field rejection, `post_logout_redirect_uris` round-trip, and the five JWE alg/enc encrypted-response families are enforced; `client_secret` is intentionally omitted from `GET /register/{id}` responses, `software_statement` is not accepted) | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
 | **OpenID Connect Back-Channel Logout 1.0** | <span class="status-pill full">full</span> | `internal/backchannel` |
-| **OpenID Connect Front-Channel Logout 1.0** | <span class="status-pill planned">planned</span> | — |
+| **OpenID Connect Front-Channel Logout 1.0** | <span class="status-pill out">out</span> (iframe / third-party-cookie signalling is intentionally not shipped; use Back-Channel Logout) | — |
 | **OpenID Connect Session Management 1.0** | <span class="status-pill out">out</span> (third-party-cookie-dependent; back-channel preferred) | — |
 | **OpenID Connect CIBA Core 1.0** | <span class="status-pill partial">partial</span> (poll delivery only; ping / push deferred to v2+) | `internal/ciba`, `internal/cibaendpoint`, `op.WithCIBA` |
 
@@ -33,46 +33,46 @@ Every standard the library actively cites in its code, mapped to the package tha
 
 | RFC | Status | Where / option |
 |---|---|---|
-| **RFC 6749** OAuth 2.0 Framework | <span class="status-pill full">full</span> | `op/`, `internal/authorize`, `internal/tokenendpoint` |
-| **RFC 6750** Bearer Token Usage | <span class="status-pill full">full</span> | `internal/tokens` |
-| **RFC 6819** Threat Model & Security Considerations | <span class="status-pill full">full</span> (the BCP this library is built around) | whole codebase |
+| **RFC 6749** OAuth 2.0 Framework | <span class="status-pill partial">partial</span> (authorization-code, refresh-token, and client-credentials surfaces; implicit and password grants are intentionally not implemented) | `op/`, `internal/authorize`, `internal/tokenendpoint` |
+| **RFC 6750** Bearer Token Usage | <span class="status-pill partial">partial</span> (OP-issued bearer tokens and OP-hosted resource endpoints such as UserInfo / introspection; general RS challenge behaviour belongs to resource servers) | `internal/tokens`, `internal/userinfo`, `internal/introspectendpoint` |
+| **RFC 6819** Threat Model & Security Considerations | <span class="status-pill partial">partial</span> (security guidance applied across the OP; not a standalone protocol surface) | whole codebase |
 | **RFC 7009** Token Revocation | <span class="status-pill full">full</span> (gated by `feature.Revoke`) | `internal/revokeendpoint` |
-| **RFC 7521** Assertion Framework | <span class="status-pill full">full</span> (only the `private_key_jwt` profile; `client_secret_jwt` is intentionally not implemented) | `internal/clientauth` |
-| **RFC 7523** JWT Bearer Assertions for Client Auth | <span class="status-pill full">full</span> (`private_key_jwt`; `client_secret_jwt` is rejected at registration with `invalid_client_metadata`) | `internal/clientauth` |
+| **RFC 7521** Assertion Framework | <span class="status-pill partial">partial</span> (`private_key_jwt` client authentication only; assertion grants and `client_secret_jwt` are intentionally not implemented) | `internal/clientauth` |
+| **RFC 7523** JWT Bearer Assertions for Client Auth | <span class="status-pill partial">partial</span> (`private_key_jwt`; JWT bearer authorization grants and `client_secret_jwt` are not implemented, and `client_secret_jwt` is rejected at registration with `invalid_client_metadata`) | `internal/clientauth` |
 | **RFC 7591** Dynamic Client Registration | <span class="status-pill partial">partial</span> (gated by `feature.DynamicRegistration`; `software_statement` is rejected with `invalid_software_statement`) | `internal/registrationendpoint` |
 | **RFC 7592** DCR Management | <span class="status-pill partial">partial</span> (read / update / delete; PUT omission resets to server defaults rather than deleting fields, and the response only re-emits `client_secret` on a `none` → confidential auth-method upgrade or an explicit rotation request) | `internal/registrationendpoint` |
 | **RFC 7636** PKCE | <span class="status-pill full">full</span> (only `S256`; `plain` refused) | `internal/pkce` |
 | **RFC 7662** Token Introspection | <span class="status-pill full">full</span> (gated by `feature.Introspect`) | `internal/introspectendpoint` |
 | **RFC 7800** Confirmation Methods (`cnf`) | <span class="status-pill full">full</span> | `internal/dpop`, `internal/mtls`, `internal/tokens` |
-| **RFC 8252** OAuth 2.0 for Native Apps | <span class="status-pill full">full</span> (loopback hardening enforced) | `internal/registrationendpoint`, `internal/authorize` |
+| **RFC 8252** OAuth 2.0 for Native Apps | <span class="status-pill partial">partial</span> (OP-side native redirect / loopback hardening; client-app behaviour is out of scope) | `internal/registrationendpoint`, `internal/authorize` |
 | **RFC 8414** Authorization Server Metadata | <span class="status-pill full">full</span> | `internal/discovery` |
 | **RFC 8485** Vectors of Trust | <span class="status-pill partial">partial</span> (consumed via ACR/AAL mapping) | `op/aal.go`, `op/acr.go` |
 | **RFC 8628** Device Authorization Grant | <span class="status-pill full">full</span> (gated by `op.WithDeviceCodeGrant`; `slow_down` ladder persisted atomically with `LastPolledAt`; `op/devicecodekit` ships the brute-force gate + revoke audit hook) | `internal/devicecode`, `internal/devicecodeendpoint`, `op/devicecodekit` |
 | **RFC 8693** OAuth 2.0 Token Exchange | <span class="status-pill full">full</span> (gated by `op.RegisterTokenExchange`; act chain mandatory whenever actor differs from subject; cnf rebinding to request's verified DPoP / mTLS) | `internal/customgrant/tokenexchange` |
 | **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill full">full</span> (gated by `feature.MTLS`; `mtls_endpoint_aliases` now published in discovery) | `internal/mtls` |
-| **RFC 8707** Resource Indicators | <span class="status-pill full">full</span> | `internal/tokenendpoint` |
+| **RFC 8707** Resource Indicators | <span class="status-pill partial">partial</span> (canonicalisation and client allow-list enforcement across authorize / token / device / CIBA; v1.x issuance narrows most built-in grants to a single resource value) | `internal/resourceindicator`, `internal/authorize`, `internal/tokenendpoint`, `internal/devicecodeendpoint`, `internal/cibaendpoint` |
 | **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span> (alg allow-list, type checks) | `internal/jose` |
 | **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill full">full</span> | `internal/tokens` |
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span> (gated by `feature.JAR`) | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span> (gated by `feature.PAR`) | `internal/parendpoint` |
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize` (`iss` parameter on the response) |
-| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill full">full</span> (consumed at JAR merge & authorize) | `internal/jar`, `internal/authorize` |
+| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill partial">partial</span> (JAR merge preserves the JSON-array form; authorization-policy evaluation is not implemented yet) | `internal/jar` |
 | **RFC 9449** DPoP | <span class="status-pill full">full</span> incl. §8 nonce flow (gated by `feature.DPoP`) | `internal/dpop`, `op.WithDPoPNonceSource` |
-| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> | `op/rule.go` (`RuleACR`) |
-| **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill full">full</span> | whole codebase |
+| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill partial">partial</span> (OP policy primitive via ACR rules; resource-server challenge emission is out of scope) | `op/rule.go` (`RuleACR`) |
+| **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill partial">partial</span> (OP-side BCP posture; resource-server and client-side requirements remain with embedders) | whole codebase |
 | **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span> (signed JWT default; JWE-wrapped per client `introspection_encrypted_response_alg` / `_enc` metadata) | `internal/introspectendpoint`, `internal/jose` |
 
 ## JOSE family
 
 | RFC | Status | Where |
 |---|---|---|
-| **RFC 7515** JWS | <span class="status-pill full">full</span> | `internal/jose` |
+| **RFC 7515** JWS | <span class="status-pill partial">partial</span> (compact JWS surfaces used by JWT / JAR / JARM / DPoP / client assertions; general JSON serialization is not exposed) | `internal/jose` |
 | **RFC 7516** JWE | <span class="status-pill partial">partial</span> — closed allow-list (`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`). Inbound JWE request_object (JAR / PAR §6.1), outbound JWE id_token, JWT-shape userinfo, JARM authorization response, and RFC 9701 introspection response wired. `RSA1_5` <span class="status-pill refused">refused</span> (CVE-2017-11424 padding oracle); `RSA-OAEP-384/512`, `dir`, symmetric-only `A*KW` deferred to v2+ | `internal/jose`, `op.WithEncryptionKeyset` |
-| **RFC 7517** JWK | <span class="status-pill full">full</span> | `internal/jwks` |
+| **RFC 7517** JWK | <span class="status-pill partial">partial</span> (JWK Set publication and client JWKS consumption for supported asymmetric key types; symmetric `oct` keys are not accepted for signing) | `internal/jwks` |
 | **RFC 7518** JWA | <span class="status-pill partial">partial</span> — issuance is `ES256` only; verification accepts `RS256`, `PS256`, `ES256`, `EdDSA`. HS\* and `none` <span class="status-pill refused">refused</span> | `internal/jose` |
-| **RFC 7519** JWT | <span class="status-pill full">full</span> | `internal/jose` |
+| **RFC 7519** JWT | <span class="status-pill partial">partial</span> (signed / encrypted JWT surfaces used by OIDC and OAuth extensions; unsecured JWTs are refused) | `internal/jose` |
 | **RFC 7638** JWK Thumbprint | <span class="status-pill full">full</span> (used by DPoP `cnf.jkt`) | `internal/dpop` |
-| **RFC 8037** Edwards-curve DSA / `EdDSA` | <span class="status-pill full">full</span> (Ed25519; Ed448 not enabled) | `internal/jose` |
+| **RFC 8037** Edwards-curve DSA / `EdDSA` | <span class="status-pill partial">partial</span> (Ed25519; Ed448 not enabled) | `internal/jose` |
 
 ## FAPI family
 
@@ -89,16 +89,22 @@ Every standard the library actively cites in its code, mapped to the package tha
 | RFC | Use |
 |---|---|
 | **RFC 1918** | Private-network deny-list for back-channel logout SSRF defense |
+| **RFC 2606** | Reserved example domains in tests / examples |
 | **RFC 3986** | URI parsing |
 | **RFC 4122** | UUIDv4 generation |
+| **RFC 4226** | HOTP building block used by the TOTP authenticator |
 | **RFC 4514** | DN handling for mTLS subject DN |
 | **RFC 4648** | Base64url encoding |
 | **RFC 5280** | X.509 cert validation |
+| **RFC 5321** | SMTP address length bounds for email OTP inputs |
 | **RFC 6238** | TOTP authenticator |
 | **RFC 6265** | Cookie syntax |
 | **RFC 6711** | Authentication Context Class Reference values registry |
 | **RFC 7230 / 7231 / 7232 / 7235** | HTTP/1.1 (now superseded by RFC 9110) |
+| **RFC 7239** | `Forwarded` header parsing for trusted-proxy handling |
 | **RFC 7807** | `application/problem+json` (selected error paths) |
+| **RFC 8017** | RSA-PSS / RSA-OAEP algorithm references through JOSE |
+| **RFC 8141** | URN handling for PAR `request_uri` values |
 | **RFC 8176** | AMR values registry |
 | **RFC 8259** | JSON |
 | **RFC 9110** | HTTP semantics |

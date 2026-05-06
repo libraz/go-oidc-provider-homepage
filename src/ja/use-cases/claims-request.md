@@ -34,7 +34,6 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 ```go
 op.New(
   /* 必須オプション */
-  op.WithClaimsParameterSupported(true),
   op.WithClaimsSupported(
     "sub", "iss", "aud", "exp", "iat",
     "email", "email_verified",
@@ -43,6 +42,8 @@ op.New(
   ),
 )
 ```
+
+`claims_parameter_supported` の既定は `true` です。`claims` request を広告・処理したくない場合だけ `op.WithClaimsParameterSupported(false)` を渡します。
 
 discovery document はこう公開します:
 

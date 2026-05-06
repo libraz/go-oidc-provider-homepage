@@ -144,7 +144,7 @@ Two classes of attack live in the JOSE algorithm registry, and the canonical def
 
 | Use | Algorithms |
 |---|---|
-| Issuance (signing outgoing JWS) | `ES256` (default), `PS256`, `EdDSA`. |
+| OP issuance (signing outgoing ID Tokens, JWT access tokens, JARM) | `ES256` only. `WithKeyset` rejects non-P-256 signing keys at `op.New`. |
 | Verification (incoming JWS) | `RS256`, `PS256`, `ES256`, `EdDSA`. `RS256` accepted on verify because OIDC Core 1.0 §10.1 makes it MUST-implement for ID Token verification. |
 
 These four are the closed enum in `internal/jose.Algorithm`. There is no zero-value default for the type, and no fallback to a wider registry. A `depguard` lint rule forbids importing the underlying JOSE package outside `internal/jose/`, so no future code path can re-introduce `none` or `HS*` by accident. See [design judgment #11](/security/design-judgments#dj-11) for the full reasoning.

@@ -53,7 +53,7 @@ Most "default-on" framework libraries silently boot on missing config. This shap
 
 ### 2. The JOSE alg list is a closed type
 
-`internal/jose.Algorithm` enumerates only `RS256`, `PS256`, `ES256`, `EdDSA`. `none`, `HS256/384/512`, and any custom string fail `IsAllowed()`. `ParseAlgorithm` returns `ok=false` rather than a fallback. Every signing / verifying path — including the packages that hold raw go-jose handles (`internal/jar`, `internal/dpop`, `internal/mtls`, `internal/backchannel`, `internal/jarm`, …) — gates the inbound `alg` through this closed type, so **algorithm-confusion attacks (RFC 7519 §6 / RFC 8725 §2.1) are structurally unreachable**.
+`internal/jose.Algorithm` enumerates only `RS256`, `PS256`, `ES256`, `EdDSA`. `none`, `HS256/384/512`, and any custom string fail `IsAllowed()`. `ParseAlgorithm` returns `ok=false` rather than a fallback. Every incoming JWS verification path — including the packages that hold raw go-jose handles (`internal/jar`, `internal/dpop`, `internal/mtls`, `internal/backchannel`, …) — gates the inbound `alg` through this closed type. OP-issued JWT signing is narrower still: `WithKeyset` accepts only ECDSA P-256 keys and discovery advertises `ES256`. **Algorithm-confusion attacks (RFC 7519 §6 / RFC 8725 §2.1) are structurally unreachable**.
 
 | Concern | Mitigation |
 |---|---|
@@ -92,10 +92,15 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | `iss` in authorization response | `internal/authorize` | RFC 9207 |
 | `redirect_uri` exact match (configurable; default exact) | `internal/authorize` | OAuth 2.1, RFC 8252 |
 | Loopback redirect hardening | `internal/registrationendpoint`, `internal/authorize` | RFC 8252 |
-| Back-channel logout SSRF defense (loopback / link-local / RFC 1918 / IPv6 ULA deny-list) | `internal/backchannel` | OIDC Back-Channel Logout 1.0 |
+| Outbound HTTP envelope (allowed schemes, body cap, accept content-types, timeout, redirect, cache) on JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout — dial-time deny-list (loopback / link-local / RFC 1918 / IPv6 ULA), URL-gate fallback when `BaseTransport` is not `*http.Transport` | `internal/securefetch`, `internal/netsec` | OWASP SSRF, OIDC Back-Channel Logout 1.0 |
 | OP-side request_object replay (`jti`) | `internal/jar` | RFC 9101 §10.8 |
 | Algorithm allow-list at every verify path | `internal/jose` | RFC 8725 |
 | Issuer canonicalisation / no trailing slash drift | `op/options_validate.go` | RFC 9207 |
+| Resource indicator canonicalisation (lowercase scheme + host, default port stripped, trailing slash normalised, fragment / userinfo refused) on `/authorize`, `/token`, `/device_authorization`, `/bc-authorize`, and the `WithAccessTokenFormatPerAudience` allow-list | `internal/resourceindicator` | RFC 8707 §2 |
+| Duplicate single-valued parameters refused on `/token`, `/bc-authorize`, `/end_session` (RFC 8707 `resource=` excepted); credentials presented in more than one location refused at `clientauth.Parse` | `internal/httpx`, `internal/clientauth`, `internal/tokenendpoint`, `internal/cibaendpoint`, `internal/endsession` | RFC 6749 §3.2.1, OIDC RP-Initiated Logout 1.0 §3 |
+| Argon2id parameters above the OWASP 2024 floor (memory ≥ 19 MiB, time ≥ 2) for `client_secret`, end-user passwords, and recovery codes; recovery-code batch verification capped at 16; duplicate parameter segments in encoded hashes refused | `internal/argon2id`, `internal/authn/password`, `internal/authn/recovery`, `internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
+| Trailing JSON documents refused on the DCR metadata decoder and the interaction JSON driver | `internal/registrationendpoint`, `op/interaction` | RFC 7591 §2 |
+| `op.New` rejects configurations whose enabled grants / features need a substore the wired store does not expose | `op/options_validate.go`, `op/storeadapter/redis` | — (defence in depth) |
 
 ## Tooling
 

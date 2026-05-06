@@ -19,7 +19,7 @@ op.New(
 
 `op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry where the `msg` is the event identifier (e.g. `"token.issued"`) and the attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields.
 
-If `WithAuditLogger` is not supplied, audit events fall through to the logger configured by `WithLogger` (or `slog.Default()`).
+If `WithAuditLogger` is not supplied, audit events fall through to the logger configured by `WithLogger`. If neither logger is supplied, audit emission is discarded.
 
 ::: tip Prometheus mirror
 A curated subset of these events is mirrored onto Prometheus counters when [`WithPrometheus`](/use-cases/prometheus) is configured. A single emission updates both the slog stream and the matching counter — there is no separate metrics emit step.
@@ -150,8 +150,8 @@ Fire from request-validation paths that detect abuse signals or operator-visible
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
-| `AuditRateLimitExceeded` | request rejected by rate limiter | warn | — |
-| `AuditRateLimitBypassed` | rate-limit bypass token consumed (operator override) | warn | — |
+| `AuditRateLimitExceeded` | request rejected by rate limiter — **embedder-emitted** vocabulary; the library does not implement a generic per-IP / per-endpoint HTTP throttle | warn | — |
+| `AuditRateLimitBypassed` | rate-limit bypass token consumed (operator override) — **embedder-emitted** vocabulary; same scoping as `AuditRateLimitExceeded` | warn | — |
 | `AuditPKCEViolation` | PKCE verifier mismatch / `plain` rejected / missing on FAPI | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditRedirectURIMismatch` | redirect URI did not match the registered list | warn | [Concepts: redirect URI](/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | a legacy alg path was reached (telemetry; rejected by the verifier) | warn | [Concepts: JOSE basics](/concepts/jose-basics) |

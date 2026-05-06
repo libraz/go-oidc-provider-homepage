@@ -93,6 +93,8 @@ op.New(
 ::: warning Private-network destinations are refused by default
 The deliverer **refuses** to POST to a `backchannel_logout_uri` whose host resolves to a loopback / link-local / RFC 1918 / IPv6 ULA address. Without this, an RP that can register an arbitrary URL becomes an SSRF oracle into the OP's internal network.
 
+The dial-time deny-list is layered on a URL-shape gate at registration time: `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host — `https://attacker:internal@rp.example.com/...` and `https://rp.example.com/cb#anchor` both fail with `invalid_client_metadata`. `backchannel_logout_session_required=true` paired with an empty URI is also rejected, so a client cannot opt into `sid` delivery without a destination.
+
 Embedders fronting their RPs with private DNS opt in:
 
 ```go
@@ -116,4 +118,4 @@ Under volatile placement this is the OIDC Back-Channel Logout 1.0 §2.7 "best ef
 
 ## Front-channel logout (a different mechanism)
 
-OIDC Front-Channel Logout 1.0 (browser-side iframe fan-out) is a separate spec the library does not currently implement. Back-channel is the more deployable choice: no third-party cookie dependency, works across origins, doesn't require the user's browser to be open at the moment fan-out happens.
+OIDC Front-Channel Logout 1.0 (browser-side iframe fan-out) is a separate spec the library intentionally does not implement. Back-channel is the deployable choice: no third-party cookie dependency, works across origins, doesn't require the user's browser to be open at the moment fan-out happens.
