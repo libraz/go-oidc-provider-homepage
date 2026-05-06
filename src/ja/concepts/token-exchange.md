@@ -21,7 +21,7 @@ description: あるトークンを別のトークンに交換する仕組み —
 :::
 
 ::: details 用語の補足
-- **subject_token** — 新トークンの `sub` を構成する identity の保持者となるトークン。通常は上流から転送されてきたユーザの access token。
+- **subject_token** — 新トークンの `sub` を構成する identity の保持者となるトークン。通常は上流から転送されてきたユーザのアクセストークン。
 - **actor_token** — 交換を実行する呼び出し元(service)を識別するトークン。存在すると新トークンには `act` claim が付与され、actor の `sub` / `client_id` がそこに包まれる。
 - **`act` claim**(RFC 8693 §4.1) — `sub` の代わりに行動している主体を記録する入れ子オブジェクト。連鎖でき(`act.act.act…`)、4 ホップの呼び出しなら 4 つの中継 service をすべて記録できる。
 - **`cnf` の再バインド** — 発行トークンの `cnf`(RFC 7800 confirmation)は、subject ではなく **呼び出し actor** の DPoP / mTLS proof に設定される。トークンは交換を実行する service に対して送信者制約が掛かる(sender-bound)。

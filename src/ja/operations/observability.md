@@ -74,7 +74,7 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 go http.ListenAndServe("127.0.0.1:9090", mux)
 ```
 
-ライブラリは `/metrics` をマウントしません。ルートと境界はあなたが選択します。カウンタは監査カタログと同じ範囲に絞られています(厳選した部分集合。[`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics) を参照)。
+ライブラリは `/metrics` をマウントしません。ルートと境界は組み込み側が選択します。カウンタは監査カタログと同じ範囲に絞られています(厳選した部分集合。[`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics) を参照)。
 
 ### OP が出**さない** metrics
 

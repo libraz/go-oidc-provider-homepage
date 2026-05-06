@@ -85,7 +85,7 @@ func main() {
 | Path | 目的 |
 |---|---|
 | `/.well-known/openid-configuration` | Discovery（OIDC Discovery 1.0 §4 によりルート固定） |
-| `/oidc/jwks` | ID Token / JWT access token 検証用の公開 JWKS |
+| `/oidc/jwks` | ID トークン / JWT アクセストークン検証用の公開 JWKS |
 | `/oidc/auth` | Authorization endpoint |
 | `/oidc/token` | Token endpoint |
 | `/oidc/userinfo` | UserInfo（RFC 6749 + OIDC Core §5.3） |
@@ -98,7 +98,7 @@ func main() {
 | ギャップ | 対処 |
 |---|---|
 | デモユーザ 1 件をハードコード | 自前の管理面でユーザを登録し、`store.User` を PUT する。 |
-| 揮発鍵 → 再起動で ID Token が検証不能 | vault / KMS / ファイルからロード。 |
+| 揮発鍵 → 再起動で ID トークンが検証不能 | vault / KMS / ファイルからロード。 |
 | in-memory ストア → 再起動で状態消失 | `op/storeadapter/sql` または `op/storeadapter/composite` に切替。 |
 | 平文 HTTP リスナ（`http://127.0.0.1`） | TLS 終端 ingress の背後に置き、issuer も `https://` に切り替える。 |
 | 単一要素（パスワードのみ） | `RuleAlways(StepTOTP{...})` を追加 — [MFA / step-up](/ja/use-cases/mfa-step-up) を参照。 |

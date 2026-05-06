@@ -1,11 +1,11 @@
 ---
 title: mTLS (RFC 8705)
-description: Mutual-TLS Client Authentication と Certificate-Bound Access Tokens — 正規クライアントが TLS で提示した証明書に access token をバインドする方式。
+description: Mutual-TLS Client Authentication と Certificate-Bound Access Tokens — 正規クライアントが TLS で提示した証明書にアクセストークンをバインドする方式。
 ---
 
 # mTLS — Mutual-TLS Client Authentication
 
-**mTLS**(RFC 8705)は、TLS ハンドシェイク中にクライアントを認証した X.509 証明書に access token をバインドする仕組みです。OP は証明書の SHA-256 thumbprint を `cnf.x5t#S256` として発行 token に書き込み、リソースサーバは API 呼び出し時に提示された証明書の thumbprint を照合します。token のバイト列だけが漏れても無価値で、攻撃者は証明書 **と** その秘密鍵も併せて入手しなければ通せません。
+**mTLS**(RFC 8705)は、TLS ハンドシェイク中にクライアントを認証した X.509 証明書にアクセストークンをバインドする仕組みです。OP は証明書の SHA-256 thumbprint を `cnf.x5t#S256` として発行 token に書き込み、リソースサーバは API 呼び出し時に提示された証明書の thumbprint を照合します。token のバイト列だけが漏れても無価値で、攻撃者は証明書 **と** その秘密鍵も併せて入手しなければ通せません。
 
 mTLS は既に PKI を運用している環境で特に強みを発揮します — B2B のサービスメッシュ、オープンバンキング、内部 CA が全関係者に証明書を発行しているバックエンド API などです。バインドが TLS 層に乗っているため、アプリケーションコードはリクエストごとに何かを署名する必要がありません。代償として、TLS 終端(リバースプロキシ、ロードバランサ)が検証済み証明書を OP まで運ぶよう設定する必要があります。
 
@@ -42,7 +42,7 @@ RFC 8705 はバインド機構を共有する 2 つの `token_endpoint_auth_meth
 
 ## Confirmation claim — `cnf.x5t#S256`
 
-OP は mTLS 認証されたクライアントに token を発行する際、DER エンコードした証明書の SHA-256 digest(RFC 8705 §3)を計算し、access token に `cnf.x5t#S256` として書き込みます。以後この access token を使うリクエストは **同じ証明書** で TLS 接続を確立する必要があり、リソースサーバは観測した証明書をハッシュして `cnf.x5t#S256` と比較します。
+OP は mTLS 認証されたクライアントに token を発行する際、DER エンコードした証明書の SHA-256 digest(RFC 8705 §3)を計算し、アクセストークンに `cnf.x5t#S256` として書き込みます。以後このアクセストークンを使うリクエストは **同じ証明書** で TLS 接続を確立する必要があり、リソースサーバは観測した証明書をハッシュして `cnf.x5t#S256` と比較します。
 
 `cnf` 自体は DPoP と共通の仕組み(RFC 7800)ですが、**メンバ名** が異なります — DPoP は `jkt`、mTLS は `x5t#S256`。1 つの token はどちらか一方だけを持ち、両方が同居することはありません。
 

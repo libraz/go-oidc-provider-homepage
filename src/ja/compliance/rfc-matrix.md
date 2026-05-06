@@ -81,7 +81,7 @@ pageClass: rfc-matrix-page
 | **FAPI 2.0 Baseline** | <span class="status-pill full">full</span>（継続回帰検査。[OFCS](/ja/compliance/ofcs) 参照） | `op.WithProfile(profile.FAPI2Baseline)` |
 | **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span>（継続回帰検査） | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | —（FAPI 2.0 を使用） |
-| **FAPI-CIBA** | <span class="status-pill full">full</span>（poll mode。`JAR` + `DPoP\|MTLS` 必須、access TTL 10 分上限、FAPI 2.0 client-auth セット、`requested_expiry` ≤ 600 秒、JAR `iss` / `aud` / `exp` / `nbf` 必須、request-object 寿命 ≤ 60 分（FAPI 2.0 Message Signing §5.6）、access-token revocation 必須） | `op.WithProfile(profile.FAPICIBA)` |
+| **FAPI-CIBA** | <span class="status-pill full">full</span>（poll mode。`JAR` + `DPoP\|MTLS` 必須、アクセストークン TTL 10 分上限、FAPI 2.0 client-auth セット、`requested_expiry` ≤ 600 秒、JAR `iss` / `aud` / `exp` / `nbf` 必須、request-object 寿命 ≤ 60 分（FAPI 2.0 Message Signing §5.6）、アクセストークン revocation 必須） | `op.WithProfile(profile.FAPICIBA)` |
 | **OpenID iGov High** | <span class="status-pill planned">planned</span>（v2） | `profile.IGovHigh`（定数あり。ランタイム制約が未着地のため、現状で `op.WithProfile(profile.IGovHigh)` を渡すと `op.New` が拒否） |
 
 ## その他、ライブラリが参照する RFC
@@ -113,7 +113,7 @@ OIDC Core や周辺 OAuth 仕様には登場するものの、本ライブラリ
 - **`client_secret_jwt` は登録時点で拒否します。** 代わりに `private_key_jwt` を使ってください。HMAC 共有秘密 JWT プロファイルは `invalid_client_metadata: token_endpoint_auth_method client_secret_jwt is not supported` で拒否されます。
 - **JWE alg / enc の許可リストは閉じています。** v0.9.1 で実装したのは `RSA-OAEP-256` + `ECDH-ES{,+A128KW,+A256KW}`（key-wrap）と `A{128,256}GCM`（content）。`WithSupportedEncryptionAlgs` は **狭める** だけで、広げることはできません。`RSA1_5` は永続的に拒否（CVE-2017-11424）。`RSA-OAEP-384` / `RSA-OAEP-512`、`dir`、対称鍵のみの `A*KW` は v2+ で対応します。
 - **CIBA の push / ping 配信モードは未実装。** Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告するので、クライアント側からこの 2 モードを negotiate することはできません。
-- **Custom-grant の refresh token は拒否します。** `CustomGrantResponse.RefreshToken` を非空で返すと `server_error` に集約されます。同梱の token-exchange ハンドラだけは grant_type URN がゲート前にチェックされるため例外です。handler 発行 refresh token の lineage 永続化と rotation は v2+ の設計課題です。
+- **Custom-grant のリフレッシュトークンは拒否します。** `CustomGrantResponse.RefreshToken` を非空で返すと `server_error` に集約されます。同梱の token-exchange ハンドラだけは grant_type URN がゲート前にチェックされるため例外です。handler 発行のリフレッシュトークンの lineage 永続化と rotation は v2+ の設計課題です。
 
 ## 範囲外(意図的)
 

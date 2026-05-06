@@ -1,13 +1,13 @@
 ---
 title: Device Code（RFC 8628）
-description: TV / コンソール / CLI がキーボードなしで access token を得る仕組み — device-authorization grant をやさしく解説。
+description: TV / コンソール / CLI がキーボードなしでアクセストークンを得る仕組み — device-authorization grant をやさしく解説。
 ---
 
 # Device Code（RFC 8628）
 
 device-authorization grant — 通称「device code」「device flow」 — は、**ブラウザを動かせない**、または **パスワードを打つのが現実的でない** クライアントのための grant です。スマート TV、ゲーム機、CLI ツール、IoT 機器、POS 端末などが該当します。
 
-一番身近な例は、新しい TV で Netflix にサインインするときの手順です。TV 画面に短いコード（`ABCD-EFGH`）と URL（`netflix.com/tv`）が表示され、ユーザはスマホでその URL を開いてコードを入力し、承認します。TV はパスワードを一度も見ないまま access token を受け取ります。
+一番身近な例は、新しい TV で Netflix にサインインするときの手順です。TV 画面に短いコード（`ABCD-EFGH`）と URL（`netflix.com/tv`）が表示され、ユーザはスマホでその URL を開いてコードを入力し、承認します。TV はパスワードを一度も見ないままアクセストークンを受け取ります。
 
 ::: details このページで触れる仕様
 - [RFC 8628](https://datatracker.ietf.org/doc/html/rfc8628) — OAuth 2.0 Device Authorization Grant

@@ -89,7 +89,7 @@ JSON 応答です。RFC 6749 §5.2 + RFC 9449(DPoP)。
 | コード | HTTP | 発生条件 |
 |---|---|---|
 | `invalid_request` | 400 | grant の body の不正、パラメータ欠落 |
-| `invalid_grant` | 400 | code の有効期限切れ / 消費済み、refresh token がローテーション猶予を超過、PKCE verifier 不一致 |
+| `invalid_grant` | 400 | code の有効期限切れ / 消費済み、リフレッシュトークンがローテーション猶予を超過、PKCE verifier 不一致 |
 | `invalid_client` | 401 | クライアント認証失敗(クレデンシャル無し、secret 違い、`private_key_jwt` / mTLS 証明書不正) |
 | `unauthorized_client` | 400 | このクライアントは当該 grant を許可されていない |
 | `unsupported_grant_type` | 400 | `WithGrants` で有効化されていない grant |

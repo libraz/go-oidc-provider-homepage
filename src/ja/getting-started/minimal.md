@@ -131,7 +131,7 @@ func main() {
 
 ::: details この OP で今すぐ試せること
 1. `curl http://localhost:8080/oidc/.well-known/openid-configuration` — discovery。
-2. `curl http://localhost:8080/oidc/jwks` — ID token 検証用の公開 JWKS。
+2. `curl http://localhost:8080/oidc/jwks` — ID トークン検証用の公開 JWKS。
 3. デフォルトの mount prefix は `/oidc` です。`op.WithMountPrefix("/")` で変更可。
 4. クライアントと authenticator を登録するまで認可は error を返します。
 :::

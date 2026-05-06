@@ -157,7 +157,7 @@ curl -s -u pos-terminal:<secret> \
 
 ## RFC 8707 `resource=`
 
-利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行される access token を resource server に固定できます。エンドポイントは `/authorize` / `/token` と同じゲートを適用します:
+利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを resource server に固定できます。エンドポイントは `/authorize` / `/token` と同じゲートを適用します:
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否されます。
 - 正規化後の値(scheme + host を小文字化、末尾 `/` 除去)はクライアントの `Resources` allowlist に含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます。

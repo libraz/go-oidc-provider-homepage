@@ -105,23 +105,23 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditCodeIssued` | authorization code を発行した | info | [ガイド: authorization code + PKCE](/ja/concepts/authorization-code-pkce) |
-| `AuditCodeConsumed` | `/token` で code を消費した | info | [ガイド: authorization code + PKCE](/ja/concepts/authorization-code-pkce) |
-| `AuditCodeReplayDetected` | code が二度提示された — chain を失効させる | alert | [ガイド: authorization code + PKCE](/ja/concepts/authorization-code-pkce) |
-| `AuditTokenIssued` | access token + (任意で)refresh + (任意で)id_token を発行した | info | [ガイド: tokens](/ja/concepts/tokens) |
-| `AuditTokenRefreshed` | refresh token をローテーションし、新しい access token を発行した | info | [ガイド: refresh tokens](/ja/concepts/refresh-tokens) |
+| `AuditCodeIssued` | 認可コードを発行した | info | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
+| `AuditCodeConsumed` | `/token` で code を消費した | info | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
+| `AuditCodeReplayDetected` | 認可コードが二度提示された — chain を失効させる | alert | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
+| `AuditTokenIssued` | アクセストークン + (任意で)refresh + (任意で)id_token を発行した | info | [ガイド: tokens](/ja/concepts/tokens) |
+| `AuditTokenRefreshed` | リフレッシュトークンをローテーションし、新しいアクセストークンを発行した | info | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
 | `AuditTokenRevoked` | `/revoke` または grant cascade で失効させた | info | [ガイド: tokens](/ja/concepts/tokens) |
 | `AuditTokenRevokeFailed` | 失効処理がサブストアの障害を観測。RFC 7009 §2.2 により、通信路上の応答は 200 のまま | alert | [ガイド: tokens](/ja/concepts/tokens) |
-| `AuditRefreshReplayDetected` | refresh token がローテーション猶予を超過して提示された — chain を失効させる | alert | [ガイド: refresh tokens](/ja/concepts/refresh-tokens) |
-| `AuditRefreshChainRevokeFailed` | replay 検出時の連鎖失効でサブストアの障害を観測 | alert | [ガイド: refresh tokens](/ja/concepts/refresh-tokens) |
-| `AuditRefreshGrantRevokeFailed` | refresh-rotation cascade で grant tombstone の書き込みが失敗 | alert | [ガイド: refresh tokens](/ja/concepts/refresh-tokens) |
+| `AuditRefreshReplayDetected` | リフレッシュトークンがローテーション猶予を超過して提示された — chain を失効させる | alert | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
+| `AuditRefreshChainRevokeFailed` | replay 検出時の連鎖失効でサブストアの障害を観測 | alert | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
+| `AuditRefreshGrantRevokeFailed` | refresh-rotation cascade で grant tombstone の書き込みが失敗 | alert | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
 
 ::: details extras
 - `grant_type` — `authorization_code`、`refresh_token`、`client_credentials`
-- `format` — access token の `jwt` / `opaque`
+- `format` — アクセストークンの `jwt` / `opaque`
 - `offline_access` — bool。`offline_access` chain なら true
 - `cnf` — sender-bound のとき、`dpop_jkt` または `mtls_x5t#S256`
-- `surface` — `token.revoke_failed` で障害を観測した呼び出し元。`/revoke` は `jwt_access_token` / `refresh_chain` / `opaque_access_token`、token endpoint では authorization-code 再利用に伴う AT カスケードが失敗したときに `code_replay_jwt_access_tokens`
+- `surface` — `token.revoke_failed` で障害を観測した呼び出し元。`/revoke` は `jwt_access_token` / `refresh_chain` / `opaque_access_token`、token endpoint では認可コード再利用に伴う AT カスケードが失敗したときに `code_replay_jwt_access_tokens`
 - `grant_id` — `token.revoke_failed`(token endpoint)と `refresh.grant_revoke_failed` で、tombstone 書き込みに失敗した grant
 - `reason` — `refresh.chain_revoke_failed` / `refresh.grant_revoke_failed` で、サブストアから返ったエラー文字列
 - `err` — `token.revoke_failed` で、サブストアから返ったエラー文字列
@@ -152,7 +152,7 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 |---|---|---|---|
 | `AuditRateLimitExceeded` | レートリミッタがリクエストを拒否した | warn | — |
 | `AuditRateLimitBypassed` | bypass トークンを消費した(運用者による上書き) | warn | — |
-| `AuditPKCEViolation` | PKCE verifier の不一致 / `plain` の拒否 / FAPI 下での不在 | alert | [ガイド: authorization code + PKCE](/ja/concepts/authorization-code-pkce) |
+| `AuditPKCEViolation` | PKCE verifier の不一致 / `plain` の拒否 / FAPI 下での不在 | alert | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
 | `AuditRedirectURIMismatch` | redirect URI が登録リストに不一致 | warn | [ガイド: redirect URI](/ja/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | 旧 alg のパスに到達した(テレメトリ目的。verifier 側では拒否) | warn | [ガイド: JOSE basics](/ja/concepts/jose-basics) |
 | `AuditCORSPreflightAllowed` | CORS preflight が厳格な許可リストに合致した | info | [ユースケース: SPA 向け CORS](/ja/use-cases/cors-spa) |
@@ -207,7 +207,7 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 | `AuditDeviceCodeTokenIssued` | 承認済 device authorization に対し `/token` がトークンを発行 | info | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenRejected` | `/token` が device-code grant を拒否(`access_denied`、`expired_token` など) | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返却。サブストア上のレコードで interval が倍化される | warn | [ユースケース: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態(deny)に遷移させた。組み込み側はここを購読し、`RevokeByGrant(deviceCodeID)` で発行済みの access token を連鎖失効させる | info | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態(deny)に遷移させた。組み込み側はここを購読し、`RevokeByGrant(deviceCodeID)` で発行済みのアクセストークンを連鎖失効させる | info | [ユースケース: device code](/ja/use-cases/device-code) |
 
 ### CIBA
 
@@ -233,7 +233,7 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
 | `AuditTokenExchangeRequested` | `/token` が RFC 8693 リクエストを受理し handler に入った | info | [ガイド: token exchange](/ja/concepts/token-exchange) |
-| `AuditTokenExchangeGranted` | exchange を admit し新しい access token(任意で refresh)を発行 | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeGranted` | exchange を admit し新しいアクセストークン(任意で refresh)を発行 | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyDenied` | 組み込み側の `TokenExchangePolicy` が拒否(deny)を返却 | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyError` | ポリシーが拒否(deny)以外のエラーを返却(一過性のインフラ障害など) | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeScopeInflationBlocked` | 要求 scope が subject_token の scope または client allow-list を超えた | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |

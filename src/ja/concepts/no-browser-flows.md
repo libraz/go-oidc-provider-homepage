@@ -1,11 +1,11 @@
 ---
 title: ブラウザを使わないフロー — CIBA と Device Code
-description: いずれも「access token を欲しがるデバイスにまともなブラウザがない」状況に対応するフロー。一見似ているが、誰が起点となるか・どのようにユーザを OP に識別させるかで分かれる。
+description: いずれも「アクセストークンを欲しがるデバイスにまともなブラウザがない」状況に対応するフロー。一見似ているが、誰が起点となるか・どのようにユーザを OP に識別させるかで分かれる。
 ---
 
 # ブラウザを使わないフロー: CIBA と Device Code
 
-[Device Code（RFC 8628）](/ja/concepts/device-code)と[CIBA（OpenID Connect Client-Initiated Backchannel Authentication 1.0）](/ja/concepts/ciba)は、仕様エコシステムが同じ大きな状況に対して用意している 2 つの grant です。状況とは「access token を欲しがるデバイスがまともなブラウザを持てない」こと。スマート TV、ゲーム機、CLI ツール、IoT、音声アシスタント、POS 端末、コールセンタの操作画面、ユーザの代わりに動くサーバ側プロセス、などです。
+[Device Code（RFC 8628）](/ja/concepts/device-code)と[CIBA（OpenID Connect Client-Initiated Backchannel Authentication 1.0）](/ja/concepts/ciba)は、仕様エコシステムが同じ大きな状況に対して用意している 2 つの grant です。状況とは「アクセストークンを欲しがるデバイスがまともなブラウザを持てない」こと。スマート TV、ゲーム機、CLI ツール、IoT、音声アシスタント、POS 端末、コールセンタの操作画面、ユーザの代わりに動くサーバ側プロセス、などです。
 
 遠目に見ると 2 つのフローは同じ形に見えます — 「2 つの面が OP で合流して、ユーザはスマホで承認する」。実際には違います。両者は **誰がリクエストを起こすか** と **ユーザがどう OP に識別されるか** で分かれており、その 1 点が他のほぼ全ての違い（通信路上のエンドポイント、polling の主体、anti-phishing の主軸、適用される規制プロファイル）を決めています。
 
@@ -15,7 +15,7 @@ description: いずれも「access token を欲しがるデバイスにまとも
 
 **Device Code（RFC 8628）.** ブラウザを持たないデバイスが OP に「使い切りのコードをくれ」と頼み、自分の画面に表示し、ユーザに「この URL をスマホで開いて、このコードを入力して」と告げます。ユーザは手元のブラウザで認証して承認します。その間デバイスは `/token` を poll し続け、承認が降りるのを待ちます。ユーザの識別は **フローの途中で発覚** します — TV の前に誰がやって来るかは OP もデバイスも事前には知りません。
 
-**CIBA（Core 1.0）.** RP はすでにユーザが誰かを知っています — `login_hint`（`alice@example.com`、口座番号 等）、`id_token_hint`（過去に発行された ID token）、`login_hint_token`（上流のシステムが発行した署名付き JWT）のいずれかで。RP は OP に「このユーザを out-of-band で認証してくれ」と頼みます。OP は事前登録された認証デバイス（push 通知、SMS、アプリの確認プロンプト）に通知を飛ばします。その間 RP は poll する（ping / push モードならコールバックを待つ）。ユーザの識別は **RP が事前に与えるもの** です — どのデバイスへ push するか、OP はそれがないと決められません。
+**CIBA（Core 1.0）.** RP はすでにユーザが誰かを知っています — `login_hint`（`alice@example.com`、口座番号 等）、`id_token_hint`（過去に発行された ID トークン）、`login_hint_token`（上流のシステムが発行した署名付き JWT）のいずれかで。RP は OP に「このユーザを out-of-band で認証してくれ」と頼みます。OP は事前登録された認証デバイス（push 通知、SMS、アプリの確認プロンプト）に通知を飛ばします。その間 RP は poll する（ping / push モードならコールバックを待つ）。ユーザの識別は **RP が事前に与えるもの** です — どのデバイスへ push するか、OP はそれがないと決められません。
 
 ## 比較
 
@@ -44,7 +44,7 @@ description: いずれも「access token を欲しがるデバイスにまとも
 
 **1. RP はフロー開始 *前* にユーザが誰かを知っているか?**
 
-- **はい** → CIBA。RP はすでに `login_hint`（または ID token、hint token）を持っており、`/bc-authorize` に乗せて送れます。ユーザは自分を識別するための入力をしません。
+- **はい** → CIBA。RP はすでに `login_hint`（または ID トークン、hint token）を持っており、`/bc-authorize` に乗せて送れます。ユーザは自分を識別するための入力をしません。
 - **いいえ** → Device Code。ユーザは verification ページでサインインすることでフローの中で自分を識別し、OP はそこでユーザが誰かを知ります。
 
 **2. token を欲しがるデバイスに画面はあるか?**

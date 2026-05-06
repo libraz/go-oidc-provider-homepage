@@ -73,7 +73,7 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 :::
 
 ::: details subject mode とは
-「public」または「pairwise」のいずれかです。OP は最初の構築時にメタデータサブストア（`__op_init` sentinel）でアクティブな subject mode を記録します。以降の起動はすべて一致する必要があります。非空のストア上で戦略を切り替えると、発行済の grant が静かに rekey され、refresh token rotation や JWT introspection の一貫性が壊れます。途中切替は構成エラーとして hard に拒否されます。
+「public」または「pairwise」のいずれかです。OP は最初の構築時にメタデータサブストア（`__op_init` sentinel）でアクティブな subject mode を記録します。以降の起動はすべて一致する必要があります。非空のストア上で戦略を切り替えると、発行済の grant が静かに rekey され、リフレッシュトークンのローテーションや JWT introspection の一貫性が壊れます。途中切替は構成エラーとして hard に拒否されます。
 :::
 
 `sector_identifier` は:

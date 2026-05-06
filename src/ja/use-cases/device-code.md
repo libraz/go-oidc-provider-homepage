@@ -137,14 +137,14 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 
 ## RFC 8707 `resource=`
 
-デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行される access token を特定の resource server に固定できます。ハンドラは `/authorize` / `/token` と同じゲートを適用します:
+デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定の resource server に固定できます。ハンドラは `/authorize` / `/token` と同じゲートを適用します:
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否します。
 - 正規化後の値(scheme + host を小文字化、末尾 `/` 除去)はクライアントの `Resources` allowlist に含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
 - `resource=` を複数指定すると `400 invalid_target` で拒否されます。現状の発行パイプラインは単一 audience だけを encode するため、ハンドラは「黙って切り捨てる」入力を受け付けません。複数 audience 対応は今後の課題です。
 
 ::: warning v0.9.x 以前は未登録 resource を黙って受け付けていました
-旧バージョンは `resource=` が絶対 URI として parse できることだけを確認しており、値はクライアントの登録 `Resources` にかかわらず device-code レコードに保存され、最終的に access token の `aud` claim に乗りました。寛容な挙動に依存していた組み込み側は、クライアントの `Resources` にその値を追加するか、`resource=` を送らないようにしてください。
+旧バージョンは `resource=` が絶対 URI として parse できることだけを確認しており、値はクライアントの登録 `Resources` にかかわらず device-code レコードに保存され、最終的にアクセストークンの `aud` claim に乗りました。寛容な挙動に依存していた組み込み側は、クライアントの `Resources` にその値を追加するか、`resource=` を送らないようにしてください。
 :::
 
 ## Polling 応答
@@ -159,10 +159,10 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 
 ## デバイス登録解除(unenroll)時の連鎖失効
 
-組み込み側がデバイスの authorization を失効させるとき(ユーザがアカウント設定で「この TV を削除」をクリックなど)は、そのレコードから発行された access token も同時に失効すべきです。v0.9.1 では監査シグナルだけ提供し、ライブラリ内蔵のカスケード波及処理は v0.9.2 に延ばしています。それまでは組み込み側が `op.AuditDeviceCodeRevoked` を購読してカスケードを自前で回します:
+組み込み側がデバイスの authorization を失効させるとき(ユーザがアカウント設定で「この TV を削除」をクリックなど)は、そのレコードから発行されたアクセストークンも同時に失効すべきです。v0.9.1 では監査シグナルだけ提供し、ライブラリ内蔵のカスケード波及処理は v0.9.2 に延ばしています。それまでは組み込み側が `op.AuditDeviceCodeRevoked` を購読してカスケードを自前で回します:
 
 ::: details cascade revocation とは
-「親」レコード（ここではデバイス authorization）が失効されたとき、そこから発行された「子」credential も同じ動作で失効させるべき、という考え方です。device-code では、`GrantID` がそのデバイスコード id を指す access token、同一 chain の refresh token がすべて該当します。cascade が無いと、ユーザが「この TV を削除」を押しても、TV のメモリ上の access token は TTL 満了まで動き続け、失効が静かに不完全になります。本ライブラリは発行する全トークンに `GrantID` を付けているため、組み込み側はこの walk を 1 クエリで回せます。
+「親」レコード（ここではデバイス authorization）が失効されたとき、そこから発行された「子」credential も同じ動作で失効させるべき、という考え方です。device-code では、`GrantID` がそのデバイスコード id を指すアクセストークン、同一 chain のリフレッシュトークンがすべて該当します。cascade が無いと、ユーザが「この TV を削除」を押しても、TV のメモリ上のアクセストークンは TTL 満了まで動き続け、失効が静かに不完全になります。本ライブラリは発行する全トークンに `GrantID` を付けているため、組み込み側はこの walk を 1 クエリで回せます。
 :::
 
 ```go

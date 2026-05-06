@@ -6,7 +6,7 @@ outline: 2
 
 # JWKS エンドポイント
 
-`/jwks` は OP の署名鍵の公開側を公開します。RP はこれを取得して、ID token、JWT access token、JARM、userinfo JWT を検証します。本ページは OP と RP キャッシュの間の運用契約です。
+`/jwks` は OP の署名鍵の公開側を公開します。RP はこれを取得して、ID トークン、JWT アクセストークン、JARM、userinfo JWT を検証します。本ページは OP と RP キャッシュの間の運用契約です。
 
 ## 何を返すか
 

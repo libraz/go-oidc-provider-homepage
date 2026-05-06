@@ -1,6 +1,6 @@
 ---
 title: Prometheus メトリクス
-description: 厳選した業務メトリクスをあなたの registry に登録 — OP は /metrics をマウントしません。
+description: 厳選した業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
 ---
 
 # ユースケース — Prometheus メトリクス

@@ -7,10 +7,10 @@ description: Bearer トークンと送信者制約付きトークン。DPoP と 
 
 保護のない bearer トークンは **bearer-authoritative** です — バイト列を持つ者が API を呼べてしまいます。トークンが漏れると(ログ、中継 proxy、ブラウザ拡張、サードパーティ SDK)、漏らした側は有効期限まで全アクセス権を握ります。
 
-**送信者制約付き** access token は、正規クライアントが保有する鍵にバインドされます。バイト列が漏れても、攻撃者は鍵を一緒に盗まないと使えません。本ページは選定ガイドです — それぞれの仕組みは [DPoP](/concepts/dpop) と [mTLS](/concepts/mtls) の専用ページに分かれています。
+**送信者制約付き** アクセストークンは、正規クライアントが保有する鍵にバインドされます。バイト列が漏れても、攻撃者は鍵を一緒に盗まないと使えません。本ページは選定ガイドです — それぞれの仕組みは [DPoP](/concepts/dpop) と [mTLS](/concepts/mtls) の専用ページに分かれています。
 
 ::: details トークン replay とは何か
-攻撃者が漏洩した有効な access token(ログや侵害された proxy など)を、自分のマシンから再送して API を呼ぶ攻撃です。RS は構文的に有効なトークンを見て応答してしまいます。送信者制約があれば、攻撃者は対応する鍵も提示する必要があり、構造的に replay が成立しません。
+攻撃者が漏洩した有効なアクセストークン(ログや侵害された proxy など)を、自分のマシンから再送して API を呼ぶ攻撃です。RS は構文的に有効なトークンを見て応答してしまいます。送信者制約があれば、攻撃者は対応する鍵も提示する必要があり、構造的に replay が成立しません。
 :::
 
 ::: details proof-of-possession とは
@@ -48,7 +48,7 @@ TLS は通信路上のトークンを保護します。一度アプリ層(OP、R
 | リクエスト毎の追加成果物 | アプリ側で署名する fresh な JWS proof | なし(TLS 層でバインド) |
 | proxy / TLS 終端への依存 | なし — プレーン HTTPS で動く | 終端側が証明書をヘッダで前送りする必要あり |
 | `cnf` メンバ | `cnf.jkt`(JWK thumbprint) | `cnf.x5t#S256`(X.509 thumbprint) |
-| refresh token バインド既定 | public はバインド、confidential は非バインド([設計判断 #15](/security/design-judgments#dj-15)) | クライアントが token endpoint で mTLS を使ったときにバインド |
+| リフレッシュトークンバインド既定 | public はバインド、confidential は非バインド([設計判断 #15](/security/design-judgments#dj-15)) | クライアントが token endpoint で mTLS を使ったときにバインド |
 | バインドを越えた replay 防御 | `jti` キャッシュ、`iat` 窓、任意のサーバ nonce | TLS セッション再利用 + 証明書 thumbprint 照合 |
 | FAPI 2.0 Baseline 受理 | 可 | 可 |
 | FAPI 2.0 Message Signing | 可(§8 / §9 nonce 併用) | 可 |

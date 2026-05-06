@@ -8,7 +8,7 @@ outline: 2
 
 ローテーションする鍵は 2 種類で、サイクルもそれぞれ違います:
 
-- **署名鍵**(`op.Keyset`) — ID token、JWT access token、JARM、userinfo JWT を署名する ECDSA P-256 秘密鍵。公開側は `/jwks` に載ります。
+- **署名鍵**(`op.Keyset`) — ID トークン、JWT アクセストークン、JARM、userinfo JWT を署名する ECDSA P-256 秘密鍵。公開側は `/jwks` に載ります。
 - **Cookie 鍵**(`op.WithCookieKeys`) — session / CSRF cookie を封緘する 32 byte の AES-256-GCM 鍵。
 
 どちらも、新しい `*Provider` を構築してハンドラをアトミックに差し替える形でローテーションします。スライスをその場で書き換える API はありません。
@@ -18,7 +18,7 @@ outline: 2
 ### サイクル
 
 - **定期:** 60 〜 90 日に一度。
-- **侵害時:** 即時。退役した鍵は、発行済みのトークンがすべて期限切れになる(access token TTL に等しい時間が経つ)まで JWKS に残してから外します。
+- **侵害時:** 即時。退役した鍵は、発行済みのトークンがすべて期限切れになる(アクセストークン TTL に等しい時間が経つ)まで JWKS に残してから外します。
 
 ### 手順
 
@@ -56,7 +56,7 @@ liveHandler.Store(newProv)  // 通常は *atomic.Value または sync.Map
 - 発行済みトークンの最長 TTL(既定の `WithAccessTokenTTL` は 5 分)。
 - これに加えて、RP 側の最長 JWKS キャッシュウィンドウ(既定で `max-age=86400`、24 時間)。
 
-つまり安全側の最低待機は **ローテーション後 24 時間** です。access token TTL を短く運用していても、ローテーション中に旧 set をキャッシュした RP が、検証可能なはずのトークンを弾かないよう、JWKS キャッシュウィンドウ分は待ってください。
+つまり安全側の最低待機は **ローテーション後 24 時間** です。アクセストークン TTL を短く運用していても、ローテーション中に旧 set をキャッシュした RP が、検証可能なはずのトークンを弾かないよう、JWKS キャッシュウィンドウ分は待ってください。
 
 ::: tip ローテーション中であることのシグナル
 `op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語が true の間は、長い既定キャッシュ(`public, max-age=86400, stale-while-revalidate=3600`) の代わりに 5 分の `public, max-age=300, must-revalidate` を返します。オーバーラップ期間中にこの述語を true にしておくと、RP のキャッシュが短い間隔で revalidate しに来てくれます。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。

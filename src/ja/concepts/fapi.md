@@ -106,7 +106,7 @@ FAPI 2.0 Message Signing で必須。
 :::
 
 ::: details DPoP / mTLS — 送信者制約
-発行された access token を、正規クライアントが保有する鍵にバインドします。トークンが漏れても鍵がなければ使えません。仕組みは [送信者制約](/ja/concepts/sender-constraint) を参照。
+発行されたアクセストークンを、正規クライアントが保有する鍵にバインドします。トークンが漏れても鍵がなければ使えません。仕組みは [送信者制約](/ja/concepts/sender-constraint) を参照。
 :::
 
 ::: details ES256 / PS256 — なぜ RS256 ではないのか
@@ -147,23 +147,23 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 | **OAuth 2.0 Security BCP (RFC 9700)** | 必須 | 必須 | 必須 |
 | **Token endpoint クライアント認証** | `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` | 同左 | 同左 |
 | **`client_secret_basic` / `_post` / `_jwt`** | 禁止 | 禁止 | 禁止 |
-| **ID Token 署名 alg** | `PS256` / `ES256` / `EdDSA` | 同左 | 同左 |
+| **ID トークン署名 alg** | `PS256` / `ES256` / `EdDSA` | 同左 | 同左 |
 | **`alg=none`** | 禁止 | 禁止 | 禁止 |
 | **`RS256`（旧来の RSA-PKCS1v15）**| 禁止 | 禁止 | 禁止 |
 | **`HS256` などの HMAC 系 alg** | 禁止 | 禁止 | 禁止 |
 | **`redirect_uri` 完全一致** | 必須 | 必須 | 対象外（リダイレクトなし）|
-| **refresh token のローテーション + 再利用検出 (RFC 9700 §4.14)** | 必須 | 必須 | 必須 |
-| **送信者制約付き access token (RFC 7800 `cnf`)** | 必須 | 必須 | 必須 |
-| **サーバ側での access token 失効 (FAPI 2.0 SP §5.3.2.2)** | 必須 | 必須 | 必須 |
+| **リフレッシュトークンのローテーション + 再利用検出 (RFC 9700 §4.14)** | 必須 | 必須 | 必須 |
+| **送信者制約付きアクセストークン (RFC 7800 `cnf`)** | 必須 | 必須 | 必須 |
+| **サーバ側でのアクセストークン失効 (FAPI 2.0 SP §5.3.2.2)** | 必須 | 必須 | 必須 |
 | **ライブラリでの有効化オプション** | `op.WithProfile(profile.FAPI2Baseline)` | `op.WithProfile(profile.FAPI2MessageSigning)` | `op.WithProfile(profile.FAPICIBA)` |
 
 いくつかの行については本文で補足しておきます。
 
-**なぜ DPoP **か** mTLS のどちらか、で十分なのか。** いずれも発行された access token を、正規クライアントが保有する鍵にバインドする仕組みで、トークンが漏れても鍵がなければ使えません。選択は安全性ではなく運用上の都合で決まります — 既存 PKI / proxy 構成にどちらが馴染むかで選んでください。仕組みの詳細は [送信者制約](/ja/concepts/sender-constraint) を参照。FAPI プロファイルは「どちらか 1 つが有効であること」を要求し、両方とも off の状態では `op.New` が起動を拒否します。
+**なぜ DPoP **か** mTLS のどちらか、で十分なのか。** いずれも発行されたアクセストークンを、正規クライアントが保有する鍵にバインドする仕組みで、トークンが漏れても鍵がなければ使えません。選択は安全性ではなく運用上の都合で決まります — 既存 PKI / proxy 構成にどちらが馴染むかで選んでください。仕組みの詳細は [送信者制約](/ja/concepts/sender-constraint) を参照。FAPI プロファイルは「どちらか 1 つが有効であること」を要求し、両方とも off の状態では `op.New` が起動を拒否します。
 
 **なぜ JARM は Message Signing で必須、Baseline では任意なのか。** Message Signing の主目的は「**応答** の署名」であり、要求の署名だけではありません。完全な非否認性（nonrepudiation）を提供するのがこのバンドの役割で、authorize 応答はその契約の半分を占めています。Baseline は PAR で通信路の安全性を担保すれば足り、応答署名は 2 つ目のバンドで追加される、という整理になります。
 
-**本ライブラリにおける「禁止」の意味。** プロファイルゲートはリクエスト時ではなく `op.New` の段階で発火します — Baseline プロファイルの OP は `client_secret_basic` クライアントを登録できず、ID Token 署名 alg として `RS256` を広告できず、構成が受理される前に 1 つもトークンを発行しません。alg 禁止を支える closed enum 設計は設計判断 [#11](/ja/security/design-judgments#dj-11) に、DPoP / mTLS の disjunction を全ハンドラに対して一様に解決する `*config` ヘルパー方式は [#7](/ja/security/design-judgments#dj-7) に記録されています。
+**本ライブラリにおける「禁止」の意味。** プロファイルゲートはリクエスト時ではなく `op.New` の段階で発火します — Baseline プロファイルの OP は `client_secret_basic` クライアントを登録できず、ID トークン署名 alg として `RS256` を広告できず、構成が受理される前に 1 つもトークンを発行しません。alg 禁止を支える closed enum 設計は設計判断 [#11](/ja/security/design-judgments#dj-11) に、DPoP / mTLS の disjunction を全ハンドラに対して一様に解決する `*config` ヘルパー方式は [#7](/ja/security/design-judgments#dj-7) に記録されています。
 
 ### 続きはこちら
 
@@ -190,7 +190,7 @@ op.New(
 
 1. `feature.PAR` / `feature.JAR` / `feature.DPoP` を自動有効化。
 2. `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差。
-3. ID Token 署名 alg を `ES256` / `PS256` にロック、`RS256` での新規発行を拒否。
+3. ID トークン署名 alg を `ES256` / `PS256` にロック、`RS256` での新規発行を拒否。
 4. `redirect_uri` の完全一致を強制。
 
 プロファイルと矛盾するオプションを後から重ねると `op.New` が起動を拒否します — partial-FAPI な構成がレビューを抜けて本番に出ることはありません。

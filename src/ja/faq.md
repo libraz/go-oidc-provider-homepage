@@ -36,7 +36,7 @@ outline: 2
 |---|---|
 | `WithIssuer` | OP が署名 / 名前空間に使う識別子が無い |
 | `WithStore` | clients / codes / tokens の永続化先が無い |
-| `WithKeyset` | ID Token に署名できない |
+| `WithKeyset` | ID トークンに署名できない |
 | `WithCookieKeys` | session / CSRF cookie を封緘できない |
 
 エラーは欠けた項目名を明示するので、起動時のタイポは「実行時の謎」ではなくビルド時エラーになります。
@@ -135,7 +135,7 @@ RP 側で **非否認性 (non-repudiation)** — authorize 要求 / 応答の署
 ひとつでも欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、`refresh_token` フィールドは付きません。
 
 ::: details なぜ既定が厳しい解釈なの？
-OIDC Core 1.0 §11 は `offline_access` 無しでも refresh token を発行できる余地を残していますが、それを許すと「同意 UI が約束した範囲」と「監査ログに残る範囲」がずれます。本ライブラリは両者が初期状態から一致するように、狭い解釈を既定にしています。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
+OIDC Core 1.0 §11 は `offline_access` 無しでもリフレッシュトークンを発行できる余地を残していますが、それを許すと「同意 UI が約束した範囲」と「監査ログに残る範囲」がずれます。本ライブラリは両者が初期状態から一致するように、狭い解釈を既定にしています。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
 :::
 
 ### 「ログイン状態の維持」と通常セッションを TTL で分けたい
@@ -166,7 +166,7 @@ op.WithDPoPNonceSource(src)
 
 ### `dpop_signing_alg_values_supported` に RS256 が含まれていないのはなぜ？
 
-意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE allow-list よりも狭くしています。`RS256` は ID Token 署名では使えますが、DPoP proof は FAPI が推奨する部分集合に絞っています。
+意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE allow-list よりも狭くしています。`RS256` は ID トークン署名では使えますが、DPoP proof は FAPI が推奨する部分集合に絞っています。
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -190,7 +190,7 @@ op.WithDPoPNonceSource(src)
 
 ### `composite.New` が起動時に設定を拒否する
 
-トランザクションクラスタの不変条件があるためです — トランザクション系サブストア（clients / codes / refresh tokens / access tokens / IATs）は **同じ** バックエンドを共有する必要があります。揮発スライス（sessions / DPoP nonce キャッシュ / JAR `jti` レジストリ）だけが別バックエンドに置けます。`composite.New` は構築時にこれを検証し、トランザクションを 2 つのストアに跨がせる設定を拒否します。
+トランザクションクラスタの不変条件があるためです — トランザクション系サブストア（clients / codes / リフレッシュトークン / アクセストークン / IATs）は **同じ** バックエンドを共有する必要があります。揮発スライス（sessions / DPoP nonce キャッシュ / JAR `jti` レジストリ）だけが別バックエンドに置けます。`composite.New` は構築時にこれを検証し、トランザクションを 2 つのストアに跨がせる設定を拒否します。
 
 <div id="ui-spa" class="faq-anchor"></div>
 

@@ -104,7 +104,7 @@ demo は OFCS テストクライアントの公開鍵を保持する `op.Private
 
 `OP_PROFILE=fapi-ciba` を設定します。CIBA は fapi2-* プランと比較して 3 点で大きく異なります。
 
-- OFCS の `fapi-ciba-id1` プランは FAPI 1.0 由来の cert-bound access token 要件をハードコードしており、sender-constraint variant を提供しません。そのため demo は `feature.DPoP` ではなく `op.WithFeature(feature.MTLS)` を組み込みます。どちらも `WithProfile` の "DPoP OR MTLS" 選言制約を満たします。
+- OFCS の `fapi-ciba-id1` プランは FAPI 1.0 由来の cert-bound アクセストークン要件をハードコードしており、sender-constraint variant を提供しません。そのため demo は `feature.DPoP` ではなく `op.WithFeature(feature.MTLS)` を組み込みます。どちらも `WithProfile` の "DPoP OR MTLS" 選言制約を満たします。
 - CIBA クライアントは `/authorize` を訪れません。seed は空の `redirect_uri` 集合と絞り込まれた grant 一覧(CIBA URN + `refresh_token`)を持ちます。
 - OFCS プランは認証デバイスが実在しない状態で `auth_req_id` ポーリングループを実行します。demo は in-memory `CIBARequestStore` を `cibaAutoApproveStore` でラップし、設定可能な遅延後に out-of-band の `Approve()` をスケジュールしてデバイスコールバックをシミュレーションします。**本番組み込みでは、ユーザの実際の認証デバイスのコールバックから `Approve` を呼び出す必要があります。OP プロセス内部から呼び出してはなりません。**
 

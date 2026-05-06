@@ -62,7 +62,7 @@ OP がルータに置くものは意図的に絞られています:
 
 | OP がマウントする | OP がマウントしない |
 |---|---|
-| `/.well-known/openid-configuration` | `/metrics`（あなたが `promhttp` でマウント） |
+| `/.well-known/openid-configuration` | `/metrics`（組み込み側が `promhttp` でマウント） |
 | `/jwks` | `/healthz`、`/readyz` |
 | `/auth`、`/token`、`/userinfo` | request-duration histogram middleware |
 | `/end_session` | OpenTelemetry の HTTP サーバスパンミドルウェア |

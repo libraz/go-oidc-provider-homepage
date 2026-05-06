@@ -103,7 +103,7 @@ govulncheck ./...
 
 - `op.WithProfile(profile.FAPI2*)` が課すセキュリティゲート（PAR、JAR、DPoP、JARM、alg リスト、redirect_uri 完全一致）のバイパス。
 - アルゴリズム混同（`none`、`HS*`、またはコードベースの allow-list 外の alg を verifier に受理させる経路）。
-- トークン偽造、ID Token の署名バイパス、`iss` ミックスアップ経路。
+- トークン偽造、ID トークンの署名バイパス、`iss` ミックスアップ経路。
 - 関連 RFC が許容する範囲を超える PKCE / nonce / state replay 経路。
 - chain revocation を伴わないリフレッシュトークンの再利用。
 - 同意 / ログアウト / interaction POST に対する CSRF。

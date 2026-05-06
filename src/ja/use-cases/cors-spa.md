@@ -63,7 +63,7 @@ op.New(
 | Endpoint | CORS 有効？ | 理由 |
 |---|---|---|
 | `/.well-known/openid-configuration` | ✅ | RP / SPA が fetch する。 |
-| `/jwks` | ✅ | RP / SPA が ID Token を検証する。 |
+| `/jwks` | ✅ | RP / SPA が ID トークンを検証する。 |
 | `/userinfo` | ✅ | SPA が Bearer トークン付きで呼ぶ。 |
 | `/interaction/*`（SPA driver 使用時） | ✅ | SPA がポーリング。 |
 | `/session/*` | ✅ | SPA がセッション状態を読む。 |

@@ -7,9 +7,9 @@ description: scope を「discovery に出す（Public）」と「管理用途で
 
 ## そもそも scope とは
 
-OAuth 2.0（RFC 6749 §3.3）における **scope** は、クライアントが `/authorize` 要求に付けて *どんな種類のアクセスを要求するか* を表す文字列です（例: `email` / `profile` / `billing.read`）。OP が許可する scope を決め、access token に許可された scope が乗り、リソースサーバが API 認可判断に使います。
+OAuth 2.0（RFC 6749 §3.3）における **scope** は、クライアントが `/authorize` 要求に付けて *どんな種類のアクセスを要求するか* を表す文字列です（例: `email` / `profile` / `billing.read`）。OP が許可する scope を決め、アクセストークンに許可された scope が乗り、リソースサーバが API 認可判断に使います。
 
-OIDC Core 1.0 §5.4 は特殊な scope として `openid`（リクエストを純 OAuth から OIDC に切り替えるスイッチ）と、ユーザ claim 用の `profile` / `email` / `address` / `phone` を予約しています。それ以外は **あなた独自のカタログ** であり、本ページではこのカタログを **Public**（discovery で広告 + 同意画面に描画）と **Internal**（許可リスト経由でだけ発行・discovery には出さない）に分割する方法を扱います。
+OIDC Core 1.0 §5.4 は特殊な scope として `openid`（リクエストを純 OAuth から OIDC に切り替えるスイッチ）と、ユーザ claim 用の `profile` / `email` / `address` / `phone` を予約しています。それ以外は **OP 独自のカタログ** であり、本ページではこのカタログを **Public**（discovery で広告 + 同意画面に描画）と **Internal**（許可リスト経由でだけ発行・discovery には出さない）に分割する方法を扱います。
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §3.3（scope）
@@ -46,7 +46,7 @@ op.WithScope(op.InternalScope("internal:audit")),
 - OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します — discovery document が OIDC Discovery 1.0 §3 に違反しないようにするためです。
 
 ::: tip OIDC 標準スコープ
-`openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **あなたの** scope カタログに焦点を当てています。
+`openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **OP 独自の** scope カタログに焦点を当てています。
 :::
 
 ## カスタム claim を `Scope.Claims` で開示する
