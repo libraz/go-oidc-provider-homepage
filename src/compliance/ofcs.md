@@ -25,7 +25,7 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 
 ## Latest baseline
 
-Snapshot ID: `2026-05-06T17-25-15Z-rc21-pkjwt-jti-fix`<br/> Repository SHA: [`9f34e2f`](https://github.com/libraz/go-oidc-provider/commit/9f34e2fb92fb7ebc3f04d3e6e543c34f3e9a5f93)<br/> OFCS image: `release-v5.1.42`
+Snapshot ID: `2026-05-06T23-25-34Z-v0.9.1-rc22-security-hardening`<br/> Repository SHA: [`466deeb`](https://github.com/libraz/go-oidc-provider/commit/466deeb78450fdb60eef35811c952ac45c3657e7)<br/> OFCS image: `release-v5.1.42`
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | Total |
 |--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
