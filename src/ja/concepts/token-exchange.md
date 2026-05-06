@@ -69,7 +69,7 @@ sequenceDiagram
 - **TTL は上限で頭打ちにする**。(handler 希望、`subject_token` の残り寿命、OP のグローバル上限)の最小値まで切り詰められる。長寿命トークンをさらに長いトークンへ伸ばすロンダリングはできない。
 - **`cnf` は呼び出し actor に再バインドする**。service A が交換リクエストに DPoP proof を提示すれば、発行トークンの `cnf.jkt` は service A の DPoP 鍵に一致する — ユーザのものでも `subject_token` のものでもない。service B は新トークンの `cnf` に対して DPoP proof を検証する。
 
-これらは組み込み側が提供する [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) が呼ばれる **前** に強制されます。ポリシー側はさらに絞り込むこと(特定 audience を拒否、特定の actor 組み合わせを拒否 など)はできますが、広げることはできません — OP が計算したデフォルトが下限です。
+これらは組み込み側が提供する [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) が呼ばれる **前** に強制されます。ポリシー側はさらに絞り込むこと(特定 audience を拒否、特定の actor 組み合わせを拒否など)はできますが、広げることはできません — OP が計算したデフォルトが下限です。
 
 ## 実際に必要になるとき
 

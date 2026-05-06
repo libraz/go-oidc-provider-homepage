@@ -6,7 +6,7 @@ outline: 2
 
 # Audit イベントカタログ
 
-OP は `op/audit.go` で閉じたカタログとして定義された、構造化された 監査イベントを発火します。各イベントは `<area>.<verb>`(または `<area>.<verb>.<qualifier>`)形の安定した文字列で、SOC ダッシュボードが自由形式のメッセージを parse することなく、area 単位で集計できる形になっています。
+OP は `op/audit.go` で閉じたカタログとして定義された、構造化された監査イベントを発火します。各イベントは `<area>.<verb>`(または `<area>.<verb>.<qualifier>`)形の安定した文字列で、SOC ダッシュボードが自由形式のメッセージを parse することなく、area 単位で集計できる形になっています。
 
 ## 購読する
 
@@ -173,7 +173,7 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditClientAuthnFailure` | `/token` または `/par` がクライアントを拒否(誤った secret、期限切れ assertion、alg 不一致、`private_key_jwt` の不在 など) | warn | [ガイド: クライアントの種類](/ja/concepts/client-types) |
+| `AuditClientAuthnFailure` | `/token` または `/par` がクライアントを拒否(誤った secret、期限切れ assertion、alg 不一致、`private_key_jwt` の不在など) | warn | [ガイド: クライアントの種類](/ja/concepts/client-types) |
 
 ### DCR
 
@@ -199,7 +199,7 @@ authorize-code 発行パスと token endpoint から発火します。replay 検
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
 | `AuditDeviceAuthorizationIssued` | `/device_authorization` が新しい `device_code` + `user_code` ペアを返却 | info | [ガイド: device code](/ja/concepts/device-code) |
-| `AuditDeviceAuthorizationRejected` | `/device_authorization` がリクエストを拒否(未知 client、scope 拒否 など) | warn | [ガイド: device code](/ja/concepts/device-code) |
+| `AuditDeviceAuthorizationRejected` | `/device_authorization` がリクエストを拒否(未知 client、scope 拒否など) | warn | [ガイド: device code](/ja/concepts/device-code) |
 | `AuditDeviceAuthorizationUnboundRejected` | DPoP / mTLS の proof が必要だが `/device_authorization` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
 | `AuditDeviceCodeVerificationApproved` | 組み込み側の verification ページがユーザの承認を報告 | info | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeVerificationDenied` | 組み込み側の verification ページがユーザ拒否を報告(またはレコード単位の brute-force gate がロックアウト) | warn | [ユースケース: device code](/ja/use-cases/device-code) |

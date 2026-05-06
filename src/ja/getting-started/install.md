@@ -18,7 +18,7 @@ go get github.com/libraz/go-oidc-provider/op@latest
 | `github.com/libraz/go-oidc-provider/op` | 常に — 公開 API。 |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/inmem` | リファレンス / 開発 / テスト用 store。 |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/sql` | SQLite / MySQL / Postgres durable store。サブモジュール — 利用するまで DB driver が `go.sum` に入りません。 |
-| `github.com/libraz/go-oidc-provider/op/storeadapter/redis` | 揮発性 サブストア（interaction、消費済み JTI）。サブモジュール。 |
+| `github.com/libraz/go-oidc-provider/op/storeadapter/redis` | 揮発性サブストア（interaction、消費済み JTI）。サブモジュール。 |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/composite` | Hot/cold splitter。 |
 
 ::: tip サブモジュール

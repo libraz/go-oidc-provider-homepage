@@ -80,7 +80,7 @@ type myHintResolver struct{ /* db handle */ }
 func (r *myHintResolver) Resolve(ctx context.Context, kind op.HintKind, value string) (string, error) {
     switch kind {
     case op.HintLoginHint:
-        // value = "alice@example.com"、口座番号、ロイヤリティカード 等
+        // value = "alice@example.com"、口座番号、ロイヤリティカード等
         sub, err := r.lookupBy(ctx, value)
         if errors.Is(err, sql.ErrNoRows) {
             return "", op.ErrUnknownCIBAUser // → 通信路上の応答: unknown_user_id

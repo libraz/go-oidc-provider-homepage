@@ -66,7 +66,7 @@ sequenceDiagram
 
 ## 実装
 
-`prompt=select_account` 用の interaction はビルトイン。アクティブな chooser group の全アカウントを並べた `interaction.ChooserPromptData` エンベロープ を返します。同梱 HTML ドライバではビルトインテンプレートが一覧を描画し、ユーザは `SessionID` を POST で送り返します。JSON ドライバ(`op.WithInteractionDriver(interaction.JSONDriver{})`)では、SPA 側が同じ エンベロープ を JSON として受け取り、`SessionID` を POST で送り返します。
+`prompt=select_account` 用の interaction はビルトイン。アクティブな chooser group の全アカウントを並べた `interaction.ChooserPromptData` エンベロープを返します。同梱 HTML ドライバではビルトインテンプレートが一覧を描画し、ユーザは `SessionID` を POST で送り返します。JSON ドライバ(`op.WithInteractionDriver(interaction.JSONDriver{})`)では、SPA 側が同じエンベロープを JSON として受け取り、`SessionID` を POST で送り返します。
 
 セッションマネージャの公開 API:
 

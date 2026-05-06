@@ -121,7 +121,7 @@ http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 
 ## リクエスト ID
 
-OP は `X-Request-ID` および `Traceparent` ヘッダを、各 監査イベントと各運用ログ行に伝播します。どちらも無ければ、リクエストごとに UUID を生成します。
+OP は `X-Request-ID` および `Traceparent` ヘッダを、各監査イベントと各運用ログ行に伝播します。どちらも無ければ、リクエストごとに UUID を生成します。
 
 レスポンスにも同じ ID を返したい(RP のログと相関を取りたい)場合は、組み込み側で次のようにラップします:
 

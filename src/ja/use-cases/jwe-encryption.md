@@ -59,7 +59,7 @@ AES-256 を Galois/Counter Mode で動かしたものです。256-bit の鍵は 
 
 - `RSA1_5` — CVE-2017-11424 padding oracle。発送せず
 
-`op.WithSupportedEncryptionAlgs(algs, encs)` は広告セットを **狭める** ことだけができます（ECDH-ES + A256GCM のみ 等）。広げることはできません。allow-list 外の値は `op.New` で構成エラーになります。
+`op.WithSupportedEncryptionAlgs(algs, encs)` は広告セットを **狭める** ことだけができます（ECDH-ES + A256GCM のみなど）。広げることはできません。allow-list 外の値は `op.New` で構成エラーになります。
 
 ## encryption keyset の登録
 

@@ -98,7 +98,7 @@ default:
 - 不一致でストライクカウンタを加算し `device_code.verification.user_code_brute_force` 監査イベントを発火
 - `devicecodekit.MaxUserCodeStrikes`（既定 5）回外したら、レコードを **Denied**（理由 `"user_code_lockout"`）に遷移し `device_code.verification.denied` を発火
 
-ユーザが打ち間違いではなく **拒否** をクリックした場合は、`devicecodekit.Revoke(ctx, deps, deviceCodeID, "user_denied")` を呼んでください — 同じ 監査イベントが発火し、brute-force カウンタは触りません。
+ユーザが打ち間違いではなく **拒否** をクリックした場合は、`devicecodekit.Revoke(ctx, deps, deviceCodeID, "user_denied")` を呼んでください — 同じ監査イベントが発火し、brute-force カウンタは触りません。
 
 ### 承認後
 
