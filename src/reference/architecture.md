@@ -143,7 +143,7 @@ See [Use case: Custom authenticator](/use-cases/custom-authenticator) for how to
 
 ## Storage seams
 
-The library never reads or writes your `users` table directly. It talks to the `op.Store` interface which is the union of small substores:
+The library never reads or writes the embedder's `users` table directly. It talks to the `op.Store` interface which is the union of small substores:
 
 | Substore | What lives there | Adapter notes |
 |---|---|---|

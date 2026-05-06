@@ -96,7 +96,7 @@ OFCS のリフレッシュトークン回帰テストはローテーションと
 1. クライアントの `GrantTypes` に `refresh_token` が含まれている。
 2. 付与された scope に `openid` が含まれている（本ライブラリでリフレッシュトークンは OIDC の構成要素として扱う）。
 
-どちらか一方でも欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、**`refresh_token` フィールドは付きません** —「クライアントが `refresh_token` grant を持っていない」場合と同じ振る舞いです。アクセストークンが切れたら、RP は再度ユーザに認証を求めることになります。
+どちらか一方でも欠けると、トークンエンドポイント (`/token`) は `access_token` + `id_token` を返して成功扱いとなり、**`refresh_token` フィールドは付きません** —「クライアントが `refresh_token` grant を持っていない」場合と同じ振る舞いです。アクセストークンが切れたら、RP は再度ユーザに認証を求めることになります。
 
 OIDC Core 1.0 §11 のデフォルト(緩やかな)解釈では、`offline_access` は **発行の判定** ではありません。同意プロンプトの UX とリフレッシュトークンの寿命バケット(`WithRefreshTokenTTL` か `WithRefreshTokenOfflineTTL`)を切り替えるだけです。`offline_access` を発行ゲートにしたい場合は `op.WithStrictOfflineAccess()` をオプトインしてください — 次のセクションを参照。
 

@@ -13,7 +13,7 @@ The OP can:
 Both directions ship in v0.9.1 against a closed algorithm allow-list.
 
 ::: details JWS vs JWE — what's the difference?
-**JWS** (RFC 7515) is the JOSE format you already know: a header + payload + signature. Anyone with the key can read the payload; the signature only proves it wasn't tampered with. **JWE** (RFC 7516) wraps the payload in a ciphertext so that only the holder of the matching private key can read it. id_tokens are signed (JWS) by default; encrypting them on top means the payload becomes opaque to anything that's not the intended RP — useful when something other than the RP terminates TLS.
+**JWS** (RFC 7515 — JSON Web Signature) is the JOSE format you already know: a header + payload + signature. Anyone with the key can read the payload; the signature only proves it wasn't tampered with. **JWE** (RFC 7516 — JSON Web Encryption) wraps the payload in a ciphertext so that only the holder of the matching private key can read it. id_tokens are signed (JWS) by default; encrypting them on top means the payload becomes opaque to anything that's not the intended RP — useful when something other than the RP terminates TLS.
 :::
 
 ::: details `alg` vs `enc` — what's the difference?
@@ -21,7 +21,7 @@ JWE uses two algorithm slots, and the split confuses everyone the first time. **
 :::
 
 ::: details `use=sig` vs `use=enc` — what's that?
-A JWK can advertise its purpose via the `use` member: `sig` for signing / verifying (JWS), `enc` for encrypting / decrypting (JWE). RFC 7517 §4.2 forbids reusing the same key material across roles — a key material's algorithm parameters and threat model differ between signing and encrypting. The OP enforces this structurally: a kid that appears in both `WithKeyset` (signing) and `WithEncryptionKeyset` (encryption) fails at `op.New`.
+A JWK can advertise its purpose via the `use` member: `sig` for signing / verifying (JWS), `enc` for encrypting / decrypting (JWE). RFC 7517 (JSON Web Key) §4.2 forbids reusing the same key material across roles — a key material's algorithm parameters and threat model differ between signing and encrypting. The OP enforces this structurally: a kid that appears in both `WithKeyset` (signing) and `WithEncryptionKeyset` (encryption) fails at `op.New`.
 :::
 
 ## When you want JWE

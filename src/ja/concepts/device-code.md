@@ -54,7 +54,7 @@ sequenceDiagram
 
 ## Polling 応答
 
-token endpoint は poll ごとに以下のいずれかを返します:
+トークンエンドポイント (`/token`) は poll ごとに以下のいずれかを返します:
 
 | 応答 | 意味 | デバイスのふるまい |
 |---|---|---|

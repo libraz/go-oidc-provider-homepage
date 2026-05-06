@@ -54,7 +54,7 @@ The device never holds the user's password. The user never types anything on the
 
 ## Polling responses
 
-The token endpoint returns one of four shapes per poll:
+The token endpoint (`/token`) returns one of four shapes per poll:
 
 | Response | Meaning | What the device should do |
 |---|---|---|

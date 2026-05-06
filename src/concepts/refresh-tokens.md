@@ -92,7 +92,7 @@ By default a refresh token is issued only when **both** conditions hold:
 1. The client lists `refresh_token` in its `GrantTypes`.
 2. The granted scope contains `openid` (refresh tokens are an OIDC construct in this library).
 
-Drop either and the token endpoint succeeds with `access_token` + `id_token` and **no `refresh_token` field** — exactly mirroring the "client has no refresh_token grant" path. The RP must re-authenticate the user when the access token expires.
+Drop either and the token endpoint (`/token`) succeeds with `access_token` + `id_token` and **no `refresh_token` field** — exactly mirroring the "client has no refresh_token grant" path. The RP must re-authenticate the user when the access token expires.
 
 In the default (lax) reading of OIDC Core 1.0 §11, `offline_access` is **not** an issuance gate: it only governs consent-prompt UX and which TTL bucket the refresh token falls into (`WithRefreshTokenTTL` vs `WithRefreshTokenOfflineTTL`). To make `offline_access` a hard gate, opt in with `op.WithStrictOfflineAccess()` — see the section below.
 

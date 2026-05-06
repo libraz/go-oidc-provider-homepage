@@ -8,7 +8,7 @@ description: A recommended reading order for the concept pages. Each step builds
 This page is the **recommended reading order** for everything under `/concepts/`. The pages are arranged so each one only assumes what the earlier steps have already covered. If you read top-to-bottom you should not need to backtrack.
 
 ::: tip Read in order
-If you are new to OAuth and OIDC, start at Step 1 and walk down. Most readers get lost not because the standards are hard, but because docs jump straight into refresh tokens or DPoP without first nailing down what an "issuer" or a "redirect URI" actually is. We try to fix that here.
+If you are new to OAuth and OIDC, start at Step 1 and walk down. It is easy to get lost not because the standards are hard, but because docs jump straight into refresh tokens or DPoP without first nailing down what an "issuer" or a "redirect URI" actually is. We try to fix that here.
 :::
 
 ::: details Skip ahead if you already know X

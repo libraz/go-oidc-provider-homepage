@@ -76,7 +76,7 @@ A single piece of software can wear two hats. Your "backend for frontend" might 
 
 OAuth 2.0 is **delegated authorization** — "Alice's app gets permission to read Alice's data on Service X." OAuth 2.0 by itself does not tell the app **who Alice is**; it only hands out an opaque access token.
 
-OpenID Connect (OIDC) is **OAuth 2.0 plus identity** — the OP additionally issues an **ID Token** (a signed JWT) that says "this token was issued for user `sub=alice123`, audience `client_id=myapp`, at this time, and the following claims about her are true." OIDC adds a `userinfo` endpoint, a discovery document, RP-Initiated Logout, and a back-channel logout notification.
+OpenID Connect (OIDC) is **OAuth 2.0 plus identity** — the OP additionally issues an **ID Token** (a signed JWT) that says "this token was issued for user `sub=alice123`, audience `client_id=myapp`, at this time, and the following claims about her are true." OIDC adds a userinfo endpoint (`/userinfo`), a discovery document, RP-Initiated Logout, and a back-channel logout notification.
 
 ::: details JWT — what's that?
 A **JWT** (JSON Web Token, RFC 7519) is a string of three base64url chunks joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is what lets a receiver verify the issuer cryptographically using a public key.

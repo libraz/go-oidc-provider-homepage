@@ -121,7 +121,7 @@ sequenceDiagram
     OP->>RP: 200 { access_token, id_token, refresh_token? }
 ```
 
-The shape is similar enough that a reader can map them mentally. The decisive difference is the diagonal arrow: in Device Code the user **walks to the OP** with a code in hand; in CIBA the OP **reaches out to a device the user already trusts**.
+The shape is similar enough to map between the two mentally. The decisive difference is the diagonal arrow: in Device Code the user **walks to the OP** with a code in hand; in CIBA the OP **reaches out to a device the user already trusts**.
 
 ## Threat model side-by-side
 

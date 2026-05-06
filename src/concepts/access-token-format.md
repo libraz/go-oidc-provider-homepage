@@ -84,7 +84,7 @@ Both formats arrive as `Authorization: Bearer <opaque-string>`. RFC 6750 makes n
 | RS-side debugging | Decode the JWT and read claims directly | Must call `/introspect` |
 | Sender constraint (DPoP / mTLS) | `cnf` claim in JWT | `cnf` rebuilt from the OP-side record |
 
-The two columns are not "secure vs insecure" — both shapes are honest designs with different operational assumptions. The next two sections explain the load and revocation halves of the trade-off, since those are the ones implementers most often underweight.
+The two columns are not "secure vs insecure" — both shapes are honest designs with different operational assumptions. The next two sections explain the load and revocation halves of the trade-off, since those are the ones most often underweighted at design time.
 
 ## Where the load lands
 
