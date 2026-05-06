@@ -25,25 +25,24 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 
 ## Latest baseline
 
-Snapshot ID: `2026-05-06T12-13-25Z-v0.9.1-rc20-final-4plan`<br/> Repository SHA: [`592ab48`](https://github.com/libraz/go-oidc-provider/commit/592ab48fa071b39e0f0c8265a49fac5b09940bed)<br/> OFCS image: `release-v5.1.42`
+Snapshot ID: `2026-05-06T17-25-15Z-rc21-pkjwt-jti-fix`<br/> Repository SHA: [`9f34e2f`](https://github.com/libraz/go-oidc-provider/commit/9f34e2fb92fb7ebc3f04d3e6e543c34f3e9a5f93)<br/> OFCS image: `release-v5.1.42`
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | Total |
 |--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
 | `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |       0 |  **0** |    35 |
 | `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |  **0** |    58 |
-| `fapi2-message-signing-id1-test-plan`      |     59 |      9 |       2 |       0 |  **1** |    71 |
+| `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |       0 |  **0** |    71 |
 | `fapi-ciba-id1-test-plan`                  |     31 |      0 |       3 |       1 |  **0** |    35 |
-| **Total**                                  | **168**| **21** |   **8** |   **1** |  **1** | **199** |
+| **Total**                                  | **169**| **21** |   **8** |   **1** |  **0** | **199** |
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"primaryColor":"#0c5460","primaryTextColor":"#fff","primaryBorderColor":"#0c5460","lineColor":"#888"}}}%%
 pie showData
   title 199 modules across 4 plans
-  "PASSED" : 168
+  "PASSED" : 169
   "REVIEW (manual gate)" : 21
   "SKIPPED (refused by design)" : 8
   "WARNING (advisory)" : 1
-  "FAILED" : 1
 ```
 
 ## What each test plan covers
@@ -108,7 +107,7 @@ The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authenti
 - **REVIEW** — the test ran, but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture honestly (consent UI strings, error page screenshots, certificate chain confirmation). Not a failure.
 - **SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
 - **WARNING** — the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. We currently see one (`fapi-ciba-id1-refresh-token`) — see the section below.
-- **FAILED** — observed behaviour diverged from the spec. We currently track **1 failure** (`fapi2-message-signing-id1` refresh-token DPoP-nonce-retry path) — see the section below.
+- **FAILED** — observed behaviour diverged from the spec. The current snapshot has **0 failures** across all four plans.
 
 ### How to reproduce the conformance run yourself
 
@@ -162,15 +161,7 @@ The OP returns the right HTTP error in every case (the negative tests pass their
 
 ## Modules currently FAILED — and why
 
-### `fapi2-message-signing-id1-test-plan` (1)
-
-| Module | What it is |
-|---|---|
-| `fapi2-security-profile-id2-refresh-token` | OFCS triggers a `use_dpop_nonce` 400 on a refresh-token request, then retries the same request with the supplied nonce attached to a fresh DPoP proof. The OFCS retry reuses the **same** `client_assertion` (with the same `jti`) — and the OP's clientauth path treats that as a JTI replay and returns `invalid_client`. |
-
-The FAPI 2.0 spec is silent on whether a `client_assertion` `jti` should be considered consumed when the token endpoint returns a transient `use_dpop_nonce` challenge. Our current reading is strict: any `jti` we have observed is consumed regardless of the request outcome. OFCS's expectation is the more permissive one: `jti` should only be consumed when the assertion successfully advanced state. We track this as a known follow-up; the safe-by-default fix (admit a `jti` re-use in the narrow window between a `use_dpop_nonce` 400 and the retry) is not yet implemented.
-
-The same module on the `fapi2-security-profile-id2-test-plan` PASSES because that plan's flow does not trigger the DPoP nonce retry path.
+The current snapshot has no FAILED modules. The previous snapshot (rc20, SHA `592ab48`) carried one FAIL on `fapi2-message-signing-id1`'s `fapi2-security-profile-id2-refresh-token` — OFCS retries the same `client_assertion` after a `use_dpop_nonce` 400, and the earlier ordering consumed the assertion's `jti` before the DPoP nonce gate ran, so the retry surfaced as `invalid_client` / `ErrAssertionReplayed`. The fix lands at SHA [`9f34e2f`](https://github.com/libraz/go-oidc-provider/commit/9f34e2fb92fb7ebc3f04d3e6e543c34f3e9a5f93): every grant path now verifies the DPoP proof (and its nonce) before authenticating the client, so the assertion's `jti` is only marked when the request actually advances past the nonce challenge. RFC 9449 §8 contemplates a verbatim retry of the request body, so this is the correct reading.
 
 ## Modules currently SKIPPED — and why
 
