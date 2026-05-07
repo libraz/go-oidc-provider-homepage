@@ -22,7 +22,7 @@ OIDC Core 1.0 §5.4 reserves the special scope `openid` (which switches the requ
 - **`scopes_supported`** — A discovery field listing the scopes the OP advertises. RPs read it to know what they can request. Scopes that don't appear here can still be issued — `scopes_supported` is *advertisement*, not *authorisation*.
 :::
 
-> **Source:** [`examples/12-scopes-public-private`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-scopes-public-private)
+> **Source:** [`examples/60-scopes-public-private`](https://github.com/libraz/go-oidc-provider/tree/main/examples/60-scopes-public-private)
 
 ## The split
 

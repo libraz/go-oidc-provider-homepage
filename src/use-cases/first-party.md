@@ -41,7 +41,7 @@ op.New(
 )
 ```
 
-For listed client IDs, `/authorize` redirects back to the RP **immediately** after the login chain succeeds — no consent screen. A third-party client (not listed) still sees the consent prompt as normal.
+For listed client IDs, `/authorize` redirects back to the RP **immediately** after the login chain succeeds — no consent screen. A third-party client (not listed) still sees the consent prompt as normal. If a first-party client sends `prompt=consent`, the explicit prompt request wins and the skip is not applied.
 
 ## Audit
 

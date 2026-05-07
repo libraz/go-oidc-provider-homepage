@@ -73,7 +73,7 @@ Every handler is wrapped by:
 
 | Layer | Source | Role |
 |---|---|---|
-| **CORS** | `internal/cors` | strict allowlist for `/token`, `/userinfo`, `/revoke`, `/introspect`; public CORS for `/jwks` and discovery |
+| **CORS** | `internal/cors` | public CORS for discovery and `/jwks`; strict allowlist for `/userinfo`, `/token`, interaction/session JSON surfaces, and mounted protocol endpoints such as `/par`, `/revoke`, `/introspect`, `/register`, `/bc-authorize`, `/device_authorization`, and `/end_session` |
 | **Trusted proxy** | `internal/httpx` | resolves real client IP from `X-Forwarded-*` / `Forwarded` based on `WithTrustedProxies` |
 | **Cookie** | `internal/cookie` | `__Host-` prefix, AES-256-GCM, `SameSite=Lax` for session, `Strict` where compatible |
 | **CSRF** | `internal/csrf` | double-submit + Origin / Referer check on the consent / logout POST |
@@ -101,8 +101,8 @@ sequenceDiagram
   UA->>OP: POST /interaction/{uid} (login)
   OP->>LF: Begin / Continue (Step chain)
   LF-->>OP: Result (subject + AAL + AMR)
-  OP->>UA: 302 to /interaction/{uid}/consent
-  UA->>OP: POST consent
+  OP->>UA: 200 consent prompt at /interaction/{uid}
+  UA->>OP: POST /interaction/{uid} (consent)
   OP->>Store: Codes.Put (auth code + PKCE challenge)
   OP->>UA: 302 to redirect_uri?code=...&state=...&iss=...
   UA->>RP: arrives with code
@@ -173,6 +173,7 @@ The discovery handler at `/.well-known/openid-configuration` builds its document
 - **`response_types_supported`** is computed from `WithGrants` + the FAPI profile.
 - **`token_endpoint_auth_methods_supported`** is intersected with the FAPI allow-list when `WithProfile(profile.FAPI2Baseline)` / `FAPI2MessageSigning` is active.
 - **`scopes_supported`** is the union of built-in scopes and `WithScope` registrations.
+- **`ui_locales_supported`** is auto-derived from the runtime locale resolver (seed bundles plus `WithLocale` additions) unless `WithDiscoveryMetadata(...).UILocalesSupported` supplies an explicit non-empty override.
 - **`code_challenge_methods_supported`** is always `["S256"]` — `plain` is structurally absent.
 - **`request_object_signing_alg_values_supported`** is the JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`).
 - **`dpop_signing_alg_values_supported`** is narrower (`ES256`, `EdDSA`, `PS256`) — see [FAQ § DPoP discovery](/faq#dpop-sender-constraint).

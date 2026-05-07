@@ -154,7 +154,7 @@ Both fields can be supplied at static seed time (the `op.ClientSeed` / `store.Cl
 
 JARM signs the authorization response. [DPoP](/concepts/dpop) and [mTLS](/concepts/mtls) bind issued tokens to a key the legitimate client holds. The two layers are orthogonal — JARM protects the **handshake step that delivers the code**, sender constraint protects the **tokens issued in exchange for that code** — and FAPI 2.0 Message Signing requires both.
 
-A request that uses JARM almost always also uses [PAR](/use-cases/fapi2-baseline) and [JAR](https://datatracker.ietf.org/doc/html/rfc9101). The four together give a fully signed authorization request and a fully signed authorization response, with sender-constrained tokens at the end. The library auto-enables PAR, JAR, and JARM under `op.WithProfile(profile.FAPI2MessageSigning)` and imposes the DPoP-or-mTLS `RequiredAnyOf` constraint that picks the sender-constraint mechanism.
+A request that uses JARM almost always also uses [PAR](/use-cases/fapi2-baseline) and [JAR](https://datatracker.ietf.org/doc/html/rfc9101). The four together give a fully signed authorization request and a fully signed authorization response, with sender-constrained tokens at the end. The library auto-enables PAR, JAR, and JARM under `op.WithProfile(profile.FAPI2MessageSigning)` and imposes the DPoP-or-mTLS `RequiredAnyOf` constraint; DPoP is selected by default unless mTLS is explicitly enabled.
 
 ## Read next
 

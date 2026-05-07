@@ -180,10 +180,10 @@ case op.AuditDeviceCodeRevoked:
 
 ## 動かしてみる
 
-[`examples/30-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-device-code-cli) は RFC 8628 のフルラウンドトリップを実演します:
+[`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) は RFC 8628 のフルラウンドトリップを実演します:
 
 ```sh
-go run -tags example ./examples/30-device-code-cli
+go run -tags example ./examples/31-device-code-cli
 ```
 
 OP を起動し、boxed `user_code` パネル + `verification_uri_complete` ショートカットを表示、数秒後にブラウザ承認をシミュレートし、access_token + id_token を発行するまで poll します。ファイルはロール別に分割（`op.go` / `cli.go` / `device.go` / `probe.go`）。

@@ -68,8 +68,9 @@ op.New(
 | `/interaction/*`（SPA driver 使用時） | ✅ | SPA がポーリング。 |
 | `/session/*` | ✅ | SPA がセッション状態を読む。 |
 | `/authorize` | ❌ | ブラウザナビゲーション、XHR ではない。 |
-| `/token` | ❌ | RP は server-side、SPA は redirect 経由 `code+PKCE`、XHR ではない。 |
-| `/par`、`/introspect`、`/revoke` | ❌ | バックエンド間。 |
+| `/token` | ✅ | browser public client が `code+PKCE` を `fetch` で交換できる。backend RP は CORS ヘッダを無視する。 |
+| `/par`、`/introspect`、`/revoke`、`/register` | マウント時 ✅ | admin console やブラウザベースの harness 用に strict CORS を提供。実際の受理可否は各 protocol auth check が決める。 |
+| `/bc-authorize`、`/device_authorization`、`/end_session` | マウント時 ✅ | 通常は server-side または navigation flow だが、tooling と明示的な browser integration 向けに wrap される。 |
 
 ::: tip credentialed XHR
 CORS 層は `Access-Control-Allow-Credentials: true` を設定し、SPA の `fetch(url, { credentials: 'include' })` が OP のセッション cookie を運べるようにします。ブラウザは `Access-Control-Allow-Origin` が特定 origin（`*` ではなく）であることを要求します — ライブラリはこれに従い、マッチした要求 origin をそのまま返します。ワイルドカードは返しません。
@@ -88,7 +89,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`op.PublicClient` は SPA / native アプリ向けの typed seed で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。
+`op.PublicClient` は SPA / native アプリ向けの typed seed で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。OP の strict CORS wrapper は `/token` も覆うので、allowlist に入った SPA は JavaScript から PKCE code exchange を実行できます。
 
 OP は全クライアントで `code_challenge_method=plain` を拒否 — `S256` のみ — なので SPA の PKCE は本物の PKCE、レガシー変種ではありません。
 

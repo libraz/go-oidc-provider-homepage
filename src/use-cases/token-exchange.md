@@ -174,10 +174,10 @@ See the [audit event catalog](/reference/audit-events#token-exchange-rfc-8693) f
 
 ## See it run
 
-[`examples/32-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-token-exchange-delegation):
+[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation):
 
 ```sh
-go run -tags example ./examples/32-token-exchange-delegation
+go run -tags example ./examples/33-token-exchange-delegation
 ```
 
 Frontend → service-a → service-b chain. Service-a exchanges Alice's token for a delegated token (`act={sub: service-a}`); service-b's RS-side verifier walks `act.sub` and rejects tokens missing the chain. Files: `op.go` (OP wiring + `TokenExchangePolicy`), `service_a.go` (intermediary), `service_b.go` (resource server), `probe.go` (self-verify).

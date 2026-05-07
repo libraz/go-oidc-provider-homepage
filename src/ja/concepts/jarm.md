@@ -154,7 +154,7 @@ JARM signer は `op.New` の段階で OP の現用署名鍵を使って 1 度だ
 
 JARM は認可応答に署名し、[DPoP](/concepts/dpop) と [mTLS](/concepts/mtls) は発行されたトークンを正規クライアントが保有する鍵にバインドします。両層は直交しており — JARM は **code を配送するハンドシェイク段** を、送信者制約は **その code と引き換えに発行されるトークン** を、それぞれ守ります — FAPI 2.0 Message Signing は両方を要求します。
 
-JARM を使うリクエストはほぼ常に [PAR](/use-cases/fapi2-baseline) と [JAR](https://datatracker.ietf.org/doc/html/rfc9101) も併用します。4 つを組み合わせると、認可リクエスト全体に署名・認可応答全体に署名・最後に送信者制約付きトークン、という構図が完成します。本ライブラリは `op.WithProfile(profile.FAPI2MessageSigning)` 下で PAR / JAR / JARM を自動有効化し、DPoP もしくは mTLS のいずれかを必須とする `RequiredAnyOf` 制約を併せて課します。
+JARM を使うリクエストはほぼ常に [PAR](/use-cases/fapi2-baseline) と [JAR](https://datatracker.ietf.org/doc/html/rfc9101) も併用します。4 つを組み合わせると、認可リクエスト全体に署名・認可応答全体に署名・最後に送信者制約付きトークン、という構図が完成します。本ライブラリは `op.WithProfile(profile.FAPI2MessageSigning)` 下で PAR / JAR / JARM を自動有効化し、DPoP もしくは mTLS のいずれかを必須とする `RequiredAnyOf` 制約を併せて課します。mTLS が明示されていない場合は DPoP を既定として選びます。
 
 ## 次に読む
 

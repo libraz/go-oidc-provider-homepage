@@ -67,7 +67,9 @@ op.WithConsentUI(op.ConsentUI{
 
 The template receives the requested scopes (and any deltas relative to an existing grant), the `client_id`, the optional client logo / display name from the client metadata, and the CSRF token to embed in the form. On `POST` from the form, the library validates the CSRF, parses the approved scope set, writes the `Grant` row, and continues the authorize flow.
 
-For SPAs that render consent client-side (e.g. inside a React shell that already drives the login form), the `op.WithSPAUI(...)` option swaps the HTML template for a JSON API exposed at `/interaction`. The two options are mutually exclusive — the constructor refuses both at once. See the [SPA custom interaction use case](/use-cases/spa-custom-interaction) for that wiring.
+For SPAs that render consent client-side (e.g. inside a React shell that already drives the login form), use `op.WithSPAUI(...)` when the OP should also mount the shell and static assets. In that mode the browser lands on `LoginMount/{uid}` and the SPA fetches prompt state from `LoginMount/state/{uid}`. If your own router serves the shell, use the lower-level `op.WithInteractionDriver(interaction.JSONDriver{})` path instead; then the state endpoint remains `/interaction/{uid}`.
+
+`WithSPAUI` and `WithConsentUI` are mutually exclusive because they both own the consent rendering surface. The constructor refuses both at once. See the [SPA custom interaction use case](/use-cases/spa-custom-interaction) for the route shapes and trade-off.
 
 ## Consent revocation
 

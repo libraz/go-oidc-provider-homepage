@@ -208,7 +208,7 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 - `feature.PAR`（`FAPI2Baseline` で自動有効化） — `/par` がルート可能、`/authorize` で `request_uri` を受理
 - `feature.JAR`（`FAPI2Baseline` で自動有効化） — `request` / `request_uri` を署名 JWT として検証
 - `feature.JARM`（`FAPI2MessageSigning` で追加で自動有効化） — 認可レスポンスを JWT として署名
-- 送信者制約付きアクセストークン — 組み込み側が `WithFeature` で `feature.DPoP`（`cnf.jkt`）か `feature.MTLS`（`cnf.x5t#S256`）の **少なくとも 1 つ** を明示的に有効化する必要がある。どちらも有効化されていなければ `op.New` が構成を拒否。DPoP が有効なら discovery は `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` を宣伝
+- 送信者制約付きアクセストークン — プロファイルは DPoP-or-mTLS 要件を課します。組み込み側が `feature.MTLS`（`cnf.x5t#S256`）を明示的に有効化した場合はそれで要件を満たし、DPoP 既定は追加されません。どちらも明示されていない場合、`op.New` は `feature.DPoP`（`cnf.jkt`）を標準の既定として選ぶため、素の `op.WithProfile(profile.FAPI2Baseline)` でも sender-constrained access token 付きで起動します。DPoP が有効なら discovery は `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` を宣伝
 - JOSE alg allow-list はコードベース全体で `RS256 / PS256 / ES256 / EdDSA` にロック、`HS*` と `none` は **構造的** に到達不能（`internal/jose/alg.go` 参照）
 - `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差
 - `redirect_uri` 完全一致を強制

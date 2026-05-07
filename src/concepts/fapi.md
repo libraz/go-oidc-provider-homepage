@@ -159,7 +159,7 @@ FAPI is a *profile* — it does not reinvent OAuth or OIDC. It tightens which ex
 
 A few of those rows deserve a short prose note.
 
-**Why DPoP *or* mTLS, not both.** Both bind the issued access token to a key the legitimate client holds, so a leaked token alone is useless. The choice is operational rather than security-grade — an embedder picks whichever fits the existing PKI / proxy topology. See [Sender constraint](/concepts/sender-constraint) for the mechanics. The FAPI profile only mandates that *one* of them be active; `op.New` refuses to start a FAPI profile with neither feature flag set.
+**Why DPoP *or* mTLS, not both.** Both bind the issued access token to a key the legitimate client holds, so a leaked token alone is useless. The choice is operational rather than security-grade — an embedder picks whichever fits the existing PKI / proxy topology. See [Sender constraint](/concepts/sender-constraint) for the mechanics. The FAPI profile only mandates that *one* of them be active; when neither is explicitly configured, `op.New` chooses DPoP as the default member because it has no mTLS terminator prerequisite. An explicit `feature.MTLS` opt-in suppresses that default.
 
 **Why JARM is required for Message Signing but optional for Baseline.** Message Signing's whole purpose is signed *responses*, not just signed requests — it is the band that gives full non-repudiation, and the authorize response is half of that contract. Baseline gets channel security from PAR; the optional response signing is what the second band adds.
 
@@ -190,7 +190,7 @@ The profile call:
 
 1. Auto-enables `feature.PAR` and `feature.JAR`.
 2. Intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
-3. Requires at least one sender-constraint feature: `feature.DPoP` or `feature.MTLS`.
+3. Requires at least one sender-constraint feature: explicit `feature.MTLS` is preserved, otherwise `feature.DPoP` is selected as the canonical default.
 4. Locks OP-issued ID Tokens to `ES256`; rejects non-P-256 OP signing keys.
 5. Forces exact-match `redirect_uri` comparison.
 

@@ -88,6 +88,14 @@ op.New(
 )
 ```
 
+Local demos and CI fixtures that bind a stub RP on loopback can opt into plain HTTP only for loopback `backchannel_logout_uri` values:
+
+```go
+op.WithAllowInsecureBackchannelLogoutForDev()
+```
+
+That option widens both the registration-time URL validator and the runtime SSRF gate for `127.0.0.1`, `[::1]`, and `localhost` only. It is not a production shortcut; public hosts and non-loopback private networks still require the explicit production posture below.
+
 ## SSRF defense
 
 ::: warning Private-network destinations are refused by default

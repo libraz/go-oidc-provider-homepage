@@ -114,10 +114,10 @@ Without `binding_message` the user has only the OP's generic prompt to go on, an
 
 ## See it run
 
-[`examples/31-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-ciba-pos) ships a complete POS-terminal scenario: the POS posts to `/bc-authorize`, the staff phone (simulated by a goroutine that calls `CIBARequestStore.Approve` directly) approves the request, and the POS polls until the OP issues a token. End-to-end runtime is around five seconds.
+[`examples/32-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-ciba-pos) ships a complete POS-terminal scenario: the POS posts to `/bc-authorize`, the staff phone (simulated by a goroutine that calls `CIBARequestStore.Approve` directly) approves the request, and the POS polls until the OP issues a token. End-to-end runtime is around five seconds.
 
 ```sh
-go run -tags example ./examples/31-ciba-pos
+go run -tags example ./examples/32-ciba-pos
 ```
 
 The example is split into role-tagged files (`op.go` for the OP wiring + `HintResolver`, `rp.go` for the POS-side polling, `device.go` for the simulated phone approval).

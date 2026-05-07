@@ -26,36 +26,21 @@ Every example folder maps to one of the use-case pages below.
 
 | Use case | Example | Page |
 |---|---|---|
+| Plain OAuth 2.0 alongside OIDC | [`04-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-oauth2-only) | [OAuth 2.0 (no openid)](/use-cases/oauth2-only) |
 | FAPI 2.0 Baseline (PAR + JAR + DPoP) | [`03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2), [`50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) | [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) |
 | Service-to-service tokens | [`05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) | [client_credentials](/use-cases/client-credentials) |
-| Plain OAuth 2.0 alongside OIDC | [`15-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/15-oauth2-only) | [OAuth 2.0 (no openid)](/use-cases/oauth2-only) |
 | DPoP server nonce flow | [`51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) | [DPoP nonce flow](/use-cases/dpop-nonce) |
-
-### Grants — non-default URNs
-
-| Use case | Example | Page |
-|---|---|---|
-| Custom grant_type URN | [`19-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/19-custom-grant) | [Custom Grant](/use-cases/custom-grant) |
-| Device code (RFC 8628) | [`30-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-device-code-cli) | [Device Code](/use-cases/device-code) |
-| CIBA poll mode | [`31-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-ciba-pos) | [CIBA](/use-cases/ciba) |
-| Token Exchange (RFC 8693) | [`32-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-token-exchange-delegation) | [Token Exchange](/use-cases/token-exchange) |
-
-### Crypto & subjects
-
-| Use case | Example | Page |
-|---|---|---|
-| Pairwise subject (OIDC Core §8.1) | [`33-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-pairwise-saas) | [Pairwise subject](/use-cases/pairwise-subject) |
-| Encrypted id_token (JWE) | [`34-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-encrypted-id-token) | [JWE encryption](/use-cases/jwe-encryption) |
 
 ### UI
 
 | Use case | Example | Page |
 |---|---|---|
-| Drive UI from a SPA | [`04-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-custom-interaction) + [`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) | [SPA / custom interaction](/use-cases/spa-custom-interaction) |
+| Drive UI from a SPA | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction), [`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) | [SPA / custom interaction](/use-cases/spa-custom-interaction) |
 | Custom HTML consent page | [`11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) | [Custom consent UI](/use-cases/custom-consent-ui) |
+| Custom HTML account chooser | [`12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) | [Multi-account chooser](/use-cases/multi-account) |
 | Multi-account chooser (`prompt=select_account`) | [`13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) | [Multi-account chooser](/use-cases/multi-account) |
 | Cross-origin SPA (CORS) | [`14-cors-spa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/14-cors-spa) | [CORS for SPA](/use-cases/cors-spa) |
-| Locale negotiation | [`16-i18n-locale`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-i18n-locale) | [i18n / locale](/use-cases/i18n) |
+| Locale negotiation | [`15-i18n-locale`](https://github.com/libraz/go-oidc-provider/tree/main/examples/15-i18n-locale) | [i18n / locale](/use-cases/i18n) |
 
 ### Storage
 
@@ -68,14 +53,31 @@ Every example folder maps to one of the use-case pages below.
 
 | Use case | Example | Page |
 |---|---|---|
-| Public / internal scope split | [`12-scopes-public-private`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-scopes-public-private) | [Public / internal scopes](/use-cases/scopes) |
-| OIDC §5.5 claims request parameter | [`17-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-claims-request) | [Claims request](/use-cases/claims-request) |
+| Public / internal scope split | [`60-scopes-public-private`](https://github.com/libraz/go-oidc-provider/tree/main/examples/60-scopes-public-private) | [Public / internal scopes](/use-cases/scopes) |
+| OIDC §5.5 claims request parameter | [`61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request) | [Claims request](/use-cases/claims-request) |
 
 ### Authentication
 
 | Use case | Example | Page |
 |---|---|---|
 | MFA, captcha, step-up | [`20`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp), [`21`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa), [`22`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha), [`23`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / step-up](/use-cases/mfa-step-up) |
+| Bring your own user store | [`24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore) | [Bring your own user store](/use-cases/byo-userstore) |
+
+### Advanced grants
+
+| Use case | Example | Page |
+|---|---|---|
+| Custom grant_type URN | [`30-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-custom-grant) | [Custom Grant](/use-cases/custom-grant) |
+| Device code (RFC 8628) | [`31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) | [Device Code](/use-cases/device-code) |
+| CIBA poll mode | [`32-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-ciba-pos) | [CIBA](/use-cases/ciba) |
+| Token Exchange (RFC 8693) | [`33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) | [Token Exchange](/use-cases/token-exchange) |
+
+### Crypto & subjects
+
+| Use case | Example | Page |
+|---|---|---|
+| Pairwise subject (OIDC Core §8.1) | [`34-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-pairwise-saas) | [Pairwise subject](/use-cases/pairwise-subject) |
+| Encrypted id_token (JWE) | [`35-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/35-encrypted-id-token) | [JWE encryption](/use-cases/jwe-encryption) |
 
 ### Governance
 
@@ -95,14 +97,14 @@ Every example folder maps to one of the use-case pages below.
 
 The example folders are grouped by topic, not by chronology:
 
-| Band  | Topic                                                                |
-|-------|----------------------------------------------------------------------|
-| 00–09 | bootstrap, grant variants, storage adapters                          |
-| 10–19 | UI, scopes, SPA, locale, claims request, CORS, custom grant, BYO     |
-| 20–29 | MFA and authentication rules (TOTP / risk / captcha / step-up)       |
-| 30–39 | non-default grants + crypto (device code, CIBA, token exchange, JWE) |
-| 40–49 | governance: first-party, DCR, back-channel logout                    |
-| 50–59 | operations: FAPI helpers, metrics, tracing, DPoP nonce               |
-| 60–69 | compliance (reserved — v1.x late)                                    |
+| Band  | Topic |
+|-------|-------|
+| 00–09 | bootstrap, core flows, profiles, storage adapters |
+| 10–19 | UI and browser integration (SPA, consent, chooser, CORS, i18n) |
+| 20–29 | MFA, authentication rules, and user-store projection |
+| 30–39 | advanced grants, subject modes, encrypted tokens, federation |
+| 40–49 | governance: first-party, DCR, back-channel logout |
+| 50–59 | operations: FAPI helpers, metrics, tracing, DPoP nonce |
+| 60–69 | scopes, claims, and compliance-adjacent examples |
 
-(Reserved bands are placeholders for in-flight or v1.x work; the README in the source repo is the authoritative inventory.)
+The README in the source repo is the authoritative inventory.

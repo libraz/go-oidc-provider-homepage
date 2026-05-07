@@ -33,7 +33,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 |---|---|---|
 | Pushed Authorization Requests | RFC 9126 | プロファイルが `feature.PAR` を自動有効化。`/par` の `request_uri` が唯一の authorize 入口。 |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` 必須、`plain` 拒否。 |
-| 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | プロファイルが `RequiredAnyOf=[DPoP, MTLS]` を立て、どちらかが有効でなければ起動を拒否。 |
+| 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | プロファイルが `RequiredAnyOf=[DPoP, MTLS]` を立てる。どちらも指定されていなければ、インフラ前提の少ない DPoP を既定として自動選択。 |
 | ES256 署名 | RFC 7518 | `id_token_signing_alg_values_supported` は無条件で `["ES256"]`。`RS256` / `none` / `HS*` はそもそも公告しない。 |
 | `redirect_uri` 完全一致 | FAPI 2.0 §5.3 | ワイルドカード無し、バイト一致比較。 |
 | `private_key_jwt` または mTLS クライアント認証 | FAPI 2.0 §3.1.3 | token endpoint auth-method リストを FAPI allow-list と交差。 |
@@ -61,7 +61,6 @@ sequenceDiagram
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
-  "github.com/libraz/go-oidc-provider/op/feature"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -78,7 +77,6 @@ provider, err := op.New(
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKeys(opKeys.CookieKey),
   op.WithProfile(profile.FAPI2Baseline), // <--- プロファイル切り替え
-  op.WithFeature(feature.DPoP),          // sender-constraint binding を選択
   op.WithStaticClients(op.PrivateKeyJWTClient{
     ID:            demoClientID,
     JWKS:          clientJWKs, // 公開 JWK Set を JSON バイト列で
@@ -94,13 +92,14 @@ provider, err := op.New(
 
 `WithProfile` 呼び出しは:
 
-1. `feature.PAR` と `feature.JAR` を自動有効化（sender-constraint の binding として `feature.DPoP` か `feature.MTLS` を選ぶのは組み込み側の責務で、`WithFeature` で明示する)。
+1. `feature.PAR` と `feature.JAR` を自動有効化。
 2. `token_endpoint_auth_methods_supported` を FAPI 2.0 §3.1.3 allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差。
 3. `id_token_signing_alg_values_supported = ["ES256"]` を維持(OP は ES256 でしか id_token を署名・公告しないため、FAPI 2.0 の anti-`RS256` 条項は構造的に満たされる)。
 4. `redirect_uri` の完全一致を強制（どこにもワイルドカード無し）。
+5. DPoP-or-mTLS の送信者制約は、明示された `feature.MTLS` があればそれを尊重し、どちらも選ばれていない場合は `feature.DPoP` を追加して満たす。
 
 ::: tip DPoP の代わりに mTLS
-同じプロファイルは `RequiredAnyOf=[DPoP, MTLS]` のまま — DPoP の代わりに（または併用で）`feature.MTLS` を有効にし、TLS 終端 proxy 用に `op.WithMTLSProxy(...)` を設定してください。FAPI グレードの TLS ヘルパーは [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks)。
+プロファイルの既定 sender binding は、TLS クライアント証明書の配管が不要な DPoP です。mTLS に標準化している deployment では `feature.MTLS` を明示し、TLS 終端 proxy 用に `op.WithMTLSProxy(...)` を設定してください。その明示選択があれば DPoP 既定は追加されません。FAPI グレードの TLS ヘルパーは [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks)。
 :::
 
 ## サーフェス確認

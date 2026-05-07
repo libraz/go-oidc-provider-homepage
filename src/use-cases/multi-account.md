@@ -5,10 +5,6 @@ description: Two users, one browser. The OP keeps a chooser group and routes pro
 
 # Use case — Multi-account chooser
 
-::: warning v0.9.x — chooser template option not wired yet
-The session manager APIs and the bundled chooser interaction described below ship today. The `op.WithChooserUI` option that lets you swap in a custom template, however, is reserved for the v1.0 surface and currently causes `op.New` to return a configuration error. Until the runtime mount lands, leave the option unset and rely on the bundled chooser template.
-:::
-
 ## What is `prompt=select_account`?
 
 OIDC Core 1.0 §3.1.2.1 defines a `prompt` request parameter the RP sends with `/authorize`. Three values matter for this page:
@@ -34,7 +30,7 @@ This library implements it as a **chooser group** in the session manager: a grou
 - **`sub` (subject)** — The stable opaque identifier for the user, scoped to the OP-RP pair. Switching accounts in the chooser changes which `sub` ends up in the next `id_token` — same browser, different identity.
 :::
 
-> **Source:** [`examples/13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account)
+> **Sources:** [`examples/13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) for the JSON-driver chooser flow, and [`examples/12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) for the HTML template path.
 
 ## How it works
 
@@ -59,14 +55,16 @@ sequenceDiagram
 
   U->>OP: GET /authorize?...&prompt=select_account
   OP->>U: chooser UI showing both accounts
-  U->>OP: POST /interaction/{uid}/select { sessionID }
+  U->>OP: POST /interaction/{uid} { state_ref, values: { session_id } }
   OP->>OP: Sessions.Switch
   OP->>U: 302 RP/callback?code=... (selected sub)
 ```
 
 ## Wiring
 
-The library ships a built-in interaction for `prompt=select_account` that emits an `interaction.ChooserPromptData` envelope listing every account in the active chooser group. With the default HTML driver, the bundled template renders the list and the user POSTs back the `SessionID`. With the JSON driver (`op.WithInteractionDriver(interaction.JSONDriver{})`), the SPA receives the same envelope as JSON and posts back the `SessionID`.
+The library ships a built-in interaction for `prompt=select_account` that emits an `interaction.ChooserPromptData` envelope listing every account in the active chooser group. With the default HTML driver, the bundled template renders the list and the user POSTs back the `SessionID`. Pass `op.WithChooserUI(op.ChooserUI{Template: tmpl})` when you want to keep the server-rendered flow but own that template.
+
+With the JSON driver (`op.WithInteractionDriver(interaction.JSONDriver{})`), the SPA receives the same envelope as JSON and posts back the `SessionID`. If you use `op.WithSPAUI`, the SPA owns the chooser surface through the JSON state envelope even when `WithChooserUI` is also configured; the chooser template is shadowed and `op.New` emits a warning so the ignored template is visible in logs.
 
 The session manager exposes the orchestration:
 

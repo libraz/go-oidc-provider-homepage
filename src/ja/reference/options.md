@@ -17,7 +17,7 @@ outline: 2
 このページは、公開されている `op.With*` をすべて並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
 - **これから新規に OP を立ち上げる** → まず必須の 4 つ: [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、[`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys)。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
-- **FAPI 2.0 を 1 行で有効にしたい** → `WithProfile(profile.FAPI2Baseline)`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)。`profile.IGovHigh` は予約値で、現時点では拒否されます。[ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
+- **FAPI 2.0 を 1 行で有効にしたい** → `WithProfile(profile.FAPI2Baseline)`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)。プロファイルは mTLS が明示されていなければ DPoP を既定選択します。`profile.IGovHigh` は予約値で、現時点では拒否されます。[ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
 - **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。PKCE は標準で有効、`DynamicRegistration` は `WithDynamicRegistration` から間接的に有効化されます。
 - **`/token` で受け付ける grant の集合を絞りたい** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`。`WithDeviceCodeGrant()` / `WithCIBA(...)` / `WithCustomGrant(...)` / `RegisterTokenExchange(...)` は、それぞれ追加で必要なエンドポイントもまとめてマウントします。
 - **送信者制約付きのアクセストークンにしたい** → DPoP 系: `WithFeature(feature.DPoP)` + 必要に応じて `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`。mTLS 系: `WithFeature(feature.MTLS)` + 必要に応じて `WithMTLSProxy(headerName, trustedCIDRs)`。詳しくは[ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint)、[DPoP](/ja/concepts/dpop)、[mTLS](/ja/concepts/mtls)、[ユースケース: DPoP nonce](/ja/use-cases/dpop-nonce)。
@@ -48,7 +48,7 @@ outline: 2
 
 | Option | 値 | セクション | デフォルト |
 |---|---|---|---|
-| `WithProfile` | `profile.Profile` | セキュリティプロファイルを 1 行で有効化(FAPI 2.0 Baseline / Message Signing / FAPI-CIBA)。`profile.IGovHigh` は v2+ 向けの予約で、ランタイム制約が未着地のため `op.New` が拒否。 | なし |
+| `WithProfile` | `profile.Profile` | セキュリティプロファイルを 1 行で有効化(FAPI 2.0 Baseline / Message Signing / FAPI-CIBA)。プロファイルが DPoP-or-mTLS を要求し、mTLS が明示されていなければ DPoP を既定 sender binding として選択。`profile.IGovHigh` は v2+ 向けの予約で、ランタイム制約が未着地のため `op.New` が拒否。 | なし |
 | `WithFeature` | `feature.Flag`(1 呼び出しで 1 つ、繰り返し可) | PAR / DPoP / mTLS / JAR / JARM / introspect / revoke を個別に有効化 | 控えめなデフォルト |
 | `WithGrants` | `...grant.Type`(可変長) | `/token` で受け付ける grant を限定 | `authorization_code`、`refresh_token` |
 | `WithScope` | `op.Scope`(1 呼び出しで 1 つ。`op.PublicScope` / `op.InternalScope` コンストラクタを利用) | scope カタログを拡張 | `openid`、`profile`、`email`、`address`、`phone`、`offline_access` |
@@ -82,12 +82,14 @@ outline: 2
 
 | Option | 値 | セクション | デフォルト |
 |---|---|---|---|
-| `WithSPAUI` | `op.SPAUI`(構造体: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | v1.0 向けの予約。**現状で設定すると `op.New` は構成エラーを返します**。代わりに `WithInteractionDriver(interaction.JSONDriver{})` を渡し、SPA shell は自前のルーターで配信。 | rejected |
-| `WithConsentUI` | `op.ConsentUI`(`*html/template.Template` をラップ) | v1.0 向けの予約。**現状で設定すると `op.New` は構成エラーを返します**。文言の差し替えは `WithLocale`、markup の自前管理は JSON ドライバで対応。 | rejected |
-| `WithChooserUI` | `op.ChooserUI`(`*html/template.Template` をラップ) | v1.0 向けの予約。**現状で設定すると `op.New` は構成エラーを返します**。同梱の chooser テンプレートはそのまま動作。 | rejected |
+| `WithSPAUI` | `op.SPAUI`(構造体: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | SPA shell と静的 asset tree を OP 側で mount し、JSON interaction state surface も提供 | off |
+| `WithConsentUI` | `op.ConsentUI`(`*html/template.Template` をラップ) | 同意画面を組み込み側 template で描画。state / CSRF / 永続化は OP が担当 | bundled template |
+| `WithChooserUI` | `op.ChooserUI`(`*html/template.Template` をラップ) | `prompt=select_account` を組み込み側 template で描画 | bundled template |
 | `WithCORSOrigins` | `...string` | 厳格 CORS の許可リスト(未指定なら redirect URI から自動導出) | 自動導出 |
 | `WithDefaultLocale` | `op.Locale`(BCP 47 タグ) | `ui_locales` が無いリクエスト時の既定ロケール | `"en"` |
 | `WithLocale` | `op.LocaleBundle`(1 呼び出しで 1 つ、繰り返し可) | 同梱 HTML ドライバ用のロケール別メッセージバンドルを登録 | 英語 + 日本語 seed |
+
+`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意描画面を所有するためです。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser は JSON state envelope 経由で SPA が描画するため、chooser template は無視され、`op.New` が構造化 warning を出します。
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | §L.2 優先順序の先頭で参照されるユーザ単位ロケール上書き | なし |
 
 ## トークン
@@ -112,7 +114,7 @@ outline: 2
 | `WithClaimsSupported` | `...string`(可変長) | discovery の `claims_supported` を埋める | 省略 |
 | `WithClaimsParameterSupported` | `bool` | `claims_parameter_supported` を切り替える。`false` の場合、authorize / PAR は malformed JSON の拒否後に `claims` payload を無視する | true |
 | `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。FAPI / eIDAS / NIST 800-63 のように特定の ACR 値を honor する deployment が広告するために使う | 空(discovery に出ない) |
-| `WithDiscoveryMetadata` | `op.DiscoveryMetadata`(typed な `service_documentation` / policy / TOS / UI locale / mTLS alias フィールド + `Extra map[string]any`) | OP が所有しない RFC 8414 / OIDC Discovery metadata を discovery 文書に追加。OP 管理フィールドと衝突する `Extra` key は拒否 | なし |
+| `WithDiscoveryMetadata` | `op.DiscoveryMetadata`(typed な `service_documentation` / policy / TOS / UI locale / mTLS alias フィールド + `Extra map[string]any`) | OP が所有しない RFC 8414 / OIDC Discovery metadata を discovery 文書に追加。`UILocalesSupported` は非空時に自動導出された locale list を上書きし、OP 管理フィールドと衝突する `Extra` key は拒否 | なし |
 | `WithJWKSRotationActive` | `func() bool` | ローテーション期間中だけ JWKS の `Cache-Control` を短期キャッシュに切り替える述語 | 常に長期キャッシュ |
 
 ## subject 戦略
@@ -152,12 +154,13 @@ outline: 2
 | `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | エッジでヘッダ経由の mTLS を終端 | なし |
 | `WithTrustedProxies` | `...string`(CIDR) | `X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 | なし |
 | `WithTrustedProxyHosts` | `...string`(hostname) | trusted proxy CIDR が設定されている場合に、canonical issuer host 以外の `X-Forwarded-Host` 許可リストを追加 | issuer host のみ |
-| `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発用に `http://127.0.0.1` issuer を許容 | 厳格(HTTPS のみ) |
+| `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発 / native app デモ用に RFC 8252 の loopback 緩和へ文字列 `localhost` を追加。literal `127.0.0.1` / `[::1]` は厳格既定のまま | literal loopback のみ |
 | `WithAllowPrivateNetworkJWKS` | _(引数なし)_ | RFC 1918 上の client JWKS を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkJAR` | _(引数なし)_ | RFC 1918 上の `request_uri` を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkSector` | _(引数なし)_ | dynamic registration 時の `sector_identifier_uri` が RFC 1918 上にあることを許容(テスト / private RP network 専用) | 拒否 |
 | `WithJWKSHTTPTransport` | `http.RoundTripper` | JAR と `private_key_jwt` が使う RP 管理 JWKS fetch の transport を差し替える。dial 時の SSRF gate は維持される | system trust の transport |
 | `WithBackchannelAllowPrivateNetwork` | `bool` | RFC 1918 上の `backchannel_logout_uri` を許容(テスト専用) | false |
+| `WithAllowInsecureBackchannelLogoutForDev` | _(引数なし)_ | dev / CI fixture 用に plain-HTTP loopback の `backchannel_logout_uri` と配送を許容 | 拒否 |
 | `WithBackchannelLogoutHTTPClient` | `*http.Client` | Back-Channel ログアウト用の HTTP クライアント | デフォルト |
 | `WithBackchannelLogoutTimeout` | `time.Duration` | RP ごとの fan-out タイムアウト | 5 秒 |
 

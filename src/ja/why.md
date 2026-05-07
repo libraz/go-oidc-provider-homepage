@@ -35,13 +35,12 @@ PAR を動かし、後から JAR を思い出し、さらに discovery がまだ
 FAPI 2.0 Baseline は **PAR**（RFC 9126）、**PKCE**（RFC 7636）、**送信者制約付きトークン**（DPoP RFC 9449 もしくは mTLS RFC 8705）、OP 発行物の **ES256** 署名、`redirect_uri` の **完全一致** を必須にしています。Message Signing はそれに加えて、**JAR**（RFC 9101）と **JARM** で authorize 要求 / 応答の非否認性を要求します。手で組むと、関連オプションが 6〜7 個、discovery の整合を保つべき箇所が 3 か所あります。
 :::
 
-`op.WithProfile(profile.FAPI2Baseline)` がプロファイル側の処理をまとめて行います — PAR + JAR の自動有効化、DPoP または mTLS の要求、`token_endpoint_auth_methods_supported` を FAPI allow-list との交差で絞り込み、OP 発行 JWT の署名を ES256 に保つところまで一括です。
+`op.WithProfile(profile.FAPI2Baseline)` がプロファイル側の処理をまとめて行います — PAR + JAR の自動有効化、mTLS が明示されていない場合の DPoP 既定選択、`token_endpoint_auth_methods_supported` を FAPI allow-list との交差で絞り込み、OP 発行 JWT の署名を ES256 に保つところまで一括です。
 
 ```go
 op.New(
   /* 必須オプション */
   op.WithProfile(profile.FAPI2Baseline),
-  op.WithFeature(feature.DPoP), // または feature.MTLS
   op.WithDPoPNonceSource(nonces),
 )
 ```
@@ -99,7 +98,7 @@ op.New(
 
 次に出すべき prompt はプロトコルエンジンが決めるべきです。一方で、その prompt をどう見せるかはフロントエンドが決めるべきです。この 2 つは別の仕事です。
 
-`op.WithInteractionDriver(interaction.JSONDriver{})` でデフォルトの HTML driver を JSON 駆動に差し替えられます。SPA（React / Vue / Svelte / Angular など、フレームワーク不問）は `/interaction/{uid}/...` でプロンプトを取得し、署名済みレスポンスを返します。SPA shell は自前のルーターでマウントし、JSON state は OP に任せる構成です。
+`op.WithInteractionDriver(interaction.JSONDriver{})` でデフォルトの HTML driver を JSON 駆動に差し替えられます。SPA（React / Vue / Svelte / Angular など、フレームワーク不問）は `/interaction/{uid}` でプロンプトを取得し、署名済みレスポンスを返します。SPA shell は自前のルーターでマウントし、JSON state は OP に任せる構成です。
 
 ```go
 op.New(
@@ -111,8 +110,8 @@ router.Handle("/", spaAssets)
 router.Handle("/oidc/", provider)
 ```
 
-::: warning UI マウントオプション(`op.WithSPAUI` / `WithConsentUI` / `WithChooserUI`)はまだ未実装
-型だけが v1.0 向けに予約されており、ランタイムの mount は未実装です。これらを設定すると現状では `op.New` が構成エラーを返します。当面は `interaction.JSONDriver` を使い、SPA shell は自前のルーターから配信してください。動く構成は [ユースケース: SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) を参照してください。
+::: info UI マウントオプション
+`op.WithSPAUI` / `WithConsentUI` / `WithChooserUI` は、OP-mounted SPA shell、独自同意 template、独自アカウント chooser template のための実行可能な経路です。低レベルに制御したい場合は `interaction.JSONDriver` を使い、SPA shell を自前 router から配信できます。
 :::
 
 ::: info SPA-safe なエラー描画

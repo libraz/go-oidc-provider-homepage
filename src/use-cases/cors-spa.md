@@ -68,8 +68,9 @@ Both static and auto-derived origins land on the same internal list; duplicates 
 | `/interaction/*` (when SPA driver is in use) | ✅ | The SPA polls these. |
 | `/session/*` | ✅ | SPA reads session state. |
 | `/authorize` | ❌ | Browser navigation, not XHR. |
-| `/token` | ❌ | RPs are server-side; SPAs use `code+PKCE` via redirect, not XHR. |
-| `/par`, `/introspect`, `/revoke` | ❌ | Backend-to-backend. |
+| `/token` | ✅ | Browser public clients can redeem `code+PKCE` with `fetch`; backend RPs ignore the CORS headers. |
+| `/par`, `/introspect`, `/revoke`, `/register` | ✅ when mounted | Strict CORS is available for admin consoles and browser-based harnesses, while the protocol auth checks still decide admission. |
+| `/bc-authorize`, `/device_authorization`, `/end_session` | ✅ when mounted | Usually server-side or navigation flows, but wrapped for tooling and explicit browser integrations. |
 
 ::: tip credentialed XHR
 The CORS layer sets `Access-Control-Allow-Credentials: true` so the SPA's `fetch(url, { credentials: 'include' })` can carry the OP's session cookie. The browser also requires `Access-Control-Allow-Origin` to be a specific origin (not `*`); the library honors this — every match is the requesting origin verbatim, never a wildcard.
@@ -88,7 +89,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`op.PublicClient` is the typed seed for SPAs / native apps; it sets `token_endpoint_auth_method=none` and `public_client=true` automatically so the embedder cannot accidentally ship a SPA with confidential auth.
+`op.PublicClient` is the typed seed for SPAs / native apps; it sets `token_endpoint_auth_method=none` and `public_client=true` automatically so the embedder cannot accidentally ship a SPA with confidential auth. The OP's strict CORS wrapper covers `/token`, so an allowlisted SPA can perform the PKCE code exchange from JavaScript without a separate proxy.
 
 The OP refuses `code_challenge_method=plain` for any client — `S256` only — so the SPA's PKCE is real PKCE, not the legacy variant.
 

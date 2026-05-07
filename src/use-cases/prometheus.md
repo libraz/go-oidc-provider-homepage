@@ -46,14 +46,17 @@ These are the embedder's responsibility because they're not OIDC domain — they
 
 The exported counter set is curated and stable. The actual names are prefixed `oidc_*` — see the example for the live list. Categories:
 
-| Category | Counters / gauges |
+| Category | Counters / labels |
 |---|---|
-| Token endpoint | tokens issued / refreshed by grant_type, refresh-reuse detections, client-auth failures |
-| Authorization endpoint | authorize requests by error code, PAR submissions, JAR validations |
-| Audit | event counts by event type (`AuditTokenIssued`, `AuditTokenRefreshed`, `AuditLoginSuccess`, `AuditMFASuccess`, `AuditBCLNoSessionsForSubject`, …) |
-| Discovery | requests, JWKS rotation events |
-| DCR | registrations, updates, deletes (when feature.DynamicRegistration is on) |
-| Logout | RP-Initiated terminations, back-channel deliveries by outcome |
+| Token endpoint | `oidc_token_issued_total{grant_type,client_id}`, `oidc_tokens_refreshed_total{client_id}`, refresh / authorization-code replay detections, client-auth failures by method and reason |
+| Authentication | login attempts by result and authenticator |
+| Extension flows | DCR, Device Authorization, Device Code, CIBA, and Token Exchange event counters, labelled by the audit event sub-name |
+| Logout / revocation | back-channel delivery outcomes, no-session fan-out gaps, token / refresh-chain / grant revocation side-effect failures |
+| Operational signals | introspection authentication errors, DPoP loose-method-case bridge admissions, retired JWKS `kid` presentation |
+
+The metrics bridge is fed from the audit emitter. A single audit event updates the slog stream and the matching counter, so embedders do not need to emit metrics separately.
+
+Dynamic clients are deliberately not exposed as raw `client_id` label values. Only statically seeded client IDs are labelled; DCR-created or unknown clients collapse into the empty `client_id` bucket to keep cardinality bounded.
 
 ## Why on-the-side, not bundled
 

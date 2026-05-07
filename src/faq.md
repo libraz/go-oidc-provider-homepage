@@ -88,7 +88,7 @@ In one call, it tightens six knobs the spec mandates:
 
 | Knob | Effect |
 |---|---|
-| Feature flags | enables `feature.PAR` and `feature.DPoP` |
+| Feature flags | enables `feature.PAR` and `feature.JAR`; selects `feature.DPoP` unless `feature.MTLS` is explicitly enabled |
 | Client auth | narrows `token_endpoint_auth_methods_supported` to the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`) |
 | Alg constraints | locks signature algorithms to the FAPI subset |
 | `redirect_uri` | enforces exact match (no wildcarding) |
@@ -103,8 +103,7 @@ The profile is intentionally rigid — silently relaxing it would break the audi
 
 | Baseline | Message Signing |
 |---|---|
-| PAR + PKCE + DPoP / mTLS | + JAR (signed authorization request) |
-|  | + JARM (signed authorization response) |
+| PAR + JAR + PKCE + DPoP / mTLS | + JARM (signed authorization response) |
 
 If your RP needs **non-repudiation** of the authorization request / response — e.g. open-banking style audit chain — pick Message Signing. Otherwise Baseline is enough.
 
@@ -206,8 +205,10 @@ op.WithInteractionDriver(interaction.JSONDriver{})
 
 The JSON driver returns each prompt (`login`, `consent.scope`, `chooser`, …) as JSON at the same `/interaction/{uid}` path the HTML driver uses. The SPA — React, Vue, Svelte, Angular, or vanilla — fetches the prompt, POSTs `{state_ref, values}` back with the `X-CSRF-Token` header echoing `prompt.csrf_token` (double-submit cookie), and follows the terminal `{type:"redirect", location}` envelope.
 
-::: warning UI mount options are not wired yet
-`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` are reserved for the v1.0 surface but currently cause `op.New` to return a configuration error. Until they land, mount your SPA shell + static assets on your own router and let the OP serve the prompt JSON. See [SPA / custom interaction](/use-cases/spa-custom-interaction) and [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login).
+::: info UI mount options
+Use `op.WithSPAUI` when the OP should mount the SPA shell and JSON state surface for you. In that mode the shell lives at `LoginMount/{uid}` and prompt JSON at `LoginMount/state/{uid}`. Use `op.WithConsentUI` and `op.WithChooserUI` when you want server-rendered HTML templates for consent or account selection. The `interaction.JSONDriver` path remains available when your own router serves the shell; its state endpoint is `/interaction/{uid}`. See [SPA / custom interaction](/use-cases/spa-custom-interaction), [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login), and [`examples/12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui).
+
+`WithSPAUI` and `WithConsentUI` are mutually exclusive. `WithChooserUI` can be supplied with `WithSPAUI`, but SPA mode shadows the chooser template and emits a warning because the SPA owns the chooser surface.
 :::
 
 ::: details SPA-safe error rendering
@@ -224,9 +225,10 @@ The library auto-derives the allowlist from registered redirect URIs when you do
 
 ### Can I customise the consent screen without forking the library?
 
-Not via `op.WithConsentUI` yet. The option is reserved for v1.0 and `op.New` rejects it today. Until it lands, your two working paths are:
+Yes. There are three supported paths:
 
 - **Stay on the bundled HTML driver and rebrand via locale bundles.** `op.WithLocale` overrides any consent string by key — the seed `en` / `ja` bundles cover the rendered surface and you ship overlays for the keys you care about. See [Use case: i18n / locale negotiation](/use-cases/i18n).
+- **Pass `op.WithConsentUI` and own the template.** The OP renders your `*html/template.Template` with `ConsentTemplateData` and still owns state, CSRF, and persistence. See [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui).
 - **Switch to the JSON driver and own the markup.** `op.WithInteractionDriver(interaction.JSONDriver{})` returns the consent prompt as JSON, and your own page (or SPA) renders it. See [SPA / custom interaction](/use-cases/spa-custom-interaction).
 
 <div id="auth-mfa" class="faq-anchor"></div>

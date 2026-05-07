@@ -5,8 +5,8 @@ description: Drive login, consent, and logout from any SPA — React, Vue, Svelt
 
 # Use case — SPA / custom interaction
 
-::: warning v0.9.x — `op.WithSPAUI` is not wired yet
-The option type stays public so future plans can refer to it, but `op.New` returns a configuration error if you pass it today. The handler that would auto-mount the SPA shell, the static asset tree, and the JSON state surface under one option is reserved for the v1.0 surface. Until it lands, drive your SPA via `op.WithInteractionDriver(interaction.JSONDriver{})` and serve the SPA shell + assets from your own router. The pattern in the rest of this page reflects that.
+::: info `op.WithSPAUI` and the lower-level JSON driver
+Use `op.WithSPAUI` when you want the OP to mount the SPA shell, static asset tree, and JSON state surface together. Use `op.WithInteractionDriver(interaction.JSONDriver{})` when your own router serves the shell and you only want the OP to expose prompt JSON. This page explains the lower-level JSON-driver contract; [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) shows the OP-mounted SPA shape.
 :::
 
 ## What is the "interaction" layer?
@@ -25,15 +25,15 @@ This library models the UX as a pluggable `interaction.Driver`. The default driv
 
 ::: details Vocabulary refresher
 - **Interaction layer** — Everything between the RP's `/authorize` redirect and the OP's redirect-back-with-code: login, optional MFA step-up, optional consent, optional account chooser. The wire-protocol parameters are spec-defined; *how* the OP renders these intermediate pages is not. Each OP picks its own UX, and that's the seam this page exposes.
-- **JSON driver** — The library's pluggable interaction backend that returns prompts as JSON instead of HTML. The state machine still lives in the OP — the SPA fetches `{ kind: "login" | "consent" | ... }` and posts answers back. The OP decides what to render next.
+- **JSON driver** — The library's pluggable interaction backend that returns prompts as JSON instead of HTML. The state machine still lives in the OP — the SPA fetches `{ type: "login" | "consent.scope" | ... }` and posts answers back. The OP decides what to render next.
 - **CSP (Content Security Policy)** — A response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page is allowed to load. The OP's error page renders under a strict policy that blocks `<script>`, inline event handlers, and arbitrary URL schemes — so a hostile `error_description` cannot escalate into XSS.
 :::
 
-> **Sources:** - [`examples/04-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-custom-interaction) — minimal swap to the JSON driver. - [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) — full SPA wiring on top of the JSON driver. The bundle in the example is hand-rolled vanilla HTML/CSS/JS so it runs without a build step, but the seam is framework-neutral; React / Vue / Svelte / Angular drop in identically.
+> **Sources:** - [`examples/16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction) — minimal swap to the JSON driver. - [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) — OP-mounted SPA wiring through `op.WithSPAUI`. The bundle in the example is hand-rolled vanilla HTML/CSS/JS so it runs without a build step, but the seam is framework-neutral; React / Vue / Svelte / Angular drop in identically.
 
 ## Architecture
 
-The OP exposes the interaction state machine at `/interaction/{uid}` regardless of driver. With the JSON driver, every prompt comes back as JSON; your own router serves the SPA shell + static assets at whatever path you pick.
+With the lower-level JSON driver, the OP exposes the interaction state machine at `/interaction/{uid}` and every prompt comes back as JSON; your own router serves the SPA shell + static assets at whatever path you pick. With `op.WithSPAUI`, the OP mounts a SPA-friendly tree instead: `LoginMount/{uid}` for the shell, `LoginMount/state/{uid}` for prompt JSON, and `LoginMount/assets/{path...}` for bundled assets when `StaticDir` is set.
 
 | Method | Path | Role |
 |---|---|---|
@@ -43,7 +43,9 @@ The OP exposes the interaction state machine at `/interaction/{uid}` regardless 
 | `GET` | _your route_ | SPA shell (serves your bundle's `index.html`) |
 | `GET` | _your route_ | Static asset fan-out (your bundle) |
 
-`/authorize` redirects to `/interaction/{uid}`. Everything between the redirect and the redirect-back-with-code stays on the SPA.
+For `op.WithSPAUI(op.SPAUI{LoginMount: "/login", StaticDir: "./web/static"})`, the same state contract moves to `/login/state/{uid}` while `/login/{uid}` serves the SPA shell.
+
+In the lower-level JSON-driver shape, `/authorize` redirects to `/interaction/{uid}`. Everything between the redirect and the redirect-back-with-code stays on the SPA.
 
 ```mermaid
 sequenceDiagram
@@ -110,11 +112,11 @@ mux.Handle("/", provider)
 The OP returns the prompt JSON at `/interaction/{uid}`; your SPA bundle at `/login/...` consumes it via `fetch`. Pick the framework that fits your stack — the Go side is the same either way.
 
 ::: info Routing redirect targets to the SPA
-`/authorize` redirects to `/interaction/{uid}` by default. To send the user to your SPA shell first (so the bundle loads, then the shell calls `/interaction/{uid}` with `Accept: application/json`), serve the SPA shell at the path your SPA expects (e.g. `/login/{uid}`) and let it fetch from `/interaction/{uid}` directly. The state surface and the visual shell are decoupled by design — the OP owns the state, your router owns the visual.
+With the lower-level JSON driver, `/authorize` redirects to `/interaction/{uid}`. To send the user to your SPA shell first (so the bundle loads, then the shell calls `/interaction/{uid}` with `Accept: application/json`), serve the SPA shell at the path your SPA expects (e.g. `/login/{uid}`) and let it fetch from `/interaction/{uid}` directly. With `op.WithSPAUI`, the OP performs that shell redirect for you and the state endpoint is `LoginMount/state/{uid}`.
 :::
 
-::: info `op.WithSPAUI` (reserved)
-`op.SPAUI` will, in v1.0, carry `LoginMount`, `ConsentMount`, `LogoutMount`, and `StaticDir` so the OP can auto-mount the SPA shell, the static asset tree, and the prompt JSON under one option. Today the type stays public for forward compatibility but `op.New` rejects it; pass `interaction.JSONDriver` and your own router instead.
+::: info `op.WithSPAUI`
+`op.SPAUI` carries `LoginMount`, `ConsentMount`, `LogoutMount`, and `StaticDir` so the OP can auto-mount the SPA shell, static asset tree, and prompt JSON under one option. The JSON state endpoint is `LoginMount/state/{uid}`; pass `interaction.JSONDriver` directly only when your own router owns the shell and should fetch from `/interaction/{uid}`.
 :::
 
 ### Frontend snippet
@@ -308,4 +310,4 @@ Per-RP, the library also auto-allowlists each registered `redirect_uri`'s origin
 
 If you only need to rebrand the consent strings (translated copy, brand voice), `op.WithLocale` overlays your keys on top of the seed bundles at key granularity — the bundled HTML driver picks the overlay up automatically and you keep the bundled CSP / CSRF scheme. See [Custom consent UI](/use-cases/custom-consent-ui) and [i18n / locale negotiation](/use-cases/i18n).
 
-`op.WithConsentUI` (custom consent template) is reserved for v1.0 and currently rejected at `op.New`; until it lands, the JSON driver above is the path that lets you own the markup.
+`op.WithConsentUI` is the server-rendered path when you want to own the consent template without taking over the whole interaction transport. The JSON driver above remains the SPA path for full client-side rendering.

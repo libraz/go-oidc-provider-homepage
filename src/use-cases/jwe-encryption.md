@@ -153,10 +153,10 @@ Independent of the encryption keyset, `userinfo_signing_alg_values_supported` no
 
 ## See it run
 
-[`examples/34-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-encrypted-id-token):
+[`examples/35-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/35-encrypted-id-token):
 
 ```sh
-go run -tags example ./examples/34-encrypted-id-token
+go run -tags example ./examples/35-encrypted-id-token
 ```
 
 A paired OP+RP demo of RSA-OAEP-256 / A256GCM id_token encryption: the OP publishes its `use=enc` JWKS, the RP registers with `id_token_encrypted_response_alg=RSA-OAEP-256` + `_enc=A256GCM`, the OP wraps the id_token in JWE, and the RP-side decrypt pulls the inner JWS for verification. Files: `op.go` (OP wiring with `WithEncryptionKeyset`), `rp.go` (RP-side decrypt + signature verify), `jose.go` (key generation + JWKS marshalling).

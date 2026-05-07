@@ -86,10 +86,10 @@ Token exchange が **必要** な場合:
 
 ## 動かしてみる
 
-[`examples/32-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-token-exchange-delegation) は frontend → service-a → service-b の chain を実演します。frontend がユーザトークンを取得、service-a がそれを委譲付きトークン(`act={sub: service-a}` を伴う)に交換、service-b の RS 側 verifier が `act.sub` をたどって委譲付きトークンのみを受理します。
+[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) は frontend → service-a → service-b の chain を実演します。frontend がユーザトークンを取得、service-a がそれを委譲付きトークン(`act={sub: service-a}` を伴う)に交換、service-b の RS 側 verifier が `act.sub` をたどって委譲付きトークンのみを受理します。
 
 ```sh
-go run -tags example ./examples/32-token-exchange-delegation
+go run -tags example ./examples/33-token-exchange-delegation
 ```
 
 example はロール別ファイルに分割されています（`op.go` で OP の組み立て + `TokenExchangePolicy`、`service_a.go` で中継、`service_b.go` で resource server、`probe.go` で self-verification）。

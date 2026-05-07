@@ -46,14 +46,13 @@ handler, _ := op.New(
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(cookieKey),
-  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR, ES256, FAPI narrowing
-  op.WithFeature(feature.DPoP),           // or feature.MTLS
+  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR, DPoP default, ES256, FAPI narrowing
   op.WithStaticClients(/* private_key_jwt client with JWKS */),
 )
 ```
 
 ::: tip Why one switch is enough
-`op.WithProfile(profile.FAPI2Baseline)` activates the profile-required features (`PAR`, `JAR`), intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, requires DPoP or mTLS, and tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
+`op.WithProfile(profile.FAPI2Baseline)` activates the profile-required features (`PAR`, `JAR`), intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, selects DPoP unless mTLS was explicitly enabled, and tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
 :::
 
 ### 3. Issue tokens to backend services (no end user)
@@ -82,8 +81,8 @@ handler, _ := op.New(
 )
 ```
 
-::: warning v0.9.x — UI options not yet wired
-`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` are reserved for v1.0; calling them today makes `op.New` return a configuration error. Drive your SPA via `interaction.JSONDriver` and serve the SPA shell from your own router until the UI mounts land. See [Use case: SPA](/use-cases/spa-custom-interaction).
+::: info UI ownership options
+`op.WithSPAUI`, `op.WithConsentUI`, and `op.WithChooserUI` cover the common UI ownership modes: OP-mounted SPA shell, custom consent template, and custom account chooser template. `interaction.JSONDriver` is still the lower-level route when you want your own router to serve the shell. See [Use case: SPA](/use-cases/spa-custom-interaction) and [Custom consent UI](/use-cases/custom-consent-ui).
 :::
 
 ### 5. Persist on a real database, split hot from cold

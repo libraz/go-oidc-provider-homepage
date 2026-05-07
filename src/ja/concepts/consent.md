@@ -67,7 +67,9 @@ op.WithConsentUI(op.ConsentUI{
 
 テンプレートには、要求 scope（既存 grant に対する delta があればそれも）、`client_id`、クライアントメタデータの任意のクライアントロゴ / 表示名、フォームに埋め込む CSRF トークンが渡されます。フォームの `POST` を受けて、本ライブラリは CSRF を検証し、承認された scope 集合を解析し、`Grant` 行を書き込み、authorize フローを継続します。
 
-クライアント側で同意をレンダリングする SPA（ログインフォームを既に駆動している React シェルの中など）には、`op.WithSPAUI(...)` オプションがあります — HTML テンプレートを `/interaction` の JSON API に置き換えます。2 つのオプションは相互排他で、コンストラクタは両方同時には受け付けません。SPA の配線は [SPA カスタムインタラクションのユースケース](/ja/use-cases/spa-custom-interaction) を参照。
+クライアント側で同意をレンダリングする SPA（ログインフォームを既に駆動している React シェルの中など）では、OP に shell と静的 asset も mount させたい場合は `op.WithSPAUI(...)` を使います。このモードではブラウザは `LoginMount/{uid}` に着地し、SPA は prompt state を `LoginMount/state/{uid}` から取得します。shell を自前 router で配信する場合は、低レベルな `op.WithInteractionDriver(interaction.JSONDriver{})` 経路を使います。この場合、state endpoint は `/interaction/{uid}` のままです。
+
+`WithSPAUI` と `WithConsentUI` はどちらも同意描画面を所有するため相互排他です。コンストラクタは両方同時には受け付けません。route 形と使い分けは [SPA カスタムインタラクションのユースケース](/ja/use-cases/spa-custom-interaction) を参照してください。
 
 ## 同意の失効
 

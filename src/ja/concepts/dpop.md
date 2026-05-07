@@ -145,7 +145,7 @@ op.New(
 )
 ```
 
-`op.WithProfile(profile.FAPI2Baseline)` は PAR と JAR を自動有効化したうえで、`feature.DPoP` と `feature.MTLS` に対する `RequiredAnyOf` 制約を課します。組み込み側は送信者制約として少なくとも一方を明示的に有効化する必要があり、`op.New` が構築時に組み合わせを検証します。
+`op.WithProfile(profile.FAPI2Baseline)` は PAR と JAR を自動有効化したうえで、`feature.DPoP` と `feature.MTLS` に対する `RequiredAnyOf` 制約を課します。どちらの送信者 binding も指定されていなければ、`op.New` は DPoP を既定メンバーとして選びます。`feature.MTLS` を明示している場合はそれで制約を満たすため、DPoP は追加されません。
 
 ## DPoP が向いているケース
 

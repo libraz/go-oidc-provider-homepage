@@ -180,10 +180,10 @@ A library-side `IssuedAccessTokens(deviceCodeID) []string` substore extension an
 
 ## See it run
 
-[`examples/30-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-device-code-cli) drives the full RFC 8628 round trip:
+[`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) drives the full RFC 8628 round trip:
 
 ```sh
-go run -tags example ./examples/30-device-code-cli
+go run -tags example ./examples/31-device-code-cli
 ```
 
 The example boots the OP, prints a boxed `user_code` panel + `verification_uri_complete` shortcut, simulates browser approval after a few seconds, and polls until the OP issues an access_token + id_token. Files are split by role (`op.go` / `cli.go` / `device.go` / `probe.go`).

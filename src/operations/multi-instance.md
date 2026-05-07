@@ -60,7 +60,7 @@ Use `WithSessionDurabilityPosture(...)` to annotate the choice in audit events (
 
 ## Interaction state
 
-The `/interaction/{uid}/...` flow stores per-attempt state under a `uid` cookie. With a single replica, this can live in process memory. With N replicas, you have two options:
+The `/interaction/{uid}` flow stores per-attempt state under a `uid` cookie. With a single replica, this can live in process memory. With N replicas, you have two options:
 
 1. **Sticky sessions on the load balancer.** Route every request carrying the same `uid` cookie to the same replica. Simple but replica failure mid-login surfaces as a generic error to the user.
 2. **Shared interaction store.** Implement `store.InteractionStore` against Redis (or use the bundled Redis adapter). Any replica can resume any login. This is the default recommendation for production.
@@ -89,7 +89,7 @@ Rotation across N replicas: deploy `WithCookieKeys(new, old)` to every replica s
 | `/authorize`, `/par`, `/end_session` | no, **if** interaction state lives in shared Redis; yes if process-local |
 | `/token`, `/userinfo`, `/introspect`, `/revoke` | no |
 | `/register`, `/register/{client_id}` | no |
-| `/interaction/{uid}/...` | sticky to the replica the `/authorize` redirect landed on, **unless** Redis-backed |
+| `/interaction/{uid}` | sticky to the replica the `/authorize` redirect landed on, **unless** Redis-backed |
 
 The simplest production shape: round-robin everywhere + Redis-backed interaction store. The next-simplest: sticky on the `uid` cookie and process-local interaction state.
 

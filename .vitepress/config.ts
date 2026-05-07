@@ -265,6 +265,7 @@ export default withMermaid(
                   text: 'Authentication',
                   items: [
                     { text: 'MFA / step-up', link: '/use-cases/mfa-step-up' },
+                    { text: 'Bring your own user store', link: '/use-cases/byo-userstore' },
                     { text: 'Custom authenticator', link: '/use-cases/custom-authenticator' }
                   ]
                 },
@@ -551,6 +552,7 @@ export default withMermaid(
                 text: 'Authentication',
                 items: [
                   { text: 'MFA / step-up', link: '/use-cases/mfa-step-up' },
+                  { text: 'Bring your own user store', link: '/use-cases/byo-userstore' },
                   { text: 'Custom authenticator', link: '/use-cases/custom-authenticator' }
                 ]
               },
@@ -838,6 +840,10 @@ export default withMermaid(
                   text: '認証',
                   items: [
                     { text: 'MFA / ステップアップ', link: '/ja/use-cases/mfa-step-up' },
+                    {
+                      text: '既存ユーザーストアの投影',
+                      link: '/ja/use-cases/byo-userstore'
+                    },
                     {
                       text: 'カスタム authenticator',
                       link: '/ja/use-cases/custom-authenticator'
@@ -1157,6 +1163,10 @@ export default withMermaid(
                 text: '認証',
                 items: [
                   { text: 'MFA / ステップアップ', link: '/ja/use-cases/mfa-step-up' },
+                  {
+                    text: '既存ユーザーストアの投影',
+                    link: '/ja/use-cases/byo-userstore'
+                  },
                   { text: 'カスタム authenticator', link: '/ja/use-cases/custom-authenticator' }
                 ]
               },

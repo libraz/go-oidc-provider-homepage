@@ -88,7 +88,7 @@ op.New(
 
 When the OP terminates TLS itself (test environments, single-tenant on-prem deployments), the `WithMTLSProxy` line can be omitted — the OP reads the certificate directly from `http.Request.TLS.PeerCertificates`.
 
-`op.WithProfile(profile.FAPI2Baseline)` does **not** auto-enable `feature.MTLS`; the profile imposes `RequiredAnyOf` over `[DPoP, MTLS]` and the embedder picks one (or both). Enabling both publishes both binding mechanisms in discovery; the client then chooses per request.
+`op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[DPoP, MTLS]`. If neither is explicit, the profile selects DPoP as the default member. Deployments that want mTLS should enable `feature.MTLS`; that explicit choice satisfies the constraint and suppresses the DPoP default. Enabling both publishes both binding mechanisms in discovery; the client then chooses per request.
 
 ## Pitfalls
 

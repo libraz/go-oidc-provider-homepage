@@ -35,13 +35,12 @@ You can make PAR work, then later remember JAR, then later discover that discove
 FAPI 2.0 Baseline mandates **PAR** (RFC 9126) for authorization requests, **PKCE** (RFC 7636), **sender-constrained tokens** via DPoP (RFC 9449) or mTLS (RFC 8705), **ES256** OP signing, and **redirect_uri exact match**. Message Signing additionally requires **JAR** (RFC 9101) and **JARM** for non-repudiation of authorize request/response. Toggling these by hand is a half-dozen options and three places the discovery document needs to agree.
 :::
 
-`op.WithProfile(profile.FAPI2Baseline)` does the profile work — auto-enables PAR + JAR, requires DPoP or mTLS, intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and keeps OP-issued JWT signing on ES256.
+`op.WithProfile(profile.FAPI2Baseline)` does the profile work — auto-enables PAR + JAR, selects DPoP unless mTLS is explicitly enabled, intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and keeps OP-issued JWT signing on ES256.
 
 ```go
 op.New(
   /* required options */
   op.WithProfile(profile.FAPI2Baseline),
-  op.WithFeature(feature.DPoP), // or feature.MTLS
   op.WithDPoPNonceSource(nonces),
 )
 ```
@@ -99,7 +98,7 @@ op.New(
 
 The protocol engine should decide what prompt is next; your frontend should decide how it looks. Those are separate jobs.
 
-`op.WithInteractionDriver(interaction.JSONDriver{})` swaps the default HTML driver for a JSON one — the SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}/...` for the prompts and posts back signed responses. Mount the SPA shell on your own router; the OP serves the JSON state surface.
+`op.WithInteractionDriver(interaction.JSONDriver{})` swaps the default HTML driver for a JSON one — the SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}` for prompts and posts back signed responses. Mount the SPA shell on your own router; the OP serves the JSON state surface.
 
 ```go
 op.New(
@@ -111,8 +110,8 @@ router.Handle("/", spaAssets)
 router.Handle("/oidc/", provider)
 ```
 
-::: warning UI mounts (`op.WithSPAUI` / `WithConsentUI` / `WithChooserUI`) are not wired yet
-The option shapes are reserved for the v1.0 surface but the runtime mounts have not landed. Calling any of them today causes `op.New` to return a configuration error. Use `interaction.JSONDriver` plus your own router for now; see [Use case: SPA / custom interaction](/use-cases/spa-custom-interaction) for the working pattern.
+::: info UI mount options
+`op.WithSPAUI`, `op.WithConsentUI`, and `op.WithChooserUI` are runnable integration points. Use `WithSPAUI` when the OP should mount a SPA shell, `WithConsentUI` for a server-rendered consent template, and `WithChooserUI` for a server-rendered account chooser. The lower-level `interaction.JSONDriver` remains available when you want to own the router and state fetch loop yourself.
 :::
 
 ::: info SPA-safe error rendering

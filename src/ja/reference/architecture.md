@@ -73,7 +73,7 @@ flowchart TB
 
 | Layer | ソース | 役割 |
 |---|---|---|
-| **CORS** | `internal/cors` | `/token`、`/userinfo`、`/revoke`、`/introspect` には厳格な許可リスト。`/jwks` と discovery は public CORS |
+| **CORS** | `internal/cors` | discovery と `/jwks` は public CORS。`/userinfo`、`/token`、interaction/session JSON surface、マウント済み protocol endpoint（`/par`、`/revoke`、`/introspect`、`/register`、`/bc-authorize`、`/device_authorization`、`/end_session` など）は厳格な許可リスト |
 | **信頼プロキシ** | `internal/httpx` | `WithTrustedProxies` を元に、`X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 |
 | **Cookie** | `internal/cookie` | `__Host-` プリフィックス、AES-256-GCM、session は `SameSite=Lax`、互換可能なところは `Strict` |
 | **CSRF** | `internal/csrf` | consent / logout の POST に対して double-submit + Origin / Referer チェック |
@@ -101,8 +101,8 @@ sequenceDiagram
   UA->>OP: POST /interaction/{uid} (login)
   OP->>LF: Begin / Continue (Step chain)
   LF-->>OP: Result (subject + AAL + AMR)
-  OP->>UA: 302 to /interaction/{uid}/consent
-  UA->>OP: POST consent
+  OP->>UA: 200 consent prompt at /interaction/{uid}
+  UA->>OP: POST /interaction/{uid} (consent)
   OP->>Store: Codes.Put (auth code + PKCE challenge)
   OP->>UA: 302 to redirect_uri?code=...&state=...&iss=...
   UA->>RP: code 付きで戻る
@@ -173,6 +173,7 @@ internal/authn/CompiledLoginFlow
 - **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。
 - **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `FAPI2MessageSigning` が有効なときに FAPI の許可リストと交差します。
 - **`scopes_supported`** は組み込みの scope と `WithScope` で登録された scope の和集合です。
+- **`ui_locales_supported`** は runtime locale resolver（seed bundle + `WithLocale` 追加分）から自動導出されます。`WithDiscoveryMetadata(...).UILocalesSupported` に非空の明示リストを渡した場合だけ、それが優先されます。
 - **`code_challenge_methods_supported`** は常に `["S256"]` です。`plain` は構造的に存在しません。
 - **`request_object_signing_alg_values_supported`** は JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)です。
 - **`dpop_signing_alg_values_supported`** はそれより狭い集合 (`ES256`、`EdDSA`、`PS256`)です。理由は [FAQ § DPoP discovery](/ja/faq#dpop-sender-constraint) を参照。

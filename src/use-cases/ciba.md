@@ -181,7 +181,7 @@ If your RP currently reads `amr` from a CIBA id_token, expect an empty / absent 
 `op.WithProfile(profile.FAPICIBA)` graduates from placeholder to enforced in v0.9.1. Activating it pins:
 
 - `RequiredFeatures` = `[JAR]` — `/bc-authorize` requests must be JWT-Secured (RFC 9101).
-- `RequiredAnyOf` = `[[DPoP, MTLS]]` — sender constraint is mandatory.
+- `RequiredAnyOf` = `[[DPoP, MTLS]]` — sender constraint is mandatory; DPoP is selected by default unless the deployment explicitly enables mTLS.
 - `MaxAccessTokenTTL` = 10 min.
 - Client authentication = `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` (the FAPI 2.0 set; `client_secret_basic` rejected).
 - `RequiresAccessTokenRevocation` = true.
@@ -213,10 +213,10 @@ A request that repeats `client_id`, `login_hint`, `id_token_hint`, `login_hint_t
 
 ## See it run
 
-[`examples/31-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-ciba-pos):
+[`examples/32-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-ciba-pos):
 
 ```sh
-go run -tags example ./examples/31-ciba-pos
+go run -tags example ./examples/32-ciba-pos
 ```
 
 A POS terminal posts to `/bc-authorize`; a goroutine standing in for the staff phone calls `CIBARequestStore.Approve` directly; the POS polls until the OP issues the token. End-to-end ≈ 5 seconds. Files: `op.go` (OP wiring + `HintResolver`), `rp.go` (POS-side polling), `device.go` (simulated phone approval).

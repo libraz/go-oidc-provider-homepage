@@ -53,7 +53,7 @@ TLS protects the token while it is on the wire. Once the request reaches the app
 | FAPI 2.0 Baseline acceptance | Yes | Yes |
 | FAPI 2.0 Message Signing | Yes (with §8 / §9 nonce) | Yes |
 
-FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]` and rejects the configuration at construction time if neither is enabled.
+FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]`. If neither is enabled, construction now selects `feature.DPoP` as the default member; if you explicitly enable `feature.MTLS`, that choice satisfies the disjunction and DPoP is not added.
 
 ## Choosing between them
 

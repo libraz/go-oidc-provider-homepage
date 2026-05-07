@@ -53,7 +53,7 @@ TLS は通信路上のトークンを保護します。一度アプリ層(OP、R
 | FAPI 2.0 Baseline 受理 | 可 | 可 |
 | FAPI 2.0 Message Signing | 可(§8 / §9 nonce 併用) | 可 |
 
-FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトークンを要求し、本ライブラリは両方を受理します。`op.WithProfile(profile.FAPI2Baseline)` は `[feature.DPoP, feature.MTLS]` に対する `RequiredAnyOf` を課し、いずれも有効化されていなければ構築時に構成を拒否します。
+FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトークンを要求し、本ライブラリは両方を受理します。`op.WithProfile(profile.FAPI2Baseline)` は `[feature.DPoP, feature.MTLS]` に対する `RequiredAnyOf` を課します。どちらも有効化されていなければ構築時に `feature.DPoP` を既定メンバーとして選びます。`feature.MTLS` を明示している場合はそれで制約を満たすため、DPoP は追加されません。
 
 ## 使い分けの指針
 

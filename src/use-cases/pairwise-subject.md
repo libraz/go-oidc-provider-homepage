@@ -125,10 +125,10 @@ When two RPs separately observe an authenticated user and compare notes, they ca
 
 ## See it run
 
-[`examples/33-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-pairwise-saas):
+[`examples/34-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-pairwise-saas):
 
 ```sh
-go run -tags example ./examples/33-pairwise-saas
+go run -tags example ./examples/34-pairwise-saas
 ```
 
 Two tenants in distinct sectors observe `A != B` (different sector → different sub) and `A1 == A2` (same sector + same user → identical sub), satisfying both the privacy and determinism properties of OIDC Core §8.1. Files: `op.go` (OP wiring with `WithPairwiseSubject`), `probe.go` (self-verify the two properties).

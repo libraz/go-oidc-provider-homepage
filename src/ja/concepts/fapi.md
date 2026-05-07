@@ -159,7 +159,7 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 
 いくつかの行については本文で補足しておきます。
 
-**なぜ DPoP **か** mTLS のどちらか、で十分なのか。** いずれも発行されたアクセストークンを、正規クライアントが保有する鍵にバインドする仕組みで、トークンが漏れても鍵がなければ使えません。選択は安全性ではなく運用上の都合で決まります — 既存 PKI / proxy 構成にどちらが馴染むかで選んでください。仕組みの詳細は [送信者制約](/ja/concepts/sender-constraint) を参照。FAPI プロファイルは「どちらか 1 つが有効であること」を要求し、両方とも off の状態では `op.New` が起動を拒否します。
+**なぜ DPoP **か** mTLS のどちらか、で十分なのか。** いずれも発行されたアクセストークンを、正規クライアントが保有する鍵にバインドする仕組みで、トークンが漏れても鍵がなければ使えません。選択は安全性ではなく運用上の都合で決まります — 既存 PKI / proxy 構成にどちらが馴染むかで選んでください。仕組みの詳細は [送信者制約](/ja/concepts/sender-constraint) を参照。FAPI プロファイルは「どちらか 1 つが有効であること」を要求します。どちらも明示されていない場合、`op.New` は mTLS 終端の前提が不要な DPoP を既定メンバーとして選びます。`feature.MTLS` を明示した場合は、その選択が尊重され DPoP 既定は追加されません。
 
 **なぜ JARM は Message Signing で必須、Baseline では任意なのか。** Message Signing の主目的は「**応答** の署名」であり、要求の署名だけではありません。完全な非否認性（nonrepudiation）を提供するのがこのバンドの役割で、authorize 応答はその契約の半分を占めています。Baseline は PAR で通信路の安全性を担保すれば足り、応答署名は 2 つ目のバンドで追加される、という整理になります。
 
@@ -190,7 +190,7 @@ op.New(
 
 1. `feature.PAR` / `feature.JAR` を自動有効化。
 2. `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差。
-3. `feature.DPoP` または `feature.MTLS` の少なくとも一方を送信者制約として要求。
+3. 送信者制約 feature として、明示された `feature.MTLS` を尊重し、未指定なら `feature.DPoP` を既定として選ぶ。
 4. OP 発行 ID トークンを `ES256` にロックし、P-256 でない OP 署名鍵を拒否。
 5. `redirect_uri` の完全一致を強制。
 

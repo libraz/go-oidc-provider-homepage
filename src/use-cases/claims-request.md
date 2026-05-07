@@ -27,7 +27,7 @@ This is most useful for two cases:
 - **Essential vs voluntary** — `{"essential": true}` makes the OP refuse the request if the claim isn't available; `{"essential": false}` (or `null`) lets the OP omit it silently.
 :::
 
-> **Source:** [`examples/17-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-claims-request)
+> **Source:** [`examples/61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request)
 
 ## Wiring
 

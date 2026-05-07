@@ -88,7 +88,7 @@ op.New(
 
 OP が自前で TLS を終端する環境(テスト、シングルテナント on-prem 等)では、`WithMTLSProxy` 行は省略可能です — ライブラリは `http.Request.TLS.PeerCertificates` から直接証明書を読みます。
 
-`op.WithProfile(profile.FAPI2Baseline)` は `feature.MTLS` を **自動有効化しません**。プロファイルは `[DPoP, MTLS]` に対する `RequiredAnyOf` だけを課し、組み込み側がいずれか(あるいは両方)を選びます。両方を有効化すれば discovery に両方のバインド方式が出るので、クライアントがリクエストごとに選べるようになります。
+`op.WithProfile(profile.FAPI2Baseline)` は `[DPoP, MTLS]` に対する `RequiredAnyOf` を課します。どちらも明示しなければ、プロファイルは DPoP を既定メンバーとして選びます。mTLS を使う deployment は `feature.MTLS` を明示してください。その場合は mTLS が制約を満たすため DPoP 既定は追加されません。両方を有効化すれば discovery に両方のバインド方式が出るので、クライアントがリクエストごとに選べるようになります。
 
 ## 落とし穴
 

@@ -33,7 +33,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 |---|---|---|
 | Pushed Authorization Requests | RFC 9126 | `feature.PAR` auto-enabled by the profile. `request_uri` returned from `/par` is the only authorize entry. |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` required; `plain` rejected. |
-| Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | Profile flags `RequiredAnyOf=[DPoP, MTLS]`; the constructor refuses to start unless one is enabled. |
+| Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | Profile flags `RequiredAnyOf=[DPoP, MTLS]`; if neither is configured, the constructor auto-selects DPoP as the no-infrastructure default. |
 | ES256 signing | RFC 7518 | `id_token_signing_alg_values_supported` is `["ES256"]` unconditionally; `RS256` / `none` / HS* never advertised. |
 | `redirect_uri` exact match | FAPI 2.0 §5.3 | No wildcards. Byte-identical comparison. |
 | `private_key_jwt` or mTLS client auth | FAPI 2.0 §3.1.3 | Token endpoint auth-method list intersected with FAPI allow-list. |
@@ -61,7 +61,6 @@ sequenceDiagram
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
-  "github.com/libraz/go-oidc-provider/op/feature"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -78,7 +77,6 @@ provider, err := op.New(
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKeys(opKeys.CookieKey),
   op.WithProfile(profile.FAPI2Baseline), // <--- the profile switch
-  op.WithFeature(feature.DPoP),          // pick the sender-constraint binding
   op.WithStaticClients(op.PrivateKeyJWTClient{
     ID:            demoClientID,
     JWKS:          clientJWKs, // public JWK Set as JSON bytes
@@ -94,13 +92,14 @@ provider, err := op.New(
 
 The `WithProfile` call:
 
-1. Enables `feature.PAR` and `feature.JAR` automatically (the embedder still picks the sender-constraint binding — `feature.DPoP` or `feature.MTLS` — explicitly via `WithFeature`).
+1. Enables `feature.PAR` and `feature.JAR` automatically.
 2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §3.1.3 allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
 3. Keeps `id_token_signing_alg_values_supported = ["ES256"]` (the OP only ever advertises and signs `ES256` id_tokens; FAPI 2.0's anti-`RS256` clause is satisfied by construction).
 4. Forces `redirect_uri` exact match (no wildcards anywhere).
+5. Satisfies the DPoP-or-mTLS sender-constraint requirement by preserving an explicit `feature.MTLS` opt-in when present, or by adding `feature.DPoP` when neither binding was selected.
 
 ::: tip mTLS instead of DPoP
-The same profile leaves `RequiredAnyOf=[DPoP, MTLS]` — enable `feature.MTLS` instead of (or alongside) DPoP and configure `op.WithMTLSProxy(...)` for a TLS-terminating proxy. See [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) for FAPI-grade TLS helpers.
+The profile's default sender binding is DPoP because it needs no TLS client-certificate plumbing. If your deployment standardizes on mTLS, enable `feature.MTLS` explicitly and configure `op.WithMTLSProxy(...)` for a TLS-terminating proxy; that explicit choice suppresses the DPoP default. See [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) for FAPI-grade TLS helpers.
 :::
 
 ## Verifying the surface

@@ -1,19 +1,15 @@
 ---
 title: Custom consent UI
-description: The op.WithConsentUI option shape is reserved for v1.0; today, customise consent via locale bundles or the JSON driver.
+description: Customise consent with op.WithConsentUI, locale bundles, or the JSON driver.
 ---
 
 # Use case — Custom consent UI
-
-::: warning v0.9.x — `op.WithConsentUI` is not wired yet
-The option type stays public so future plans can refer to it, but `op.New` returns a configuration error if you pass it today. The handler that would render embedder-supplied consent templates is reserved for the v1.0 surface and has not landed. Use one of the two paths below instead.
-:::
 
 ## What is "consent" in OIDC?
 
 After the user authenticates, OIDC Core 1.0 §3.1.2.4 expects the OP to ask **the user — not the RP — whether to release the requested scopes** (`profile`, `email`, anything else the RP listed). The user clicks "Approve" or "Deny", and only then does the OP redirect back with a code. This page exists *between* login and the redirect.
 
-The bundled consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n. Until `op.WithConsentUI` lands, the working paths are locale bundle overlays (small changes) or the JSON driver (full SPA control).
+The bundled consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n. For small copy changes, locale bundle overlays are enough. For a branded server-rendered page, pass `op.WithConsentUI`. For full client-side rendering, use the JSON driver.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent prompt)
@@ -47,7 +43,22 @@ Bundle keys follow the surface they render — see [Use case: i18n / locale nego
 
 This path keeps the bundled HTML driver, the bundled CSP, and the bundled CSRF / cookie scheme. You only change strings.
 
-## Path 2 — JSON driver (full markup control)
+## Path 2 — Custom consent template (server-rendered)
+
+When you want branded HTML but still want the OP to own state, CSRF, and consent persistence, pass `op.WithConsentUI` with a parsed `*html/template.Template`. The template receives `interaction.ConsentTemplateData`, including `Client`, `Scopes`, `StateRef`, `CSRFToken`, `ApprovedScopesField`, `SubmitMethod`, and `SubmitAction`.
+
+```go
+tmpl := template.Must(template.ParseFiles("consent.html"))
+
+op.New(
+  /* required options */
+  op.WithConsentUI(op.ConsentUI{Template: tmpl}),
+)
+```
+
+See [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) for the form field shape.
+
+## Path 3 — JSON driver (full markup control)
 
 If you need to own the markup (custom layout, brand assets, framework-rendered consent), switch to the JSON driver. The OP returns the consent prompt as `{ type: "consent.scope", data: { scopes: [...] }, csrf_token, ... }` JSON; your page or SPA renders it and posts the user's choice back.
 
@@ -73,10 +84,6 @@ The SPA echoes `prompt.csrf_token` into the `X-CSRF-Token` header on submission;
 | Rendering the redirect back to the RP after approval | yes |
 
 The locale bundle path keeps the bundled CSP (`default-src 'none'; style-src 'unsafe-inline'`) and the rendered HTML; the JSON driver path lets your own page set the CSP it needs.
-
-## When `op.WithConsentUI` lands (v1.0)
-
-The reserved option ships an embedder-supplied `*html/template.Template` and a canonical context (`Client`, `Scopes`, `CSRFToken`, `User`). Until the handler is wired, the template never executes, so `op.New` rejects the option at construction time rather than letting embedders believe their template is rendering. Pages that previously used `WithConsentUI` should pick one of the two paths above for now and revisit when v1.0 lands.
 
 ## Read next
 

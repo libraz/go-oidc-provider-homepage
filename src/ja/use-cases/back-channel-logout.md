@@ -88,6 +88,14 @@ op.New(
 )
 ```
 
+loopback 上に stub RP を立てるローカル demo や CI fixture では、loopback の `backchannel_logout_uri` に限って plain HTTP を許容できます。
+
+```go
+op.WithAllowInsecureBackchannelLogoutForDev()
+```
+
+このオプションは、登録時 URL validator と実行時 SSRF gate の両方を `127.0.0.1`、`[::1]`、`localhost` に限って広げます。本番用の近道ではありません。public host と loopback 以外の private network は、下記の本番向け posture を別途明示する必要があります。
+
 ## SSRF 防御
 
 ::: warning デフォルトでプライベートネットワーク宛先を拒否

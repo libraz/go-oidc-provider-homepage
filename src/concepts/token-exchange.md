@@ -86,10 +86,10 @@ You probably **do** need it when:
 
 ## See it run
 
-[`examples/32-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-token-exchange-delegation) ships a frontend → service-a → service-b chain. The frontend obtains a user token, service-a exchanges it for a delegated token (with `act={sub: service-a}`), service-b's RS-side verifier walks `act.sub` and accepts only delegated tokens.
+[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) ships a frontend → service-a → service-b chain. The frontend obtains a user token, service-a exchanges it for a delegated token (with `act={sub: service-a}`), service-b's RS-side verifier walks `act.sub` and accepts only delegated tokens.
 
 ```sh
-go run -tags example ./examples/32-token-exchange-delegation
+go run -tags example ./examples/33-token-exchange-delegation
 ```
 
 The example is split into role-tagged files (`op.go` for the OP wiring + `TokenExchangePolicy`, `service_a.go` for the intermediary, `service_b.go` for the resource server, `probe.go` for self-verification).

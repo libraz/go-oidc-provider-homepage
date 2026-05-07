@@ -154,10 +154,10 @@ The OP records each refresh token's parent so a rotation produces a chain (`A â†
 
 ## See it run
 
-[`examples/19-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/19-custom-grant):
+[`examples/30-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-custom-grant):
 
 ```sh
-go run -tags example ./examples/19-custom-grant
+go run -tags example ./examples/30-custom-grant
 ```
 
 The embedder defines `urn:example:libraz:service-token-exchange`, the OP routes it via `op.WithCustomGrant`, and the handler returns a `BoundAccessToken` so the dispatcher mints a JWT access token bound to the request's DPoP / mTLS confirmation. Files: `op.go` (OP wiring + handler), `client.go` (client side), `probe.go` (self-verify).

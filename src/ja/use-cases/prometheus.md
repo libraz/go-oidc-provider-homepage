@@ -46,14 +46,17 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
 公開する counter は意図的に絞ってあり、安定しています。実名は `oidc_*` 接頭辞で、最新一覧は example 側を参照してください。カテゴリは次のとおり。
 
-| カテゴリ | counter / gauge |
+| カテゴリ | counter / label |
 |---|---|
-| Token endpoint | grant_type 別の発行 / refresh、refresh 再利用検知、クライアント認証失敗 |
-| Authorization endpoint | エラーコード別の authorize 要求、PAR 提出、JAR 検証 |
-| 監査 | イベント種別別のカウント（`AuditTokenIssued`、`AuditTokenRefreshed`、`AuditLoginSuccess`、`AuditMFASuccess`、`AuditBCLNoSessionsForSubject` など） |
-| Discovery | 要求件数、JWKS ローテーションイベント |
-| DCR | 登録・更新・削除（`feature.DynamicRegistration` が ON のとき） |
-| Logout | RP-Initiated 終了、結果別の back-channel 配送 |
+| Token endpoint | `oidc_token_issued_total{grant_type,client_id}`、`oidc_tokens_refreshed_total{client_id}`、refresh / authorization-code replay 検知、method / reason 別の client-auth 失敗 |
+| 認証 | result / authenticator 別の login attempt |
+| 拡張フロー | DCR、Device Authorization、Device Code、CIBA、Token Exchange のイベントカウンタ。label は audit event の sub-name |
+| Logout / revocation | back-channel 配送結果、session が無い fan-out gap、token / refresh-chain / grant revocation の副作用失敗 |
+| 運用シグナル | introspection 認証エラー、DPoP loose-method-case bridge の受理、retired JWKS `kid` の提示 |
+
+metrics bridge は audit emitter から供給されます。1 回の audit event が slog stream と対応 counter の両方を更新するため、組み込み側が metrics 用に別 emit する必要はありません。
+
+Dynamic client の `client_id` は raw label として出しません。label に出るのは静的 seed 済み client ID だけです。DCR 由来または未知の client は空の `client_id` bucket に畳み、cardinality を bounded に保ちます。
 
 ## なぜ「外付け」で、束ね込まないのか
 

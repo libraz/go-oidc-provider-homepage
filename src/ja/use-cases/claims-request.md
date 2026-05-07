@@ -27,7 +27,7 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 - **Essential / voluntary** — `{"essential": true}` の場合、claim が取得できなければ OP はリクエストを拒否します。`{"essential": false}` または `null` の場合、取得できなければ何も告知せず省略します。
 :::
 
-> **ソース:** [`examples/17-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-claims-request)
+> **ソース:** [`examples/61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request)
 
 ## 実装
 
