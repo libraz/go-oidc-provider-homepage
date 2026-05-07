@@ -25,8 +25,8 @@ description: go-oidc-provider が OpenID Foundation Conformance Suite に対し�
 
 ## 最新 baseline
 
-取得日時: 2026-05-06T23:25:34Z<br/>
-リポジトリ SHA: [`466deeb`](https://github.com/libraz/go-oidc-provider/commit/466deeb78450fdb60eef35811c952ac45c3657e7)<br/>
+取得日時: 2026-05-07T12:31:15Z<br/>
+リポジトリ SHA: [`c100e86`](https://github.com/libraz/go-oidc-provider/commit/c100e866d025627d32405fca29c5080e9f19af01)<br/>
 OFCS イメージ: `release-v5.1.42`
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | 合計 |
