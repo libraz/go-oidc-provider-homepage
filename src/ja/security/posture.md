@@ -100,7 +100,7 @@ flowchart LR
 | `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否(RFC 8707 の `resource=` のみ例外)。credentials を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
 | Argon2id パラメータを OWASP 2024 ベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
 | DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
-| 有効化した grant / feature が要求するサブストアを wired store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
+| 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 
 ## ツールチェーン
 
@@ -111,7 +111,7 @@ flowchart LR
 | Fuzz | Go 標準 `Fuzz*`（`make fuzz` / `scripts/fuzz.sh 30s`） | `internal/jose`、`internal/jar`、`internal/dpop`、`internal/pkce`、`internal/jwks` などにターゲット |
 | ライセンス | `go-licenses` | `scripts/licenses.sh` |
 | 適合性 | `make conformance-baseline` | `tools/conformance/`、`conformance/` |
-| シナリオ | カタログ駆動の Spec Scenario Suite | `test/scenarios/` |
+| シナリオ | カタログに基づく Spec Scenario Suite | `test/scenarios/` |
 
 ## ここに **無い** もの
 

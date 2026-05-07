@@ -77,5 +77,6 @@ The session manager exposes the orchestration:
 
 ## Read next
 
+- [Custom chooser UI](/use-cases/custom-chooser-ui) — keep the chooser server-rendered but replace the account picker template.
 - [SPA / custom interaction](/use-cases/spa-custom-interaction) — drive the chooser from a SPA.
 - [Back-Channel Logout](/use-cases/back-channel-logout) — fan-out when the user logs everyone out.

@@ -14,7 +14,7 @@ outline: 2
   <li><a href="#tokens"><div class="faq-index-title">トークンとローテーション</div><div class="faq-index-desc">リフレッシュ rotation の grace、<code>offline_access</code>、TTL 分離</div></a></li>
   <li><a href="#dpop"><div class="faq-index-title">DPoP と送信者制約</div><div class="faq-index-desc">DPoP nonce の配布、対応アルゴリズムの絞り込み理由</div></a></li>
   <li><a href="#storage"><div class="faq-index-title">ストレージ</div><div class="faq-index-desc">既存 users テーブルの扱い、アダプタ選択、composite の制約</div></a></li>
-  <li><a href="#ui-spa"><div class="faq-index-title">UI と SPA</div><div class="faq-index-desc">SPA 駆動（React / Vue / Svelte / …）、CORS、同意画面のカスタム</div></a></li>
+  <li><a href="#ui-spa"><div class="faq-index-title">UI と SPA</div><div class="faq-index-desc">SPA 連携（React / Vue / Svelte / …）、CORS、同意画面のカスタム</div></a></li>
   <li><a href="#auth-mfa"><div class="faq-index-title">認証と MFA</div><div class="faq-index-desc">パスワード / TOTP / passkey、step-up、リスクベース</div></a></li>
   <li><a href="#logout"><div class="faq-index-title">ログアウト</div><div class="faq-index-desc">Front-Channel を持たない理由、Back-Channel fan-out のギャップ</div></a></li>
   <li><a href="#native-loopback"><div class="faq-index-title">ネイティブアプリとループバック</div><div class="faq-index-desc"><code>127.0.0.1</code> redirect_uri のオプトイン</div></a></li>
@@ -195,7 +195,7 @@ op.WithDPoPNonceSource(src)
 
 ## UI と SPA
 
-### SPA からログイン / 同意を駆動するには？
+### SPA からログイン / 同意を扱うには？
 
 ```go
 import "github.com/libraz/go-oidc-provider/op/interaction"
@@ -206,9 +206,9 @@ op.WithInteractionDriver(interaction.JSONDriver{})
 JSON ドライバは、HTML ドライバが使う `/interaction/{uid}` と同じパスで各プロンプト(`login` / `consent.scope` / `chooser` ほか)を JSON として返します。SPA(React / Vue / Svelte / Angular / vanilla、フレームワーク不問)はそこから prompt を取得し、`{state_ref, values}` を `X-CSRF-Token` ヘッダ(`prompt.csrf_token` をそのまま返す double-submit cookie)と共に POST、終端で返る `{type:"redirect", location}` エンベロープを `window.location.href` で辿れば完了です。
 
 ::: info UI マウントオプション
-`op.WithSPAUI` は SPA shell と JSON state surface を OP 側で mountします。このモードでは shell は `LoginMount/{uid}`、prompt JSON は `LoginMount/state/{uid}` です。`op.WithConsentUI` / `op.WithChooserUI` は同意画面とアカウント選択画面を組み込み側 HTML template で描画します。自前 router で shell を配信したい場合は `interaction.JSONDriver` も使えます。この場合の state endpoint は `/interaction/{uid}` です。
+`op.WithSPAUI` は SPA shell と JSON state surface を OP 側で mountします。このモードでは shell は `LoginMount/{uid}`、prompt JSON は `LoginMount/state/{uid}` です。`op.WithConsentUI` / `op.WithChooserUI` は同意画面とアカウント選択画面を組み込み側 HTML template で描画します。自前 router で shell を配信したい場合は `interaction.JSONDriver` も使えます。この場合の state endpoint は `/interaction/{uid}` です。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) と [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
 
-`WithSPAUI` と `WithConsentUI` は相互排他です。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser template は shadow され、SPA が chooser surface を持つことを示す warning が出ます。
+`WithSPAUI` と `WithConsentUI` は相互排他です。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser template は無視され、SPA が chooser surface を持つことを示す warning が出ます。
 :::
 
 ::: details SPA-safe なエラー描画

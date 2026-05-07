@@ -50,7 +50,7 @@ sequenceDiagram
     OP->>RP: 201 { request_uri: urn:ietf:params:oauth:request_uri:..., expires_in }
     RP->>OP: GET /authorize?<br/>request_uri=urn:...&client_id=...
     OP->>OP: ES256 で id_token を署名、redirect_uri 完全一致
-    OP-->>RP: （ログイン + 同意 — または interaction 駆動）
+    OP-->>RP: （ログイン + 同意 — または interaction 経由）
     OP->>RP: 302 redirect_uri?code=...&state=...
     RP->>OP: POST /token<br/>DPoP: <proof><br/>grant_type=authorization_code&code=...&code_verifier=...&<br/>client_assertion=<private_key_jwt>
     OP->>RP: 200 { access_token (DPoP バインド), id_token (ES256), refresh_token }

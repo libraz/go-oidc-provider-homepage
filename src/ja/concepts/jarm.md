@@ -35,7 +35,7 @@ JARM は FAPI 2.0 Message Signing が FAPI 2.0 Baseline の上に重ねる 2 つ
 | `response_mode` | 配送方法 | 用途 |
 |---|---|---|
 | `query.jwt` | リダイレクト URL の `?response=<JWT>` | Code フロー(v0.x が出荷する唯一のフローなので、裸の `jwt` エイリアスもここに解決) |
-| `fragment.jwt` | リダイレクト URL の `#response=<JWT>` | Hybrid / Implicit フロー(配線済みだが v0.x では実行されない) |
+| `fragment.jwt` | リダイレクト URL の `#response=<JWT>` | Hybrid / Implicit フロー(実装済みだが v0.x では実行されない) |
 | `form_post.jwt` | 自動 submit する HTML フォームの hidden `response` フィールド | URL バーに値を載せたくないブラウザ向け |
 | `jwt` | 裸のエイリアス。`response_type=code` なら `query.jwt`、`token` / `id_token` を含めば `fragment.jwt` に解決 | 既定挙動に任せたいクライアント |
 
@@ -105,7 +105,7 @@ OP は discovery で `authorization_encryption_alg_values_supported` と `_enc_v
 | **FAPI-CIBA** | 該当なし — CIBA にはフロントチャネルの認可応答が存在しない |
 | **素の OIDC / OAuth** | 純粋に選択肢 — 多くの実装は RFC 9207 の `iss` で済ませ、JARM までは入れません |
 
-JARM は特定の CVE クラスを単独で潰す唯一の対策ではありません。担う役割は **認可応答そのものの暗号学的な立証可能性** で、応答が out-of-band で転送される構成(ブローカ型、規制要件で保管が必要なログ)や、各プロトコルメッセージに対する完全性契約を最も強い水準で確保したい実装で意味を持ちます。
+JARM は特定の CVE リスクを単独で潰す唯一の対策ではありません。担う役割は **認可応答そのものの暗号学的な立証可能性** で、応答が out-of-band で転送される構成(ブローカ型、規制要件で保管が必要なログ)や、各プロトコルメッセージに対する完全性契約を最も強い水準で確保したい実装で意味を持ちます。
 
 ## 本ライブラリでの有効化
 

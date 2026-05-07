@@ -115,7 +115,7 @@ CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication gra
 
 1. 該当プロファイルを組み込んだ OP を立ち上げます — security プロファイルなら `op.WithProfile(profile.FAPI2Baseline)`、message signing なら `op.WithProfile(profile.FAPI2MessageSigning)`、OIDC Core プランなら `WithProfile` 無し。
 2. プランを OFCS deployment に登録します。conformance suite は OpenID Foundation が運用しています。ソースリポジトリの `conformance/` 配下にプランテンプレートとローカル起動用の固定 Docker イメージが入っています。
-3. プランを drive します。ハーネスは `/authorize`、`/par`、`/token`、`/userinfo`、`/jwks` ほか discovery で公開された各エンドポイントを必須経路で全て叩き、JSON スナップショットを書き出します。記録済 baseline との差分が取れます。
+3. プランを実行します。ハーネスは `/authorize`、`/par`、`/token`、`/userinfo`、`/jwks` ほか discovery で公開された各エンドポイントを必須経路で全て呼び出し、JSON スナップショットを書き出します。記録済 baseline との差分が取れます。
 
 詳細な runbook（`make` ターゲット、JSON スナップショットの構造、差分ゲート）は下の[自分でベースラインを再現する](#自分でベースラインを再現する)を参照してください。
 

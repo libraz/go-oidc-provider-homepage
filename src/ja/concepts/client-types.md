@@ -60,7 +60,7 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 |---|---|---|---|---|
 | `none` | — | — | 不可 | public client（SPA、native、CLI）+ PKCE。 |
 | `client_secret_basic` | あり | — | 不可 | 共有シークレット保持のバックエンド。HTTP Basic で送る。confidential client の既定。 |
-| `client_secret_post` | あり | — | 不可 | 同じシークレットを form body で送る。新規デプロイには非推奨 — Basic が canonical な wire 形式。 |
+| `client_secret_post` | あり | — | 不可 | 同じシークレットを form body で送る。新規デプロイには非推奨 — Basic が標準的な通信路上の形式。 |
 | `private_key_jwt` | — | あり | 可 | バックエンドが自分の秘密鍵で短寿命 JWT assertion に署名し、OP が登録 JWKS で検証。FAPI が推奨するメソッド。 |
 | `tls_client_auth` | — | あり（PKI） | 可 | mTLS handshake。OP がクライアントの X.509 証明書を、登録された subject DN または SAN と照合。 |
 | `self_signed_tls_client_auth` | — | あり（pin） | 可 | mTLS handshake。OP はクライアント JWKS に登録された JWK サムプリントで証明書を pin します。CA は介在しません。 |

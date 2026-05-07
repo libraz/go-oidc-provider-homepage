@@ -184,7 +184,7 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 
 汎用の IP 単位レート制限では塞げない 3 つの濫用経路だけは、ライブラリ側にロックアウトが組み込まれています — 攻撃者は IP を安価に切り替えられ、保護対象がエントロピーの低いコードや subject 単位の credential（任意の URL ではない）だからです:
 
-- **ログインのブルートフォース（要素跨ぎ）。** `op.WithAuthnLockoutStore` を組み込むと、組み込みの第 2 要素 `Step`（TOTP、メール OTP、パスワード）が同じ subject 単位カウンタを参照するので、攻撃者が要素を切り替えて推測予算を 2 倍にすることはできません。ログインフローは失敗ステップごとに `op.AuditLoginFailed`（最終的に成功した時点で `op.AuditLoginSuccess`）を発火しますが、失敗ストリームを無制限に走らせないのはこのロックアウト層の役目です。
+- **ログインのブルートフォース（要素跨ぎ）。** `op.WithAuthnLockoutStore` を組み込むと、組み込みの第 2 要素 `Step`（TOTP、メール OTP、パスワード）が同じ subject 単位カウンタを参照するので、攻撃者が要素を切り替えて推測予算を 2 倍にすることはできません。ログインフローは失敗ステップごとに `op.AuditLoginFailed`（最終的に成功した時点で `op.AuditLoginSuccess`）を発火しますが、失敗ストリームを無制限に流さないのはこのロックアウト層の役目です。
 - **Device Code user_code のブルートフォース。** `op.devicecodekit` パッケージが `device_code` ごとの strike カウンタを持ちます。一定回数のミスマッチで verification helper が短絡し、strike ごとに `op.AuditDeviceCodeUserCodeBruteForce` を発火します。ユーザに短いコードを手で打たせる UX を壊さずに防御するには、これしか方法がありません。
 - **CIBA poll abuse。** トークンエンドポイントは単一 `auth_req_id` が許容ケイデンスを超えてポーリングされた回数を数えます。閾値を超えると、リクエストストアの `Deny` を `reason="poll_abuse"` で呼び、ワイヤ応答は `access_denied` になり、`op.AuditCIBAPollAbuseLockout` が発火します。グローバルなレート制限で行儀の良い RP まで巻き添えにすることなく、病的な RP だけを止められます。
 

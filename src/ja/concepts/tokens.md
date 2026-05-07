@@ -82,7 +82,7 @@ flowchart LR
 :::
 
 ::: details `azp` とは
-**`azp`**（Authorized Party）は、ID トークンを *要求した* `client_id` です。意味があるのは `aud` に複数値が入っているときだけ — そのケースで「複数 audience のうちどれが実際に authorize 要求を駆動したか」を曖昧でなく示します。単一 RP の通常ケースでは `aud` が `[client_id]` 1 件で済むので `azp` は省略されます。RP は「`aud` が複数あるのに `azp` が欠けている / 自分の `client_id` と一致しない」ID トークンを拒否すべきです。
+**`azp`**（Authorized Party）は、ID トークンを *要求した* `client_id` です。意味があるのは `aud` に複数値が入っているときだけ — そのケースで「複数 audience のうちどれが実際に authorize 要求を開始したか」を曖昧でなく示します。単一 RP の通常ケースでは `aud` が `[client_id]` 1 件で済むので `azp` は省略されます。RP は「`aud` が複数あるのに `azp` が欠けている / 自分の `client_id` と一致しない」ID トークンを拒否すべきです。
 :::
 
 ::: details JWKS とは
@@ -111,7 +111,7 @@ ID トークンの audience は RP であって RS ではありません。Beare
 | フロー | 本来の判定 | 純粋ステートレス JWT で壊れる箇所 |
 |---|---|---|
 | **`/userinfo`**（OIDC Core §5.3） | このトークンは今もユーザを正しく代表しているか | OP が参照する材料を持たない。ログアウト済みユーザに対しても claim が返る。 |
-| **`/end_session`**（RP-Initiated Logout） | セッションを終了させる | JWT は `exp` まで動き続ける。「ログアウト」した直後でも、漏洩したトークンがあと 10 分 API を叩ける。 |
+| **`/end_session`**（RP-Initiated Logout） | セッションを終了させる | JWT は `exp` まで動き続ける。「ログアウト」した直後でも、漏洩したトークンがあと 10 分 API を呼び出せる。 |
 | **`/revoke`**（RFC 7009） | 特定トークンを無効化 | no-op。RFC 7009 §2.2 は self-contained トークンに revocation を実装しないことを許容しています。 |
 | **`/introspect`**（RFC 7662） | revoke 済みトークンに `active: false` を返す | 反映できるのは署名 / `exp` だけ。セッション状態には到達しない。 |
 

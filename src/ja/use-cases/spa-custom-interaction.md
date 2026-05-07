@@ -1,6 +1,6 @@
 ---
 title: SPA / カスタム interaction
-description: 任意の SPA（React / Vue / Svelte / Angular など）からログイン / 同意 / ログアウトを駆動。SPA-safe なエラー描画も同梱。
+description: 任意の SPA（React / Vue / Svelte / Angular など）からログイン / 同意 / ログアウトを扱う。SPA-safe なエラー描画も同梱。
 ---
 
 # ユースケース — SPA / カスタム interaction

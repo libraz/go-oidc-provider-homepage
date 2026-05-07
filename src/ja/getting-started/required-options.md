@@ -21,9 +21,9 @@ op.WithIssuer("https://op.example.com")
 ```
 
 ::: warning OIDC Discovery 1.0 §3 / FAPI 2.0 §5.4
-issuer は `https://` で始まり、末尾スラッシュ無し、query / fragment 無し、でなければなりません。scheme と host は全て小文字、デフォルトポート（https は `:443`、http は `:80`）の混入は禁止、path は canonical（`..`、`.`、重複スラッシュは禁止）です。loopback の IP リテラル（`127.0.0.0/8`、`[::1]`）は localhost 開発のため `https://` 要件から免除されます。テキストの `localhost` は例外には **含まれません**（RFC 8252 §7.3 の DNS hijack 観点）。
+issuer は `https://` で始まり、末尾スラッシュ無し、query / fragment 無し、でなければなりません。scheme と host は全て小文字、デフォルトポート（https は `:443`、http は `:80`）の混入は禁止、path は正規形（`..`、`.`、重複スラッシュは禁止）です。loopback の IP リテラル（`127.0.0.0/8`、`[::1]`）は localhost 開発のため `https://` 要件から免除されます。テキストの `localhost` は例外には **含まれません**（RFC 8252 §7.3 の DNS hijack 観点）。
 
-`internal/discovery.ValidateIssuer` がオプション setter のさらに defense-in-depth として shape を強制します。typo（末尾スラッシュ、`:443`、host の大文字など）は `op.New` で失敗し、RP が拒否する discovery document を黙って吐くことはありません。この厳しさが RFC 9207 の byte 完全一致ミックスアップ防御を end-to-end で成立させています。canonical 形の詳細は [Issuer](/ja/concepts/issuer) を参照してください。
+`internal/discovery.ValidateIssuer` がオプション setter のさらに defense-in-depth として形状を強制します。typo（末尾スラッシュ、`:443`、host の大文字など）は `op.New` で失敗し、RP が拒否する discovery document を黙って吐くことはありません。この厳しさが RFC 9207 の byte 完全一致ミックスアップ防御を end-to-end で成立させています。正規形の詳細は [Issuer](/ja/concepts/issuer) を参照してください。
 :::
 
 ## `WithStore`

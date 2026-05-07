@@ -69,7 +69,7 @@ op.New(
 | `/session/*` | ✅ | SPA がセッション状態を読む。 |
 | `/authorize` | ❌ | ブラウザナビゲーション、XHR ではない。 |
 | `/token` | ✅ | browser public client が `code+PKCE` を `fetch` で交換できる。backend RP は CORS ヘッダを無視する。 |
-| `/par`、`/introspect`、`/revoke`、`/register` | マウント時 ✅ | admin console やブラウザベースの harness 用に strict CORS を提供。実際の受理可否は各 protocol auth check が決める。 |
+| `/par`、`/introspect`、`/revoke`、`/register` | マウント時 ✅ | admin console やブラウザベースの harness 用に厳格な CORS を提供。実際の受理可否は各 protocol auth check が決める。 |
 | `/bc-authorize`、`/device_authorization`、`/end_session` | マウント時 ✅ | 通常は server-side または navigation flow だが、tooling と明示的な browser integration 向けに wrap される。 |
 
 ::: tip credentialed XHR
@@ -89,7 +89,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`op.PublicClient` は SPA / native アプリ向けの typed seed で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。OP の strict CORS wrapper は `/token` も覆うので、allowlist に入った SPA は JavaScript から PKCE code exchange を実行できます。
+`op.PublicClient` は SPA / native アプリ向けの typed seed で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。OP の厳格な CORS wrapper は `/token` も覆うので、allowlist に入った SPA は JavaScript から PKCE code exchange を実行できます。
 
 OP は全クライアントで `code_challenge_method=plain` を拒否 — `S256` のみ — なので SPA の PKCE は本物の PKCE、レガシー変種ではありません。
 
@@ -99,7 +99,7 @@ CORS で origin を許可しても、OP のセッション cookie は **op.examp
 
 ## エンドポイント別の CORS の効き方
 
-直前の表は、ライブラリが strict CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が allowlist にあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的なデプロイで *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
+直前の表は、ライブラリが厳格な CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が allowlist にあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的なデプロイで *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
 
 allowlist は 2 つの集合の和です。`WithCORSOrigins` で明示した entries と、クライアントストアに登録された全 `redirect_uri` の origin です。SPA クライアントを `RedirectURIs: []string{"https://app.example.com/callback"}` で登録すれば、`https://app.example.com` は自動で CORS allowlist に入ります。`WithCORSOrigins` は、`redirect_uri` として登場しない browser-side origin（別の管理用 SPA、ステータスページ、localhost 開発 origin など）のためにあります。
 
@@ -118,10 +118,10 @@ allowlist は 2 つの集合の和です。`WithCORSOrigins` で明示した ent
 | `/register`（Dynamic Client Registration） | 既定では呼ばない。 | DCR を意図的に SPA に開放する場合のみ。 |
 | `/end_session` | 呼ばない — フルページリダイレクトかバックチャネル。 | 不要。 |
 
-ライブラリは「不要」側のいくつかのエンドポイントも `strictCORS` でラップしています。ラップのコストが小さく、JS から呼ぶ可能性のあるツール（管理コンソール、ブラウザベースのテストハーネス）に対する将来耐性を確保したいためです。ブラウザから使う予定がないなら、それらの origin を allowlist に追加する必要はありません。allowlist にマッチしない場合、strict 層は `Access-Control-Allow-*` ヘッダを 1 つも返さず、ブラウザはレスポンスを拒否します — これが正しい挙動です。
+ライブラリは「不要」側のいくつかのエンドポイントも `strictCORS` でラップしています。ラップのコストが小さく、JS から呼ぶ可能性のあるツール（管理コンソール、ブラウザベースのテストハーネス）に対する将来耐性を確保したいためです。ブラウザから使う予定がないなら、それらの origin を allowlist に追加する必要はありません。allowlist にマッチしない場合、厳格な層は `Access-Control-Allow-*` ヘッダを 1 つも返さず、ブラウザはレスポンスを拒否します — これが正しい挙動です。
 
 ::: tip cross-origin トラフィックの監査シグナル
-strict CORS 層は、allowlist に載った origin から `OPTIONS` preflight を受理するたびに `op.AuditCORSPreflightAllowed`（`cors.preflight.allowed`）を発火します。ダッシュボードが actual（preflight ではない方の）リクエストだけを観測している場合、cross-origin の活動を完全に見落とすことがあります — preflight は 204 で短絡され、内側のハンドラに到達しないためです。このイベントを「正規 CORS トラフィック」のベースラインとして扱ってください。普段は活発なエンドポイントで突然このイベントが消えたら `WithCORSOrigins` の設定変更ミスを疑う合図、見覚えのない origin から急増したら `redirect_uris` レジストリと突き合わせる合図です。
+厳格な CORS 層は、allowlist に載った origin から `OPTIONS` preflight を受理するたびに `op.AuditCORSPreflightAllowed`（`cors.preflight.allowed`）を発火します。ダッシュボードが actual（preflight ではない方の）リクエストだけを観測している場合、cross-origin の活動を完全に見落とすことがあります — preflight は 204 で短絡され、内側のハンドラに到達しないためです。このイベントを「正規 CORS トラフィック」のベースラインとして扱ってください。普段は活発なエンドポイントで突然このイベントが消えたら `WithCORSOrigins` の設定変更ミスを疑う合図、見覚えのない origin から急増したら `redirect_uris` レジストリと突き合わせる合図です。
 :::
 
 ### SPA を組み込む際の落とし穴

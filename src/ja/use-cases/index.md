@@ -35,9 +35,9 @@ go run -tags example ./examples/01-minimal
 
 | ユースケース | 例 | ページ |
 |---|---|---|
-| SPA から UI 駆動 | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction)、[`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) | [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) |
+| SPA から UI を扱う | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction)、[`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) | [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) |
 | カスタム HTML 同意画面 | [`11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) | [カスタム同意 UI](/ja/use-cases/custom-consent-ui) |
-| カスタム HTML アカウントチューザ | [`12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) | [マルチアカウントチューザ](/ja/use-cases/multi-account) |
+| カスタム HTML アカウントチューザ | [`12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) | [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) |
 | マルチアカウントチューザ（`prompt=select_account`） | [`13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) | [マルチアカウントチューザ](/ja/use-cases/multi-account) |
 | クロスオリジン SPA (CORS) | [`14-cors-spa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/14-cors-spa) | [SPA 向け CORS](/ja/use-cases/cors-spa) |
 | ロケールネゴシエーション | [`15-i18n-locale`](https://github.com/libraz/go-oidc-provider/tree/main/examples/15-i18n-locale) | [i18n / ロケール](/ja/use-cases/i18n) |

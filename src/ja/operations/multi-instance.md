@@ -36,7 +36,7 @@ Redis 層に置ける揮発サブストアは `Sessions`、`Interactions`、`Con
 ```go
 // スケッチ — 分散実装を差し込み口の裏に置く形。
 // op.DPoPNonceSource は 2 メソッドだけ。ローテーション周期と
-// 受理窓は実装側が判断します。
+// 猶予期間は実装側が判断します。
 type redisNonces struct{ rdb *redis.Client }
 
 func (r *redisNonces) IssueNonce() string         { /* ... */ }

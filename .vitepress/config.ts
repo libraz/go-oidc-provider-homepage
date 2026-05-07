@@ -239,6 +239,7 @@ export default withMermaid(
                       link: '/use-cases/spa-custom-interaction'
                     },
                     { text: 'Custom consent UI', link: '/use-cases/custom-consent-ui' },
+                    { text: 'Custom chooser UI', link: '/use-cases/custom-chooser-ui' },
                     { text: 'Multi-account chooser', link: '/use-cases/multi-account' },
                     { text: 'CORS for SPA', link: '/use-cases/cors-spa' },
                     { text: 'i18n / locale', link: '/use-cases/i18n' }
@@ -529,6 +530,7 @@ export default withMermaid(
                 items: [
                   { text: 'SPA (custom interaction)', link: '/use-cases/spa-custom-interaction' },
                   { text: 'Custom consent UI', link: '/use-cases/custom-consent-ui' },
+                  { text: 'Custom chooser UI', link: '/use-cases/custom-chooser-ui' },
                   { text: 'Multi-account chooser', link: '/use-cases/multi-account' },
                   { text: 'CORS for SPA', link: '/use-cases/cors-spa' },
                   { text: 'i18n / locale', link: '/use-cases/i18n' }
@@ -814,6 +816,10 @@ export default withMermaid(
                       link: '/ja/use-cases/spa-custom-interaction'
                     },
                     { text: 'カスタム同意 UI', link: '/ja/use-cases/custom-consent-ui' },
+                    {
+                      text: 'カスタムアカウントチューザ UI',
+                      link: '/ja/use-cases/custom-chooser-ui'
+                    },
                     { text: 'マルチアカウントチューザ', link: '/ja/use-cases/multi-account' },
                     { text: 'SPA 向け CORS', link: '/ja/use-cases/cors-spa' },
                     { text: 'i18n / ロケール', link: '/ja/use-cases/i18n' }
@@ -1140,6 +1146,10 @@ export default withMermaid(
                     link: '/ja/use-cases/spa-custom-interaction'
                   },
                   { text: 'カスタム同意 UI', link: '/ja/use-cases/custom-consent-ui' },
+                  {
+                    text: 'カスタムアカウントチューザ UI',
+                    link: '/ja/use-cases/custom-chooser-ui'
+                  },
                   { text: 'マルチアカウントチューザ', link: '/ja/use-cases/multi-account' },
                   { text: 'SPA 向け CORS', link: '/ja/use-cases/cors-spa' },
                   { text: 'i18n / ロケール', link: '/ja/use-cases/i18n' }

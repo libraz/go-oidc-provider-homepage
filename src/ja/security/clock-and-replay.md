@@ -31,7 +31,7 @@ type Clock interface {
 | リフレッシュトークン (ローテーション猶予) | 直前のトークンを猶予期間内は受理 | `refresh.GraceTTLDefault = 60 s`(`op.WithRefreshGracePeriod` で変更可) | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
 | DPoP proof — `iat` 窓 | サーバ時刻に対する対称な許容幅 | `dpop.DefaultIatWindow = 60 s` | [/ja/concepts/dpop](/ja/concepts/dpop) |
 | DPoP proof — `jti` キャッシュ | リプレイ重複検出 | iat 窓と同じ (`replayLeew`) | [/ja/concepts/dpop](/ja/concepts/dpop) |
-| JAR (RFC 9101) request object — `jti` キャッシュ | リプレイ重複検出 | OP 側キャッシュ。request object 自身の `exp` で eviction | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
+| JAR (RFC 9101) request object — `jti` キャッシュ | リプレイ重複検出 | OP 側キャッシュ。request object 自身の `exp` で追い出し | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
 | JAR — 未来側ずれ許容 | `nbf` / `iat` の許容幅 | `jar.DefaultMaxFutureSkew = 60 s` | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
 | PAR (RFC 9126) `request_uri` 寿命 | 一回限り、短寿命 | `parendpoint.DefaultTTL = 60 s` | [/ja/concepts/fapi](/ja/concepts/fapi) |
 | Back-Channel Logout token | OP は 1 度だけ署名、RP 側で重複検出 | OP は `jti` キャッシュを持たない (RP 側の責務) | [/ja/use-cases/back-channel-logout](/ja/use-cases/back-channel-logout) |
@@ -48,7 +48,7 @@ type Clock interface {
 
 **トークンリプレイ** — 同じ bearer 形のクレデンシャルを 2 回提示する形。認可コードは初回使用時に *消費* されます (`AuthorizationCodeStore` の該当行が使用済みに切り替わる)。リフレッシュトークンは引き換えのたびに *ローテーション* し、猶予期間が閉じた後に直前のトークンを提示するとリユース検出によって失効カスケードが走ります。DPoP proof は `jti` で *重複検出* されます。検証器は受理した proof の `jti` を後続処理の前に `ConsumedJTIStore` にマークするため、同じ `jti` を持つ 2 個目の proof は 2 個目の nonce が新鮮であっても `ErrProofReplayed` を返します。
 
-**リクエストリプレイ** — 同じ /authorize リクエストを同じパラメータで再送信する形。PAR は構造的にこれを不可能にしており、一回限りの `request_uri` を発行します。/authorize がその URN を消費した時点で `PushedAuthRequestStore` から消えます。JAR (`request=` でインライン渡しする request object) は同じ `ConsumedJTIStore` サブストアに対して `jti` 重複検出を行い、`jar:<clientID>:<jti>` 形式のキーで保持して request object 自身の `exp` で eviction します。
+**リクエストリプレイ** — 同じ /authorize リクエストを同じパラメータで再送信する形。PAR は構造的にこれを不可能にしており、一回限りの `request_uri` を発行します。/authorize がその URN を消費した時点で `PushedAuthRequestStore` から消えます。JAR (`request=` でインライン渡しする request object) は同じ `ConsumedJTIStore` サブストアに対して `jti` 重複検出を行い、`jar:<clientID>:<jti>` 形式のキーで保持して request object 自身の `exp` で追い出します。
 
 **ログアウトリプレイ** — 同じ `logout_token` を RP に対して 2 度 POST する形。Back-Channel Logout 1.0 §2.6 は重複検出の責務を *RP* 側に置きます。OP は 1 度だけ署名・配送し、各 RP は自分が観測した logout-token の `jti` を必要に応じて記録します。OP 側に logout-token のリプレイキャッシュを持たないのは、関心境界が RP にあるからです。
 

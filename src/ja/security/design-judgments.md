@@ -433,7 +433,7 @@ IAT-bound 経路は、operator-trusted な広い default を維持します。IA
 
 ## 26. CIBA / FAPI-CIBA の polling と error taxonomy
 
-**仕様**: CIBA Core 1.0 は poll / ping / push mode、`slow_down`、および §13 の error vocabulary を定義します。poll abuse の lockout 閾値は実装定義です。FAPI-CIBA は CIBA の上に signed request-object 要件を重ねますが、conformance module は CIBA らしい wire error を期待します。
+**仕様**: CIBA Core 1.0 は poll / ping / push mode、`slow_down`、および §13 の error vocabulary を定義します。poll abuse の lockout 閾値は実装定義です。FAPI-CIBA は CIBA の上に signed request-object 要件を重ねますが、conformance module は CIBA らしい通信路上の error を期待します。
 
 **衝突**: 上限のない poll ladder は、client が `slow_down` を無視して `auth_req_id` の期限まで高速 poll し続けられる状態を作ります。低い上限を hard-code すれば本番保護にはなりますが、反復 poll を意図的に行う OFCS module を壊す場合があります。また、`/bc-authorize` から詳細な JAR parser error をそのまま出すと debug には便利ですが、CIBA endpoint が期待する `invalid_request` ではなく JOSE 固有の taxonomy が通信路に漏れます。
 

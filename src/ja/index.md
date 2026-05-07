@@ -69,7 +69,7 @@ handler, _ := op.New(
 
 > [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) と [ユースケース: client_credentials](/ja/use-cases/client-credentials) を参照。
 
-### 4. ログイン・同意・ログアウトを SPA から駆動する
+### 4. ログイン・同意・ログアウトを SPA から扱う
 
 ```go
 import "github.com/libraz/go-oidc-provider/op/interaction"

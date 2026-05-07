@@ -89,7 +89,7 @@ outline: 2
 | `WithDefaultLocale` | `op.Locale`(BCP 47 タグ) | `ui_locales` が無いリクエスト時の既定ロケール | `"en"` |
 | `WithLocale` | `op.LocaleBundle`(1 呼び出しで 1 つ、繰り返し可) | 同梱 HTML ドライバ用のロケール別メッセージバンドルを登録 | 英語 + 日本語 seed |
 
-`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意描画面を所有するためです。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser は JSON state envelope 経由で SPA が描画するため、chooser template は無視され、`op.New` が構造化 warning を出します。
+`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意描画面を所有するためです。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser は JSON state envelope 経由で SPA が描画するため、chooser template は無視され、`op.New` が構造化 warning を出します。詳細は [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | §L.2 優先順序の先頭で参照されるユーザ単位ロケール上書き | なし |
 
 ## トークン

@@ -114,7 +114,7 @@ op.WithBackchannelAllowPrivateNetwork(true)
 
 ## 揮発ストアのギャップ（とそれを示す監査イベント）
 
-Back-channel fan-out は OP の `SessionStore` を辿り、終了セッションに紐づく全 RP を見つけます。**揮発** session ストア（永続化無しの Redis、Memcached、maxmemory eviction 下の in-memory）配下では、セッション確立から `/end_session` までの間に追い出された行は気付かれずに失われ、対応する RP には何も通知されません。
+Back-channel fan-out は OP の `SessionStore` を辿り、終了セッションに紐づく全 RP を見つけます。**揮発** session ストア（永続化無しの Redis、Memcached、maxmemory による追い出し下の in-memory）配下では、セッション確立から `/end_session` までの間に追い出された行は気付かれずに失われ、対応する RP には何も通知されません。
 
 ライブラリはこのギャップを監査イベントとして可視化します。
 

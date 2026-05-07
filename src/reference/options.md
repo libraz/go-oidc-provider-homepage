@@ -89,7 +89,7 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 | `WithDefaultLocale` | `op.Locale` (BCP 47 tag) | default UI locale when the request carries no `ui_locales` | `"en"` |
 | `WithLocale` | `op.LocaleBundle` (one per call; repeatable) | registers a per-locale message bundle for the bundled HTML driver | English + Japanese seed |
 
-`WithSPAUI` is mutually exclusive with `WithConsentUI`: both own the consent rendering surface. `WithChooserUI` may be configured alongside `WithSPAUI`, but SPA mode owns the chooser through the JSON state envelope; the chooser template is ignored and `op.New` emits a structured warning.
+`WithSPAUI` is mutually exclusive with `WithConsentUI`: both own the consent rendering surface. `WithChooserUI` may be configured alongside `WithSPAUI`, but SPA mode owns the chooser through the JSON state envelope; the chooser template is ignored and `op.New` emits a structured warning. See [Custom chooser UI](/use-cases/custom-chooser-ui).
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | per-user locale override consulted at the head of the §L.2 chain | none |
 
 ## Tokens
