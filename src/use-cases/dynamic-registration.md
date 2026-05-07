@@ -85,7 +85,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 })
 ```
 
-`OpenRegistrationDefaultScopes` is the opt-in baseline. Each entry MUST already be in the OP's scope catalog (the four built-ins plus anything added via `WithScope(...)`); unknown values fail at `op.New`. The IAT-bound path is unchanged — when an Initial Access Token is presented, `store.InitialAccessToken.AllowedScopes` still wins.
+`OpenRegistrationDefaultScopes` is the opt-in baseline. Each entry MUST already be in the OP's scope catalog (the six built-in OIDC standard scopes plus anything added via `WithScope(...)`); unknown values fail at `op.New`. The IAT-bound path is unchanged — when an Initial Access Token is presented, `store.InitialAccessToken.AllowedScopes` still wins.
 
 ::: warning Pre-v0.9.x: open-registration scope default
 Earlier releases inherited the OP-wide discovery scope list when an open POST omitted `scope`, so a freshly registered client could hit `/authorize` with `openid profile email …` immediately. The current default is the empty slice — embedders that relied on the legacy behaviour must set `OpenRegistrationDefaultScopes` explicitly.

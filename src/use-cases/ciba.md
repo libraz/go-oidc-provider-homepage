@@ -59,7 +59,7 @@ provider, err := op.New(
 
 1. Mounts `/bc-authorize` at the configured endpoint path.
 2. Registers the CIBA URN (`urn:openid:params:grant-type:ciba`) at `/token`.
-3. Advertises `backchannel_authentication_endpoint`, `backchannel_token_delivery_modes_supported: ["poll"]`, `backchannel_user_code_parameter_supported: false`, and `backchannel_authentication_request_signing_alg_values_supported` in discovery.
+3. Advertises `backchannel_authentication_endpoint`, `backchannel_token_delivery_modes_supported: ["poll"]`, and `backchannel_user_code_parameter_supported: false` in discovery. When JAR is also enabled, discovery adds `backchannel_authentication_request_signing_alg_values_supported`.
 
 The CIBA substore (`store.CIBARequestStore`) is required: the in-memory adapter ships one; SQL / Redis adapters land in v0.9.2. `op.New` enforces this whether the grant is activated via `op.WithCIBA(...)` or via `op.WithGrants(grant.CIBA, ...)` — both code paths require `Store.CIBARequests()` and a `HintResolver` to be wired before construction succeeds.
 

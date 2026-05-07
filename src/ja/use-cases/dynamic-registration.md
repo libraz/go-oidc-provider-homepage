@@ -85,7 +85,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 })
 ```
 
-`OpenRegistrationDefaultScopes` は明示的なオプトインです。各エントリは OP の scope カタログに登録済みでなければなりません(組み込み 4 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録は変わらず — Initial Access Token を提示した場合は `store.InitialAccessToken.AllowedScopes` が優先します。
+`OpenRegistrationDefaultScopes` は明示的なオプトインです。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録は変わらず — Initial Access Token を提示した場合は `store.InitialAccessToken.AllowedScopes` が優先します。
 
 ::: warning v0.9.x 以前のオープン登録 scope 既定
 旧版は `scope` を省略したオープンな POST に対して OP 全体の discovery scope リストを継承していたため、登録直後のクライアントが `openid profile email …` で `/authorize` を直接呼び出せました。現在の既定は空スライスで、旧挙動に依存していた組み込み側は `OpenRegistrationDefaultScopes` を明示する必要があります。

@@ -59,7 +59,7 @@ provider, err := op.New(
 
 1. `/bc-authorize` を設定済 endpoint パスにマウント
 2. CIBA URN（`urn:openid:params:grant-type:ciba`）を `/token` に登録
-3. discovery に `backchannel_authentication_endpoint`、`backchannel_token_delivery_modes_supported: ["poll"]`、`backchannel_user_code_parameter_supported: false`、`backchannel_authentication_request_signing_alg_values_supported` を出力
+3. discovery に `backchannel_authentication_endpoint`、`backchannel_token_delivery_modes_supported: ["poll"]`、`backchannel_user_code_parameter_supported: false` を出力。JAR も有効な場合は `backchannel_authentication_request_signing_alg_values_supported` も出力
 
 CIBA サブストア(`store.CIBARequestStore`)は必須。in-memory アダプタは同梱。SQL / Redis アダプタは v0.9.2 で着地します。`op.WithCIBA(...)` 経由でも `op.WithGrants(grant.CIBA, ...)` 経由でも、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方が組み込まれていることを確認します — どちらが欠けていても構成エラーで起動を拒否します。
 
