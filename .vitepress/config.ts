@@ -3,6 +3,10 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
+const docsVersion = '0.9.1'
+const docsVersionTag = `v${docsVersion}`
+const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
+const releaseNotesUrl = `${changelogUrl}#v091--2026-05-07`
 
 const softwareApplicationJsonLd = {
   '@context': 'https://schema.org',
@@ -15,6 +19,7 @@ const softwareApplicationJsonLd = {
     'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
   url: siteUrl,
   downloadUrl: githubUrl,
+  softwareVersion: docsVersion,
   author: { '@type': 'Person', name: 'libraz' },
   license: 'https://opensource.org/licenses/Apache-2.0',
   keywords:
@@ -36,6 +41,21 @@ export default withMermaid(
     },
 
     sitemap: { hostname: siteUrl },
+
+    vite: {
+      build: {
+        chunkSizeWarningLimit: 3000,
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('/node_modules/mermaid/')) return 'mermaid'
+              if (id.includes('/node_modules/katex/')) return 'katex'
+              if (id.includes('/node_modules/dompurify/')) return 'dompurify'
+            }
+          }
+        }
+      }
+    },
 
     head: [
       ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
@@ -332,6 +352,16 @@ export default withMermaid(
                     { text: 'Disclosure', link: '/security/disclosure' }
                   ]
                 }
+              ]
+            },
+            {
+              text: docsVersionTag,
+              items: [
+                {
+                  text: 'Release Notes',
+                  link: releaseNotesUrl
+                },
+                { text: 'Changelog', link: changelogUrl }
               ]
             }
           ],
@@ -921,6 +951,16 @@ export default withMermaid(
                     { text: '脆弱性報告', link: '/ja/security/disclosure' }
                   ]
                 }
+              ]
+            },
+            {
+              text: docsVersionTag,
+              items: [
+                {
+                  text: 'リリースノート',
+                  link: releaseNotesUrl
+                },
+                { text: '変更履歴', link: changelogUrl }
               ]
             }
           ],

@@ -82,15 +82,15 @@ outline: 2
 
 | Option | 値 | セクション | デフォルト |
 |---|---|---|---|
-| `WithSPAUI` | `op.SPAUI`(構造体: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | SPA shell と静的 asset tree を OP 側で mount し、JSON interaction state surface も提供 | off |
-| `WithConsentUI` | `op.ConsentUI`(`*html/template.Template` をラップ) | 同意画面を組み込み側 template で描画。state / CSRF / 永続化は OP が担当 | bundled template |
-| `WithChooserUI` | `op.ChooserUI`(`*html/template.Template` をラップ) | `prompt=select_account` を組み込み側 template で描画 | bundled template |
+| `WithSPAUI` | `op.SPAUI`(構造体: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | SPA の入口と静的アセット一式を OP 側でマウントし、interaction の状態も JSON で提供 | 無効 |
+| `WithConsentUI` | `op.ConsentUI`(`*html/template.Template` をラップ) | 同意画面を組み込み側テンプレートで描画。state / CSRF / 永続化は OP が担当 | 同梱テンプレート |
+| `WithChooserUI` | `op.ChooserUI`(`*html/template.Template` をラップ) | `prompt=select_account` を組み込み側テンプレートで描画 | 同梱テンプレート |
 | `WithCORSOrigins` | `...string` | 厳格 CORS の許可リスト(未指定なら redirect URI から自動導出) | 自動導出 |
 | `WithDefaultLocale` | `op.Locale`(BCP 47 タグ) | `ui_locales` が無いリクエスト時の既定ロケール | `"en"` |
-| `WithLocale` | `op.LocaleBundle`(1 呼び出しで 1 つ、繰り返し可) | 同梱 HTML ドライバ用のロケール別メッセージバンドルを登録 | 英語 + 日本語 seed |
-
-`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意描画面を所有するためです。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser は JSON state envelope 経由で SPA が描画するため、chooser template は無視され、`op.New` が構造化 warning を出します。詳細は [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
+| `WithLocale` | `op.LocaleBundle`(1 呼び出しで 1 つ、繰り返し可) | 同梱 HTML ドライバ用のロケール別メッセージバンドルを登録 | 英語 + 日本語の初期バンドル |
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | §L.2 優先順序の先頭で参照されるユーザ単位ロケール上書き | なし |
+
+`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意画面の描画を受け持つためです。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA モードではアカウント選択も JSON の状態取得を通じて SPA が描画します。そのため chooser テンプレートは使われず、`op.New` が構造化された警告を出します。詳細は [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
 
 ## トークン
 
@@ -113,7 +113,7 @@ outline: 2
 | `WithMountPrefix` | `string`(`/` で始める。ルートに置くなら `/`) | issuer 直下にプリフィックスを設けてマウント | `/oidc` |
 | `WithClaimsSupported` | `...string`(可変長) | discovery の `claims_supported` を埋める | 省略 |
 | `WithClaimsParameterSupported` | `bool` | `claims_parameter_supported` を切り替える。`false` の場合、authorize / PAR は malformed JSON の拒否後に `claims` payload を無視する | true |
-| `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。FAPI / eIDAS / NIST 800-63 のように特定の ACR 値を honor する deployment が広告するために使う | 空(discovery に出ない) |
+| `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。FAPI / eIDAS / NIST 800-63 のように特定の ACR 値を扱うデプロイが広告するために使う | 空(discovery に出ない) |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata`(typed な `service_documentation` / policy / TOS / UI locale / mTLS alias フィールド + `Extra map[string]any`) | OP が所有しない RFC 8414 / OIDC Discovery metadata を discovery 文書に追加。`UILocalesSupported` は非空時に自動導出された locale list を上書きし、OP 管理フィールドと衝突する `Extra` key は拒否 | なし |
 | `WithJWKSRotationActive` | `func() bool` | ローテーション期間中だけ JWKS の `Cache-Control` を短期キャッシュに切り替える述語 | 常に長期キャッシュ |
 
@@ -153,12 +153,12 @@ outline: 2
 |---|---|---|---|
 | `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | エッジでヘッダ経由の mTLS を終端 | なし |
 | `WithTrustedProxies` | `...string`(CIDR) | `X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 | なし |
-| `WithTrustedProxyHosts` | `...string`(hostname) | trusted proxy CIDR が設定されている場合に、canonical issuer host 以外の `X-Forwarded-Host` 許可リストを追加 | issuer host のみ |
+| `WithTrustedProxyHosts` | `...string`(hostname) | trusted proxy CIDR が設定されている場合に、正規の issuer host 以外の `X-Forwarded-Host` 許可リストを追加 | issuer host のみ |
 | `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発 / native app デモ用に RFC 8252 の loopback 緩和へ文字列 `localhost` を追加。literal `127.0.0.1` / `[::1]` は厳格既定のまま | literal loopback のみ |
 | `WithAllowPrivateNetworkJWKS` | _(引数なし)_ | RFC 1918 上の client JWKS を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkJAR` | _(引数なし)_ | RFC 1918 上の `request_uri` を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkSector` | _(引数なし)_ | dynamic registration 時の `sector_identifier_uri` が RFC 1918 上にあることを許容(テスト / private RP network 専用) | 拒否 |
-| `WithJWKSHTTPTransport` | `http.RoundTripper` | JAR と `private_key_jwt` が使う RP 管理 JWKS fetch の transport を差し替える。dial 時の SSRF gate は維持される | system trust の transport |
+| `WithJWKSHTTPTransport` | `http.RoundTripper` | JAR と `private_key_jwt` が使う RP 管理 JWKS 取得の transport を差し替える。接続時の SSRF 判定は維持される | システム trust の transport |
 | `WithBackchannelAllowPrivateNetwork` | `bool` | RFC 1918 上の `backchannel_logout_uri` を許容(テスト専用) | false |
 | `WithAllowInsecureBackchannelLogoutForDev` | _(引数なし)_ | dev / CI fixture 用に plain-HTTP loopback の `backchannel_logout_uri` と配送を許容 | 拒否 |
 | `WithBackchannelLogoutHTTPClient` | `*http.Client` | Back-Channel ログアウト用の HTTP クライアント | デフォルト |

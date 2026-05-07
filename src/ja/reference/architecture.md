@@ -6,7 +6,7 @@ outline: 2
 
 # アーキテクチャ概観
 
-`op.New(...)` は `http.ServeMux` を内部に持つ `http.Handler` を返します。本ページではリクエスト到着からレスポンスまでの間に何が走るか — 関わるパッケージ、検証の順序、組み込み側が制御するストレージの差し込み口 — を整理します。
+`op.New(...)` は `http.ServeMux` を内部に持つ `http.Handler` を返します。本ページでは、リクエスト到着からレスポンスまでの間に OP が何を実行するか、関わるパッケージ、検証の順序、組み込み側が制御するストレージの差し込み口を整理します。
 
 ## パッケージ構成
 
@@ -30,7 +30,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
   discovery、scoperegistry、timex、i18n
 ```
 
-境界は構造的に強制されています。外部コードは `internal/` に届きません。組み込み側が制御する差し込み口(オプション、store interface、authenticator、audit subscriber)はすべて `op/` 配下にあります。
+境界は構造的に強制されています。外部コードは `internal/` に届きません。組み込み側が制御する差し込み口（オプション、store interface、authenticator、audit subscriber）はすべて `op/` 配下にあります。
 
 ## ハンドラグラフ
 
@@ -50,7 +50,7 @@ flowchart TB
   H --> IN[/introspect<br/>internal/introspectendpoint]
   H --> ES[/end_session<br/>internal/endsession]
   H --> RG[/register<br/>internal/registrationendpoint]
-  H --> IX[/interaction/...<br/>HTML or React UI driver]
+  H --> IX[/interaction/...<br/>HTML or SPA UI driver]
   style H fill:#0c5460,color:#fff
   style Disc fill:#1f2937,color:#fff
   style JWKS fill:#1f2937,color:#fff
@@ -65,7 +65,7 @@ flowchart TB
   style IX fill:#1f2937,color:#fff
 ```
 
-`feature.*`(`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`、`BackChannelLogout`)で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション(`WithDynamicRegistration` など)が渡されたときだけマウントされます。discovery document も、実際にマウントされたエンドポイントだけを公開します。
+`feature.*`（`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`、`BackChannelLogout`）で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション（`WithDynamicRegistration` など）が渡されたときだけマウントされます。discovery document も、実際にマウントされたエンドポイントだけを公開します。
 
 ## クロスカットなミドルウェア
 
@@ -73,7 +73,7 @@ flowchart TB
 
 | Layer | ソース | 役割 |
 |---|---|---|
-| **CORS** | `internal/cors` | discovery と `/jwks` は public CORS。`/userinfo`、`/token`、interaction/session JSON surface、マウント済み protocol endpoint（`/par`、`/revoke`、`/introspect`、`/register`、`/bc-authorize`、`/device_authorization`、`/end_session` など）は厳格な許可リスト |
+| **CORS** | `internal/cors` | discovery と `/jwks` は public CORS。`/userinfo`、`/token`、interaction / session の JSON 面、マウント済み protocol endpoint（`/par`、`/revoke`、`/introspect`、`/register`、`/bc-authorize`、`/device_authorization`、`/end_session` など）は厳格な許可リスト |
 | **信頼プロキシ** | `internal/httpx` | `WithTrustedProxies` を元に、`X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 |
 | **Cookie** | `internal/cookie` | `__Host-` プリフィックス、AES-256-GCM、session は `SameSite=Lax`、互換可能なところは `Strict` |
 | **CSRF** | `internal/csrf` | consent / logout の POST に対して double-submit + Origin / Referer チェック |
@@ -82,7 +82,7 @@ flowchart TB
 
 ## Authorize → token のライフサイクル
 
-最も流量の多いパスです。概略は次のとおりです:
+最も流量の多いパスです。概略は次のとおりです。
 
 ```mermaid
 sequenceDiagram
@@ -101,7 +101,7 @@ sequenceDiagram
   UA->>OP: POST /interaction/{uid} (login)
   OP->>LF: Begin / Continue (Step chain)
   LF-->>OP: Result (subject + AAL + AMR)
-  OP->>UA: 200 consent prompt at /interaction/{uid}
+  OP->>UA: 200 /interaction/{uid} に同意プロンプト
   UA->>OP: POST /interaction/{uid} (consent)
   OP->>Store: Codes.Put (auth code + PKCE challenge)
   OP->>UA: 302 to redirect_uri?code=...&state=...&iss=...
@@ -112,7 +112,7 @@ sequenceDiagram
   OP->>RP: 200 { access_token, id_token, refresh_token? }
 ```
 
-`/par` と `/end_session` も大筋は同じ形です。上記が標準的な happy path です。
+`/par` と `/end_session` も大筋は同じ形です。上記が標準的な成功経路です。
 
 ## LoginFlow の内部
 
@@ -131,11 +131,11 @@ internal/authn/CompiledLoginFlow
 
 各 authorize リクエストでは:
 
-1. `Primary.Begin` が `interaction.Step`(Prompt または Result)を返します。
-2. UI ドライバ(HTML または React)がプロンプトを描画し、ユーザが送信します。
-3. `Primary.Continue` が `Result`(`Identity` がバインドされている) まで進めます。
-4. オーケストレータが `LoginContext` を組み立てます(subject、scope、完了したステップ、リスクスコア、ACR values)。
-5. `Decider` が走ります(non-nil の場合)。`Pass` 以外の判定は short-circuit します。
+1. `Primary.Begin` が `interaction.Step`（Prompt または Result）を返します。
+2. UI ドライバ（HTML または SPA）がプロンプトを描画し、ユーザが送信します。
+3. `Primary.Continue` が `Result`（`Identity` がバインドされている）まで進めます。
+4. オーケストレータが `LoginContext` を組み立てます（subject、scope、完了したステップ、リスクスコア、ACR values）。
+5. `Decider` が動きます（non-nil の場合）。`Pass` 以外の判定はそこで短絡します。
 6. それ以外は `Rules` を順に評価します。最初にマッチしたルールの `Step.Kind()` が `CompletedSteps` にまだ含まれていなければ発火します。
 7. 発火するルールが無くなるまで繰り返し、その後にセッションを発行します。
 
@@ -157,7 +157,7 @@ internal/authn/CompiledLoginFlow
 | `GrantRevocations` | 失効した grant の tombstone | 永続 |
 | `Sessions` | ブラウザセッションのレコード | 揮発に置いてもよい |
 | `Interactions` | 試行ごとの interaction 状態 | 揮発に置いてもよい |
-| `ConsumedJTIs` | JAR / DPoP `jti` の replay set | 揮発に置いてもよい |
+| `ConsumedJTIs` | JAR / DPoP `jti` のリプレイ検出集合 | 揮発に置いてもよい |
 | `PARs` | pushed authorization request | 揮発に置いてもよい |
 | `IATs` / `RATs` | DCR の Initial / Registration Access Token | 永続 |
 | `EmailOTPs`、`TOTPs`、`Passkeys`、`Recovery` | ユーザごとの MFA factor レコード | 永続 |
@@ -168,7 +168,7 @@ internal/authn/CompiledLoginFlow
 
 ## Discovery document の組み立て
 
-`/.well-known/openid-configuration` は OP の実効設定から discovery document を組み立てます。アドバタイズされるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです:
+`/.well-known/openid-configuration` は OP の実効設定から discovery document を組み立てます。広告されるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです。
 
 - **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。
 - **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `FAPI2MessageSigning` が有効なときに FAPI の許可リストと交差します。

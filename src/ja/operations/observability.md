@@ -170,14 +170,14 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 | `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | デバイスコード確認画面で user_code が総当たりされている。`devicecodekit` がデバイスコード単位のロックアウトを内蔵しています — 確認ヘルパは [Device Code](/ja/use-cases/device-code) を参照。 |
 | `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | CIBA のポーリングカウンタが `auth_req_id` 単位の閾値を超えた。ライブラリはワイヤ応答を `access_denied` で拒否し、SOC ツールが相関できるようイベントを発行します。 |
 | `rate_limit.exceeded` | `op.AuditRateLimitExceeded` | 組み込み側のレート制限ミドルウェアから発火させるための予約イベント。ライブラリは定数だけ定義してカタログの一貫性を保ちますが、内部経路から発火させはしません。 |
-| `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | 同じ趣旨 — 組み込み側ミドルウェアが明示的な bypass（allowlist 済み IP、内部プローブ等）を記録するためのもの。 |
+| `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | 同じ趣旨 — 組み込み側ミドルウェアが明示的な bypass（許可リスト済み IP、内部プローブ等）を記録するためのもの。 |
 
 最後の 2 つは、ライブラリが運用側ミドルウェアと共有する語彙であって、内部イベントではありません。リバースプロキシやミドルウェアが枠を執行してリクエストを通した（あるいは拒否した）ときに、同じ監査ロガーへこれらを発行すれば、解析パイプラインが 1 本の一貫したストリームを観測できます。
 
 ::: tip 推奨パターン
 1. **リバースプロキシまたはエッジサービスでグローバルなレートを執行する** — 例えば `/token` は IP 当たり 100 req/s、`/par` はもっと低めに。これが攻撃者にリクエストを「コスト」として支払わせる実機構です。
 2. **監査パイプラインがバーストにアラートを出す** — 単一 IP・ASN・`client_id` から `pkce.violation`・`redirect_uri.mismatch`・`client_authn.failure` が立て続けに来たとき。これらが「誰かが OP を突いている」の S/N が高いイベントです。
-3. **クライアント単位の allow-list で攻撃面を上流で削る。** `WithCORSOrigins` も `redirect_uris` レジストリも allowlist として働きます — 小さく保つほど、設定ミスや侵害されたクライアントが晒す攻撃面は減ります。
+3. **クライアント単位の許可リストで攻撃面を上流で削る。** `WithCORSOrigins` も `redirect_uris` レジストリも許可リストとして働きます — 小さく保つほど、設定ミスや侵害されたクライアントが晒す攻撃面は減ります。
 :::
 
 ### ライブラリが内部でロックアウトしている挙動

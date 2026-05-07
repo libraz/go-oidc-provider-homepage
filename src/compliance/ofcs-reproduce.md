@@ -7,7 +7,7 @@ description: Step-by-step recipe for running the OpenID Foundation Conformance S
 
 This page is the operator's runbook. It complements [OFCS conformance status](/compliance/ofcs), which records *what* the suite saw on the latest run; this page covers *how* to reproduce it on your own machine and *which library options* each OFCS plan exercises.
 
-If you are looking for the latest PASS/REVIEW/SKIPPED counts, start at [OFCS conformance status](/compliance/ofcs). If you want to understand which `op.With...` options to wire into your own OP so the same OFCS plans pass against it, you are in the right place.
+If you are looking for the latest PASS/REVIEW/SKIPPED/WARNING counts, start at [OFCS conformance status](/compliance/ofcs). If you want to understand which `op.With...` options to wire into your own OP so the same OFCS plans pass against it, you are in the right place.
 
 ::: warning Personal project, not certified
 The numbers on this site are reproducible snapshots — this page tells you how to reproduce them. They are not a substitute for paid OpenID Foundation certification. Run the suite locally to verify your own embedder configuration; do not cite local PASS counts as certification.
@@ -144,11 +144,12 @@ That runs every module in every seeded plan and writes a deterministic JSON snap
 
 ## Reading the result
 
-OFCS has four terminal states.
+OFCS mainly reports four terminal result values, and the harness also preserves advisory `WARNING` results.
 
 - **PASSED** — the module ran and observed the spec-required behaviour.
 - **REVIEW** — the module ran but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture (consent UI strings, error page screenshots). Not a failure. The headless harness records `REVIEW` as-is; paid certification would require sitting in front of the OFCS UI to clear it.
 - **SKIPPED** — the module depends on a feature this OP does not advertise in discovery or per-client metadata. For example, a per-client `RS256` negative test skips when the client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
+- **WARNING** — the module reached a non-failed advisory result. The current status page tracks these separately from FAILED.
 - **FAILED** — observed behaviour diverged from the spec. The current snapshot tracks **0 failures** across all plans; see [OFCS conformance status](/compliance/ofcs#latest-baseline) for the breakdown.
 
 The detailed breakdown of which modules currently sit in REVIEW or SKIPPED, and why, is on [OFCS conformance status](/compliance/ofcs#modules-currently-in-review).

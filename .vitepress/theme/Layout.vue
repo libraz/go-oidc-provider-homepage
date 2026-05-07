@@ -8,15 +8,6 @@ const { Layout } = DefaultTheme
 
 <template>
   <Layout>
-    <template #nav-bar-content-after>
-      <a
-        href="https://github.com/libraz/go-oidc-provider/blob/main/LICENSE"
-        target="_blank"
-        rel="noopener"
-        class="op-nav-license"
-        >Apache-2.0</a
-      >
-    </template>
     <template #home-hero-before>
       <HomeHero />
     </template>

@@ -5,16 +5,16 @@ description: How go-oidc-provider runs against the OpenID Foundation Conformance
 
 # OFCS conformance status
 
-`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and runs four plans end-to-end against a `cmd/op-demo` instance.
+`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the published baseline below is the current four-plan security snapshot run end-to-end against a `cmd/op-demo` instance.
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
 
 ::: warning Personal project, not certified
-This is a personal project maintained by an individual developer. No OpenID Foundation membership fee is paid and **no formal OIDC certification** is held. The numbers on this page are reproducible snapshots — `make conformance-baseline` records exactly what you see. They are not a substitute for a paid OpenID Foundation certification and should not be cited as one.
+This is a personal project maintained by an individual developer. No OpenID Foundation membership fee is paid and **no formal OIDC certification** is held. The numbers on this page are reproducible snapshots from the plan set shown below. They are not a substitute for a paid OpenID Foundation certification and should not be cited as one.
 :::
 
-## What gets exercised
+## What this snapshot exercises
 
 | Plan | What it covers | Profile |
 |---|---|---|
@@ -106,12 +106,12 @@ The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authenti
 
 - **REVIEW** — the test ran, but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture honestly (consent UI strings, error page screenshots, certificate chain confirmation). Not a failure.
 - **SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
-- **WARNING** — the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. We currently see one (`fapi-ciba-id1-refresh-token`) — see the section below.
+- **WARNING** — OFCS records this as a non-failed result value: the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. We currently see one (`fapi-ciba-id1-refresh-token`) — see the section below.
 - **FAILED** — observed behaviour diverged from the spec. The current snapshot has **0 failures** across all four plans.
 
 ### How to reproduce the conformance run yourself
 
-1. Stand up an OP with the relevant profile wired in — `op.WithProfile(profile.FAPI2Baseline)` for the security profile, `op.WithProfile(profile.FAPI2MessageSigning)` for message signing, or no `WithProfile` for the OIDC Core plan.
+1. Stand up an OP with the relevant profile wired in — `op.WithProfile(profile.FAPI2Baseline)` for the security profile, `op.WithProfile(profile.FAPI2MessageSigning)` for message signing, `op.WithProfile(profile.FAPICIBA)` plus the CIBA options for FAPI-CIBA, or no `WithProfile` for the OIDC Core plan.
 2. Register the plan against an OFCS deployment. The conformance suite is operated by the OpenID Foundation; the source repo's `conformance/` directory contains plan templates and a pinned Docker image that brings up a local copy.
 3. Drive the plan. The harness pokes `/authorize`, `/par`, `/token`, `/userinfo`, `/jwks`, and the rest of the discovered endpoints through every required code path, then writes a JSON snapshot you can diff against the recorded baseline.
 
@@ -119,7 +119,7 @@ The detailed runbook (`make` targets, the JSON snapshot layout, the diff gate) i
 
 ## REVIEW vs FAILED — the distinction
 
-OFCS has four terminal states: `PASSED`, `FAILED`, `REVIEW`, `SKIPPED`. **REVIEW does not mean a test failed.** It means the test wants a human operator to confirm something the automation cannot — for example, "did the OP show a login screen here?" The test runs, takes screenshots, then sits in a `WAITING` state until someone in the OFCS UI clicks "reviewed". Our headless runner records `REVIEW` when the test reached that state without erroring.
+OFCS mainly reports `PASSED`, `FAILED`, `REVIEW`, and `SKIPPED`; the harness also preserves `WARNING` when OFCS emits an advisory result. **REVIEW does not mean a test failed.** It means the test wants a human operator to confirm something the automation cannot — for example, "did the OP show a login screen here?" The test runs, takes screenshots, then sits in a `WAITING` state until someone in the OFCS UI clicks "reviewed". Our headless runner records `REVIEW` when the test reached that state without erroring.
 
 ::: details Why we don't auto-pass REVIEW modules
 The conformance suite gates these modules on human judgment by design. A `cmd/op-demo` running headless can't honestly upload a screenshot of "this is what my user saw"; turning the gate off would lie about what was actually checked. The harness records `REVIEW` as-is, on the understanding that paid certification would require sitting in front of the UI to clear them.
@@ -159,10 +159,6 @@ The OP returns the right HTTP error in every case (the negative tests pass their
 |---|---|
 | `fapi-ciba-id1-refresh-token` | The OP issued a refresh token to the CIBA flow but its discovery document does not list `refresh_token` in `grant_types_supported`. The refresh path itself works (the test reaches a terminal PASS on its assertions); the advisory is a doc/discovery-metadata consistency observation. |
 
-## Modules currently FAILED — and why
-
-The current snapshot has no FAILED modules. The previous snapshot (rc20, SHA `592ab48`) carried one FAIL on `fapi2-message-signing-id1`'s `fapi2-security-profile-id2-refresh-token` — OFCS retries the same `client_assertion` after a `use_dpop_nonce` 400, and the earlier ordering consumed the assertion's `jti` before the DPoP nonce gate ran, so the retry surfaced as `invalid_client` / `ErrAssertionReplayed`. The fix lands at SHA [`9f34e2f`](https://github.com/libraz/go-oidc-provider/commit/9f34e2fb92fb7ebc3f04d3e6e543c34f3e9a5f93): every grant path now verifies the DPoP proof (and its nonce) before authenticating the client, so the assertion's `jti` is only marked when the request actually advances past the nonce challenge. RFC 9449 §8 contemplates a verbatim retry of the request body, so this is the correct reading.
-
 ## Modules currently SKIPPED — and why
 
 | Module | Reason |
@@ -194,7 +190,7 @@ The harness:
 1. Generates self-signed RSA-2048 certs (`scripts/conformance.sh certs`).
 2. Brings up the OFCS Docker stack at `https://localhost:8443`.
 3. Builds and runs `cmd/op-demo` at `https://127.0.0.1:9443`.
-4. Seeds the four plans via the OFCS REST API.
+4. Seeds the OFCS plans via the REST API. The harness scaffolds nine plans; the latest status table above records the four-plan security snapshot.
 5. Records pass/fail per module to a deterministic JSON file.
 
 `make conformance-baseline-diff` exits non-zero on any module that **lost** `PASSED` between two snapshots — that is the regression gate the project uses pre-merge for security-relevant changes.

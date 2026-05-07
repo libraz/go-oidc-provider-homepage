@@ -72,17 +72,18 @@ handler, _ := op.New(
 ### 4. Drive login / consent / logout from an SPA
 
 ```go
-import "github.com/libraz/go-oidc-provider/op/interaction"
-
 handler, _ := op.New(
   /* required options */
-  op.WithInteractionDriver(interaction.JSONDriver{}),
-  op.WithCORSOrigins("https://app.example.com"),
+  op.WithLoginFlow(flow),
+  op.WithSPAUI(op.SPAUI{
+    LoginMount: "/login",
+    StaticDir:  "./web/static",
+  }),
 )
 ```
 
 ::: info UI ownership options
-`op.WithSPAUI`, `op.WithConsentUI`, and `op.WithChooserUI` cover the common UI ownership modes: OP-mounted SPA shell, custom consent template, and custom account chooser template. `interaction.JSONDriver` is still the lower-level route when you want your own router to serve the shell. See [Use case: SPA](/use-cases/spa-custom-interaction) and [Custom consent UI](/use-cases/custom-consent-ui).
+`op.WithSPAUI`, `op.WithConsentUI`, and `op.WithChooserUI` cover the common UI ownership modes: OP-mounted SPA shell, custom consent template, and custom account chooser template. `interaction.JSONDriver` is still the lower-level route when you want your own router to serve the shell. See [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login), [Use case: SPA](/use-cases/spa-custom-interaction), and [Custom consent UI](/use-cases/custom-consent-ui).
 :::
 
 ### 5. Persist on a real database, split hot from cold

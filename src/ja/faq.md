@@ -203,16 +203,16 @@ import "github.com/libraz/go-oidc-provider/op/interaction"
 op.WithInteractionDriver(interaction.JSONDriver{})
 ```
 
-JSON ドライバは、HTML ドライバが使う `/interaction/{uid}` と同じパスで各プロンプト(`login` / `consent.scope` / `chooser` ほか)を JSON として返します。SPA(React / Vue / Svelte / Angular / vanilla、フレームワーク不問)はそこから prompt を取得し、`{state_ref, values}` を `X-CSRF-Token` ヘッダ(`prompt.csrf_token` をそのまま返す double-submit cookie)と共に POST、終端で返る `{type:"redirect", location}` エンベロープを `window.location.href` で辿れば完了です。
+JSON ドライバは、HTML ドライバが使う `/interaction/{uid}` と同じパスで各プロンプト（`login` / `consent.scope` / `chooser` ほか）を JSON として返します。SPA（React / Vue / Svelte / Angular / vanilla、フレームワーク不問）はそこからプロンプトを取得し、`{state_ref, values}` を `X-CSRF-Token` ヘッダ（`prompt.csrf_token` をそのまま返す double-submit cookie）と共に POST します。終端で返る `{type:"redirect", location}` エンベロープを `window.location.href` で辿れば完了です。
 
 ::: info UI マウントオプション
-`op.WithSPAUI` は SPA shell と JSON state surface を OP 側で mountします。このモードでは shell は `LoginMount/{uid}`、prompt JSON は `LoginMount/state/{uid}` です。`op.WithConsentUI` / `op.WithChooserUI` は同意画面とアカウント選択画面を組み込み側 HTML template で描画します。自前 router で shell を配信したい場合は `interaction.JSONDriver` も使えます。この場合の state endpoint は `/interaction/{uid}` です。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) と [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
+`op.WithSPAUI` は SPA の入口と JSON の状態取得面を OP 側でマウントします。このモードでは SPA の入口は `LoginMount/{uid}`、プロンプト JSON は `LoginMount/state/{uid}` です。`op.WithConsentUI` / `op.WithChooserUI` は同意画面とアカウント選択画面を組み込み側 HTML テンプレートで描画します。SPA の配信を自前のルータで持ちたい場合は `interaction.JSONDriver` も使えます。この場合の状態取得エンドポイントは `/interaction/{uid}` です。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) と [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
 
-`WithSPAUI` と `WithConsentUI` は相互排他です。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA mode では chooser template は無視され、SPA が chooser surface を持つことを示す warning が出ます。
+`WithSPAUI` と `WithConsentUI` は相互排他です。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA モードでは chooser テンプレートは使われず、chooser の描画も SPA が受け持つことを示す警告が出ます。
 :::
 
 ::: details SPA-safe なエラー描画
-エラーページは CSP `default-src 'none'; style-src 'unsafe-inline'` の下で `<div id="op-error" data-code="..." data-description="...">` を出力するので、SPA ホストはマークアップを parse することなく selector で取得できます。
+エラーページは CSP `default-src 'none'; style-src 'unsafe-inline'` の下で `<div id="op-error" data-code="..." data-description="...">` を出力するので、SPA ホストは HTML を parse しなくても selector で取得できます。
 :::
 
 ### CORS — SPA の origin を許可するには？
@@ -221,15 +221,15 @@ JSON ドライバは、HTML ドライバが使う `/interaction/{uid}` と同じ
 op.WithCORSOrigins("https://app.example.com")
 ```
 
-`WithCORSOrigins` を呼ばない場合、登録済み redirect URI から allowlist が自動導出されます。詳細は <a class="doc-ref" href="/ja/use-cases/cors-spa">SPA 向け CORS</a>。
+`WithCORSOrigins` を呼ばない場合、登録済み redirect URI から許可リストが自動導出されます。詳細は <a class="doc-ref" href="/ja/use-cases/cors-spa">SPA 向け CORS</a>。
 
 ### ライブラリを fork せずに同意画面をカスタマイズしたい
 
 可能です。主な経路は次の 3 つです。
 
 - **同梱 HTML ドライバを残し、ロケール bundle で文言を上書き。** `op.WithLocale` を使うと、seed の `en` / `ja` bundle 上に変更したいキーだけを重ねられます — 同意画面の文言はこのキー単位の上書きでカバーできるので、ブランド・コピー差し替えはこちらで足ります。詳細は [ユースケース: i18n / ロケールネゴシエーション](/ja/use-cases/i18n)。
-- **`op.WithConsentUI` で template を差し替える。** OP は組み込み側の `*html/template.Template` を `ConsentTemplateData` で描画し、state / CSRF / 同意永続化は引き続き OP が担当します。詳細は [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui)。
-- **JSON ドライバに切り替えて markup ごと自前で描画。** `op.WithInteractionDriver(interaction.JSONDriver{})` を渡すと同意プロンプトが JSON で返るので、自前のページ（または SPA）で描画できます。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction)。
+- **`op.WithConsentUI` でテンプレートを差し替える。** OP は組み込み側の `*html/template.Template` を `ConsentTemplateData` で描画し、state / CSRF / 同意永続化は引き続き OP が担当します。詳細は [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui)。
+- **JSON ドライバに切り替えて画面ごと自前で描画。** `op.WithInteractionDriver(interaction.JSONDriver{})` を渡すと同意プロンプトが JSON で返るので、自前のページ（または SPA）で描画できます。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction)。
 
 <div id="auth-mfa" class="faq-anchor"></div>
 

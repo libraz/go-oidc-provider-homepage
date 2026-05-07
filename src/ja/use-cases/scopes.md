@@ -43,7 +43,7 @@ op.WithScope(op.InternalScope("internal:audit")),
 - `scopes_supported` には **掲載されません**。
 - 同意画面にも **表示されません**（OP は同意フェーズをスキップします）。
 - 受理可否は `Scope.AllowedClients` で制御されます。空のリストはどの RP からも要求可能、要素を持つリストはそのリストに掲載されたクライアントのみ受理し、それ以外は RFC 6749 §5.2 の `invalid_scope` で拒否されます。
-- OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します — discovery document が OIDC Discovery 1.0 §3 に違反しないようにするためです。
+- OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します。discovery document が OIDC Discovery 1.0 §3 に違反しないようにするためです。
 
 ::: tip OIDC 標準スコープ
 `openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **OP 独自の** scope カタログに焦点を当てています。
@@ -63,10 +63,10 @@ op.WithScope(op.Scope{
 }),
 ```
 
-クライアントに `billing.read` が granted されると、`/userinfo` 応答には `profile` / `email` 等が解放するものに加えて `billing_tier` と `billing_account_id` が乗ります — `UserStore`(または interaction driver に組み込まれた claim resolver) が当該 subject に対してその claim 名を実際に提供している場合に限ります。
+クライアントに `billing.read` が付与されると、`/userinfo` 応答には `profile` / `email` 等が開示するものに加えて `billing_tier` と `billing_account_id` が乗ります。`UserStore`（または interaction driver に組み込まれた claim resolver）が当該 subject に対してその claim 名を実際に提供している場合に限ります。
 
 ::: tip v0.9.x で開示が有効になりました
-旧バージョンの `Scope.Claims` は同意画面の「この scope はこれを開示します」表示のためだけに使われており、フィールドは意図を文書化していたものの runtime は `/userinfo` での開示に反映していませんでした。v0.9.x からは設定済カタログを runtime の scope → claim 名マップに射影するようになり、granted されたカスタム scope が宣言済 claim を自動で `/userinfo` に開示します。同じ目的で out-of-band な hook を自前で組んでいた組み込み側はそれを外せます。
+旧バージョンの `Scope.Claims` は同意画面の「この scope はこれを開示します」表示のためだけに使われており、フィールドは意図を文書化していたものの runtime は `/userinfo` での開示に反映していませんでした。v0.9.x からは設定済カタログを runtime の scope → claim 名マップに射影するようになり、付与されたカスタム scope が宣言済 claim を自動で `/userinfo` に開示します。同じ目的で out-of-band な hook を自前で組んでいた組み込み側はそれを外せます。
 :::
 
 ::: info OIDC 標準 scope は影響を受けません

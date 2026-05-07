@@ -65,7 +65,7 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 | `tls_client_auth` | — | あり（PKI） | 可 | mTLS handshake。OP がクライアントの X.509 証明書を、登録された subject DN または SAN と照合。 |
 | `self_signed_tls_client_auth` | — | あり（pin） | 可 | mTLS handshake。OP はクライアント JWKS に登録された JWK サムプリントで証明書を pin します。CA は介在しません。 |
 
-`client_secret_jwt`（HS256 共有シークレット JWT）は **実装していません**。共有シークレット JWT は漏洩シークレットの被害範囲を広げる一方で、`private_key_jwt` が提供しないものを何ひとつ提供しません。本ライブラリはこの surface を増やすことを拒否しています。
+`client_secret_jwt`（HS256 共有シークレット JWT）は **実装していません**。共有シークレット JWT は漏洩シークレットの被害範囲を広げる一方で、`private_key_jwt` が提供しないものを何ひとつ提供しません。本ライブラリはこの攻撃面を増やしません。
 
 ::: tip メソッドはクライアントごとに 1 つに絞る
 discovery document には OP が受理するすべてのメソッドが列挙されますが、各クライアントが登録するのは正確に 1 つです。1 クライアント上での複数メソッド混在は標準化されておらず、ダウングレード攻撃の研究論文の元ネタになってきました — 本ライブラリは登録メソッドと正確に照合し、フォールバックを拒否します。

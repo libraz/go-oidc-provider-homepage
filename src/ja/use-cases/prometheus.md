@@ -56,7 +56,7 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
 metrics bridge は audit emitter から供給されます。1 回の audit event が slog stream と対応 counter の両方を更新するため、組み込み側が metrics 用に別 emit する必要はありません。
 
-Dynamic client の `client_id` は raw label として出しません。label に出るのは静的 seed 済み client ID だけです。DCR 由来または未知の client は空の `client_id` bucket に畳み、cardinality を bounded に保ちます。
+Dynamic client の `client_id` は生の label として出しません。label に出るのは静的にシード済みの client ID だけです。DCR 由来または未知の client は空の `client_id` バケットに畳み、cardinality を上限付きに保ちます。
 
 ## なぜ「外付け」で、束ね込まないのか
 

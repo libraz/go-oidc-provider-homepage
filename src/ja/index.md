@@ -7,7 +7,7 @@ description: 既存の Go アプリに http.Handler として OIDC Provider（Au
 
 ## 代表的なユースケース
 
-このライブラリでよく作られる構成を 5 つ。それぞれ動作する例があります。
+このライブラリでよく作る構成を 5 つ挙げます。どれも動作する例があります。
 
 ### 1. 最小構成の OP を立ち上げる
 
@@ -52,7 +52,7 @@ handler, _ := op.New(
 ```
 
 ::: tip プロファイル 1 行で済む理由
-`op.WithProfile(profile.FAPI2Baseline)` だけで、プロファイル必須 feature（`PAR`、`JAR`）の有効化、`token_endpoint_auth_methods_supported` の FAPI allow-list との絞り込み、mTLS が明示されていない場合の DPoP 既定選択、discovery の引き締めまでまとめて行います。詳細は [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)。
+`op.WithProfile(profile.FAPI2Baseline)` だけで、プロファイルが必須とする機能（`PAR`、`JAR`）の有効化、`token_endpoint_auth_methods_supported` の FAPI allow-list への絞り込み、mTLS が明示されていない場合の DPoP 既定選択、discovery の引き締めまでまとめて行います。詳細は [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)。
 :::
 
 ### 3. バックエンド向けトークンを発行する（エンドユーザなし）
@@ -72,17 +72,18 @@ handler, _ := op.New(
 ### 4. ログイン・同意・ログアウトを SPA から扱う
 
 ```go
-import "github.com/libraz/go-oidc-provider/op/interaction"
-
 handler, _ := op.New(
   /* 必須オプション */
-  op.WithInteractionDriver(interaction.JSONDriver{}),
-  op.WithCORSOrigins("https://app.example.com"),
+  op.WithLoginFlow(flow),
+  op.WithSPAUI(op.SPAUI{
+    LoginMount: "/login",
+    StaticDir:  "./web/static",
+  }),
 )
 ```
 
 ::: info UI オプション
-`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は、OP-mounted SPA shell、独自同意 template、独自アカウント chooser template のための経路です。自前 router で shell を配信したい場合は `interaction.JSONDriver` も使えます。詳細は [ユースケース: SPA](/ja/use-cases/spa-custom-interaction)。
+`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は、OP が SPA の入口をマウントする構成、独自の同意テンプレート、独自のアカウント選択テンプレートを扱うためのオプションです。SPA の配信を自前の router で持ちたい場合は `interaction.JSONDriver` も使えます。詳細は [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) と [ユースケース: SPA](/ja/use-cases/spa-custom-interaction) を参照してください。
 :::
 
 ### 5. 永続ストアと揮発ストアを分離する

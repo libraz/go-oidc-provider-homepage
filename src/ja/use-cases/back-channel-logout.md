@@ -94,7 +94,7 @@ loopback 上に stub RP を立てるローカル demo や CI fixture では、lo
 op.WithAllowInsecureBackchannelLogoutForDev()
 ```
 
-このオプションは、登録時 URL validator と実行時 SSRF gate の両方を `127.0.0.1`、`[::1]`、`localhost` に限って広げます。本番用の近道ではありません。public host と loopback 以外の private network は、下記の本番向け posture を別途明示する必要があります。
+このオプションは、登録時の URL 検証と実行時の SSRF 判定の両方を `127.0.0.1`、`[::1]`、`localhost` に限って緩和します。本番用の近道ではありません。public host と loopback 以外の private network は、下記の本番向け方針を別途明示する必要があります。
 
 ## SSRF 防御
 

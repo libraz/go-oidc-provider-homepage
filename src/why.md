@@ -98,20 +98,21 @@ op.New(
 
 The protocol engine should decide what prompt is next; your frontend should decide how it looks. Those are separate jobs.
 
-`op.WithInteractionDriver(interaction.JSONDriver{})` swaps the default HTML driver for a JSON one — the SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}` for prompts and posts back signed responses. Mount the SPA shell on your own router; the OP serves the JSON state surface.
+`op.WithSPAUI(op.SPAUI{...})` swaps the default HTML pages for a JSON-backed SPA flow and lets the OP mount the shell and static assets. The SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}` for prompts and posts back signed responses while the protocol engine owns the state machine.
 
 ```go
 op.New(
   /* required options */
-  op.WithInteractionDriver(interaction.JSONDriver{}),
+  op.WithLoginFlow(flow),
+  op.WithSPAUI(op.SPAUI{
+    LoginMount: "/login",
+    StaticDir:  "./web/static",
+  }),
 )
-
-router.Handle("/", spaAssets)
-router.Handle("/oidc/", provider)
 ```
 
 ::: info UI mount options
-`op.WithSPAUI`, `op.WithConsentUI`, and `op.WithChooserUI` are runnable integration points. Use `WithSPAUI` when the OP should mount a SPA shell, `WithConsentUI` for a server-rendered consent template, and `WithChooserUI` for a server-rendered account chooser. The lower-level `interaction.JSONDriver` remains available when you want to own the router and state fetch loop yourself.
+`op.WithSPAUI`, `op.WithConsentUI`, and `op.WithChooserUI` are runnable integration points. Use `WithSPAUI` when the OP should mount a SPA shell, `WithConsentUI` for a server-rendered consent template, and `WithChooserUI` for a server-rendered account chooser. The lower-level `interaction.JSONDriver` remains available when you want to own the router and state fetch loop yourself. See [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login).
 :::
 
 ::: info SPA-safe error rendering
@@ -122,17 +123,18 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` so
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
-Each release is regressed against the OpenID Foundation conformance suite. Latest baseline (sha `ab23d3c`):
+Each release is regressed against the OpenID Foundation conformance suite. Latest baseline (sha `c100e86`):
 
-| Plan | PASSED | REVIEW | SKIPPED | FAILED |
-|---|---:|---:|---:|---:|
-| oidcc-basic-certification-test-plan | 30 | 3 | 2 | **0** |
-| fapi2-security-profile-id2-test-plan | 48 | 9 | 1 | **0** |
-| fapi2-message-signing-id1-test-plan | 60 | 9 | 2 | **0** |
-| **Total (3 plans, 164 modules)** | **138** | **21** | **5** | **0** |
+| Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
+|---|---:|---:|---:|---:|---:|
+| oidcc-basic-certification-test-plan | 30 | 3 | 2 | 0 | **0** |
+| fapi2-security-profile-id2-test-plan | 48 | 9 | 1 | 0 | **0** |
+| fapi2-message-signing-id1-test-plan | 60 | 9 | 2 | 0 | **0** |
+| fapi-ciba-id1-test-plan | 31 | 0 | 3 | 1 | **0** |
+| **Total (4 plans, 199 modules)** | **169** | **21** | **8** | **1** | **0** |
 
 ::: tip Reading REVIEW / SKIPPED
-`REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects).
+`REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects). `WARNING` is an advisory result, not a failed module.
 :::
 
 ### "I need observable refresh-token rotation"

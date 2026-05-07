@@ -105,7 +105,7 @@ provider, err := op.New(
 )
 
 mux := http.NewServeMux()
-// SPA shell + 静的アセットは自前のルートに配置。
+// SPA の入口 + 静的アセットは自前のルートに配置。
 mux.Handle("GET /login/", http.StripPrefix("/login/", http.FileServer(http.Dir("./web/dist"))))
 // `/interaction/{uid}` を含むプロトコル面は OP が所有。
 mux.Handle("/", provider)
@@ -113,12 +113,12 @@ mux.Handle("/", provider)
 
 OP が `/interaction/{uid}` に prompt JSON を返し、`/login/...` に置いた SPA バンドルが `fetch` でそれを取得します。フレームワークはスタックに合うものを選んでください — Go 側の書き方はどれでも同じです。
 
-::: info SPA shell へのリダイレクト先
-低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。先に SPA shell を読み込ませてから(shell が `Accept: application/json` で `/interaction/{uid}` を呼ぶ構成にしたい場合は)、SPA が想定するパス(例: `/login/{uid}`)で SPA shell を配信し、そこから `/interaction/{uid}` を直接 fetch させる構成にしてください。`op.WithSPAUI` では OP がこの shell redirect を行い、state endpoint は `LoginMount/state/{uid}` になります。
+::: info SPA の入口へのリダイレクト先
+低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。先に SPA を読み込ませてから、SPA が `Accept: application/json` で `/interaction/{uid}` を呼ぶ構成にしたい場合は、SPA が想定するパス(例: `/login/{uid}`)で SPA の入口を配信し、そこから `/interaction/{uid}` を直接 fetch させる構成にしてください。`op.WithSPAUI` では OP がこのリダイレクトを行い、状態取得エンドポイントは `LoginMount/state/{uid}` になります。
 :::
 
 ::: info `op.WithSPAUI`
-`op.SPAUI` は `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir` を取り、SPA shell・静的アセットツリー・prompt JSON を 1 オプションで自動 mount します。JSON state endpoint は `LoginMount/state/{uid}` です。自前 router で shell を持ち、`/interaction/{uid}` から fetch したい場合だけ `interaction.JSONDriver` を直接使ってください。
+`op.SPAUI` は `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir` を取り、SPA の入口・静的アセット一式・prompt JSON を 1 オプションで自動マウントします。JSON の状態取得エンドポイントは `LoginMount/state/{uid}` です。自前ルータで SPA を配信し、`/interaction/{uid}` から fetch したい場合だけ `interaction.JSONDriver` を直接使ってください。
 :::
 
 ### フロントエンドスニペット
@@ -306,7 +306,7 @@ op.WithCORSOrigins(
 )
 ```
 
-ライブラリは登録済み `redirect_uri` の origin を per-RP で自動 allowlist もします（static クライアント設定なら CORS 設定の重複不要）。詳細は [SPA 向け CORS](/ja/use-cases/cors-spa)。
+ライブラリは登録済み `redirect_uri` の origin を RP ごとの許可リストへ自動で追加します（static クライアント設定なら CORS 設定の重複不要）。詳細は [SPA 向け CORS](/ja/use-cases/cors-spa)。
 
 ## フル SPA 化せず、文言だけ差し替えたい
 

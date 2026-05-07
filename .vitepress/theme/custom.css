@@ -457,36 +457,6 @@
   }
 }
 
-/* Persistent license badge in the top nav, sits after the GitHub icon
- * so source + license read as one block of provenance. Visible on every
- * page so doc-page readers can find the license without the footer. */
-.op-nav-license {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  color: var(--vp-c-text-3);
-  margin: 0 4px 0 12px;
-  padding: 2px 0 3px;
-  border-bottom: 1px solid transparent;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.op-nav-license:hover {
-  color: var(--vp-c-text-1);
-  border-bottom-color: var(--vp-c-text-1);
-}
-
-@media (max-width: 767px) {
-  .op-nav-license {
-    display: none;
-  }
-}
-
 /* Replace VitePress's default "Aあ" language icon with a globe so the
  * locale switcher reads as i18n at a glance instead of a typography hint. */
 .vpi-languages {
