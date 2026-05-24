@@ -36,7 +36,7 @@ Accept: application/jwk-set+json
 各エントリは `alg: "ES256"`、`use: "sig"`、`kty: "EC"`、`crv: "P-256"` です。OP が署名するのは ES256 のみで、暗号化鍵 (`enc`)や他の alg はアドバタイズされません。
 
 ::: info Keyset が ES256 のみである理由
-JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)は OP が **検証**するときの集合です(RP の `private_key_jwt` 署名や JAR request object 署名で意味があります)。OP が **署名**する側の鍵は v1.0 では ES256 のみです。[必須オプション § WithKeyset](/ja/getting-started/required-options#withkeyset) を参照。
+JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)は OP が **検証**するときの集合です(RP の `private_key_jwt` 署名や JAR request object 署名で意味があります)。OP が **署名**する側の鍵は ES256 のみです。[必須オプション § WithKeyset](/ja/getting-started/required-options#withkeyset) を参照。
 :::
 
 ## HTTP ヘッダ

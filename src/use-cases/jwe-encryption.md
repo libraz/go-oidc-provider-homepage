@@ -10,7 +10,7 @@ The OP can:
 - **Decrypt** JWE-shaped request objects (JAR / PAR §6.1) addressed to the OP's `use=enc` keyset.
 - **Encrypt** outbound `id_token`, JWT-shape `userinfo`, JARM authorization responses, and RFC 9701 JWT introspection responses to the client's registered `use=enc` JWK.
 
-Both directions ship in v0.9.1 against a closed algorithm allow-list.
+Both directions use a closed algorithm allow-list.
 
 ::: details JWS vs JWE — what's the difference?
 **JWS** (RFC 7515 — JSON Web Signature) is the JOSE format you already know: a header + payload + signature. Anyone with the key can read the payload; the signature only proves it wasn't tampered with. **JWE** (RFC 7516 — JSON Web Encryption) wraps the payload in a ciphertext so that only the holder of the matching private key can read it. id_tokens are signed (JWS) by default; encrypting them on top means the payload becomes opaque to anything that's not the intended RP — useful when something other than the RP terminates TLS.
@@ -34,7 +34,7 @@ If TLS hop-by-hop is good enough and your RPs already verify signatures, JWE add
 
 ## The closed allow-list
 
-v0.9.1 advertises and accepts:
+The OP advertises and accepts:
 
 | Family | Values |
 |---|---|

@@ -156,7 +156,7 @@ Service B verifies the DPoP proof against `cnf.jkt`, sees `act.sub`, and applies
 
 By default, a token-exchange request does **not** issue a refresh token. RFC 8693 §2.2.1 makes the response parameter OPTIONAL because chained delegations should not silently extend their reach past the subject_token's lifetime.
 
-To opt in, the policy returns `IssueRefreshToken: op.PtrBool(true)`. The pointer shape (rather than a plain bool) prevents accidental opt-in from struct zero values. Issuance fires the `token_exchange.refresh_issued` audit event for SOC visibility.
+To opt in, the policy returns `IssueRefreshToken: op.PtrBool(true)`. The pointer shape (rather than a plain bool) prevents accidental opt-in from struct zero values. The OP mints and persists the refresh token through its own `RefreshTokenStore`, sharing the issued access token's grant identity and DPoP / mTLS binding. Issuance fires the `token_exchange.refresh_issued` audit event for SOC visibility.
 
 ## Audit signal pairing
 

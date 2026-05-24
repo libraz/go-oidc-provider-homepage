@@ -156,7 +156,7 @@ op.New(
 | `AuditRedirectURIMismatch` | redirect URI が登録リストに不一致 | warn | [ガイド: redirect URI](/ja/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | 旧 alg のパスに到達した(テレメトリ目的。verifier 側では拒否) | warn | [ガイド: JOSE basics](/ja/concepts/jose-basics) |
 | `AuditCORSPreflightAllowed` | CORS preflight が厳格な許可リストに合致した | info | [ユースケース: SPA 向け CORS](/ja/use-cases/cors-spa) |
-| `AuditDPoPLooseMethodCaseAdmitted` | DPoP proof の `htm` が標準形でない大文字小文字。テレメトリ付きで受理 | info | [ガイド: DPoP](/ja/concepts/dpop) |
+| `AuditDPoPLooseMethodCaseAdmitted` | DPoP 証明の `htm` が標準形でない大文字小文字。テレメトリ付きで受理 | info | [ガイド: DPoP](/ja/concepts/dpop) |
 | `AuditKeyRetiredKidPresented` | リクエストが JWKS の猶予期間を過ぎた kid を提示 — verifier で拒否 | warn | [運用: 鍵ローテーション](/ja/operations/key-rotation) |
 
 ### introspection
@@ -194,20 +194,20 @@ op.New(
 
 ### Device Code (RFC 8628)
 
-`/device_authorization`、`op/devicecodekit` の verification ヘルパ、token endpoint の device-code grant から発火します。`device_code.verification.user_code_brute_force` と `device_code.token.slow_down` は、典型的な poll abuse シグナルです。
+`/device_authorization`、`op/devicecodekit` の verification ヘルパ、token endpoint の device-code grant から発火します。`device_code.verification.user_code_brute_force` と `device_code.token.slow_down` は、典型的なポーリング乱用シグナルです。
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
 | `AuditDeviceAuthorizationIssued` | `/device_authorization` が新しい `device_code` + `user_code` ペアを返却 | info | [ガイド: device code](/ja/concepts/device-code) |
 | `AuditDeviceAuthorizationRejected` | `/device_authorization` がリクエストを拒否(未知 client、scope 拒否など) | warn | [ガイド: device code](/ja/concepts/device-code) |
-| `AuditDeviceAuthorizationUnboundRejected` | DPoP / mTLS の proof が必要だが `/device_authorization` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
+| `AuditDeviceAuthorizationUnboundRejected` | DPoP / mTLS の証明が必要だが `/device_authorization` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
 | `AuditDeviceCodeVerificationApproved` | 組み込み側の verification ページがユーザの承認を報告 | info | [ユースケース: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeVerificationDenied` | 組み込み側の verification ページがユーザ拒否を報告(またはレコード単位の brute-force 対策がロックアウト) | warn | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeVerificationDenied` | 組み込み側の verification ページがユーザ拒否を報告(またはレコード単位の総当たり対策がロックアウト) | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeUserCodeBruteForce` | `user_code` 提出が外れた。カウンタを増やし、`devicecodekit.MaxUserCodeStrikes`(既定 5)でロックアウト発火 | alert | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenIssued` | 承認済 device authorization に対し `/token` がトークンを発行 | info | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenRejected` | `/token` が device-code grant を拒否(`access_denied`、`expired_token` など) | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返却。サブストア上のレコードで interval が倍化される | warn | [ユースケース: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態(deny)に遷移させた。組み込み側はここを購読し、`RevokeByGrant(deviceCodeID)` で発行済みのアクセストークンを連鎖失効させる | info | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態に遷移させた。`Deps.AccessTokens` が渡されている場合は、ヘルパが発行済みアクセストークンも連鎖失効させ、`revoked_access_tokens` を記録する | info | [ユースケース: device code](/ja/use-cases/device-code) |
 
 ### CIBA
 
@@ -217,14 +217,14 @@ op.New(
 |---|---|---|---|
 | `AuditCIBAAuthorizationIssued` | `/bc-authorize` が新しい `auth_req_id` を返却 | info | [ガイド: CIBA](/ja/concepts/ciba) |
 | `AuditCIBAAuthorizationRejected` | `/bc-authorize` がリクエストを拒否(未知ユーザ、hint resolver 失敗、scope 拒否) | warn | [ガイド: CIBA](/ja/concepts/ciba) |
-| `AuditCIBAAuthorizationUnboundRejected` | DPoP / mTLS の proof が必要だが `/bc-authorize` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
+| `AuditCIBAAuthorizationUnboundRejected` | DPoP / mTLS の証明が必要だが `/bc-authorize` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
 | `AuditCIBAAuthDeviceApproved` | サブストアが保留中リクエストに対する `Approve` を観測(組み込み側の認証デバイスコールバック) | info | [ユースケース: CIBA](/ja/use-cases/ciba) |
 | `AuditCIBAAuthDeviceDenied` | サブストアが保留中リクエストに対する `Deny` を観測 | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBAPollAbuseLockout` | poll cadence が交渉した interval を大きく下回り続け、リクエストをロックアウト | alert | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBAPollAbuseLockout` | ポーリング間隔が交渉済みの interval を大きく下回り続け、リクエストをロックアウト | alert | [ユースケース: CIBA](/ja/use-cases/ciba) |
 | `AuditCIBATokenIssued` | 承認済 CIBA リクエストに対し `/token` がトークンを発行 | info | [ユースケース: CIBA](/ja/use-cases/ciba) |
 | `AuditCIBATokenRejected` | `/token` が CIBA grant を拒否(`access_denied`、`expired_token`、`authorization_pending`) | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBATokenSlowDown` | `/token` が `slow_down` を返却。クライアントが交渉 interval より速く poll した | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBAPollObservationFailed` | poll の `LastPolledAt` 永続化が失敗。判定自体は続行する(best-effort な観測) | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBATokenSlowDown` | `/token` が `slow_down` を返却。クライアントが交渉 interval より速くポーリングした | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBAPollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する(best-effort な観測) | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
 
 ### Token Exchange (RFC 8693)
 
@@ -232,14 +232,14 @@ op.New(
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditTokenExchangeRequested` | `/token` が RFC 8693 リクエストを受理し handler に入った | info | [ガイド: token exchange](/ja/concepts/token-exchange) |
+| `AuditTokenExchangeRequested` | `/token` が RFC 8693 リクエストを受理しハンドラに入った | info | [ガイド: token exchange](/ja/concepts/token-exchange) |
 | `AuditTokenExchangeGranted` | exchange を admit し新しいアクセストークン(任意で refresh)を発行 | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyDenied` | 組み込み側の `TokenExchangePolicy` が拒否(deny)を返却 | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyError` | ポリシーが拒否(deny)以外のエラーを返却(一過性のインフラ障害など) | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeScopeInflationBlocked` | 要求 scope が subject_token の scope または client allow-list を超えた | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeAudienceBlocked` | 要求 audience がポリシーの allow-list の外だった | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeTTLCapped` | 発行 TTL を(handler の希望、subject_token の残り、グローバル上限)の最小値で切り詰めた | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeActChainTooDeep` | ネストした act chain の深さが上限を超えた | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeTTLCapped` | 発行 TTL を(ハンドラの希望、subject_token の残り、グローバル上限)の最小値で切り詰めた | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeActChainTooDeep` | ネストした act チェーンの深さが上限を超えた | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeEmptyScopeRejected` | scope subset を空集合に解決して拒否 | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeActorEqualsSubject` | actor_token が subject_token と同じ subject に解決(委譲なし) | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeSubjectTokenExternal` | subject_token がローカルレジストリで解決できず、外部発行の opaque トークンとして扱った | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
@@ -248,6 +248,14 @@ op.New(
 | `AuditTokenExchangeSubjectTokenRegistryError` | レジストリの参照(lookup)が `NotFound` 以外の障害を観測。通信路上の応答は `invalid_grant` のまま | alert | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeRefreshIssued` | exchange が refresh 発行をオプトイン(`IssueRefreshToken=op.PtrBool(true)`) | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeSelfExchange` | exchange の宛先が呼び出し client 自身(受動的なトークン replay シナリオ) | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+
+### Custom Grant
+
+| イベント | 意味 | レベル | 参照 |
+|---|---|---|---|
+| `custom_grant.requested` | custom `grant_type` がディスパッチャに入った | info | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
+| `custom_grant.failed` | custom grant の dispatch またはハンドラが失敗した | warn | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
+| `custom_grant.refresh_dropped` | ハンドラが `IssueRefreshToken` でリフレッシュトークン発行を求めたが、クライアントが `refresh_token` grant に登録されていない。アクセストークン応答自体は成功する | info | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
 
 ## 安定性
 

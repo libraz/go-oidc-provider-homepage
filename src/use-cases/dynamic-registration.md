@@ -87,8 +87,8 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 `OpenRegistrationDefaultScopes` is the opt-in baseline. Each entry MUST already be in the OP's scope catalog (the six built-in OIDC standard scopes plus anything added via `WithScope(...)`); unknown values fail at `op.New`. The IAT-bound path is unchanged — when an Initial Access Token is presented, `store.InitialAccessToken.AllowedScopes` still wins.
 
-::: warning Pre-v0.9.x: open-registration scope default
-Earlier releases inherited the OP-wide discovery scope list when an open POST omitted `scope`, so a freshly registered client could hit `/authorize` with `openid profile email …` immediately. The current default is the empty slice — embedders that relied on the legacy behaviour must set `OpenRegistrationDefaultScopes` explicitly.
+::: warning Open-registration scope default is empty
+An open POST that omits `scope` receives no default scopes unless the embedder sets `OpenRegistrationDefaultScopes`. Set that option explicitly when freshly registered clients should be able to request `openid` or other baseline scopes immediately.
 :::
 
 ## Authentication-context client metadata
@@ -133,8 +133,8 @@ The remaining gap to a `full` claim is design choice, not pending work. The reas
 - **PUT omission resets to server defaults, not deletion.** A `PUT /register/{client_id}` that omits `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, or `id_token_signed_response_alg` reapplies the OP default for that field; optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, …) becomes empty.
 - **PUT only re-emits `client_secret` on (a) `none` → confidential auth-method upgrade or (b) explicit rotation request.** The body of a routine metadata edit does not include the secret.
 - **PUT body MUST NOT include server-managed fields.** `registration_access_token`, `registration_client_uri`, `client_secret_expires_at`, and `client_id_issued_at` cause `400 invalid_request`. A `client_secret` value that does not match the authenticated client also returns `400`.
-- **`backchannel_logout_uri` and `backchannel_logout_session_required` round-trip end-to-end.** Both fields are persisted on `POST /register`, returned on `GET /register/{client_id}`, and overwritable through `PUT /register/{client_id}`. Earlier releases silently dropped them on the management surface, leaving back-channel-logout-bound clients unable to update their delivery shape via RFC 7592.
-- **`software_statement` (RFC 7591 §2.3) is not accepted in v1.0.** A request that includes the field returns `invalid_software_statement`. Federation / trust-chain support is out of scope for v1.0.
+- **`backchannel_logout_uri` and `backchannel_logout_session_required` round-trip end-to-end.** Both fields are persisted on `POST /register`, returned on `GET /register/{client_id}`, and overwritable through `PUT /register/{client_id}`.
+- **`software_statement` (RFC 7591 §2.3) is not accepted.** A request that includes the field returns `invalid_software_statement`. Federation / trust-chain support is out of scope.
 
 ## Read / update / delete
 

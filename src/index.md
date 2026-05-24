@@ -122,7 +122,7 @@ handler, _ := op.New(
 ## Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@latest
+go get github.com/libraz/go-oidc-provider/op@v0.9.2
 ```
 
 ::: warning Pre-v1.0

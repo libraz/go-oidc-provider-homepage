@@ -67,7 +67,7 @@ flowchart LR
 
 ### 4. `time.Now()` は `internal/timex/` 経由のみ
 
-`time.Now()` の直接呼び出しは禁止です。`Clock` 抽象により、時刻注入を境界で明示し、テスト時に時刻がずれて replay 検証窓のテストが偶然通ってしまう事故を防いでいます。
+`time.Now()` の直接呼び出しは `forbidigo` lint でブロックされ、すべての wall-clock 読みは `internal/timex.Clock` を経由します。唯一の正規呼び出し点は `internal/timex.systemClock.Now()` で、`internal/timex` を import できない `op/storeadapter/redis` サブモジュールに限り、明示的な例外がもう 1 箇所あります（embedder は `WithClock` でその fallback を上書きできます）。`Clock` 抽象により、時刻注入を境界で明示し、テスト時に時刻がずれて replay 検証窓のテストが偶然通ってしまう事故を防いでいます。
 
 ### 5. エラーは型付きカタログ経由のみ
 

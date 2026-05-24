@@ -35,6 +35,8 @@ Start with the decision map for the surface you are changing. Each detailed entr
 | [#17](#dj-17) | `/end_session` access-token cascade scope | Cascade by default when registry/opaque substores are wired |
 | [#18](#dj-18) | Access-token format default | JWT default; opaque opt-in; per-RFC 8707-resource override |
 | [#19](#dj-19) | JWT access-token revocation strategy default | Grant-tombstone default; FAPI rejects "no revocation" |
+| [#28](#dj-28) | Custom-grant refresh tokens | Handler signals intent; OP owns the refresh-token value and lineage |
+| [#29](#dj-29) | Device-code revocation cascade | `devicecodekit.Revoke` denies the row and revokes issued access tokens when a registry is wired |
 
 ### Registration, issuer, and outbound fetch
 
@@ -118,7 +120,7 @@ Embedders that want the strict §11 reading pass `op.WithStrictOfflineAccess()`.
 **Conflict:** The two readings disagree by construction. A CLI tool cannot pre-register every ephemeral OS-assigned port; a strict exact-match policy breaks the canonical native-app flow.
 
 ::: tip Decision
-Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation is **opt-in per client** via the registered `redirect_uris` listing a loopback URI; the OP then ignores port mismatch when scheme is `http`, the registered hostname is one of the loopback shapes (`127.0.0.1`, `::1`, or the textual `localhost`), the requested host matches the registered host, and path / query / fragment exact-match. The textual `localhost` was added to the authorize-side wildcard set in v0.9.x to mirror the registration-side carve-out (DCR / OIDC Registration §2 already accepted it for native clients) — without it, a native app that registered `http://localhost/cb` would pass DCR but fail at `/authorize` once the OS handed it an ephemeral port. The `localhost` admission still depends on the embedder having opted in at registration via `op.WithAllowLocalhostLoopback()` for web clients (or `application_type=native` for native clients), so DNS-rebinding-sensitive deployments keep the strict literal-IP-only posture by leaving both opt-ins off. HTTPS loopback is not relaxed (no ACME on `127.0.0.1`).
+Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation is **opt-in per client** via the registered `redirect_uris` listing a loopback URI; the OP then ignores port mismatch when scheme is `http`, the registered hostname is one of the loopback shapes (`127.0.0.1`, `::1`, or the textual `localhost`), the requested host matches the registered host, and path / query / fragment exact-match. The textual `localhost` is admitted to keep the authorize-side rule aligned with OIDC Registration's native-client loopback carve-out; without it, a native app that registered `http://localhost/cb` would pass registration but fail at `/authorize` once the OS handed it an ephemeral port. The `localhost` admission still depends on the embedder having opted in at registration via `op.WithAllowLocalhostLoopback()` for web clients (or `application_type=native` for native clients), so DNS-rebinding-sensitive deployments keep the strict literal-IP-only posture by leaving both opt-ins off. HTTPS loopback is not relaxed (no ACME on `127.0.0.1`).
 :::
 
 <a class="faq-anchor" id="dj-5"></a>
@@ -350,7 +352,7 @@ The opaque AT path (`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`) is u
 **Conflict:** A strict reading of the first sentence makes a missing `grant_types` field on PUT mean "delete `grant_types`", which leaves the client with no grant capability and breaks every subsequent `/token` request. The MAY clause in the second sentence is the escape hatch every reference OP uses to avoid that footgun, but the ecosystem has not converged on a single replacement policy.
 
 ::: tip Decision
-**Omitted *defaulted* fields reset to the server-side default. Omitted *optional* fields become empty.** The defaulted set is `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, and `id_token_signed_response_alg`; on PUT they fall back to the OP's documented defaults rather than vanishing from the record. Optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `contacts`, …) is genuinely cleared when omitted. Server-managed fields — `registration_access_token`, `registration_client_uri`, `client_secret_expires_at`, `client_id_issued_at` — are rejected with `400 invalid_request` if present in the body, and a `client_secret` value that does not match the authenticated client is rejected with the same status. The "configured vs defaulted" sparse persistence model that would let a PUT distinguish "the client deliberately omitted this" from "the server defaulted this" is not implemented in v1.0; the on-the-wire behaviour is the same either way for every defaulted field. Implemented in `internal/registrationendpoint/manage.go` (`validateManageUpdateRequest`) and `internal/registrationendpoint/metadata.go` (`applyMetadataDefaults`).
+**Omitted *defaulted* fields reset to the server-side default. Omitted *optional* fields become empty.** The defaulted set is `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, and `id_token_signed_response_alg`; on PUT they fall back to the OP's documented defaults rather than vanishing from the record. Optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `contacts`, …) is genuinely cleared when omitted. Server-managed fields — `registration_access_token`, `registration_client_uri`, `client_secret_expires_at`, `client_id_issued_at` — are rejected with `400 invalid_request` if present in the body, and a `client_secret` value that does not match the authenticated client is rejected with the same status. The OP does not persist a separate "configured vs defaulted" bit for these fields; the on-the-wire behaviour is the same either way for every defaulted field. Implemented in `internal/registrationendpoint/manage.go` (`validateManageUpdateRequest`) and `internal/registrationendpoint/metadata.go` (`applyMetadataDefaults`).
 :::
 
 <a class="faq-anchor" id="dj-22"></a>
@@ -437,4 +439,32 @@ At `/bc-authorize`, duplicate single-valued parameters are rejected and request-
 **JWE is closed by policy and nested JOSE traversal is capped.** The OP accepts only its explicit `alg` and `enc` allow-lists, rejects unknown `crit`, caps decrypted plaintext at 1 MiB, and rejects the 11th JOSE layer with `ErrJWENestingTooDeep`. A normal encrypted request object is two layers at most (JWE wrapping JWS), so the 10-layer ceiling leaves room for future protocol shapes without making recursion unbounded.
 
 Implemented in `internal/jose/jwe.go`, wired through JAR / PAR verification, and pinned by `internal/jar/verify_jwe_test.go` plus scenario coverage for deeply nested encrypted request objects.
+:::
+
+<a class="faq-anchor" id="dj-28"></a>
+
+## 28. Custom-grant refresh tokens — handler value or OP-issued credential?
+
+**Spec:** RFC 6749 §6 treats a refresh token as a credential issued by the authorization server. RFC 9700 §2.2.2 then relies on the AS tracking refresh-token rotation and replay so reuse can retire the affected chain.
+
+**Conflict:** Custom grants are intentionally handler-defined. Letting a handler return an arbitrary refresh-token string is tempting because it mirrors `AccessToken`, but the OP cannot rotate, bind, or cascade-revoke a credential whose value and lineage it did not create. Rejecting refresh tokens entirely is simpler, but it prevents legitimate custom grants and token-exchange policies from using the OP's existing rotation machinery for long-lived service chains.
+
+::: tip Decision
+**Handlers signal intent; the OP owns the refresh-token value.** `CustomGrantResponse.IssueRefreshToken` asks the OP to mint and persist the refresh token through `RefreshTokenStore`. The record shares the issued access token's grant identity and DPoP / mTLS confirmation, so the normal rotation, replay cascade, grant revocation, and introspection semantics apply. A handler never supplies the refresh-token string directly.
+
+Issuance is gated on the client being registered for `refresh_token`; if it is not, the access-token response still succeeds, the refresh token is omitted, and `custom_grant.refresh_dropped` records the policy drop. Implemented in `internal/tokenendpoint/customgrant.go`, with token-exchange carrying the same policy shape through `TokenExchangeDecision.IssueRefreshToken`.
+:::
+
+<a class="faq-anchor" id="dj-29"></a>
+
+## 29. Device-code revocation — audit hook or library-owned cascade?
+
+**Spec:** RFC 8628 defines the device authorization state machine but does not spell out what should happen to access tokens already issued from a device authorization when the user later removes that device. RFC 7009 gives the AS a revocation endpoint, but device unenrolment is an embedder-owned UX action rather than a standard wire request.
+
+**Conflict:** If revocation only flips the device-code row to denied, future polls stop but already-issued access tokens remain usable until `exp`. If every embedder must subscribe to an audit event and run `RevokeByGrant` itself, the security posture depends on remembering out-of-band glue code in each deployment.
+
+::: tip Decision
+**The public helper owns the cascade when the registry is available.** `devicecodekit.Revoke` first denies the device-code row, then calls `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` when `Deps.AccessTokens` is non-nil. Every access token issued from a device-code grant carries the device-code ID as its grant identity, so the existing per-grant revocation primitive covers the whole issued set.
+
+A nil registry is still valid for JWT-stateless deployments or deployments that drive revocation out of band: the row is denied and the audit event fires, but the helper does not pretend an access-token cascade happened. When the registry is wired, `device_code.revoked` includes `revoked_access_tokens` so operators can alert on unexpectedly low or failed cascades. Implemented in `op/devicecodekit.Revoke` and the `store.AccessTokenRegistry` adapters.
 :::

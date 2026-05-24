@@ -143,7 +143,7 @@ See [Use case: device code](/use-cases/device-code), [CIBA](/use-cases/ciba), [C
 | Option | Value | Section | Default |
 |---|---|---|---|
 | `WithEncryptionKeyset` | `op.EncryptionKeyset` (RSA ≥ 2048 / EC P-256/384/521 private keys, `use=enc`) | publishes encryption JWKs; required for inbound JWE request objects and outbound JWE responses (id_token / userinfo / JARM / introspection) | none |
-| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | narrows the v0.9.1 default allow-list (`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`); cannot extend it | full allow-list |
+| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | narrows the default allow-list (`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`); cannot extend it | full allow-list |
 
 See [Use case: JWE encryption](/use-cases/jwe-encryption).
 

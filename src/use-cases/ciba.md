@@ -8,7 +8,7 @@ description: Enable Client-Initiated Backchannel Authentication — /bc-authoriz
 For the conceptual background — what CIBA is, how it differs from device flow, why `binding_message` matters — read the [CIBA primer](/concepts/ciba) first. This page covers the wiring.
 
 ::: details Poll / ping / push delivery — what's the difference?
-CIBA defines three ways for the OP to tell the consumption device "the user approved". **Poll** = the consumption device hits `/token` repeatedly until the answer arrives (same shape as device-code). **Ping** = the OP sends a notification webhook to a client-registered endpoint and the client then polls `/token`. **Push** = the OP sends the issued token directly to the client's webhook. v0.9.1 implements poll only — discovery advertises the supported list so a client cannot negotiate the others.
+CIBA defines three ways for the OP to tell the consumption device "the user approved". **Poll** = the consumption device hits `/token` repeatedly until the answer arrives (same shape as device-code). **Ping** = the OP sends a notification webhook to a client-registered endpoint and the client then polls `/token`. **Push** = the OP sends the issued token directly to the client's webhook. This library implements poll only — discovery advertises the supported list so a client cannot negotiate the others.
 :::
 
 ::: details `auth_req_id` — what's that?
@@ -19,7 +19,7 @@ The opaque identifier `/bc-authorize` returns to the consumption device. It is t
 A short human-readable string the consumption device sends in `/bc-authorize` and the OP forwards to the authentication device's prompt. The cashier's POS shows "Approve $80.00 at Acme Coffee, terminal #14"; the user's phone shows the same string in the approve dialog. This is the only signal the user has that the prompt is genuinely for the transaction in front of them — without it, a phisher who triggered an unrelated CIBA request could trick a user into approving on a vague "Approve sign-in?" dialog. Treat it as required even though the spec says optional.
 :::
 
-::: warning Poll mode only in v0.9.1
+::: warning Poll mode only
 The library implements **poll** delivery. Push and ping delivery modes are deferred to v2+; discovery advertises `backchannel_token_delivery_modes_supported: ["poll"]` exclusively so a client cannot negotiate them. If your design needs push or ping, the OP in this release is not the right choice.
 :::
 
@@ -61,7 +61,7 @@ provider, err := op.New(
 2. Registers the CIBA URN (`urn:openid:params:grant-type:ciba`) at `/token`.
 3. Advertises `backchannel_authentication_endpoint`, `backchannel_token_delivery_modes_supported: ["poll"]`, and `backchannel_user_code_parameter_supported: false` in discovery. When JAR is also enabled, discovery adds `backchannel_authentication_request_signing_alg_values_supported`.
 
-The CIBA substore (`store.CIBARequestStore`) is required: the in-memory adapter ships one; SQL / Redis adapters land in v0.9.2. `op.New` enforces this whether the grant is activated via `op.WithCIBA(...)` or via `op.WithGrants(grant.CIBA, ...)` — both code paths require `Store.CIBARequests()` and a `HintResolver` to be wired before construction succeeds.
+The CIBA substore (`store.CIBARequestStore`) is required. The in-memory adapter ships one. The SQL and Redis adapters return `nil` for this substore, so use in-memory directly or route `CIBARequests` to an in-memory hot tier through the composite adapter. `op.New` enforces this whether the grant is activated via `op.WithCIBA(...)` or via `op.WithGrants(grant.CIBA, ...)` — both code paths require `Store.CIBARequests()` and a `HintResolver` to be wired before construction succeeds.
 
 ## Implementing `HintResolver`
 
@@ -166,26 +166,26 @@ Consumption devices may pin the issued access token to a resource server by send
 - The canonical form (lowercase scheme + host, trailing slash stripped) MUST appear in the client's registered `Resources` allowlist; a request that names a resource the client was never registered for is refused with `400 invalid_target`.
 - Multiple non-empty `resource=` values are rejected with `400 invalid_target`. The CIBA issuance pipeline encodes a single audience entry today; multi-aud support is deferred.
 
-::: warning Pre-v0.9.x silently accepted unregistered resources on `/bc-authorize`
-Earlier releases checked only that `resource=` parsed as an absolute URI. Embedders relying on the lenient behaviour MUST extend the client's `Resources` allowlist to include the value, or stop sending `resource=`.
+::: warning `resource=` must be registered
+`resource=` values must be absolute URIs and must appear in the client's registered `Resources` allowlist. Requests outside that allowlist are rejected with `invalid_target`.
 :::
 
 ## `amr` and `acr` in the CIBA id_token
 
-The id_token issued at the end of a CIBA flow stamps `acr` from `ACRValues[0]` (when non-empty) so RPs can read the requested authentication context class. **`amr` is not populated** in v0.9.x — earlier builds copied the requested `acr_values` slice into `amr`, which mis-stated which authentication methods the user's device actually satisfied. OIDC Core §2 defines `acr` and `amr` as distinct concepts with no defined synonymy, and the v0.9.x CIBARequest substore does not yet surface a real authentication-method signal.
+The id_token issued at the end of a CIBA flow stamps `acr` from `ACRValues[0]` (when non-empty) so RPs can read the requested authentication context class. **`amr` is not populated** because the CIBA request record does not carry a verified authentication-method signal. OIDC Core §2 defines `acr` and `amr` as distinct concepts with no defined synonymy.
 
 If your RP currently reads `amr` from a CIBA id_token, expect an empty / absent claim until a substore extension lands that supplies real method strings.
 
 ## FAPI-CIBA profile
 
-`op.WithProfile(profile.FAPICIBA)` graduates from placeholder to enforced in v0.9.1. Activating it pins:
+`op.WithProfile(profile.FAPICIBA)` pins:
 
 - `RequiredFeatures` = `[JAR]` — `/bc-authorize` requests must be JWT-Secured (RFC 9101).
 - `RequiredAnyOf` = `[[DPoP, MTLS]]` — sender constraint is mandatory; DPoP is selected by default unless the deployment explicitly enables mTLS.
 - `MaxAccessTokenTTL` = 10 min.
 - Client authentication = `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` (the FAPI 2.0 set; `client_secret_basic` rejected).
 - `RequiresAccessTokenRevocation` = true.
-- JAR enforcement on `/bc-authorize`: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` are all required; the request-object lifetime is capped at 60 minutes (FAPI 2.0 Message Signing §5.6). FAPI 2.0 Baseline and Message Signing keep `jti` optional (the v0.9.x relaxation that admits jti-less request objects under FAPI applies to those two profiles only); FAPI-CIBA opts back into the strict shape.
+- JAR enforcement on `/bc-authorize`: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` are all required; the request-object lifetime is capped at 60 minutes (FAPI 2.0 Message Signing §5.6). FAPI 2.0 Baseline and Message Signing keep `jti` optional; FAPI-CIBA opts into the stricter shape.
 - `requested_expiry > 600s` is a hard `invalid_request` (FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 ten-minute cap). Vanilla CIBA keeps the silent-clamp posture.
 - Every JAR failure at `/bc-authorize` (signature mismatch, unsupported alg, missing required claim, fetch failure on `request_uri`, …) maps to `400 invalid_request` per CIBA Core §13. The vanilla `/authorize` JAR pipeline keeps its richer error vocabulary; CIBA collapses it because the spec leaves no room for a finer breakdown on the back-channel surface.
 

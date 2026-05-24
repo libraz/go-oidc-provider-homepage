@@ -8,7 +8,7 @@ description: Client-Initiated Backchannel Authentication を有効化 — /bc-au
 CIBA の概念的背景（何で、device flow とどう違い、なぜ `binding_message` が重要か）は [CIBA 入門](/ja/concepts/ciba) を先に読んでください。このページは組み込み手順を扱います。
 
 ::: details poll / ping / push 配信モードの違い
-CIBA は OP が利用デバイスに「ユーザが承認した」と伝える方法を 3 つ定義しています。**poll** は利用デバイスが応答が来るまで `/token` を繰り返しポーリングする形（device-code と同じ）です。**ping** は OP がクライアント登録済みの webhook に通知を送り、それを受けてクライアントが `/token` を poll する形です。**push** は OP が発行済みトークンを直接クライアントの webhook に届ける形です。v0.9.1 は poll のみを実装しており、discovery のサポートリストもそれに揃えてあるので、クライアント側で他モードへネゴシエートできません。
+CIBA は OP が利用デバイスに「ユーザが承認した」と伝える方法を 3 つ定義しています。**poll** は利用デバイスが応答が来るまで `/token` を繰り返しポーリングする形（device-code と同じ）です。**ping** は OP がクライアント登録済みの webhook に通知を送り、それを受けてクライアントが `/token` を poll する形です。**push** は OP が発行済みトークンを直接クライアントの webhook に届ける形です。本ライブラリは poll のみを実装しており、discovery のサポートリストもそれに揃えてあるので、クライアント側で他モードへネゴシエートできません。
 :::
 
 ::: details `auth_req_id` とは
@@ -19,7 +19,7 @@ CIBA は OP が利用デバイスに「ユーザが承認した」と伝える�
 利用デバイスが `/bc-authorize` に渡す短い人間可読な文字列で、OP が認証デバイスのプロンプトに転送します。レジの POS が「Acme Coffee で 800 円を承認、端末 #14」と表示し、ユーザのスマホの承認ダイアログにも同じ文字列が表示されます。これは「目の前の取引と本当に対応するプロンプトか」をユーザが判別する唯一のシグナルです — 無ければ、無関係な CIBA リクエストを発火させた phisher が、漠然とした「サインインを承認しますか?」ダイアログでユーザを欺けます。仕様上 optional でも、運用では必須として扱ってください。
 :::
 
-::: warning v0.9.1 では poll mode のみ
+::: warning poll mode のみ
 本ライブラリは **poll** 配信を実装します。push / ping 配信モードは v2+ で対応予定です。Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告するため、クライアント側からこれら 2 モードへ交渉することはできません。設計が push / ping を必要とするなら、このリリースの OP は適していません。
 :::
 
@@ -61,7 +61,7 @@ provider, err := op.New(
 2. CIBA URN（`urn:openid:params:grant-type:ciba`）を `/token` に登録
 3. discovery に `backchannel_authentication_endpoint`、`backchannel_token_delivery_modes_supported: ["poll"]`、`backchannel_user_code_parameter_supported: false` を出力。JAR も有効な場合は `backchannel_authentication_request_signing_alg_values_supported` も出力
 
-CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory アダプタは同梱。SQL / Redis アダプタは v0.9.2 で着地します。`op.WithCIBA(...)` 経由でも `op.WithGrants(grant.CIBA, ...)` 経由でも、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方が組み込まれていることを確認します。どちらが欠けていても構成エラーで起動を拒否します。
+CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory アダプタは同梱しています。SQL / Redis アダプタはこのサブストアに `nil` を返すため、in-memory を直接使うか、composite アダプタで `CIBARequests` を in-memory の hot tier にルーティングしてください。`op.WithCIBA(...)` 経由でも `op.WithGrants(grant.CIBA, ...)` 経由でも、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方が組み込まれていることを確認します。どちらが欠けていても構成エラーで起動を拒否します。
 
 ## `HintResolver` を実装する
 
@@ -164,26 +164,26 @@ curl -s -u pos-terminal:<secret> \
 - 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` allow-list に含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます。
 - `resource=` を複数指定すると `400 invalid_target` で拒否されます。CIBA の発行パイプラインは現状単一 audience だけを encode するため、複数 audience 対応は今後の課題です。
 
-::: warning v0.9.x 以前は `/bc-authorize` でも未登録 resource を黙って受け付けていました
-旧バージョンは `resource=` が絶対 URI として parse できることだけを確認していました。寛容な挙動に依存していた組み込み側は、クライアントの `Resources` 許可リストにその値を追加するか、`resource=` を送らないようにしてください。
+::: warning `resource=` は登録済みである必要があります
+`resource=` は絶対 URI で、かつクライアントの `Resources` 許可リストに含まれている必要があります。許可リスト外の値は `invalid_target` で拒否されます。
 :::
 
 ## CIBA id_token の `amr` と `acr`
 
-CIBA フロー終端で発行される id_token は、`ACRValues[0]`（非空のとき）を `acr` に入れるので、RP は要求された認証コンテキストクラスを参照できます。**`amr` は v0.9.x では入りません**。旧版は要求された `acr_values` をそのまま `amr` に複製していましたが、これはユーザの認証デバイスが実際に満たした認証手段を誤って表現する挙動でした。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。v0.9.x の CIBARequest サブストアにはまだ実際の認証手段の signal が入っていません。
+CIBA フロー終端で発行される id_token は、`ACRValues[0]`（非空のとき）を `acr` に入れるので、RP は要求された認証コンテキストクラスを参照できます。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
 
 CIBA id_token の `amr` を読んでいる RP は、実値を提供するサブストア拡張が入るまで、空 / 不在として扱ってください。
 
 ## FAPI-CIBA プロファイル
 
-`op.WithProfile(profile.FAPICIBA)` は v0.9.1 でプレースホルダから強制適用に昇格しました。有効化すると以下の項目が固定されます:
+`op.WithProfile(profile.FAPICIBA)` を有効化すると以下の項目が固定されます:
 
 - `RequiredFeatures` = `[JAR]` — `/bc-authorize` リクエストは JWT-Secured(RFC 9101)必須
 - `RequiredAnyOf` = `[[DPoP, MTLS]]` — sender constraint 必須。mTLS が明示されていない場合は DPoP が既定選択される
 - `MaxAccessTokenTTL` = 10 分
 - クライアント認証 = `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth`(FAPI 2.0 セット。`client_secret_basic` は拒否)
 - `RequiresAccessTokenRevocation` = true
-- `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須、request-object 寿命は 60 分上限(FAPI 2.0 Message Signing §5.6)。FAPI 2.0 Baseline / Message Signing では `jti` は任意のまま(v0.9.x で入った「`jti` を持たない request object を FAPI 配下で受理する」緩和はこの 2 プロファイルにのみ効く)。FAPI-CIBA は厳格な要件にオプトインで戻ります。
+- `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須、request-object 寿命は 60 分上限(FAPI 2.0 Message Signing §5.6)。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な要件に戻ります。
 - `requested_expiry > 600s` はハードエラー `invalid_request`(FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 の 10 分上限)。プロファイル無効時の素の CIBA は黙って上限へクランプする挙動のまま
 - `/bc-authorize` で発生したあらゆる JAR 失敗(署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…)は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/authorize` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
 

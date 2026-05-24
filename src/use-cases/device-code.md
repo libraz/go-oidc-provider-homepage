@@ -50,10 +50,10 @@ provider, err := op.New(
 2. Registers the device-code URN (`urn:ietf:params:oauth:grant-type:device_code`) at `/token`.
 3. Advertises `device_authorization_endpoint` and the URN in `grant_types_supported` in the discovery document.
 
-The device-code substore (`store.DeviceCodeStore`) is required: the in-memory adapter ships one out of the box; SQL / Redis adapters land in v0.9.2.
+The device-code substore (`store.DeviceCodeStore`) is required. The in-memory adapter ships one out of the box. The SQL and Redis adapters return `nil` for this substore, so use in-memory directly or route `DeviceCodes` to an in-memory hot tier through the composite adapter.
 
 ::: warning Substore-presence is enforced at op.New
-If the configured store does not return a non-nil `DeviceCodes()` substore, `op.New` returns a configuration error rather than panicking on the first poll. The same gate fires whether you activate the grant via the dedicated `op.WithDeviceCodeGrant()` option or via `op.WithGrants(grant.DeviceCode, ...)` — both paths require the substore. SQL / Redis adapters in v0.9.0 do not yet provide one; use the in-memory adapter, the composite adapter (in-memory hot tier), or wait for v0.9.2.
+If the configured store does not return a non-nil `DeviceCodes()` substore, `op.New` returns a configuration error rather than panicking on the first poll. The same gate fires whether you activate the grant via the dedicated `op.WithDeviceCodeGrant()` option or via `op.WithGrants(grant.DeviceCode, ...)` — both paths require the substore.
 :::
 
 ## The verification page
@@ -143,8 +143,8 @@ Devices may pin the issued access token to a specific resource server by sending
 - The canonical form (lowercase scheme + host, trailing slash stripped) MUST appear in the client's registered `Resources` allowlist. A request that names a resource the client was never registered for is rejected with `400 invalid_target` — `Resources` is the only audience the OP will mint into the issued AT's `aud`.
 - Multiple non-empty `resource=` values are rejected with `400 invalid_target`. The current issuance pipeline encodes a single audience, so the handler refuses input it would otherwise silently truncate. Multi-aud support is deferred.
 
-::: warning Pre-v0.9.x silently accepted unregistered resources
-Earlier releases checked only that `resource=` parsed as an absolute URI; the value was persisted on the device-code record and surfaced on the eventual access token's `aud` claim regardless of the client's registered `Resources`. Embedders relying on that lenient behaviour MUST extend the client's `Resources` to include the value, or stop sending `resource=`.
+::: warning Unregistered resources are rejected
+The OP mints only audiences that appear in the client's registered `Resources`. Embedders must add every device-flow resource server URI to the client seed (or dynamic-registration metadata) before sending it as `resource=`.
 :::
 
 ## Polling responses
@@ -159,24 +159,25 @@ Earlier releases checked only that `resource=` parsed as an absolute URI; the va
 
 ## Cascade-revoking when a device is unenrolled
 
-When an embedder revokes a device authorization (user clicks "remove this TV" in account settings), every access token issued from that device should die alongside the row. v0.9.1 ships the audit signal but defers the in-tree cascade walk to v0.9.2; until then, embedders subscribe to `op.AuditDeviceCodeRevoked` and run the cascade themselves:
+When an embedder revokes a device authorization (user clicks "remove this TV" in account settings), every access token issued from that device should die alongside the row. `devicecodekit.Revoke` performs that cascade when `devicecodekit.Deps.AccessTokens` is wired:
 
 ::: details Cascade revocation — what's that?
-When a "parent" record (here, the device authorization) is revoked, every "child" credential issued from it should die in the same act. For device-code that means: every access token whose `GrantID` references the device-code id, every refresh token in the same chain. Without the cascade, the user clicks "remove this TV" but the access token in the TV's memory keeps working until its TTL expires — the revocation is silently incomplete. The library tags every issued token with `GrantID` precisely so the embedder can run this walk in one query.
+When a "parent" record (here, the device authorization) is revoked, every "child" credential issued from it should die in the same act. For device-code that means every access token whose `GrantID` references the device-code id. Without the cascade, the user clicks "remove this TV" but the access token in the TV's memory keeps working until its TTL expires — the revocation is silently incomplete. The library tags every issued token with `GrantID` so the helper can run this walk in one query.
 :::
 
 ```go
-// In your audit logger / observer:
-case op.AuditDeviceCodeRevoked:
-    deviceCodeID := event.Extras["device_code_id"].(string)
-    // Every access token derived from this device authorization carries
-    // GrantID == deviceCodeID, so the existing per-grant cascade is sufficient.
-    if _, err := st.AccessTokens().RevokeByGrant(ctx, deviceCodeID); err != nil {
-        // log + alert
-    }
+deps := &devicecodekit.Deps{
+    DeviceCodes:  st.DeviceCodes(),
+    AccessTokens: st.AccessTokens(), // optional; nil skips the cascade
+    Audit:        auditEmitter,
+}
+
+if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReasonUserRevokedDevice); err != nil {
+    // log + surface an operator-visible failure
+}
 ```
 
-A library-side `IssuedAccessTokens(deviceCodeID) []string` substore extension and an OP-side `RevokeByGrant` driver are tracked for v0.9.2 alongside the SQL / Redis substore wiring.
+When `AccessTokens` is set, the `device_code.revoked` audit event includes `revoked_access_tokens`. A nil registry is valid for JWT-stateless or out-of-band deployments; the authorization row is still denied and the audit event still fires.
 
 ## See it run
 

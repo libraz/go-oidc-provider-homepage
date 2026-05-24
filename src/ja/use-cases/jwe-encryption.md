@@ -10,7 +10,7 @@ OP は以下を行えます:
 - OP の `use=enc` keyset 宛の JWE-shape request object（JAR / PAR §6.1）を **復号**
 - 発行する `id_token`、JWT-shape `userinfo`、JARM authorization 応答、RFC 9701 JWT introspection 応答をクライアント登録の `use=enc` JWK 宛に **暗号化**
 
-両方向とも v0.9.1 で実装済みです（閉じた許可リストに対して）。
+両方向とも閉じた許可リストに対して実装しています。
 
 ::: details JWS と JWE の違い
 **JWS**（RFC 7515 — JSON Web Signature）はおなじみの JOSE 形式で、ヘッダ + payload + 署名の構成です。鍵があれば誰でも payload を読めますが、署名は改ざんが無いことしか保証しません。**JWE**（RFC 7516 — JSON Web Encryption）は payload を ciphertext に包み、対応する秘密鍵を持つ受信者だけが読めるようにします。id_token は既定で署名（JWS）されており、その上にさらに JWE で暗号化すれば、想定 RP 以外には payload が不透明になります — RP 以外が TLS を終端するような構成で有用です。
@@ -34,7 +34,7 @@ TLS hop-by-hop で十分で RP がすでに署名検証しているなら、JWE 
 
 ## 閉じた許可リスト
 
-v0.9.1 が広告 + 受理するもの:
+OP が広告 + 受理するもの:
 
 | ファミリ | 値 |
 |---|---|

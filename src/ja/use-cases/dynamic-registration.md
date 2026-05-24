@@ -41,9 +41,9 @@ sequenceDiagram
     RP->>OP: POST /register<br/>Authorization: Bearer <iat><br/>{ redirect_uris, ..., client_name }
     OP->>RP: 201 { client_id, client_secret?, registration_access_token, registration_client_uri, ... }
     RP->>OP: GET /register/<client_id><br/>Authorization: Bearer <registration_access_token>
-    OP->>RP: 200 { client metadata 全体 }
+    OP->>RP: 200 { クライアントメタデータ全体 }
     RP->>OP: PUT /register/<client_id> ...
-    OP->>RP: 200 { 更新済 metadata }
+    OP->>RP: 200 { 更新済みメタデータ }
     RP->>OP: DELETE /register/<client_id>
     OP->>RP: 204
 ```
@@ -81,14 +81,14 @@ op.WithDynamicRegistration(op.RegistrationOption{
   Open:                          true,
   AllowedGrantTypes:             []string{"authorization_code", "refresh_token"},
   AllowedResponseTypes:          []string{"code"},
-  OpenRegistrationDefaultScopes: []string{"openid"}, // scope 省略時の baseline
+  OpenRegistrationDefaultScopes: []string{"openid"}, // scope 省略時の基準
 })
 ```
 
 `OpenRegistrationDefaultScopes` は明示的なオプトインです。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録は変わらず — Initial Access Token を提示した場合は `store.InitialAccessToken.AllowedScopes` が優先します。
 
-::: warning v0.9.x 以前のオープン登録 scope 既定
-旧版は `scope` を省略したオープンな POST に対して OP 全体の discovery scope リストを継承していたため、登録直後のクライアントが `openid profile email …` で `/authorize` を直接呼び出せました。現在の既定は空スライスで、旧挙動に依存していた組み込み側は `OpenRegistrationDefaultScopes` を明示する必要があります。
+::: warning オープン登録の scope 既定は空です
+`scope` を省略したオープンな POST には、組み込み側が `OpenRegistrationDefaultScopes` を設定しない限り既定 scope は付きません。登録直後のクライアントに `openid` などの基準 scope を要求させたい場合は、このオプションを明示してください。
 :::
 
 ## 認証コンテキスト系のクライアントメタデータ
@@ -97,7 +97,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 | フィールド | 効果 | 仕様 |
 |---|---|---|
-| `default_max_age`（nullable な整数） | リクエストが `max_age` を省略した場合の既定値として適用されます。フィールドは end-to-end で nullable なので、「未指定」と「明示的な `0`（再認証必須）」が通信路上でもストア上でも区別され続けます。 | OIDC Core 1.0 §2 / Dynamic Client Registration §2 |
+| `default_max_age`（nullable な整数） | リクエストが `max_age` を省略した場合の既定値として適用されます。フィールドは保存から応答まで nullable のままなので、「未指定」と「明示的な `0`（再認証必須）」が通信路上でもストア上でも区別され続けます。 | OIDC Core 1.0 §2 / Dynamic Client Registration §2 |
 | `default_acr_values` | リクエストが `acr_values` を省略した場合の既定値として適用されます。`op.WithACRPolicy`（[MFA / ステップアップ](/ja/use-cases/mfa-step-up)）と組み合わせて AAL 階層へマップします。 | OIDC Core 1.0 §2 / Dynamic Client Registration §2 |
 | `require_auth_time` | `true` のとき、発行される `id_token` には必ず `auth_time` が乗らなければなりません。OP が元の認証時刻を復元できない場合、値を捏造する代わりに `server_error` でトークン発行を失敗させます。 | OIDC Core 1.0 §2 |
 
@@ -115,11 +115,11 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 ## 登録時に強制している内容
 
-DCR は `full` ではなく `partial` の表記ですが、`partial` の差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反する metadata を拒否します:
+DCR は `full` ではなく `partial` の表記ですが、`partial` の差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反するメタデータを拒否します:
 
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
-- `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って auto-fix することはありません。
-- `jwks` と `jwks_uri` は同時指定不可。URI 系 metadata(`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`)は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール(絶対 URI、`https`、host 必須、userinfo 不可)は通常通り適用されます。
+- `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
+- `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ(`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`)は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール(絶対 URI、`https`、host 必須、userinfo 不可)は通常通り適用されます。
 - `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` と空の `backchannel_logout_uri` の組み合わせは `invalid_client_metadata` で拒否します — 配送先を持たないクライアントが `sid` 配送にオプトインできないようにするためです。
 - `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証(OIDC Core §8.1)。取得は 5 秒のタイムアウトと 5 MiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
 - `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
@@ -130,11 +130,11 @@ DCR は `full` ではなく `partial` の表記ですが、`partial` の差分�
 `full` を名乗らない残差は、設計判断であって積み残しではありません。判断の根拠は [設計判断](/ja/security/design-judgments) ページに別エントリとして残しています — `client_secret` の非開示（[#dj-20](/ja/security/design-judgments#dj-20)）、PUT 省略のセマンティクス（[#dj-21](/ja/security/design-judgments#dj-21)）、`sector_identifier_uri` の fetch と native loopback ルール（[#dj-22](/ja/security/design-judgments#dj-22)）。
 
 - **`GET /register/{id}` では `client_secret` を再掲しない。** ストアは hash しか保持せず、平文は最初の `POST /register` と、後述する 2 つの PUT ケースだけで応答に乗ります。RFC 7591 §3.2.1 は読み取り応答での `client_secret` を OPTIONAL としており、非準拠ではありません。
-- **PUT の省略は削除ではなく server default への reset。** `PUT /register/{client_id}` で `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` のいずれかを省略すると、その field は OP のデフォルト値に戻ります。optional metadata（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）は空値になります。
-- **PUT が `client_secret` を再掲するのは (a) `none` から confidential への auth method 昇格、(b) 明示的な rotation 要求のいずれか。** 通常の metadata 編集の応答には平文 secret は含まれません。
-- **PUT の body に server 管理の field を含めてはならない。** `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` を含めると `400 invalid_request`。認証中のクライアントの `client_secret` と一致しない値を送っても `400` になります。
-- **`backchannel_logout_uri` と `backchannel_logout_session_required` は end-to-end でラウンドトリップします。** いずれも `POST /register` で永続化され、`GET /register/{client_id}` で返却、`PUT /register/{client_id}` で上書きできます。旧リリースは管理面で両方の field を黙って捨てており、back-channel-logout 連携クライアントが RFC 7592 経由で配送設定を更新できませんでした。
-- **`software_statement`（RFC 7591 §2.3）は v1.0 では非対応。** 指定されたリクエストは `invalid_software_statement` で拒否します。federation / trust chain は v1.0 のスコープ外です。
+- **PUT の省略は削除ではなくサーバデフォルトへのリセット。** `PUT /register/{client_id}` で `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` のいずれかを省略すると、そのフィールドは OP のデフォルト値に戻ります。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）は空値になります。
+- **PUT が `client_secret` を再掲するのは (a) `none` から confidential への auth method 昇格、(b) 明示的な rotation 要求のいずれか。** 通常のメタデータ編集の応答には平文 secret は含まれません。
+- **PUT の body にサーバ管理のフィールドを含めてはならない。** `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` を含めると `400 invalid_request`。認証中のクライアントの `client_secret` と一致しない値を送っても `400` になります。
+- **`backchannel_logout_uri` と `backchannel_logout_session_required` は end-to-end でラウンドトリップします。** いずれも `POST /register` で永続化され、`GET /register/{client_id}` で返却、`PUT /register/{client_id}` で上書きできます。
+- **`software_statement`（RFC 7591 §2.3）は非対応。** 指定されたリクエストは `invalid_software_statement` で拒否します。federation / trust chain はスコープ外です。
 
 ## 読み取り / 更新 / 削除
 

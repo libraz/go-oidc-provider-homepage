@@ -67,7 +67,7 @@ A repository-wide rule bans `math/rand`. The lint configuration backs it up. Eve
 
 ### 4. `time.Now()` is funnelled through `internal/timex/`
 
-Direct `time.Now()` calls are forbidden. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
+Direct `time.Now()` calls are blocked by the `forbidigo` lint, so every wall-clock read flows through `internal/timex.Clock`. The single canonical site is `internal/timex.systemClock.Now()`, with one documented carve-out in `op/storeadapter/redis` — a sub-module that cannot import `internal/timex`; embedders override its fallback with `WithClock`. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
 
 ### 5. Errors go through a typed catalog
 

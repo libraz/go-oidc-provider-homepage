@@ -207,7 +207,7 @@ Fire from `/device_authorization`, the embedder's verification ceremony helpers 
 | `AuditDeviceCodeTokenIssued` | `/token` minted a token for an approved device authorization | info | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenRejected` | `/token` rejected the device-code grant (`access_denied`, `expired_token`, etc.) | warn | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenSlowDown` | `/token` returned `slow_down`; the substore row's interval was doubled | warn | [Use case: device code](/use-cases/device-code) |
-| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` flipped the row to denied; embedders subscribe here to cascade-revoke issued access tokens via `RevokeByGrant(deviceCodeID)` | info | [Use case: device code](/use-cases/device-code) |
+| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` flipped the row to denied; when `Deps.AccessTokens` is wired, the helper also cascade-revoked issued access tokens and reports `revoked_access_tokens` | info | [Use case: device code](/use-cases/device-code) |
 
 ### CIBA
 
@@ -248,6 +248,14 @@ Fire from the in-tree `RegisterTokenExchange` handler. Every successful exchange
 | `AuditTokenExchangeSubjectTokenRegistryError` | registry lookup observed a non-`NotFound` fault (transient outage); wire stays `invalid_grant` | alert | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeRefreshIssued` | exchange opted into refresh issuance (`IssueRefreshToken=op.PtrBool(true)`) | info | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeSelfExchange` | exchange targeted the calling client (passive token replay scenario) | warn | [Use case: token exchange](/use-cases/token-exchange) |
+
+### Custom Grant
+
+| Event | Meaning | Level | See |
+|---|---|---|---|
+| `custom_grant.requested` | custom `grant_type` entered the dispatcher | info | [Use case: custom grant](/use-cases/custom-grant) |
+| `custom_grant.failed` | custom grant dispatch or handler failed | warn | [Use case: custom grant](/use-cases/custom-grant) |
+| `custom_grant.refresh_dropped` | handler asked for a refresh token with `IssueRefreshToken`, but the client is not registered for `refresh_token`; the access-token response still succeeds | info | [Use case: custom grant](/use-cases/custom-grant) |
 
 ## Stability
 

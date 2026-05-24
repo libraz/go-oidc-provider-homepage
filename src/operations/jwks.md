@@ -36,7 +36,7 @@ Response body shape:
 Every entry carries `alg: "ES256"`, `use: "sig"`, `kty: "EC"`, and `crv: "P-256"`. The OP only signs with ES256; encryption keys (`enc`) and other algs are not advertised.
 
 ::: info Why ES256-only on the keyset
-The JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) is the set the OP **verifies** — relevant when an RP signs `private_key_jwt` client assertions or JAR request objects with one of those algs. The keys the OP **signs with** are restricted to ES256 in v1.0. See [Required options § WithKeyset](/getting-started/required-options#withkeyset).
+The JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) is the set the OP **verifies** — relevant when an RP signs `private_key_jwt` client assertions or JAR request objects with one of those algs. The keys the OP **signs with** are restricted to ES256. See [Required options § WithKeyset](/getting-started/required-options#withkeyset).
 :::
 
 ## HTTP headers

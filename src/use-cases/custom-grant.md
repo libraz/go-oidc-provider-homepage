@@ -12,7 +12,7 @@ A `grant_type` is the `/token` form parameter that selects which issuance path r
 :::
 
 ::: details Issuance pipeline — what's that?
-The shared code path that the standard grants run through after the dispatcher has identified them: scope intersection against the client's allow-list, audience intersection against registered resources, TTL clamp against the global ceiling, `cnf` stamping for sender-bound tokens, refresh-token lineage tracking. Custom grants get a thin slice of this pipeline (scope / audience / TTL / `cnf`) but **not** refresh-token lineage — see "What the OP refuses" below.
+The shared code path that the standard grants run through after the dispatcher has identified them: scope intersection against the client's allow-list, audience intersection against registered resources, TTL clamp against the global ceiling, `cnf` stamping for sender-bound tokens, and refresh-token lineage tracking. Custom grants share the scope / audience / TTL / `cnf` parts. They can also ask the OP to issue a refresh token by setting `IssueRefreshToken`; the handler still never supplies the refresh-token value itself.
 :::
 
 ::: warning Use the standard grants when you can
@@ -142,13 +142,27 @@ These are floors the OP applies before / after `Handle`:
 - **TTL cap** — `AccessTokenTTL` (or `BoundAccessToken.TTL`) is truncated to the global access-token ceiling with an audit warning if exceeded; negative is rejected.
 - **`openid` scope auto-id_token** — when `Scope` contains `openid` and `IDToken` is empty, the OP signs a fresh id_token from `Subject` + `AuthTime` + `ExtraClaims` (reserved-claim filter applies).
 
+## Refresh tokens
+
+Custom grants can opt into OP-managed refresh-token issuance:
+
+```go
+return op.CustomGrantResponse{
+    BoundAccessToken: &op.BoundAccessToken{ /* ... */ },
+    Scope:             []string{"service.invoke", "offline_access"},
+    IssueRefreshToken: true,
+}, nil
+```
+
+The OP owns the refresh-token credential: it generates the value, persists it through `RefreshTokenStore`, shares the access token's grant identity, and binds it to the same DPoP / mTLS proof. That means the issued refresh token uses the normal rotation, replay cascade (RFC 9700 §2.2.2), and revocation machinery. Issuance is honoured only when the client is registered for the `refresh_token` grant; otherwise the access-token response still succeeds, the refresh token is omitted, and `custom_grant.refresh_dropped` is emitted.
+
+::: details Refresh-token lineage — what's that?
+The OP records each refresh token's parent so a rotation produces a chain (`A → B → C`); when one of those tokens is replayed (RFC 9700 §2.2.2), the OP can revoke every descendant in one shot. `IssueRefreshToken` keeps custom grants inside that OP-owned chain. A handler cannot provide a refresh-token value directly because RFC 6749 §6 treats the refresh token as an authorization-server-issued credential.
+:::
+
 ## What the OP refuses
 
-- **Refresh tokens**. `CustomGrantResponse.RefreshToken` non-empty collapses to `server_error`. Lineage-tracked persistence + rotation for handler-issued refresh tokens is a v2+ design item — until then leave the field empty. The in-tree token-exchange handler is the single exception (its grant_type URN is checked before the gate fires).
-
-::: details Refresh token lineage — what's that?
-The OP records each refresh token's parent so a rotation produces a chain (`A → B → C`); when one of those tokens is replayed (RFC 9700 §2.2.2), the OP can revoke every descendant in one shot. Custom grants opt out of this entirely because their handler picks where the token comes from — the OP cannot reason about a chain it didn't build. Until the lineage seam exists for handler-issued refresh tokens, returning one is a hard error.
-:::
+- **Handler-supplied refresh-token values**. Use `IssueRefreshToken: true` when the OP should mint one.
 - **Both `AccessToken` and `BoundAccessToken`**. Mutually exclusive — setting both yields `server_error`.
 - **Reserved-claim collisions** in `ExtraClaims`. `iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid` (and `act` / `cnf` for `BoundAccessToken`) are dropped silently for `TokenExchangePolicy.ExtraClaims` (so the policy cannot rewrite them) but yield `server_error` for `CustomGrantResponse.ExtraClaims` (so handler bugs surface in the audit record).
 

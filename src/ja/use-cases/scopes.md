@@ -65,8 +65,8 @@ op.WithScope(op.Scope{
 
 クライアントに `billing.read` が付与されると、`/userinfo` 応答には `profile` / `email` 等が開示するものに加えて `billing_tier` と `billing_account_id` が乗ります。`UserStore`（または interaction driver に組み込まれた claim resolver）が当該 subject に対してその claim 名を実際に提供している場合に限ります。
 
-::: tip v0.9.x で開示が有効になりました
-旧バージョンの `Scope.Claims` は同意画面の「この scope はこれを開示します」表示のためだけに使われており、フィールドは意図を文書化していたものの runtime は `/userinfo` での開示に反映していませんでした。v0.9.x からは設定済カタログを runtime の scope → claim 名マップに射影するようになり、付与されたカスタム scope が宣言済 claim を自動で `/userinfo` に開示します。同じ目的で out-of-band な hook を自前で組んでいた組み込み側はそれを外せます。
+::: tip カスタム scope は宣言済 claim を開示します
+設定済みの scope カタログは、実行時の scope → claim 名マップに反映されます。カスタム scope が付与されると、`/userinfo` は `Scope.Claims` に宣言された claim 名を自動で開示します。ただし、その subject に該当 claim の値が存在する場合に限ります。
 :::
 
 ::: info OIDC 標準 scope は影響を受けません

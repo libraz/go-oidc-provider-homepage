@@ -61,8 +61,8 @@ op.WithScope(op.Scope{
 
 When a client is granted `billing.read`, the `/userinfo` response surfaces `billing_tier` and `billing_account_id` (in addition to whatever `profile`, `email`, etc. release) — provided your `UserStore` (or the claim resolver wired into the interaction driver) actually carries those claim names for the subject.
 
-::: tip Released since v0.9.x
-Earlier builds populated `Scope.Claims` only for the consent prompt's "this scope grants…" copy; the field documented intent but the runtime never honoured it for `/userinfo` release. v0.9.x projects the configured catalogue onto a runtime scope → claim-name map so granted custom scopes now release their declared claims through `/userinfo` automatically. Embedders who hand-rolled out-of-band release hooks for the same purpose can drop them.
+::: tip Custom scopes release declared claims
+The configured scope catalogue is projected onto the runtime scope → claim-name map. When a custom scope is granted, `/userinfo` automatically releases the claim names declared on `Scope.Claims`, subject to the subject's available claim data.
 :::
 
 ::: info Standard OIDC scopes are unaffected

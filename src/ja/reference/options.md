@@ -143,7 +143,7 @@ outline: 2
 | Option | 値 | セクション | デフォルト |
 |---|---|---|---|
 | `WithEncryptionKeyset` | `op.EncryptionKeyset`(RSA 2048 bit 以上 / EC P-256/384/521 の秘密鍵、`use=enc`) | 暗号化用 JWK を公開。inbound JWE request_object と outbound JWE 応答(id_token / userinfo / JARM / introspection)に必要 | なし |
-| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | v0.9.1 既定の許可リスト(`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`)を **狭める** だけ。広げることはできない | 既定の許可リスト全体 |
+| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | 既定の許可リスト(`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`)を **狭める** だけ。広げることはできない | 既定の許可リスト全体 |
 
 詳細は [ユースケース: JWE 暗号化](/ja/use-cases/jwe-encryption)。
 

@@ -26,7 +26,7 @@ The consumption device never asks the user for credentials — it just asks the 
   - `id_token_hint` — a previously issued ID token whose `sub` identifies the user.
   - `login_hint_token` — a signed JWT the embedder verifies and maps to a subject (e.g. issued by another upstream system).
 - **Delivery mode** — how the OP tells the consumption device that approval landed:
-  - **poll** — the device polls `/token` with `auth_req_id`; the only mode v0.9.1 ships.
+  - **poll** — the device polls `/token` with `auth_req_id`; this is the only delivery mode the library implements today.
   - **ping** — the OP calls back to the device's HTTPS endpoint with `auth_req_id`, then the device polls `/token`. (Deferred to v2+.)
   - **push** — the OP delivers the token directly to the device's HTTPS endpoint. (Deferred to v2+.)
 :::

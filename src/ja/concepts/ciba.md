@@ -26,7 +26,7 @@ CIBA は [device flow](/ja/concepts/device-code) とは別の形の問題を解�
   - `id_token_hint` — 過去に発行された ID トークン。`sub` claim でユーザを識別する。
   - `login_hint_token` — 組み込み側が署名検証してから subject にマップする署名付き JWT（別の上流システムが発行したものなど）。
 - **配信モード** — OP が承認を利用デバイスに伝える方法:
-  - **poll** — デバイスが `auth_req_id` で `/token` を poll する。v0.9.1 ではこのモードのみ。
+  - **poll** — デバイスが `auth_req_id` で `/token` を poll する。本ライブラリが現在実装している配信モードはこれだけです。
   - **ping** — OP がデバイスの HTTPS endpoint に `auth_req_id` をコールバック、その後デバイスが `/token` を poll する。（v2+ で対応）
   - **push** — OP がデバイスの HTTPS endpoint にトークンを直接配信する。（v2+ で対応）
 :::

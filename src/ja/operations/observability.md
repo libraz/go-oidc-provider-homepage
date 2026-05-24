@@ -34,7 +34,7 @@ op.New(
 - エンドポイント内部のエラー(典型的には `IsServerError(err)` が一致するもの — [エラーカタログ](/ja/reference/errors) を参照)。
 - ストアバックエンドの障害。
 
-`WithLogger` を渡さない場合、ライブラリはログを破棄します(`slog.Default()` へのフォールバックはしません)。渡した handler は redaction ミドルウェアで自動的にラップされ、OAuth/OIDC のシークレットらしい属性(`access_token`、`refresh_token`、`code`、`code_verifier`、`client_secret`、`state`、`nonce`、`dpop`、`authorization`、`cookie`、`set-cookie` …)は handler に到達する前にマスクされます。
+`WithLogger` を渡さない場合、ライブラリはログを破棄します(`slog.Default()` へのフォールバックはしません)。渡したハンドラは redaction ミドルウェアで自動的にラップされ、OAuth/OIDC のシークレットらしい属性(`access_token`、`refresh_token`、`code`、`code_verifier`、`client_secret`、`state`、`nonce`、`dpop`、`authorization`、`cookie`、`set-cookie` …)はハンドラに到達する前にマスクされます。
 
 ## 監査ログ
 
@@ -113,10 +113,10 @@ import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 ```
 
-リクエストのライフサイクルがスパンでカバーされます。エンドポイント内部の child span は現状は発火していません。「`/token` の中で PKCE 検証にどれだけかかったか」のような段階別の trace は、HTTP 層から見える粒度に留まります。
+リクエストのライフサイクルがスパンでカバーされます。エンドポイント内部の子スパンは現状は発火していません。「`/token` の中で PKCE 検証にどれだけかかったか」のような段階別の trace は、HTTP 層から見える粒度に留まります。
 
 ::: info 将来の tracing
-段階別スパンは計画していますが、pre-v1.0 の段階では公開表面を意図的に小さく保っています。同等のカバレッジを高カーディナリティと引き換えに欲しい場合は、監査イベントカタログ(イベント単位の発火)を使えます。
+段階別スパンは計画していますが、公開トレーシング面は意図的に小さく保っています。同等のカバレッジを高カーディナリティと引き換えに欲しい場合は、監査イベントカタログ(イベント単位の発火)を使えます。
 :::
 
 ## リクエスト ID
@@ -185,8 +185,8 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 汎用の IP 単位レート制限では塞げない 3 つの濫用経路だけは、ライブラリ側にロックアウトが組み込まれています — 攻撃者は IP を安価に切り替えられ、保護対象がエントロピーの低いコードや subject 単位の credential（任意の URL ではない）だからです:
 
 - **ログインのブルートフォース（要素跨ぎ）。** `op.WithAuthnLockoutStore` を組み込むと、組み込みの第 2 要素 `Step`（TOTP、メール OTP、パスワード）が同じ subject 単位カウンタを参照するので、攻撃者が要素を切り替えて推測予算を 2 倍にすることはできません。ログインフローは失敗ステップごとに `op.AuditLoginFailed`（最終的に成功した時点で `op.AuditLoginSuccess`）を発火しますが、失敗ストリームを無制限に流さないのはこのロックアウト層の役目です。
-- **Device Code user_code のブルートフォース。** `op.devicecodekit` パッケージが `device_code` ごとの strike カウンタを持ちます。一定回数のミスマッチで verification helper が短絡し、strike ごとに `op.AuditDeviceCodeUserCodeBruteForce` を発火します。ユーザに短いコードを手で打たせる UX を壊さずに防御するには、これしか方法がありません。
-- **CIBA poll abuse。** トークンエンドポイントは単一 `auth_req_id` が許容ケイデンスを超えてポーリングされた回数を数えます。閾値を超えると、リクエストストアの `Deny` を `reason="poll_abuse"` で呼び、ワイヤ応答は `access_denied` になり、`op.AuditCIBAPollAbuseLockout` が発火します。グローバルなレート制限で行儀の良い RP まで巻き添えにすることなく、病的な RP だけを止められます。
+- **Device Code user_code の総当たり。** `op.devicecodekit` パッケージが `device_code` ごとの strike カウンタを持ちます。一定回数のミスマッチで verification ヘルパが短絡し、strike ごとに `op.AuditDeviceCodeUserCodeBruteForce` を発火します。ユーザに短いコードを手で打たせる UX を壊さずに防御するには、これしか方法がありません。
+- **CIBA poll abuse。** トークンエンドポイントは単一 `auth_req_id` が許容ケイデンスを超えてポーリングされた回数を数えます。閾値を超えると、リクエストストアの `Deny` を `reason="poll_abuse"` で呼び、通信路上の応答は `access_denied` になり、`op.AuditCIBAPollAbuseLockout` が発火します。グローバルなレート制限で行儀の良い RP まで巻き添えにすることなく、病的な RP だけを止められます。
 
 これらのゲートはいずれも **専用の** 監査イベントを発火します — `rate_limit.exceeded` / `rate_limit.bypassed` ではありません。この分担は意図的です:
 

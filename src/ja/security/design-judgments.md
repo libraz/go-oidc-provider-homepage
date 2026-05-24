@@ -35,6 +35,8 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 | [#17](#dj-17) | `/end_session` のアクセストークンカスケード | レジストリ / opaque サブストアがあれば既定でカスケード |
 | [#18](#dj-18) | アクセストークン形式の既定 | JWT 既定、opaque はオプトイン、RFC 8707 の resource ごとに上書き可 |
 | [#19](#dj-19) | JWT アクセストークン失効戦略の既定 | grant tombstone が既定。FAPI は「失効処理なし」を拒否 |
+| [#28](#dj-28) | Custom grant のリフレッシュトークン | ハンドラは意図だけを示し、OP が値と親子関係を所有 |
+| [#29](#dj-29) | Device-code 失効時の連鎖失効 | `devicecodekit.Revoke` が行を拒否状態にし、レジストリがあれば発行済み AT も失効 |
 
 ### 登録、issuer、外向き fetch
 
@@ -43,9 +45,9 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 | [#4](#dj-4) | RFC 8252 loopback redirect のポート扱い | 既定は完全一致。native loopback の wildcard は狭いオプトイン |
 | [#9](#dj-9) | Issuer 識別子の検証 | 非正規 issuer は構築時に拒否 |
 | [#20](#dj-20) | DCR の `client_secret` 保存と再開示 | 保存は hash のみ。平文は 1 回限りの応答 artifact |
-| [#21](#dj-21) | RFC 7592 PUT 省略のセマンティクス | defaulted フィールドは reset、optional metadata は clear |
+| [#21](#dj-21) | RFC 7592 PUT 省略のセマンティクス | デフォルト付きフィールドはリセット、任意メタデータはクリア |
 | [#22](#dj-22) | `sector_identifier_uri` の fetch 上限 | 1 回だけ bounded fetch。native は OIDC の loopback host 3 種を受理 |
-| [#23](#dj-23) | 外向き JWKS / metadata fetch の SSRF 境界 | custom transport は trust だけを広げ、dial-time SSRF gate は残す |
+| [#23](#dj-23) | 外向き JWKS / メタデータ取得の SSRF 境界 | custom transport は trust だけを広げ、dial-time SSRF gate は残す |
 | [#24](#dj-24) | Open DCR で省略された `scope` | `OpenRegistrationDefaultScopes` 未設定なら scope なしで登録 |
 
 ### ブラウザ、セッション、UI 境界
@@ -118,7 +120,7 @@ OIDC Core §11 を厳格に読みたい組み込み側は、`op.WithStrictOfflin
 **衝突**: 構造的な矛盾です。CLI ツールは OS が割り当てる動的ポートを事前登録できないため、完全一致を厳密に適用するとネイティブアプリの標準的なフローが壊れます。
 
 ::: tip 選択
-既定は完全一致(OAuth 2.1 を厳格に解釈)です。RFC 8252 §7.3 の緩和は **クライアント単位のオプトイン** とし、登録済みの `redirect_uris` にループバック URI が含まれる場合に限り、scheme が `http` で、登録済 host がループバック形(`127.0.0.1` / `::1` / 文字列 `localhost`)のいずれか、要求側 host が登録 host と一致、かつ path / query / fragment が完全一致のとき、ポート不一致だけを許容します。文字列 `localhost` は v0.9.x で authorize 側のワイルドカード集合に追加されました — 登録(DCR / OIDC Registration §2)はネイティブクライアントに対して以前から `localhost` を受理していたためで、authorize 側だけが拒否すると、`http://localhost/cb` で登録した native アプリが OS から動的ポートを受け取った瞬間に `/authorize` で弾かれる問題がありました。この `localhost` の受理は、登録側で組み込み側がオプトイン(web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`)している場合にだけ意味を持つため、DNS rebinding を懸念するデプロイは登録側のオプトインを外しておけば従来どおり literal IP のみの厳格な構えを保てます。HTTPS ループバックは対象外です(`127.0.0.1` 向けの ACME 証明書を発行する経路がないため)。
+既定は完全一致(OAuth 2.1 を厳格に解釈)です。RFC 8252 §7.3 の緩和は **クライアント単位のオプトイン** とし、登録済みの `redirect_uris` にループバック URI が含まれる場合に限り、scheme が `http` で、登録済 host がループバック形(`127.0.0.1` / `::1` / 文字列 `localhost`)のいずれか、要求側 host が登録 host と一致、かつ path / query / fragment が完全一致のとき、ポート不一致だけを許容します。文字列 `localhost` は、authorize 側の判定を OIDC Registration の native client 向け loopback carve-out と揃えるために受理します。これがないと、`http://localhost/cb` で登録した native アプリが登録は通るのに、OS から動的ポートを受け取った瞬間に `/authorize` で弾かれます。この `localhost` の受理は、登録側で組み込み側がオプトイン(web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`)している場合にだけ意味を持つため、DNS rebinding を懸念するデプロイは登録側のオプトインを外しておけば従来どおり literal IP のみの厳格な構えを保てます。HTTPS ループバックは対象外です(`127.0.0.1` 向けの ACME 証明書を発行する経路がないため)。
 :::
 
 <a class="faq-anchor" id="dj-5"></a>
@@ -316,7 +318,7 @@ JWT と opaque で到達範囲が違う点(JWT は OP のエンドポイント�
 
 <a class="faq-anchor" id="dj-19"></a>
 
-## 19. JWT アクセストークン失効戦略 — `jti` 単位 registry より grant 単位の tombstone
+## 19. JWT アクセストークン失効戦略 — `jti` 単位レジストリより grant 単位の tombstone
 
 **仕様**: RFC 6749 §4.1.2 は、コード再利用時に AS が「可能であれば失効させるべき」と書いています。RFC 6819 §5.2.1.1 はサーバ側に再利用検出の不変条件を期待します。RFC 7009 §2.2 は、self-contained なトークンに対する revocation を未対応にしてもよいと許容します。FAPI 2.0 SP §5.3.2.2 は、サーバ側の revocation を必須としています。
 
@@ -355,18 +357,18 @@ opaque AT 経路(`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`) は、�
 
 **仕様**: RFC 7592 §2.2 は、次の 2 文で構成されます。
 
-> **RFC 7592 §2.2 第 1 文(訳)** 応答で返される metadata の値は、それ以前のクライアントに紐付いていた値を *置換* するものとし、追加してはならない。
+> **RFC 7592 §2.2 第 1 文(訳)** 応答で返されるメタデータの値は、それ以前のクライアントに紐付いていた値を *置換* するものとし、追加してはならない。
 
 > **RFC 7592 §2.2 第 2 文(訳)** サーバはリクエスト中の null または空の値を、他の値と同様に無視してもよい。
 
 **衝突**: 第 1 文を厳密に読むと、PUT で `grant_types` が省略されたら「`grant_types` を削除する」を意味することになります。結果として、クライアントが grant 能力を持たなくなり、その後の `/token` 要求がすべて壊れます。第 2 文の MAY 句は、参照実装が揃ってこのフットガンを避けるために使う逃げ道ですが、エコシステムは単一の置換ポリシーに収束していません。
 
 ::: tip 選択
-**省略された *defaulted* なフィールドは、サーバ default に reset し、省略された *optional* なフィールドは空値にします**。defaulted の集合は `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` で、PUT で省略された場合はレコードから消えるのではなく、OP のドキュメント化された default に戻ります。optional な metadata (`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`contacts` ほか)は、省略によって素直に空値になります。
+**省略された *デフォルト付き* フィールドは、サーバデフォルトにリセットし、省略された *任意* フィールドは空値にします**。デフォルト付きの集合は `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` で、PUT で省略された場合はレコードから消えるのではなく、OP のドキュメント化されたデフォルトに戻ります。任意メタデータ (`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`contacts` ほか)は、省略によって素直に空値になります。
 
 サーバ管理のフィールド — `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` — はボディに存在すれば `400 invalid_request` で拒否し、認証中のクライアントの `client_secret` と一致しない値を送った場合も同様に拒否します。
 
-「クライアントが意図的に省略したのか、サーバが default を埋めたのか」を区別する sparse な永続化モデルは、v1.0 では持ちません。defaulted なフィールドの通信路上の挙動は、どちらの読みでも同一になるためです。実装は `internal/registrationendpoint/manage.go` (`validateManageUpdateRequest`)と `internal/registrationendpoint/metadata.go`(`applyMetadataDefaults`) にあります。
+「クライアントが意図的に省略したのか、サーバがデフォルトを埋めたのか」を区別する sparse な永続化ビットは保持しません。デフォルト付きフィールドの通信路上の挙動は、どちらの読みでも同一になるためです。実装は `internal/registrationendpoint/manage.go` (`validateManageUpdateRequest`)と `internal/registrationendpoint/metadata.go`(`applyMetadataDefaults`) にあります。
 :::
 
 <a class="faq-anchor" id="dj-22"></a>
@@ -391,9 +393,9 @@ authorize 時の loopback ポートワイルドカードは、クライアント
 
 <a class="faq-anchor" id="dj-23"></a>
 
-## 23. 外向き JWKS / metadata fetch の SSRF 境界
+## 23. 外向き JWKS / メタデータ取得の SSRF 境界
 
-**仕様**: OIDC Dynamic Registration、JAR、private_key_jwt、pairwise subject、Back-Channel Logout は、いずれも RP 管理 metadata から OP に外向き URL を fetch させます。各仕様は「何を取得するか」は定めますが、private network、loopback、DNS rebinding、custom TLS root に対する共通の SSRF 境界は定めていません。
+**仕様**: OIDC Dynamic Registration、JAR、private_key_jwt、pairwise subject、Back-Channel Logout は、いずれも RP 管理メタデータから OP に外向き URL を取得させます。各仕様は「何を取得するか」は定めますが、private network、loopback、DNS rebinding、custom TLS root に対する共通の SSRF 境界は定めていません。
 
 **衝突**: conformance runner、内部 CA、public trust に載っていない RP network では custom transport が必要になります。一方、HTTP client 全体を差し替え可能にすると、呼び出し側が意図せず dial-time の SSRF guard まで外してしまえます。custom transport を拒否すれば guard は単純ですが、正当な deployment まで動かなくなります。
 
@@ -407,26 +409,26 @@ JAR JWKS、client-auth JWKS、`sector_identifier_uri`、Back-Channel Logout dest
 
 ## 24. Open DCR で省略された `scope`
 
-**仕様**: RFC 7591 は、登録 metadata の `scope` を optional とします。IAT-bound な登録では、Initial Access Token の発行者は operator code であり、明示的な `AllowedScopes` policy を付与できます。Open registration には、その operator 発行の per-request envelope がありません。
+**仕様**: RFC 7591 は、登録メタデータの `scope` を optional とします。IAT-bound な登録では、Initial Access Token の発行者は operator code であり、明示的な `AllowedScopes` policy を付与できます。Open registration には、その operator 発行の per-request envelope がありません。
 
 **衝突**: 省略された `scope` を「public scope すべて」と扱うと、body の薄い open-registration POST が予想以上に強い client を作ります。逆に「scope なし」と扱う方が安全ですが、従来の OP-wide default を期待する client は scope を明示するか、組み込み側が代替 default を設定する必要があります。
 
 ::: tip 選択
-**Open registration では、省略された `scope` を空の登録 scope set として保存します**。その後の `/authorize` で client が登録していない scope を要求した場合は、`invalid_scope` で拒否します。public default を意図的に持たせたい組み込み側は、`RegistrationOption.OpenRegistrationDefaultScopes` でオプトインします。この値は構築時に OP の scope registry に対して検証されます。
+**Open registration では、省略された `scope` を空の登録 scope set として保存します**。その後の `/authorize` で client が登録していない scope を要求した場合は、`invalid_scope` で拒否します。public default を意図的に持たせたい組み込み側は、`RegistrationOption.OpenRegistrationDefaultScopes` でオプトインします。この値は構築時に OP の scope レジストリに対して検証されます。
 
-IAT-bound 経路は、operator-trusted な広い default を維持します。IAT に `AllowedScopes` がなければ、public scope registry から default を取れます。実装は `op/registration.go`、`op/options_validate.go`、`internal/registrationendpoint/handler.go`、`internal/registrationendpoint/register.go`、`internal/registrationendpoint/metadata_validate.go` にあります。
+IAT-bound 経路は、operator-trusted な広いデフォルトを維持します。IAT に `AllowedScopes` がなければ、public scope レジストリからデフォルトを取れます。実装は `op/registration.go`、`op/options_validate.go`、`internal/registrationendpoint/handler.go`、`internal/registrationendpoint/register.go`、`internal/registrationendpoint/metadata_validate.go` にあります。
 :::
 
 <a class="faq-anchor" id="dj-25"></a>
 
 ## 25. `client_assertion` replay 消費より前の DPoP nonce challenge
 
-**仕様**: RFC 9449 は、AS が token request に `use_dpop_nonce` を返し、client が fresh な DPoP proof で retry する形を許します。RFC 7523 は、JWT client assertion に `jti` / 時刻 window による replay protection を要求します。
+**仕様**: RFC 9449 は、AS が token request に `use_dpop_nonce` を返し、client が fresh な DPoP 証明で retry する形を許します。RFC 7523 は、JWT client assertion に `jti` / 時刻 window による replay protection を要求します。
 
-**衝突**: token endpoint が先に client authentication を行うと、初回 request で `client_assertion` の `jti` を消費したあとに `use_dpop_nonce` を返すことになります。client が form body はそのまま、DPoP proof だけを差し替えて retry すると、nonce challenge の回復経路であるにもかかわらず `invalid_client` / assertion replay で失敗します。
+**衝突**: token endpoint が先に client authentication を行うと、初回 request で `client_assertion` の `jti` を消費したあとに `use_dpop_nonce` を返すことになります。client が form body はそのまま、DPoP 証明だけを差し替えて retry すると、nonce challenge の回復経路であるにもかかわらず `invalid_client` / assertion replay で失敗します。
 
 ::: tip 選択
-**token / PAR 経路では、client authentication より前に DPoP nonce を検証します**。nonce が欠けている、または古い場合は、form に載った `client_assertion` を消費せずに nonce challenge を返します。DPoP proof が受理可能になってから、通常の private_key_jwt replay cache が assertion を 1 回だけ消費します。実装は `internal/tokenendpoint/authcode.go`、refresh-token の token 経路、`internal/parendpoint/par.go` にあり、`internal/tokenendpoint/refresh_dpop_nonce_pkjwt_test.go` が固定しています。
+**token / PAR 経路では、client authentication より前に DPoP nonce を検証します**。nonce が欠けている、または古い場合は、form に載った `client_assertion` を消費せずに nonce challenge を返します。DPoP 証明が受理可能になってから、通常の private_key_jwt replay cache が assertion を 1 回だけ消費します。実装は `internal/tokenendpoint/authcode.go`、refresh-token の token 経路、`internal/parendpoint/par.go` にあり、`internal/tokenendpoint/refresh_dpop_nonce_pkjwt_test.go` が固定しています。
 :::
 
 <a class="faq-anchor" id="dj-26"></a>
@@ -455,4 +457,32 @@ IAT-bound 経路は、operator-trusted な広い default を維持します。IA
 **JWE は policy で閉じ、nested JOSE の走査に上限を置きます**。OP は明示的な `alg` / `enc` allow-list だけを受理し、未知の `crit` を拒否し、復号後 plaintext を 1 MiB に制限し、11 層目の JOSE layer を `ErrJWENestingTooDeep` で拒否します。通常の暗号化 request object は最大でも 2 層(JWE wrapping JWS)なので、10 層の上限は将来の protocol 形状に余地を残しつつ、再帰を無制限にしません。
 
 実装は `internal/jose/jwe.go` にあり、JAR / PAR verification を通じて使われます。`internal/jar/verify_jwe_test.go` と、深い nested encrypted request object の scenario coverage が固定しています。
+:::
+
+<a class="faq-anchor" id="dj-28"></a>
+
+## 28. Custom grant のリフレッシュトークン — ハンドラの値か、OP 発行の資格情報か
+
+**仕様**: RFC 6749 §6 は、リフレッシュトークンを authorization server が発行する資格情報として扱います。RFC 9700 §2.2.2 はその前提で、AS がリフレッシュトークンのローテーションと replay を追跡し、再利用時にチェーンを退役させることを期待します。
+
+**衝突**: custom grant は意図的にハンドラ定義です。`AccessToken` と同じようにハンドラが任意のリフレッシュトークン文字列を返せる設計は一見自然ですが、値と親子関係を OP が作っていない資格情報は、OP がローテーション、バインド、連鎖失効できません。逆にリフレッシュトークンを全面的に拒否すると、長寿命のサービスチェーンを OP 既存のローテーション機構に乗せたい custom grant や token-exchange policy が作れません。
+
+::: tip 選択
+**ハンドラは意図だけを示し、リフレッシュトークン値は OP が所有します**。`CustomGrantResponse.IssueRefreshToken` は、OP に `RefreshTokenStore` 経由でリフレッシュトークンを生成・永続化させるフラグです。レコードは発行アクセストークンと同じ grant 識別子と DPoP / mTLS confirmation を共有するため、通常のローテーション、再利用時の連鎖失効、grant 失効、introspection の意味論に乗ります。ハンドラがリフレッシュトークン文字列を直接渡す経路はありません。
+
+発行は、クライアントが `refresh_token` grant に登録されている場合だけ許可されます。未登録の場合でもアクセストークン応答は成功し、リフレッシュトークンだけが省略され、`custom_grant.refresh_dropped` がそのポリシー上の省略を記録します。実装は `internal/tokenendpoint/customgrant.go` にあり、token-exchange も `TokenExchangeDecision.IssueRefreshToken` で同じ方針を通します。
+:::
+
+<a class="faq-anchor" id="dj-29"></a>
+
+## 29. Device-code 失効 — 監査 hook か、ライブラリ内蔵の連鎖失効か
+
+**仕様**: RFC 8628 は device authorization の状態遷移を定義しますが、ユーザが後からデバイス登録を解除したとき、その device authorization から既に発行されたアクセストークンをどう扱うかまでは明記しません。RFC 7009 は AS の revocation endpoint を定義しますが、デバイス登録解除は標準の通信路リクエストではなく、組み込み側の UX アクションです。
+
+**衝突**: 失効が device-code 行を拒否状態にするだけなら、以後のポーリングは止まりますが、既に発行されたアクセストークンは `exp` まで動き続けます。一方、組み込み側が監査イベントを購読して `RevokeByGrant` を自前で呼ぶ設計にすると、デプロイごとの別経路の接続コードを忘れないことに安全性が依存します。
+
+::: tip 選択
+**レジストリがある場合、公開ヘルパが連鎖失効まで所有します**。`devicecodekit.Revoke` はまず device-code 行を拒否状態にし、`Deps.AccessTokens` が non-nil なら `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` を呼びます。device-code grant から発行されたアクセストークンはすべて device-code ID を grant 識別子として持つため、既存の grant 単位失効処理で発行済み集合をまとめて退役できます。
+
+JWT stateless 構成や、別経路で失効を流す構成では nil レジストリも正当です。その場合、行は拒否状態になり監査イベントも発火しますが、ヘルパはアクセストークン連鎖失効が実行されたとは主張しません。レジストリがある場合は `device_code.revoked` に `revoked_access_tokens` が入り、想定外に少ない連鎖失効や失敗を運用側で検知できます。実装は `op/devicecodekit.Revoke` と各 `store.AccessTokenRegistry` アダプタにあります。
 :::

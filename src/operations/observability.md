@@ -116,7 +116,7 @@ http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 Spans cover the request lifecycle. The library does not currently emit per-endpoint child spans — if you need per-stage traces (e.g. "how long did PKCE verification take inside `/token`") you'll see them only at the HTTP level today.
 
 ::: info Future tracing
-Per-stage spans are planned but pre-v1.0 the surface is intentionally small. The audit event catalog gives you the same coverage (per-event emission) at the cost of higher cardinality.
+Per-stage spans are planned, but the public tracing surface is intentionally small. The audit event catalog gives you the same coverage (per-event emission) at the cost of higher cardinality.
 :::
 
 ## Request IDs

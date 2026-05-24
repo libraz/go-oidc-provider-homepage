@@ -54,7 +54,7 @@ sequenceDiagram
     A->>OP: POST /token grant_type=token-exchange<br/>subject_token=<alice の>&actor_token=<A の>
     OP->>A: 新トークン（sub=alice、act={sub: service-a}、<br/>aud=service-b）
     A->>B: Bearer（sub=alice、act={sub: service-a}）
-    B->>B: alice が service-a を介して操作 — ポリシ判定
+    B->>B: alice が service-a を介して操作 — ポリシー判定
 ```
 
 差は監査ログ(service B が呼び出しの起点を知れる)と認可ポリシー(センシティブな操作で actor を要求できる)に現れます。
