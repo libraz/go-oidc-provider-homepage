@@ -81,7 +81,7 @@ OpenID Connect (OIDC) is **OAuth 2.0 plus identity** — the OP additionally iss
 ::: details JWT — what's that?
 A **JWT** (JSON Web Token, RFC 7519) is a string of three base64url chunks joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is what lets a receiver verify the issuer cryptographically using a public key.
 
-In OIDC, **ID Tokens are always JWTs**, and access tokens issued by `go-oidc-provider` are JWTs too. If you can read JSON and check a signature, you can read a JWT — no proprietary binary format involved.
+In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provider` are JWTs by default and can be switched to opaque tokens when you opt in. If you can read JSON and check a signature, you can read the default JWT shape — no proprietary binary format involved.
 :::
 
 ::: details Opaque vs JWT — quick refresher

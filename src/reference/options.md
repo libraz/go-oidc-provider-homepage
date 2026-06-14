@@ -18,7 +18,7 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 
 - **You're booting a fresh OP for the first time** → start with the four required options: [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
 - **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). The profile auto-selects DPoP unless you explicitly enable mTLS. `profile.IGovHigh` is reserved and rejected today. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
-- **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. PKCE is on by default; `DynamicRegistration` is activated implicitly by `WithDynamicRegistration`.
+- **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. PKCE is on by default. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
 - **You want to restrict the grant types accepted at `/token`** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`. The convenience options `WithDeviceCodeGrant()`, `WithCIBA(...)`, `WithCustomGrant(...)`, and `RegisterTokenExchange(...)` mount the additional endpoints those grants need.
 - **You want sender-constrained access tokens** → DPoP path: `WithFeature(feature.DPoP)` plus optional `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`. mTLS path: `WithFeature(feature.MTLS)` plus optional `WithMTLSProxy(headerName, trustedCIDRs)`. See [Concepts: sender-constrained tokens](/concepts/sender-constraint), [DPoP](/concepts/dpop), [mTLS](/concepts/mtls), and [Use case: DPoP nonce](/use-cases/dpop-nonce).
 - **You want JWT versus opaque access tokens** → `WithAccessTokenFormat(...)` for the OP-wide default and `WithAccessTokenFormatPerAudience(...)` for RFC 8707 resource-scoped overrides. See [Concepts: access-token format](/concepts/access-token-format).
@@ -52,7 +52,7 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 | `WithFeature` | `feature.Flag` (one per call; repeatable) | enables PAR / DPoP / mTLS / JAR / JARM / introspect / revoke individually | conservative defaults |
 | `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token` | `authorization_code`, `refresh_token` |
 | `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `address`, `phone`, `offline_access` |
-| `WithOpenIDScopeOptional` | _(no args)_ | makes pure-OAuth2 (`scope` without `openid`) acceptable | required |
+| `WithOpenIDScopeOptional` | _(no args)_ | makes pure OAuth 2.0 (`scope` without `openid`) acceptable | `openid` required |
 | `WithStrictOfflineAccess` | _(no args)_ | gates `refresh_token` issuance behind explicit `offline_access` consent | lax (refresh on any `openid` grant) |
 
 ## Clients & registration
@@ -88,9 +88,9 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 | `WithCORSOrigins` | `...string` | strict-CORS allowlist (auto-derived from redirect URIs if omitted) | derived |
 | `WithDefaultLocale` | `op.Locale` (BCP 47 tag) | default UI locale when the request carries no `ui_locales` | `"en"` |
 | `WithLocale` | `op.LocaleBundle` (one per call; repeatable) | registers a per-locale message bundle for the bundled HTML driver | English + Japanese seed |
+| `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | per-user locale override consulted at the head of the §L.2 chain | none |
 
 `WithSPAUI` is mutually exclusive with `WithConsentUI`: both own the consent rendering surface. `WithChooserUI` may be configured alongside `WithSPAUI`, but SPA mode owns the chooser through the JSON state envelope; the chooser template is ignored and `op.New` emits a structured warning. See [Custom chooser UI](/use-cases/custom-chooser-ui).
-| `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | per-user locale override consulted at the head of the §L.2 chain | none |
 
 ## Tokens
 
@@ -104,6 +104,7 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 | `WithRefreshTokenOfflineTTL` | `time.Duration` | refresh token lifetime when `offline_access` granted | inherits `WithRefreshTokenTTL` (zero value defers) |
 | `WithRefreshGracePeriod` | `time.Duration` (zero disables; negative rejected) | rotation grace window | 60 s |
 | `WithDPoPNonceSource` | `op.DPoPNonceSource` (interface) | server-supplied DPoP nonce store (`op.NewInMemoryDPoPNonceSource` provides one) | none |
+| `WithInMemoryDPoPNonceLogger` | `*slog.Logger` | optional logger for the in-memory DPoP nonce source; pass it to `op.NewInMemoryDPoPNonceSource`, not `op.New` | no logging |
 
 ## Discovery & endpoints
 
@@ -137,6 +138,18 @@ See [Use case: pairwise subject](/use-cases/pairwise-subject).
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | enables the RFC 8693 token-exchange grant; the policy decides admission per request and may narrow OP-computed defaults | disabled |
 
 See [Use case: device code](/use-cases/device-code), [CIBA](/use-cases/ciba), [Custom grant](/use-cases/custom-grant), [Token exchange](/use-cases/token-exchange).
+
+## Authorization features — RAR, Grant Management, Protected Resource Metadata
+
+| Option | Value | Section | Default |
+|---|---|---|---|
+| `WithAuthorizationDetailTypes` | `...op.AuthorizationDetailType` | enables RFC 9396 Rich Authorization Requests; registers each accepted `type` with its validator. `authorization_details` is then validated at `/authorize`, `/par`, `/token`, persisted on the grant, echoed on JWT access tokens and introspection, and advertised in discovery. A nil `Validate` is rejected at `op.New` | disabled |
+| `WithGrantManagement` | `(actions []op.GrantManagementAction, actionRequired bool)` | enables the OAuth 2.0 Grant Management draft; honours `grant_management_action` / `grant_id`, mounts the query / revoke endpoint, stamps `grant_id` on the token response, and advertises the configured action set in discovery. Experimental (tracks an IETF draft) | disabled |
+| `WithProtectedResources` | `...op.ProtectedResource` | publishes RFC 9728 protected-resource metadata at `/.well-known/oauth-protected-resource` plus each resource path suffix, with the issuer in `authorization_servers` | none |
+
+`op.StepUpChallenge(realm, acrValues, maxAge)` is a standalone helper (not an `op.New` option) that builds the RFC 9470 `WWW-Authenticate: Bearer` challenge an embedder's resource server returns; the OP itself never emits it.
+
+See [Rich authorization requests](/use-cases/authorization-details), [Grant management](/use-cases/grant-management), [Protected resource metadata](/use-cases/protected-resource-metadata), [MFA / step-up](/use-cases/mfa-step-up).
 
 ## Encryption (JWE)
 
@@ -183,7 +196,7 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 
 These are deliberate non-options — see the linked design rationale for why each is fixed:
 
-- **JOSE algorithm allow-list** — fixed at `RS256` / `PS256` / `ES256` / `EdDSA`. No flag widens it. See [Security posture §2](/security/posture#_2-the-jose-alg-list-is-a-closed-type).
+- **JOSE verification allow-list** — incoming client assertions, JAR request objects, and DPoP proofs use the fixed `RS256` / `PS256` / `ES256` / `EdDSA` verification set. OP-issued JWTs are signed with `ES256` only. No flag widens either surface. See [Security posture §2](/security/posture#_2-the-jose-alg-list-is-a-closed-type).
 - **PKCE method** — `S256` only. `plain` is structurally rejected.
 - **Cookie scheme** — `__Host-` prefix, AES-256-GCM, double-submit CSRF always on. See [Required options §WithCookieKeys](/getting-started/required-options#withcookiekeys).
 - **Random source** — `crypto/rand` only; `math/rand` is forbidden by lint.
@@ -202,7 +215,8 @@ grep -rhE '^func With[A-Z]|^func RegisterTokenExchange' \
   op/options_discovery.go op/options_encryption.go op/options_features.go \
   op/options_fapi_proxy.go op/options_protocol.go op/options_session.go \
   op/options_subject.go op/access_token_revocation.go op/i18n.go \
-  op/registration.go \
+  op/registration.go op/authorization_details.go op/grant_management.go \
+  op/protected_resource.go \
   | sort -u
 ```
 

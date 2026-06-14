@@ -50,10 +50,10 @@ provider, err := op.New(
 2. device-code URN（`urn:ietf:params:oauth:grant-type:device_code`）を `/token` に登録
 3. discovery 文書に `device_authorization_endpoint` を出し、`grant_types_supported` に URN を追加
 
-device-code サブストア（`store.DeviceCodeStore`）は必須です。in-memory アダプタは同梱しています。SQL / Redis アダプタはこのサブストアに `nil` を返すため、in-memory を直接使うか、composite アダプタで `DeviceCodes` を in-memory のホット層にルーティングしてください。
+device-code サブストア（`store.DeviceCodeStore`）は必須です。in-memory と SQL の両アダプタが同梱しています — SQL アダプタは sqlite / mysql / postgres で `oidc_device_codes` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis のみの構成では composite アダプタで `DeviceCodes` を durable な層（SQL か in-memory）にルーティングしてください。
 
 ::: warning サブストアの存在は op.New で強制
-設定 store が non-nil な `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じゲートが発火します — どちらの経路でもサブストアは必須です。
+設定 store が nil 以外な `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じゲートが発火します — どちらの経路でもサブストアは必須です。
 :::
 
 ## verification ページ
@@ -141,7 +141,7 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否します。
 - 正規化後の値(scheme + host を小文字化、末尾 `/` 除去)はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
-- `resource=` を複数指定すると `400 invalid_target` で拒否されます。現状の発行パイプラインは単一 audience だけを encode するため、ハンドラは「黙って切り捨てる」入力を受け付けません。複数 audience 対応は今後の課題です。
+- `resource=` を複数指定すると `400 invalid_target` で拒否されます。このリリースの発行パイプラインは単一 audience だけを encode するため、ハンドラは「黙って切り捨てる」入力を受け付けません。
 
 ::: warning 未登録 resource は拒否されます
 OP が audience として発行できるのは、クライアントの `Resources` に登録済みの値だけです。組み込み側は device flow で使うリソースサーバ URI を、`resource=` として送る前にクライアントシードまたは dynamic registration のメタデータへ追加してください。

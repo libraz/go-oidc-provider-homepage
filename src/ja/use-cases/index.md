@@ -11,6 +11,14 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 go run -tags example ./examples/01-minimal
 ```
 
+各ページは、おおよそ同じ判断の流れで読めるようにしています。
+
+- **何を解決するか。** 冒頭で option 名だけでなく、その機能が必要になる背景を説明します。
+- **使うべき状況。** 複雑な機能では、その複雑さを受け入れる価値がある構成を明示します。
+- **使わない方がよい状況。** より単純な組み込み経路で足りる場合は、先にそちらへ誘導します。
+
+初めて読む場合は [最小 OP](/ja/use-cases/minimal-op)、次に [Comprehensive bundle](/ja/use-cases/bundle) を確認し、自分の構成にその必要が出てきた段階で下の各ページへ進むのがおすすめです。
+
 ## 一覧
 
 各 example フォルダはいずれかのページに対応しています。
@@ -47,6 +55,8 @@ go run -tags example ./examples/01-minimal
 | ユースケース | 例 | ページ |
 |---|---|---|
 | 実 DB に永続化 | [`06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store)、[`07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) | [SQL ストア](/ja/use-cases/sql-store) |
+| SQL アダプタのテーブル名を差し替える | [`25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) | [SQL ストア § テーブル名を差し替える](/ja/use-cases/sql-store#テーブル名を差し替える) |
+| ストアをゼロから実装する | [`26-byo-store-from-scratch`](https://github.com/libraz/go-oidc-provider/tree/main/examples/26-byo-store-from-scratch) | [ストアバックエンドを自前実装する](/ja/use-cases/byo-store) |
 | Hot / Cold 分離（Redis 揮発） | [`08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold)、[`09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) | [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) |
 
 ### スコープ / claim
@@ -60,8 +70,8 @@ go run -tags example ./examples/01-minimal
 
 | ユースケース | 例 | ページ |
 |---|---|---|
-| MFA、captcha、ステップアップ | [`20`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp)、[`21`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa)、[`22`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha)、[`23`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / ステップアップ](/ja/use-cases/mfa-step-up) |
-| 既存ユーザーストアの投影 | [`24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore) | [既存ユーザーストアの投影](/ja/use-cases/byo-userstore) |
+| MFA、captcha、ステップアップ | [`20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp)、[`21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa)、[`22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha)、[`23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / ステップアップ](/ja/use-cases/mfa-step-up) |
+| 既存ユーザストアの投影 | [`24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore) | [既存ユーザストアの投影](/ja/use-cases/byo-userstore) |
 
 ### Advanced grants
 

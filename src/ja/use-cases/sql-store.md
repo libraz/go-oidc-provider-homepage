@@ -95,6 +95,27 @@ provider, err := op.New(
 `*sql.Store.Migrate(ctx)` がアクティブな dialect 用の同梱スキーマを適用します。最初のリクエストが届く前のデプロイ時に実行してください。`Schema()` は同じ DDL を文字列で返すので、自前の migration ツールに渡すこともできます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
 :::
 
+## テーブル名を差し替える
+
+同梱テーブルの名前は `oidc_clients`、`oidc_refresh_tokens` のように `oidc_` 接頭辞で固定されています。既に `clients` テーブルを持つ DB に OP を組み込みたい場合や、社内規約が `oidc_` 接頭辞を許さない場合は、`oidcsql.WithNaming` で OP 内部レコードの物理テーブル名を任意に差し替えられます。アダプタは物理名を SQL 標準の識別子文法で検証し、同梱 DDL を書き換え、すべてのクエリを差し替え後のテーブルに対して組み立てます。そのため `Schema()` / `Migrate()` と実行時クエリは常に一致します。
+
+```go
+storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[string]string{
+  "clients":             "auth_clients",
+  "refresh_tokens":      "auth_refresh_tokens",
+  "authorization_codes": "auth_codes",
+  // ...必要なだけ差し替え可能。指定しない種別は oidc_ 既定のまま。
+}))
+```
+
+map のキーは物理名ではなく論理的なレコード種別です。受け付けるキーは 18 個すべてで、`clients`、`authorization_codes`、`refresh_tokens`、`access_tokens`、`opaque_access_tokens`、`grant_revocations`、`revoked_jtis`、`grants`、`sessions`、`par_records`、`interactions`、`consumed_jtis`、`users`、`initial_access_tokens`、`registration_access_tokens`、`op_metadata`、`device_codes`、`ciba_requests` です。未知のキーを渡すと `oidcsql.New` が即座にエラーを返すので、タイポは最初のクエリではなく構築時に検出できます。
+
+> **ソース:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) は 18 テーブルすべてを `auth_` 接頭辞へ差し替え、`sqlite_master` から読み戻して書き換えが効いたことを確認しています。
+
+::: warning 差し替えられるのはテーブル名のみ、カラム名は不可
+`WithNaming` が書き換えるのはテーブル名だけです。カラム構成はアダプタが所有しており固定です。カラム名まで自由にしたい場合(reshape できない既存スキーマ、暗号化カラム、共有テーブルなど)は、同梱アダプタを使わず `store` インターフェースを自分で実装してください。[ストアバックエンドを自前実装する](/ja/use-cases/byo-store)を参照。
+:::
+
 ## MySQL プールサイズ
 
 [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) は本番形の DSN を示します:

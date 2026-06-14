@@ -7,7 +7,7 @@ description: Demonstrating Proof of Possession — クライアントが保有�
 
 **DPoP**(RFC 9449)は、クライアントが保有する鍵にアクセストークンをバインドする仕組みです。同じ鍵で署名された fresh な proof が無ければ、漏洩したアクセストークンは使い物になりません。API 呼び出しごとに小さな JWT(*DPoP proof*)が同行し、OP とリソースサーバはトークンと合わせてこの proof も検証します。
 
-DPoP は HTTP 層だけで完結する方式です。クライアントは TLS クライアント証明書を持つ必要がなく、OP もリバースプロキシのヘッダ仕様を意識する必要がありません。SPA・モバイル・バックエンドのいずれでも同じ流れが使えます。この移植性の高さが、FAPI 2.0 Baseline が DPoP を送信者制約付きトークンの 2 つの選択肢の片方として認める理由です(もう片方は[mTLS](/concepts/mtls))。
+DPoP は HTTP 層だけで完結する方式です。クライアントは TLS クライアント証明書を持つ必要がなく、OP もリバースプロキシのヘッダ仕様を意識する必要がありません。SPA・モバイル・バックエンドのいずれでも同じ流れが使えます。この移植性の高さが、FAPI 2.0 Baseline が DPoP を送信者制約付きトークンの 2 つの選択肢の片方として認める理由です(もう片方は[mTLS](/ja/concepts/mtls))。
 
 ::: details このページで触れる仕様
 - [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP (Demonstrating Proof of Possession)
@@ -89,13 +89,13 @@ DPoP は独立した 4 つのゲートを重ね、proof 1 通を盗み出した�
 
 本ライブラリには単一プロセス用の in-memory 参照実装(`op.NewInMemoryDPoPNonceSource`)が同梱されています。マルチレプリカの HA 構成では、共有 store を持つ自前の `DPoPNonceSource` を差し込みます。FAPI 2.0 Message Signing は nonce を必須化し、Baseline は許可します。
 
-組み込み手順、ローテーションのパイプライン、複数インスタンス運用の注意点は[DPoP nonce フロー](/use-cases/dpop-nonce)に詳しく書いています。
+組み込み手順、ローテーションのパイプライン、複数インスタンス運用の注意点は[DPoP nonce フロー](/ja/use-cases/dpop-nonce)に詳しく書いています。
 
 ## 本ライブラリが何をバインドするか
 
 アクセストークンは、`feature.DPoP` が有効でクライアントが `/token` で proof を提示した場合(あるいは authorize / PAR 要求で `dpop_jkt` により鍵を事前確約した場合)、常に DPoP バインドされます。
 
-リフレッシュトークンは[設計判断 #15](/security/design-judgments#dj-15)に従います — public クライアントには bind、confidential クライアントには bind しない:
+リフレッシュトークンは[設計判断 #15](/ja/security/design-judgments#dj-15)に従います — public クライアントには bind、confidential クライアントには bind しない:
 
 - **Public クライアント**(`token_endpoint_auth_method = "none"`、典型的には SPA とネイティブアプリ)では、refresh chain は最初の発行で DPoP バインドされ、RFC 9449 §5.4 の規則に従って以降のローテーションでもバインドが継承されます。鍵が無ければリフレッシュトークン単体は無価値で、これはまさに RFC 9449 §1 が想定する脅威モデルです。
 - **Confidential クライアント**(`private_key_jwt`、`tls_client_auth`)では、refresh chain は bind しません。リクエストごとに DPoP 鍵をローテーションでき(OFCS の plan がこの動作を検証しています)、chain の生涯を 1 鍵に縛りません。各 refresh で発行されるアクセストークンは、その交換時に提示された鍵にバインドされ続けるので、漏洩面はアクセストークンに限定されます。
@@ -156,13 +156,13 @@ op.New(
 
 ## DPoP が向かないケース
 
-- **既存 PKI を持つバックエンドサービス** — すべてのサービスが内部 CA 発行のクライアント証明書を既に持っている場合、[mTLS](/concepts/mtls)で同じ基盤を再利用するほうが、新しい鍵管理面を増やさずに済みます。
+- **既存 PKI を持つバックエンドサービス** — すべてのサービスが内部 CA 発行のクライアント証明書を既に持っている場合、[mTLS](/ja/concepts/mtls)で同じ基盤を再利用するほうが、新しい鍵管理面を増やさずに済みます。
 - **リクエストごとの署名コストを許容できないクライアント** — API 呼び出しごとに JWS 1 通の署名コストが発生します。1 本のチャネルを使い回す制約デバイスは、TLS 層で binding する mTLS のほうが向くことがあります。
 - **既に mTLS 一択で標準化された規制環境** — 一部のオープンバンキング地域では、ネットワーク層で mTLS のみを許容しています。DPoP を上から重ねる前にローカルプロファイルを確認してください。
 
 ## 次に読む
 
-- [mTLS (RFC 8705)](/concepts/mtls) — もう一方の送信者制約方式。TLS 証明書にバインドします。
-- [送信者制約 — 選定ガイド](/concepts/sender-constraint) — 比較表と使い分けの指針。
-- [DPoP nonce フロー](/use-cases/dpop-nonce) — §8 / §9 nonce パイプラインの詳細な組み込み手順。
-- [設計判断](/security/design-judgments) — public / confidential での refresh バインド差を含む、解決済みの仕様間トレードオフ。
+- [mTLS (RFC 8705)](/ja/concepts/mtls) — もう一方の送信者制約方式。TLS 証明書にバインドします。
+- [送信者制約 — 選定ガイド](/ja/concepts/sender-constraint) — 比較表と使い分けの指針。
+- [DPoP nonce フロー](/ja/use-cases/dpop-nonce) — §8 / §9 nonce パイプラインの詳細な組み込み手順。
+- [設計判断](/ja/security/design-judgments) — public / confidential での refresh バインド差を含む、解決済みの仕様間トレードオフ。

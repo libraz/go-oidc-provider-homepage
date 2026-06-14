@@ -19,7 +19,7 @@ description: /.well-known/openid-configuration の中身、初学者が押さえ
 discovery がなければ、すべての RP がエンドポイント URL・署名アルゴリズム・対応機能をハードコードする必要があり、鍵ローテーションや機能切り替えのたびに各 RP のコード変更が必要になります。discovery によって、RP は「`https://op.example.com` に居る OP」というひとつの URL を知っていれば足りるようになります。
 :::
 
-## Discovery ドキュメントの中身
+## Discovery 文書の中身
 
 初学者が実際に目にし、使うフィールドの代表例を挙げます。下記のフィールドはすべて、対応する機能が組み込まれていれば本ライブラリが出力します。
 
@@ -48,6 +48,12 @@ discovery がなければ、すべての RP がエンドポイント URL・署�
 | `dpop_signing_alg_values_supported` | DPoP 機能（RFC 9449）を有効化した場合のみ。 |
 | `require_pushed_authorization_requests` | FAPI 2.0 プロファイルでのみ `true`。FAPI 2.0 が PAR を必須化するため。 |
 | `claims_parameter_supported` | 既定は `true`。OIDC §5.5 の `claims` request を広告・処理しない場合は `op.WithClaimsParameterSupported(false)` を渡す。 |
+| `authorization_details_types_supported` | `authorization_details` で受理する RFC 9396 の `type` 値。`op.WithAuthorizationDetailTypes(...)` を組み込んだときのみ出現。 |
+| `grant_management_endpoint` | grant management エンドポイントの URL。`op.WithGrantManagement(...)` を組み込んだときのみ出現。 |
+| `grant_management_actions_supported` | OP が受理する grant management アクション（`create` / `replace` / `merge` / `query` / `revoke`）。`grant_management_endpoint` と一緒に出現。 |
+| `grant_management_action_required` | `WithGrantManagement(..., actionRequired=true)` のときのみ `true` として出力。認可リクエストは `grant_management_action` を必ず含める必要がある。 |
+
+`op.WithProtectedResources(...)` を組み込むと、OP はさらに RFC 9728 protected-resource metadata を `/.well-known/oauth-protected-resource` で配信します。登録リソースごとに 1 つの文書があり、`openid-configuration` のフィールドではなく独立した well-known 文書です。
 
 ::: details `_supported` は広告であってポリシーではない
 `_supported` のリストは、OP が **受け付ける** ものであって、すべてのクライアントがそれらを使う必要があるわけではありません。クライアントは部分集合を選んでよく、OP はリストにないものを拒否します。
@@ -62,34 +68,34 @@ discovery がなければ、すべての RP がエンドポイント URL・署�
 3. キャッシュからエンドポイント・対応アルゴリズム・対応機能を取り出す。
 4. キャッシュ期限切れか、JWKS による署名検証が失敗した（kid が未知 — おそらく OP が鍵をローテーションした）ときに再取得。
 
-本ライブラリはこの経路を 2 つの方法で支援します。第 1 に、ローテーションが行われていない間、discovery ドキュメントと JWKS は安定しているので、RP 側のキャッシュは長くしておけます。第 2 に、操作者がローテーション中であることを `op.WithJWKSRotationActive(predicate)` で宣言した期間、本ライブラリは JWKS のレスポンスに短い `Cache-Control: max-age` を付けて返すので、再取得した RP は新しい鍵を発見できます。discovery ドキュメント自体は `op.New` で 1 度組み立てられ、リクエストごとには再生成されないため、インスタンス間で内容がドリフトしません。
+本ライブラリはこの経路を 2 つの方法で支援します。第 1 に、ローテーションが行われていない間、discovery 文書と JWKS は安定しているので、RP 側のキャッシュは長くしておけます。第 2 に、操作者がローテーション中であることを `op.WithJWKSRotationActive(predicate)` で宣言した期間、本ライブラリは JWKS のレスポンスに短い `Cache-Control: max-age` を付けて返すので、再取得した RP は新しい鍵を発見できます。discovery 文書自体は `op.New` で 1 度組み立てられ、リクエストごとには再生成されないため、インスタンス間で内容がドリフトしません。
 
 ::: tip Discovery は RP 側のキャッシュを語る話で、OP 側のキャッシュではない
-OP は provider のマウント時に discovery ドキュメントを構築・marshal し、その handler の lifetime ではキャッシュ済み JSON body を返します。コストがかかる方の話 — 直近にローテーションされた鍵を使った ID トークンの JWS 検証 — こそが、discovery キャッシュの無効化が解こうとしている本当の問題です。詳細は [JWKS ローテーション](/ja/operations/key-rotation) を参照。
+OP は provider のマウント時に discovery 文書を構築・marshal し、その handler の lifetime ではキャッシュ済み JSON body を返します。コストがかかる方の話 — 直近にローテーションされた鍵を使った ID トークンの JWS 検証 — こそが、discovery キャッシュの無効化が解こうとしている本当の問題です。詳細は [JWKS ローテーション](/ja/operations/key-rotation) を参照。
 :::
 
 ## 本ライブラリでの構築方法
 
 discovery は `op.New` の時点で（`internal/discovery/build.go` で）、組み込まれた機能集合から一度だけ構築されます。実行時のドリフトは発生しません — 組み込み側が PAR を組み込んでいなければ `pushed_authorization_request_endpoint` は出力されず、`require_pushed_authorization_requests` も登場しません。組み込み側が `op.WithProfile(profile.FAPI2Baseline)` を組み込んでいれば FAPI の絞り込みが適用されます — `token_endpoint_auth_methods_supported` は FAPI が許可する集合に絞り込まれ、`require_pushed_authorization_requests=true` が出現し、introspection / revocation の auth method リストは絞り込み後の同じリストからコピーされます。
 
-リポジトリには、プロファイルごとの discovery ドキュメント形状を検証する golden test があり、「discovery が言うこと」と「ハンドラが実際に行うこと」の間で気付かれずに進行するドリフトを PR 時点で捕捉します。背景は [設計判断 #12](/ja/security/design-judgments#dj-12) を参照。
+リポジトリには、プロファイルごとの discovery 文書形状を検証する golden test があり、「discovery が言うこと」と「ハンドラが実際に行うこと」の間で気付かれずに進行するドリフトを PR 時点で捕捉します。背景は [設計判断 #12](/ja/security/design-judgments#dj-12) を参照。
 
 ## 本ライブラリが広告 *しない* もの
 
-本ライブラリは、意図的に discovery ドキュメントを絞り込んでいます。
+本ライブラリは、意図的に discovery 文書を絞り込んでいます。
 
 - **`none` alg は出さない。** `id_token_signing_alg_values_supported` と `request_object_signing_alg_values_supported` に `none` は含まれません。型自体に存在しません（[JOSE 基礎](/ja/concepts/jose-basics) と [設計判断 #11](/ja/security/design-judgments#dj-11) を参照）。
 - **ID トークンに HMAC 系 alg を出さない。** `HS256` / `HS384` / `HS512` は広告しません。alg-confusion 攻撃クラスはこれらが到達可能であることを必要とするため、型を閉じることで攻撃を構造的に閉じます。
 - **PAR が無効なら `request_uri` を示すフィールドを出さない。** `request_uri_parameter_supported` と `pushed_authorization_request_endpoint` は、組み込み側が PAR を組み込んでいるときだけ登場します。
-- **`claims_parameter_supported` のデフォルトは `true` だが、無効化できる。** `op.WithClaimsParameterSupported(false)` を渡すと、discovery ドキュメントは OIDC §5.5 対応を広告せず、authorize / PAR は malformed JSON の拒否後に `claims` payload を無視します。
-- **`frontchannel_logout_supported` も `check_session_iframe` も出さない。** Front-Channel Logout 1.0 / Session Management 1.0 は実装していないため、discovery ドキュメントはそれらについて沈黙します。組み込み側は代わりに Back-Channel Logout 1.0 を使います — [設計判断 #5](/ja/security/design-judgments#dj-5) を参照。
+- **`claims_parameter_supported` のデフォルトは `true` だが、無効化できる。** `op.WithClaimsParameterSupported(false)` を渡すと、discovery 文書は OIDC §5.5 対応を広告せず、authorize / PAR は malformed JSON の拒否後に `claims` payload を無視します。
+- **`frontchannel_logout_supported` も `check_session_iframe` も出さない。** Front-Channel Logout 1.0 / Session Management 1.0 は実装していないため、discovery 文書はそれらについて沈黙します。組み込み側は代わりに Back-Channel Logout 1.0 を使います — [設計判断 #5](/ja/security/design-judgments#dj-5) を参照。
 
 ::: warning Discovery は契約面
-`_supported` の各配列は、OP が「受け付けると約束した」値の集合です。値を増やすことは契約の拡大、値を減らすことは縮小にあたります。RP はリストと比較し、自分が必要とするアルゴリズムを広告しなくなった OP との通信を拒否することがあります。discovery ドキュメントの変更は、公開 API の変更と同じ重さで扱ってください。
+`_supported` の各配列は、OP が「受け付けると約束した」値の集合です。値を増やすことは契約の拡大、値を減らすことは縮小にあたります。RP はリストと比較し、自分が必要とするアルゴリズムを広告しなくなった OP との通信を拒否することがあります。discovery 文書の変更は、公開 API の変更と同じ重さで扱ってください。
 :::
 
 ## 次に読む
 
 - [運用: JWKS](/ja/operations/jwks) — JWK Set がどう見え、本ライブラリがどう serve しているか。
 - [運用: 鍵ローテーション](/ja/operations/key-rotation) — RP のキャッシュを壊さずに署名鍵をローテーションする方法。
-- [リファレンス: オプション](/ja/reference/options) — discovery ドキュメントに現れるすべての `op.With...` オプション。
+- [リファレンス: オプション](/ja/reference/options) — discovery 文書に現れるすべての `op.With...` オプション。

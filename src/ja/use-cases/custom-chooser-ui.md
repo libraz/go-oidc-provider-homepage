@@ -1,6 +1,6 @@
 ---
 title: カスタムアカウントチューザ UI
-description: prompt=select_account のサーバー描画テンプレートを差し替えつつ、state、CSRF、セッション切替は OP に保持させる。
+description: prompt=select_account のサーバ描画テンプレートを差し替えつつ、state、CSRF、セッション切替は OP に保持させる。
 ---
 
 # ユースケース — カスタムアカウントチューザ UI
@@ -10,7 +10,7 @@ description: prompt=select_account のサーバー描画テンプレートを差
 - **セッションの意味論**: ブラウザが複数の有効アカウントを含む chooser group を持ち、選択されたセッションが次の `sub` を決める
 - **描画面**: アカウント一覧を表示し、選択された `SessionID` を POST するページ
 
-[マルチアカウントチューザ](/ja/use-cases/multi-account) は前者を扱います。このページは後者、つまりブランド付きのサーバー描画のアカウント選択画面を持ちつつ、state、CSRF、最後の `Sessions.Switch` は OP に任せるための `op.WithChooserUI` を扱います。
+[マルチアカウントチューザ](/ja/use-cases/multi-account) は前者を扱います。このページは後者、つまりブランド付きのサーバ描画のアカウント選択画面を持ちつつ、state、CSRF、最後の `Sessions.Switch` は OP に任せるための `op.WithChooserUI` を扱います。
 
 > **ソース:** [`examples/12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) は、デフォルトの HTML interaction ドライバで `op.WithChooserUI` を使う例です。JSON ドライバ / SPA 経路は [`examples/13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) と対比してください。
 
@@ -19,7 +19,7 @@ description: prompt=select_account のサーバー描画テンプレートを差
 | 目的 | 使うもの |
 |---|---|
 | 同梱 chooser をそのまま使う | オプション不要。デフォルト HTML ドライバが描画 |
-| chooser の HTML / 文言 / レイアウトだけ変え、サーバー描画に留める | `op.WithChooserUI(op.ChooserUI{Template: tmpl})` |
+| chooser の HTML / 文言 / レイアウトだけ変え、サーバ描画に留める | `op.WithChooserUI(op.ChooserUI{Template: tmpl})` |
 | chooser を SPA の中で描画する | `op.WithSPAUI` または `interaction.JSONDriver` |
 | アカウントのグループ化や切替のロジックを変える | テンプレートではなく session store / authenticator 側 |
 
@@ -90,7 +90,7 @@ sequenceDiagram
 
 | UI の所有者 | オプション |
 |---|---|
-| OP によるサーバー描画 HTML | `op.WithChooserUI` |
+| OP によるサーバ描画 HTML | `op.WithChooserUI` |
 | OP がマウントする SPA の入口 | `op.WithSPAUI` |
 | 自前ルータが SPA を配信 | `op.WithInteractionDriver(interaction.JSONDriver{})` |
 
@@ -105,4 +105,4 @@ sequenceDiagram
 
 - [マルチアカウントチューザ](/ja/use-cases/multi-account) — chooser group の意味論と `Sessions.Switch`。
 - [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) — 同じ prompt を JSON ドライバで扱う経路。
-- [カスタム同意 UI](/ja/use-cases/custom-consent-ui) — consent 向けの同等のサーバー描画テンプレート差し込み口。
+- [カスタム同意 UI](/ja/use-cases/custom-consent-ui) — consent 向けの同等のサーバ描画テンプレート差し込み口。

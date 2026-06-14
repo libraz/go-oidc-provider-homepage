@@ -11,7 +11,9 @@ description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 c
 - **`Rule`** — その factor がこの試行で **必要** かを判定。
 - **`LoginFlow`** — `Primary` ステップと `Rules` の順序付きリスト。
 
-各 step は対応する rule が yes と言ったときだけ走ります。「password 常時、TOTP 常時」がひとつのフロー、「password 常時、3 回失敗後 captcha、リスク高なら TOTP」が別のフロー。
+各 step は対応する rule が yes と言ったときだけ走ります。「password 常時、TOTP 常時」が 1 つのフロー、「password 常時、3 回失敗後 captcha、リスク高なら TOTP」が別のフローです。
+
+このページは、ログイン判定が「password を受理したか」だけでは終わらない場合に使います。たとえば必須 MFA、不審な試行への captcha、リスクベースの追加 factor、RP が要求する ACR step-up です。ユーザ名と password だけでよいなら、既定の password primary step と user store のページで足ります。必要になる前に rule を増やすと、テストや復旧の範囲だけが広がります。
 
 ::: details このページで触れる仕様
 - [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) — TOTP（時刻ベースワンタイムパスワード）
@@ -132,6 +134,29 @@ op.New(
 ```
 
 ユーザがセッション内で `aal2` で認証済の場合、RP の `acr_values=aal3` 要求は対話的 step-up を発火させます。OP は次の step を実行してセッションを `aal3` に引き上げてから RP に redirect で返します。
+
+## リソースサーバ側: `op.StepUpChallenge`
+
+RFC 9470 には 2 つの側面があります。OP 側は上記のとおり — `acr_values` / `max_age` を尊重して再認証します。もう一方は **リソースサーバ** にあります。ある機微な呼び出しに対してアクセストークンが必要な強度や freshness を欠くとき、リソースサーバは `401` を返し、`error="insufficient_user_authentication"` と必要な `acr_values` / `max_age` を載せた `WWW-Authenticate: Bearer` チャレンジを返します。クライアントはその値で再認可し、上記の OP 側 step-up が働きます。
+
+`op.StepUpChallenge` はそのヘッダ値を組み立てます。OP 自身はこれを発行しません — トークン検証と `401` の応答はリソースサーバの仕事なので、本ライブラリは正しく整形されたチャレンジ文字列を生成するところで止まります:
+
+```go
+maxAge := int64(300)
+challenge := op.StepUpChallenge("api", []string{"urn:acr:high", "urn:acr:mfa"}, &maxAge)
+// challenge == `Bearer realm="api", error="insufficient_user_authentication",
+//               acr_values="urn:acr:high urn:acr:mfa", max_age="300"`
+w.Header().Set("WWW-Authenticate", challenge)
+w.WriteHeader(http.StatusUnauthorized)
+```
+
+空の `realm`、空の `acrValues` スライス、`nil` の `maxAge` はそれぞれ省略され、必須の `error="insufficient_user_authentication"` は常に含まれます。`acrValues` は `acr_values` リクエストパラメータと同じく、space 区切りの引用符付き 1 文字列にエンコードされます。
+
+## ワンタイム factor は単回使用
+
+ワンタイム factor — email-OTP（`op.StepEmailOTP`）、TOTP（`op.StepTOTP`）、recovery code（`op.StepRecoveryCode`）— は並行下でも単回使用です。同じコードを 2 度受理することはできません。store は atomic な compare-and-set でこれを強制し、再提示時には `ErrAlreadyConsumed` を返すので、同じコードを提示する 2 つの競合リクエストが両方とも成功することはありません。[factor store を自前実装](/ja/use-cases/byo-store)する場合は、これらの consume 操作を CAS にする必要があります（in-memory リファレンスがその形を示します）。
+
+terminal な factor 失敗 — 期限切れまたは消費済みのワンタイムコード、lockout、必須のリセット、再送回数超過 — は `authn.ErrFactorAbort` sentinel にラップされ、authorize endpoint はこれを 500 ではなく **HTTP 400** にマップします。使用済みのコードはサーバ障害ではなくクライアント側の状態だからです。
 
 ## 監査記録
 

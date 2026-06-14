@@ -97,7 +97,7 @@ N レプリカでのローテーション: 全レプリカに `WithCookieKeys(ne
 
 OP 自体はヘルスエンドポイントをマウントしません。よくある pattern は次のとおりです:
 
-- **Liveness:** `/.well-known/openid-configuration` の 2xx。discovery document はストアアクセスなしで描画できます。
+- **Liveness:** `/.well-known/openid-configuration` の 2xx。discovery 文書はストアアクセスなしで描画できます。
 - **Readiness:** ストアの ping を含めます。ストア全体に対する health メソッドは公開していないので、組み込み層で実装してください:
 
 ```go
@@ -132,5 +132,5 @@ func ready(store *MyComposite) http.HandlerFunc {
 
 ## マルチインスタンスでも**できないこと**
 
-- **同じトランザクショナルストアに対して、設定の異なる OP を 2 つ稼働させる。** discovery document、scope カタログ、alg リスト、grant set はレプリカ間で一致が必須です。差があると、RP から見て drift になります(あるレプリカが発行したトークンを別のレプリカが拒否する、など)。
+- **同じトランザクショナルストアに対して、設定の異なる OP を 2 つ稼働させる。** discovery 文書、scope カタログ、alg リスト、grant set はレプリカ間で一致が必須です。差があると、RP から見て drift になります(あるレプリカが発行したトークンを別のレプリカが拒否する、など)。
 - **永続サブストアを 2 つのバックエンドに分割する。** composite store の不変条件は「永続バックエンドは 1 つ」です。トランザクショナル整合性がそれに依存しています。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。

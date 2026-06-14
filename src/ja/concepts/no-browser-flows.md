@@ -149,7 +149,7 @@ sequenceDiagram
 - `AuditDeviceCodeTokenIssued`、`AuditDeviceCodeTokenRejected`、`AuditDeviceCodeTokenSlowDown`
 - `AuditDeviceCodeRevoked`（公開 `Revoke` ヘルパから発火）
 
-**CIBA（Core 1.0）.** 現リリースでは poll モードのみ。ping / push は今後対応。`op.WithCIBA(op.WithCIBAHintResolver(...))` で組み込みます。`HintResolver` は組み込み側のフックで、受信した hint（`login_hint`、`id_token_hint`、`login_hint_token`）を subject に解決します。Audit catalogue:
+**CIBA（Core 1.0）.** 現リリースでは poll モードのみ。ping / push は対象外です。`op.WithCIBA(op.WithCIBAHintResolver(...))` で組み込みます。`HintResolver` は組み込み側のフックで、受信した hint（`login_hint`、`id_token_hint`、`login_hint_token`）を subject に解決します。Audit catalogue:
 
 - `AuditCIBAAuthorizationIssued`、`AuditCIBAAuthorizationRejected`、`AuditCIBAAuthorizationUnboundRejected`
 - `AuditCIBAAuthDeviceApproved`、`AuditCIBAAuthDeviceDenied`

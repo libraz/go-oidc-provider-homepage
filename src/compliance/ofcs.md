@@ -70,7 +70,7 @@ Each OFCS test plan exercises a specific spec profile. The tables below map ever
 | JAR (RFC 9101) | profile implies `feature.JAR` | [/concepts/fapi](/concepts/fapi) |
 | `S256` PKCE enforcement | profile-enforced | [/concepts/authorization-code-pkce](/concepts/authorization-code-pkce) |
 | `iss` in authorization response (RFC 9207) | profile-enforced | [/concepts/issuer](/concepts/issuer) |
-| `ES256` / `PS256` for ID Token signing | profile-enforced | [/concepts/jose-basics](/concepts/jose-basics) |
+| `ES256` for ID Token signing | profile-enforced; OP-issued ID Tokens are never signed with `PS256` or `RS256` | [/concepts/jose-basics](/concepts/jose-basics) |
 | Refusal of `RS256` (FAPI), `HS*`, `none` | closed alg type at `internal/jose/alg.go` | [/security/design-judgments](/security/design-judgments) |
 | `private_key_jwt` or `tls_client_auth` | profile-enforced (intersected with FAPI allow-list) | [/concepts/client-types](/concepts/client-types) |
 | DPoP or mTLS sender constraint | `op.WithFeature(feature.DPoP)` or `op.WithFeature(feature.MTLS)` (at least one is mandatory under FAPI 2.0) | [/concepts/sender-constraint](/concepts/sender-constraint), [/concepts/dpop](/concepts/dpop), [/concepts/mtls](/concepts/mtls) |
@@ -228,4 +228,4 @@ If you set conflicting options after `WithProfile`, `op.New(...)` returns a buil
 - **No real RP cert.** The mTLS plan slots use generated self-signed certs at `conformance/certs/` so the plan can be instantiated. No real CA chain is exercised.
 - **Single OP instance.** Cross-instance behaviour (e.g. token introspection across two OPs sharing a store) is exercised by `test/scenarios`, not OFCS.
 
-The conformance harness sits next to an in-process Spec Scenario Suite under `test/scenarios/`. The two suites cover different layers — OFCS runs end-to-end against a live OP via HTTP, the scenario suite drives the same protocol invariants in-process — and both are required green before security-relevant changes merge.
+The conformance harness sits next to an in-process Spec Scenario Suite under `test/scenarios/`. The two suites cover different layers — OFCS runs end-to-end against a live OP via HTTP, the scenario suite drives the same protocol invariants in-process — and both must be passing before security-relevant changes merge.

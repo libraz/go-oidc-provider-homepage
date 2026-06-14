@@ -88,10 +88,10 @@ op.WithScope(op.Scope{
 
 よくある用途には 2 つのヘルパが用意されています。
 
-- `op.PublicScope(name, label)` — discovery document の `scopes_supported` に公開する scope を登録します。審査済みのクライアントなら誰でも要求できる scope に使います。
+- `op.PublicScope(name, label)` — discovery 文書の `scopes_supported` に公開する scope を登録します。審査済みのクライアントなら誰でも要求できる scope に使います。
 - `op.InternalScope(name)` — `scopes_supported` から **省略** する scope を登録します（RFC 8414 §2 / OIDC Discovery §3 が省略を明示的に許容）。受理判定は scope の `AllowedClients` リストで制御されます。discoverable にしたくないが特定クライアントには許す scope に使います。
 
-OIDC 標準 scope は組み込みのデフォルトで自動認識されます。標準名（例: `email`）に対して `WithScope` を呼ぶと組み込みエントリが上書きされます — 翻訳や追加の claim mapping を付与する目的で使うのが典型です — が、`Public: false` で標準 scope を登録すると `op.New` が失敗します。discovery document が「標準 scope を欠落」と公告するのを防ぐためです。
+OIDC 標準 scope は組み込みのデフォルトで自動認識されます。標準名（例: `email`）に対して `WithScope` を呼ぶと組み込みエントリが上書きされます — 翻訳や追加の claim mapping を付与する目的で使うのが典型です — が、`Public: false` で標準 scope を登録すると `op.New` が失敗します。discovery 文書が「標準 scope を欠落」と公告するのを防ぐためです。
 
 i18n ラベル、claim mapping、consent prompt のレンダリングを含む詳細は[ユースケース: scope](/ja/use-cases/scopes)を参照してください。
 

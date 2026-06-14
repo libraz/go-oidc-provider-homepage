@@ -122,7 +122,7 @@ composite は意図的に `store.ClientRegistry` を型アサーションでは�
 ::: info 新しいサブストアが durable 側に残る理由
 `OpaqueAccessTokenStore` と `GrantRevocationStore` はトランザクションクラスタの一部で、起点となる grant / refresh の書き込みと同時にコミットされる必要があります。Redis アダプタはどちらのアクセサからも `nil` を返すので、composite アダプタは両者を非トランザクションのバックエンドに振り分けることができません。
 
-これらのサブストアが必要な組み込み側は durable 側に SQL を配置してください。既定の失効戦略(`RevocationStrategyGrantTombstone`)は `GrantRevocations()` が non-nil であることを `op.New` で強制するため、durable 側を空にしたい Redis 専用デプロイは `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示する必要があります(非 FAPI 限定 — FAPI プロファイルは `None` を拒否します)。
+これらのサブストアが必要な組み込み側は durable 側に SQL を配置してください。既定の失効戦略(`RevocationStrategyGrantTombstone`)は `GrantRevocations()` が nil 以外であることを `op.New` で強制するため、durable 側を空にしたい Redis 専用デプロイは `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示する必要があります(非 FAPI 限定 — FAPI プロファイルは `None` を拒否します)。
 :::
 
 ::: details SessionStore がどちらにもなる理由

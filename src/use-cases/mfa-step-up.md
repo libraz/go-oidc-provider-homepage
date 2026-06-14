@@ -13,6 +13,8 @@ The library's authentication layer is built from three primitives that compose:
 
 Each authenticator runs only when its rule says yes. So "password always, TOTP always" is one flow; "password always, captcha after 3 failures, TOTP if risk score is high" is another.
 
+Use this page when the login decision depends on more than "password accepted": mandatory MFA, suspicious-attempt captcha, risk-based extra factors, or RP-requested ACR step-up. If you only need a username/password login, the default password primary step and the user-store pages are enough; adding rules before you need them mainly increases test and recovery surface.
+
 ::: details Specs referenced on this page
 - [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) — TOTP (Time-Based One-Time Password)
 - [RFC 8176](https://datatracker.ietf.org/doc/html/rfc8176) — Authentication Method Reference Values (`amr`)
@@ -130,6 +132,29 @@ op.New(
 ```
 
 If the user already authenticated at `aal2` earlier in the session, the RP requesting `acr_values=aal3` triggers an interactive step-up: the OP runs `passkeyAuth` to lift the session to `aal3` before redirecting back.
+
+## The resource-server side: `op.StepUpChallenge`
+
+RFC 9470 has two halves. The OP half is above — honour `acr_values` / `max_age` and re-authenticate. The other half lives at the **resource server**: when an access token lacks the required strength or freshness for a sensitive call, the resource server answers `401` with a `WWW-Authenticate: Bearer` challenge carrying `error="insufficient_user_authentication"` and the `acr_values` / `max_age` it needs. The client then re-authorizes with those values, and the OP step-up above kicks in.
+
+`op.StepUpChallenge` builds that header value. The OP itself never emits it — token validation and the `401` belong to your resource server, so the library stops at producing a correctly-formatted challenge string:
+
+```go
+maxAge := int64(300)
+challenge := op.StepUpChallenge("api", []string{"urn:acr:high", "urn:acr:mfa"}, &maxAge)
+// challenge == `Bearer realm="api", error="insufficient_user_authentication",
+//               acr_values="urn:acr:high urn:acr:mfa", max_age="300"`
+w.Header().Set("WWW-Authenticate", challenge)
+w.WriteHeader(http.StatusUnauthorized)
+```
+
+An empty `realm`, an empty `acrValues` slice, and a `nil` `maxAge` are each omitted; the mandatory `error="insufficient_user_authentication"` is always present. `acrValues` is encoded as a single space-delimited quoted string, mirroring the `acr_values` request parameter.
+
+## One-time factors are single-use
+
+The one-time factors — email-OTP (`op.StepEmailOTP`), TOTP (`op.StepTOTP`), and recovery codes (`op.StepRecoveryCode`) — are single-use under concurrency: a code cannot be accepted twice. The store enforces this with an atomic compare-and-set that returns `ErrAlreadyConsumed` on replay, so two racing requests presenting the same code cannot both succeed. A [custom factor store](/use-cases/byo-store) must make these consume operations a CAS (the in-memory reference shows the shape).
+
+Terminal factor failures — an expired or already-consumed one-time code, lockout, a required reset, too many resends — are wrapped in the `authn.ErrFactorAbort` sentinel, which the authorize endpoint maps to **HTTP 400**, not 500: a spent code is a client-side condition, not a server fault.
 
 ## Audit trail
 

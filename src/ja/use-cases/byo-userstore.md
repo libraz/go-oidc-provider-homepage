@@ -1,9 +1,9 @@
 ---
-title: 既存ユーザーストアの投影
-description: アプリケーション所有の users テーブルを移行せずに、OIDC のユーザー読み取り面へ投影する。
+title: 既存ユーザストアの投影
+description: アプリケーション所有の users テーブルを移行せずに、OIDC のユーザ読み取り面へ投影する。
 ---
 
-# ユースケース — 既存ユーザーストアの投影
+# ユースケース — 既存ユーザストアの投影
 
 既に users、members、employees、accounts などのテーブルがあり、その形が OP 同梱の `oidc_users` テーブルと一致しない場合でも、そのテーブルを source of truth のままにできます。OP に必要なのは、subject を解決し、許可された claim を返し、password login を使う場合は `store.UserPasswordStore` contract 経由で password hash を読める投影です。
 
@@ -16,7 +16,7 @@ example はストレージを 2 つの責務に分けます。
 | 責務 | バックエンド |
 |---|---|
 | OAuth / OIDC レコード: clients、authorization codes、refresh tokens、grants、sessions、PAR、IAT、RAT、access tokens | 同梱の `op/storeadapter/sql` schema |
-| エンドユーザーレコード: subject、email、name、locale、password hash、tenant metadata | embedder 所有の `members` table |
+| エンドユーザレコード: subject、email、name、locale、password hash、tenant metadata | embedder 所有の `members` table |
 
 `hybridStore` は `*oidcsql.Store` を embed し、`Users()` だけを上書きします。Go の method promotion により、それ以外の substore は SQL adapter のまま残り、`/userinfo`、ID Token 組み立て、password login だけがアプリケーション所有の member 投影を読みます。
 
@@ -48,13 +48,13 @@ provider, err := op.New(
 
 ## 投影 contract
 
-通常、ユーザーストア adapter は次を実装します。
+通常、ユーザストア adapter は次を実装します。
 
 | Method | 役割 |
 |---|---|
 | `FindBySubject(ctx, sub)` | `/userinfo` と token 組み立て用に、安定した OIDC subject と claim map を読む。 |
 | `FindByUsername(ctx, username)` | email address などの login identifier を、同じ安定 subject に解決する。 |
-| `ReadPasswordHash(ctx, subject)` | `op.PrimaryPassword` 用に PHC encoded password hash を返す。未知ユーザーや passwordless user では `store.ErrNotFound` を返す。 |
+| `ReadPasswordHash(ctx, subject)` | `op.PrimaryPassword` 用に PHC encoded password hash を返す。未知ユーザや passwordless user では `store.ErrNotFound` を返す。 |
 
 カラム名は自由です。example では `member_id`、`email_address`、`password_phc`、`full_name`、`locale_pref`、`tenant_id` を `store.User.Subject` と `store.User.Claims` へ投影しています。
 

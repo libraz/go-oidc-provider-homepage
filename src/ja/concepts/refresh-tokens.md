@@ -106,6 +106,14 @@ OIDC Core 1.0 §11 のデフォルト(緩やかな)解釈では、`offline_acces
 このオプションは `op.WithOpenIDScopeOptional` と排他です（`openid` 自体が任意な構成では §11 に意味がないため、両方を同時指定すると `op.New` が拒否します）。
 :::
 
+## 認証コンテキストはローテーションをまたいで保持される
+
+リフレッシュトークンは、subject と scope だけでなく、元のログインの認証コンテキストを保持します。リフレッシュ交換が新しい id_token や JWT アクセストークンを発行するとき、OP はリフレッシュ時点ではなく、ユーザが実際に認証したときのコンテキスト — `auth_time`、`acr`、`amr`、付与された `authorization_details` — を再現します。そのため、ログイン時に `acr_values=aal2` を要求した RP は、1 週間バックグラウンドでリフレッシュを続けたあとでも `acr` がその強度を反映したままになり、ステップアップの freshness シグナルがローテーションのたびに知らぬ間にリセットされることもありません。リフレッシュレコードはこれらのフィールド（トークンの `origin` も含む）を永続化するので、保存された chain がそれらを忠実に再現します。
+
+## 保存形式: ハッシュ化・定数時間
+
+リフレッシュトークンのハンドルは opaque な bearer secret であり、所持しているだけで行使できます。OP は提示された値そのものを保存しません — ハッシュを保存し、`Find` / `Consume` では提示された値をハッシュ化して digest を引き、定数時間で比較します。これにより公開ストアの参照はハッシュのみ・タイミング非依存の形に保たれ、ストア漏洩とタイミングサイドチャネルの双方に対して堅牢になります。内部の再利用検出 chain 探索は、公開参照をハッシュのみに保つため、別の `RefreshChainResolver` 経路で保存ハンドルを解決します。[ストアを自前実装](/ja/use-cases/byo-store)する場合は、契約を満たすためにハッシュ化した id を永続化する必要があります。
+
 ## 監査ログ
 
 token endpoint は `op.WithAuditLogger` 経由で 2 種類の slog 監査イベントを発行します。
@@ -114,6 +122,8 @@ token endpoint は `op.WithAuditLogger` 経由で 2 種類の slog 監査イベ�
 |---|---|
 | `op.AuditTokenIssued` | `authorization_code` 交換時にリフレッシュトークンを発行したとき。 |
 | `op.AuditTokenRefreshed` | `refresh_token` grant でリフレッシュトークンをローテーションしたとき。 |
+
+すでにローテーション済みのトークンが再提示された（再利用検出）ときは、best-effort の chain 失効の前に `refresh.replay_detected` イベントが発行されます。
 
 両方とも `extras` に `offline_access`（boolean）と `ttl_bucket`（`"offline"` または `"default"`）を持つので、SOC ダッシュボードは scope を再読することなく「ログイン状態の維持」chain と通常のローテーションを区別できます。
 

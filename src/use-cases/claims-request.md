@@ -100,9 +100,10 @@ The library parses both shapes — query parameter and JAR-embedded — through 
 
 ## Authorization Details (RFC 9396)
 
-The library also accepts the RFC 9396 `authorization_details` array on the same merge path; the format is JSON-array vs JSON-object, and the library distinguishes them by shape rather than asking embedders to opt in separately.
+The `claims` parameter narrows *which claims* land in the id_token / userinfo. Its structured sibling, RFC 9396 `authorization_details`, describes *what the access token may do* at a resource server. The two compose on the same merge path — the library distinguishes the JSON array (`authorization_details`) from the JSON object (`claims`) by shape — but `authorization_details` is only accepted once you register the accepted types. See [Rich authorization requests](/use-cases/authorization-details).
 
 ## Read next
 
 - [Tokens primer](/concepts/tokens) — what claims live where.
+- [Rich authorization requests](/use-cases/authorization-details) — the structured `authorization_details` sibling.
 - [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — JAR + claims combined.

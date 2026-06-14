@@ -28,6 +28,10 @@ description: public / confidential / FAPI grade のクライアント分類、�
 
 public client とは、ユーザが制御するデバイス上でコードが動くアプリケーションのことです — SPA、モバイルアプリ、ネイティブデスクトップアプリ、CLI など。本質的な特徴は **バイナリやページに同梱されたものは攻撃者の手にも渡る** という点です。長寿命のシークレットを隠しておく場所はありません。
 
+この分類は、ユーザをログインさせるアプリを「シークレットを持てるかどうか」で正しく扱うためにあります。SPA やモバイルアプリに `client_secret` を要求すると、開発者は secret を JavaScript bundle、アプリ binary、設定ファイルのどこかに埋め込むしかなくなります。その値は配布先の全ユーザ、つまり攻撃者にも渡るので、仕様上は秘密として扱えません。そこで OAuth / OIDC は public client を明示的に認め、長寿命 secret ではなく、登録済み `client_id`、redirect URI の完全一致、リクエストごとの PKCE、refresh token rotation、必要に応じた DPoP で保護します。
+
+実務上は、ブラウザ内 SPA、モバイル / デスクトップアプリ、CLI など「ユーザの端末で人をログインさせる」クライアントに使います。バックエンドだけで動く server-side RP や service-to-service 呼び出しでは、secret や秘密鍵を保持できるので confidential client を選びます。
+
 本ライブラリは `TokenEndpointAuthMethod` が `"none"` のクライアントを public として扱います。シークレットの不在を補う構造的な保護は次のとおりです。
 
 - **PKCE が必須**。OP は `S256` のみを受理し、`plain` はプロファイルに関係なく拒否します（[設計判断 #14](/ja/security/design-judgments#dj-14)）。`code_verifier` は「フローを開始したクライアントと終わらせるクライアントが同じである」ことを示すリクエストごとのシークレット — これがなければ、redirect で奪われた認可コードだけでトークンが発行されてしまいます。
@@ -48,7 +52,7 @@ confidential client が得られるもの:
 
 ## FAPI grade client
 
-FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: PAR が必須、request object が署名される（JAR / Message Signing）、アクセストークンが sender-constrained（DPoP または mTLS）、認証は非対称鍵（`private_key_jwt`、`tls_client_auth`、または `self_signed_tls_client_auth`）。`op.WithProfile(profile.FAPI2Baseline)` を有効にすると、本ライブラリは discovery document の `token_endpoint_auth_methods_supported` を narrow します。詳細は[FAPI 2.0 入門](/ja/concepts/fapi)。
+FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: PAR が必須、request object が署名される（JAR / Message Signing）、アクセストークンが sender-constrained（DPoP または mTLS）、認証は非対称鍵（`private_key_jwt`、`tls_client_auth`、または `self_signed_tls_client_auth`）。`op.WithProfile(profile.FAPI2Baseline)` を有効にすると、本ライブラリは discovery 文書の `token_endpoint_auth_methods_supported` を narrow します。詳細は[FAPI 2.0 入門](/ja/concepts/fapi)。
 
 プロトコル上「FAPI クライアント種別」が別物として存在するわけではありません — FAPI grade client は追加要件を満たした confidential client です。本ライブラリは構築時およびリクエスト時にその一致を強制します。
 
@@ -68,7 +72,7 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 `client_secret_jwt`（HS256 共有シークレット JWT）は **実装していません**。共有シークレット JWT は漏洩シークレットの被害範囲を広げる一方で、`private_key_jwt` が提供しないものを何ひとつ提供しません。本ライブラリはこの攻撃面を増やしません。
 
 ::: tip メソッドはクライアントごとに 1 つに絞る
-discovery document には OP が受理するすべてのメソッドが列挙されますが、各クライアントが登録するのは正確に 1 つです。1 クライアント上での複数メソッド混在は標準化されておらず、ダウングレード攻撃の研究論文の元ネタになってきました — 本ライブラリは登録メソッドと正確に照合し、フォールバックを拒否します。
+discovery 文書には OP が受理するすべてのメソッドが列挙されますが、各クライアントが登録するのは正確に 1 つです。1 クライアント上での複数メソッド混在は標準化されておらず、ダウングレード攻撃の研究論文の元ネタになってきました — 本ライブラリは登録メソッドと正確に照合し、フォールバックを拒否します。
 :::
 
 ## プロビジョニング方法

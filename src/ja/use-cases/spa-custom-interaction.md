@@ -312,4 +312,4 @@ op.WithCORSOrigins(
 
 同意画面の文言だけを差し替えたい(翻訳コピー、ブランドトーン)場合は、`op.WithLocale` で seed bundle にキー単位で重ねるのが最短です。同梱 HTML ドライバはそれをそのまま描画するので、CSP / CSRF scheme もそのまま維持できます。詳細は [カスタム同意 UI](/ja/use-cases/custom-consent-ui) と [i18n / ロケールネゴシエーション](/ja/use-cases/i18n) を参照してください。
 
-`op.WithConsentUI` は、interaction transport 全体を SPA に寄せずに同意画面 template だけを差し替えるサーバー描画の経路です。markup を完全にクライアント側で持ちたい場合は、上記の JSON ドライバ経路を使います。
+`op.WithConsentUI` は、interaction transport 全体を SPA に寄せずに同意画面 template だけを差し替えるサーバ描画の経路です。markup を完全にクライアント側で持ちたい場合は、上記の JSON ドライバ経路を使います。

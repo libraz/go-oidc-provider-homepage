@@ -18,7 +18,7 @@ outline: 2
 
 - **これから新規に OP を立ち上げる** → まず必須の 4 つ: [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、[`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys)。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
 - **FAPI 2.0 を 1 行で有効にしたい** → `WithProfile(profile.FAPI2Baseline)`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)。プロファイルは mTLS が明示されていなければ DPoP を既定選択します。`profile.IGovHigh` は予約値で、現時点では拒否されます。[ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
-- **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。PKCE は標準で有効、`DynamicRegistration` は `WithDynamicRegistration` から間接的に有効化されます。
+- **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。PKCE は標準で有効です。Dynamic Registration、RAR、Grant Management は追加設定が必要なので、それぞれ専用オプションから有効化します。
 - **`/token` で受け付ける grant の集合を絞りたい** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`。`WithDeviceCodeGrant()` / `WithCIBA(...)` / `WithCustomGrant(...)` / `RegisterTokenExchange(...)` は、それぞれ追加で必要なエンドポイントもまとめてマウントします。
 - **送信者制約付きのアクセストークンにしたい** → DPoP 系: `WithFeature(feature.DPoP)` + 必要に応じて `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`。mTLS 系: `WithFeature(feature.MTLS)` + 必要に応じて `WithMTLSProxy(headerName, trustedCIDRs)`。詳しくは[ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint)、[DPoP](/ja/concepts/dpop)、[mTLS](/ja/concepts/mtls)、[ユースケース: DPoP nonce](/ja/use-cases/dpop-nonce)。
 - **アクセストークンを JWT / opaque で切り替えたい** → OP 全体の既定は `WithAccessTokenFormat(...)`、RFC 8707 リソースごとに分けたいときは `WithAccessTokenFormatPerAudience(...)`。[ガイド: アクセストークンの形式](/ja/concepts/access-token-format) を参照。
@@ -52,7 +52,7 @@ outline: 2
 | `WithFeature` | `feature.Flag`(1 呼び出しで 1 つ、繰り返し可) | PAR / DPoP / mTLS / JAR / JARM / introspect / revoke を個別に有効化 | 控えめなデフォルト |
 | `WithGrants` | `...grant.Type`(可変長) | `/token` で受け付ける grant を限定 | `authorization_code`、`refresh_token` |
 | `WithScope` | `op.Scope`(1 呼び出しで 1 つ。`op.PublicScope` / `op.InternalScope` コンストラクタを利用) | scope カタログを拡張 | `openid`、`profile`、`email`、`address`、`phone`、`offline_access` |
-| `WithOpenIDScopeOptional` | _(引数なし)_ | OAuth2 単独(`scope` に `openid` を含まない)を許容 | 必須 |
+| `WithOpenIDScopeOptional` | _(引数なし)_ | OAuth 2.0 単独(`scope` に `openid` を含まない)を許容 | `openid` 必須 |
 | `WithStrictOfflineAccess` | _(引数なし)_ | `refresh_token` の発行を `offline_access` の同意取得時に限定 | lax(`openid` granted で発行) |
 
 ## クライアント / 登録
@@ -104,6 +104,7 @@ outline: 2
 | `WithRefreshTokenOfflineTTL` | `time.Duration` | `offline_access` granted 時のリフレッシュトークンの寿命 | `WithRefreshTokenTTL` を継承(ゼロ値で延長しない) |
 | `WithRefreshGracePeriod` | `time.Duration`(0 で無効化、負値は拒否) | ローテーション後の猶予期間 | 60 秒 |
 | `WithDPoPNonceSource` | `op.DPoPNonceSource`(interface) | サーバ供給の DPoP nonce ストア(`op.NewInMemoryDPoPNonceSource` が同梱実装) | なし |
+| `WithInMemoryDPoPNonceLogger` | `*slog.Logger` | in-memory DPoP nonce source 用の任意 logger。`op.New` ではなく `op.NewInMemoryDPoPNonceSource` に渡す | ログなし |
 
 ## Discovery / endpoint
 
@@ -137,6 +138,18 @@ outline: 2
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | RFC 8693 token-exchange grant を有効化。ポリシーがリクエスト単位で受理可否(admission)を判断し、OP の既定値をさらに狭めることもできる | 無効 |
 
 詳細は [ユースケース: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
+
+## 認可機能 — RAR / Grant Management / Protected Resource Metadata
+
+| オプション | 値 | 説明 | 既定 |
+|---|---|---|---|
+| `WithAuthorizationDetailTypes` | `...op.AuthorizationDetailType` | RFC 9396 Rich Authorization Requests を有効化。受理する `type` を validator とともに登録する。`authorization_details` は `/authorize`、`/par`、`/token` で検証され、grant に永続化され、JWT アクセストークンと introspection に反映され、discovery で公開される。nil の `Validate` は `op.New` で拒否される | 無効 |
+| `WithGrantManagement` | `(actions []op.GrantManagementAction, actionRequired bool)` | OAuth 2.0 Grant Management draft を有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントをマウントし、token 応答に `grant_id` を載せ、設定した action 集合を discovery で公開する。Experimental（IETF draft 追跡） | 無効 |
+| `WithProtectedResources` | `...op.ProtectedResource` | 登録した各リソースについて RFC 9728 protected-resource metadata を `/.well-known/oauth-protected-resource` とリソース path の接尾辞で公開し、`authorization_servers` に issuer を載せる | なし |
+
+`op.StepUpChallenge(realm, acrValues, maxAge)` は `op.New` のオプションではなく独立したヘルパで、組み込み側のリソースサーバが返す RFC 9470 の `WWW-Authenticate: Bearer` challenge を組み立てます。OP 自身はこれを発行しません。
+
+詳細は [Rich authorization requests](/ja/use-cases/authorization-details)、[Grant management](/ja/use-cases/grant-management)、[Protected resource metadata](/ja/use-cases/protected-resource-metadata)、[MFA / ステップアップ](/ja/use-cases/mfa-step-up)。
 
 ## 暗号化(JWE)
 
@@ -183,7 +196,7 @@ outline: 2
 
 意図的にオプションにしていない項目です。理由は各リンク先の設計判断を参照してください。
 
-- **JOSE algorithm 許可リスト** — `RS256` / `PS256` / `ES256` / `EdDSA` で固定です。これを広げるフラグはありません。[セキュリティ方針 §2](/ja/security/posture#_2-the-jose-alg-list-is-a-closed-type) を参照。
+- **JOSE 検証用の許可リスト** — client assertion、JAR request object、DPoP proof など入力側の署名検証では `RS256` / `PS256` / `ES256` / `EdDSA` の固定集合を使います。OP が発行する JWT の署名は `ES256` のみです。どちらの面も広げるフラグはありません。[セキュリティ方針 §2](/ja/security/posture#_2-the-jose-alg-list-is-a-closed-type) を参照。
 - **PKCE method** — `S256` のみ。`plain` は構造的に拒否されます。
 - **Cookie scheme** — `__Host-` プリフィックス、AES-256-GCM、double-submit CSRF が常に有効です。[必須オプション § WithCookieKeys](/ja/getting-started/required-options#withcookiekeys) を参照。
 - **乱数源** — `crypto/rand` のみ。`math/rand` は lint で禁止しています。
@@ -202,7 +215,8 @@ grep -rhE '^func With[A-Z]|^func RegisterTokenExchange' \
   op/options_discovery.go op/options_encryption.go op/options_features.go \
   op/options_fapi_proxy.go op/options_protocol.go op/options_session.go \
   op/options_subject.go op/access_token_revocation.go op/i18n.go \
-  op/registration.go \
+  op/registration.go op/authorization_details.go op/grant_management.go \
+  op/protected_resource.go \
   | sort -u
 ```
 

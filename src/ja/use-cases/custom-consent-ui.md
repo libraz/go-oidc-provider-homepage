@@ -9,7 +9,7 @@ description: op.WithConsentUI、ロケール bundle、JSON ドライバで同意
 
 ユーザが認証を済ませたあと、OIDC Core 1.0 §3.1.2.4 は **OP が RP ではなくユーザ本人に対して**「要求された scope（`profile` / `email` 等）の開示を許可するか」を問うことを期待しています。ユーザが「許可」「拒否」を選び、許可されたときだけ OP は code を付けて RP にリダイレクトを返します。同意画面はログインとリダイレクトの **間** に挟まる UI です。
 
-OP 同梱の同意画面でもひと通り動きますが、実運用では独自ブランド（ロゴ・コピー・プライバシー / 利用規約リンク・i18n）に差し替えたくなります。小さな文言差し替えはロケール bundle、サーバー描画の独自 HTML は `op.WithConsentUI`、SPA での完全制御は JSON ドライバが向いています。
+OP 同梱の同意画面でもひと通り動きますが、実運用では独自ブランド（ロゴ・コピー・プライバシー / 利用規約リンク・i18n）に差し替えたくなります。小さな文言差し替えはロケール bundle、サーバ描画の独自 HTML は `op.WithConsentUI`、SPA での完全制御は JSON ドライバが向いています。
 
 ::: details このページで触れる仕様
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4(同意プロンプト)
@@ -43,7 +43,7 @@ bundle のキーは描画される表示面に追従します。一覧と優先�
 
 この経路では同梱 HTML ドライバ・同梱 CSP・同梱の CSRF / cookie scheme をそのまま使えます。変えるのは文言だけです。
 
-## 経路 2 — カスタム同意テンプレート(サーバー描画)
+## 経路 2 — カスタム同意テンプレート(サーバ描画)
 
 ブランド付き HTML を持ちつつ、state・CSRF・同意の永続化は OP に任せたい場合は、parse 済みの `*html/template.Template` を `op.WithConsentUI` で渡します。テンプレートには `interaction.ConsentTemplateData` が渡され、`Client`、`Scopes`、`StateRef`、`CSRFToken`、`ApprovedScopesField`、`SubmitMethod`、`SubmitAction` を参照できます。
 

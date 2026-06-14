@@ -45,7 +45,7 @@ op.New(
 
 `claims_parameter_supported` の既定は `true` です。`claims` request を広告・処理したくない場合だけ `op.WithClaimsParameterSupported(false)` を渡します。
 
-discovery document はこう公開します:
+discovery 文書はこう公開します:
 
 ```json
 {
@@ -100,9 +100,10 @@ curl -G --data-urlencode "claims=$CLAIMS" \
 
 ## Authorization Details（RFC 9396）
 
-ライブラリは RFC 9396 の `authorization_details` 配列も同じマージ経路で受理します。形式は JSON 配列か JSON オブジェクトかの違いで、ライブラリは形で区別するので、組み込み側が個別にオプトインする必要はありません。
+`claims` パラメータは *どの claim* を id_token / userinfo に載せるかを絞り込みます。その構造化された兄弟分である RFC 9396 の `authorization_details` は、リソースサーバで *アクセストークンが何をできるか* を記述します。両者は同じマージ経路で共存し、本ライブラリは JSON 配列（`authorization_details`）と JSON オブジェクト（`claims`）を形で区別します。ただし `authorization_details` は、受理する type を登録して初めて有効になります。詳細は [Rich authorization requests](/ja/use-cases/authorization-details) を参照してください。
 
 ## 続きはこちら
 
 - [トークン入門](/ja/concepts/tokens) — どの claim がどこに乗るか。
+- [Rich authorization requests](/ja/use-cases/authorization-details) — 構造化された `authorization_details` の兄弟分。
 - [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — JAR + claims の組み合わせ。

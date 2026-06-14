@@ -257,6 +257,12 @@ op.New(
 | `custom_grant.failed` | custom grant の dispatch またはハンドラが失敗した | warn | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
 | `custom_grant.refresh_dropped` | ハンドラが `IssueRefreshToken` でリフレッシュトークン発行を求めたが、クライアントが `refresh_token` grant に登録されていない。アクセストークン応答自体は成功する | info | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
 
+### Grant management
+
+| イベント定数 | 発火タイミング | severity の目安 | リンク先 |
+|---|---|---|---|
+| `AuditGrantManagementRevoked` | grant management エンドポイントへの `DELETE` が grant を失効させ、トークンをカスケードした | info | [ユースケース: grant management](/ja/use-cases/grant-management) |
+
 ## 安定性
 
 監査イベント名は公開 API 表面の一部です:

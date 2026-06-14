@@ -112,7 +112,7 @@ OIDC では JWE は、組み込み側やクライアントが署名の上に機�
 }
 ```
 
-OP は公開署名鍵を `jwks_uri`（discovery ドキュメントで広告）に公開します。RP は JWKS を 1 度取得してキャッシュし、ID トークンの署名検証にオフラインで使います。鍵ローテーション中、OP は RP のキャッシュが収束するのに十分な期間、前の鍵を集合に残します — [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
+OP は公開署名鍵を `jwks_uri`（discovery 文書で広告）に公開します。RP は JWKS を 1 度取得してキャッシュし、ID トークンの署名検証にオフラインで使います。鍵ローテーション中、OP は RP のキャッシュが収束するのに十分な期間、前の鍵を集合に残します — [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
 
 ::: details `jwks_uri` と JWS ヘッダの `jwk` の違い
 - **`jwks_uri`**（discovery のフィールド）は、OP が JWKS を serve する URL。安定でキャッシュ可能、RP は自身の都合で取得します。

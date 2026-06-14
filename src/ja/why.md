@@ -15,7 +15,7 @@ description: OIDC OP を自作するか、既製の重量級 IdP を Go サー�
 
 </div>
 
-Go でサービスを書いていて、自前で OpenID Connect Provider を立てる必要に迫られることがあります。つまり、ID トークンとアクセストークンを発行し、`/authorize` と `/token` を公開し、discovery document を配信する立場になるということです。そういうときの選択肢は次の 3 つです。
+Go でサービスを書いていて、自前で OpenID Connect Provider を立てる必要に迫られることがあります。つまり、ID トークンとアクセストークンを発行し、`/authorize` と `/token` を公開し、discovery 文書を配信する立場になるということです。そういうときの選択肢は次の 3 つです。
 
 | 選択肢 | 得られるもの | 引き受けるもの |
 |---|---|---|

@@ -33,7 +33,7 @@ OIDC produces three identity artefacts. They look interchangeable at a glance �
 ::: details JWT — what's that?
 A **JWT** (JSON Web Token, RFC 7519) is a string of three base64url chunks joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is a cryptographic check that the token came from the holder of the matching private key.
 
-In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provider` are also JWTs (RFC 9068). UserInfo is not a JWT — it's a plain JSON HTTP response.
+In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provider` are JWTs by default (RFC 9068), but you can opt into opaque access tokens globally or per audience. UserInfo is not a JWT — it's a plain JSON HTTP response.
 :::
 
 ## At a glance
@@ -41,7 +41,7 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 | Artefact | Format | Audience (`aud`) | Where it goes | Lifetime | Who reads it |
 |---|---|---|---|---|---|
 | **ID Token** | Signed JWT (always) | The RP's `client_id` | OP → RP only | Minutes (default 5) | The RP, to know who logged in. |
-| **Access token** | JWT (RFC 9068) on the wire — see below | The RS identifier | RP → RS via `Authorization: Bearer` | Minutes | The RS, to authorize an API call. |
+| **Access token** | JWT by default (RFC 9068); opaque when configured — see below | The RS identifier | RP → RS via `Authorization: Bearer` | Minutes | The RS, to authorize an API call. |
 | **UserInfo response** | JSON | n/a (RP's `client_id` implied) | RP → OP `/userinfo` (with access token) → RP | Per-request | The RP, to get fresh claims. |
 
 ```mermaid

@@ -8,7 +8,7 @@ description: Where the library's behaviour is the result of a deliberate read of
 Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authorization server may". Several places need an explicit reading because the literature disagrees with itself, or because a literal reading collides with another spec. This page lists those calls.
 
 ::: tip How to read this page
-Start with the decision map for the surface you are changing. Each detailed entry then follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The decision sits in the green callout; cited package paths under `op/` and `internal/` point to the implementation.
+Start with the decision map for the surface you are changing. Each detailed entry then follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The decision sits in the highlighted callout; cited package paths under `op/` and `internal/` point to the implementation.
 :::
 
 ## Decision map

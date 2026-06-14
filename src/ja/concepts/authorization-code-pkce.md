@@ -105,7 +105,7 @@ sequenceDiagram
 - ユーザエージェント境界での改竄が無効化される — そこに露出するのは `request_uri` だけ。
 - FAPI 2.0 Baseline では必須。それ以外でもオプトインする価値あり。
 
-`op.WithFeature(feature.PAR)` で有効化すると、discovery document の `pushed_authorization_request_endpoint` に出ます。
+`op.WithFeature(feature.PAR)` で有効化すると、discovery 文書の `pushed_authorization_request_endpoint` に出ます。
 :::
 
 ## PKCE が防ぐもの

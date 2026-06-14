@@ -19,7 +19,7 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 |---|---|---|
 | [#7](#dj-7) | プロファイル制約の解決方式 | `*config` ヘルパーで disjunction を解き、ハンドラは bool だけを見る |
 | [#8](#dj-8) | ACR / AAL の語彙 | 内部 AAL 階層と通信路上の `acr` mapping の 2 層モデル |
-| [#12](#dj-12) | Discovery document のプロファイル絞り込み | 構築時入力から 1 回生成し、golden test で drift を検出 |
+| [#12](#dj-12) | Discovery 文書のプロファイル絞り込み | 構築時入力から 1 回生成し、golden test で drift を検出 |
 | [#13](#dj-13) | `client_assertion` の `aud` | FAPI と OIDC Core の両形を `Audience` + `AuxAudiences` で受理 |
 | [#25](#dj-25) | DPoP nonce と `client_assertion` replay | assertion の `jti` 消費より前に DPoP nonce を検証 |
 | [#26](#dj-26) | CIBA / FAPI-CIBA の poll と error | poll mode のみ。slow_down strike は上限付き。CIBA JAR 失敗は `invalid_request` に集約 |
@@ -132,7 +132,7 @@ OIDC Core §11 を厳格に読みたい組み込み側は、`op.WithStrictOfflin
 **衝突**: どちらも、サードパーティの iframe が埋め込まれた状態で自分自身の cookie を読めることを前提にしています。モダンブラウザの既定(2017 年以降の Safari ITP、2019 年以降の Firefox ETP、2020 年以降の Chrome `SameSite=Lax`、2024 〜 2025 年のサードパーティ cookie 段階廃止)が、この前提を取り去りました。
 
 ::: tip 選択
-**未実装** です。discovery document には `frontchannel_logout_supported` も `check_session_iframe` も出力しません。代わりに RP-Initiated Logout 1.0 + Back-Channel Logout 1.0(署名済みの `logout_token` を server-to-server で POST する形式)を提供しています。iframe ベースのセッション通知が必要なら、別ライブラリを選んでください。これは未着手の TODO ではなく、設計上のスコープ判断です。
+**未実装** です。discovery 文書には `frontchannel_logout_supported` も `check_session_iframe` も出力しません。代わりに RP-Initiated Logout 1.0 + Back-Channel Logout 1.0(署名済みの `logout_token` を server-to-server で POST する形式)を提供しています。iframe ベースのセッション通知が必要なら、別ライブラリを選んでください。これは未着手の TODO ではなく、設計上のスコープ判断です。
 :::
 
 <a class="faq-anchor" id="dj-6"></a>
@@ -180,7 +180,7 @@ OP 側で `jti` キャッシュを保持します。JAR ウィンドウごとに
 **衝突**: 実環境では「同等に見えるが、末尾スラッシュ・scheme の大小・host の大小・デフォルトポートの有無で違う 2 つの URI」がよく現れます。RFC 9207 のミックスアップ防御は OP と全 RP のバイト完全一致比較に依存しているので、OP 側と RP 側の正規化が違えば、防御は黙って破綻します。
 
 ::: tip 選択
-`op.WithIssuer` は、末尾スラッシュ、scheme の大文字混在、host の大文字混在、デフォルトポート（https は `:443`、http は `:80`）、fragment、query、非正規 path（`..`、`.`、`path.Clean` で検出される重複スラッシュ）を拒否します。同じ正規形を、`iss` を出すすべての場面 — 発行する全アーティファクト、discovery document の `issuer` フィールド、認可応答の `iss` パラメタ — で再利用するので、RFC 9207 ミックスアップ防御の byte 完全一致比較が end-to-end で成立します。`op.New` は非正規 issuer では起動せず、ビルド時にエラーを返します。
+`op.WithIssuer` は、末尾スラッシュ、scheme の大文字混在、host の大文字混在、デフォルトポート（https は `:443`、http は `:80`）、fragment、query、非正規 path（`..`、`.`、`path.Clean` で検出される重複スラッシュ）を拒否します。同じ正規形を、`iss` を出すすべての場面 — 発行する全アーティファクト、discovery 文書の `issuer` フィールド、認可応答の `iss` パラメタ — で再利用するので、RFC 9207 ミックスアップ防御の byte 完全一致比較が end-to-end で成立します。`op.New` は非正規 issuer では起動せず、ビルド時にエラーを返します。
 :::
 
 <a class="faq-anchor" id="dj-10"></a>
@@ -209,7 +209,7 @@ OP 側で `jti` キャッシュを保持します。JAR ウィンドウごとに
 
 <a class="faq-anchor" id="dj-12"></a>
 
-## 12. Discovery document — プロファイルでの絞り込み
+## 12. Discovery 文書 — プロファイルでの絞り込み
 
 **仕様**: OIDC Discovery 1.0 + RFC 8414 がメタデータフィールドを列挙しています。FAPI 2.0 §3.1.3 は `token_endpoint_auth_methods_supported` を絞ることを要求します。RFC 9101 §10.1 は、JAR 有効時に `request_object_signing_alg_values_supported` を要求します。
 
@@ -482,7 +482,7 @@ IAT-bound 経路は、operator-trusted な広いデフォルトを維持しま�
 **衝突**: 失効が device-code 行を拒否状態にするだけなら、以後のポーリングは止まりますが、既に発行されたアクセストークンは `exp` まで動き続けます。一方、組み込み側が監査イベントを購読して `RevokeByGrant` を自前で呼ぶ設計にすると、デプロイごとの別経路の接続コードを忘れないことに安全性が依存します。
 
 ::: tip 選択
-**レジストリがある場合、公開ヘルパが連鎖失効まで所有します**。`devicecodekit.Revoke` はまず device-code 行を拒否状態にし、`Deps.AccessTokens` が non-nil なら `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` を呼びます。device-code grant から発行されたアクセストークンはすべて device-code ID を grant 識別子として持つため、既存の grant 単位失効処理で発行済み集合をまとめて退役できます。
+**レジストリがある場合、公開ヘルパが連鎖失効まで所有します**。`devicecodekit.Revoke` はまず device-code 行を拒否状態にし、`Deps.AccessTokens` が nil 以外なら `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` を呼びます。device-code grant から発行されたアクセストークンはすべて device-code ID を grant 識別子として持つため、既存の grant 単位失効処理で発行済み集合をまとめて退役できます。
 
 JWT stateless 構成や、別経路で失効を流す構成では nil レジストリも正当です。その場合、行は拒否状態になり監査イベントも発火しますが、ヘルパはアクセストークン連鎖失効が実行されたとは主張しません。レジストリがある場合は `device_code.revoked` に `revoked_access_tokens` が入り、想定外に少ない連鎖失効や失敗を運用側で検知できます。実装は `op/devicecodekit.Revoke` と各 `store.AccessTokenRegistry` アダプタにあります。
 :::

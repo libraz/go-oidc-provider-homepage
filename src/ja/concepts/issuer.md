@@ -5,7 +5,7 @@ description: issuer URL とは何か、なぜひとつの正規形であるこ�
 
 # Issuer
 
-**issuer**（発行者）は OP の identity URL です。OP が署名するすべてのトークンの `iss` claim、`/.well-known/openid-configuration` の `issuer` フィールド、JWKS メタデータの帰属、さらにプロファイルによっては confidential client が署名する `client_assertion` の `aud` にまで現れます。トークン・署名鍵・discovery document を「同じ OP に属する」と紐付ける、ただひとつの文字列です。
+**issuer**（発行者）は OP の identity URL です。OP が署名するすべてのトークンの `iss` claim、`/.well-known/openid-configuration` の `issuer` フィールド、JWKS メタデータの帰属、さらにプロファイルによっては confidential client が署名する `client_assertion` の `aud` にまで現れます。トークン・署名鍵・discovery 文書を「同じ OP に属する」と紐付ける、ただひとつの文字列です。
 
 ::: tip 30 秒で頭に入れる相関図
 - issuer は **URL** であって、ホスト名ではありません。`https://login.example.com` が issuer であり、`login.example.com` は issuer ではありません。
@@ -55,9 +55,9 @@ OIDC Discovery 1.0 §3 は、issuer 識別子を `/.well-known/openid-configurat
 - **path が正規形であること**。`..` セグメント、`.` セグメント、重複スラッシュ（`https://idp.example.com/a/../b`、`https://idp.example.com/a/./b`、`https://idp.example.com//oidc`）は拒否されます。検証は `path.Clean` を通し、round-trip しないものは弾きます。
 - **`https` であること**。唯一の例外は loopback の IP リテラル（`127.0.0.0/8` と `[::1]`）で、開発時の起動が TLS なしで済むよう plain `http` を許容します。テキストの `localhost` は **例外には含まれません** — DNS hijack の対象になるため（RFC 8252 §7.3 の理由）、本番デプロイや DNS rebinding を警戒する環境では IP リテラルでの記述に矯正されます。
 
-これらのルールをまとめて適用することで、discovery document、発行する全トークン、認可応答の `iss` パラメタにわたって `iss` が byte 完全一致になることを保証します — RFC 9207 のミックスアップ防御で RP が比較するのはこの形です。
+これらのルールをまとめて適用することで、discovery 文書、発行する全トークン、認可応答の `iss` パラメタにわたって `iss` が byte 完全一致になることを保証します — RFC 9207 のミックスアップ防御で RP が比較するのはこの形です。
 
-これらをすべて通過した値が正規形として採用されます。渡した値が `iss` の値、discovery document 内の `issuer` フィールド、FAPI 2.0 配下の `client_assertion` audience チェックの値、すべてに使われます。
+これらをすべて通過した値が正規形として採用されます。渡した値が `iss` の値、discovery 文書内の `issuer` フィールド、FAPI 2.0 配下の `client_assertion` audience チェックの値、すべてに使われます。
 
 ## 設定方法
 
@@ -68,7 +68,7 @@ provider, err := op.New(
 )
 ```
 
-マルチテナントのデプロイで subpath を使うのも問題ありません — `op.New` は issuer の path に対してすべてのエンドポイントを相対マウントします。`https://login.example.com/tenant-a` の discovery document は `https://login.example.com/tenant-a/.well-known/openid-configuration` から配信されます。末尾スラッシュのルールは subpath にも適用されます: `https://login.example.com/tenant-a` は正規形、`https://login.example.com/tenant-a/` は正規形ではありません。
+マルチテナントのデプロイで subpath を使うのも問題ありません — `op.New` は issuer の path に対してすべてのエンドポイントを相対マウントします。`https://login.example.com/tenant-a` の discovery 文書は `https://login.example.com/tenant-a/.well-known/openid-configuration` から配信されます。末尾スラッシュのルールは subpath にも適用されます: `https://login.example.com/tenant-a` は正規形、`https://login.example.com/tenant-a/` は正規形ではありません。
 
 ::: warning デプロイの一生に渡って 1 つの値
 RP がいったん issuer 文字列を保存したら、それを変えるのは破壊的変更です。最初の RP が連携する前に正規形を決めてください — 引退させずに済むホスト名を選ぶ、subpath の形を決める、ロードバランサに途中で host や scheme を書き換えさせない。本ライブラリは起動時の典型的なミスのほとんどを捕まえますが、TLS 終端しているプロキシが下流で path を削ったり host を小文字化していたりするのまでは捕まえられません。

@@ -62,7 +62,7 @@ sequenceDiagram
 
 ## 実装
 
-`prompt=select_account` 用の interaction はビルトインです。アクティブな chooser group の全アカウントを並べた `interaction.ChooserPromptData` エンベロープを返します。同梱 HTML ドライバではビルトインテンプレートが一覧を描画し、ユーザは `SessionID` を POST で送り返します。サーバー描画の流れを保ちつつテンプレートだけ持ちたい場合は、`op.WithChooserUI(op.ChooserUI{Template: tmpl})` を渡します。
+`prompt=select_account` 用の interaction はビルトインです。アクティブな chooser group の全アカウントを並べた `interaction.ChooserPromptData` エンベロープを返します。同梱 HTML ドライバではビルトインテンプレートが一覧を描画し、ユーザは `SessionID` を POST で送り返します。サーバ描画の流れを保ちつつテンプレートだけ持ちたい場合は、`op.WithChooserUI(op.ChooserUI{Template: tmpl})` を渡します。
 
 JSON ドライバ（`op.WithInteractionDriver(interaction.JSONDriver{})`）では、SPA 側が同じ情報を JSON として受け取り、`SessionID` を POST で送り返します。`op.WithSPAUI` を使う場合、`WithChooserUI` が同時指定されていてもアカウント選択画面の描画は SPA が受け持ちます。このとき chooser テンプレートは使われず、`op.New` がその旨の警告を出します。
 
@@ -77,6 +77,6 @@ JSON ドライバ（`op.WithInteractionDriver(interaction.JSONDriver{})`）で�
 
 ## 続きはこちら
 
-- [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) — chooser をサーバー描画のまま保ち、アカウント選択テンプレートだけ差し替える。
+- [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) — chooser をサーバ描画のまま保ち、アカウント選択テンプレートだけ差し替える。
 - [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) — chooser を SPA から扱う。
 - [Back-Channel Logout](/ja/use-cases/back-channel-logout) — 全員ログアウト時の fan-out。

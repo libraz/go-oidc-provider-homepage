@@ -135,9 +135,9 @@ KMS をバックエンドにした signer は、トークン発行のレイテ�
 
 ## Discovery 上の `jwks_uri`
 
-discovery document は、設定された JWKS パスを、issuer に `WithMountPrefix` を加えた配下の絶対 URL として `jwks_uri` に出します。RP は discovery を 1 回取って `jwks_uri` を辿るので、OP 側でパスをハードコードする必要はありません。
+discovery 文書は、設定された JWKS パスを、issuer に `WithMountPrefix` を加えた配下の絶対 URL として `jwks_uri` に出します。RP は discovery を 1 回取って `jwks_uri` を辿るので、OP 側でパスをハードコードする必要はありません。
 
-ルーターと衝突するなら `WithEndpoints(op.Endpoints{JWKS: "/keys"})` でパスを上書きできます。discovery document も追従します。
+ルーターと衝突するなら `WithEndpoints(op.Endpoints{JWKS: "/keys"})` でパスを上書きできます。discovery 文書も追従します。
 
 ## 契約の検証
 

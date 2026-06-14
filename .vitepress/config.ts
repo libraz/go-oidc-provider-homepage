@@ -3,10 +3,10 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
-const docsVersion = '0.9.1'
+const docsVersion = '0.9.3'
 const docsVersionTag = `v${docsVersion}`
 const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
-const releaseNotesUrl = `${changelogUrl}#v091--2026-05-07`
+const releaseNotesUrl = `${changelogUrl}#v093--2026-06-14`
 
 const softwareApplicationJsonLd = {
   '@context': 'https://schema.org',
@@ -232,7 +232,11 @@ export default withMermaid(
                       link: '/use-cases/client-credentials'
                     },
                     { text: 'OAuth 2.0 (no openid)', link: '/use-cases/oauth2-only' },
-                    { text: 'DPoP nonce flow', link: '/use-cases/dpop-nonce' }
+                    { text: 'DPoP nonce flow', link: '/use-cases/dpop-nonce' },
+                    {
+                      text: 'Protected resource metadata (RFC 9728)',
+                      link: '/use-cases/protected-resource-metadata'
+                    }
                   ]
                 },
                 {
@@ -272,14 +276,20 @@ export default withMermaid(
                     {
                       text: 'Hot/cold split (Redis volatile)',
                       link: '/use-cases/hot-cold-redis'
-                    }
+                    },
+                    { text: 'Bring your own store backend', link: '/use-cases/byo-store' }
                   ]
                 },
                 {
                   text: 'Scopes & claims',
                   items: [
                     { text: 'Public / internal scopes', link: '/use-cases/scopes' },
-                    { text: 'Claims request', link: '/use-cases/claims-request' }
+                    { text: 'Claims request', link: '/use-cases/claims-request' },
+                    {
+                      text: 'Rich authorization requests (RFC 9396)',
+                      link: '/use-cases/authorization-details'
+                    },
+                    { text: 'Grant management', link: '/use-cases/grant-management' }
                   ]
                 },
                 {
@@ -536,7 +546,11 @@ export default withMermaid(
                     link: '/use-cases/client-credentials'
                   },
                   { text: 'OAuth 2.0 (no openid)', link: '/use-cases/oauth2-only' },
-                  { text: 'DPoP nonce flow', link: '/use-cases/dpop-nonce' }
+                  { text: 'DPoP nonce flow', link: '/use-cases/dpop-nonce' },
+                  {
+                    text: 'Protected resource metadata (RFC 9728)',
+                    link: '/use-cases/protected-resource-metadata'
+                  }
                 ]
               },
               {
@@ -570,14 +584,20 @@ export default withMermaid(
                 text: 'Storage',
                 items: [
                   { text: 'Persistent storage (SQL)', link: '/use-cases/sql-store' },
-                  { text: 'Hot/cold split (Redis volatile)', link: '/use-cases/hot-cold-redis' }
+                  { text: 'Hot/cold split (Redis volatile)', link: '/use-cases/hot-cold-redis' },
+                  { text: 'Bring your own store backend', link: '/use-cases/byo-store' }
                 ]
               },
               {
                 text: 'Scopes & claims',
                 items: [
                   { text: 'Public / internal scopes', link: '/use-cases/scopes' },
-                  { text: 'Claims request', link: '/use-cases/claims-request' }
+                  { text: 'Claims request', link: '/use-cases/claims-request' },
+                  {
+                    text: 'Rich authorization requests (RFC 9396)',
+                    link: '/use-cases/authorization-details'
+                  },
+                  { text: 'Grant management', link: '/use-cases/grant-management' }
                 ]
               },
               {
@@ -816,7 +836,11 @@ export default withMermaid(
                       link: '/ja/use-cases/client-credentials'
                     },
                     { text: 'OAuth 2.0（openid なし）', link: '/ja/use-cases/oauth2-only' },
-                    { text: 'DPoP nonce フロー', link: '/ja/use-cases/dpop-nonce' }
+                    { text: 'DPoP nonce フロー', link: '/ja/use-cases/dpop-nonce' },
+                    {
+                      text: 'Protected resource metadata（RFC 9728）',
+                      link: '/ja/use-cases/protected-resource-metadata'
+                    }
                   ]
                 },
                 {
@@ -862,14 +886,20 @@ export default withMermaid(
                     {
                       text: 'Hot / Cold 分離（Redis 揮発）',
                       link: '/ja/use-cases/hot-cold-redis'
-                    }
+                    },
+                    { text: 'ストアを自前実装', link: '/ja/use-cases/byo-store' }
                   ]
                 },
                 {
                   text: 'スコープ / claim',
                   items: [
                     { text: 'Public / Internal スコープ', link: '/ja/use-cases/scopes' },
-                    { text: 'Claims リクエスト', link: '/ja/use-cases/claims-request' }
+                    { text: 'Claims リクエスト', link: '/ja/use-cases/claims-request' },
+                    {
+                      text: 'Rich authorization requests（RFC 9396）',
+                      link: '/ja/use-cases/authorization-details'
+                    },
+                    { text: 'Grant management', link: '/ja/use-cases/grant-management' }
                   ]
                 },
                 {
@@ -1159,7 +1189,11 @@ export default withMermaid(
                     link: '/ja/use-cases/client-credentials'
                   },
                   { text: 'OAuth 2.0（openid なし）', link: '/ja/use-cases/oauth2-only' },
-                  { text: 'DPoP nonce フロー', link: '/ja/use-cases/dpop-nonce' }
+                  { text: 'DPoP nonce フロー', link: '/ja/use-cases/dpop-nonce' },
+                  {
+                    text: 'Protected resource metadata（RFC 9728）',
+                    link: '/ja/use-cases/protected-resource-metadata'
+                  }
                 ]
               },
               {
@@ -1199,14 +1233,20 @@ export default withMermaid(
                 text: 'ストレージ',
                 items: [
                   { text: 'SQL ストア', link: '/ja/use-cases/sql-store' },
-                  { text: 'Hot / Cold 分離（Redis 揮発）', link: '/ja/use-cases/hot-cold-redis' }
+                  { text: 'Hot / Cold 分離（Redis 揮発）', link: '/ja/use-cases/hot-cold-redis' },
+                  { text: 'ストアを自前実装', link: '/ja/use-cases/byo-store' }
                 ]
               },
               {
                 text: 'スコープ / claim',
                 items: [
                   { text: 'Public / Internal スコープ', link: '/ja/use-cases/scopes' },
-                  { text: 'Claims リクエスト', link: '/ja/use-cases/claims-request' }
+                  { text: 'Claims リクエスト', link: '/ja/use-cases/claims-request' },
+                  {
+                    text: 'Rich authorization requests（RFC 9396）',
+                    link: '/ja/use-cases/authorization-details'
+                  },
+                  { text: 'Grant management', link: '/ja/use-cases/grant-management' }
                 ]
               },
               {

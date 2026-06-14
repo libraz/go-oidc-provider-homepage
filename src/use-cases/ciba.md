@@ -61,7 +61,7 @@ provider, err := op.New(
 2. Registers the CIBA URN (`urn:openid:params:grant-type:ciba`) at `/token`.
 3. Advertises `backchannel_authentication_endpoint`, `backchannel_token_delivery_modes_supported: ["poll"]`, and `backchannel_user_code_parameter_supported: false` in discovery. When JAR is also enabled, discovery adds `backchannel_authentication_request_signing_alg_values_supported`.
 
-The CIBA substore (`store.CIBARequestStore`) is required. The in-memory adapter ships one. The SQL and Redis adapters return `nil` for this substore, so use in-memory directly or route `CIBARequests` to an in-memory hot tier through the composite adapter. `op.New` enforces this whether the grant is activated via `op.WithCIBA(...)` or via `op.WithGrants(grant.CIBA, ...)` — both code paths require `Store.CIBARequests()` and a `HintResolver` to be wired before construction succeeds.
+The CIBA substore (`store.CIBARequestStore`) is required. The in-memory and SQL adapters both ship one — the SQL adapter persists to the `oidc_ciba_requests` table across sqlite / mysql / postgres. The Redis adapter returns `nil` for this substore, so on a Redis-only deployment route `CIBARequests` to a durable tier (SQL or in-memory) through the composite adapter. `op.New` enforces this whether the grant is activated via `op.WithCIBA(...)` or via `op.WithGrants(grant.CIBA, ...)` — both code paths require `Store.CIBARequests()` and a `HintResolver` to be wired before construction succeeds.
 
 ## Implementing `HintResolver`
 

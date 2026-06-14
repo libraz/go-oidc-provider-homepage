@@ -47,7 +47,7 @@ outline: 2
 
 ### OP はどこにマウントすればいい？ prefix を変えても大丈夫？
 
-`http.Handler` をマウントしたパスにそのまま乗ります。既定のマウントプリフィックスは `/oidc` で、ルートに置きたい場合は `op.WithMountPrefix("/")`、`/auth` に動かしたい場合は `op.WithMountPrefix("/auth")` を渡します。Discovery document には設定された issuer + マウント prefix が埋め込まれるので、RP からは一貫した URL として見えます。
+`http.Handler` をマウントしたパスにそのまま乗ります。既定のマウントプリフィックスは `/oidc` で、ルートに置きたい場合は `op.WithMountPrefix("/")`、`/auth` に動かしたい場合は `op.WithMountPrefix("/auth")` を渡します。Discovery 文書には設定された issuer + マウント prefix が埋め込まれるので、RP からは一貫した URL として見えます。
 
 ### 最小構成は？
 

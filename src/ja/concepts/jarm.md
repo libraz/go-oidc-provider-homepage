@@ -65,7 +65,7 @@ v0.x にクライアント単位の `authorization_signed_response_alg` 上書�
 "authorization_signing_alg_values_supported": ["ES256"]
 ```
 
-`alg=none` / `RS256` / `HS*` ファミリは型レベルで存在しません — 本ライブラリのあらゆる JOSE 接面に共通する閉じた enum 方針については [設計判断 #11](/security/design-judgments#dj-11) を参照してください。
+`alg=none` / `RS256` / `HS*` ファミリは型レベルで存在しません — 本ライブラリのあらゆる JOSE 接面に共通する閉じた enum 方針については [設計判断 #11](/ja/security/design-judgments#dj-11) を参照してください。
 
 ::: details なぜ alg を 1 つに絞り、交渉可能なリストにしないのか
 JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り違える("alg confusion")バグを生んできた経路です。本ライブラリは交渉を行わず、通信路上の allow-list と型レベルの enum を一致させ、リスト外の alg を名乗る入力は検証器に到達する前に拒否します。v0.x は ES256 だけを出荷していますが、これは FAPI 2.0 Message Signing が要求する集合と通信路を互換に保ちつつ、攻撃面を広げないための選択です。
@@ -79,7 +79,7 @@ JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り�
 - 署名済み JARM JWT を、解決した受信者鍵に対して登録済みの `alg` / `enc` で暗号化します。
 - 暗号化に失敗した場合、OP は平文の `?code=...` リダイレクトへフォールバックせず、`server_error` を返します。クライアントが暗号化された応答を要求しているのに code を平文で漏らすのは、fail-closed(失敗時は応答そのものを止める)よりも悪い結果になるためです。
 
-`alg` / `enc` の allow-list は、ID トークン / userinfo / introspection の暗号化と同じ閉じたリスト(`op.SupportedEncryptionAlgs` と `op.SupportedEncryptionEncs`)を使います: RSA-OAEP ファミリ(`SHA-256` / `SHA-512`)、ECDH-ES バリアント、AES-GCM の鍵 wrap、`A128GCM` / `A256GCM` のコンテンツ暗号化が対象です。`RSA1_5`、`dir`、AES-CBC-HS 系のコンテンツ暗号化は意図的に除外しています。alg マトリクスと根拠は [JWE 暗号化](/use-cases/jwe-encryption) を参照してください。
+`alg` / `enc` の allow-list は、ID トークン / userinfo / introspection の暗号化と同じ閉じたリスト(`op.SupportedEncryptionAlgs` と `op.SupportedEncryptionEncs`)を使います: RSA-OAEP ファミリ(`SHA-256` / `SHA-512`)、ECDH-ES バリアント、AES-GCM の鍵 wrap、`A128GCM` / `A256GCM` のコンテンツ暗号化が対象です。`RSA1_5`、`dir`、AES-CBC-HS 系のコンテンツ暗号化は意図的に除外しています。alg マトリクスと根拠は [JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
 
 OP は discovery で `authorization_encryption_alg_values_supported` と `_enc_values_supported` を、JARM 機能と `op.WithEncryptionKeyset` の両方が組み込まれているときにだけ広告します(`internal/discovery/document.go`)。
 
@@ -100,7 +100,7 @@ OP は discovery で `authorization_encryption_alg_values_supported` と `_enc_v
 
 | プロファイル / 文脈 | JARM の扱い |
 |---|---|
-| **FAPI 2.0 Message Signing** | 必須(`op.WithProfile(profile.FAPI2MessageSigning)` が `feature.JARM` を自動で有効化) — [FAPI 2.0](/concepts/fapi) 参照 |
+| **FAPI 2.0 Message Signing** | 必須(`op.WithProfile(profile.FAPI2MessageSigning)` が `feature.JARM` を自動で有効化) — [FAPI 2.0](/ja/concepts/fapi) 参照 |
 | **FAPI 2.0 Baseline** | 任意(Baseline は RFC 9207 の `iss` パラメータで十分) |
 | **FAPI-CIBA** | 該当なし — CIBA にはフロントチャネルの認可応答が存在しない |
 | **素の OIDC / OAuth** | 純粋に選択肢 — 多くの実装は RFC 9207 の `iss` で済ませ、JARM までは入れません |
@@ -152,14 +152,14 @@ JARM signer は `op.New` の段階で OP の現用署名鍵を使って 1 度だ
 
 ## JARM と DPoP / mTLS の関係
 
-JARM は認可応答に署名し、[DPoP](/concepts/dpop) と [mTLS](/concepts/mtls) は発行されたトークンを正規クライアントが保有する鍵にバインドします。両層は直交しており — JARM は **code を配送するハンドシェイク段** を、送信者制約は **その code と引き換えに発行されるトークン** を、それぞれ守ります — FAPI 2.0 Message Signing は両方を要求します。
+JARM は認可応答に署名し、[DPoP](/ja/concepts/dpop) と [mTLS](/ja/concepts/mtls) は発行されたトークンを正規クライアントが保有する鍵にバインドします。両層は直交しており — JARM は **code を配送するハンドシェイク段** を、送信者制約は **その code と引き換えに発行されるトークン** を、それぞれ守ります — FAPI 2.0 Message Signing は両方を要求します。
 
-JARM を使うリクエストはほぼ常に [PAR](/use-cases/fapi2-baseline) と [JAR](https://datatracker.ietf.org/doc/html/rfc9101) も併用します。4 つを組み合わせると、認可リクエスト全体に署名・認可応答全体に署名・最後に送信者制約付きトークン、という構図が完成します。本ライブラリは `op.WithProfile(profile.FAPI2MessageSigning)` 下で PAR / JAR / JARM を自動有効化し、DPoP もしくは mTLS のいずれかを必須とする `RequiredAnyOf` 制約を併せて課します。mTLS が明示されていない場合は DPoP を既定として選びます。
+JARM を使うリクエストはほぼ常に [PAR](/ja/use-cases/fapi2-baseline) と [JAR](https://datatracker.ietf.org/doc/html/rfc9101) も併用します。4 つを組み合わせると、認可リクエスト全体に署名・認可応答全体に署名・最後に送信者制約付きトークン、という構図が完成します。本ライブラリは `op.WithProfile(profile.FAPI2MessageSigning)` 下で PAR / JAR / JARM を自動有効化し、DPoP もしくは mTLS のいずれかを必須とする `RequiredAnyOf` 制約を併せて課します。mTLS が明示されていない場合は DPoP を既定として選びます。
 
 ## 次に読む
 
-- [FAPI 2.0](/concepts/fapi) — JARM が FAPI 2.0 Baseline / Message Signing の対比のどこに位置づくか。
-- [送信者制約 — 選定ガイド](/concepts/sender-constraint) — JARM と並走するトークンバインド層、DPoP と mTLS の選び方。
-- [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — JARM を載せる前段の Baseline プロファイルの実装一式。
-- [JWE 暗号化](/use-cases/jwe-encryption) — 暗号化 JARM、暗号化 ID トークン、暗号化 userinfo、暗号化 introspection(鍵集合 1 個で 4 接面分)。
-- [設計判断](/security/design-judgments) — 閉じた alg enum(#11)など、JARM が継承する仕様上の判断材料。
+- [FAPI 2.0](/ja/concepts/fapi) — JARM が FAPI 2.0 Baseline / Message Signing の対比のどこに位置づくか。
+- [送信者制約 — 選定ガイド](/ja/concepts/sender-constraint) — JARM と並走するトークンバインド層、DPoP と mTLS の選び方。
+- [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — JARM を載せる前段の Baseline プロファイルの実装一式。
+- [JWE 暗号化](/ja/use-cases/jwe-encryption) — 暗号化 JARM、暗号化 ID トークン、暗号化 userinfo、暗号化 introspection(鍵集合 1 個で 4 接面分)。
+- [設計判断](/ja/security/design-judgments) — 閉じた alg enum(#11)など、JARM が継承する仕様上の判断材料。

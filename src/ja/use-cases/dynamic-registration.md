@@ -48,7 +48,7 @@ sequenceDiagram
     OP->>RP: 204
 ```
 
-## 実装
+## 設定
 
 ```go
 import (
@@ -70,7 +70,7 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 })
 ```
 
-`op.WithDynamicRegistration` は暗黙のうちに `feature.DynamicRegistration` を有効化し、`/register` をマウントして、discovery document に `registration_endpoint` を出力します。
+`op.WithDynamicRegistration` は暗黙のうちに `feature.DynamicRegistration` を有効化し、`/register` をマウントして、discovery 文書に `registration_endpoint` を出力します。`op.WithFeature(feature.DynamicRegistration)` も同時に渡す必要はありません。重複指定は、登録ポリシーの所有箇所が曖昧にならないようコンストラクタで拒否されます。
 
 ## オープン登録と既定 scope
 

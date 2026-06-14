@@ -70,7 +70,7 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 })
 ```
 
-`op.WithDynamicRegistration` implicitly activates `feature.DynamicRegistration`, mounts `/register`, and surfaces `registration_endpoint` in the discovery document.
+`op.WithDynamicRegistration` implicitly activates `feature.DynamicRegistration`, mounts `/register`, and surfaces `registration_endpoint` in the discovery document. Do not also pass `feature.DynamicRegistration` to `op.WithFeature`: the constructor rejects the duplicate so the registration policy has a single owner.
 
 ## Open registration and default scope
 

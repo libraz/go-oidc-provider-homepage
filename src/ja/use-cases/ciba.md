@@ -61,7 +61,7 @@ provider, err := op.New(
 2. CIBA URN（`urn:openid:params:grant-type:ciba`）を `/token` に登録
 3. discovery に `backchannel_authentication_endpoint`、`backchannel_token_delivery_modes_supported: ["poll"]`、`backchannel_user_code_parameter_supported: false` を出力。JAR も有効な場合は `backchannel_authentication_request_signing_alg_values_supported` も出力
 
-CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory アダプタは同梱しています。SQL / Redis アダプタはこのサブストアに `nil` を返すため、in-memory を直接使うか、composite アダプタで `CIBARequests` を in-memory の hot tier にルーティングしてください。`op.WithCIBA(...)` 経由でも `op.WithGrants(grant.CIBA, ...)` 経由でも、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方が組み込まれていることを確認します。どちらが欠けていても構成エラーで起動を拒否します。
+CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory と SQL の両アダプタが同梱しています — SQL アダプタは sqlite / mysql / postgres で `oidc_ciba_requests` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis のみの構成では composite アダプタで `CIBARequests` を durable な層（SQL か in-memory）にルーティングしてください。`op.WithCIBA(...)` 経由でも `op.WithGrants(grant.CIBA, ...)` 経由でも、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方が組み込まれていることを確認します。どちらが欠けていても構成エラーで起動を拒否します。
 
 ## `HintResolver` を実装する
 
@@ -72,7 +72,7 @@ CIBA は利用デバイスがユーザを指名する方法を 3 つ用意して
 :::
 
 ::: details `HintResolver` とは
-`/bc-authorize` ごとに OP が 1 度呼び出すインタフェースで、「組み込み側が考えるユーザの指名」を安定的な内部 `sub` に翻訳します。OP はこれを推測できません。ユーザテーブルは組み込み側ごとに異なるからです。`Resolve(ctx, kind, value)` は subject 文字列を返します（不明なら `op.ErrUnknownCIBAUser`、一過性の参照失敗なら `login_required`）。リクエストのホットパス上で動くため、リモートストアへの参照はローカルでキャッシュしてください。
+`/bc-authorize` ごとに OP が 1 度呼び出すインターフェースで、「組み込み側が考えるユーザの指名」を安定的な内部 `sub` に翻訳します。OP はこれを推測できません。ユーザテーブルは組み込み側ごとに異なるからです。`Resolve(ctx, kind, value)` は subject 文字列を返します（不明なら `op.ErrUnknownCIBAUser`、一過性の参照失敗なら `login_required`）。リクエストのホットパス上で動くため、リモートストアへの参照はローカルでキャッシュしてください。
 :::
 
 ```go
@@ -162,7 +162,7 @@ curl -s -u pos-terminal:<secret> \
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否されます。
 - 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` allow-list に含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます。
-- `resource=` を複数指定すると `400 invalid_target` で拒否されます。CIBA の発行パイプラインは現状単一 audience だけを encode するため、複数 audience 対応は今後の課題です。
+- `resource=` を複数指定すると `400 invalid_target` で拒否されます。このリリースの CIBA 発行パイプラインは単一 audience だけを encode するため、複数 audience を黙って切り捨てる入力は受け付けません。
 
 ::: warning `resource=` は登録済みである必要があります
 `resource=` は絶対 URI で、かつクライアントの `Resources` 許可リストに含まれている必要があります。許可リスト外の値は `invalid_target` で拒否されます。

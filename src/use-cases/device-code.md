@@ -50,7 +50,7 @@ provider, err := op.New(
 2. Registers the device-code URN (`urn:ietf:params:oauth:grant-type:device_code`) at `/token`.
 3. Advertises `device_authorization_endpoint` and the URN in `grant_types_supported` in the discovery document.
 
-The device-code substore (`store.DeviceCodeStore`) is required. The in-memory adapter ships one out of the box. The SQL and Redis adapters return `nil` for this substore, so use in-memory directly or route `DeviceCodes` to an in-memory hot tier through the composite adapter.
+The device-code substore (`store.DeviceCodeStore`) is required. The in-memory and SQL adapters both ship one — the SQL adapter persists to the `oidc_device_codes` table across sqlite / mysql / postgres. The Redis adapter returns `nil` for this substore, so on a Redis-only deployment route `DeviceCodes` to a durable tier (SQL or in-memory) through the composite adapter.
 
 ::: warning Substore-presence is enforced at op.New
 If the configured store does not return a non-nil `DeviceCodes()` substore, `op.New` returns a configuration error rather than panicking on the first poll. The same gate fires whether you activate the grant via the dedicated `op.WithDeviceCodeGrant()` option or via `op.WithGrants(grant.DeviceCode, ...)` — both paths require the substore.

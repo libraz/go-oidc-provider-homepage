@@ -27,7 +27,7 @@ pageClass: rfc-matrix-page
 | **OpenID Connect Back-Channel Logout 1.0** | <span class="status-pill full">full</span> | `internal/backchannel` |
 | **OpenID Connect Front-Channel Logout 1.0** | <span class="status-pill out">out</span>（iframe / third-party-cookie 依存の通知方式は意図的に非実装。Back-Channel Logout を使う） | — |
 | **OpenID Connect Session Management 1.0** | <span class="status-pill out">out</span>（サードパーティ cookie 依存のため。Back-Channel を推奨） | — |
-| **OpenID Connect CIBA Core 1.0** | <span class="status-pill partial">partial</span>（poll 配信のみ。ping / push は今後対応） | `internal/ciba`、`internal/cibaendpoint`、`op.WithCIBA` |
+| **OpenID Connect CIBA Core 1.0** | <span class="status-pill partial">partial</span>（poll 配信のみ。ping / push は対象外） | `internal/ciba`、`internal/cibaendpoint`、`op.WithCIBA` |
 
 ## OAuth 2.0 系 RFC
 
@@ -56,11 +56,18 @@ pageClass: rfc-matrix-page
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span>（`feature.JAR` でゲート） | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span>（`feature.PAR` でゲート） | `internal/parendpoint` |
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize`（応答に `iss` パラメータを付与） |
-| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill partial">partial</span>（JAR merge で JSON 配列形を保持。authorization policy としての評価は未実装） | `internal/jar` |
+| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill full">full</span>（`op.WithAuthorizationDetailTypes` で有効化。`/authorize`、`/par`、`/token` で検証し、grant に永続化し、JWT アクセストークンと introspection に反映し、discovery で公開） | `internal/authorizationdetails`、`op/authorization_details.go` |
 | **RFC 9449** DPoP | <span class="status-pill full">full</span>（§8 nonce フロー含む。`feature.DPoP` でゲート） | `internal/dpop`、`op.WithDPoPNonceSource` |
-| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill partial">partial</span>（ACR rule による OP ポリシー primitive。リソースサーバ側の challenge 発行は対象外） | `op/rule.go`（`RuleACR`） |
+| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span>（OP は ACR rule で `acr_values` / `max_age` の再認証を尊重。`op.StepUpChallenge` が組み込み側 RS の返す `WWW-Authenticate` challenge を組み立てる） | `op/rule.go`（`RuleACR`）、`op/stepup.go` |
 | **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill partial">partial</span>（OP 側 BCP posture。リソースサーバ / client 側要件は組み込み側の責務） | コードベース全体 |
 | **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span>（既定は signed JWT。client の `introspection_encrypted_response_alg` / `_enc` メタデータに応じて JWE で wrap） | `internal/introspectendpoint`、`internal/jose` |
+| **RFC 9728** OAuth 2.0 Protected Resource Metadata | <span class="status-pill full">full</span>（`op.WithProtectedResources` で有効化。`/.well-known/oauth-protected-resource` で配信し、`authorization_servers` に issuer を刻む） | `internal/protectedresource`、`op/protected_resource.go` |
+
+## IETF ドラフト
+
+| ドラフト | ステータス | 場所 |
+|---|---|---|
+| **OAuth 2.0 Grant Management**（`draft-ietf-oauth-grant-management`） | <span class="status-pill partial">partial</span>（`op.WithGrantManagement` で有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントをマウントし、token 応答に `grant_id` を載せ、discovery で公開。IETF draft 追跡のため v1.0 までに surface が変わり得る） | `internal/grantmgmtendpoint`、`op/grant_management.go` |
 
 ## JOSE 系
 

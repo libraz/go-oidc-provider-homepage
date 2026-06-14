@@ -88,6 +88,27 @@ provider, err := op.New(
 `*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect. Run it at deploy time before the first request lands. `Schema()` returns the same DDL as a string for callers that want to hand it to their own migration tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
 :::
 
+## Renaming the tables
+
+The adapter's bundled tables are named `oidc_clients`, `oidc_refresh_tokens`, and so on. If you are grafting the OP onto a database that already owns a `clients` table — or your house style forbids the `oidc_` prefix — `oidcsql.WithNaming` rewrites the physical table name for any of the OP-internal record kinds. The adapter validates every physical name against the SQL standard identifier grammar, rewrites the embedded DDL, and builds every query against the renamed tables, so `Schema()` / `Migrate()` and the runtime queries stay in lockstep.
+
+```go
+storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[string]string{
+  "clients":        "auth_clients",
+  "refresh_tokens": "auth_refresh_tokens",
+  "authorization_codes": "auth_codes",
+  // ...rename as many as you like; unlisted kinds keep their oidc_ default.
+}))
+```
+
+The map keys are logical record kinds, not physical names. All eighteen are accepted: `clients`, `authorization_codes`, `refresh_tokens`, `access_tokens`, `opaque_access_tokens`, `grant_revocations`, `revoked_jtis`, `grants`, `sessions`, `par_records`, `interactions`, `consumed_jtis`, `users`, `initial_access_tokens`, `registration_access_tokens`, `op_metadata`, `device_codes`, `ciba_requests`. An unknown key makes `oidcsql.New` fail fast, so a typo is caught at construction time rather than at the first query.
+
+> **Source:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) renames all eighteen tables under an `auth_` prefix and logs them back from `sqlite_master` to prove the rewrite took effect.
+
+::: warning Table names only, not column names
+`WithNaming` rewrites table names. The column layout is fixed — the adapter owns it. If you need custom **column** names too (an existing schema you cannot reshape, encrypted columns, a shared table), implement the `store` interfaces yourself instead of using the bundled adapter. See [Bring your own store backend](/use-cases/byo-store).
+:::
+
 ## MySQL pool sizing
 
 [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) demonstrates a production-shaped DSN:

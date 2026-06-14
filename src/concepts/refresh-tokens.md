@@ -102,6 +102,14 @@ In the default (lax) reading of OIDC Core 1.0 §11, `offline_access` is **not** 
 The option is mutually exclusive with `op.WithOpenIDScopeOptional` (strict §11 has no meaning when `openid` itself is optional) — the constructor refuses the combination.
 :::
 
+## Authentication context survives rotation
+
+A refresh token carries the original login's authentication context, not just the subject and scope. When a refresh exchange mints a fresh id_token or JWT access token, the OP reproduces the context the user actually authenticated with — `auth_time`, `acr`, `amr`, and the granted `authorization_details` — rather than stamping the moment of the refresh. So an RP that asked for `acr_values=aal2` at login still sees `acr` reflect that strength after a week of background refreshes, and a step-up's freshness signal does not silently reset on every rotation. The refresh record persists these fields (alongside the token's `origin`) so a stored chain reproduces them faithfully.
+
+## At rest: hashed, constant-time
+
+Refresh-token handles are opaque bearer secrets: possession alone redeems them. The OP never stores the presented value — it stores a hash, and on `Find` / `Consume` it hashes the presented value to look the digest up, comparing in constant time. That holds the public store lookups to a hash-only, timing-flat shape, hardening against both store disclosure and timing side channels. The internal reuse-detection chain walk resolves stored handles through a separate `RefreshChainResolver` path so the public lookups stay hash-only. A [custom store](/use-cases/byo-store) must persist hashed ids to satisfy the contract.
+
 ## Audit trail
 
 The token endpoint emits two slog audit events through `op.WithAuditLogger`:
@@ -110,6 +118,8 @@ The token endpoint emits two slog audit events through `op.WithAuditLogger`:
 |---|---|
 | `op.AuditTokenIssued` | Refresh minted on `authorization_code` exchange. |
 | `op.AuditTokenRefreshed` | Refresh rotated on `refresh_token` grant. |
+
+A `refresh.replay_detected` event is emitted before the best-effort chain revoke when an already-rotated token is presented (reuse detection).
 
 Both records carry an `offline_access` boolean and a `ttl_bucket` string (`"offline"` or `"default"`) in `extras`, so SOC dashboards can split stay-signed-in chains from conventional rotation without re-reading the granted scope set.
 

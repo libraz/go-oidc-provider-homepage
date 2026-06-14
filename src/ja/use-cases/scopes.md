@@ -43,7 +43,7 @@ op.WithScope(op.InternalScope("internal:audit")),
 - `scopes_supported` には **掲載されません**。
 - 同意画面にも **表示されません**（OP は同意フェーズをスキップします）。
 - 受理可否は `Scope.AllowedClients` で制御されます。空のリストはどの RP からも要求可能、要素を持つリストはそのリストに掲載されたクライアントのみ受理し、それ以外は RFC 6749 §5.2 の `invalid_scope` で拒否されます。
-- OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します。discovery document が OIDC Discovery 1.0 §3 に違反しないようにするためです。
+- OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します。discovery 文書が OIDC Discovery 1.0 §3 に違反しないようにするためです。
 
 ::: tip OIDC 標準スコープ
 `openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **OP 独自の** scope カタログに焦点を当てています。

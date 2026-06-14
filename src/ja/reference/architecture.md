@@ -65,7 +65,7 @@ flowchart TB
   style IX fill:#1f2937,color:#fff
 ```
 
-`feature.*`（`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`、`BackChannelLogout`）で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション（`WithDynamicRegistration` など）が渡されたときだけマウントされます。discovery document も、実際にマウントされたエンドポイントだけを公開します。
+`feature.*`（`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`、`BackChannelLogout`）で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション（`WithDynamicRegistration` など）が渡されたときだけマウントされます。discovery 文書も、実際にマウントされたエンドポイントだけを公開します。
 
 ## クロスカットなミドルウェア
 
@@ -135,7 +135,7 @@ internal/authn/CompiledLoginFlow
 2. UI ドライバ（HTML または SPA）がプロンプトを描画し、ユーザが送信します。
 3. `Primary.Continue` が `Result`（`Identity` がバインドされている）まで進めます。
 4. オーケストレータが `LoginContext` を組み立てます（subject、scope、完了したステップ、リスクスコア、ACR values）。
-5. `Decider` が動きます（non-nil の場合）。`Pass` 以外の判定はそこで短絡します。
+5. `Decider` が動きます（nil 以外の場合）。`Pass` 以外の判定はそこで短絡します。
 6. それ以外は `Rules` を順に評価します。最初にマッチしたルールの `Step.Kind()` が `CompletedSteps` にまだ含まれていなければ発火します。
 7. 発火するルールが無くなるまで繰り返し、その後にセッションを発行します。
 
@@ -166,9 +166,9 @@ internal/authn/CompiledLoginFlow
 
 詳細は [hot/cold ストレージ](/ja/use-cases/hot-cold-redis) を参照してください。
 
-## Discovery document の組み立て
+## Discovery 文書の組み立て
 
-`/.well-known/openid-configuration` は OP の実効設定から discovery document を組み立てます。広告されるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです。
+`/.well-known/openid-configuration` は OP の実効設定から discovery 文書を組み立てます。広告されるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです。
 
 - **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。
 - **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `FAPI2MessageSigning` が有効なときに FAPI の許可リストと交差します。

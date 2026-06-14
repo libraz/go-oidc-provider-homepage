@@ -33,7 +33,7 @@ OIDC は 3 種の identity アーティファクトを扱います。一見ど�
 ::: details JWT とは
 **JWT**（JSON Web Token、RFC 7519）は `header.payload.signature` の 3 つを `.` で繋いだ base64url 文字列です。header と payload は JSON、signature は対応する秘密鍵の保有者から来たものであることを暗号学的に検証する部分です。
 
-OIDC では **ID トークンは常に JWT** です。本ライブラリのアクセストークンも JWT（RFC 9068）で発行されます。UserInfo は JWT ではなく、ただの JSON HTTP レスポンスです。
+OIDC では **ID トークンは常に JWT** です。本ライブラリのアクセストークンは既定では JWT（RFC 9068）ですが、OP 全体または audience ごとに opaque 形式へ切り替えられます。UserInfo は JWT ではなく、ただの JSON HTTP レスポンスです。
 :::
 
 ## 一覧
@@ -41,7 +41,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | アーティファクト | 形式 | Audience (`aud`) | 行き先 | 寿命 | 読む人 |
 |---|---|---|---|---|---|
 | **ID トークン** | 署名 JWT（常に） | RP の `client_id` | OP → RP のみ | 数分（既定 5 分） | RP（誰がログインしたか確認） |
-| **アクセストークン** | JWT（RFC 9068）— 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
+| **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
 | **UserInfo response** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
 ```mermaid
@@ -86,7 +86,7 @@ flowchart LR
 :::
 
 ::: details JWKS とは
-**JWKS**（JSON Web Key Set、RFC 7517）は OP が `/jwks`（discovery document に記載）で配信する JSON 文書です。OP の **公開鍵** の一覧が入っており、RP は一度取得してキャッシュし、ID トークンの署名をオフラインで検証するのに使います。OP は鍵をローテーションするとき、署名に使う前に新鍵を JWKS に載せて先行公開するので、RP は再取得すればそのまま追従できます。
+**JWKS**（JSON Web Key Set、RFC 7517）は OP が `/jwks`（discovery 文書に記載）で配信する JSON 文書です。OP の **公開鍵** の一覧が入っており、RP は一度取得してキャッシュし、ID トークンの署名をオフラインで検証するのに使います。OP は鍵をローテーションするとき、署名に使う前に新鍵を JWKS に載せて先行公開するので、RP は再取得すればそのまま追従できます。
 :::
 
 ::: warning ID トークンを `Authorization: Bearer` に乗せない
@@ -208,7 +208,7 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 | `op.WithAccessTokenTTL(d)` | アクセストークン寿命 | 5 分 |
 | `op.WithRefreshTokenTTL(d)` | リフレッシュトークン寿命 | 30 日 |
 | `op.WithRefreshTokenOfflineTTL(d)` | `offline_access` リフレッシュトークン寿命 | `WithRefreshTokenTTL` 継承 |
-| `op.WithClaimsSupported(...)` | OP が返せる claim の列挙。discovery document に出る | — |
+| `op.WithClaimsSupported(...)` | OP が返せる claim の列挙。discovery 文書に出る | — |
 | `op.WithClaimsParameterSupported(false)` | OIDC §5.5 の `claims` 要求パラメータを広告せず、malformed JSON の拒否後は処理しない | on |
 | `op.WithStrictOfflineAccess()` | 発行とリフレッシュ交換を OIDC Core §11 の厳格解釈に切り替え、`offline_access` が granted scope に含まれているときに限りリフレッシュトークンを発行・受理する（下の callout 参照） | off（緩い設定。`openid` + クライアントの `refresh_token` grant で発行）|
 

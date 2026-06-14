@@ -66,7 +66,7 @@ provider, err := op.New(
 
 ## 2. IaC / GitOps プロビジョニング
 
-RP の一覧をソース管理（Terraform / Pulumi モジュール、Kustomize オーバーレイ、Helm の values ファイルなど）に置くなら、マニフェストを読んで OP のストアを直接書くプロビジョニングバイナリが向いています。本ライブラリは `store.ClientRegistry` で書き込み口を公開しており、DCR をサポートするバックエンドはこのインタフェースを満たします。
+RP の一覧をソース管理（Terraform / Pulumi モジュール、Kustomize オーバーレイ、Helm の values ファイルなど）に置くなら、マニフェストを読んで OP のストアを直接書くプロビジョニングバイナリが向いています。本ライブラリは `store.ClientRegistry` で書き込み口を公開しており、DCR をサポートするバックエンドはこのインターフェースを満たします。
 
 ```go
 storage, err := oidcsql.New(db, oidcsql.Postgres())

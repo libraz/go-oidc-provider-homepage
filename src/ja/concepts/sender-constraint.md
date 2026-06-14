@@ -7,7 +7,7 @@ description: Bearer トークンと送信者制約付きトークン。DPoP と 
 
 保護のない bearer トークンは **bearer-authoritative** です — バイト列を持つ者が API を呼べてしまいます。トークンが漏れると(ログ、中継 proxy、ブラウザ拡張、サードパーティ SDK)、漏らした側は有効期限まで全アクセス権を握ります。
 
-**送信者制約付き** アクセストークンは、正規クライアントが保有する鍵にバインドされます。バイト列が漏れても、攻撃者は鍵を一緒に盗まないと使えません。本ページは選定ガイドです — それぞれの仕組みは [DPoP](/concepts/dpop) と [mTLS](/concepts/mtls) の専用ページに分かれています。
+**送信者制約付き** アクセストークンは、正規クライアントが保有する鍵にバインドされます。バイト列が漏れても、攻撃者は鍵を一緒に盗まないと使えません。本ページは選定ガイドです — それぞれの仕組みは [DPoP](/ja/concepts/dpop) と [mTLS](/ja/concepts/mtls) の専用ページに分かれています。
 
 ::: details トークン replay とは何か
 攻撃者が漏洩した有効なアクセストークン(ログや侵害された proxy など)を、自分のマシンから再送して API を呼ぶ攻撃です。RS は構文的に有効なトークンを見て応答してしまいます。送信者制約があれば、攻撃者は対応する鍵も提示する必要があり、構造的に replay が成立しません。
@@ -34,9 +34,9 @@ TLS は通信路上のトークンを保護します。一度アプリ層(OP、R
 
 ## 本ライブラリの 2 つのバインド方式
 
-**DPoP**(RFC 9449)は、クライアントがリクエスト毎に自分の鍵で署名する方式です。proof は小さな JWT(`htm`、`htu`、`iat`、`jti`、任意の `ath` と `nonce`)で、HTTP ヘッダ `DPoP:` に乗せます。プレーン HTTPS で動作し、TLS クライアント証明書を要しません。詳細は [DPoP](/concepts/dpop) を参照してください。
+**DPoP**(RFC 9449)は、クライアントがリクエスト毎に自分の鍵で署名する方式です。proof は小さな JWT(`htm`、`htu`、`iat`、`jti`、任意の `ath` と `nonce`)で、HTTP ヘッダ `DPoP:` に乗せます。プレーン HTTPS で動作し、TLS クライアント証明書を要しません。詳細は [DPoP](/ja/concepts/dpop) を参照してください。
 
-**mTLS**(RFC 8705)は、TLS ハンドシェイクで提示した X.509 証明書にトークンをバインドする方式です。OP は証明書の SHA-256 thumbprint を `cnf.x5t#S256` として発行 token に書き込み、リソースサーバは観測した証明書の thumbprint を照合します。詳細は [mTLS](/concepts/mtls) を参照してください。
+**mTLS**(RFC 8705)は、TLS ハンドシェイクで提示した X.509 証明書にトークンをバインドする方式です。OP は証明書の SHA-256 thumbprint を `cnf.x5t#S256` として発行 token に書き込み、リソースサーバは観測した証明書の thumbprint を照合します。詳細は [mTLS](/ja/concepts/mtls) を参照してください。
 
 ## 比較
 
@@ -48,7 +48,7 @@ TLS は通信路上のトークンを保護します。一度アプリ層(OP、R
 | リクエスト毎の追加成果物 | アプリ側で署名する fresh な JWS proof | なし(TLS 層でバインド) |
 | proxy / TLS 終端への依存 | なし — プレーン HTTPS で動く | 終端側が証明書をヘッダで前送りする必要あり |
 | `cnf` メンバ | `cnf.jkt`(JWK thumbprint) | `cnf.x5t#S256`(X.509 thumbprint) |
-| リフレッシュトークンバインド既定 | public はバインド、confidential は非バインド([設計判断 #15](/security/design-judgments#dj-15)) | クライアントが token endpoint で mTLS を使ったときにバインド |
+| リフレッシュトークンバインド既定 | public はバインド、confidential は非バインド([設計判断 #15](/ja/security/design-judgments#dj-15)) | クライアントが token endpoint で mTLS を使ったときにバインド |
 | バインドを越えた replay 防御 | `jti` キャッシュ、`iat` 窓、任意のサーバ nonce | TLS セッション再利用 + 証明書 thumbprint 照合 |
 | FAPI 2.0 Baseline 受理 | 可 | 可 |
 | FAPI 2.0 Message Signing | 可(§8 / §9 nonce 併用) | 可 |
@@ -69,11 +69,11 @@ FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトー�
 
 ## さらに読む
 
-- [DPoP (RFC 9449)](/concepts/dpop) — proof の構造、replay 防御、`cnf.jkt`、サーバ nonce、public / confidential での refresh バインド差。
-- [mTLS (RFC 8705)](/concepts/mtls) — サブモード(`tls_client_auth` と `self_signed_tls_client_auth`)、`cnf.x5t#S256`、リバースプロキシ構成。
+- [DPoP (RFC 9449)](/ja/concepts/dpop) — proof の構造、replay 防御、`cnf.jkt`、サーバ nonce、public / confidential での refresh バインド差。
+- [mTLS (RFC 8705)](/ja/concepts/mtls) — サブモード(`tls_client_auth` と `self_signed_tls_client_auth`)、`cnf.x5t#S256`、リバースプロキシ構成。
 
 ## 次に読む
 
-- [ユースケース: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — 送信者制約を有効化した完全な組み込み例。
-- [DPoP nonce フロー](/use-cases/dpop-nonce) — RFC 9449 §8 / §9 のサーバ供給 nonce パイプライン。
-- [設計判断](/security/design-judgments) — public / confidential での refresh バインド差を含む、解決済みの仕様間トレードオフ。
+- [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — 送信者制約を有効化した完全な組み込み例。
+- [DPoP nonce フロー](/ja/use-cases/dpop-nonce) — RFC 9449 §8 / §9 のサーバ供給 nonce パイプライン。
+- [設計判断](/ja/security/design-judgments) — public / confidential での refresh バインド差を含む、解決済みの仕様間トレードオフ。

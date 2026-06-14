@@ -46,7 +46,7 @@ nil の `TokenExchangePolicy` は `op.New` で失敗します(`op.ErrTokenExchan
 
 ## `TokenExchangePolicy` を実装する
 
-ポリシーのインタフェース自体は小さいですが、exchange の判断はすべてここに乗ります。完全に解決済みの `TokenExchangeRequest`(subject / actor は検証済み、audience は正規化済み、scope は積集合適用済み)を受け取り、`*TokenExchangeDecision`(任意の追加絞り込み)またはエラーを返します。
+ポリシーのインターフェース自体は小さいですが、exchange の判断はすべてここに乗ります。完全に解決済みの `TokenExchangeRequest`(subject / actor は検証済み、audience は正規化済み、scope は積集合適用済み)を受け取り、`*TokenExchangeDecision`(任意の追加絞り込み)またはエラーを返します。
 
 ```go
 type myPolicy struct{ /* dependencies */ }

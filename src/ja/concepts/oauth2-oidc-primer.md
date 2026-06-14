@@ -83,7 +83,7 @@ OIDC はさらに userinfo エンドポイント (`/userinfo`)、discovery、RP-
 ::: details JWT とは
 **JWT**（JSON Web Token、RFC 7519）は `header.payload.signature` の 3 つを `.` で繋いだ base64url 文字列です。header と payload は JSON で、signature は受け手が公開鍵で発行者を暗号学的に検証するための部分です。
 
-OIDC では **ID トークンは常に JWT**、本ライブラリのアクセストークンも JWT で発行されます。JSON が読めて署名が検証できるなら JWT は読めます — 独自バイナリ形式は登場しません。
+OIDC では **ID トークンは常に JWT** です。本ライブラリのアクセストークンも既定では JWT で、必要な場合は opaque 形式に切り替えられます。JSON が読めて署名が検証できるなら、既定の JWT 形式は読めます — 独自バイナリ形式は登場しません。
 :::
 
 ::: details Opaque と JWT の違い
@@ -150,7 +150,7 @@ sequenceDiagram
 | **Audience（`aud`）** | トークンの宛先。ID トークンは `aud = client_id`、アクセストークンは `aud = resource server` です。 |
 | **Issuer（`iss`）** | トークンに署名した OP。RP も RS も自分の期待値と一致するか確認します。 |
 | **JWKS** | JSON Web Key Set。OP の公開鍵集合で、`/jwks` から取得します。RP は ID トークンの検証に使います。 |
-| **Discovery document** | `/.well-known/openid-configuration`。エンドポイント、対応 scope、対応 alg などをまとめた JSON カタログ。 |
+| **Discovery 文書** | `/.well-known/openid-configuration`。エンドポイント、対応 scope、対応 alg などをまとめた JSON カタログ。 |
 
 ::: details `acr` と `amr` を 1 段落で
 `acr` は認証が **どれだけ強かったか**(`aal2` のような保証水準ラベル)を表し、`amr` は **どの factor を使ったか**(`["pwd","otp"]` のような配列)を表します。RP が機微な操作のために高い保証を要求するときは `acr_values` で高い `acr` を要求し、OP は step-up 認証を実行して ID トークンを再発行します。RFC 8176(Authentication Method Reference Values)が標準 `amr` 値を規定し、RFC 9470(OAuth 2.0 Step Up Authentication Challenge Protocol)が `WWW-Authenticate: error="insufficient_user_authentication"` 経由の step-up を標準化しています。組み込み手順は [MFA / step-up](/ja/use-cases/mfa-step-up) を参照してください。

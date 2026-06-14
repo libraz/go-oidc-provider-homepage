@@ -6,14 +6,14 @@ description: Go モジュールに go-oidc-provider を追加する。
 # インストール
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v0.9.2
+go get github.com/libraz/go-oidc-provider/op@v0.9.3
 ```
 
 SQL / Redis のストアアダプタサブモジュールを使う場合は、同じタグに揃えてください:
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v0.9.2
-go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v0.9.2
+go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v0.9.3
+go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v0.9.3
 ```
 
 ライブラリは **Go 1.25+** を対象にしています（`go.mod` の directive と一致）。`op/storeadapter/sql` と `op/storeadapter/redis` のストアアダプタサブモジュールは testcontainers ベースの結合テストのために以前から Go 1.25 を要求していたため、ルートモジュールも同じ最低ラインに揃えた形です。

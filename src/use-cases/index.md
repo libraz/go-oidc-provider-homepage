@@ -11,6 +11,14 @@ Each card below maps to a runnable example under [`examples/`](https://github.co
 go run -tags example ./examples/01-minimal
 ```
 
+Most pages start with the same decision shape:
+
+- **What problem this solves.** The opening paragraphs explain the pressure that makes the feature useful, not just the option name.
+- **When to use it.** Advanced pages call out the deployment shape where the feature earns its complexity.
+- **When not to use it.** If a simpler built-in path is enough, the page points you there before diving into code.
+
+If you are new to the library, start with [Minimal OP](/use-cases/minimal-op), then [Comprehensive bundle](/use-cases/bundle), and only jump to the pages below when your deployment has that specific need.
+
 ## Index
 
 Every example folder maps to one of the use-case pages below.
@@ -47,6 +55,8 @@ Every example folder maps to one of the use-case pages below.
 | Use case | Example | Page |
 |---|---|---|
 | Persist on a real database | [`06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store), [`07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) | [Persistent storage (SQL)](/use-cases/sql-store) |
+| Rename SQL adapter tables | [`25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) | [Persistent storage (SQL) § Renaming the tables](/use-cases/sql-store#renaming-the-tables) |
+| Implement a store from scratch | [`26-byo-store-from-scratch`](https://github.com/libraz/go-oidc-provider/tree/main/examples/26-byo-store-from-scratch) | [Bring your own store backend](/use-cases/byo-store) |
 | Hot/cold split (Redis volatile) | [`08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold), [`09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) | [Hot/cold + Redis](/use-cases/hot-cold-redis) |
 
 ### Scopes & claims
@@ -60,7 +70,7 @@ Every example folder maps to one of the use-case pages below.
 
 | Use case | Example | Page |
 |---|---|---|
-| MFA, captcha, step-up | [`20`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp), [`21`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa), [`22`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha), [`23`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / step-up](/use-cases/mfa-step-up) |
+| MFA, captcha, step-up | [`20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp), [`21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa), [`22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha), [`23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / step-up](/use-cases/mfa-step-up) |
 | Bring your own user store | [`24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore) | [Bring your own user store](/use-cases/byo-userstore) |
 
 ### Advanced grants

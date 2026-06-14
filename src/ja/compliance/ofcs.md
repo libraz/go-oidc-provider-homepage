@@ -72,7 +72,7 @@ OFCS の各テストプランは、それぞれ特定の仕様プロファイル
 | JAR (RFC 9101) | プロファイルが `feature.JAR` を有効化 | [/ja/concepts/fapi](/ja/concepts/fapi) |
 | `S256` PKCE の強制 | プロファイルが強制 | [/ja/concepts/authorization-code-pkce](/ja/concepts/authorization-code-pkce) |
 | 認可レスポンスの `iss` (RFC 9207) | プロファイルが強制 | [/ja/concepts/issuer](/ja/concepts/issuer) |
-| ID トークン署名アルゴリズム `ES256` / `PS256` | プロファイルが強制 | [/ja/concepts/jose-basics](/ja/concepts/jose-basics) |
+| ID トークン署名アルゴリズム `ES256` | プロファイルが強制。OP 発行 ID トークンは `PS256` / `RS256` では署名しない | [/ja/concepts/jose-basics](/ja/concepts/jose-basics) |
 | `RS256`(FAPI 文脈)・`HS*`・`none` の拒否 | `internal/jose/alg.go` の closed enum で禁止 | [/ja/security/design-judgments](/ja/security/design-judgments) |
 | `private_key_jwt` または `tls_client_auth` | プロファイルが強制（FAPI allow-list と交差） | [/ja/concepts/client-types](/ja/concepts/client-types) |
 | DPoP または mTLS による送信者制約 | `op.WithFeature(feature.DPoP)` か `op.WithFeature(feature.MTLS)` のいずれか（FAPI 2.0 では少なくとも一方が必須） | [/ja/concepts/sender-constraint](/ja/concepts/sender-constraint)、[/ja/concepts/dpop](/ja/concepts/dpop)、[/ja/concepts/mtls](/ja/concepts/mtls) |

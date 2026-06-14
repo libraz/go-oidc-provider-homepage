@@ -101,6 +101,9 @@ flowchart LR
 | Argon2id パラメータを OWASP 2024 ベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
 | DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
 | 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
+| クライアント検証鍵（`client_assertion`、JAR request object）を OP の鍵 shape 最低水準に保持: RSA は 2048 bit 以上、EC 曲線は宣言された `alg` と一致 | `internal/clientauth`、`internal/jar`、`internal/jose`（`AssertAlgKeyShape`） | RFC 7518 §3.3、RFC 8725 §3.2 |
+| ワンタイム認証 factor（email-OTP、TOTP、recovery code）を atomic な compare-and-set で単回使用化（再提示時は `ErrAlreadyConsumed`）。cross-factor の lockout は atomic に刻む（`StampLock`） | `internal/authn`、`op/store` | — (defence in depth) |
+| リフレッシュトークンの `id` / `parent_id` を保存時にハッシュ化し、定数時間で参照 | `internal/tokenendpoint`、`op/store` | RFC 9700 §2.2.2 |
 
 ## ツールチェーン
 

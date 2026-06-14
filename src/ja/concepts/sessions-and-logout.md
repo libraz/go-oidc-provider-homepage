@@ -92,7 +92,7 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 - Chrome の `SameSite=Lax` デフォルト化（2020 年〜）
 - third-party cookie の段階的廃止（2024〜2025 年）
 
-本ライブラリは Front-Channel Logout を **実装しません**。discovery ドキュメントでも `frontchannel_logout_supported` は広告しません。fan-out 型のログアウトが必要な組み込み側は、ブラウザの cookie ポリシーから独立した server-to-server の Back-Channel Logout 1.0 を使います。完全な背景は [設計判断 #5](/ja/security/design-judgments#dj-5) を参照。
+本ライブラリは Front-Channel Logout を **実装しません**。discovery 文書でも `frontchannel_logout_supported` は広告しません。fan-out 型のログアウトが必要な組み込み側は、ブラウザの cookie ポリシーから独立した server-to-server の Back-Channel Logout 1.0 を使います。完全な背景は [設計判断 #5](/ja/security/design-judgments#dj-5) を参照。
 
 ## End-session カスケード
 

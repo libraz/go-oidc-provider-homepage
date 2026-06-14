@@ -48,6 +48,12 @@ A representative subset of the fields a beginner will actually see and use. Ever
 | `dpop_signing_alg_values_supported` | Present only when the DPoP feature (RFC 9449) is enabled. |
 | `require_pushed_authorization_requests` | Set to `true` only under FAPI 2.0 profiles, which mandate PAR. |
 | `claims_parameter_supported` | Defaults to `true`; pass `op.WithClaimsParameterSupported(false)` to stop advertising and honoring OIDC §5.5 `claims` requests. |
+| `authorization_details_types_supported` | The RFC 9396 `type` values accepted in `authorization_details`. Present only when `op.WithAuthorizationDetailTypes(...)` is wired. |
+| `grant_management_endpoint` | The grant management endpoint URL. Present only when `op.WithGrantManagement(...)` is wired. |
+| `grant_management_actions_supported` | The grant management actions the OP accepts (`create` / `replace` / `merge` / `query` / `revoke`). Present with `grant_management_endpoint`. |
+| `grant_management_action_required` | Emitted as `true` only when `WithGrantManagement(..., actionRequired=true)` — an authorization request must then carry `grant_management_action`. |
+
+When `op.WithProtectedResources(...)` is wired, the OP additionally serves RFC 9728 protected-resource metadata at `/.well-known/oauth-protected-resource` (one document per registered resource) — a separate well-known document, not a field on `openid-configuration`.
 
 ::: details `_supported` fields are advertisements, not policy
 A `_supported` list is what the OP **will accept** — not what every client must use. A client may use a subset. The OP rejects anything outside the list.

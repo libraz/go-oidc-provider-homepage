@@ -257,6 +257,12 @@ Fire from the in-tree `RegisterTokenExchange` handler. Every successful exchange
 | `custom_grant.failed` | custom grant dispatch or handler failed | warn | [Use case: custom grant](/use-cases/custom-grant) |
 | `custom_grant.refresh_dropped` | handler asked for a refresh token with `IssueRefreshToken`, but the client is not registered for `refresh_token`; the access-token response still succeeds | info | [Use case: custom grant](/use-cases/custom-grant) |
 
+### Grant management
+
+| Event constant | When it fires | Severity hint | Linked doc |
+|---|---|---|---|
+| `AuditGrantManagementRevoked` | a `DELETE` to the grant management endpoint revoked a grant and cascaded its tokens | info | [Use case: grant management](/use-cases/grant-management) |
+
 ## Stability
 
 Audit event names are part of the public API surface:

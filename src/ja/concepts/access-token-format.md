@@ -66,7 +66,7 @@ opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 
 :::
 
 ::: tip 通信路上の見た目だけでは RS は形式を判別できない
-両形式とも `Authorization: Bearer <opaque-string>` として届きます。RFC 6750 は形式を区別しません。RS は audience やデプロイ側の取り決めで「この audience は opaque」「この audience は JWT」を知っている前提です — JWKS をどれと信じるかと同じ仕組みです。本ライブラリの discovery document は形式を **広告しません**。
+両形式とも `Authorization: Bearer <opaque-string>` として届きます。RFC 6750 は形式を区別しません。RS は audience やデプロイ側の取り決めで「この audience は opaque」「この audience は JWT」を知っている前提です — JWKS をどれと信じるかと同じ仕組みです。本ライブラリの discovery 文書は形式を **広告しません**。
 :::
 
 ## トレードオフ
@@ -224,7 +224,7 @@ provider, err := op.New(
 :::
 
 ::: warning サブストアの存在は `op.New` で強制されます（BREAKING）
-既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が non-nil なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は最初の `/revoke` / refresh 再利用検出で半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI デプロイは `RevocationStrategyNone` に固定する選択肢があります）。
+既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が nil 以外なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は最初の `/revoke` / refresh 再利用検出で半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI デプロイは `RevocationStrategyNone` に固定する選択肢があります）。
 :::
 
 ## 形式の選び方

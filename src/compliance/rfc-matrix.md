@@ -56,11 +56,18 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span> (gated by `feature.JAR`) | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span> (gated by `feature.PAR`) | `internal/parendpoint` |
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize` (`iss` parameter on the response) |
-| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill partial">partial</span> (JAR merge preserves the JSON-array form; authorization-policy evaluation is not implemented yet) | `internal/jar` |
+| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill full">full</span> (gated by `op.WithAuthorizationDetailTypes`; validated at `/authorize`, `/par`, `/token`, persisted on the grant, echoed on JWT access tokens and introspection, advertised in discovery) | `internal/authorizationdetails`, `op/authorization_details.go` |
 | **RFC 9449** DPoP | <span class="status-pill full">full</span> incl. §8 nonce flow (gated by `feature.DPoP`) | `internal/dpop`, `op.WithDPoPNonceSource` |
-| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill partial">partial</span> (OP policy primitive via ACR rules; resource-server challenge emission is out of scope) | `op/rule.go` (`RuleACR`) |
+| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> (OP honours `acr_values` / `max_age` re-authentication via ACR rules; `op.StepUpChallenge` builds the resource-server `WWW-Authenticate` challenge the embedder's RS returns) | `op/rule.go` (`RuleACR`), `op/stepup.go` |
 | **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill partial">partial</span> (OP-side BCP posture; resource-server and client-side requirements remain with embedders) | whole codebase |
 | **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span> (signed JWT default; JWE-wrapped per client `introspection_encrypted_response_alg` / `_enc` metadata) | `internal/introspectendpoint`, `internal/jose` |
+| **RFC 9728** OAuth 2.0 Protected Resource Metadata | <span class="status-pill full">full</span> (gated by `op.WithProtectedResources`; served at `/.well-known/oauth-protected-resource` with the issuer stamped into `authorization_servers`) | `internal/protectedresource`, `op/protected_resource.go` |
+
+## IETF drafts
+
+| Draft | Status | Where |
+|---|---|---|
+| **OAuth 2.0 Grant Management** (`draft-ietf-oauth-grant-management`) | <span class="status-pill partial">partial</span> (gated by `op.WithGrantManagement`; `grant_management_action` / `grant_id` honoured, query / revoke endpoint mounted, `grant_id` on the token response, discovery advertisement. Tracks an IETF draft — surface may change before v1.0) | `internal/grantmgmtendpoint`, `op/grant_management.go` |
 
 ## JOSE family
 

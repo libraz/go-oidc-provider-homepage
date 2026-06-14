@@ -28,6 +28,10 @@ A **client** is the application that asks the OP for tokens. Clients fall into t
 
 Public clients are applications whose code runs on a device the user controls — a single-page app, a mobile app, a native desktop app, a CLI. The defining property is that **anything shipped with the binary or page is in the attacker's hands too**. There is no place to hide a long-lived secret.
 
+The category exists so user-facing apps are handled according to whether they can keep a credential secret. If an SPA or mobile app is required to use a `client_secret`, the developer has nowhere better to put it than a JavaScript bundle, app binary, or local config file. That value is delivered to every user, including attackers, so the protocol cannot treat it as a secret. OAuth / OIDC therefore names public clients explicitly and protects them with a registered `client_id`, exact redirect-URI matching, per-request PKCE, refresh-token rotation, and DPoP where appropriate instead of a long-lived shared secret.
+
+In practice, use a public client for browser SPAs, mobile / desktop apps, and CLIs that log a human in on the user's device. Use a confidential client for server-side RPs and service-to-service callers where a backend can keep a shared secret, private key, or certificate out of user-reachable storage.
+
 The library treats a client as public when its `TokenEndpointAuthMethod` is `"none"`. The structural protections that compensate for the missing secret are:
 
 - **PKCE is required.** The OP rejects `S256` PKCE only (`plain` is refused regardless of profile, see [Design judgments #14](/security/design-judgments#dj-14)). The `code_verifier` is the per-request secret that proves "the same client that started the flow is the one finishing it"; without it, an authorization code intercepted on the redirect is enough to mint tokens.

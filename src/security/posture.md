@@ -17,7 +17,7 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 | # | Property | Evidence here |
 |---|---|---|
-| 1 | **Conformance** — implements the spec | OFCS green ([compliance/ofcs](/compliance/ofcs)) |
+| 1 | **Conformance** — implements the spec | OFCS passing ([compliance/ofcs](/compliance/ofcs)) |
 | 2 | **Correctness** — sane on all inputs | Unit + scenario + fuzz tests under `test/` |
 | 3 | **Security** — resists active attackers | Structural defenses (below) + design judgments |
 | 4 | **Supply-chain** — dependencies stay safe | `govulncheck` in CI, depguard, third-party manifest |
@@ -101,6 +101,9 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | Argon2id parameters above the OWASP 2024 floor (memory ≥ 19 MiB, time ≥ 2) for `client_secret`, end-user passwords, and recovery codes; recovery-code batch verification capped at 16; duplicate parameter segments in encoded hashes refused | `internal/argon2id`, `internal/authn/password`, `internal/authn/recovery`, `internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
 | Trailing JSON documents refused on the DCR metadata decoder and the interaction JSON driver | `internal/registrationendpoint`, `op/interaction` | RFC 7591 §2 |
 | `op.New` rejects configurations whose enabled grants / features need a substore the wired store does not expose | `op/options_validate.go`, `op/storeadapter/redis` | — (defence in depth) |
+| Client verification keys (`client_assertion`, JAR request objects) held to the OP key-shape floor: RSA ≥ 2048 bits, EC curve matches the declared `alg` | `internal/clientauth`, `internal/jar`, `internal/jose` (`AssertAlgKeyShape`) | RFC 7518 §3.3, RFC 8725 §3.2 |
+| One-time auth factors (email-OTP, TOTP, recovery codes) single-use via atomic compare-and-set (`ErrAlreadyConsumed` on replay); cross-factor lockout stamped atomically (`StampLock`) | `internal/authn`, `op/store` | — (defence in depth) |
+| Refresh-token `id` / `parent_id` hashed at rest, looked up in constant time | `internal/tokenendpoint`, `op/store` | RFC 9700 §2.2.2 |
 
 ## Tooling
 
