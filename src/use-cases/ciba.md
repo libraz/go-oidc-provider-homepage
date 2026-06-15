@@ -216,7 +216,7 @@ A request that repeats `client_id`, `login_hint`, `id_token_hint`, `login_hint_t
 [`examples/32-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-ciba-pos):
 
 ```sh
-go run -tags example ./examples/32-ciba-pos
+(cd examples/32-ciba-pos && go run -tags example .)
 ```
 
 A POS terminal posts to `/bc-authorize`; a goroutine standing in for the staff phone calls `CIBARequestStore.Approve` directly; the POS polls until the OP issues the token. End-to-end ≈ 5 seconds. Files: `op.go` (OP wiring + `HintResolver`), `rp.go` (POS-side polling), `device.go` (simulated phone approval).

@@ -156,7 +156,7 @@ encryption keyset とは独立に、`userinfo_signing_alg_values_supported` は�
 [`examples/35-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/35-encrypted-id-token):
 
 ```sh
-go run -tags example ./examples/35-encrypted-id-token
+(cd examples/35-encrypted-id-token && go run -tags example .)
 ```
 
 RSA-OAEP-256 / A256GCM id_token 暗号化のペア OP+RP デモ。OP が `use=enc` JWKS を公開、RP が `id_token_encrypted_response_alg=RSA-OAEP-256` + `_enc=A256GCM` で登録、OP が id_token を JWE で wrap、RP 側 decrypt が内側 JWS を取り出し検証します。ファイル: `op.go`（`WithEncryptionKeyset` での OP 組み立て）、`rp.go`（RP 側 decrypt + signature verify）、`jose.go`（鍵生成 + JWKS marshalling）。

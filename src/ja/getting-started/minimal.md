@@ -141,7 +141,7 @@ func main() {
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-go run -tags example ./examples/01-minimal
+(cd examples/01-minimal && go run -tags example .)
 ```
 
 upstream の `01-minimal` 例では `examples/internal/devkeys` で揮発性鍵を、`examples/internal/serve` でリスナの boilerplate を提供しているので、`main.go` 自体は `op.New` に集中できます。

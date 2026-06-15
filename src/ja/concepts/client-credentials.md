@@ -123,7 +123,7 @@ op.WithStaticClients(op.ConfidentialClient{
 [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) は `client_secret_basic` クライアントでの end-to-end 実行版です。
 
 ```sh
-go run -tags example ./examples/05-client-credentials
+(cd examples/05-client-credentials && go run -tags example .)
 ```
 
 ## 次に読むもの

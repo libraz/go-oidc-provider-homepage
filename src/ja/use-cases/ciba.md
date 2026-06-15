@@ -214,7 +214,7 @@ OP は「交渉済み interval が経過する前に poll した」を `auth_req
 [`examples/32-ciba-pos`](https://github.com/libraz/go-oidc-provider/tree/main/examples/32-ciba-pos):
 
 ```sh
-go run -tags example ./examples/32-ciba-pos
+(cd examples/32-ciba-pos && go run -tags example .)
 ```
 
 POS 端末が `/bc-authorize` に POST し、スタッフのスマホ役の goroutine が `CIBARequestStore.Approve` を直接呼び、POS が token 発行まで poll します。end-to-end で約 5 秒。ファイル: `op.go`（OP の組み立て + `HintResolver`）、`rp.go`（POS 側 polling）、`device.go`（スマホ承認シミュレーション）。

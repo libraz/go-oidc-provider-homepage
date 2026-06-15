@@ -25,8 +25,9 @@ description: go-oidc-provider が OpenID Foundation Conformance Suite に対し�
 
 ## 最新 baseline
 
-取得日時: 2026-05-07T12:31:15Z<br/>
-リポジトリ SHA: [`c100e86`](https://github.com/libraz/go-oidc-provider/commit/c100e866d025627d32405fca29c5080e9f19af01)<br/>
+取得日時: 2026-06-14T07:18:03Z<br/>
+リリースラベル: `v0.9.3`<br/>
+リポジトリ SHA: [`ae2def2`](https://github.com/libraz/go-oidc-provider/commit/ae2def2f95f9c29f2a5ad8b072908d72c1d64b07)<br/>
 OFCS イメージ: `release-v5.1.42`
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | 合計 |
@@ -34,18 +35,66 @@ OFCS イメージ: `release-v5.1.42`
 | `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |       0 |  **0** |    35 |
 | `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |  **0** |    58 |
 | `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |       0 |  **0** |    71 |
-| `fapi-ciba-id1-test-plan`                  |     31 |      0 |       3 |       1 |  **0** |    35 |
-| **合計**                                  | **169**| **21** |   **8** |   **1** |  **0** | **199** |
+| `fapi-ciba-id1-test-plan`                  |     32 |      0 |       3 |       0 |  **0** |    35 |
+| **合計**                                  | **170**| **21** |   **8** |   **0** |  **0** | **199** |
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#0c5460","primaryTextColor":"#fff","primaryBorderColor":"#0c5460","lineColor":"#888"}}}%%
-pie showData
-  title 4 plans 計 199 modules
-  "PASSED" : 169
-  "REVIEW (手動ゲート)" : 21
-  "SKIPPED (設計上拒否)" : 8
-  "WARNING (advisory)" : 1
-```
+<div class="status-bars" aria-label="4 plans 計 199 modules">
+  <div class="status-bar-row">
+    <span>PASSED</span>
+    <div class="status-bar"><i style="width:85.4%"></i></div>
+    <strong>170</strong>
+  </div>
+  <div class="status-bar-row">
+    <span>REVIEW</span>
+    <div class="status-bar review"><i style="width:10.6%"></i></div>
+    <strong>21</strong>
+  </div>
+  <div class="status-bar-row">
+    <span>SKIPPED</span>
+    <div class="status-bar skipped"><i style="width:4.0%"></i></div>
+    <strong>8</strong>
+  </div>
+</div>
+
+<style>
+.status-bars {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0;
+  max-width: 680px;
+}
+.status-bar-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.status-bar-row span {
+  color: var(--vp-c-text-2);
+  font-weight: 600;
+}
+.status-bar-row strong {
+  text-align: right;
+}
+.status-bar {
+  height: 10px;
+  overflow: hidden;
+  background: var(--vp-c-bg-soft);
+  border-radius: 999px;
+}
+.status-bar i {
+  display: block;
+  height: 100%;
+  background: #0c5460;
+}
+.status-bar.review i {
+  background: #8a5a00;
+}
+.status-bar.skipped i {
+  background: #5f6368;
+}
+</style>
 
 ## 各テストプランが検証する範囲
 
@@ -108,7 +157,7 @@ CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication gra
 
 - **REVIEW** — テストは実行されたが、ハーネスでは正直に検証できない視覚的 / out-of-band の挙動（同意 UI の文言、エラー画面のスクリーンショット、証明書チェーンの確認）を人間のレビュアーが裏取りする必要がある状態。失敗ではない。
 - **SKIPPED** — テストが依存する機能を、この OP が discovery やクライアントメタデータで宣言していないために OFCS が実行を見送った状態。例えば `RS256` 負例テストは、FAPI クライアントが `PS256` を署名 alg として宣言しているため適用外になる。失敗ではない。
-- **WARNING** — OFCS が非 failure の result value として記録する状態。主たる assertion は終端 PASS まで到達したが、運用者が対処すべき advisory がログに残っています。現在 1 件（`fapi-ciba-id1-refresh-token`）— 後述の節を参照。
+- **WARNING** — OFCS が非 failure の result value として記録する状態。主たる assertion は終端 PASS まで到達したが、運用者が対処すべき advisory がログに残っている場合に使われます。現在の 4 plan snapshot では **0 件** です。
 - **FAILED** — 仕様から挙動が逸脱した状態。現スナップショットでは 4 plan 全体で **0 failure**。
 
 ### 自分で conformance を回すには
@@ -155,11 +204,7 @@ OP は各ケースで正しい HTTP エラーを返します（負例テスト�
 
 ## 現在 WARNING の module
 
-### `fapi-ciba-id1-test-plan` (1)
-
-| Module | warning の内容 |
-|---|---|
-| `fapi-ciba-id1-refresh-token` | OP は CIBA フローでリフレッシュトークンを発行したが、discovery 文書の `grant_types_supported` には `refresh_token` が列挙されていない。リフレッシュ自体は機能している（テストは主 assertion で終端 PASS）— advisory は doc / discovery メタデータの一貫性に関する観察。 |
+現在の 4 plan snapshot ではありません。以前 `WARNING` だった `fapi-ciba-id1-refresh-token` は、通常の `PASSED` module になっています。
 
 ## 現在 SKIPPED の module — 理由
 

@@ -8,7 +8,7 @@ description: Production-shaped scenarios with verified examples in the upstream 
 Each card below maps to a runnable example under [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) in the source repo. Examples build behind the `example` build tag so they don't bloat your `go.sum` or get pulled into `go test ./...`:
 
 ```sh
-go run -tags example ./examples/01-minimal
+(cd examples/01-minimal && go run -tags example .)
 ```
 
 Most pages start with the same decision shape:

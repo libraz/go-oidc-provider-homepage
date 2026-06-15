@@ -68,7 +68,7 @@ example は、すべてのテーブルとカラムに意図的に非 OIDC 的な
 ## 動かす
 
 ```sh
-go run -tags example ./examples/26-byo-store-from-scratch
+(cd examples/26-byo-store-from-scratch && go run -tags example .)
 ```
 
 example は OP を `:8080`、ペアの RP を `:9090` で起動します。`demo@example.test` / `demo` でサインインすると、RP の `/me` ページに払い出された ID Token の claim が表示されます。すべて `vault_*` スキーマから提供されています。

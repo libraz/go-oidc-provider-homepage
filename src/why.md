@@ -123,15 +123,15 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` so
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
-Each release is regressed against the OpenID Foundation conformance suite. Latest baseline (sha `c100e86`):
+Each release is regressed against the OpenID Foundation conformance suite. Latest baseline (`v0.9.3`, sha `ae2def2`):
 
 | Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
 |---|---:|---:|---:|---:|---:|
 | oidcc-basic-certification-test-plan | 30 | 3 | 2 | 0 | **0** |
 | fapi2-security-profile-id2-test-plan | 48 | 9 | 1 | 0 | **0** |
 | fapi2-message-signing-id1-test-plan | 60 | 9 | 2 | 0 | **0** |
-| fapi-ciba-id1-test-plan | 31 | 0 | 3 | 1 | **0** |
-| **Total (4 plans, 199 modules)** | **169** | **21** | **8** | **1** | **0** |
+| fapi-ciba-id1-test-plan | 32 | 0 | 3 | 0 | **0** |
+| **Total (4 plans, 199 modules)** | **170** | **21** | **8** | **0** | **0** |
 
 ::: tip Reading REVIEW / SKIPPED
 `REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects). `WARNING` is an advisory result, not a failed module.

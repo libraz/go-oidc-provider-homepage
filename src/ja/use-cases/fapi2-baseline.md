@@ -99,7 +99,7 @@ provider, err := op.New(
 5. DPoP-or-mTLS の送信者制約は、明示された `feature.MTLS` があればそれを尊重し、どちらも選ばれていない場合は `feature.DPoP` を追加して満たす。
 
 ::: tip DPoP の代わりに mTLS
-プロファイルの既定 sender binding は、TLS クライアント証明書の配管が不要な DPoP です。mTLS に標準化している deployment では `feature.MTLS` を明示し、TLS 終端 proxy 用に `op.WithMTLSProxy(...)` を設定してください。その明示選択があれば DPoP 既定は追加されません。FAPI グレードの TLS ヘルパーは [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks)。
+プロファイルの既定の送信者制約方式は、TLS クライアント証明書の配管が不要な DPoP です。mTLS に標準化しているデプロイでは `feature.MTLS` を明示し、TLS 終端 proxy 用に `op.WithMTLSProxy(...)` を設定してください。その明示選択があれば DPoP 既定は追加されません。FAPI グレードの TLS ヘルパーは [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks)。
 :::
 
 ## サーフェス確認

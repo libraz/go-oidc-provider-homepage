@@ -111,7 +111,7 @@ func main() {
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-go run -tags example ./examples/01-minimal
+(cd examples/01-minimal && go run -tags example .)
 # 別ターミナル:
 curl -s http://localhost:8080/.well-known/openid-configuration | jq
 ```

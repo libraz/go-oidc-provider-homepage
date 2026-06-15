@@ -51,10 +51,10 @@ OFCS test plans differ in which library features they exercise. The table below 
 |---|---|---|
 | `oidcc-basic-certification-test-plan` | `make conformance-op-up` (no profile) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `commonOptions` |
 | `oidcc-config-certification-test-plan` | `make conformance-op-up` (no profile) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `commonOptions` |
-| `oidcc-dynamic-certification-test-plan` | `OP_ENABLE_DCR=1 make conformance-op-up` | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `op.WithDynamicRegistration` branch |
+| `oidcc-dynamic-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `op.WithDynamicRegistration` branch |
 | `oidcc-formpost-basic-certification-test-plan` | `make conformance-op-up` (no profile) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
-| `oidcc-rp-initiated-logout-certification-test-plan` | `OP_ENABLE_DCR=1 make conformance-op-up` | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
-| `oidcc-rp-initiated-logout-with-back-channel-logout-certification-test-plan` | `OP_ENABLE_DCR=1 make conformance-op-up` | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
+| `oidcc-rp-initiated-logout-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
+| `oidcc-rp-initiated-logout-with-back-channel-logout-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
 | `fapi2-security-profile-id2-test-plan` | `OP_PROFILE=fapi2-baseline make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2BaselineOptions` |
 | `fapi2-message-signing-id1-test-plan` | `OP_PROFILE=fapi2-message-signing make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2MessageSigningOptions` |
 | `fapi-ciba-id1-test-plan` | `OP_PROFILE=fapi-ciba make conformance-op-up` | [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) — `fapiCIBAOptions` |
@@ -79,7 +79,7 @@ The vanilla profile needs no `op.WithProfile` call. The base options live in `co
 - `op.WithFeature(feature.JAR)` — opt-in JAR for non-FAPI profiles so the OFCS request-object modules either pass or skip cleanly.
 - `op.WithClaimsSupported(...)` — the claim list discovery advertises.
 
-For the dynamic plans (`oidcc-dynamic`, `*-rp-initiated-logout-*`), add `op.WithDynamicRegistration(op.RegistrationOption{...})` so `/register` is mounted and an Initial Access Token is minted at startup. The demo prints the IAT to stdout; in production hand it to a secret manager and never log it.
+The conformance harness enables DCR by default. For the dynamic plans (`oidcc-dynamic`, `*-rp-initiated-logout-*`), `op.WithDynamicRegistration(op.RegistrationOption{...})` is added so `/register` is mounted and an Initial Access Token is minted at startup. Set `OP_ENABLE_DCR=0` only when you intentionally want to measure a non-DCR discovery surface. The demo prints the IAT to stdout; in production hand it to a secret manager and never log it.
 
 ### FAPI 2.0 Baseline
 

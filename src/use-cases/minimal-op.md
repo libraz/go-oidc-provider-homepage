@@ -112,7 +112,7 @@ Optional endpoints (`/par`, `/introspect`, `/revoke`, `/register`, `/interaction
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-go run -tags example ./examples/01-minimal
+(cd examples/01-minimal && go run -tags example .)
 # in another terminal:
 curl -s http://localhost:8080/.well-known/openid-configuration | jq
 ```

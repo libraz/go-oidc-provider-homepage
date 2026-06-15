@@ -73,7 +73,7 @@ Use [Hot/cold + Redis](/use-cases/hot-cold-redis) when you want to route multipl
 ## Run it
 
 ```sh
-go run -tags example ./examples/24-byo-userstore
+(cd examples/24-byo-userstore && go run -tags example .)
 ```
 
 The example starts the OP on `:8080` and a paired RP on `:9090`. Sign in as `demo@example.test` / `demo`; the RP's `/me` page shows the released ID Token claims.

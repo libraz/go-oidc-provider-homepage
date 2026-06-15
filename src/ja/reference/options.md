@@ -1,12 +1,12 @@
 ---
 title: Options 索引
-description: 公開されている op.With* オプションを 1 ページに集約。何を設定し、どのページで深掘りされているか。
+description: op.New に渡せる公開オプションを 1 ページに集約。何を設定し、どのページで深掘りされているか。
 outline: 2
 ---
 
 # Options 索引
 
-公開されている `op.With*` オプションを、触る対象のレイヤごとに分類しました。先頭の 4 つは構築時に必須で、それ以外はデフォルトを上書きする任意オプションです。
+`op.New` に渡せる公開オプションを、触る対象のレイヤごとに分類しました。先頭の 4 つは構築時に必須で、それ以外はデフォルトを上書きする任意オプションです。
 
 ::: tip このページの読み方
 オプション名のリンクから詳細ページに飛べます。「セクション」列は、そのオプションが動かす discovery / endpoint の表面です。「デフォルト」が空欄のオプションは組み込みの初期値を持っておらず、明示的に渡したときだけ機能が有効になります。
@@ -14,7 +14,7 @@ outline: 2
 
 ## どのオプションが必要か
 
-このページは、公開されている `op.With*` をすべて並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
+このページは、`op.New` に渡せる公開オプションを並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
 - **これから新規に OP を立ち上げる** → まず必須の 4 つ: [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、[`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys)。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
 - **FAPI 2.0 を 1 行で有効にしたい** → `WithProfile(profile.FAPI2Baseline)`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)。プロファイルは mTLS が明示されていなければ DPoP を既定選択します。`profile.IGovHigh` は予約値で、現時点では拒否されます。[ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
@@ -48,12 +48,12 @@ outline: 2
 
 | Option | 値 | セクション | デフォルト |
 |---|---|---|---|
-| `WithProfile` | `profile.Profile` | セキュリティプロファイルを 1 行で有効化(FAPI 2.0 Baseline / Message Signing / FAPI-CIBA)。プロファイルが DPoP-or-mTLS を要求し、mTLS が明示されていなければ DPoP を既定 sender binding として選択。`profile.IGovHigh` は v2+ 向けの予約で、ランタイム制約が未着地のため `op.New` が拒否。 | なし |
+| `WithProfile` | `profile.Profile` | セキュリティプロファイルを 1 行で有効化(FAPI 2.0 Baseline / Message Signing / FAPI-CIBA)。プロファイルが DPoP-or-mTLS を要求し、mTLS が明示されていなければ DPoP を既定の送信者制約方式として選択。`profile.IGovHigh` は v2+ 向けの予約で、ランタイム制約が未着地のため `op.New` が拒否。 | なし |
 | `WithFeature` | `feature.Flag`(1 呼び出しで 1 つ、繰り返し可) | PAR / DPoP / mTLS / JAR / JARM / introspect / revoke を個別に有効化 | 控えめなデフォルト |
 | `WithGrants` | `...grant.Type`(可変長) | `/token` で受け付ける grant を限定 | `authorization_code`、`refresh_token` |
 | `WithScope` | `op.Scope`(1 呼び出しで 1 つ。`op.PublicScope` / `op.InternalScope` コンストラクタを利用) | scope カタログを拡張 | `openid`、`profile`、`email`、`address`、`phone`、`offline_access` |
 | `WithOpenIDScopeOptional` | _(引数なし)_ | OAuth 2.0 単独(`scope` に `openid` を含まない)を許容 | `openid` 必須 |
-| `WithStrictOfflineAccess` | _(引数なし)_ | `refresh_token` の発行を `offline_access` の同意取得時に限定 | lax(`openid` granted で発行) |
+| `WithStrictOfflineAccess` | _(引数なし)_ | `refresh_token` の発行を `offline_access` の同意取得時に限定 | 緩い既定(`openid` が付与されれば発行) |
 
 ## クライアント / 登録
 
@@ -101,10 +101,11 @@ outline: 2
 | `WithAccessTokenRevocationStrategy` | `op.AccessTokenRevocationStrategy`(`RevocationStrategyGrantTombstone` / `RevocationStrategyJTIRegistry` / `RevocationStrategyNone`) | 発行済 JWT アクセストークンの失効ポリシー。既定の `GrantTombstone` は `Store.GrantRevocations()`、`JTIRegistry` は `Store.AccessTokens()` を必須とし、いずれも `op.New` で検査される | grant tombstone |
 | `WithAccessTokenTTL` | `time.Duration` | アクセストークンの寿命 | 5 分 |
 | `WithRefreshTokenTTL` | `time.Duration` | 通常のリフレッシュトークンの寿命 | 30 日 |
-| `WithRefreshTokenOfflineTTL` | `time.Duration` | `offline_access` granted 時のリフレッシュトークンの寿命 | `WithRefreshTokenTTL` を継承(ゼロ値で延長しない) |
+| `WithRefreshTokenOfflineTTL` | `time.Duration` | `offline_access` が付与されたときのリフレッシュトークンの寿命 | `WithRefreshTokenTTL` を継承(ゼロ値で延長しない) |
 | `WithRefreshGracePeriod` | `time.Duration`(0 で無効化、負値は拒否) | ローテーション後の猶予期間 | 60 秒 |
 | `WithDPoPNonceSource` | `op.DPoPNonceSource`(interface) | サーバ供給の DPoP nonce ストア(`op.NewInMemoryDPoPNonceSource` が同梱実装) | なし |
-| `WithInMemoryDPoPNonceLogger` | `*slog.Logger` | in-memory DPoP nonce source 用の任意 logger。`op.New` ではなく `op.NewInMemoryDPoPNonceSource` に渡す | ログなし |
+
+`WithInMemoryDPoPNonceLogger` は `op.New` ではなく `op.NewInMemoryDPoPNonceSource` に渡す補助オプションです。同梱の in-memory nonce source を使う場合だけ指定します。
 
 ## Discovery / endpoint
 

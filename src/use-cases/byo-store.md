@@ -68,7 +68,7 @@ The substore godoc is normative. A backend that compiles but ignores these does 
 ## Run it
 
 ```sh
-go run -tags example ./examples/26-byo-store-from-scratch
+(cd examples/26-byo-store-from-scratch && go run -tags example .)
 ```
 
 The example starts the OP on `:8080` and a paired RP on `:9090`. Sign in as `demo@example.test` / `demo`; the RP's `/me` page shows the released ID Token claims, served entirely from the `vault_*` schema.

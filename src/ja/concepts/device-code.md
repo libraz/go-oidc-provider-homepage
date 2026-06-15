@@ -84,7 +84,7 @@ device flow を選ぶのは、デバイス側に以下のいずれかの制約�
 [`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) は単一バイナリで RFC 8628 のラウンドトリップを実演します。OP を立ち上げ、boxed `user_code` パネル + `verification_uri_complete` のショートカットを表示し、数秒後にブラウザ承認をシミュレートして、OP が `access_token` + `id_token` を発行するまで poll します。
 
 ```sh
-go run -tags example ./examples/31-device-code-cli
+(cd examples/31-device-code-cli && go run -tags example .)
 ```
 
 example はロール別ファイルに分割されています（`op.go` で OP の組み立て、`cli.go` でデバイス側の polling、`device.go` でブラウザ承認のシミュレーション、`probe.go` で self-verification）。各面を独立に読めます。

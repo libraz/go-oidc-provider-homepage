@@ -141,7 +141,7 @@ func main() {
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-go run -tags example ./examples/01-minimal
+(cd examples/01-minimal && go run -tags example .)
 ```
 
 The upstream `01-minimal` example uses `examples/internal/devkeys` for the ephemeral keys and `examples/internal/serve` for the listener boilerplate, so the `main.go` file stays focused on `op.New`.

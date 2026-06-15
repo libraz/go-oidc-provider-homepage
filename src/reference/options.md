@@ -1,12 +1,12 @@
 ---
 title: Options reference
-description: Every public op.With* option in one table — what it sets, when you need it, and where the in-depth page lives.
+description: Every public op.New option in one table — what it sets, when you need it, and where the in-depth page lives.
 outline: 2
 ---
 
 # Options reference
 
-Every public `op.With*` option, grouped by what it touches. The first four are constructor-required; everything else is optional and refines the defaults.
+Every public option accepted by `op.New`, grouped by what it touches. The first four are constructor-required; everything else is optional and refines the defaults.
 
 ::: tip How to read this page
 Click the option name for the deep-dive page. The "Section" column tells you which discovery / endpoint surface the option moves. "Default" is empty when the option has no built-in default — supplying it is the only way to enable the behaviour.
@@ -14,7 +14,7 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 
 ## What option do I need?
 
-This page is a flat reference of every public `op.With*`. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
+This page is a flat reference of the public `op.New` options. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
 
 - **You're booting a fresh OP for the first time** → start with the four required options: [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
 - **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). The profile auto-selects DPoP unless you explicitly enable mTLS. `profile.IGovHigh` is reserved and rejected today. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
@@ -48,7 +48,7 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithProfile` | `profile.Profile` | activates a security profile in one switch (FAPI 2.0 Baseline / Message Signing / FAPI-CIBA), including DPoP as the default sender binding when the profile requires DPoP-or-mTLS and mTLS was not explicitly enabled. `profile.IGovHigh` is reserved for v2+ and currently rejected at `op.New` because its runtime constraints have not landed. | none |
+| `WithProfile` | `profile.Profile` | activates a security profile in one switch (FAPI 2.0 Baseline / Message Signing / FAPI-CIBA), including DPoP as the default sender-constrained token method when the profile requires DPoP-or-mTLS and mTLS was not explicitly enabled. `profile.IGovHigh` is reserved for v2+ and currently rejected at `op.New` because its runtime constraints have not landed. | none |
 | `WithFeature` | `feature.Flag` (one per call; repeatable) | enables PAR / DPoP / mTLS / JAR / JARM / introspect / revoke individually | conservative defaults |
 | `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token` | `authorization_code`, `refresh_token` |
 | `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `address`, `phone`, `offline_access` |
@@ -104,7 +104,8 @@ This page is a flat reference of every public `op.With*`. With 70+ options the t
 | `WithRefreshTokenOfflineTTL` | `time.Duration` | refresh token lifetime when `offline_access` granted | inherits `WithRefreshTokenTTL` (zero value defers) |
 | `WithRefreshGracePeriod` | `time.Duration` (zero disables; negative rejected) | rotation grace window | 60 s |
 | `WithDPoPNonceSource` | `op.DPoPNonceSource` (interface) | server-supplied DPoP nonce store (`op.NewInMemoryDPoPNonceSource` provides one) | none |
-| `WithInMemoryDPoPNonceLogger` | `*slog.Logger` | optional logger for the in-memory DPoP nonce source; pass it to `op.NewInMemoryDPoPNonceSource`, not `op.New` | no logging |
+
+`WithInMemoryDPoPNonceLogger` is a helper option for `op.NewInMemoryDPoPNonceSource`, not an `op.New` option. Use it only when you use the bundled in-memory nonce source.
 
 ## Discovery & endpoints
 

@@ -26,11 +26,23 @@ A **client** is the application that asks the OP for tokens. Clients fall into t
 
 ## Public clients
 
-Public clients are applications whose code runs on a device the user controls — a single-page app, a mobile app, a native desktop app, a CLI. The defining property is that **anything shipped with the binary or page is in the attacker's hands too**. There is no place to hide a long-lived secret.
+Public clients are applications whose code runs on a device the user controls. Typical examples are single-page apps, mobile apps, native desktop apps, and CLIs. The defining property is that **anything shipped with the binary or page is in the attacker's hands too**. There is no place to hide a long-lived secret.
 
-The category exists so user-facing apps are handled according to whether they can keep a credential secret. If an SPA or mobile app is required to use a `client_secret`, the developer has nowhere better to put it than a JavaScript bundle, app binary, or local config file. That value is delivered to every user, including attackers, so the protocol cannot treat it as a secret. OAuth / OIDC therefore names public clients explicitly and protects them with a registered `client_id`, exact redirect-URI matching, per-request PKCE, refresh-token rotation, and DPoP where appropriate instead of a long-lived shared secret.
+### When to use one
 
-In practice, use a public client for browser SPAs, mobile / desktop apps, and CLIs that log a human in on the user's device. Use a confidential client for server-side RPs and service-to-service callers where a backend can keep a shared secret, private key, or certificate out of user-reachable storage.
+Use a public client for apps that log a human in on the user's device.
+
+- A browser SPA redirects to `/authorize`, then exchanges code + PKCE at `/token` from JavaScript.
+- A mobile or desktop app receives the authorization code through a custom URI scheme, claimed `https`, or loopback redirect.
+- A CLI opens a local loopback listener, sends the user through browser login, and receives the authorization code locally.
+
+Use a confidential client for server-side RPs and service-to-service callers where a backend can keep a shared secret, private key, or certificate out of user-reachable storage.
+
+### Why the type exists
+
+The category exists so clients are handled according to whether they can keep a credential secret. If an SPA or mobile app is required to use a `client_secret`, the developer has nowhere better to put it than a JavaScript bundle, app binary, or local config file. That value is delivered to every user, including attackers, so the protocol cannot treat it as a secret.
+
+OAuth / OIDC therefore names public clients explicitly. Instead of pretending a long-lived shared secret is still authentication, the protocol protects them with a registered `client_id`, exact redirect-URI matching, per-request PKCE, refresh-token rotation, and DPoP where appropriate. A public client is not an "untrusted client"; it is a client protected by different mechanisms because it cannot keep a secret.
 
 The library treats a client as public when its `TokenEndpointAuthMethod` is `"none"`. The structural protections that compensate for the missing secret are:
 

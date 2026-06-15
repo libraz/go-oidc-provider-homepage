@@ -25,25 +25,73 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 
 ## Latest baseline
 
-Captured: 2026-05-07T12:31:15Z<br/> Repository SHA: [`c100e86`](https://github.com/libraz/go-oidc-provider/commit/c100e866d025627d32405fca29c5080e9f19af01)<br/> OFCS image: `release-v5.1.42`
+Captured: 2026-06-14T07:18:03Z<br/> Release label: `v0.9.3`<br/> Repository SHA: [`ae2def2`](https://github.com/libraz/go-oidc-provider/commit/ae2def2f95f9c29f2a5ad8b072908d72c1d64b07)<br/> OFCS image: `release-v5.1.42`
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | Total |
 |--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
 | `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |       0 |  **0** |    35 |
 | `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |  **0** |    58 |
 | `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |       0 |  **0** |    71 |
-| `fapi-ciba-id1-test-plan`                  |     31 |      0 |       3 |       1 |  **0** |    35 |
-| **Total**                                  | **169**| **21** |   **8** |   **1** |  **0** | **199** |
+| `fapi-ciba-id1-test-plan`                  |     32 |      0 |       3 |       0 |  **0** |    35 |
+| **Total**                                  | **170**| **21** |   **8** |   **0** |  **0** | **199** |
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#0c5460","primaryTextColor":"#fff","primaryBorderColor":"#0c5460","lineColor":"#888"}}}%%
-pie showData
-  title 199 modules across 4 plans
-  "PASSED" : 169
-  "REVIEW (manual gate)" : 21
-  "SKIPPED (refused by design)" : 8
-  "WARNING (advisory)" : 1
-```
+<div class="status-bars" aria-label="199 modules across 4 plans">
+  <div class="status-bar-row">
+    <span>PASSED</span>
+    <div class="status-bar"><i style="width:85.4%"></i></div>
+    <strong>170</strong>
+  </div>
+  <div class="status-bar-row">
+    <span>REVIEW</span>
+    <div class="status-bar review"><i style="width:10.6%"></i></div>
+    <strong>21</strong>
+  </div>
+  <div class="status-bar-row">
+    <span>SKIPPED</span>
+    <div class="status-bar skipped"><i style="width:4.0%"></i></div>
+    <strong>8</strong>
+  </div>
+</div>
+
+<style>
+.status-bars {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0;
+  max-width: 680px;
+}
+.status-bar-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.status-bar-row span {
+  color: var(--vp-c-text-2);
+  font-weight: 600;
+}
+.status-bar-row strong {
+  text-align: right;
+}
+.status-bar {
+  height: 10px;
+  overflow: hidden;
+  background: var(--vp-c-bg-soft);
+  border-radius: 999px;
+}
+.status-bar i {
+  display: block;
+  height: 100%;
+  background: #0c5460;
+}
+.status-bar.review i {
+  background: #8a5a00;
+}
+.status-bar.skipped i {
+  background: #5f6368;
+}
+</style>
 
 ## What each test plan covers
 
@@ -106,7 +154,7 @@ The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authenti
 
 - **REVIEW** — the test ran, but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture honestly (consent UI strings, error page screenshots, certificate chain confirmation). Not a failure.
 - **SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
-- **WARNING** — OFCS records this as a non-failed result value: the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. We currently see one (`fapi-ciba-id1-refresh-token`) — see the section below.
+- **WARNING** — OFCS records this as a non-failed result value: the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. The current four-plan snapshot has **0 warnings**.
 - **FAILED** — observed behaviour diverged from the spec. The current snapshot has **0 failures** across all four plans.
 
 ### How to reproduce the conformance run yourself
@@ -153,11 +201,7 @@ The OP returns the right HTTP error in every case (the negative tests pass their
 
 ## Modules currently in WARNING
 
-### `fapi-ciba-id1-test-plan` (1)
-
-| Module | What the warning says |
-|---|---|
-| `fapi-ciba-id1-refresh-token` | The OP issued a refresh token to the CIBA flow but its discovery document does not list `refresh_token` in `grant_types_supported`. The refresh path itself works (the test reaches a terminal PASS on its assertions); the advisory is a doc/discovery-metadata consistency observation. |
+None in the current four-plan snapshot. The previous `fapi-ciba-id1-refresh-token` advisory is now a plain `PASSED` module.
 
 ## Modules currently SKIPPED — and why
 

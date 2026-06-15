@@ -51,10 +51,10 @@ OFCS テストプランによって検証するライブラリ機能が異なり
 |---|---|---|
 | `oidcc-basic-certification-test-plan` | `make conformance-op-up`(プロファイル無し) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `commonOptions` |
 | `oidcc-config-certification-test-plan` | `make conformance-op-up`(プロファイル無し) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `commonOptions` |
-| `oidcc-dynamic-certification-test-plan` | `OP_ENABLE_DCR=1 make conformance-op-up` | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `op.WithDynamicRegistration` 分岐 |
+| `oidcc-dynamic-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `op.WithDynamicRegistration` 分岐 |
 | `oidcc-formpost-basic-certification-test-plan` | `make conformance-op-up`(プロファイル無し) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
-| `oidcc-rp-initiated-logout-certification-test-plan` | `OP_ENABLE_DCR=1 make conformance-op-up` | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
-| `oidcc-rp-initiated-logout-with-back-channel-logout-certification-test-plan` | `OP_ENABLE_DCR=1 make conformance-op-up` | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
+| `oidcc-rp-initiated-logout-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
+| `oidcc-rp-initiated-logout-with-back-channel-logout-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
 | `fapi2-security-profile-id2-test-plan` | `OP_PROFILE=fapi2-baseline make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2BaselineOptions` |
 | `fapi2-message-signing-id1-test-plan` | `OP_PROFILE=fapi2-message-signing make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2MessageSigningOptions` |
 | `fapi-ciba-id1-test-plan` | `OP_PROFILE=fapi-ciba make conformance-op-up` | [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) — `fapiCIBAOptions` |
@@ -79,7 +79,7 @@ vanilla プロファイルは `op.WithProfile` の呼び出しが不要です。
 - `op.WithFeature(feature.JAR)` — 非 FAPI プロファイル向けにオプトインで JAR を有効化。OFCS の request-object module が pass / skip のいずれかにきれいに分岐します。
 - `op.WithClaimsSupported(...)` — discovery が広告する claim 一覧。
 
-dynamic 系プラン(`oidcc-dynamic`、`*-rp-initiated-logout-*`)では `op.WithDynamicRegistration(op.RegistrationOption{...})` を追加して `/register` を mount し、起動時に Initial Access Token を発行します。demo は IAT を stdout に出力しますが、本番では secret manager に渡し、log に出さないでください。
+dynamic 系プラン（`oidcc-dynamic`、`*-rp-initiated-logout-*`）では、conformance ハーネスが DCR を既定で有効化します。`op.WithDynamicRegistration(op.RegistrationOption{...})` を追加して `/register` を mount し、起動時に Initial Access Token を発行します。DCR なしの discovery surface を意図的に測りたい場合だけ `OP_ENABLE_DCR=0` を設定します。demo は IAT を stdout に出力しますが、本番では secret manager に渡し、log に出さないでください。
 
 ### FAPI 2.0 Baseline
 

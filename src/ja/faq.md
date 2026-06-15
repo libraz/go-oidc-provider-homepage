@@ -305,7 +305,7 @@ HTTP ルートのマウントはルーター側の責務です — トレーシ�
 
 ## 適合性とバージョン
 
-### README に「138 PASSED, 0 FAILED」とあるけど、OFCS UI には REVIEW も出る
+### OFCS 適合状況に PASSED だけでなく REVIEW も出るのはなぜ？
 
 OFCS の判定は 3 値で、OP の不具合と言えるのは `FAILED` だけです:
 
@@ -315,7 +315,7 @@ OFCS の判定は 3 値で、OP の不具合と言えるのは `FAILED` だけ�
 | `REVIEW` | テスト実行 / OP は正しく振る舞った — 人間が UI 成果物（描画されたエラーページのスクリーンショット等）を目視確認する必要がある |
 | `FAILED` | OP が誤った挙動を返した |
 
-本ハーネスは `REVIEW` を自動 pass にせず、そのまま記録します。本ライブラリの `FAILED` はゼロです。完全な内訳は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
+本ハーネスは `REVIEW` を自動 pass にせず、そのまま記録します。現在の 4 plan baseline では `FAILED` はゼロです。完全な内訳は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
 
 ### 「OIDF 認証取得済み」と称してよい？
 

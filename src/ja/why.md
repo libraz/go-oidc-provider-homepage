@@ -123,15 +123,15 @@ op.New(
 
 セキュリティレビューで問題になるのは、RFC 名を挙げられないことよりも、任意仕様のどの分岐を実装し、どれを拒否し、conformance suite が実際にどの経路を検証したのかを示せないことです。
 
-各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。最新ベースライン（sha `c100e86`）:
+各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。最新ベースライン（`v0.9.3`、sha `ae2def2`）:
 
 | Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
 |---|---:|---:|---:|---:|---:|
 | oidcc-basic-certification-test-plan | 30 | 3 | 2 | 0 | **0** |
 | fapi2-security-profile-id2-test-plan | 48 | 9 | 1 | 0 | **0** |
 | fapi2-message-signing-id1-test-plan | 60 | 9 | 2 | 0 | **0** |
-| fapi-ciba-id1-test-plan | 31 | 0 | 3 | 1 | **0** |
-| **合計（4 plan、199 module）** | **169** | **21** | **8** | **1** | **0** |
+| fapi-ciba-id1-test-plan | 32 | 0 | 3 | 0 | **0** |
+| **合計（4 plan、199 module）** | **170** | **21** | **8** | **0** | **0** |
 
 ::: tip REVIEW / SKIPPED の読み方
 `REVIEW` は OFCS の「人間レビューが必要」判定で、エラーページで止まる挙動はそれが正しい姿です（[詳細](/ja/compliance/ofcs)）。`SKIPPED` は OP が設計上拒否しているケースです（例: `alg=none` の request object）。`WARNING` は advisory result であり、FAILED module ではありません。

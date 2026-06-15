@@ -184,7 +184,7 @@ if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReason
 [`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) は RFC 8628 のフルラウンドトリップを実演します:
 
 ```sh
-go run -tags example ./examples/31-device-code-cli
+(cd examples/31-device-code-cli && go run -tags example .)
 ```
 
 OP を起動し、枠付きの `user_code` パネルと `verification_uri_complete` ショートカットを表示します。数秒後にブラウザ承認をシミュレートし、access_token + id_token が発行されるまでポーリングします。ファイルはロール別に分割（`op.go` / `cli.go` / `device.go` / `probe.go`）。

@@ -8,7 +8,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 各カードはソースリポジトリの [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) の実行可能例にマップされています。例は `example` build tag の背後でビルドされ、`go.sum` を肥大化させたり `go test ./...` に巻き込まれたりしません。
 
 ```sh
-go run -tags example ./examples/01-minimal
+(cd examples/01-minimal && go run -tags example .)
 ```
 
 各ページは、おおよそ同じ判断の流れで読めるようにしています。

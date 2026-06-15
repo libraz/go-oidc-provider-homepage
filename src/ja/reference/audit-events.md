@@ -233,7 +233,7 @@ op.New(
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
 | `AuditTokenExchangeRequested` | `/token` が RFC 8693 リクエストを受理しハンドラに入った | info | [ガイド: token exchange](/ja/concepts/token-exchange) |
-| `AuditTokenExchangeGranted` | exchange を admit し新しいアクセストークン(任意で refresh)を発行 | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeGranted` | exchange を許可し、新しいアクセストークン(任意で refresh)を発行 | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyDenied` | 組み込み側の `TokenExchangePolicy` が拒否(deny)を返却 | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyError` | ポリシーが拒否(deny)以外のエラーを返却(一過性のインフラ障害など) | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 | `AuditTokenExchangeScopeInflationBlocked` | 要求 scope が subject_token の scope または client allow-list を超えた | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |

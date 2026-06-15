@@ -26,11 +26,23 @@ description: public / confidential / FAPI grade のクライアント分類、�
 
 ## Public client
 
-public client とは、ユーザが制御するデバイス上でコードが動くアプリケーションのことです — SPA、モバイルアプリ、ネイティブデスクトップアプリ、CLI など。本質的な特徴は **バイナリやページに同梱されたものは攻撃者の手にも渡る** という点です。長寿命のシークレットを隠しておく場所はありません。
+public client とは、ユーザが制御するデバイス上でコードが動くアプリケーションのことです。典型例は SPA、モバイルアプリ、ネイティブデスクトップアプリ、CLI です。本質的な特徴は **バイナリやページに同梱されたものは攻撃者の手にも渡る** という点です。長寿命のシークレットを隠しておく場所はありません。
 
-この分類は、ユーザをログインさせるアプリを「シークレットを持てるかどうか」で正しく扱うためにあります。SPA やモバイルアプリに `client_secret` を要求すると、開発者は secret を JavaScript bundle、アプリ binary、設定ファイルのどこかに埋め込むしかなくなります。その値は配布先の全ユーザ、つまり攻撃者にも渡るので、仕様上は秘密として扱えません。そこで OAuth / OIDC は public client を明示的に認め、長寿命 secret ではなく、登録済み `client_id`、redirect URI の完全一致、リクエストごとの PKCE、refresh token rotation、必要に応じた DPoP で保護します。
+### いつ使うか
 
-実務上は、ブラウザ内 SPA、モバイル / デスクトップアプリ、CLI など「ユーザの端末で人をログインさせる」クライアントに使います。バックエンドだけで動く server-side RP や service-to-service 呼び出しでは、secret や秘密鍵を保持できるので confidential client を選びます。
+public client は「ユーザの端末で人をログインさせる」クライアントに使います。
+
+- ブラウザ内 SPA が `/authorize` にリダイレクトし、JavaScript から `/token` で code + PKCE を交換する。
+- モバイル / デスクトップアプリが custom URI scheme、claimed `https`、または loopback redirect で認可コードを受け取る。
+- CLI がローカル loopback listener を開き、ブラウザログイン後に認可コードを受け取る。
+
+バックエンドだけで動く server-side RP や service-to-service 呼び出しでは、secret や秘密鍵を保持できるので confidential client を選びます。
+
+### なぜ仕様として分かれているか
+
+この分類は、クライアントを「シークレットを持てるかどうか」で正しく扱うためにあります。SPA やモバイルアプリに `client_secret` を要求すると、開発者は secret を JavaScript bundle、アプリ binary、設定ファイルのどこかに埋め込むしかありません。その値は配布先の全ユーザ、つまり攻撃者にも渡るので、仕様上は秘密として扱えません。
+
+そこで OAuth / OIDC は public client を明示的に認めます。長寿命 secret で認証したふりをする代わりに、登録済み `client_id`、redirect URI の完全一致、リクエストごとの PKCE、refresh token rotation、必要に応じた DPoP で保護します。public client は「信用しないクライアント」ではなく、「secret を保持できない前提で別の防御を積むクライアント」です。
 
 本ライブラリは `TokenEndpointAuthMethod` が `"none"` のクライアントを public として扱います。シークレットの不在を補う構造的な保護は次のとおりです。
 

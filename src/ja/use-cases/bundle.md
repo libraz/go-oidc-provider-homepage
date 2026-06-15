@@ -28,7 +28,7 @@ description: 典型的な組み込み側が触るオプションを一通り束�
 例は意図的に長めです — コピーして不要な部分を削るための「ひな型」として使うのが目的です。実装をゼロから書きそうになったら、まず `02-bundle` を見て見落としがないか確認してください。
 
 ```sh
-go run -tags example ./examples/02-bundle
+(cd examples/02-bundle && go run -tags example .)
 ```
 
 ## 何を確認したいときに見るか

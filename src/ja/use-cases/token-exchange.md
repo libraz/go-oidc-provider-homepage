@@ -177,7 +177,7 @@ token-exchange リクエストは既定でリフレッシュトークンを **�
 [`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation):
 
 ```sh
-go run -tags example ./examples/33-token-exchange-delegation
+(cd examples/33-token-exchange-delegation && go run -tags example .)
 ```
 
 Frontend → service-a → service-b のチェーンです。service-a が Alice のトークンを delegated token(`act={sub: service-a}`)に交換し、service-b の RS 側 verifier が `act.sub` を辿ります。チェーンを持たないトークンは拒否されます。ファイル: `op.go`(OP の組み立て + `TokenExchangePolicy`)、`service_a.go`(中継)、`service_b.go`(リソースサーバ)、`probe.go`(self-verify)。

@@ -301,7 +301,7 @@ Every event carries `request-id`, `subject`, `client-id`, plus an `extras` map f
 
 ## Conformance & versions
 
-### Why does the README say "138 PASSED, 0 FAILED" but the OFCS UI shows REVIEW too?
+### Why does the OFCS status show REVIEW as well as PASSED?
 
 OFCS uses three verdicts; only `FAILED` is an OP defect:
 
@@ -311,7 +311,7 @@ OFCS uses three verdicts; only `FAILED` is an OP defect:
 | `REVIEW` | Test ran, OP behaved correctly — OFCS wants a human to verify a UI artefact (e.g. a screenshot of the rendered error page). |
 | `FAILED` | OP behaved wrongly. |
 
-The headless harness records `REVIEW` as-is rather than auto-passing it. The library has zero `FAILED`. Full breakdown at <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
+The headless harness records `REVIEW` as-is rather than auto-passing it. The current four-plan baseline has zero `FAILED`. Full breakdown at <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
 
 ### Can I cite this library as "OIDF-certified"?
 

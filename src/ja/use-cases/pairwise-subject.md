@@ -128,7 +128,7 @@ curl -s -X POST \
 [`examples/34-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-pairwise-saas):
 
 ```sh
-go run -tags example ./examples/34-pairwise-saas
+(cd examples/34-pairwise-saas && go run -tags example .)
 ```
 
 異なる sector の 2 テナントが `A != B`（異なる sector → 異なる sub）と `A1 == A2`（同じ sector + 同じユーザ → 同じ sub）を観測し、OIDC Core §8.1 のプライバシ性と決定性の両方を満たします。ファイル: `op.go`（`WithPairwiseSubject` での OP 組み立て）、`probe.go`（2 性質の自己検証）。

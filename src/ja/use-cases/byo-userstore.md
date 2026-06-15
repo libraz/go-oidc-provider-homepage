@@ -7,7 +7,7 @@ description: アプリケーション所有の users テーブルを移行せず
 
 既に users、members、employees、accounts などのテーブルがあり、その形が OP 同梱の `oidc_users` テーブルと一致しない場合でも、そのテーブルを source of truth のままにできます。OP に必要なのは、subject を解決し、許可された claim を返し、password login を使う場合は `store.UserPasswordStore` contract 経由で password hash を読める投影です。
 
-> **Source:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
+> **ソース:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
 
 ## 構成
 
@@ -73,7 +73,7 @@ provider, err := op.New(
 ## 実行
 
 ```sh
-go run -tags example ./examples/24-byo-userstore
+(cd examples/24-byo-userstore && go run -tags example .)
 ```
 
 example は OP を `:8080`、ペアの RP を `:9090` で起動します。`demo@example.test` / `demo` でログインすると、RP の `/me` ページで release された ID Token claim を確認できます。

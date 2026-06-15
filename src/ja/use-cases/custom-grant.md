@@ -171,7 +171,7 @@ OP はリフレッシュトークンごとに親を記録するため、ロー�
 [`examples/30-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-custom-grant):
 
 ```sh
-go run -tags example ./examples/30-custom-grant
+(cd examples/30-custom-grant && go run -tags example .)
 ```
 
 組み込み側が `urn:example:libraz:service-token-exchange` を定義し、OP が `op.WithCustomGrant` 経由でルーティングします。ハンドラが `BoundAccessToken` を返すと、ディスパッチャはリクエストの DPoP / mTLS confirmation に紐付いた JWT アクセストークンを発行します。ファイル: `op.go`(OP の組み立て + ハンドラ)、`client.go`(client 側)、`probe.go`(self-verify)。

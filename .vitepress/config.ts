@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
@@ -43,6 +44,13 @@ export default withMermaid(
     sitemap: { hostname: siteUrl },
 
     vite: {
+      resolve: {
+        alias: {
+          'vscode-jsonrpc/lib/common/cancellation.js': fileURLToPath(
+            new URL('./shims/vscode-jsonrpc-cancellation.ts', import.meta.url)
+          )
+        }
+      },
       build: {
         chunkSizeWarningLimit: 3000,
         rollupOptions: {
