@@ -76,6 +76,10 @@ Both static and auto-derived origins land on the same internal list; duplicates 
 The CORS layer sets `Access-Control-Allow-Credentials: true` so the SPA's `fetch(url, { credentials: 'include' })` can carry the OP's session cookie. The browser also requires `Access-Control-Allow-Origin` to be a specific origin (not `*`); the library honors this — every match is the requesting origin verbatim, never a wildcard.
 :::
 
+::: tip Exposed protocol headers
+Strict-CORS responses expose `DPoP-Nonce`, `WWW-Authenticate`, and `x-fapi-interaction-id`. That lets a browser SPA complete the DPoP nonce retry loop and read FAPI interaction IDs without a same-origin proxy.
+:::
+
 ## Public client + PKCE
 
 A SPA is a **public client** (`token_endpoint_auth_method=none`). It cannot keep a `client_secret`. It uses PKCE to compensate:

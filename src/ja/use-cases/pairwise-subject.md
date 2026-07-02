@@ -85,7 +85,7 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 
 ### `sector_identifier_uri` 解決
 
-クライアントが `sector_identifier_uri` を登録すると、OP がそれを取得し(HTTPS のみ、RFC 1918 / loopback / link-local は拒否、リダイレクト先を再検証、body サイズと timeout に上限、24 時間の成功キャッシュ)、クライアントの全 redirect URI が文書にリストされていることを確認します。これにより sector が公開済みの manifest に紐付き、OP が監査できる形になります。
+クライアントが `sector_identifier_uri` を登録すると、OP がそれを取得し(HTTPS のみ、RFC 1918 / loopback / link-local は拒否、リダイレクト先を再検証、body サイズと timeout に上限、24 時間の成功キャッシュ)、クライアントの全 redirect URI が文書にリストされていることを確認します。文書は単一の JSON 配列である必要があり、末尾に余分な byte があれば拒否されます。リモート文書の内容が正当に更新された場合、resolver は古い cache entry を退避し、次の成功 fetch で OP 再起動なしに回復します。これにより sector が公開済みの manifest に紐付き、OP が監査できる形になります。
 
 ## 途中切替は拒否
 

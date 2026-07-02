@@ -26,9 +26,13 @@ description: go-oidc-provider が OpenID Foundation Conformance Suite に対し�
 ## 最新 baseline
 
 取得日時: 2026-06-14T07:18:03Z<br/>
-リリースラベル: `v0.9.3`<br/>
-リポジトリ SHA: [`ae2def2`](https://github.com/libraz/go-oidc-provider/commit/ae2def2f95f9c29f2a5ad8b072908d72c1d64b07)<br/>
-OFCS イメージ: `release-v5.1.42`
+リリースラベル: `v0.9.4`<br/>
+リポジトリ SHA: [`2d915fe`](https://github.com/libraz/go-oidc-provider/commit/2d915fe8cbd4a997375f66aeb20eb6c40ea70fed)<br/>
+OFCS イメージ: `release-v5.1.45`
+
+::: info スナップショットの状態
+下の pass / review / skip 件数は、現在公開している 4 plan snapshot です。v0.9.4 ではハーネスのイメージ固定とリリースメタデータを更新しています。新しい認証 baseline として引用する前に、再現ワークフローを実行してください。
+:::
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | 合計 |
 |--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
@@ -263,15 +267,15 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 |---|---|
 | `conformance/README.md` | 運用 runbook |
 | `conformance/plans/*.json` | プランテンプレート（server / client / resource ブロック） |
-| `conformance/docker-compose.yml` | OFCS イメージのタグ固定(`release-v5.1.42`)+ JKS truststore 実装 |
+| `conformance/docker-compose.yml` | OFCS イメージのタグ固定(`release-v5.1.45`)+ JKS truststore 実装 |
 | `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
 | `tools/conformance/ofcs.py` | REST クライアント + ヘッドレス drive スクリプト |
 | `conformance/baselines/*.json` | 取得済スナップショット（gitignored — 環境依存） |
 
 ## 明示しておく制限事項
 
-- **プランスイートのバージョン。** OFCS は `release-v5.1.42` で固定しています。新しい OFCS リリースで追加・改名されたテストは、固定バージョンを引き上げるまで対象外です。
-- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。挙動確認は v5.1.42 でしか取れていません。
+- **プランスイートのバージョン。** OFCS は `release-v5.1.45` で固定しています。新しい OFCS リリースで追加・改名されたテストは、固定バージョンを引き上げるまで対象外です。
+- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。挙動確認は v5.1.45 でしか取れていません。
 - **本物の RP 証明書なし。** mTLS プラン枠は `conformance/certs/` の生成済み自己署名証明書を使っており、プランをインスタンス化できる程度に整えてあるだけです。本物の CA チェーン検証はしていません。
 - **OP インスタンス 1 個。** インスタンス間挙動（例: ストア共有の OP 2 個でのトークン introspection）は OFCS ではなく `test/scenarios` で検査します。
 

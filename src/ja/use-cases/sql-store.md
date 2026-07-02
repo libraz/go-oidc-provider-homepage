@@ -110,6 +110,8 @@ storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[strin
 
 map のキーは物理名ではなく論理的なレコード種別です。受け付けるキーは 18 個すべてで、`clients`、`authorization_codes`、`refresh_tokens`、`access_tokens`、`opaque_access_tokens`、`grant_revocations`、`revoked_jtis`、`grants`、`sessions`、`par_records`、`interactions`、`consumed_jtis`、`users`、`initial_access_tokens`、`registration_access_tokens`、`op_metadata`、`device_codes`、`ciba_requests` です。未知のキーを渡すと `oidcsql.New` が即座にエラーを返すので、タイポは最初のクエリではなく構築時に検出できます。
 
+解決後の物理テーブル名はすべて相互に異なる必要があります。2 つの論理ストアが同じテーブルへ map される場合や、override が未指定の既定テーブル名と衝突する場合、`oidcsql.New` は構築時に失敗します。スキーマ書き換えは exact-name ベースなので、`clients` の override が `client_secrets` のような部分文字列を誤って書き換えることもありません。
+
 > **ソース:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) は 18 テーブルすべてを `auth_` 接頭辞へ差し替え、`sqlite_master` から読み戻して書き換えが効いたことを確認しています。
 
 ::: warning 差し替えられるのはテーブル名のみ、カラム名は不可

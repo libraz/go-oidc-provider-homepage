@@ -208,6 +208,7 @@ op.New(
 | `AuditDeviceCodeTokenRejected` | `/token` が device-code grant を拒否(`access_denied`、`expired_token` など) | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返却。サブストア上のレコードで interval が倍化される | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態に遷移させた。`Deps.AccessTokens` が渡されている場合は、ヘルパが発行済みアクセストークンも連鎖失効させ、`revoked_access_tokens` を記録する | info | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodePollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する(best-effort な観測) | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 
 ### CIBA
 

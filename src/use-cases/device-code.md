@@ -23,6 +23,8 @@ RFC 8628 has the device hit `/token` repeatedly until the user approves on their
 
 ```go
 import (
+  "time"
+
   "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -34,6 +36,8 @@ provider, err := op.New(
   op.WithCookieKeys(myCookieKey),
 
   op.WithDeviceCodeGrant(),
+  op.WithDeviceCodeExpiry(10*time.Minute),       // optional; default 10 minutes
+  op.WithDeviceCodePollInterval(5*time.Second), // optional; default 5 seconds
 
   op.WithStaticClients(op.PublicClient{
     ID:           "tv-app",
@@ -64,6 +68,8 @@ If the configured store does not return a non-nil `DeviceCodes()` substore, `op.
 2. **Anti-abuse policy**: per-record brute-force gating, IP rate limiting, captcha, audit triage — these belong with the embedder's existing fraud stack.
 
 The default URI is `<issuer>/device`; override it with `op.WithDeviceVerificationURI("https://acme.com/connect")` if your verification page lives elsewhere.
+
+`expires_in` and `interval` have their own knobs: `op.WithDeviceCodeExpiry(...)` and `op.WithDeviceCodePollInterval(...)`. They are no longer derived from `op.WithAccessTokenTTL`. A deployment that uses 30- or 60-second access tokens can still leave the user ten minutes to reach a phone, enter the code, and approve the request.
 
 ::: warning user_code is brute-forceable by design
 Short codes are usable; long codes are not. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) so embedders building the verification page do not have to invent the brute-force gate. **Use it** unless you have a fully-equivalent gate in your existing stack.
@@ -152,7 +158,7 @@ The OP mints only audiences that appear in the client's registered `Resources`. 
 | Wire response | Meaning |
 |---|---|
 | `400 authorization_pending` | User has not approved yet. Poll again after `interval` seconds. |
-| `400 slow_down` | Polled too fast. Double the interval — RFC 8628 §3.5. The OP persists the new interval atomically so this is enforced across replicas. |
+| `400 slow_down` | Polled too fast. Double the interval — RFC 8628 §3.5. The OP persists the new interval atomically so this is enforced across replicas. If persisting the observation faults, the OP emits `device_code.poll_observation.failed` so the observability gap is visible. |
 | `400 access_denied` | User denied (or the brute-force gate locked out, or `devicecodekit.Revoke` was called). Stop polling. |
 | `400 expired_token` | `device_code` outlived `expires_in`. Stop polling. |
 | `200 { access_token, ... }` | Approved — treat as a normal token response. |

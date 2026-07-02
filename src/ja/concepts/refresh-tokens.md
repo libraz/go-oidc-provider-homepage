@@ -78,6 +78,8 @@ grace 期間は **猶予期間** とも呼ばれます。OP は前のリフレ�
 `WithRefreshGracePeriod` を渡さない場合のデフォルト grace 期間は **60 秒**（`refresh.GraceTTLDefault`）です。`op.WithRefreshGracePeriod(0)` で grace を完全無効化（厳密な single-use）、正の値で猶予期間を明示設定できます。負値は構築時に拒否されます。
 
 OFCS のリフレッシュトークン回帰テストはローテーションとリトライの間に約 32 秒待つため、それ以下の grace 期間に縮めると適合性が後退します。
+
+`profile.FAPI2Baseline` と `profile.FAPI2MessageSigning` では、明示設定された非ゼロの grace window は `op.New` で拒否されます。どちらかの profile を有効にする前に、`WithRefreshGracePeriod` を外すか 0 にしてください。`profile.FAPICIBA` にはこの refresh-grace gate は適用されません。
 :::
 
 ## TTL バケット

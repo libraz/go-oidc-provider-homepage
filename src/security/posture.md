@@ -102,8 +102,12 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | Trailing JSON documents refused on the DCR metadata decoder and the interaction JSON driver | `internal/registrationendpoint`, `op/interaction` | RFC 7591 §2 |
 | `op.New` rejects configurations whose enabled grants / features need a substore the wired store does not expose | `op/options_validate.go`, `op/storeadapter/redis` | — (defence in depth) |
 | Client verification keys (`client_assertion`, JAR request objects) held to the OP key-shape floor: RSA ≥ 2048 bits, EC curve matches the declared `alg` | `internal/clientauth`, `internal/jar`, `internal/jose` (`AssertAlgKeyShape`) | RFC 7518 §3.3, RFC 8725 §3.2 |
+| `private_key_jwt` clients using `jwks_uri` recover from legitimate RP key rotation by doing one throttled cache-bypassing refetch on unknown `kid`; random unknown kids cannot amplify outbound fetches | `internal/clientauth`, `internal/jar` | RFC 7523, OIDC Dynamic Registration |
 | One-time auth factors (email-OTP, TOTP, recovery codes) single-use via atomic compare-and-set (`ErrAlreadyConsumed` on replay); cross-factor lockout stamped atomically (`StampLock`) | `internal/authn`, `op/store` | — (defence in depth) |
+| Wrong-code branches for TOTP, email-OTP, and recovery codes all increment the shared retry path and observer, so captcha / lockout gates see second-factor brute-force attempts | `internal/authn` | — (defence in depth) |
 | Refresh-token `id` / `parent_id` hashed at rest, looked up in constant time | `internal/tokenendpoint`, `op/store` | RFC 9700 §2.2.2 |
+| Refresh-token rotation re-checks the parent under the same critical section / transaction as the child insert, so replay revocation cannot race a successful descendant save | `op/storeadapter/sql`, `op/storeadapter/inmem` | RFC 9700 §2.2.2 |
+| Token exchange re-verifies the post-policy decision: granted scope must remain within the requested subject-token-bounded scope, and granted audience must remain within the requested audience | `internal/customgrant/tokenexchange` | RFC 8693 |
 
 ## Tooling
 

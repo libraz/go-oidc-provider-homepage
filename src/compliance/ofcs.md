@@ -25,7 +25,11 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 
 ## Latest baseline
 
-Captured: 2026-06-14T07:18:03Z<br/> Release label: `v0.9.3`<br/> Repository SHA: [`ae2def2`](https://github.com/libraz/go-oidc-provider/commit/ae2def2f95f9c29f2a5ad8b072908d72c1d64b07)<br/> OFCS image: `release-v5.1.42`
+Captured: 2026-06-14T07:18:03Z<br/> Release label: `v0.9.4`<br/> Repository SHA: [`2d915fe`](https://github.com/libraz/go-oidc-provider/commit/2d915fe8cbd4a997375f66aeb20eb6c40ea70fed)<br/> OFCS image: `release-v5.1.45`
+
+::: info Snapshot status
+The pass / review / skip counts below are the current published four-plan snapshot. The v0.9.4 release updates the harness image pin and release metadata; run the reproduction workflow before citing a fresh certification baseline.
+:::
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | Total |
 |--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
@@ -260,15 +264,15 @@ If you set conflicting options after `WithProfile`, `op.New(...)` returns a buil
 |---|---|
 | `conformance/README.md` | Operator runbook |
 | `conformance/plans/*.json` | Plan templates (server / client / resource blocks) |
-| `conformance/docker-compose.yml` | OFCS image pin (`release-v5.1.42`) + JKS truststore wiring |
+| `conformance/docker-compose.yml` | OFCS image pin (`release-v5.1.45`) + JKS truststore wiring |
 | `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
 | `tools/conformance/ofcs.py` | REST client + headless drive script |
 | `conformance/baselines/*.json` | Captured snapshots (gitignored — environment-specific) |
 
 ## Caveats worth naming
 
-- **Plan suite version.** OFCS is pinned to `release-v5.1.42`. Tests added or renamed in newer OFCS releases are not covered until the pin is bumped.
-- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. Behaviour confirmed against v5.1.42 only.
+- **Plan suite version.** OFCS is pinned to `release-v5.1.45`. Tests added or renamed in newer OFCS releases are not covered until the pin is bumped.
+- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. Behaviour confirmed against v5.1.45 only.
 - **No real RP cert.** The mTLS plan slots use generated self-signed certs at `conformance/certs/` so the plan can be instantiated. No real CA chain is exercised.
 - **Single OP instance.** Cross-instance behaviour (e.g. token introspection across two OPs sharing a store) is exercised by `test/scenarios`, not OFCS.
 

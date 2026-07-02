@@ -123,7 +123,7 @@ op.New(
 
 セキュリティレビューで問題になるのは、RFC 名を挙げられないことよりも、任意仕様のどの分岐を実装し、どれを拒否し、conformance suite が実際にどの経路を検証したのかを示せないことです。
 
-各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。最新ベースライン（`v0.9.3`、sha `ae2def2`）:
+各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。最新公開 baseline メタデータ（`v0.9.4`、sha `2d915fe`）:
 
 | Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
 |---|---:|---:|---:|---:|---:|
@@ -143,7 +143,7 @@ op.New(
 
 リフレッシュトークンはデフォルトでローテーションします。再利用が検知された場合は chain 全体を無効化します。
 
-- `op.WithRefreshGracePeriod` — リトライが競合するクライアント向けに、ローテーション直後の猶予期間を広げる。
+- `op.WithRefreshGracePeriod` — リトライが競合するクライアント向けにローテーション直後の猶予期間を広げる。`FAPI2Baseline` と `FAPI2MessageSigning` では、明示設定された非ゼロ window が拒否されます。
 - `op.WithRefreshTokenOfflineTTL` — `offline_access` 付きリフレッシュトークン（ログイン状態の維持）の寿命を、通常のローテーションから分離する。
 
 `token.issued` / `token.refreshed` 監査イベントは `extras` に `offline_access` フラグを載せるので、SOC ダッシュボードで chain を分けて可視化できます。

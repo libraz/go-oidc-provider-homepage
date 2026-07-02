@@ -85,7 +85,7 @@ A client with multiple redirect-URI hosts and no `sector_identifier_uri` produce
 
 ### `sector_identifier_uri` resolution
 
-When a client registers a `sector_identifier_uri`, the OP fetches it (HTTPS-only, RFC 1918 / loopback / link-local rejected, redirect targets re-validated, body-size + timeout caps, 24-hour success cache) and confirms every redirect URI on the client is listed in the document. This binds the sector to a published manifest the OP can audit.
+When a client registers a `sector_identifier_uri`, the OP fetches it (HTTPS-only, RFC 1918 / loopback / link-local rejected, redirect targets re-validated, body-size + timeout caps, 24-hour success cache) and confirms every redirect URI on the client is listed in the document. The document must be a single JSON array with no trailing bytes. If the remote document changes content, the resolver evicts the stale cache entry and recovers on the next successful fetch without an OP restart. This binds the sector to a published manifest the OP can audit.
 
 ## Mid-life switching is rejected
 

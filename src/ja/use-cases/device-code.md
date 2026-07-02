@@ -23,6 +23,8 @@ RFC 8628 では、デバイスはユーザがスマホなどで承認するの�
 
 ```go
 import (
+  "time"
+
   "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -34,6 +36,8 @@ provider, err := op.New(
   op.WithCookieKeys(myCookieKey),
 
   op.WithDeviceCodeGrant(),
+  op.WithDeviceCodeExpiry(10*time.Minute),       // 任意。既定 10 分
+  op.WithDeviceCodePollInterval(5*time.Second), // 任意。既定 5 秒
 
   op.WithStaticClients(op.PublicClient{
     ID:           "tv-app",
@@ -64,6 +68,8 @@ device-code サブストア（`store.DeviceCodeStore`）は必須です。in-mem
 2. **不正対策ポリシー**: レコード単位の総当たり制御、IP rate limit、CAPTCHA、監査 triage は組み込み側の既存不正対策スタックに属するため
 
 既定の URI は `<issuer>/device`。verification ページが別の場所にあるなら `op.WithDeviceVerificationURI("https://acme.com/connect")` で上書きします。
+
+`expires_in` と `interval` には専用の knob があります: `op.WithDeviceCodeExpiry(...)` と `op.WithDeviceCodePollInterval(...)` です。これらは `op.WithAccessTokenTTL` からは導出されません。アクセストークンを 30 秒や 60 秒にしている deployment でも、ユーザがスマホに移り、コードを入力し、承認するための 10 分をそのまま残せます。
 
 ::: warning user_code は構造的に総当たり可能
 短いコードは入力しやすい一方で、総当たりを受けやすくなります。verification ページを自前で作る組み込み側のために、本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で総当たり対策を同梱しています。**使ってください** — 同等の制御が既存スタックにあるなら別ですが。
@@ -152,7 +158,7 @@ OP が audience として発行できるのは、クライアントの `Resource
 | 通信路上の応答 | 意味 |
 |---|---|
 | `400 authorization_pending` | ユーザがまだ承認していない。`interval` 秒後に再ポーリング |
-| `400 slow_down` | ポーリングが速すぎた。interval を倍に — RFC 8628 §3.5。OP が新 interval を原子的に永続化するのでマルチレプリカでも強制される |
+| `400 slow_down` | ポーリングが速すぎた。interval を倍に — RFC 8628 §3.5。OP が新 interval を原子的に永続化するのでマルチレプリカでも強制される。観測値の永続化に失敗した場合は `device_code.poll_observation.failed` を発火し、観測ギャップを見える化する |
 | `400 access_denied` | ユーザが拒否（または総当たり対策がロックアウト、`devicecodekit.Revoke` が呼ばれた）。ポーリングを停止 |
 | `400 expired_token` | `device_code` が `expires_in` を超えた。ポーリングを停止 |
 | `200 { access_token, ... }` | 承認 — 通常の token 応答として処理 |

@@ -85,6 +85,8 @@ func (p *myPolicy) Allow(ctx context.Context, req op.TokenExchangeRequest) (*op.
 | `IssueRefreshToken` | `*bool` override. Default = nil = no refresh token. To opt in, set `op.PtrBool(true)` — the pointer shape exists so embedders cannot conflate "unset" with "false". |
 | `ExtraClaims` | Merged into the id_token. Reserved-claim filter applies: `iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid / act / cnf` are dropped silently so the policy cannot rewrite the act chain, hijack `sub`, or forge `cnf`. |
 
+The subset rule is enforced again after the policy decision is applied. A policy bug that returns a broader scope or audience is rejected with `invalid_scope` / `invalid_target` and an audit event instead of minting a widened token.
+
 ### Error semantics
 
 | Return | Wire response |

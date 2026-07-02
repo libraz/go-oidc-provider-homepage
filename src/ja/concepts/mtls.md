@@ -67,6 +67,8 @@ op.WithMTLSProxy("X-SSL-Cert", []string{"10.0.0.0/8"})
 
 OP が自前で TLS を終端しているときは、ライブラリは TLS ハンドシェイクの証明書(`http.Request.TLS.PeerCertificates`)を優先します。ヘッダ経路は、ハンドシェイク証明書が無く **かつ** リクエストの `RemoteAddr` が `trustedCIDRs` のいずれかに含まれるときにのみ参照されます。リバースプロキシを迂回して OP に直接到達した攻撃者は、ヘッダを設定しても証明書を偽造できません — OP は fail closed して、証明書なしのリクエストと同じ応答を返します。
 
+trusted proxy がクライアント証明書ヘッダを前送りした場合、そのヘッダ上の証明書が token binding の正本です。proxy ヘッダの証明書と live handshake の証明書が食い違う場合は、proxy 自身の証明書へ黙って bind せず `invalid_request` で拒否します。
+
 `op.MTLSProxyConfig(provider)` は記録された設定を返すので、out-of-band な introspection エンドポイント等で `internal/mtls.Verifier` を自前構築する組み込み側でも、同じ allow-list を再利用できます。
 
 ## 実装例

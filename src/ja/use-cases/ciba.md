@@ -156,6 +156,8 @@ curl -s -u pos-terminal:<secret> \
 
 これがユーザにとって CIBA phishing への唯一の防衛線です。仕様上 optional ですが、組み込み側の UX では **必須** として扱ってください。
 
+OP は `binding_message` を検証（trim 後の長さと制御文字チェック）し、HTML escape 済みではなく raw 値として永続化します。認証デバイス UI で描画するときに escape してください。`/bc-authorize` に送る前に事前 escape すると、`&`、`<`、`>`、`"`、`'` を含む取引文言がレジ側表示と一致しなくなります。
+
 ## RFC 8707 `resource=`
 
 利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを resource server に固定できます。エンドポイントは `/authorize` / `/token` と同じ判定を適用します:

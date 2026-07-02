@@ -74,6 +74,8 @@ The grace period is sometimes called an **acceptance window**: the OP accepts th
 
 ::: tip Default is 60 seconds
 The default grace period is **60 seconds** (`refresh.GraceTTLDefault`) when `WithRefreshGracePeriod` is not supplied. Pass `op.WithRefreshGracePeriod(0)` to disable grace entirely (strict single-use), or a positive duration to set the window explicitly. Negative values are rejected at construction time. The OFCS refresh-token regression test waits ~32 s between rotation and retry, so any grace below that range will regress conformance.
+
+Under `profile.FAPI2Baseline` and `profile.FAPI2MessageSigning`, an explicitly configured non-zero grace window is rejected at `op.New`. Remove `WithRefreshGracePeriod` or set it to zero before enabling either profile. `profile.FAPICIBA` does not apply this refresh-grace gate.
 :::
 
 ## TTL buckets

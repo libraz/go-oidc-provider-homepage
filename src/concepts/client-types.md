@@ -83,6 +83,8 @@ The library implements six methods, all from the IANA "OAuth Token Endpoint Auth
 
 `client_secret_jwt` (HS256-shared-secret JWT) is **not** implemented. A shared-secret JWT broadens the blast radius of a leaked secret without offering anything `private_key_jwt` does not, so the library refuses to grow the surface.
 
+For `private_key_jwt` clients registered with `jwks_uri`, an assertion signed with an unknown `kid` triggers one throttled, cache-bypassing JWKS refetch before verification fails. Legitimate RP key rotation recovers immediately; random unknown `kid` values cannot amplify outbound fetches.
+
 ::: tip Pick one method per client and stick to it
 The discovery document lists every method the OP is configured to accept, but each client registers exactly one. Mixing methods on a single client is not standardised and has been the source of downgrade-attack research papers — the library matches the registered method exactly and refuses fallbacks.
 :::

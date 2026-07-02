@@ -158,6 +158,8 @@ curl -s -u pos-terminal:<secret> \
 
 This is the user's only defense against a CIBA phishing flow. Treat it as required in the embedder UX even though the spec marks it optional.
 
+The OP validates `binding_message` (trimmed length and control-character checks) and persists the raw value, not an HTML-escaped copy. Escape it at render time in your authentication-device UI; do not pre-escape before sending it to `/bc-authorize`, or transaction text containing `&`, `<`, `>`, `"`, or `'` will stop matching what the cashier saw.
+
 ## RFC 8707 `resource=`
 
 Consumption devices may pin the issued access token to a resource server by sending `resource=<absolute URI>` on `/bc-authorize`. The endpoint enforces the same gate as `/authorize` and `/token`:

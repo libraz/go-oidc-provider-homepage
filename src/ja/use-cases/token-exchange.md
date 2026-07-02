@@ -85,6 +85,8 @@ func (p *myPolicy) Allow(ctx context.Context, req op.TokenExchangeRequest) (*op.
 | `IssueRefreshToken` | `*bool` で上書き。デフォルトは nil でリフレッシュトークン発行なし。オプトインは `op.PtrBool(true)`。「未設定」と「false」を組み込み側が混同できないようポインタ形 |
 | `ExtraClaims` | id_token にマージされます。reserved-claim フィルタが適用され、`iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid / act / cnf` は黙って破棄されます — ポリシー側で `act` チェーンを書き換える、`sub` を乗っ取る、`cnf` を捏造する、といった操作はできません |
 
+この部分集合ルールは、ポリシー決定を適用した後にも再検証されます。ポリシーのバグで scope や audience が広がった場合、拡張されたトークンを発行せず `invalid_scope` / `invalid_target` と監査イベントで拒否します。
+
 ### エラーセマンティクス
 
 | return | 通信路上の応答 |

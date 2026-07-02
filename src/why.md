@@ -123,7 +123,7 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` so
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
-Each release is regressed against the OpenID Foundation conformance suite. Latest baseline (`v0.9.3`, sha `ae2def2`):
+Each release is regressed against the OpenID Foundation conformance suite. Latest published baseline metadata (`v0.9.4`, sha `2d915fe`):
 
 | Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
 |---|---:|---:|---:|---:|---:|
@@ -143,7 +143,7 @@ When a mobile app retries the same refresh request, you want an idempotent repla
 
 Refresh tokens rotate by default. Reuse-detection invalidates the entire chain.
 
-- `op.WithRefreshGracePeriod` — widens the rotation window for racing clients.
+- `op.WithRefreshGracePeriod` — widens the rotation window for racing clients; `FAPI2Baseline` and `FAPI2MessageSigning` reject an explicitly configured non-zero window.
 - `op.WithRefreshTokenOfflineTTL` — separates the lifetime of `offline_access` refresh tokens (stay-signed-in) from conventional rotation.
 
 The `token.issued` / `token.refreshed` audit events carry an `offline_access` flag in `extras` so SOC dashboards can split the chains.

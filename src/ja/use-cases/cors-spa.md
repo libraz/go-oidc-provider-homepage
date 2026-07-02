@@ -76,6 +76,10 @@ op.New(
 CORS 層は `Access-Control-Allow-Credentials: true` を設定し、SPA の `fetch(url, { credentials: 'include' })` が OP のセッション cookie を運べるようにします。ブラウザは `Access-Control-Allow-Origin` が特定 origin（`*` ではなく）であることを要求します — ライブラリはこれに従い、マッチした要求 origin をそのまま返します。ワイルドカードは返しません。
 :::
 
+::: tip 公開されるプロトコルヘッダ
+厳格 CORS の応答では `DPoP-Nonce`、`WWW-Authenticate`、`x-fapi-interaction-id` を `Access-Control-Expose-Headers` に載せます。これにより、ブラウザ SPA は same-origin proxy を挟まずに DPoP nonce retry loop を完了し、FAPI interaction ID も読めます。
+:::
+
 ## Public client + PKCE
 
 SPA は **public クライアント**（`token_endpoint_auth_method=none`）です。`client_secret` を保管できません。代わりに PKCE を使います:

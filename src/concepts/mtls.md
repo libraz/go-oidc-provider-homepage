@@ -67,6 +67,8 @@ The two arguments are both required (see `op/options_fapi_proxy.go`):
 
 The library prefers the live TLS handshake cert when the OP terminates TLS itself (`http.Request.TLS.PeerCertificates`); the header path is consulted only when no handshake cert is present **and** the request's `RemoteAddr` lies inside one of the trusted CIDRs. An attacker who reaches the OP directly (bypassing the reverse proxy) cannot forge a cert by setting the header — the OP fails closed and returns the same response as a request without a cert at all.
 
+If a trusted proxy forwards a client certificate header, that forwarded certificate is authoritative for token binding. A mismatch between the proxy header certificate and a live handshake certificate is rejected as `invalid_request` instead of silently binding the proxy's own certificate.
+
 `op.MTLSProxyConfig(provider)` exposes the recorded configuration so an embedder constructing an `internal/mtls.Verifier` themselves (for example, an out-of-band introspection endpoint) can reuse the same allow-list.
 
 ## Wiring

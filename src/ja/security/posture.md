@@ -102,8 +102,12 @@ flowchart LR
 | DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
 | 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 | クライアント検証鍵（`client_assertion`、JAR request object）を OP の鍵 shape 最低水準に保持: RSA は 2048 bit 以上、EC 曲線は宣言された `alg` と一致 | `internal/clientauth`、`internal/jar`、`internal/jose`（`AssertAlgKeyShape`） | RFC 7518 §3.3、RFC 8725 §3.2 |
+| `jwks_uri` を使う `private_key_jwt` クライアントは、未知の `kid` を見たときに 1 回だけ throttle 付きでキャッシュを迂回して再取得し、正当な RP 鍵ローテーションから復帰する。ランダムな未知 `kid` は外向き fetch を増幅できない | `internal/clientauth`、`internal/jar` | RFC 7523、OIDC Dynamic Registration |
 | ワンタイム認証 factor（email-OTP、TOTP、recovery code）を atomic な compare-and-set で単回使用化（再提示時は `ErrAlreadyConsumed`）。cross-factor の lockout は atomic に刻む（`StampLock`） | `internal/authn`、`op/store` | — (defence in depth) |
+| TOTP / email-OTP / recovery code の誤入力分岐はすべて共有 retry path と observer を通るため、captcha / lockout gate が second-factor brute-force を観測できる | `internal/authn` | — (defence in depth) |
 | リフレッシュトークンの `id` / `parent_id` を保存時にハッシュ化し、定数時間で参照 | `internal/tokenendpoint`、`op/store` | RFC 9700 §2.2.2 |
+| Refresh-token rotation は child insert と同じ critical section / transaction 内で parent を再確認し、replay revocation が成功済み descendant save と競合して取り逃がすことを防ぐ | `op/storeadapter/sql`、`op/storeadapter/inmem` | RFC 9700 §2.2.2 |
+| Token exchange は policy 適用後の決定を再検証し、付与 scope が要求済み subject-token-bounded scope 内、付与 audience が要求済み audience 内に残ることを強制する | `internal/customgrant/tokenexchange` | RFC 8693 |
 
 ## ツールチェーン
 

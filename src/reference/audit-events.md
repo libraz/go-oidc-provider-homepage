@@ -208,6 +208,7 @@ Fire from `/device_authorization`, the embedder's verification ceremony helpers 
 | `AuditDeviceCodeTokenRejected` | `/token` rejected the device-code grant (`access_denied`, `expired_token`, etc.) | warn | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenSlowDown` | `/token` returned `slow_down`; the substore row's interval was doubled | warn | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` flipped the row to denied; when `Deps.AccessTokens` is wired, the helper also cascade-revoked issued access tokens and reports `revoked_access_tokens` | info | [Use case: device code](/use-cases/device-code) |
+| `AuditDeviceCodePollObservationFailed` | persisting the `LastPolledAt` stamp on a poll faulted; decision still proceeds (best-effort observability) | warn | [Use case: device code](/use-cases/device-code) |
 
 ### CIBA
 

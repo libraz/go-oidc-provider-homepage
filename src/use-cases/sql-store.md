@@ -103,6 +103,8 @@ storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[strin
 
 The map keys are logical record kinds, not physical names. All eighteen are accepted: `clients`, `authorization_codes`, `refresh_tokens`, `access_tokens`, `opaque_access_tokens`, `grant_revocations`, `revoked_jtis`, `grants`, `sessions`, `par_records`, `interactions`, `consumed_jtis`, `users`, `initial_access_tokens`, `registration_access_tokens`, `op_metadata`, `device_codes`, `ciba_requests`. An unknown key makes `oidcsql.New` fail fast, so a typo is caught at construction time rather than at the first query.
 
+Every resolved physical table name must be distinct. If two logical stores map to the same table, or an override collides with an unlisted default table name, `oidcsql.New` fails at construction time. The schema rewrite is exact-name based, so overriding `clients` cannot accidentally rewrite `client_secrets`-style substrings in the embedded DDL.
+
 > **Source:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) renames all eighteen tables under an `auth_` prefix and logs them back from `sqlite_master` to prove the rewrite took effect.
 
 ::: warning Table names only, not column names

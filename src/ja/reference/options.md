@@ -134,11 +134,13 @@ outline: 2
 |---|---|---|---|
 | `WithDeviceCodeGrant` | _(引数なし)_ | RFC 8628 device-authorization grant を有効化。`/device_authorization` をマウントし `/token` に URN を登録 | 無効 |
 | `WithDeviceVerificationURI` | `string`(絶対 URL) | デバイス画面に表示する verification URI を上書き(既定は `<issuer>/device`) | 自動導出 |
+| `WithDeviceCodeExpiry` | `time.Duration` | 新規 `device_code` レコードの `expires_in` 寿命を上書き。アクセストークン TTL とは独立 | 10 分 |
+| `WithDeviceCodePollInterval` | `time.Duration` | 広告する poll `interval` を上書き。これより速い poll は `slow_down` | 5 秒 |
 | `WithCIBA` | `...op.CIBAOption` | CIBA poll mode を有効化。`/bc-authorize` をマウントし CIBA URN を登録。サブオプション: `WithCIBAHintResolver`(必須)、`WithCIBADefaultExpiresIn`、`WithCIBAMaxExpiresIn`、`WithCIBAPollInterval`、`WithCIBAMaxPollViolations` | 無効 |
 | `WithCustomGrant` | `op.CustomGrantHandler` | 組み込み側が定義する `grant_type` URN を `/token` に登録。handler はアクセストークンをそのまま返すか、`BoundAccessToken` 要求として返して OP に署名させる | なし |
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | RFC 8693 token-exchange grant を有効化。ポリシーがリクエスト単位で受理可否(admission)を判断し、OP の既定値をさらに狭めることもできる | 無効 |
 
-詳細は [ユースケース: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
+`WithDeviceCodeExpiry` と `WithDeviceCodePollInterval` は `WithAccessTokenTTL` から導出されません。アクセストークンを短命にしても、TV / CLI のペアリング手順までユーザがセカンドスクリーンに移る前に失効しないようにするためです。詳細は [ユースケース: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
 
 ## 認可機能 — RAR / Grant Management / Protected Resource Metadata
 

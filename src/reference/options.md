@@ -134,11 +134,13 @@ See [Use case: pairwise subject](/use-cases/pairwise-subject).
 |---|---|---|---|
 | `WithDeviceCodeGrant` | _(no args)_ | enables the RFC 8628 device-authorization grant; mounts `/device_authorization` and registers the URN at `/token` | disabled |
 | `WithDeviceVerificationURI` | `string` (absolute URL) | overrides the verification URI advertised on the device's display (default `<issuer>/device`) | derived |
+| `WithDeviceCodeExpiry` | `time.Duration` | overrides the `expires_in` lifetime for newly issued `device_code` records; independent of the access-token TTL | 10 min |
+| `WithDeviceCodePollInterval` | `time.Duration` | overrides the advertised polling `interval`; clients polling faster receive `slow_down` | 5 s |
 | `WithCIBA` | `...op.CIBAOption` | enables CIBA poll mode; mounts `/bc-authorize` and registers the CIBA URN. Sub-options: `WithCIBAHintResolver` (required), `WithCIBADefaultExpiresIn`, `WithCIBAMaxExpiresIn`, `WithCIBAPollInterval`, `WithCIBAMaxPollViolations` | disabled |
 | `WithCustomGrant` | `op.CustomGrantHandler` | registers an embedder-defined `grant_type` URN at `/token`; the handler returns a verbatim access token or a `BoundAccessToken` request the OP signs | none |
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | enables the RFC 8693 token-exchange grant; the policy decides admission per request and may narrow OP-computed defaults | disabled |
 
-See [Use case: device code](/use-cases/device-code), [CIBA](/use-cases/ciba), [Custom grant](/use-cases/custom-grant), [Token exchange](/use-cases/token-exchange).
+`WithDeviceCodeExpiry` and `WithDeviceCodePollInterval` are intentionally not derived from `WithAccessTokenTTL`; short-lived access tokens should not make a TV / CLI pairing ceremony expire before the user can reach the second screen. See [Use case: device code](/use-cases/device-code), [CIBA](/use-cases/ciba), [Custom grant](/use-cases/custom-grant), [Token exchange](/use-cases/token-exchange).
 
 ## Authorization features — RAR, Grant Management, Protected Resource Metadata
 
