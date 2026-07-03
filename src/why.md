@@ -25,7 +25,7 @@ You're writing a Go service. You need to **be** an OpenID Connect Provider — i
 
 This page argues option 3 by walking through the things that hurt when you build options 1 or 2.
 
-## Pain → Answer
+## Pain points, answered
 
 ### "I want one switch for FAPI 2.0"
 

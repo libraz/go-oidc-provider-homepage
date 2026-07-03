@@ -538,6 +538,17 @@ html[lang="ja"] .vp-doc td {
   max-width: 74ch;
 }
 
+/* `::: info` / `::: tip` / etc. callouts read as a panel, not running
+ * prose — match the full-width tables/code blocks get instead of the
+ * 74ch prose measure, so the tinted background isn't wider than its
+ * own text (or narrower than the tables it sits next to). */
+.vp-doc .custom-block p,
+.vp-doc .custom-block ul,
+.vp-doc .custom-block ol,
+.vp-doc .custom-block blockquote {
+  max-width: none;
+}
+
 /* Code font unification */
 div[class*="language-"] code {
   font-family: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace !important;

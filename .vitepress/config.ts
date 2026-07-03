@@ -511,6 +511,75 @@ export default defineConfig({
               items: [{ text: 'FAQ', link: '/faq' }]
             }
           ],
+          '/why': [
+            {
+              text: 'Overview',
+              items: [{ text: 'Reading order', link: '/concepts/' }]
+            },
+            {
+              text: 'Setup primitives',
+              items: [
+                { text: 'OAuth 2.0 / OIDC primer', link: '/concepts/oauth2-oidc-primer' },
+                { text: 'Issuer', link: '/concepts/issuer' },
+                { text: 'Redirect URI', link: '/concepts/redirect-uri' },
+                { text: 'Client types', link: '/concepts/client-types' },
+                { text: 'Scopes and claims', link: '/concepts/scopes-and-claims' },
+                { text: 'Discovery', link: '/concepts/discovery' },
+                { text: 'JOSE basics', link: '/concepts/jose-basics' }
+              ]
+            },
+            {
+              text: 'Common flows',
+              items: [
+                { text: 'Authorization Code + PKCE', link: '/concepts/authorization-code-pkce' },
+                { text: 'Refresh tokens', link: '/concepts/refresh-tokens' },
+                { text: 'Client Credentials', link: '/concepts/client-credentials' }
+              ]
+            },
+            {
+              text: 'Tokens',
+              items: [
+                { text: 'ID Token vs access token', link: '/concepts/tokens' },
+                {
+                  text: 'Access token format (JWT vs opaque)',
+                  link: '/concepts/access-token-format'
+                }
+              ]
+            },
+            {
+              text: 'Sessions and consent',
+              items: [
+                { text: 'Sessions and logout', link: '/concepts/sessions-and-logout' },
+                { text: 'Consent', link: '/concepts/consent' }
+              ]
+            },
+            {
+              text: 'Sender-constrained tokens',
+              items: [
+                { text: 'Sender constraint (DPoP / mTLS)', link: '/concepts/sender-constraint' },
+                { text: 'DPoP', link: '/concepts/dpop' },
+                { text: 'mTLS', link: '/concepts/mtls' }
+              ]
+            },
+            {
+              text: 'Advanced topics',
+              items: [
+                { text: 'Device Code (RFC 8628)', link: '/concepts/device-code' },
+                { text: 'CIBA', link: '/concepts/ciba' },
+                {
+                  text: 'No-browser flows (CIBA vs Device Code)',
+                  link: '/concepts/no-browser-flows'
+                },
+                { text: 'Token Exchange (RFC 8693)', link: '/concepts/token-exchange' },
+                { text: 'JARM (signed authorization response)', link: '/concepts/jarm' },
+                { text: 'FAPI 2.0 primer', link: '/concepts/fapi' }
+              ]
+            },
+            {
+              text: 'Help',
+              items: [{ text: 'FAQ', link: '/faq' }]
+            }
+          ],
           '/getting-started/': [
             {
               text: 'Getting started',
@@ -1074,6 +1143,87 @@ export default defineConfig({
             }
           ],
           '/ja/faq': [
+            {
+              text: '概要',
+              items: [{ text: '読む順番', link: '/ja/concepts/' }]
+            },
+            {
+              text: '設定の基礎',
+              items: [
+                { text: 'OAuth 2.0 / OIDC 入門', link: '/ja/concepts/oauth2-oidc-primer' },
+                { text: 'issuer / 発行者', link: '/ja/concepts/issuer' },
+                { text: 'redirect URI', link: '/ja/concepts/redirect-uri' },
+                { text: 'クライアントの種類', link: '/ja/concepts/client-types' },
+                { text: 'scope と claim', link: '/ja/concepts/scopes-and-claims' },
+                { text: 'discovery', link: '/ja/concepts/discovery' },
+                {
+                  text: 'JOSE 入門 (JWS / JWE / JWK / JWKS / kid)',
+                  link: '/ja/concepts/jose-basics'
+                }
+              ]
+            },
+            {
+              text: '基本フロー',
+              items: [
+                {
+                  text: '認可コードフロー + PKCE',
+                  link: '/ja/concepts/authorization-code-pkce'
+                },
+                { text: 'リフレッシュトークン', link: '/ja/concepts/refresh-tokens' },
+                { text: 'Client Credentials', link: '/ja/concepts/client-credentials' }
+              ]
+            },
+            {
+              text: 'トークン',
+              items: [
+                {
+                  text: 'ID トークン / アクセストークン',
+                  link: '/ja/concepts/tokens'
+                },
+                {
+                  text: 'Access token の形式（JWT と opaque）',
+                  link: '/ja/concepts/access-token-format'
+                }
+              ]
+            },
+            {
+              text: 'セッションと同意',
+              items: [
+                { text: 'session と logout', link: '/ja/concepts/sessions-and-logout' },
+                { text: '同意', link: '/ja/concepts/consent' }
+              ]
+            },
+            {
+              text: '送信者制約トークン',
+              items: [
+                {
+                  text: '送信者制約 (DPoP / mTLS) — 選び方',
+                  link: '/ja/concepts/sender-constraint'
+                },
+                { text: 'DPoP', link: '/ja/concepts/dpop' },
+                { text: 'mTLS', link: '/ja/concepts/mtls' }
+              ]
+            },
+            {
+              text: '発展トピック',
+              items: [
+                { text: 'Device Code（RFC 8628）', link: '/ja/concepts/device-code' },
+                { text: 'CIBA', link: '/ja/concepts/ciba' },
+                {
+                  text: 'ブラウザを使わないフロー (CIBA と Device Code)',
+                  link: '/ja/concepts/no-browser-flows'
+                },
+                { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
+                { text: 'JARM(署名付き認可レスポンス)', link: '/ja/concepts/jarm' },
+                { text: 'FAPI 2.0 入門', link: '/ja/concepts/fapi' }
+              ]
+            },
+            {
+              text: 'ヘルプ',
+              items: [{ text: 'FAQ', link: '/ja/faq' }]
+            }
+          ],
+          '/ja/why': [
             {
               text: '概要',
               items: [{ text: '読む順番', link: '/ja/concepts/' }]
