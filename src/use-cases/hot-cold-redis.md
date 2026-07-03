@@ -35,6 +35,7 @@ Putting both in the same backend is wasteful: durable storage doesn't need the Q
 ## Architecture
 
 <style scoped>
+text{stroke:none}
 .hcr-t{fill:var(--vp-c-text-1);font-family:var(--vp-font-family-base);font-size:13px;}
 .hcr-m{fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px;}
 .hcr-edge{fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:12px;}

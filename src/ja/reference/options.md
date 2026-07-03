@@ -17,6 +17,7 @@ outline: 2
 このページは、`op.New` に渡せる公開オプションを並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
 <style scoped>
+text{stroke:none}
 .od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
 </style>
 

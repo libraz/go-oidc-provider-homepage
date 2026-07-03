@@ -12,6 +12,7 @@ You want a working Authorization Code + PKCE round-trip end-to-end with the abso
 ## Architecture
 
 <style scoped>
+text{stroke:none}
 .d-label{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);}
 .d-sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);}
 .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);}

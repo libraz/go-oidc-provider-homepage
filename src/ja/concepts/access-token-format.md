@@ -36,6 +36,7 @@ description: 設計判断のためのページ。JWT が既定で opaque はオ�
 ### JWT（RFC 9068） — RS がローカルで検証
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -61,6 +62,7 @@ RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `au
 ### Opaque — RS は毎回 OP に問い合わせる
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -149,6 +151,7 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 **JWT 形式:**
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -182,6 +185,7 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 **Opaque 形式:**
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -309,6 +313,7 @@ provider, err := op.New(
 判断は概ね「誰を信頼するか」「RS にどこまで要求できるか」「アクセストークン TTL がどれだけ短いか」で決まります。
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 

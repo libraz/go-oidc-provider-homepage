@@ -36,6 +36,7 @@ The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token
 ### JWT (RFC 9068) — the RS validates locally
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -61,6 +62,7 @@ The RS holds a cached JWKS, validates the JWT signature offline, checks `aud` an
 ### Opaque — the RS asks the OP every time
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -147,6 +149,7 @@ This is the half of the trade-off most often glossed over.
 **JWT format:**
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -180,6 +183,7 @@ This is the half of the trade-off most often glossed over.
 **Opaque format:**
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 
@@ -303,6 +307,7 @@ The default `RevocationStrategyGrantTombstone` requires `Store.GrantRevocations(
 The decision is mostly about who you trust, what you can ask of the RS, and how short the access-token TTL is.
 
 <style scoped>
+text{stroke:none}
 .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
 </style>
 

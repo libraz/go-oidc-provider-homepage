@@ -30,6 +30,7 @@ description: あるトークンを別のトークンに交換する仕組み —
 ## なりすまし(Impersonation)と委譲(Delegation)を並べて見る
 
 <style scoped>
+text{stroke:none}
 .tx-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:currentColor}
 .tx-sub{font-family:var(--vp-font-family-base);font-size:8.5px;fill:currentColor;opacity:.55}
 .tx-band{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;letter-spacing:.03em;fill:currentColor}
