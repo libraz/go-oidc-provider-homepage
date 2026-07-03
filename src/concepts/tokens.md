@@ -40,18 +40,51 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 
 | Artefact | Format | Audience (`aud`) | Where it goes | Lifetime | Who reads it |
 |---|---|---|---|---|---|
-| **ID Token** | Signed JWT (always) | The RP's `client_id` | OP → RP only | Minutes (default 5) | The RP, to know who logged in. |
+| **ID Token** | Signed JWT (always) | The RP's `client_id` | OP → RP only | Minutes (default 10) | The RP, to know who logged in. |
 | **Access token** | JWT by default (RFC 9068); opaque when configured — see below | The RS identifier | RP → RS via `Authorization: Bearer` | Minutes | The RS, to authorize an API call. |
 | **UserInfo response** | JSON | n/a (RP's `client_id` implied) | RP → OP `/userinfo` (with access token) → RP | Per-request | The RP, to get fresh claims. |
 
-```mermaid
-flowchart LR
-  OP((OP)) -- ID Token --> RP
-  OP -- access_token --> RP
-  RP -- access_token --> RS[(RS)]
-  RP -- access_token --> UI[OP /userinfo]
-  UI -- claims JSON --> RP
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="tokens-flow-title">The OP issues an ID Token and an access token to the RP; the RP presents the access token to the resource server and to the OP's /userinfo endpoint, which returns claims JSON.</title>
+  <style>
+    .d-h{font-family:var(--vp-font-family-base);font-size:15px;font-weight:600;stroke:none}
+    .d-txt{font-family:var(--vp-font-family-base);font-size:12px;stroke:none;fill:var(--vp-c-text-1)}
+    .d-sub{font-family:var(--vp-font-family-base);font-size:11px;stroke:none;fill:var(--vp-c-text-2)}
+    .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-text-2)}
+    .d-mono-op{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-brand-2)}
+    .d-op{stroke:var(--vp-c-brand-2)}
+    .d-op-t{fill:var(--vp-c-brand-2)}
+    .d-fill1{fill:var(--vp-c-text-1)}
+    .d-rs{stroke:var(--vp-c-text-3)}
+    .d-rs-t{fill:var(--vp-c-text-3)}
+  </style>
+  <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
+  <rect x="272" y="52" width="132" height="156" rx="10"/>
+  <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>
+  <text class="d-h d-op-t" x="90" y="126" text-anchor="middle">OP</text>
+  <text class="d-sub" x="90" y="145" text-anchor="middle">this library</text>
+  <text class="d-h d-fill1" x="338" y="126" text-anchor="middle">RP</text>
+  <text class="d-sub" x="338" y="145" text-anchor="middle">client app</text>
+  <text class="d-h d-rs-t" x="626" y="126" text-anchor="middle">RS</text>
+  <text class="d-sub" x="626" y="145" text-anchor="middle">resource server</text>
+  <text class="d-mono-op" x="90" y="228" text-anchor="middle">/userinfo</text>
+  <line class="d-op" x1="156" y1="84" x2="270" y2="84"/>
+  <path class="d-op" d="M272,84 l-7,-4 M272,84 l-7,4"/>
+  <text class="d-txt" x="214" y="76" text-anchor="middle">ID Token</text>
+  <line class="d-op" x1="156" y1="108" x2="270" y2="108"/>
+  <path class="d-op" d="M272,108 l-7,-4 M272,108 l-7,4"/>
+  <text class="d-mono" x="214" y="100" text-anchor="middle">access_token</text>
+  <line class="d-op" x1="272" y1="152" x2="158" y2="152"/>
+  <path class="d-op" d="M156,152 l7,-4 M156,152 l7,4"/>
+  <text class="d-mono" x="214" y="144" text-anchor="middle">access_token</text>
+  <line class="d-op" x1="156" y1="178" x2="270" y2="178"/>
+  <path class="d-op" d="M272,178 l-7,-4 M272,178 l-7,4"/>
+  <text class="d-txt" x="214" y="192" text-anchor="middle">claims JSON</text>
+  <line class="d-rs" x1="404" y1="130" x2="558" y2="130"/>
+  <path class="d-rs" d="M560,130 l-7,-4 M560,130 l-7,4"/>
+  <text class="d-mono" x="482" y="122" text-anchor="middle">access_token</text>
+  <text class="d-mono" x="482" y="146" text-anchor="middle">Authorization: Bearer</text>
+</svg>
 
 ## ID Token — "who logged in"
 
@@ -70,7 +103,7 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 | `amr` | Authentication Methods References — `pwd`, `otp`, `mfa`, `hwk`, etc. | RFC 8176 |
 
 ::: details `acr` — what's that?
-**`acr`** (Authentication Context Class Reference) is a single string that names *how strong* the login was. Your OP decides the vocabulary; common values are `urn:mace:incommon:iap:silver`, NIST SP 800-63 levels, or the FAPI-style `urn:openbanking:psd2:sca`. The RP requests a minimum with `acr_values=...` on `/authorize`; if the user's session can't satisfy it, the OP either re-prompts (step-up, RFC 9470) or rejects the request. Don't confuse it with `amr` — `acr` is the *level*, `amr` is the *methods used to reach that level*.
+**`acr`** (Authentication Context Class Reference) is a single string that names *how strong* the login was. Your OP decides the vocabulary; common values are `urn:mace:incommon:iap:silver`, NIST SP 800-63 levels, or the FAPI-style `urn:openbanking:psd2:sca`. The RP requests a minimum with `acr_values=...` on `/auth`; if the user's session can't satisfy it, the OP either re-prompts (step-up, RFC 9470) or rejects the request. Don't confuse it with `amr` — `acr` is the *level*, `amr` is the *methods used to reach that level*.
 :::
 
 ::: details `amr` — what's that?
@@ -78,7 +111,7 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 :::
 
 ::: details `auth_time` — what's that?
-**`auth_time`** is the Unix timestamp of when the user *authenticated to the OP*, which is **not** the same as `iat` (when *this* token was issued). A user who logged in an hour ago and just refreshed gets a fresh `iat` but the old `auth_time`. RPs use it to enforce a `max_age` policy ("force re-auth if it's been more than 30 minutes") and the OP enforces it server-side when the RP passes `max_age` on `/authorize`.
+**`auth_time`** is the Unix timestamp of when the user *authenticated to the OP*, which is **not** the same as `iat` (when *this* token was issued). A user who logged in an hour ago and just refreshed gets a fresh `iat` but the old `auth_time`. RPs use it to enforce a `max_age` policy ("force re-auth if it's been more than 30 minutes") and the OP enforces it server-side when the RP passes `max_age` on `/auth`.
 :::
 
 ::: details `azp` — what's that?

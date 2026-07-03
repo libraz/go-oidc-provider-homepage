@@ -70,7 +70,7 @@ The per-profile files in `cmd/op-demo/` are the canonical wiring reference. The 
 The vanilla profile needs no `op.WithProfile` call. The base options live in `commonOptions` in `cmd/op-demo/main.go` and apply to every plan:
 
 - `op.WithIssuer(...)` — the issuer URL discovery and ID tokens advertise.
-- `op.WithStore(...)` — the storage adapter ([`op/storeadapter/inmem`](/operations/jwks) for the demo; production uses sql / redis adapters).
+- `op.WithStore(...)` — the storage adapter (`op/storeadapter/inmem` for the demo; production uses sql / redis adapters).
 - `op.WithKeyset(...)` — the signing keyset.
 - `op.WithCookieKeys(...)` — the AEAD key for cookie encryption.
 - `op.WithMountPrefix(...)` — the URL prefix the OP handler is mounted under.

@@ -53,20 +53,49 @@ description: OAuth 2.0 のロールと OpenID Connect が追加するものを�
 
 ## 3 つのロール
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#f8fafc","primaryTextColor":"#0f172a","primaryBorderColor":"#94a3b8","lineColor":"#94a3b8"}}}%%
-flowchart LR
-  RP["<b>RP</b> — Relying Party / client<br/>あなたのアプリ<br/><br/>ログインを開始し、<br/>トークンを保持して API を呼ぶ"]
-  OP["<b>OP</b> — OpenID Provider<br/>あるいは Authorization Server<br/><br/><b>go-oidc-provider はここ</b><br/>ユーザを認証しトークンを発行する HTTP サーバ"]
-  RS["<b>RS</b> — Resource Server<br/>あなたの API<br/><br/>アクセストークンを検証して<br/>データを返す"]
-  RP <-->|"認証を委任 / トークンを受領"| OP
-  RP -->|"Bearer アクセストークンで呼び出し"| RS
-  style OP fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px,color:#0f172a
-  style RP fill:#f1f5f9,stroke:#64748b,color:#0f172a
-  style RS fill:#f1f5f9,stroke:#64748b,color:#0f172a
-```
+<svg class="diag diag-roles" role="img" aria-labelledby="roles-title" viewBox="0 0 760 202" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="roles-title">OAuth / OIDC の 3 つのロール: RP は OP に認証を委任してトークンを受け取り、Bearer アクセストークンで RS を呼び出す。</title>
+  <style>
+    .diag-roles text{stroke:none;fill:var(--vp-c-text-1)}
+    .diag-roles .p{font-family:var(--vp-font-family-base)}
+    .diag-roles .m{font-family:var(--vp-font-family-mono)}
+    .diag-roles .sub{fill:var(--vp-c-text-2)}
+    .diag-roles .op{stroke:var(--vp-c-brand-2)}
+    .diag-roles .opf{fill:var(--vp-c-brand-2)}
+    .diag-roles .rs{stroke:var(--vp-c-text-3)}
+    .diag-roles .rsf{fill:var(--vp-c-text-3)}
+  </style>
+  <defs>
+    <marker id="roles-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="14" y="16" width="186" height="128" rx="8"/>
+  <rect class="op" x="287" y="16" width="186" height="128" rx="8"/>
+  <rect class="rs" x="560" y="16" width="186" height="128" rx="8"/>
+  <text class="p" x="107" y="50" text-anchor="middle" font-size="18" font-weight="700">RP</text>
+  <text class="p sub" x="107" y="72" text-anchor="middle" font-size="11">Relying Party / client</text>
+  <text class="p sub" x="107" y="90" text-anchor="middle" font-size="11">あなたのアプリ</text>
+  <text class="p sub" x="107" y="114" text-anchor="middle" font-size="10">ログインを開始し、</text>
+  <text class="p sub" x="107" y="128" text-anchor="middle" font-size="10">トークンを保持し API を呼ぶ</text>
+  <text class="p opf" x="380" y="50" text-anchor="middle" font-size="18" font-weight="700">OP</text>
+  <text class="p sub" x="380" y="72" text-anchor="middle" font-size="11">OpenID Provider</text>
+  <text class="m opf" x="380" y="91" text-anchor="middle" font-size="11">go-oidc-provider</text>
+  <text class="p sub" x="380" y="114" text-anchor="middle" font-size="10">ユーザを認証し、</text>
+  <text class="p sub" x="380" y="128" text-anchor="middle" font-size="10">トークンを発行</text>
+  <text class="p rsf" x="653" y="50" text-anchor="middle" font-size="18" font-weight="700">RS</text>
+  <text class="p sub" x="653" y="72" text-anchor="middle" font-size="11">Resource Server</text>
+  <text class="p sub" x="653" y="90" text-anchor="middle" font-size="11">あなたの API</text>
+  <text class="p sub" x="653" y="114" text-anchor="middle" font-size="10">アクセストークンを検証し</text>
+  <text class="p sub" x="653" y="128" text-anchor="middle" font-size="10">データを返す</text>
+  <text class="p sub" x="243" y="60" text-anchor="middle" font-size="10">認証を委任 /</text>
+  <text class="p sub" x="243" y="74" text-anchor="middle" font-size="10">トークンを受領</text>
+  <line x1="200" y1="88" x2="287" y2="88" marker-start="url(#roles-ah)" marker-end="url(#roles-ah)"/>
+  <path d="M120 144 C 120 200, 640 200, 640 144" marker-end="url(#roles-ah)"/>
+  <text class="p sub" x="380" y="178" text-anchor="middle" font-size="10"><tspan class="m">Bearer</tspan> アクセストークン</text>
+</svg>
 
-ログインの実際のステップ（`/authorize` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE フロー](#最もよく見かけるフロー-認可コード-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
+ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE フロー](#最もよく見かけるフロー-認可コード-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
 
 ::: tip 同じソフトが複数のロールを兼ねることもある
 たとえば「Backend for Frontend」は、ユーザをログインさせる **RP** であると同時に、SPA からアクセストークン付きで呼ばれる **RS** でもあります。
@@ -107,7 +136,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | **認可コード** | 数十秒（既定 60 秒） | 1 回限りの不透明な文字列。 | server-to-server: RP → OP `/token`。 |
 | **アクセストークン** | 数分（既定 5 分） | API を呼ぶときの `Authorization: Bearer …` に乗せる。JWT または opaque。 | RP → RS。 |
 | **リフレッシュトークン** | 数日〜数週間（既定 30 日） | 長寿命。再認証なしに新しいアクセストークンを取得するために使う。 | RP → OP `/token`。 |
-| **ID トークン** | 数分（アクセストークンに追従） | ユーザが誰かを証明する署名付き JWT。**API には送らない**。 | OP → RP、RP 内で消費。 |
+| **ID トークン** | 数分（既定 10 分） | ユーザが誰かを証明する署名付き JWT。**API には送らない**。 | OP → RP、RP 内で消費。 |
 
 ::: warning ID トークンを Bearer に乗せない
 よくある落とし穴です。ID トークンの audience は RP であって RS ではありません。API に `Authorization: Bearer` で送ると技術的には通ってしまうことがありますが、意味的には誤りです。RP 向けの claim（email など）を、ユーザが触る全 API に晒すことになります。
@@ -117,26 +146,89 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 ## 最もよく見かけるフロー: 認可コード + PKCE
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User browser
-    participant RP as RP（あなたのアプリ）
-    participant OP as OP（go-oidc-provider）
-    participant RS as RS（あなたの API）
-
-    U->>RP: アプリを開く
-    RP->>U: OP /authorize にリダイレクト<br/>(client_id, redirect_uri, scope, state, code_challenge)
-    U->>OP: GET /authorize ...
-    OP->>U: ログイン + 同意 UI
-    U->>OP: 認証情報を送信
-    OP->>U: 302 で RP/callback?code=xyz&state=...
-    U->>RP: GET /callback?code=xyz
-    RP->>OP: POST /token<br/>code=xyz, code_verifier=..., client auth
-    OP->>RP: { access_token, id_token, refresh_token }
-    RP->>RS: GET /api/...<br/>Authorization: Bearer <access_token>
-    RS->>RP: 200 OK { data }
-```
+<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" style="width:100%;height:auto;max-width:772px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="authcode-title">認可コード + PKCE のシーケンス: ブラウザがユーザを RP と OP の間で運んでログインと code 交換を行い、その後 RP が access token で RS を呼び出す。</title>
+  <style>
+    .diag-authcode text{stroke:none;fill:var(--vp-c-text-1)}
+    .diag-authcode .p{font-family:var(--vp-font-family-base)}
+    .diag-authcode .m{font-family:var(--vp-font-family-mono)}
+    .diag-authcode .sub{fill:var(--vp-c-text-2)}
+    .diag-authcode .life{stroke:var(--vp-c-divider);stroke-width:1.5}
+    .diag-authcode .op{stroke:var(--vp-c-brand-2)}
+    .diag-authcode .opf{fill:var(--vp-c-brand-2)}
+    .diag-authcode .rs{stroke:var(--vp-c-text-3)}
+    .diag-authcode .rsf{fill:var(--vp-c-text-3)}
+  </style>
+  <defs>
+    <marker id="authcode-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <line class="life" x1="70" y1="48" x2="70" y2="506"/>
+  <line class="life" x1="280" y1="48" x2="280" y2="506"/>
+  <line class="life op" x1="500" y1="48" x2="500" y2="506"/>
+  <line class="life rs" x1="700" y1="48" x2="700" y2="506"/>
+  <rect x="20" y="12" width="100" height="36" rx="6"/>
+  <text class="p" x="70" y="30" text-anchor="middle" font-size="12" font-weight="700">ユーザ</text>
+  <text class="p sub" x="70" y="43" text-anchor="middle" font-size="9">(ブラウザ)</text>
+  <rect x="230" y="12" width="100" height="36" rx="6"/>
+  <text class="p" x="280" y="30" text-anchor="middle" font-size="12" font-weight="700">RP</text>
+  <text class="p sub" x="280" y="43" text-anchor="middle" font-size="9">あなたのアプリ</text>
+  <rect class="op" x="440" y="12" width="120" height="36" rx="6"/>
+  <text class="p opf" x="500" y="29" text-anchor="middle" font-size="12" font-weight="700">OP</text>
+  <text class="m opf" x="500" y="43" text-anchor="middle" font-size="9">go-oidc-provider</text>
+  <rect class="rs" x="650" y="12" width="100" height="36" rx="6"/>
+  <text class="p rsf" x="700" y="30" text-anchor="middle" font-size="12" font-weight="700">RS</text>
+  <text class="p sub" x="700" y="43" text-anchor="middle" font-size="9">あなたの API</text>
+  <circle cx="24" cy="92" r="10"/>
+  <text class="p" x="24" y="96" text-anchor="middle" font-size="11">1</text>
+  <line x1="70" y1="92" x2="280" y2="92" marker-end="url(#authcode-ah)"/>
+  <text class="p" x="78" y="83" font-size="11">アプリを開く</text>
+  <circle cx="24" cy="132" r="10"/>
+  <text class="p" x="24" y="136" text-anchor="middle" font-size="11">2</text>
+  <line x1="280" y1="132" x2="70" y2="132" marker-end="url(#authcode-ah)"/>
+  <text class="p" x="78" y="110" font-size="11">OP <tspan class="m">/auth</tspan> にリダイレクト</text>
+  <text class="m" x="78" y="122" font-size="9.5">client_id, redirect_uri, scope, state, code_challenge</text>
+  <circle cx="24" cy="172" r="10"/>
+  <text class="p" x="24" y="176" text-anchor="middle" font-size="11">3</text>
+  <line x1="70" y1="172" x2="500" y2="172" marker-end="url(#authcode-ah)"/>
+  <text class="m" x="78" y="163" font-size="10">GET /auth …</text>
+  <circle cx="24" cy="212" r="10"/>
+  <text class="p" x="24" y="216" text-anchor="middle" font-size="11">4</text>
+  <line x1="500" y1="212" x2="70" y2="212" marker-end="url(#authcode-ah)"/>
+  <text class="p" x="78" y="203" font-size="11">ログイン + 同意 UI</text>
+  <circle cx="24" cy="252" r="10"/>
+  <text class="p" x="24" y="256" text-anchor="middle" font-size="11">5</text>
+  <line x1="70" y1="252" x2="500" y2="252" marker-end="url(#authcode-ah)"/>
+  <text class="p" x="78" y="243" font-size="11">認証情報を送信</text>
+  <circle cx="24" cy="292" r="10"/>
+  <text class="p" x="24" y="296" text-anchor="middle" font-size="11">6</text>
+  <line x1="500" y1="292" x2="70" y2="292" marker-end="url(#authcode-ah)"/>
+  <text class="p" x="78" y="270" font-size="11">302 で RP <tspan class="m">/callback</tspan> へ</text>
+  <text class="m" x="78" y="282" font-size="10">?code=xyz&amp;state=…</text>
+  <circle cx="24" cy="332" r="10"/>
+  <text class="p" x="24" y="336" text-anchor="middle" font-size="11">7</text>
+  <line x1="70" y1="332" x2="280" y2="332" marker-end="url(#authcode-ah)"/>
+  <text class="m" x="78" y="323" font-size="10">GET /callback?code=xyz</text>
+  <circle cx="24" cy="372" r="10"/>
+  <text class="p" x="24" y="376" text-anchor="middle" font-size="11">8</text>
+  <line x1="280" y1="372" x2="500" y2="372" marker-end="url(#authcode-ah)"/>
+  <text class="m" x="288" y="350" font-size="10">POST /token</text>
+  <text class="m" x="288" y="362" font-size="9.5">code=xyz, code_verifier=…, client auth</text>
+  <circle cx="24" cy="412" r="10"/>
+  <text class="p" x="24" y="416" text-anchor="middle" font-size="11">9</text>
+  <line x1="500" y1="412" x2="280" y2="412" marker-end="url(#authcode-ah)"/>
+  <text class="m" x="288" y="403" font-size="10">{ access_token, id_token, refresh_token }</text>
+  <circle cx="24" cy="452" r="10"/>
+  <text class="p" x="24" y="456" text-anchor="middle" font-size="11">10</text>
+  <line x1="280" y1="452" x2="700" y2="452" marker-end="url(#authcode-ah)"/>
+  <text class="m" x="288" y="430" font-size="10">GET /api/…</text>
+  <text class="m" x="288" y="442" font-size="9.5">Authorization: Bearer &lt;access_token&gt;</text>
+  <circle cx="24" cy="492" r="10"/>
+  <text class="p" x="24" y="496" text-anchor="middle" font-size="11">11</text>
+  <line x1="700" y1="492" x2="280" y2="492" marker-end="url(#authcode-ah)"/>
+  <text class="m" x="288" y="483" font-size="10">200 OK  { data }</text>
+</svg>
 
 「+ PKCE」（`code_challenge` / `code_verifier` で示される部分）は、悪意あるアプリが認可コードを横取りすることを防ぐ仕組みです。詳しくは [認可コードフロー + PKCE](/ja/concepts/authorization-code-pkce) で扱います。
 
@@ -153,7 +245,7 @@ sequenceDiagram
 | **Discovery 文書** | `/.well-known/openid-configuration`。エンドポイント、対応 scope、対応 alg などをまとめた JSON カタログ。 |
 
 ::: details `acr` と `amr` を 1 段落で
-`acr` は認証が **どれだけ強かったか**(`aal2` のような保証水準ラベル)を表し、`amr` は **どの factor を使ったか**(`["pwd","otp"]` のような配列)を表します。RP が機微な操作のために高い保証を要求するときは `acr_values` で高い `acr` を要求し、OP は step-up 認証を実行して ID トークンを再発行します。RFC 8176(Authentication Method Reference Values)が標準 `amr` 値を規定し、RFC 9470(OAuth 2.0 Step Up Authentication Challenge Protocol)が `WWW-Authenticate: error="insufficient_user_authentication"` 経由の step-up を標準化しています。組み込み手順は [MFA / step-up](/ja/use-cases/mfa-step-up) を参照してください。
+`acr` は認証が **どれだけ強かったか**（`aal2` のような保証水準ラベル）を表し、`amr` は **どの factor を使ったか**（`["pwd","otp"]` のような配列）を表します。RP が機微な操作のために高い保証を要求するときは `acr_values` で高い `acr` を要求し、OP は step-up 認証を実行して ID トークンを再発行します。RFC 8176(Authentication Method Reference Values)が標準 `amr` 値を規定し、RFC 9470(OAuth 2.0 Step Up Authentication Challenge Protocol)が `WWW-Authenticate: error="insufficient_user_authentication"` 経由の step-up を標準化しています。組み込み手順は [MFA / step-up](/ja/use-cases/mfa-step-up) を参照してください。
 :::
 
 ## FAPI 2.0 が追加するもの

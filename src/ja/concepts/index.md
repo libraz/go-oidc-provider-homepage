@@ -5,14 +5,14 @@ description: 概念ページの推奨される読む順番。各ステップは�
 
 # 概念を学ぶ
 
-このページは`/ja/concepts/`配下のすべてのページに対する **推奨される読む順番** です。各ページは前のステップで扱った内容のみを前提にしているので、上から順に読めば途中で戻る必要はありません。
+このページは `/ja/concepts/` 配下のすべてのページに対する **推奨される読む順番** です。各ページは前のステップで扱った内容のみを前提にしているので、上から順に読めば途中で戻る必要はありません。
 
 ::: tip 順番に読む
 OAuth と OIDC が初めての方は、ステップ 1 から順に降りていってください。よくつまづくのは仕様が難しいからではなく、「issuer とは」「redirect URI とは」を最初に固める前に、いきなりリフレッシュトークンや DPoP の話に進んでしまうからです。本ページはその順序を整えるためにあります。
 :::
 
 ::: details すでに知っている場合は飛ばして OK
-- OAuth のロール、scope、`code`+ PKCE はすでに把握している → **ステップ 4(トークン)** か **ステップ 6(送信者制約トークン)** から読み始めて構いません。
+- OAuth のロール、scope、`code` + PKCE はすでに把握している → **ステップ 4(トークン)** か **ステップ 6(送信者制約トークン)** から読み始めて構いません。
 - 別の OP を運用していて、本ライブラリの運用面だけ知りたい → **ステップ 2(設定の基礎)** で語彙だけ確認したら[運用](/ja/operations/)に飛んでください。
 - FAPI 2.0 が目的 → **ステップ 6**(DPoP / mTLS)→ **ステップ 7 → FAPI 2.0 入門** の順で十分ですが、入門ページは送信者制約を理解している前提で書かれています。
 :::
@@ -30,7 +30,7 @@ OAuth と OIDC が初めての方は、ステップ 1 から順に降りてい�
 - [issuer / 発行者](/ja/concepts/issuer) — OP の identity URL、`iss` claim、そしてなぜ正規形がただひとつでなければならないか。
 - [redirect URI](/ja/concepts/redirect-uri) — RP が登録する値、なぜ完全一致が現代の標準なのか、本ライブラリがどう検証するか。
 - [クライアントの種類](/ja/concepts/client-types) — `confidential` と `public`、それぞれが対応するクライアント認証方式。
-- [scope と claim](/ja/concepts/scopes-and-claims) — scope が何を許可し、claim が何を運ぶか、`openid`/`profile`/`email`が user-info 応答にどう対応するか。
+- [scope と claim](/ja/concepts/scopes-and-claims) — scope が何を許可し、claim が何を運ぶか、`openid`/`profile`/`email` が user-info 応答にどう対応するか。
 - [discovery](/ja/concepts/discovery) — `/.well-known/openid-configuration`、RP がそこから何を読むか、OP が安定させるべき項目は何か。
 - [JOSE 入門 (JWS / JWE / JWK / JWKS / kid)](/ja/concepts/jose-basics) — JWS、JWE、JWK、JWKS、`kid`、そしてどのページにも繰り返し現れるアルゴリズム名。
 

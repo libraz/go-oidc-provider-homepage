@@ -24,7 +24,7 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 ::: details 用語の補足
 - **Scope** — 粗い権限の束（`profile`、`email` など）。1 scope が固定の claim 集合に対応します。
 - **Claims request** — claim 単位のきめ細かい指定。RP が必要な claim と出力先（`id_token` / `userinfo`）を明示し、`essential` マーカーで essential / voluntary を区別できます。
-- **Essential / voluntary** — `{"essential": true}` の場合、claim が取得できなければ OP はリクエストを拒否します。`{"essential": false}` または `null` の場合、取得できなければ何も告知せず省略します。
+- **Essential / voluntary** — 通常の claim では、`essential` は強制のスイッチではなくヒントに過ぎません。OP は best-effort で取得を試み、取得できなければ voluntary リクエストと同じく黙って省略します。唯一の例外は `acr` で、現在のセッションが満たせない essential な `acr` リクエストは再認証を強制します（詳細は [MFA / ステップアップ](/ja/use-cases/mfa-step-up)）。
 :::
 
 > **ソース:** [`examples/61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request)
@@ -72,13 +72,17 @@ curl -G --data-urlencode "claims=$CLAIMS" \
 
 | 場所 | 結果 |
 |---|---|
-| `id_token` | `email` を含む。ユーザストアに値がなければ OP が再プロンプトを強制する（essential） |
+| `id_token` | ユーザストアに値があれば `email` を含む。なければ黙って省略する（essential は「より頑張って取得する」の意味であり、無ければ失敗する、という意味ではない） |
 | `/userinfo` レスポンス | `locale` を best-effort で含める（voluntary） |
 
 ## Essential と voluntary
 
-- `{"essential": true}` — OP は claim を **必ず** 含めなければなりません。ユーザストアにその claim がなく、ログインフローでも提供できない場合、OP は authorize 要求を `claim_not_available` で失敗させます。
+通常の claim（`acr` 以外）では、`essential` は OP がどこで失敗するかを変えません。OIDC Core 1.0 §5.5 は essential な claim について「OP は提供を試みなければならない(MUST attempt to provide)」と定めるだけで、そこで止まっています。claim が存在しないときに OP がリクエストを拒否することまでは求めていません。
+
+- `{"essential": true}` — OP は claim を検索し、値があれば含めます。ユーザストアにその claim がなければ、voluntary リクエストと全く同じように黙って省略します。存在しない通常の claim に紐づくエラーコードや再プロンプトはありません。
 - `{"essential": false}` または `null` — OP は claim を **持っていれば** 含めます。なければ何も告知せず省略します。
+
+`essential` が実際に効くのは `acr` だけです。essential な `acr` リクエスト(`{"id_token":{"acr":{"essential":true,"values":[...]}}}`)を現在のセッションの認証コンテキストが満たせない場合、OP は再認証を強制します。`prompt=none` では `interaction_required`、それ以外では対話的なログインへのリダイレクトになり、これは RFC 9470 のステップアップ経路によるものです。詳細は [MFA / ステップアップ](/ja/use-cases/mfa-step-up) を参照してください。
 
 ## JAR と組み合わせ
 

@@ -123,10 +123,15 @@ func handleApproval(w http.ResponseWriter, r *http.Request, st *inmem.Store) {
 
     switch decision {
     case "approve":
+        // acr は認証デバイスが実際に満たした Authentication Context Class
+        // Reference。token endpoint はこの値をそのまま id_token.acr に入れる。
+        // 利用デバイスが /bc-authorize で要求した acr_values とは独立していて、
+        // ACR の語彙を持たないデプロイメントでは "" のままでよい。
         // authTime はユーザが authentication device 上で認証した壁時計時刻。
         // token endpoint が id_token.auth_time に入れ（ゼロ値は claim を出さない）、
         // `RequireAuthTime` を登録したクライアントはこの値で判定する。
-        if err := st.CIBARequests().Approve(r.Context(), authReqID, sub, time.Now()); err != nil {
+        acr := "" // または認証デバイスが満たした ACR
+        if err := st.CIBARequests().Approve(r.Context(), authReqID, sub, acr, time.Now()); err != nil {
             http.Error(w, "approve failed", 500)
             return
         }
@@ -172,7 +177,7 @@ OP は `binding_message` を検証（trim 後の長さと制御文字チェッ�
 
 ## CIBA id_token の `amr` と `acr`
 
-CIBA フロー終端で発行される id_token は、`ACRValues[0]`（非空のとき）を `acr` に入れるので、RP は要求された認証コンテキストクラスを参照できます。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
+CIBA フロー終端で発行される id_token の `acr` は、認証デバイスが実際に満たした ACR ── 組み込み側のコールバックが `CIBARequestStore.Approve` の `acr` 引数として渡す値 ── をそのまま反映します。要求された `acr_values` から決まるわけではなく、コールバックが `""` を渡した場合は空になります。これは比較可能な ACR 語彙を持たないデプロイメントで想定される挙動です。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
 
 CIBA id_token の `amr` を読んでいる RP は、実値を提供するサブストア拡張が入るまで、空 / 不在として扱ってください。
 

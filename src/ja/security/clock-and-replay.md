@@ -30,17 +30,81 @@ type Clock interface {
 | 認可コード | one-time consumption + TTL | `DefaultAuthCodeTTL = 60 s` | [/ja/concepts/authorization-code-pkce](/ja/concepts/authorization-code-pkce) |
 | リフレッシュトークン (ローテーション猶予) | 直前のトークンを猶予期間内は受理 | `refresh.GraceTTLDefault = 60 s`(`op.WithRefreshGracePeriod` で変更可) | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
 | DPoP proof — `iat` 窓 | サーバ時刻に対する対称な許容幅 | `dpop.DefaultIatWindow = 60 s` | [/ja/concepts/dpop](/ja/concepts/dpop) |
-| DPoP proof — `jti` キャッシュ | リプレイ重複検出 | `iat` 窓と同じ | [/ja/concepts/dpop](/ja/concepts/dpop) |
+| DPoP proof — `jti` キャッシュ | リプレイ重複検出 | `iat + 2 * DefaultIatWindow`(`replayLeew`、約 120 秒) | [/ja/concepts/dpop](/ja/concepts/dpop) |
 | JAR (RFC 9101) request object — `jti` キャッシュ | リプレイ重複検出 | OP 側キャッシュ。request object 自身の `exp` を境に削除 | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
 | JAR — 未来側ずれ許容 | `nbf` / `iat` の許容幅 | `jar.DefaultMaxFutureSkew = 60 s` | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
 | PAR (RFC 9126) `request_uri` 寿命 | 一回限り、短寿命 | `parendpoint.DefaultTTL = 60 s` | [/ja/concepts/fapi](/ja/concepts/fapi) |
 | Back-Channel Logout token | OP は 1 度だけ署名、RP 側で重複検出 | OP は `jti` キャッシュを持たない (RP 側の責務) | [/ja/use-cases/back-channel-logout](/ja/use-cases/back-channel-logout) |
-| ID トークン | `iat` + `exp` | `exp - iat = リクエスト時の AccessTokenTTL` | [/ja/concepts/tokens](/ja/concepts/tokens) |
+| ID トークン | `iat` + `exp` | `exp - iat = defaultIDTokenTTL = 10 分`(固定値。リクエストのアクセストークン TTL とは独立) | [/ja/concepts/tokens](/ja/concepts/tokens) |
 | アクセストークン (JWT または opaque) | `iat` + `exp` | `DefaultAccessTokenTTL = 5 分`、上限 `AccessTokenTTLMax = 24 h`(FAPI プロファイルは 10 分まで) | [/ja/concepts/tokens](/ja/concepts/tokens) |
 | リフレッシュトークン (絶対寿命) | 発行時の `exp` | `timex.RefreshTokenTTLDefault = 30 日` | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
-| `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` 重複検出、±60 秒の clock leeway | `jti` は `expiresAt = assertion.exp` で記録。clock leeway 既定 60 秒 | [/ja/concepts/client-types](/ja/concepts/client-types) |
+| `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` 重複検出、±60 秒の clock leeway | `jti` は `expiresAt = assertion.exp + leeway`(60 秒)で記録。`now + maxAssertionLifetime + leeway` を上限にキャップ | [/ja/concepts/client-types](/ja/concepts/client-types) |
 
 「既定の窓 / TTL」列の定数は、隣接するライブラリ本体のソースを読んで確認した一次情報です。ライブラリ側で既定値が変わったときに最初に追従すべきページがここです。
+
+同じ猶予を対数時間軸で実スケールに並べると、形が一目で分かります。リプレイと時計に関する猶予はいずれも 60 秒前後の狭い帯に収まり、トークンの寿命は数分に上がり、リフレッシュトークンの絶対寿命だけが 30 日という遠い位置にあります。その間には何もありません。
+
+<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:720px;height:auto">
+<title id="clock-replay-window-scale-title">go-oidc-provider が適用する時刻・リプレイ猶予を、60 秒のリプレイ帯から 30 日のリフレッシュトークン寿命まで対数軸で並べた比較図。</title>
+<style>#crws .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#crws .d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-1);stroke:none}#crws .d-val{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-tick{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}#crws .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#crws .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-leg{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-grid{stroke:currentColor;stroke-width:1;opacity:.16;stroke-dasharray:2 3}#crws .d-lane{stroke:currentColor;stroke-width:1;opacity:.08}#crws .d-axis{stroke:currentColor;stroke-width:1;opacity:.28}#crws .d-op-fill{fill:var(--vp-c-brand-2);stroke:none}#crws .d-op-store{fill:none;stroke:var(--vp-c-brand-2);stroke-width:1.6;stroke-dasharray:3 2}</style>
+<line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
+<line class="d-grid" x1="374.9" y1="58" x2="374.9" y2="362"/>
+<line class="d-grid" x1="449.6" y1="58" x2="449.6" y2="362"/>
+<line class="d-grid" x1="582.1" y1="58" x2="582.1" y2="362"/>
+<line class="d-grid" x1="724" y1="58" x2="724" y2="362"/>
+<line class="d-axis" x1="250" y1="362" x2="724" y2="362"/>
+<line class="d-lane" x1="250" y1="70" x2="724" y2="70"/>
+<line class="d-lane" x1="250" y1="101" x2="724" y2="101"/>
+<line class="d-lane" x1="250" y1="132" x2="724" y2="132"/>
+<line class="d-lane" x1="250" y1="163" x2="724" y2="163"/>
+<line class="d-lane" x1="250" y1="194" x2="724" y2="194"/>
+<line class="d-lane" x1="250" y1="225" x2="724" y2="225"/>
+<line class="d-lane" x1="250" y1="256" x2="724" y2="256"/>
+<line class="d-lane" x1="250" y1="287" x2="724" y2="287"/>
+<line class="d-lane" x1="250" y1="318" x2="724" y2="318"/>
+<line class="d-lane" x1="250" y1="349" x2="724" y2="349"/>
+<rect class="d-op-store" x="274.4" y="65.5" width="9" height="9" rx="1"/>
+<rect class="d-op-store" x="274.4" y="96.5" width="9" height="9" rx="1"/>
+<circle class="d-op-fill" cx="278.9" cy="132" r="4.5"/>
+<circle class="d-op-fill" cx="278.9" cy="163" r="4.5"/>
+<circle class="d-op-fill" cx="278.9" cy="194" r="4.5"/>
+<rect class="d-op-store" x="274.4" y="220.5" width="9" height="9" rx="1"/>
+<rect class="d-op-store" x="303.3" y="251.5" width="9" height="9" rx="1"/>
+<circle class="d-op-fill" cx="346" cy="287" r="4.5"/>
+<circle class="d-op-fill" cx="374.9" cy="318" r="4.5"/>
+<circle class="d-op-fill" cx="724" cy="349" r="4.5"/>
+<text class="d-cap" x="8" y="18">各猶予を対数軸で比較</text>
+<text class="d-sub" x="8" y="34">発行時点からの猶予の長さ（対数時間軸）</text>
+<circle class="d-op-fill" cx="470" cy="14" r="4.5"/>
+<text class="d-leg" x="480" y="18">clock / TTL の新鮮性</text>
+<rect class="d-op-store" x="465.5" y="29.5" width="9" height="9" rx="1"/>
+<text class="d-leg" x="480" y="37">ストア上のリプレイ重複検出</text>
+<text class="d-lbl" x="238" y="73.5" text-anchor="end">認可コード</text>
+<text class="d-lbl" x="238" y="104.5" text-anchor="end">PAR <tspan class="d-mono">request_uri</tspan></text>
+<text class="d-lbl" x="238" y="135.5" text-anchor="end">リフレッシュトークン — 猶予</text>
+<text class="d-lbl" x="238" y="166.5" text-anchor="end">DPoP proof — <tspan class="d-mono">iat</tspan></text>
+<text class="d-lbl" x="238" y="197.5" text-anchor="end">JAR — 未来側ずれ</text>
+<text class="d-lbl" x="238" y="228.5" text-anchor="end"><tspan class="d-mono">client_assertion</tspan></text>
+<text class="d-lbl" x="238" y="259.5" text-anchor="end">DPoP proof — <tspan class="d-mono">jti</tspan> キャッシュ</text>
+<text class="d-lbl" x="238" y="290.5" text-anchor="end">アクセストークン</text>
+<text class="d-lbl" x="238" y="321.5" text-anchor="end">ID トークン</text>
+<text class="d-lbl" x="238" y="352.5" text-anchor="end">リフレッシュトークン — 絶対寿命</text>
+<text class="d-val" x="289" y="73.5">60 s</text>
+<text class="d-val" x="289" y="104.5">60 s</text>
+<text class="d-val" x="289" y="135.5">60 s</text>
+<text class="d-val" x="289" y="166.5">±60 s</text>
+<text class="d-val" x="289" y="197.5">60 s</text>
+<text class="d-val" x="289" y="228.5">±60 s</text>
+<text class="d-val" x="318" y="259.5">約 120 秒</text>
+<text class="d-val" x="356" y="290.5">5 分 · FAPI 10 分</text>
+<text class="d-val" x="385" y="321.5">10 分</text>
+<text class="d-val" x="715" y="352.5" text-anchor="end">30 日</text>
+<text class="d-tick" x="278.9" y="375" text-anchor="middle">1 分</text>
+<text class="d-tick" x="374.9" y="375" text-anchor="middle">10 分</text>
+<text class="d-tick" x="449.6" y="375" text-anchor="middle">1 時間</text>
+<text class="d-tick" x="582.1" y="375" text-anchor="middle">1 日</text>
+<text class="d-tick" x="724" y="375" text-anchor="middle">30 日</text>
+</svg>
 
 ## ここでの「リプレイ」とは
 
@@ -60,7 +124,7 @@ type Clock interface {
 
 複数インスタンス構成では、このサブストアを全インスタンスで共有するか、または特定の `jti` の存続期間中はその `jti` を同じインスタンスへルーティングする必要があります。複数レプリカそれぞれに in-memory 実装を持たせると、この防御は無効化されます。レプリカ A とレプリカ B が同じ proof を 1 度ずつ、合計 2 度受理してしまうためです。Redis / Memcached のような高速な共有キャッシュが標準的な選択肢で、これに伴う揮発 / 永続ストアの分離指針は [/ja/operations/multi-instance](/ja/operations/multi-instance) で扱っています。
 
-`ConsumedJTIStore` はトランザクション対象の永続ストアの外側に明示的に置かれています（`op/store/tx.go` 参照）。操作は冪等です。最初に書いた側が勝ち、後続の書き込みは consumed として観測されます。キャッシュが完全に消えても、攻撃者がリプレイできる時間幅は各アーティファクトの残り寿命に限られます。DPoP は `iat` 窓、JAR / `client_assertion` は `exp` で上限が決まります。表中の窓がいずれもおおむね 60 秒以下に収まっているのはこのためです。
+`ConsumedJTIStore` はトランザクション対象の永続ストアの外側に明示的に置かれています（`op/store/tx.go` 参照）。操作は冪等です。最初に書いた側が勝ち、後続の書き込みは consumed として観測されます。キャッシュが完全に消えても、攻撃者がリプレイできる時間幅は各アーティファクトの残り寿命に限られます。DPoP は `iat` 窓の 2 倍、JAR / `client_assertion` は `exp` で上限が決まります。表中の窓がいずれもおおむね 120 秒以下に収まっているのはこのためです。
 
 もう 1 つの運用上の前提は wall clock 自体です。すべてのレプリカは同じ OP コード・同じ既定値で動いていても、レプリカ間の時計が該当する猶予を超えてずれると、同じアーティファクトが新鮮かどうかについて判断が割れます。フリート全体の NTP 規律はセキュリティ姿勢の一部であり、付け足しではありません。
 

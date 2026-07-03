@@ -22,19 +22,65 @@ description: Service-to-service tokens with no end user. RFC 6749 §4.4.
 - **`private_key_jwt`** — client authentication where the client signs a short-lived JWT with its private key; the OP verifies it against the registered public key. Stronger than a shared secret because the secret never leaves the client.
 :::
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant SVC as Service A<br/>(your backend)
-    participant OP as OP (go-oidc-provider)
-    participant SVC2 as Service B<br/>(another backend)
-
-    SVC->>OP: POST /token<br/>grant_type=client_credentials<br/>scope=read:things<br/>client auth (basic / private_key_jwt / mTLS)
-    OP->>OP: validate scopes against client allow-list
-    OP->>SVC: 200 { access_token, expires_in }
-    SVC->>SVC2: GET /things<br/>Authorization: Bearer <access_token>
-    SVC2->>SVC: 200 [...]
-```
+<svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
+  <title id="cc-flow-title">Client credentials flow: Service A authenticates to the OP, receives an access token, then presents it as a bearer token to Service B.</title>
+  <style>
+    #cc-flow text { font-family: var(--vp-font-family-base); fill: currentColor; stroke: none; }
+    #cc-flow .mono { font-family: var(--vp-font-family-mono); }
+    #cc-flow .c-op { stroke: var(--vp-c-brand-2); }
+    #cc-flow .c-rs { stroke: var(--vp-c-text-3); }
+    #cc-flow .tf-op { fill: var(--vp-c-brand-2); }
+    #cc-flow .tf-rs { fill: var(--vp-c-text-3); }
+    #cc-flow .life { stroke-width: 1; opacity: .4; }
+    #cc-flow .box { stroke-width: 2; }
+    #cc-flow .arw { stroke-width: 2; }
+    #cc-flow .num { stroke-width: 1.5; }
+  </style>
+  <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
+  <text x="90" y="26" text-anchor="middle" font-size="13" font-weight="600">Service A</text>
+  <text x="90" y="40" text-anchor="middle" font-size="9.5" opacity=".7">(your backend)</text>
+  <rect class="box c-op" x="285" y="8" width="150" height="40" rx="6"/>
+  <text class="tf-op" x="360" y="26" text-anchor="middle" font-size="13" font-weight="600">OP</text>
+  <text class="tf-op mono" x="360" y="40" text-anchor="middle" font-size="9.5">go-oidc-provider</text>
+  <rect class="box c-rs" x="555" y="8" width="150" height="40" rx="6"/>
+  <text class="tf-rs" x="630" y="26" text-anchor="middle" font-size="13" font-weight="600">Service B</text>
+  <text class="tf-rs" x="630" y="40" text-anchor="middle" font-size="9.5">(another backend)</text>
+  <line class="life" x1="90" y1="48" x2="90" y2="344"/>
+  <line class="life c-op" x1="360" y1="48" x2="360" y2="344"/>
+  <line class="life c-rs" x1="630" y1="48" x2="630" y2="344"/>
+  <text class="mono" x="225" y="62" text-anchor="middle" font-size="11">POST /token</text>
+  <text class="mono" x="225" y="76" text-anchor="middle" font-size="11">grant_type=client_credentials</text>
+  <text x="225" y="90" text-anchor="middle" font-size="11"><tspan class="mono">scope</tspan> + client auth</text>
+  <path class="arw" d="M99 104 H360"/>
+  <path class="arw" d="M353 99 L360 104 L353 109"/>
+  <circle class="num" cx="90" cy="104" r="9" fill="var(--vp-c-bg)"/>
+  <text class="mono" x="90" y="108" text-anchor="middle" font-size="11">1</text>
+  <path class="arw c-op" d="M369 148 h20 v10 h-20"/>
+  <path class="arw c-op" d="M376 153 L369 158 L376 163"/>
+  <text x="398" y="151" font-size="11">validate <tspan class="mono">scope</tspan> against</text>
+  <text x="398" y="165" font-size="11">client <tspan class="mono">allow-list</tspan></text>
+  <circle class="num c-op" cx="360" cy="150" r="9" fill="var(--vp-c-bg)"/>
+  <text class="mono tf-op" x="360" y="154" text-anchor="middle" font-size="11">2</text>
+  <text x="225" y="194" text-anchor="middle" font-size="11">200 OK</text>
+  <text class="mono" x="225" y="208" text-anchor="middle" font-size="11">{ access_token, expires_in }</text>
+  <path class="arw c-op" d="M351 220 H90"/>
+  <path class="arw c-op" d="M97 215 L90 220 L97 225"/>
+  <circle class="num c-op" cx="360" cy="220" r="9" fill="var(--vp-c-bg)"/>
+  <text class="mono tf-op" x="360" y="224" text-anchor="middle" font-size="11">3</text>
+  <rect x="262" y="242" width="196" height="28" fill="var(--vp-c-bg)" stroke="none"/>
+  <text class="mono" x="360" y="253" text-anchor="middle" font-size="11">GET /things</text>
+  <text class="mono" x="360" y="267" text-anchor="middle" font-size="11">Authorization: Bearer &lt;token&gt;</text>
+  <path class="arw" d="M99 278 H630"/>
+  <path class="arw" d="M623 273 L630 278 L623 283"/>
+  <circle class="num" cx="90" cy="278" r="9" fill="var(--vp-c-bg)"/>
+  <text class="mono" x="90" y="282" text-anchor="middle" font-size="11">4</text>
+  <rect x="305" y="303" width="110" height="16" fill="var(--vp-c-bg)" stroke="none"/>
+  <text class="mono" x="360" y="314" text-anchor="middle" font-size="11">200 [ ... ]</text>
+  <path class="arw c-rs" d="M621 326 H90"/>
+  <path class="arw c-rs" d="M97 321 L90 326 L97 331"/>
+  <circle class="num c-rs" cx="630" cy="326" r="9" fill="var(--vp-c-bg)"/>
+  <text class="mono tf-rs" x="630" y="330" text-anchor="middle" font-size="11">5</text>
+</svg>
 
 ::: warning Confidential clients only
 `client_credentials` is structurally restricted to **confidential** clients in this library — clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`). Public clients (SPAs / native, `token_endpoint_auth_method=none`) cannot use it.

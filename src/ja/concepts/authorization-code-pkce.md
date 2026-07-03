@@ -1,6 +1,6 @@
 ---
 title: 認可コード + PKCE フロー
-description: 最も使われる OIDC フローを最初から最後まで、パラメータ用語集と mermaid 図で解説。
+description: 最も使われる OIDC フローを最初から最後まで、シーケンス図とパラメータ用語集で解説。
 ---
 
 # 認可コード + PKCE
@@ -24,37 +24,152 @@ description: 最も使われる OIDC フローを最初から最後まで、パ�
 
 ## 完全なシーケンス
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User browser
-    participant RP as Relying Party<br/>(あなたの web アプリ)
-    participant OP as OpenID Provider<br/>(go-oidc-provider)
-    participant RS as Resource Server<br/>(あなたの API)
-
-    note over RP: code_verifier = random(43-128 文字)<br/>code_challenge = SHA-256(code_verifier)
-    U->>RP: アプリを開く
-    RP->>U: 302 -> OP/authorize?<br/>response_type=code<br/>client_id=...<br/>redirect_uri=...<br/>scope=openid profile email<br/>state=<csrf>&nonce=<replay>&<br/>code_challenge=...&code_challenge_method=S256
-    U->>OP: GET /authorize?...
-    OP->>OP: 検証<br/>(redirect_uri 完全一致、alg、scope)
-    OP->>U: 200 ログインページ
-    U->>OP: POST 認証情報
-    OP->>OP: 認証<br/>(password / TOTP / passkey ...)
-    OP->>U: 200 同意ページ
-    U->>OP: POST consent
-    OP->>U: 302 -> redirect_uri?code=<one-time>&state=<echoed>
-    U->>RP: GET /callback?code=...&state=...
-    RP->>RP: state を検証
-    RP->>OP: POST /token<br/>grant_type=authorization_code<br/>code=...&code_verifier=...&<br/>client auth (basic / private_key_jwt / mTLS)
-    OP->>OP: SHA-256(code_verifier) == 保存済 code_challenge を検証
-    OP->>RP: 200 { access_token, id_token, refresh_token, ... }
-    RP->>RP: ID Token の署名 / iss / aud / exp / nonce を検証
-    RP->>U: セッション cookie 設定、レンダ
-    U->>RP: GET /api/me
-    RP->>RS: GET /api/me<br/>Authorization: Bearer <access_token>
-    RS->>OP: (任意) /introspect または JWT 自己検証
-    RS->>RP: 200 { user data }
-```
+<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" style="width:100%;height:auto;max-width:684px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="acpkce-seq-title">認可コード + PKCE のシーケンス: ブラウザ、Relying Party、OpenID Provider、Resource Server の間で、ログインから PKCE 検証付きトークン発行、Bearer トークンでの API 呼び出しまでのやり取りを示す図。</title>
+  <defs>
+    <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
+    <marker id="acp-ahb" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" class="op-accent" stroke-width="1.4"/></marker>
+  </defs>
+  <style>
+    text{stroke:none}
+    .actor{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-1)}
+    .actor-op{fill:var(--vp-c-brand-2)}
+    .actor-rs{fill:var(--vp-c-text-3)}
+    .asub{font-family:var(--vp-font-family-base);font-size:9px;fill:var(--vp-c-text-3)}
+    .lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-1)}
+    .sub{font-family:var(--vp-font-family-base);font-size:9.5px;fill:var(--vp-c-text-2)}
+    .mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-2)}
+    .num{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3)}
+    .note{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-1)}
+    .notemono{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2)}
+    .box{fill:var(--vp-c-bg);stroke:currentColor}
+    .box-op{stroke:var(--vp-c-brand-2)}
+    .box-rs{stroke:var(--vp-c-text-3)}
+    .lane{fill:none;stroke:var(--vp-c-divider);stroke-width:1.3;stroke-dasharray:2 5}
+    .lane-op{stroke:var(--vp-c-brand-2)}
+    .lane-rs{stroke:var(--vp-c-text-3)}
+    .msg{fill:none;stroke:currentColor}
+    .self{fill:none;stroke:currentColor}
+    .op-accent{stroke:var(--vp-c-brand-2)}
+    .notebox{fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider);stroke-width:1.3}
+  </style>
+  <!-- lifelines -->
+  <line class="lane" x1="70" y1="54" x2="70" y2="706"/>
+  <line class="lane" x1="250" y1="54" x2="250" y2="706"/>
+  <line class="lane lane-op" x1="430" y1="54" x2="430" y2="706"/>
+  <line class="lane lane-rs" x1="610" y1="54" x2="610" y2="706"/>
+  <!-- actor headers -->
+  <rect class="box" x="20" y="14" width="100" height="40" rx="6"/>
+  <text class="actor" x="70" y="31" text-anchor="middle">ユーザ</text>
+  <text class="asub" x="70" y="45" text-anchor="middle">ブラウザ</text>
+  <rect class="box" x="200" y="14" width="100" height="40" rx="6"/>
+  <text class="actor" x="250" y="31" text-anchor="middle">Relying Party</text>
+  <text class="asub" x="250" y="45" text-anchor="middle">web アプリ</text>
+  <rect class="box box-op" x="380" y="14" width="100" height="40" rx="6"/>
+  <text class="actor actor-op" x="430" y="31" text-anchor="middle">OpenID Provider</text>
+  <text class="asub" x="430" y="45" text-anchor="middle">go-oidc-provider</text>
+  <rect class="box box-rs" x="560" y="14" width="100" height="40" rx="6"/>
+  <text class="actor actor-rs" x="610" y="31" text-anchor="middle">Resource Server</text>
+  <text class="asub" x="610" y="45" text-anchor="middle">API サーバ</text>
+  <!-- PKCE note over RP -->
+  <rect class="notebox" x="128" y="62" width="244" height="32" rx="5"/>
+  <text class="note" x="250" y="76" text-anchor="middle">RP が PKCE ペアを生成</text>
+  <text class="notemono" x="250" y="89" text-anchor="middle">code_challenge = SHA-256(code_verifier)</text>
+  <!-- 1 -->
+  <text class="num" x="12" y="119" text-anchor="middle">1</text>
+  <path class="msg" d="M70 116 H250" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="160" y="111" text-anchor="middle">アプリを開く</text>
+  <!-- 2 -->
+  <text class="num" x="12" y="148" text-anchor="middle">2</text>
+  <path class="msg" d="M250 145 H70" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="160" y="130" text-anchor="middle">302 → OP</text>
+  <text class="mono" x="160" y="141" text-anchor="middle">/authorize · S256 · state · nonce</text>
+  <!-- 3 -->
+  <text class="num" x="12" y="177" text-anchor="middle">3</text>
+  <path class="msg" d="M70 174 H430" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="158" y="169" text-anchor="middle">GET /authorize</text>
+  <!-- 4 -->
+  <text class="num" x="12" y="206" text-anchor="middle">4</text>
+  <path class="self op-accent" d="M430 196 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
+  <text class="lbl" x="474" y="200">リクエスト検証</text>
+  <text class="mono" x="474" y="211">redirect_uri 完全一致</text>
+  <!-- 5 -->
+  <text class="num" x="12" y="235" text-anchor="middle">5</text>
+  <path class="msg" d="M430 232 H70" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="158" y="227" text-anchor="middle">200 ログイン画面</text>
+  <!-- 6 -->
+  <text class="num" x="12" y="264" text-anchor="middle">6</text>
+  <path class="msg" d="M70 261 H430" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="158" y="256" text-anchor="middle">POST 認証情報</text>
+  <!-- 7 -->
+  <text class="num" x="12" y="293" text-anchor="middle">7</text>
+  <path class="self op-accent" d="M430 283 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
+  <text class="lbl" x="474" y="287">ユーザ認証</text>
+  <text class="sub" x="474" y="298">password / passkey</text>
+  <!-- 8 -->
+  <text class="num" x="12" y="322" text-anchor="middle">8</text>
+  <path class="msg" d="M430 319 H70" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="158" y="314" text-anchor="middle">200 同意画面</text>
+  <!-- 9 -->
+  <text class="num" x="12" y="351" text-anchor="middle">9</text>
+  <path class="msg" d="M70 348 H430" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="158" y="343" text-anchor="middle">POST 同意</text>
+  <!-- 10 -->
+  <text class="num" x="12" y="380" text-anchor="middle">10</text>
+  <path class="msg" d="M430 377 H70" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="158" y="362" text-anchor="middle">302 → redirect_uri</text>
+  <text class="mono" x="158" y="373" text-anchor="middle">code &amp; state</text>
+  <!-- 11 -->
+  <text class="num" x="12" y="409" text-anchor="middle">11</text>
+  <path class="msg" d="M70 406 H250" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="160" y="401" text-anchor="middle">GET /callback?code&amp;state</text>
+  <!-- 12 -->
+  <text class="num" x="12" y="438" text-anchor="middle">12</text>
+  <path class="self" d="M250 428 h32 v14 h-32" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="294" y="438">state を検証</text>
+  <!-- 13 -->
+  <text class="num" x="12" y="467" text-anchor="middle">13</text>
+  <path class="msg" d="M250 464 H430" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="340" y="451" text-anchor="middle">POST /token</text>
+  <text class="mono" x="340" y="461" text-anchor="middle">code · code_verifier · client auth</text>
+  <!-- 14 -->
+  <text class="num" x="12" y="496" text-anchor="middle">14</text>
+  <path class="self op-accent" d="M430 486 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
+  <text class="lbl" x="474" y="490">PKCE 検証</text>
+  <text class="mono" x="474" y="501">SHA-256(verifier) == challenge</text>
+  <!-- 15 -->
+  <text class="num" x="12" y="525" text-anchor="middle">15</text>
+  <path class="msg" d="M430 522 H250" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="340" y="510" text-anchor="middle">200 OK</text>
+  <text class="mono" x="340" y="520" text-anchor="middle">access_token · id_token · refresh_token</text>
+  <!-- 16 -->
+  <text class="num" x="12" y="554" text-anchor="middle">16</text>
+  <path class="self" d="M250 544 h32 v14 h-32" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="294" y="548">ID Token 検証</text>
+  <text class="mono" x="294" y="559">iss · aud · exp · nonce</text>
+  <!-- 17 -->
+  <text class="num" x="12" y="583" text-anchor="middle">17</text>
+  <path class="msg" d="M250 580 H70" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="158" y="575" text-anchor="middle">session cookie 設定</text>
+  <!-- 18 -->
+  <text class="num" x="12" y="612" text-anchor="middle">18</text>
+  <path class="msg" d="M70 609 H250" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="160" y="604" text-anchor="middle">GET /api/me</text>
+  <!-- 19 -->
+  <text class="num" x="12" y="641" text-anchor="middle">19</text>
+  <path class="msg" d="M250 638 H610" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="520" y="626" text-anchor="middle">GET /api/me</text>
+  <text class="mono" x="520" y="636" text-anchor="middle">Authorization: Bearer …</text>
+  <!-- 20 -->
+  <text class="num" x="12" y="670" text-anchor="middle">20</text>
+  <path class="msg" d="M610 667 H430" marker-end="url(#acp-ah)"/>
+  <text class="lbl" x="520" y="655" text-anchor="middle">(任意)</text>
+  <text class="mono" x="520" y="665" text-anchor="middle">introspect · JWT 自己検証</text>
+  <!-- 21 -->
+  <text class="num" x="12" y="699" text-anchor="middle">21</text>
+  <path class="msg" d="M610 696 H250" marker-end="url(#acp-ah)"/>
+  <text class="mono" x="520" y="691" text-anchor="middle">200 { user data }</text>
+</svg>
 
 ## パラメータ用語集
 
@@ -68,7 +183,7 @@ sequenceDiagram
 | `nonce` | `/authorize` | ID トークンの `nonce` claim にバインドされるランダム値。replay 防御。 |
 | `code_challenge` | `/authorize` | `BASE64URL(SHA256(code_verifier))`。 |
 | `code_challenge_method` | `/authorize` | `S256`（本ライブラリが受理する唯一の値）。 |
-| `code` | `/authorize` レスポンス | 単発。spec 上 max-age 60 秒、本ライブラリも同値。 |
+| `code` | `/authorize` レスポンス | 単発。本ライブラリは max-age 60 秒をデフォルトとする。RFC 6749 §4.1.2 は上限 10 分を推奨。 |
 | `code_verifier` | `/token` | `code_challenge` の原像。OP が SHA-256 を再計算。 |
 | `grant_type=authorization_code` | `/token` | この grant を選択。 |
 | Client auth | `/token` | `client_secret_basic` / `client_secret_post` / `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` / `none`（PKCE のみ）のいずれか。 |
@@ -91,7 +206,7 @@ sequenceDiagram
 :::
 
 ::: details `redirect_uri` — 完全一致が必須な理由
-`/authorize` の `redirect_uri` は、クライアントの登録リストに対して **バイト単位** で照合されます — 末尾スラッシュの正規化なし、パスプレフィックス一致なし、ワイルドカードなし。この厳格さは意図的です: open-redirect バグや「`https://app.example.com/` のサブパスならどれでも」式の登録は、コードを攻撃者が制御する URL に漏らす経路として何度も悪用されてきました。RFC 9700 §2.1 が完全一致を要求しており、本ライブラリも強制します。`/token` では RP が `/authorize` で送ったのと *同じ* `redirect_uri` を再送する必要があり、ずれると `redirect_uri_mismatch` を返します。
+`/authorize` の `redirect_uri` は、クライアントの登録リストに対して **バイト単位** で照合されます — 末尾スラッシュの正規化なし、パスプレフィックス一致なし、ワイルドカードなし。この厳格さは意図的です: open-redirect バグや「`https://app.example.com/` のサブパスならどれでも」式の登録は、コードを攻撃者が制御する URL に漏らす経路として何度も悪用されてきました。RFC 9700 §2.1 が完全一致を要求しており、本ライブラリも強制します。`/token` では RP が `/authorize` で送ったのと *同じ* `redirect_uri` を再送する必要があり、ずれると `invalid_grant` を返します。
 :::
 
 ::: details `response_type=code` とは
@@ -143,7 +258,7 @@ PKCE はコードを **正規 RP のみが知る秘密** にバインドしま�
 | `invalid_request` `code_challenge_method` | クライアントが `plain` を送った | `S256` を送る |
 | `invalid_request_uri` | PAR `request_uri` の期限切れ / 消費済み | 新しい PAR を発行 |
 | `invalid_grant`（`/token`） | `code_verifier` 不一致、または code が使用済 / 期限切れ | code を再利用しない、再生成 |
-| `redirect_uri_mismatch` | `/token` の `redirect_uri` が `/authorize` と異なる | バイト単位で同一にする |
+| `invalid_grant`（`/token`） | `/token` の `redirect_uri` が `/authorize` と異なる | バイト単位で同一にする |
 
 ## 自分でフローを動かす
 

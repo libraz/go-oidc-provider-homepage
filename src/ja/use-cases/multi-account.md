@@ -17,7 +17,7 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 
 `select_account` は、大手 SaaS の「アカウント切り替え」ボタンの裏側で使われる仕様です。1 つのブラウザで同じ OP に複数アカウント（仕事 + 個人、alice + bob 等）でサインインしているとき、OP が一覧を出してユーザに選ばせます。
 
-本ライブラリではこれをセッションマネージャの **chooser group**（同一ブラウザで同時に有効なセッション群）として実装し、追加・切替・全ログアウトの API を提供します。
+本ライブラリではこれを OP 内部のセッションマネージャが持つ **chooser group**（同一ブラウザで同時に有効なセッション群）として実装し、追加・切替・全ログアウトを内部で処理します。
 
 ::: details このページで触れる仕様
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.1（`prompt` パラメータ）、§3.1.2.4（同意との相互作用）
@@ -34,31 +34,82 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 
 ## 動作
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant U as User browser
-  participant OP as OP
-  participant RP as RP
+<svg role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="multi-account-chooser-flow-title">3 回の /authorize 往復のシーケンス。初回ログインで chooser group を発行し、prompt=login でアカウントを追加、prompt=select_account でアクティブセッションを切り替える。</title>
+  <style>
+    .d-lbl{font-family:var(--vp-font-family-base);fill:currentColor;font-size:12px}
+    .d-mono{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
+    .d-sm{font-size:10px}
+    .d-ph{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:10px;letter-spacing:1.5px}
+    .d-acc{fill:var(--vp-c-brand-2)}
+    .d-mut{opacity:.6}
+    .d-op{stroke:var(--vp-c-brand-2)}
+    .d-life{stroke-opacity:.35}
+    text{stroke:none}
+  </style>
 
-  U->>OP: GET /authorize?...（prompt なし）
-  OP->>OP: セッションなし → ログインフローを実行
-  U->>OP: alice@acme.com でログイン
-  OP->>OP: Sessions.Issue → 新規 chooser group
-  OP->>U: 302 RP/callback?code=...
+  <!-- actors -->
+  <rect x="60" y="14" width="120" height="34" rx="6"/>
+  <rect x="320" y="14" width="120" height="34" rx="6" class="d-op"/>
+  <rect x="560" y="14" width="120" height="34" rx="6"/>
+  <text class="d-lbl" text-anchor="middle" x="120" y="35">ユーザブラウザ</text>
+  <text class="d-lbl d-acc" text-anchor="middle" x="380" y="35">OP</text>
+  <text class="d-lbl" text-anchor="middle" x="620" y="35">RP</text>
 
-  U->>OP: GET /authorize?...&prompt=login
-  OP->>OP: 既存セッションを検出、prompt=login → AddAccount
-  U->>OP: alice@personal.com でログイン
-  OP->>OP: AddAccount で既存 chooser group に追加
-  OP->>U: 302 RP/callback?code=...（個人アカウント）
+  <!-- lifelines -->
+  <path class="d-life" d="M120 48 V648"/>
+  <path class="d-op" d="M380 48 V648"/>
+  <path class="d-life" d="M620 48 V648"/>
 
-  U->>OP: GET /authorize?...&prompt=select_account
-  OP->>U: 両アカウントを並べた chooser UI
-  U->>OP: POST /interaction/{uid} { state_ref, values: { session_id } }
-  OP->>OP: Sessions.Switch
-  OP->>U: 302 RP/callback?code=...（選択した sub）
-```
+  <!-- phase 1 -->
+  <text class="d-ph" x="10" y="64">1 · 初回ログイン</text>
+  <path d="M120 84 H380"/><path d="M374 80 L380 84 L374 88"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="77"><tspan class="d-mono">GET /authorize</tspan>（prompt なし）</text>
+  <rect x="268" y="94" width="224" height="24" rx="5"/>
+  <text class="d-lbl" text-anchor="middle" x="380" y="110">有効セッションなし → ログインフロー実行</text>
+  <path d="M120 138 H380"/><path d="M374 134 L380 138 L374 142"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="131">ログイン — <tspan class="d-mono">alice@acme.com</tspan></text>
+  <rect x="268" y="148" width="224" height="36" rx="5" class="d-op"/>
+  <text class="d-mono d-acc" text-anchor="middle" x="380" y="164">Sessions.Issue</text>
+  <text class="d-lbl" text-anchor="middle" x="380" y="178">新規 chooser group</text>
+  <path d="M380 204 H120"/><path d="M126 200 L120 204 L126 208"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="197"><tspan class="d-mono">302</tspan> → RP callback（code）</text>
+  <path d="M120 228 H620"/><path d="M614 224 L620 228 L614 232"/>
+  <text class="d-lbl d-mut" text-anchor="middle" x="370" y="221">ブラウザがリダイレクト追従</text>
+
+  <!-- phase 2 -->
+  <text class="d-ph" x="10" y="252">2 · アカウント追加</text>
+  <path d="M120 274 H380"/><path d="M374 270 L380 274 L374 278"/>
+  <text class="d-mono" text-anchor="middle" x="250" y="267">GET /authorize?prompt=login</text>
+  <rect x="268" y="284" width="224" height="24" rx="5"/>
+  <text class="d-lbl" text-anchor="middle" x="380" y="300">有効セッション + <tspan class="d-mono">prompt=login</tspan></text>
+  <path d="M120 328 H380"/><path d="M374 324 L380 328 L374 332"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="321">ログイン — <tspan class="d-mono">alice@personal.com</tspan></text>
+  <rect x="268" y="338" width="224" height="36" rx="5" class="d-op"/>
+  <text class="d-mono d-acc" text-anchor="middle" x="380" y="354">AddAccount</text>
+  <text class="d-lbl" text-anchor="middle" x="380" y="368">既存 group に追加</text>
+  <path d="M380 394 H120"/><path d="M126 390 L120 394 L126 398"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="387"><tspan class="d-mono">302</tspan> → RP callback（code）</text>
+  <path d="M120 418 H620"/><path d="M614 414 L620 418 L614 422"/>
+  <text class="d-lbl d-mut" text-anchor="middle" x="370" y="411">ブラウザがリダイレクト追従</text>
+
+  <!-- phase 3 -->
+  <text class="d-ph" x="10" y="442">3 · アカウント切替</text>
+  <path d="M120 464 H380"/><path d="M374 460 L380 464 L374 468"/>
+  <text class="d-mono" text-anchor="middle" x="250" y="457">GET /authorize?prompt=select_account</text>
+  <path d="M380 496 H120"/><path d="M126 492 L120 496 L126 500"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="489">chooser UI — 両アカウント</text>
+  <path d="M120 528 H380"/><path d="M374 524 L380 528 L374 532"/>
+  <text class="d-mono" text-anchor="middle" x="250" y="521">POST /interaction/{uid}</text>
+  <text class="d-mono d-sm d-mut" text-anchor="middle" x="250" y="542">{ state_ref, values: { session_id } }</text>
+  <rect x="268" y="552" width="224" height="36" rx="5" class="d-op"/>
+  <text class="d-mono d-acc" text-anchor="middle" x="380" y="568">Sessions.Switch</text>
+  <text class="d-lbl" text-anchor="middle" x="380" y="582">アクティブセッション切替</text>
+  <path d="M380 608 H120"/><path d="M126 604 L120 608 L126 612"/>
+  <text class="d-lbl" text-anchor="middle" x="250" y="601"><tspan class="d-mono">302</tspan> → RP callback（選択した sub）</text>
+  <path d="M120 632 H620"/><path d="M614 628 L620 632 L614 636"/>
+  <text class="d-lbl d-mut" text-anchor="middle" x="370" y="625">ブラウザがリダイレクト追従</text>
+</svg>
 
 ## 実装
 
@@ -66,14 +117,16 @@ sequenceDiagram
 
 JSON ドライバ（`op.WithInteractionDriver(interaction.JSONDriver{})`）では、SPA 側が同じ情報を JSON として受け取り、`SessionID` を POST で送り返します。`op.WithSPAUI` を使う場合、`WithChooserUI` が同時指定されていてもアカウント選択画面の描画は SPA が受け持ちます。このとき chooser テンプレートは使われず、`op.New` がその旨の警告を出します。
 
-セッションマネージャの公開 API:
+これは OP 内部のセッションマネージャ（`internal/sessions.Manager`）が行う処理です。`internal/` 配下の非公開型のため、組み込み側が import して直接呼び出すことはできません。
 
-| メソッド | タイミング |
+| 内部処理 | タイミング |
 |---|---|
-| `Sessions.Issue(ctx, subject)` | 初回ログイン → 新 chooser group |
-| `Sessions.AddAccount(ctx, group, subject)` | 同ブラウザで 2 人目 → 既存 group に追加 |
-| `Sessions.Switch(ctx, group, sessionID)` | chooser でアカウントを選択 |
-| `Sessions.LogoutAll(ctx, group)` | 全員ログアウト |
+| 新規 chooser group の発行 | 初回ログイン → 新 chooser group |
+| group へのアカウント追加 | 同ブラウザで 2 人目 → 既存 group に追加 |
+| group 内のアクティブセッション切替 | chooser でアカウントを選択 |
+| group 全体のログアウト | 全員ログアウト |
+
+組み込み側から触れられるセッション状態の公開面は `store.SessionStore` インターフェース（`Save` / `Find` / `Touch` / `Delete` / `ListByChooserGroup`）で、カスタムストアバックエンドはこれを実装します。chooser の一連処理そのものは `/authorize` と chooser interaction の処理の中で OP が内部的に行うものであり、アプリケーションコードから呼び出す API ではありません。
 
 ## 続きはこちら
 

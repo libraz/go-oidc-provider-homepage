@@ -33,7 +33,7 @@ Accept: application/jwk-set+json
 }
 ```
 
-各エントリは `alg: "ES256"`、`use: "sig"`、`kty: "EC"`、`crv: "P-256"` です。OP が署名するのは ES256 のみで、暗号化鍵 (`enc`)や他の alg はアドバタイズされません。
+署名鍵のエントリはすべて `alg: "ES256"`、`use: "sig"`、`kty: "EC"`、`crv: "P-256"` です。OP が署名するのは ES256 のみです。`WithEncryptionKeyset` を設定している場合、OP は暗号化鍵の公開鍵 (`use: "enc"`)を署名鍵のあとに追加でアドバタイズします。両者が別々にローテーションする仕組みは [鍵ローテーション](/ja/operations/key-rotation) を参照してください。
 
 ::: info Keyset が ES256 のみである理由
 JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)は OP が **検証**するときの集合です(RP の `private_key_jwt` 署名や JAR request object 署名で意味があります)。OP が **署名**する側の鍵は ES256 のみです。[必須オプション § WithKeyset](/ja/getting-started/required-options#withkeyset) を参照。
@@ -44,7 +44,7 @@ JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)は OP が **検�
 | Header | 値 | 補足 |
 |---|---|---|
 | `Content-Type` | `application/jwk-set+json` | RFC 7517 |
-| `Cache-Control` | `public, max-age=86400, stale-while-revalidate=3600` | 24 時間キャッシュ、1 時間 SWR |
+| `Cache-Control` | `public, max-age=3600, stale-while-revalidate=3600` | 1 時間キャッシュ、1 時間 SWR |
 | `ETag` | `"<sha256-hex>"` | シリアライズ後のボディ全体に対する strong validator |
 | `Allow` | `GET, HEAD` | 他のメソッドは 405 |
 

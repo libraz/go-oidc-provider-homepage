@@ -7,9 +7,9 @@ description: Compose authenticators and rules — TOTP always, captcha after N f
 
 The library's authentication layer is built from three primitives that compose:
 
-- **`Authenticator`** — knows how to verify one factor (password, TOTP, passkey, email-OTP, …).
+- **`Step`** — knows how to verify one factor (password, TOTP, passkey, email-OTP, …).
 - **`Rule`** — decides whether a factor is **required** for this attempt.
-- **`LoginFlow`** — the ordered list of `(authenticator, rule)` pairs.
+- **`LoginFlow`** — a `Primary` step plus an ordered list of `Rules`.
 
 Each authenticator runs only when its rule says yes. So "password always, TOTP always" is one flow; "password always, captcha after 3 failures, TOTP if risk score is high" is another.
 
@@ -35,19 +35,62 @@ Use this page when the login decision depends on more than "password accepted": 
 
 ## Composition
 
-```mermaid
-flowchart TB
-  S[Login start] --> P[Primary: PrimaryPassword]
-  P --> R{Rules eval}
-  R -->|RuleAlways| T[StepTOTP]
-  R -->|RuleAfterFailedAttempts > 2| C[StepCaptcha]
-  R -->|RuleRisk = high| WK[Stepped passkey]
-  R -->|RuleACR &gt;= aal3| SU[Step-up factor]
-  T --> Done[Issue tokens]
-  C --> Done
-  WK --> Done
-  SU --> Done
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="mfa-loginflow-title">Login flow composition: a primary password step, a rules layer that decides which factor steps run, then token issuance.</title>
+  <style>
+    text{stroke:none}
+    .d-lbl{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1)}
+    .d-cap{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2)}
+    .d-mono{font-family:var(--vp-font-family-mono)}
+    .d-accent{stroke:var(--vp-c-brand-2)}
+    .d-accent-t{fill:var(--vp-c-brand-2)}
+  </style>
+  <rect x="330" y="16" width="140" height="38" rx="6"/>
+  <rect x="290" y="78" width="220" height="50" rx="6"/>
+  <rect x="17" y="352" width="176" height="42" rx="6"/>
+  <rect x="214" y="352" width="176" height="42" rx="6"/>
+  <rect x="410" y="352" width="176" height="42" rx="6"/>
+  <rect x="607" y="352" width="176" height="42" rx="6"/>
+  <rect class="d-accent" x="330" y="150" width="140" height="44" rx="6"/>
+  <rect class="d-accent" x="17" y="240" width="176" height="58" rx="8"/>
+  <rect class="d-accent" x="214" y="240" width="176" height="58" rx="8"/>
+  <rect class="d-accent" x="410" y="240" width="176" height="58" rx="8"/>
+  <rect class="d-accent" x="607" y="240" width="176" height="58" rx="8"/>
+  <rect class="d-accent" x="330" y="430" width="140" height="40" rx="6"/>
+  <path d="M400 54 L400 78"/>
+  <path d="M400 128 L400 150"/>
+  <path d="M400 194 L400 214 M105 214 L695 214 M105 214 L105 240 M302 214 L302 240 M498 214 L498 240 M695 214 L695 240"/>
+  <path d="M105 298 L105 352 M302 298 L302 352 M498 298 L498 352 M695 298 L695 352"/>
+  <path d="M105 394 L105 412 M302 394 L302 412 M498 394 L498 412 M695 394 L695 412 M105 412 L695 412 M400 412 L400 430"/>
+  <path d="M396 71 L400 78 L404 71"/>
+  <path d="M396 143 L400 150 L404 143"/>
+  <path d="M101 233 L105 240 L109 233"/>
+  <path d="M298 233 L302 240 L306 233"/>
+  <path d="M494 233 L498 240 L502 233"/>
+  <path d="M691 233 L695 240 L699 233"/>
+  <path d="M101 345 L105 352 L109 345"/>
+  <path d="M298 345 L302 352 L306 345"/>
+  <path d="M494 345 L498 352 L502 345"/>
+  <path d="M691 345 L695 352 L699 345"/>
+  <path d="M396 423 L400 430 L404 423"/>
+  <text class="d-lbl" x="400" y="40" font-size="13" text-anchor="middle">Login start</text>
+  <text class="d-lbl d-mono" x="400" y="100" font-size="13" text-anchor="middle">PrimaryPassword</text>
+  <text class="d-cap" x="400" y="117" font-size="11" text-anchor="middle">primary step</text>
+  <text x="400" y="177" font-size="13" text-anchor="middle"><tspan class="d-accent-t d-mono">Rules</tspan><tspan class="d-accent-t"> eval</tspan></text>
+  <text class="d-accent-t d-mono" x="105" y="266" font-size="12.5" text-anchor="middle">RuleAlways</text>
+  <text class="d-cap" x="105" y="285" font-size="11" text-anchor="middle">every attempt</text>
+  <text class="d-accent-t d-mono" x="302" y="266" font-size="12" text-anchor="middle">RuleAfterFailedAttempts</text>
+  <text class="d-cap" x="302" y="285" font-size="11" text-anchor="middle">count ≥ 3</text>
+  <text class="d-accent-t d-mono" x="498" y="266" font-size="12.5" text-anchor="middle">RuleRisk</text>
+  <text class="d-cap" x="498" y="285" font-size="11" text-anchor="middle">score ≥ High</text>
+  <text class="d-accent-t d-mono" x="695" y="266" font-size="12.5" text-anchor="middle">RuleACR</text>
+  <text x="695" y="285" font-size="11" text-anchor="middle"><tspan class="d-cap d-mono">aal3</tspan><tspan class="d-cap"> in acr_values</tspan></text>
+  <text class="d-lbl d-mono" x="105" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
+  <text class="d-lbl d-mono" x="302" y="378" font-size="13" text-anchor="middle">StepCaptcha</text>
+  <text class="d-lbl d-mono" x="498" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
+  <text class="d-lbl d-mono" x="695" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
+  <text class="d-accent-t" x="400" y="455" font-size="13" text-anchor="middle">Issue tokens</text>
+</svg>
 
 `LoginFlow` is a struct with a `Primary` step and a list of `Rules`. Each rule is a `Rule` value built from a constructor like `op.RuleAlways(step)`, `op.RuleAfterFailedAttempts(n, step)`, `op.RuleRisk(threshold, step)`, or `op.RuleACR(acr, step)`.
 

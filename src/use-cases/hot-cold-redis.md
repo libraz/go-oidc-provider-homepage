@@ -34,14 +34,58 @@ Putting both in the same backend is wasteful: durable storage doesn't need the Q
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  OP[op.Provider] --> COMP[storeadapter/composite]
-  COMP -->|durable substores| SQL[storeadapter/sql]
-  SQL --> DB[(MySQL)]
-  COMP -->|volatile substores| REDIS[storeadapter/redis]
-  REDIS --> RDB[(Redis)]
-```
+<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" width="728" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="max-width:100%;height:auto;">
+  <title id="hcr-arch-title">The composite store adapter routes durable substores to the SQL/MySQL backend and volatile substores to the Redis backend.</title>
+  <style>
+    .hcr-t{fill:var(--vp-c-text-1);font-family:var(--vp-font-family-base);font-size:13px;}
+    .hcr-m{fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px;}
+    .hcr-edge{fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:12px;}
+    .hcr-accent{stroke:var(--vp-c-brand-2);}
+    .hcr-accent-t{fill:var(--vp-c-brand-2);}
+    .hcr-db{stroke-dasharray:5 4;}
+  </style>
+  <marker id="hcr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M1 1 L9 5 L1 9" stroke-width="1.6"/>
+  </marker>
+
+  <!-- op.Provider (the OP — brand accent) -->
+  <rect class="hcr-accent" x="8" y="100" width="132" height="50" rx="6"/>
+  <text class="hcr-m hcr-accent-t" x="74" y="129" text-anchor="middle">op.Provider</text>
+
+  <!-- composite splitter -->
+  <rect x="176" y="100" width="144" height="50" rx="6"/>
+  <text class="hcr-m" x="248" y="120" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="248" y="137" text-anchor="middle">composite</text>
+
+  <!-- op -> composite -->
+  <path d="M140 125 H172" marker-end="url(#hcr-arrow)"/>
+
+  <!-- durable branch -->
+  <path d="M320 118 C 370 118 384 52 448 52" marker-end="url(#hcr-arrow)"/>
+  <text class="hcr-edge" x="386" y="42" text-anchor="middle">durable substores</text>
+  <rect x="452" y="27" width="132" height="50" rx="6"/>
+  <text class="hcr-m" x="518" y="47" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="518" y="64" text-anchor="middle">sql</text>
+  <path d="M584 52 H615" marker-end="url(#hcr-arrow)"/>
+  <g class="hcr-db">
+    <path d="M620 39 V65 A50 7 0 0 0 720 65 V39"/>
+    <ellipse cx="670" cy="39" rx="50" ry="7"/>
+  </g>
+  <text class="hcr-t" x="670" y="57" text-anchor="middle">MySQL</text>
+
+  <!-- volatile branch -->
+  <path d="M320 132 C 370 132 384 198 448 198" marker-end="url(#hcr-arrow)"/>
+  <text class="hcr-edge" x="386" y="212" text-anchor="middle">volatile substores</text>
+  <rect x="452" y="173" width="132" height="50" rx="6"/>
+  <text class="hcr-m" x="518" y="193" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="518" y="210" text-anchor="middle">redis</text>
+  <path d="M584 198 H615" marker-end="url(#hcr-arrow)"/>
+  <g class="hcr-db">
+    <path d="M620 185 V211 A50 7 0 0 0 720 211 V185"/>
+    <ellipse cx="670" cy="185" rx="50" ry="7"/>
+  </g>
+  <text class="hcr-t" x="670" y="203" text-anchor="middle">Redis</text>
+</svg>
 
 The composite store enforces a transactional-cluster invariant: substores that need to commit atomically together (e.g. `AuthCodeStore` and `RefreshTokenStore`) **must** be on the same backend. The composite constructor refuses configurations that would split a transactional cluster.
 

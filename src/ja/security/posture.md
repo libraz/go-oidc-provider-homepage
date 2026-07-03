@@ -25,19 +25,42 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 > 適合性 ≠ セキュリティ です。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#374151","primaryTextColor":"#fff","lineColor":"#888"}}}%%
-flowchart LR
-  A[適合性<br/>OFCS] --> B[正しさ<br/>tests + fuzz]
-  B --> C[セキュリティ<br/>構造的防御]
-  C --> D[サプライチェーン<br/>govulncheck<br/>depguard]
-  D --> E[運用<br/>SECURITY.md<br/>GHSA]
-  style A fill:#0c5460,color:#fff
-  style B fill:#0c5460,color:#fff
-  style C fill:#0c5460,color:#fff
-  style D fill:#0c5460,color:#fff
-  style E fill:#0c5460,color:#fff
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
+  <title id="posture-five-properties-title">「これは安全か？」を支える 5 つの独立した性質 — 適合性・正しさ・セキュリティ・サプライチェーン・運用の保証を順に並べた図。</title>
+  <style>
+    .op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+    .op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
+    .op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
+    .op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
+    .op-fp-flow{stroke:var(--vp-c-brand-2);}
+  </style>
+  <rect x="0" y="16" width="124" height="84" rx="6"/>
+  <rect x="149" y="16" width="124" height="84" rx="6"/>
+  <rect x="298" y="16" width="124" height="84" rx="6"/>
+  <rect x="447" y="16" width="124" height="84" rx="6"/>
+  <rect x="596" y="16" width="124" height="84" rx="6"/>
+  <path class="op-fp-flow" d="M127 58 H143 M139 54 L144 58 L139 62"/>
+  <path class="op-fp-flow" d="M276 58 H292 M288 54 L293 58 L288 62"/>
+  <path class="op-fp-flow" d="M425 58 H442 M438 54 L443 58 L438 62"/>
+  <path class="op-fp-flow" d="M574 58 H591 M587 54 L592 58 L587 62"/>
+  <text class="op-fp-num" x="62" y="38" text-anchor="middle" stroke="none">1</text>
+  <text class="op-fp-title" x="62" y="59" text-anchor="middle" fill="currentColor" stroke="none">適合性</text>
+  <text class="op-fp-mono" x="62" y="80" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
+  <text class="op-fp-num" x="211" y="38" text-anchor="middle" stroke="none">2</text>
+  <text class="op-fp-title" x="211" y="59" text-anchor="middle" fill="currentColor" stroke="none">正しさ</text>
+  <text class="op-fp-prose" x="211" y="80" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
+  <text class="op-fp-num" x="360" y="38" text-anchor="middle" stroke="none">3</text>
+  <text class="op-fp-title" x="360" y="59" text-anchor="middle" fill="currentColor" stroke="none">セキュリティ</text>
+  <text class="op-fp-prose" x="360" y="80" text-anchor="middle" fill="currentColor" stroke="none">構造的防御</text>
+  <text class="op-fp-num" x="509" y="38" text-anchor="middle" stroke="none">4</text>
+  <text class="op-fp-title" x="509" y="59" text-anchor="middle" fill="currentColor" stroke="none">サプライチェーン</text>
+  <text class="op-fp-mono" x="509" y="76" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
+  <text class="op-fp-mono" x="509" y="89" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
+  <text class="op-fp-num" x="658" y="38" text-anchor="middle" stroke="none">5</text>
+  <text class="op-fp-title" x="658" y="59" text-anchor="middle" fill="currentColor" stroke="none">運用</text>
+  <text class="op-fp-mono" x="658" y="76" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
+  <text class="op-fp-mono" x="658" y="89" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
+</svg>
 
 ## 構造的防御（コードの形そのもので強制している箇所）
 
@@ -115,7 +138,7 @@ flowchart LR
 |---|---|---|
 | Lint | `golangci-lint v2`（errcheck、govet、staticcheck、unused、**gosec**、errorlint、revive、depguard など） | `.golangci.yml` |
 | 脆弱性スキャン | `govulncheck` | `scripts/govulncheck.sh` |
-| Fuzz | Go 標準 `Fuzz*`（`make fuzz` / `scripts/fuzz.sh 30s`） | `internal/jose`、`internal/jar`、`internal/dpop`、`internal/pkce`、`internal/jwks` など |
+| Fuzz | Go 標準 `Fuzz*`（`make fuzz` / `scripts/fuzz.sh 30s`） | `internal/jose`、`internal/dpop`、`internal/pkce`、`internal/clientauth`、`internal/parendpoint`、`internal/introspectendpoint`、`internal/revokeendpoint`、`internal/jarm`、`internal/mtls`、`internal/authorizationdetails` など |
 | ライセンス | `go-licenses` | `scripts/licenses.sh` |
 | 適合性 | `make conformance-baseline` | `tools/conformance/`、`conformance/` |
 | シナリオ | カタログに基づく Spec Scenario Suite | `test/scenarios/` |

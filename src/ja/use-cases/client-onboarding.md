@@ -16,6 +16,105 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 
 ## 全体像 — 5 つのパターン
 
+<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
+<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(out-of-band CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
+<style>
+#onbo-spectrum text{fill:currentColor;stroke:none}
+#onbo-spectrum .lbl{font-family:var(--vp-font-family-base)}
+#onbo-spectrum .mono{font-family:var(--vp-font-family-mono)}
+#onbo-spectrum .card{fill:none;stroke:currentColor;stroke-width:1.5}
+#onbo-spectrum .badge{fill:none;stroke:currentColor;stroke-width:1.5}
+#onbo-spectrum .seam{fill:none;stroke:currentColor;stroke-width:1.2}
+#onbo-spectrum .store{stroke-dasharray:4 3}
+#onbo-spectrum .divider{stroke:currentColor;stroke-width:1;opacity:.25}
+#onbo-spectrum .hair{stroke:currentColor;stroke-width:1;opacity:.3}
+#onbo-spectrum .axis{stroke:currentColor;stroke-width:2;opacity:.45}
+#onbo-spectrum .band{stroke:currentColor;stroke-width:3;opacity:.7}
+#onbo-spectrum .muted{opacity:.6}
+#onbo-spectrum .op-accent{stroke:var(--vp-c-brand-2)}
+#onbo-spectrum .op-fill{fill:var(--vp-c-brand-2)}
+</style>
+<g>
+<rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
+<circle class="badge" cx="34" cy="30" r="11"/>
+<text class="lbl" x="34" y="34" text-anchor="middle" font-size="11" font-weight="700">1</text>
+<text class="lbl" x="24" y="58" font-size="11" font-weight="600">静的</text>
+<text class="lbl" x="24" y="72" font-size="11" font-weight="600">登録</text>
+<line class="divider" x1="24" y1="82" x2="132" y2="82"/>
+<text class="lbl muted" x="24" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="24" y="110" font-size="9.5">運用者の</text>
+<text class="lbl" x="24" y="123" font-size="9.5">config</text>
+<rect class="seam" x="24" y="132" width="108" height="20" rx="4"/>
+<text class="mono" x="78" y="145" text-anchor="middle" font-size="8">WithStaticClients</text>
+</g>
+<g>
+<rect class="card" x="154" y="10" width="128" height="162" rx="8"/>
+<circle class="badge" cx="174" cy="30" r="11"/>
+<text class="lbl" x="174" y="34" text-anchor="middle" font-size="11" font-weight="700">2</text>
+<text class="lbl" x="164" y="58" font-size="11" font-weight="600">IaC /</text>
+<text class="lbl" x="164" y="72" font-size="11" font-weight="600">GitOps</text>
+<line class="divider" x1="164" y1="82" x2="272" y2="82"/>
+<text class="lbl muted" x="164" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="164" y="110" font-size="9.5">運用者の CI</text>
+<text class="lbl" x="164" y="123" font-size="9.5">パイプライン</text>
+<rect class="seam store" x="164" y="132" width="108" height="20" rx="4"/>
+<text class="mono" x="218" y="145" text-anchor="middle" font-size="8">store.ClientRegistry</text>
+</g>
+<g>
+<rect class="card op-accent" x="294" y="10" width="128" height="162" rx="8"/>
+<circle class="badge op-accent" cx="314" cy="30" r="11"/>
+<text class="lbl op-fill" x="314" y="34" text-anchor="middle" font-size="11" font-weight="700">3</text>
+<text class="lbl op-fill" x="304" y="58" font-size="11" font-weight="600">標準化</text>
+<text class="lbl op-fill" x="304" y="72" font-size="11" font-weight="600">DCR</text>
+<line class="divider" x1="304" y1="82" x2="412" y2="82"/>
+<text class="lbl muted" x="304" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="304" y="110" font-size="9.5">発行済み IAT</text>
+<text class="lbl" x="304" y="123" font-size="9.5">クライアント別 RAT</text>
+<rect class="seam op-accent" x="304" y="132" width="108" height="20" rx="4"/>
+<text class="mono op-fill" x="358" y="145" text-anchor="middle" font-size="8">/register</text>
+</g>
+<g>
+<rect class="card" x="434" y="10" width="128" height="162" rx="8"/>
+<circle class="badge" cx="454" cy="30" r="11"/>
+<text class="lbl" x="454" y="34" text-anchor="middle" font-size="11" font-weight="700">4</text>
+<text class="lbl" x="444" y="58" font-size="11" font-weight="600">scope 保護の</text>
+<text class="lbl" x="444" y="72" font-size="11" font-weight="600">管理 API</text>
+<line class="divider" x1="444" y1="82" x2="552" y2="82"/>
+<text class="lbl muted" x="444" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="444" y="110" font-size="9.5">管理用 AT</text>
+<text class="lbl" x="444" y="123" font-size="9.5">(scope + claim)</text>
+<rect class="seam store" x="444" y="132" width="108" height="20" rx="4"/>
+<text class="mono" x="498" y="145" text-anchor="middle" font-size="8">store.ClientRegistry</text>
+</g>
+<g>
+<rect class="card" x="574" y="10" width="128" height="162" rx="8"/>
+<circle class="badge" cx="594" cy="30" r="11"/>
+<text class="lbl" x="594" y="34" text-anchor="middle" font-size="11" font-weight="700">5</text>
+<text class="lbl" x="584" y="58" font-size="11" font-weight="600">out-of-band</text>
+<text class="lbl" x="584" y="72" font-size="11" font-weight="600">CLI</text>
+<line class="divider" x1="584" y1="82" x2="692" y2="82"/>
+<text class="lbl muted" x="584" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="584" y="110" font-size="9.5">通信路上に</text>
+<text class="lbl" x="584" y="123" font-size="9.5">認証なし</text>
+<rect class="seam store" x="584" y="132" width="108" height="20" rx="4"/>
+<text class="mono" x="638" y="145" text-anchor="middle" font-size="8">RegisterClient</text>
+</g>
+<line class="hair" x1="78" y1="172" x2="78" y2="194"/>
+<line class="hair" x1="218" y1="172" x2="218" y2="194"/>
+<line class="hair" x1="358" y1="172" x2="358" y2="194"/>
+<line class="hair" x1="498" y1="172" x2="498" y2="194"/>
+<line class="hair" x1="638" y1="172" x2="638" y2="194"/>
+<line class="axis" x1="24" y1="194" x2="692" y2="194"/>
+<path class="axis" d="M32 189 L24 194 L32 199"/>
+<path class="axis" d="M684 189 L692 194 L684 199"/>
+<line class="band" x1="358" y1="194" x2="498" y2="194"/>
+<text class="lbl muted" x="24" y="212" font-size="9">運用者が</text>
+<text class="lbl muted" x="24" y="224" font-size="9">完全に統制</text>
+<text class="lbl muted" x="692" y="212" text-anchor="end" font-size="9">通信路上に</text>
+<text class="lbl muted" x="692" y="224" text-anchor="end" font-size="9">信頼なし</text>
+<text class="lbl muted" x="428" y="214" text-anchor="middle" font-size="9">信頼は通信路上の token</text>
+</svg>
+
 | パターン | 信頼の起点 | metadata を書く主体 | 向いている場面 |
 |---|---|---|---|
 | 静的登録 | 運用者の config | デプロイ時に運用者 | 内部アプリの固定的な一覧 |

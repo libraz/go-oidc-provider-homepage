@@ -84,8 +84,8 @@ type SMSAuthenticator struct {
     CodeTTL   time.Duration             // 通常は 5 分
 }
 
-func (a *SMSAuthenticator) Type() FactorType { return "myorg.sms_otp" }
-func (a *SMSAuthenticator) AAL() op.AAL      { return op.AALMedium }
+func (a *SMSAuthenticator) Type() op.FactorType { return "myorg.sms_otp" }
+func (a *SMSAuthenticator) AAL() op.AAL         { return op.AAL2 }
 func (a *SMSAuthenticator) AMR() string      { return "sms" } // RFC 8176 §2
 
 func (a *SMSAuthenticator) Prompts() []string {

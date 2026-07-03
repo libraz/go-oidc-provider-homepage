@@ -24,7 +24,7 @@ The library deliberately stays out of HTTP-lifecycle and infra concerns: there i
 | `/metrics` HTTP route | your router's job; the library exposes counters via `WithPrometheus(reg)` and lets you mount `/metrics` where it fits your auth boundary |
 | HTTP request-duration histograms | belongs in HTTP middleware (`otelhttp`, `prometheus/promhttp`); the OP only emits OIDC-business counters |
 | Tracing instrumentation inside endpoint handlers | the public surface is an `http.Handler`; wrap with `otelhttp.NewMiddleware` once at the seam |
-| Rate limiting | upstream — Cloudflare, Envoy, or a Go middleware of your choice. The OP emits `rate_limit.exceeded` audit events when *something* in the chain rejects a request, but does not implement the limiter itself |
+| Rate limiting | upstream — Cloudflare, Envoy, or a Go middleware of your choice. The OP defines the `rate_limit.exceeded` audit-event constant as shared vocabulary for that middleware to emit; it does not fire the event itself, nor does it implement the limiter |
 | Health checks | embedder territory; the OP has no opinion about liveness vs readiness for your stack |
 | Background workers | the OP is stateless across requests; no internal goroutines for cleanup. TTL-based eviction is the store's responsibility |
 
@@ -32,7 +32,7 @@ The library deliberately stays out of HTTP-lifecycle and infra concerns: there i
 
 A handful of decisions cascade through every page in this section:
 
-1. **One backend per transactional cluster.** The composite store refuses to split clients / codes / refresh tokens / access tokens / IATs across two backends — see [Hot/cold split](/use-cases/hot-cold-redis).
+1. **One backend per transactional cluster.** The composite store refuses to split authorization codes / refresh tokens / grants / PARs / access tokens / grant revocations across two backends — see [Hot/cold split](/use-cases/hot-cold-redis).
 2. **Volatile substores are best-effort.** Sessions, DPoP nonces, JAR `jti` registry can live on Redis without persistence. Eviction is a normal operating mode; the OP audits the gap rather than failing open. See [Multi-instance deployment](/operations/multi-instance).
 3. **No background goroutines.** TTL cleanup is the store's job. SQL adapters do periodic prune via your DB scheduler; Redis adapters use native TTL. There is no in-process janitor that could leak on hot-reload.
 4. **Configuration changes require a new `Provider`.** Rotating keys, adding clients, changing scopes — all of these construct a new `*Provider` and replace the handler. See [Key rotation](/operations/key-rotation) for the supervisor-side pattern.

@@ -25,19 +25,43 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 > Conformance ≠ Security. An OFCS-passing OP can still be exploitable (alg confusion, PKCE downgrade, redirect_uri partial match, timing attacks on secret compare). The next sections describe how each class is closed structurally rather than by runtime checks alone.
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#374151","primaryTextColor":"#fff","lineColor":"#888"}}}%%
-flowchart LR
-  A[Conformance<br/>OFCS] --> B[Correctness<br/>tests + fuzz]
-  B --> C[Security<br/>structural<br/>defenses]
-  C --> D[Supply-chain<br/>govulncheck<br/>depguard]
-  D --> E[Operational<br/>SECURITY.md<br/>GHSA]
-  style A fill:#0c5460,color:#fff
-  style B fill:#0c5460,color:#fff
-  style C fill:#0c5460,color:#fff
-  style D fill:#0c5460,color:#fff
-  style E fill:#0c5460,color:#fff
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
+  <title id="posture-five-properties-title">The five separate properties behind "is this safe?" — conformance, correctness, security, supply-chain, and operational assurance, read in order.</title>
+  <style>
+    .op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+    .op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
+    .op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
+    .op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
+    .op-fp-flow{stroke:var(--vp-c-brand-2);}
+  </style>
+  <rect x="0" y="16" width="124" height="84" rx="6"/>
+  <rect x="149" y="16" width="124" height="84" rx="6"/>
+  <rect x="298" y="16" width="124" height="84" rx="6"/>
+  <rect x="447" y="16" width="124" height="84" rx="6"/>
+  <rect x="596" y="16" width="124" height="84" rx="6"/>
+  <path class="op-fp-flow" d="M127 58 H143 M139 54 L144 58 L139 62"/>
+  <path class="op-fp-flow" d="M276 58 H292 M288 54 L293 58 L288 62"/>
+  <path class="op-fp-flow" d="M425 58 H442 M438 54 L443 58 L438 62"/>
+  <path class="op-fp-flow" d="M574 58 H591 M587 54 L592 58 L587 62"/>
+  <text class="op-fp-num" x="62" y="38" text-anchor="middle" stroke="none">1</text>
+  <text class="op-fp-title" x="62" y="59" text-anchor="middle" fill="currentColor" stroke="none">Conformance</text>
+  <text class="op-fp-mono" x="62" y="80" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
+  <text class="op-fp-num" x="211" y="38" text-anchor="middle" stroke="none">2</text>
+  <text class="op-fp-title" x="211" y="59" text-anchor="middle" fill="currentColor" stroke="none">Correctness</text>
+  <text class="op-fp-prose" x="211" y="80" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
+  <text class="op-fp-num" x="360" y="38" text-anchor="middle" stroke="none">3</text>
+  <text class="op-fp-title" x="360" y="59" text-anchor="middle" fill="currentColor" stroke="none">Security</text>
+  <text class="op-fp-prose" x="360" y="76" text-anchor="middle" fill="currentColor" stroke="none">structural</text>
+  <text class="op-fp-prose" x="360" y="89" text-anchor="middle" fill="currentColor" stroke="none">defenses</text>
+  <text class="op-fp-num" x="509" y="38" text-anchor="middle" stroke="none">4</text>
+  <text class="op-fp-title" x="509" y="59" text-anchor="middle" fill="currentColor" stroke="none">Supply-chain</text>
+  <text class="op-fp-mono" x="509" y="76" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
+  <text class="op-fp-mono" x="509" y="89" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
+  <text class="op-fp-num" x="658" y="38" text-anchor="middle" stroke="none">5</text>
+  <text class="op-fp-title" x="658" y="59" text-anchor="middle" fill="currentColor" stroke="none">Operational</text>
+  <text class="op-fp-mono" x="658" y="76" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
+  <text class="op-fp-mono" x="658" y="89" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
+</svg>
 
 ## Structural defenses (what the codebase enforces by shape)
 
@@ -115,7 +139,7 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 |---|---|---|
 | Lint | `golangci-lint v2` (errcheck, govet, staticcheck, unused, **gosec**, errorlint, revive, depguard, …) | `.golangci.yml` |
 | Vuln scan | `govulncheck` | `scripts/govulncheck.sh` |
-| Fuzz | Go native `Fuzz*` (run `make fuzz` or `scripts/fuzz.sh 30s`) | targets across `internal/jose`, `internal/jar`, `internal/dpop`, `internal/pkce`, `internal/jwks` |
+| Fuzz | Go native `Fuzz*` (run `make fuzz` or `scripts/fuzz.sh 30s`) | targets across `internal/jose`, `internal/dpop`, `internal/pkce`, `internal/clientauth`, `internal/parendpoint`, `internal/introspectendpoint`, `internal/revokeendpoint`, `internal/jarm`, `internal/mtls`, `internal/authorizationdetails` |
 | License | `go-licenses` | `scripts/licenses.sh` |
 | Conformance | `make conformance-baseline` | `tools/conformance/`, `conformance/` |
 | Scenarios | catalog-driven Spec Scenario Suite | `test/scenarios/` |

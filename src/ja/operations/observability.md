@@ -121,9 +121,10 @@ http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 
 ## リクエスト ID
 
-OP は `X-Request-ID` および `Traceparent` ヘッダを、各監査イベントと各運用ログ行に伝播します。どちらも無ければ、リクエストごとに UUID を生成します。
+OP は `X-Request-ID` や `Traceparent` ヘッダからリクエスト ID を抽出することはなく、自ら ID を生成することもありません。
+監査 `Event` 構造体には相関用の `RequestID` フィールドがありますが、OP がこれを自動的に埋めることはなく、リクエストとレスポンスの相関付けは([tracing](#tracing)で HTTP 層全般について述べたのと同じく)組み込み側の責務です。
 
-レスポンスにも同じ ID を返したい(RP のログと相関を取りたい)場合は、組み込み側で次のようにラップします:
+エッジでリクエスト ID を生成し、レスポンスに刻んで RP のログと相関を取れるようにし、OP の周りで組み込む自前のログでも相関キーとして使ってください:
 
 ```go
 http.Handle("/", requestIDMiddleware(opHandler))

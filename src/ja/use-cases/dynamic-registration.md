@@ -28,25 +28,82 @@ description: RP がランタイムに自身を登録できるようにする —
 
 ## アーキテクチャ
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant ADM as 運用者
-    participant OP
-    participant RP as 新規 RP
-
-    ADM->>OP: Provider.IssueInitialAccessToken(ctx, spec)
-    OP-->>ADM: <iat>
-    ADM-->>RP: out-of-band: <iat>
-    RP->>OP: POST /register<br/>Authorization: Bearer <iat><br/>{ redirect_uris, ..., client_name }
-    OP->>RP: 201 { client_id, client_secret?, registration_access_token, registration_client_uri, ... }
-    RP->>OP: GET /register/<client_id><br/>Authorization: Bearer <registration_access_token>
-    OP->>RP: 200 { クライアントメタデータ全体 }
-    RP->>OP: PUT /register/<client_id> ...
-    OP->>RP: 200 { 更新済みメタデータ }
-    RP->>OP: DELETE /register/<client_id>
-    OP->>RP: 204
-```
+<svg role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" style="display:block;width:100%;max-width:760px;height:auto;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="dcr-seq-title">動的クライアント登録のシーケンス: 運用者が Initial Access Token を発行し out-of-band で新規 RP に渡すと、RP は POST /register で登録し、RFC 7592 で登録内容を読み取り・更新・削除する。</title>
+  <style>
+    .d-box{fill:none;stroke:currentColor;stroke-width:2}
+    .op-accent{stroke:var(--vp-c-brand-2)}
+    .d-life{stroke:currentColor;stroke-width:1.5;opacity:.35}
+    .d-life-op{stroke:var(--vp-c-brand-2);stroke-width:1.5;opacity:.5}
+    .d-msg{stroke:currentColor;stroke-width:2;fill:none}
+    .d-msg-oob{stroke:currentColor;stroke-width:2;fill:none;stroke-dasharray:5 4}
+    .d-badge{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.5}
+    .d-name{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
+    .d-accent-fill{fill:var(--vp-c-brand-2)}
+    .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
+    .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:currentColor;stroke:none}
+    .d-badge-t{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:currentColor;stroke:none}
+  </style>
+  <line x1="130" y1="64" x2="130" y2="581" class="d-life"/>
+  <line x1="420" y1="64" x2="420" y2="581" class="d-life-op"/>
+  <line x1="710" y1="64" x2="710" y2="581" class="d-life"/>
+  <rect x="55" y="20" width="150" height="44" rx="6" class="d-box"/>
+  <text x="130" y="47" text-anchor="middle" class="d-name">運用者</text>
+  <rect x="345" y="20" width="150" height="44" rx="6" class="d-box op-accent"/>
+  <text x="420" y="47" text-anchor="middle" class="d-name d-accent-fill">OP</text>
+  <rect x="635" y="20" width="150" height="44" rx="6" class="d-box"/>
+  <text x="710" y="47" text-anchor="middle" class="d-name">新規 RP</text>
+  <line x1="138" y1="105" x2="418" y2="105" class="d-msg"/>
+  <polyline points="411,101 418,105 411,109" class="d-msg"/>
+  <text x="275" y="97" text-anchor="middle" class="d-mono">IssueInitialAccessToken(ctx, spec)</text>
+  <line x1="412" y1="142" x2="132" y2="142" class="d-msg"/>
+  <polyline points="139,138 132,142 139,146" class="d-msg"/>
+  <text x="275" y="134" text-anchor="middle" class="d-mono">&lt;iat&gt;</text>
+  <line x1="138" y1="179" x2="708" y2="179" class="d-msg-oob"/>
+  <polyline points="701,175 708,179 701,183" class="d-msg"/>
+  <text x="420" y="171" text-anchor="middle" class="d-lbl">out-of-band で受け渡し <tspan class="d-mono">&lt;iat&gt;</tspan></text>
+  <line x1="702" y1="246" x2="422" y2="246" class="d-msg"/>
+  <polyline points="429,242 422,246 429,250" class="d-msg"/>
+  <text x="565" y="208" text-anchor="middle" class="d-mono">POST /register</text>
+  <text x="565" y="223" text-anchor="middle" class="d-mono">Authorization: Bearer &lt;iat&gt;</text>
+  <text x="565" y="238" text-anchor="middle" class="d-mono">{ redirect_uris, …, client_name }</text>
+  <line x1="428" y1="328" x2="708" y2="328" class="d-msg"/>
+  <polyline points="701,324 708,328 701,332" class="d-msg"/>
+  <text x="565" y="275" text-anchor="middle" class="d-mono">201</text>
+  <text x="565" y="290" text-anchor="middle" class="d-mono">{ client_id, client_secret?,</text>
+  <text x="565" y="305" text-anchor="middle" class="d-mono">registration_access_token,</text>
+  <text x="565" y="320" text-anchor="middle" class="d-mono">registration_client_uri, … }</text>
+  <line x1="702" y1="380" x2="422" y2="380" class="d-msg"/>
+  <polyline points="429,376 422,380 429,384" class="d-msg"/>
+  <text x="565" y="357" text-anchor="middle" class="d-mono">GET /register/&lt;client_id&gt;</text>
+  <text x="565" y="372" text-anchor="middle" class="d-mono">Authorization: Bearer &lt;rat&gt;</text>
+  <line x1="428" y1="417" x2="708" y2="417" class="d-msg"/>
+  <polyline points="701,413 708,417 701,421" class="d-msg"/>
+  <text x="565" y="409" text-anchor="middle" class="d-lbl"><tspan class="d-mono">200</tspan> クライアントメタデータ全体</text>
+  <line x1="702" y1="454" x2="422" y2="454" class="d-msg"/>
+  <polyline points="429,450 422,454 429,458" class="d-msg"/>
+  <text x="565" y="446" text-anchor="middle" class="d-mono">PUT /register/&lt;client_id&gt; …</text>
+  <line x1="428" y1="491" x2="708" y2="491" class="d-msg"/>
+  <polyline points="701,487 708,491 701,495" class="d-msg"/>
+  <text x="565" y="483" text-anchor="middle" class="d-lbl"><tspan class="d-mono">200</tspan> 更新済みメタデータ</text>
+  <line x1="702" y1="528" x2="422" y2="528" class="d-msg"/>
+  <polyline points="429,524 422,528 429,532" class="d-msg"/>
+  <text x="565" y="520" text-anchor="middle" class="d-mono">DELETE /register/&lt;client_id&gt;</text>
+  <line x1="428" y1="565" x2="708" y2="565" class="d-msg"/>
+  <polyline points="701,561 708,565 701,569" class="d-msg"/>
+  <text x="565" y="557" text-anchor="middle" class="d-lbl"><tspan class="d-mono">204</tspan> 本文なし</text>
+  <circle cx="130" cy="105" r="8" class="d-badge"/><text x="130" y="108.5" text-anchor="middle" class="d-badge-t">1</text>
+  <circle cx="420" cy="142" r="8" class="d-badge"/><text x="420" y="145.5" text-anchor="middle" class="d-badge-t">2</text>
+  <circle cx="130" cy="179" r="8" class="d-badge"/><text x="130" y="182.5" text-anchor="middle" class="d-badge-t">3</text>
+  <circle cx="710" cy="246" r="8" class="d-badge"/><text x="710" y="249.5" text-anchor="middle" class="d-badge-t">4</text>
+  <circle cx="420" cy="328" r="8" class="d-badge"/><text x="420" y="331.5" text-anchor="middle" class="d-badge-t">5</text>
+  <circle cx="710" cy="380" r="8" class="d-badge"/><text x="710" y="383.5" text-anchor="middle" class="d-badge-t">6</text>
+  <circle cx="420" cy="417" r="8" class="d-badge"/><text x="420" y="420.5" text-anchor="middle" class="d-badge-t">7</text>
+  <circle cx="710" cy="454" r="8" class="d-badge"/><text x="710" y="457.5" text-anchor="middle" class="d-badge-t">8</text>
+  <circle cx="420" cy="491" r="8" class="d-badge"/><text x="420" y="494.5" text-anchor="middle" class="d-badge-t">9</text>
+  <circle cx="710" cy="528" r="8" class="d-badge"/><text x="710" y="531.5" text-anchor="middle" class="d-badge-t">10</text>
+  <circle cx="420" cy="565" r="8" class="d-badge"/><text x="420" y="568.5" text-anchor="middle" class="d-badge-t">11</text>
+</svg>
 
 ## 設定
 
@@ -121,7 +178,7 @@ DCR は `full` ではなく `partial` の表記ですが、`partial` の差分�
 - `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
 - `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ(`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`)は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール(絶対 URI、`https`、host 必須、userinfo 不可)は通常通り適用されます。
 - `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` と空の `backchannel_logout_uri` の組み合わせは `invalid_client_metadata` で拒否します — 配送先を持たないクライアントが `sid` 配送にオプトインできないようにするためです。
-- `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証(OIDC Core §8.1)。取得は 5 秒のタイムアウトと 5 MiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
+- `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証(OIDC Core §8.1)。取得は 5 秒のタイムアウトと 64 KiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
 - `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
 - `request_object_signing_alg` は `RS256` / `PS256` / `ES256` / `EdDSA` に限定されます。
 

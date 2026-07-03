@@ -28,10 +28,10 @@ Scopes are the request; claims are the response. Granting a scope is what causes
 
 ## Scope: what the client asks for
 
-The `scope` parameter on `/authorize` is a **space-separated** list of opaque identifiers. The user consents to the set; the OP records the granted set on the resulting authorization code, then on the access token, refresh token, and ID Token.
+The `scope` parameter on `/auth` is a **space-separated** list of opaque identifiers. The user consents to the set; the OP records the granted set on the resulting authorization code, then on the access token, refresh token, and ID Token.
 
 ```
-GET /authorize?response_type=code&client_id=...&scope=openid%20profile%20email&...
+GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
 ```
 
 A few observations beginners often miss:

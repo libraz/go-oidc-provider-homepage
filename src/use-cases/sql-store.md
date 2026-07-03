@@ -31,21 +31,38 @@ The same applies to the Redis adapter.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  OP[op.Provider] -->|Store interface| SQL[storeadapter/sql]
-  SQL --> DB[(SQL DB)]
-  DB --> AC[oidc_auth_codes]
-  DB --> RT[oidc_refresh_tokens]
-  DB --> CL[oidc_clients]
-  DB --> SE[oidc_sessions]
-  DB --> JTI[oidc_consumed_jtis]
-  DB --> AT[oidc_access_tokens]
-  DB --> OAT[oidc_opaque_access_tokens]
-  DB --> GR[oidc_grant_revocations]
-  DB --> RJ[oidc_revoked_jtis]
-  DB --> ...
-```
+<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 816 300" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="sql-store-arch-title">op.Provider talks to the storeadapter/sql package over the Store interface, which persists each substore to its own table inside the SQL database.</title>
+  <style>
+    text { stroke: none; }
+    .lbl { font-family: var(--vp-font-family-base); fill: currentColor; }
+    .mono { font-family: var(--vp-font-family-mono); fill: currentColor; }
+    .arch-op { stroke: var(--vp-c-brand-2); }
+    .arch-db { stroke-dasharray: 7 5; }
+  </style>
+  <rect x="12" y="123" width="142" height="54" rx="8" class="arch-op"/>
+  <text x="83" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="14" font-weight="600">op.Provider</text>
+  <path d="M154 150 H300"/>
+  <path d="M294 145 l6 5 -6 5"/>
+  <text x="227" y="136" text-anchor="middle" class="lbl" font-size="12"><tspan class="mono">Store</tspan> interface</text>
+  <rect x="300" y="123" width="170" height="54" rx="8"/>
+  <text x="385" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="14">storeadapter/sql</text>
+  <path d="M470 150 H520"/>
+  <path d="M514 145 l6 5 -6 5"/>
+  <rect x="520" y="20" width="282" height="260" rx="10" class="arch-db"/>
+  <text x="538" y="45" class="mono" font-size="13" font-weight="600">SQL DB</text>
+  <path d="M538 58 H784" class="arch-db"/>
+  <text x="538" y="82" dominant-baseline="central" class="mono" font-size="12">oidc_authorization_codes</text>
+  <text x="538" y="102" dominant-baseline="central" class="mono" font-size="12">oidc_refresh_tokens</text>
+  <text x="538" y="122" dominant-baseline="central" class="mono" font-size="12">oidc_clients</text>
+  <text x="538" y="142" dominant-baseline="central" class="mono" font-size="12">oidc_sessions</text>
+  <text x="538" y="162" dominant-baseline="central" class="mono" font-size="12">oidc_consumed_jtis</text>
+  <text x="538" y="182" dominant-baseline="central" class="mono" font-size="12">oidc_access_tokens</text>
+  <text x="538" y="202" dominant-baseline="central" class="mono" font-size="12">oidc_opaque_access_tokens</text>
+  <text x="538" y="222" dominant-baseline="central" class="mono" font-size="12">oidc_grant_revocations</text>
+  <text x="538" y="242" dominant-baseline="central" class="mono" font-size="12">oidc_revoked_jtis</text>
+  <text x="538" y="262" dominant-baseline="central" class="lbl" font-size="12" fill="var(--vp-c-text-3)">… and more</text>
+</svg>
 
 Every substore (`AuthCodeStore`, `RefreshTokenStore`, `ClientStore`, `SessionStore`, etc.) maps to a table.
 

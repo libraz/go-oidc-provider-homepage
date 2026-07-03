@@ -83,6 +83,48 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 
 複数 redirect-URI ホストを持ち `sector_identifier_uri` を持たないクライアントは sector を解決できず、issuance が `server_error` で失敗します。複数ホストへ fan-out するクライアントには `sector_identifier_uri` を必須にしてください。
 
+<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:700px;height:auto">
+<title id="pairwise-sub-fanout-title">1 つの internal_user_id が 2 つの RP sector それぞれに異なる pairwise sub を導出する図。sector は各クライアントの sector_identifier_uri から解決されます。</title>
+<style>#psfd .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#psfd .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#psfd .d-mono{font-family:var(--vp-font-family-mono);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-muted{fill:var(--vp-c-text-3)}#psfd .d-op{stroke:var(--vp-c-brand-2)}#psfd .d-op-t{fill:var(--vp-c-brand-2);stroke:none}#psfd .d-store{stroke-dasharray:5 4}#psfd .d-flow{opacity:.5}</style>
+<text class="d-cap" x="8" y="18">pairwise sub の fan-out</text>
+<text class="d-sub" x="8" y="34">1 つの internal_user_id → sector ごとに異なる sub</text>
+<rect x="16" y="136" width="150" height="50" rx="8"/>
+<text class="d-lbl" x="91" y="158" text-anchor="middle" font-weight="600">同一ユーザ</text>
+<text class="d-mono" x="91" y="176" text-anchor="middle">internal_user_id</text>
+<rect class="d-store" x="16" y="196" width="150" height="42" rx="8"/>
+<text class="d-mono" x="91" y="214" text-anchor="middle">salt</text>
+<text class="d-sub" x="91" y="229" text-anchor="middle">KMS / Vault</text>
+<path class="d-flow" d="M166 161 H210"/>
+<path class="d-flow" d="M166 217 H210"/>
+<path class="d-flow" d="M210 112 V217"/>
+<path class="d-flow" d="M210 112 H250"/>
+<path class="d-flow" d="M243 107 L250 112 L243 117"/>
+<path class="d-flow" d="M210 214 H250"/>
+<path class="d-flow" d="M243 209 L250 214 L243 219"/>
+<rect class="d-op" x="250" y="76" width="176" height="72" rx="8"/>
+<text class="d-lbl d-op-t" x="338" y="106" text-anchor="middle" font-weight="600">OP が sub を導出</text>
+<text class="d-mono" x="338" y="126" text-anchor="middle">sector = a.example.com</text>
+<rect class="d-op" x="250" y="178" width="176" height="72" rx="8"/>
+<text class="d-lbl d-op-t" x="338" y="208" text-anchor="middle" font-weight="600">OP が sub を導出</text>
+<text class="d-mono" x="338" y="228" text-anchor="middle">sector = b.example.com</text>
+<path class="d-flow" d="M426 112 H486"/>
+<path class="d-flow" d="M479 107 L486 112 L479 117"/>
+<path class="d-flow" d="M426 214 H486"/>
+<path class="d-flow" d="M479 209 L486 214 L479 219"/>
+<rect x="486" y="74" width="210" height="76" rx="8"/>
+<text class="d-lbl" x="500" y="94" font-weight="600">RP A</text>
+<text class="d-mono d-muted" x="500" y="112">sector_identifier_uri</text>
+<text class="d-mono" x="500" y="129">→ a.example.com</text>
+<text class="d-mono" x="500" y="146">sub = 7bQ…Xa</text>
+<rect x="486" y="178" width="210" height="76" rx="8"/>
+<text class="d-lbl" x="500" y="198" font-weight="600">RP B</text>
+<text class="d-mono d-muted" x="500" y="216">sector_identifier_uri</text>
+<text class="d-mono" x="500" y="233">→ b.example.com</text>
+<text class="d-mono" x="500" y="250">sub = k9P…Zb</text>
+<text class="d-mono d-op-t" x="591" y="168" text-anchor="middle">sub_A ≠ sub_B</text>
+<text class="d-mono" x="356" y="282" text-anchor="middle">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
+</svg>
+
 ### `sector_identifier_uri` 解決
 
 クライアントが `sector_identifier_uri` を登録すると、OP がそれを取得し(HTTPS のみ、RFC 1918 / loopback / link-local は拒否、リダイレクト先を再検証、body サイズと timeout に上限、24 時間の成功キャッシュ)、クライアントの全 redirect URI が文書にリストされていることを確認します。文書は単一の JSON 配列である必要があり、末尾に余分な byte があれば拒否されます。リモート文書の内容が正当に更新された場合、resolver は古い cache entry を退避し、次の成功 fetch で OP 再起動なしに回復します。これにより sector が公開済みの manifest に紐付き、OP が監査できる形になります。

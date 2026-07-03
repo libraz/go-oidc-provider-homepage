@@ -37,7 +37,7 @@ discovery がなければ、すべての RP がエンドポイント URL・署�
 | `device_authorization_endpoint` | `/device_authorization` の URL — device code grant を組み込んだ場合のみ。 |
 | `grant_types_supported` | `/token` で受け付ける grant 種別: `authorization_code`、`refresh_token`、`client_credentials`、… |
 | `response_types_supported` | `/authorize` が受け付ける response type。本ライブラリは `code` のみ（OIDC Core の "code flow"）を広告します。 |
-| `response_modes_supported` | `/authorize` の応答方式: `query`、`fragment`、`form_post`、`jwt`（JARM）。 |
+| `response_modes_supported` | `/authorize` の応答方式: `query`、`form_post`、加えて JARM 有効時は `query.jwt`、`fragment.jwt`、`form_post.jwt`、`jwt`。 |
 | `id_token_signing_alg_values_supported` | ID トークンの署名に使う JWS アルゴリズム。OP 署名鍵は ECDSA P-256 のため、本ライブラリは `ES256` のみを公開します。 |
 | `request_object_signing_alg_values_supported` | JAR の `request=` パラメータで受理する JWS アルゴリズム: `RS256`、`PS256`、`ES256`、`EdDSA`。 |
 | `token_endpoint_auth_methods_supported` | confidential RP が `/token` で認証する方式: `client_secret_basic`、`client_secret_post`、`private_key_jwt`、mTLS 有効時は `tls_client_auth` / `self_signed_tls_client_auth`。public client は登録 metadata では `none` を使いますが、discovery の広告には `none` を列挙しません。 |

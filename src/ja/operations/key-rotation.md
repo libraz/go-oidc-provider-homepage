@@ -54,12 +54,12 @@ liveHandler.Store(newProv)  // 通常は *atomic.Value または sync.Map
 最低でも以下の時間は待ちます:
 
 - 発行済みトークンの最長 TTL(既定の `WithAccessTokenTTL` は 5 分)。
-- これに加えて、RP 側の最長 JWKS キャッシュウィンドウ(既定で `max-age=86400`、24 時間)。
+- これに加えて、RP 側の最長 JWKS キャッシュウィンドウ(既定で `max-age=3600`、1 時間)。
 
-つまり安全側の最低待機は **ローテーション後 24 時間** です。アクセストークン TTL を短く運用していても、ローテーション中に旧 set をキャッシュした RP が、検証可能なはずのトークンを弾かないよう、JWKS キャッシュウィンドウ分は待ってください。
+つまり安全側の最低待機は **ローテーション後およそ 1 時間**(既定の 1 時間の JWKS キャッシュウィンドウにアクセストークン TTL を足した時間)です。アクセストークン TTL を長めに運用している場合は、その分を JWKS キャッシュウィンドウに上乗せしてください。ローテーション中に旧 set をキャッシュした RP が、検証可能なはずのトークンを弾かないようにするためです。
 
 ::: tip ローテーション中であることのシグナル
-`op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語が true の間は、長い既定キャッシュ(`public, max-age=86400, stale-while-revalidate=3600`) の代わりに 5 分の `public, max-age=300, must-revalidate` を返します。オーバーラップ期間中にこの述語を true にしておくと、RP のキャッシュが短い間隔で revalidate しに来てくれます。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。
+`op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語が true の間は、長い既定キャッシュ(`public, max-age=3600, stale-while-revalidate=3600`) の代わりに 5 分の `public, max-age=300, must-revalidate` を返します。オーバーラップ期間中にこの述語を true にしておくと、RP のキャッシュが短い間隔で revalidate しに来てくれます。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。
 :::
 
 ## Cookie 鍵のローテーション

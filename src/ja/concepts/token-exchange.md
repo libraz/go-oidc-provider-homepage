@@ -29,33 +29,91 @@ description: あるトークンを別のトークンに交換する仕組み —
 
 ## なりすまし(Impersonation)と委譲(Delegation)を並べて見る
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant FE as Frontend
-    participant A as Service A
-    participant OP as OP
-    participant B as Service B
-
-    Note over FE,B: 単純な転送(交換なし) — service B からは Alice 単独にしか見えない
-    FE->>A: Bearer token（sub=alice、aud=service-a）
-    A->>B: Bearer token（sub=alice、aud=service-a）
-    B->>B: WARN — token の aud が service-a で自分宛てではない。拒否
-
-    Note over FE,B: Impersonation — service B からは alice しか見えず、chain が残らない
-    FE->>A: Bearer token（sub=alice）
-    A->>OP: POST /token grant_type=token-exchange<br/>subject_token=<alice のトークン>
-    OP->>A: 新トークン（sub=alice、aud=service-b）
-    A->>B: Bearer（sub=alice）
-    B->>B: alice 単独 — A の記録なし
-
-    Note over FE,B: 委譲(Delegation) — service B から chain が見える
-    FE->>A: Bearer token（sub=alice）
-    A->>OP: POST /token grant_type=token-exchange<br/>subject_token=<alice の>&actor_token=<A の>
-    OP->>A: 新トークン（sub=alice、act={sub: service-a}、<br/>aud=service-b）
-    A->>B: Bearer（sub=alice、act={sub: service-a}）
-    B->>B: alice が service-a を介して操作 — ポリシー判定
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="tx-imp-del-title">service A が Alice の代理で service B を呼ぶ 3 通り — 単純な転送は拒否され、なりすましは actor を落とし、委譲は act chain を記録する。</title>
+  <style>
+    .tx-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:currentColor}
+    .tx-sub{font-family:var(--vp-font-family-base);font-size:8.5px;fill:currentColor;opacity:.55}
+    .tx-band{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;letter-spacing:.03em;fill:currentColor}
+    .tx-mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:currentColor}
+    .tx-note{font-family:var(--vp-font-family-base);font-size:10px;fill:currentColor;opacity:.85}
+    .tx-acc{stroke:var(--vp-c-brand-2)}
+    .tx-acc-f{fill:var(--vp-c-brand-2)}
+    .tx-rs{stroke:#7c6ba6}
+    .tx-rs-f{fill:#7c6ba6}
+    .dark .tx-rs{stroke:#b3a4d6}
+    .dark .tx-rs-f{fill:#b3a4d6}
+  </style>
+  <!-- actor headers -->
+  <rect x="34" y="16" width="104" height="40" rx="6"/>
+  <text class="tx-lbl" x="86" y="33" text-anchor="middle">Frontend</text>
+  <text class="tx-sub" x="86" y="46" text-anchor="middle">ブラウザ</text>
+  <rect x="230" y="16" width="104" height="40" rx="6"/>
+  <text class="tx-lbl" x="282" y="33" text-anchor="middle">Service A</text>
+  <text class="tx-sub" x="282" y="46" text-anchor="middle">中継</text>
+  <rect class="tx-acc" x="426" y="16" width="104" height="40" rx="6"/>
+  <text class="tx-lbl tx-acc-f" x="478" y="33" text-anchor="middle">OP</text>
+  <text class="tx-sub" x="478" y="46" text-anchor="middle">認可サーバ</text>
+  <rect class="tx-rs" x="622" y="16" width="104" height="40" rx="6"/>
+  <text class="tx-lbl tx-rs-f" x="674" y="33" text-anchor="middle">Service B</text>
+  <text class="tx-sub" x="674" y="46" text-anchor="middle">リソース</text>
+  <!-- lifelines -->
+  <line x1="86" y1="56" x2="86" y2="574" stroke-width="1.5" stroke-opacity=".28"/>
+  <line x1="282" y1="56" x2="282" y2="574" stroke-width="1.5" stroke-opacity=".28"/>
+  <line class="tx-acc" x1="478" y1="56" x2="478" y2="574" stroke-width="1.5" stroke-opacity=".3"/>
+  <line class="tx-rs" x1="674" y1="56" x2="674" y2="574" stroke-width="1.5" stroke-opacity=".3"/>
+  <!-- band separators -->
+  <line x1="30" y1="66" x2="730" y2="66" stroke-width="1" stroke-opacity=".12"/>
+  <line x1="30" y1="190" x2="730" y2="190" stroke-width="1" stroke-opacity=".12"/>
+  <line x1="30" y1="384" x2="730" y2="384" stroke-width="1" stroke-opacity=".12"/>
+  <!-- ===== Band 1: plain forwarding ===== -->
+  <text class="tx-band" x="30" y="82">単純な転送 — 交換なし</text>
+  <line x1="86" y1="108" x2="282" y2="108"/>
+  <polyline points="276,104 282,108 276,112"/>
+  <text class="tx-mono" x="184" y="100" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
+  <line x1="282" y1="142" x2="674" y2="142"/>
+  <polyline points="668,138 674,142 668,146"/>
+  <text class="tx-mono" x="478" y="134" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
+  <path d="M674,166 h12 v8 h-12"/>
+  <polyline points="679,171 674,174 679,177"/>
+  <text class="tx-note" x="666" y="173" text-anchor="end">aud が service-a で自分宛てではない → 拒否</text>
+  <!-- ===== Band 2: impersonation ===== -->
+  <text class="tx-band" x="30" y="206">Impersonation(なりすまし)</text>
+  <line x1="86" y1="232" x2="282" y2="232"/>
+  <polyline points="276,228 282,232 276,236"/>
+  <text class="tx-mono" x="184" y="224" text-anchor="middle">Bearer sub=alice</text>
+  <line x1="282" y1="268" x2="478" y2="268"/>
+  <polyline points="472,264 478,268 472,272"/>
+  <text class="tx-mono" x="380" y="252" text-anchor="middle">grant_type=token-exchange</text>
+  <text class="tx-mono" x="380" y="262" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+  <line x1="282" y1="302" x2="478" y2="302"/>
+  <polyline points="288,298 282,302 288,306"/>
+  <text class="tx-mono" x="380" y="294" text-anchor="middle">sub=alice, aud=service-b</text>
+  <line x1="282" y1="336" x2="674" y2="336"/>
+  <polyline points="668,332 674,336 668,340"/>
+  <text class="tx-mono" x="478" y="328" text-anchor="middle">Bearer sub=alice</text>
+  <path d="M674,360 h12 v8 h-12"/>
+  <polyline points="679,365 674,368 679,371"/>
+  <text class="tx-note" x="666" y="367" text-anchor="end">alice 単独 — A の記録なし</text>
+  <!-- ===== Band 3: delegation ===== -->
+  <text class="tx-band" x="30" y="400">Delegation(委譲)</text>
+  <line x1="86" y1="426" x2="282" y2="426"/>
+  <polyline points="276,422 282,426 276,430"/>
+  <text class="tx-mono" x="184" y="418" text-anchor="middle">Bearer sub=alice</text>
+  <line x1="282" y1="462" x2="478" y2="462"/>
+  <polyline points="472,458 478,462 472,466"/>
+  <text class="tx-mono" x="380" y="446" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+  <text class="tx-mono" x="380" y="456" text-anchor="middle">+ actor_token=&lt;A&gt;</text>
+  <line x1="282" y1="496" x2="478" y2="496"/>
+  <polyline points="288,492 282,496 288,500"/>
+  <text class="tx-mono" x="380" y="488" text-anchor="middle">sub=alice, act={sub: service-a}</text>
+  <line x1="282" y1="530" x2="674" y2="530"/>
+  <polyline points="668,526 674,530 668,534"/>
+  <text class="tx-mono" x="478" y="522" text-anchor="middle">Bearer sub=alice, act={sub: service-a}</text>
+  <path d="M674,554 h12 v8 h-12"/>
+  <polyline points="679,559 674,562 679,565"/>
+  <text class="tx-note" x="666" y="561" text-anchor="end">alice が service-a 経由 → ポリシー判定</text>
+</svg>
 
 差は監査ログ(service B が呼び出しの起点を知れる)と認可ポリシー(センシティブな操作で actor を要求できる)に現れます。
 

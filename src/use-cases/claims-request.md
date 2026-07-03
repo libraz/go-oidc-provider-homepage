@@ -24,7 +24,7 @@ This is most useful for two cases:
 ::: details Quick refresher
 - **Scope** — a coarse permission bundle (`profile`, `email`, …). One scope maps to a fixed set of claims.
 - **Claim request** — a fine-grained, per-claim ask. The RP specifies exactly which claims it wants and where they should appear (`id_token` vs `userinfo`), with optional `essential` markers.
-- **Essential vs voluntary** — `{"essential": true}` makes the OP refuse the request if the claim isn't available; `{"essential": false}` (or `null`) lets the OP omit it silently.
+- **Essential vs voluntary** — for an ordinary claim, `essential` is a hint, not an enforcement lever: the OP makes a best-effort attempt and silently omits the claim if it isn't available, same as a voluntary request. The one exception is `acr`: an essential `acr` request the current session doesn't satisfy forces re-authentication (see [MFA / step-up](/use-cases/mfa-step-up)).
 :::
 
 > **Source:** [`examples/61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request)
@@ -72,13 +72,17 @@ After the flow:
 
 | Place | Outcome |
 |---|---|
-| `id_token` | `email` is included **and** the OP enforces a re-prompt if the user store doesn't have it (essential) |
+| `id_token` | `email` is included if the user store has it; if not, the OP silently omits it (essential only means "attempt harder", not "fail if absent") |
 | `/userinfo` response | `locale` is included on a best-effort basis (voluntary) |
 
 ## Essential vs voluntary
 
-- `{"essential": true}` — the OP **must** include the claim. If the user store doesn't carry the claim and the user can't supply it via the login flow, the OP fails the authorize request with `claim_not_available`.
+For ordinary claims (anything other than `acr`), `essential` does not change what the OP is willing to fail on. OIDC Core 1.0 §5.5 only says the OP "MUST attempt to provide" an essential claim, and it stops there — it does not require the OP to refuse the request when the claim is absent.
+
+- `{"essential": true}` — the OP looks the claim up and includes it if the value exists; if the user store doesn't carry the claim, the OP silently omits it, exactly as it would for a voluntary request. There is no error code and no re-prompt tied to a missing ordinary claim.
 - `{"essential": false}` or `null` — the OP includes the claim **if it has it**; otherwise silently omits.
+
+The one claim where `essential` has real teeth is `acr`. An essential `acr` request (`{"id_token":{"acr":{"essential":true,"values":[...]}}}`) that the current session's authentication context doesn't satisfy forces re-authentication — `interaction_required` under `prompt=none`, or an interactive login redirect otherwise — via the RFC 9470 step-up path. See [MFA / step-up](/use-cases/mfa-step-up) for that mechanism.
 
 ## With JAR
 

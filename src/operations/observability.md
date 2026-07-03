@@ -121,9 +121,10 @@ Per-stage spans are planned, but the public tracing surface is intentionally sma
 
 ## Request IDs
 
-The OP propagates request IDs from `X-Request-ID` and `Traceparent` headers into every audit event and operational log line. If neither header is present, the OP synthesises a UUID per request.
+The OP does not extract request IDs from `X-Request-ID` or `Traceparent` headers, and it does not synthesise one itself.
+The audit `Event` struct does carry a `RequestID` field for correlation, but the OP never populates it on its own — request/response correlation is the embedder's responsibility end to end, the same way it already is for the HTTP layer in general (see [Tracing](#tracing) above).
 
-To stamp the same ID on the response (so RP logs can correlate):
+Generate a request ID at the edge, stamp it on the response so RP logs can correlate, and use it as the correlation key in whatever logging you wrap around the OP:
 
 ```go
 http.Handle("/", requestIDMiddleware(opHandler))

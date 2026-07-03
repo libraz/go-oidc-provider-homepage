@@ -32,13 +32,40 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 ## アーキテクチャ
 
-```mermaid
-flowchart LR
-  SVC_A[Service A<br/>confidential client] --1. POST /token--> OP
-  OP --2. access_token--> SVC_A
-  SVC_A --3. Authorization: Bearer--> SVC_B[Service B<br/>resource server]
-  SVC_B --4. introspect or self-validate JWT--> OP
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" width="736" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="cc-svc-flow-title">サービス間 client_credentials フロー: Service A が OP からアクセストークンを取得し、それを付けて Service B を呼び出し、Service B が OP でトークンを検証する。</title>
+  <style>
+    .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
+    .d-tok{font-family:var(--vp-font-family-mono);font-size:11px;fill:currentColor;stroke:none}
+    .d-bt{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
+    .d-bs{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
+    .d-op{stroke:var(--vp-c-brand-2)}
+    .d-opt{fill:var(--vp-c-brand-2)}
+    .d-rs{stroke:var(--vp-c-text-3)}
+  </style>
+  <rect x="20" y="48" width="150" height="68" rx="6"/>
+  <rect class="d-op" x="305" y="48" width="150" height="68" rx="6"/>
+  <rect class="d-rs" x="590" y="48" width="150" height="68" rx="6"/>
+  <text class="d-bt" x="95" y="80" text-anchor="middle">Service A</text>
+  <text class="d-bs" x="95" y="98" text-anchor="middle">confidential クライアント</text>
+  <text class="d-bt d-opt" x="380" y="80" text-anchor="middle">OP</text>
+  <text class="d-bs" x="380" y="98" text-anchor="middle">認可サーバー</text>
+  <text class="d-bt" x="665" y="80" text-anchor="middle">Service B</text>
+  <text class="d-bs" x="665" y="98" text-anchor="middle">resource server</text>
+  <line x1="176" y1="68" x2="299" y2="68"/>
+  <path d="M293 63 L299 68 L293 73"/>
+  <line x1="299" y1="96" x2="176" y2="96"/>
+  <path d="M182 91 L176 96 L182 101"/>
+  <line x1="584" y1="82" x2="461" y2="82"/>
+  <path d="M467 77 L461 82 L467 87"/>
+  <path d="M95 116 C95 168 665 168 665 116"/>
+  <path d="M660 123 L665 116 L670 123"/>
+  <text class="d-lbl" x="238" y="60" text-anchor="middle">1. <tspan class="d-tok">POST /token</tspan></text>
+  <text class="d-lbl" x="238" y="110" text-anchor="middle">2. <tspan class="d-tok">access_token</tspan></text>
+  <text class="d-lbl" x="522" y="68" text-anchor="middle">4. トークンを検証</text>
+  <text class="d-tok" x="522" y="100" text-anchor="middle" font-size="10.5">/introspect · /jwks</text>
+  <text class="d-lbl" x="380" y="140" text-anchor="middle">3. <tspan class="d-tok">Authorization: Bearer</tspan></text>
+</svg>
 
 `/authorize` 無し、同意無し、`id_token` 無し、リフレッシュトークン無し。
 

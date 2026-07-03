@@ -5,14 +5,14 @@ description: op.New が起動を拒否する 4 オプション — それぞれ�
 
 # 必須オプション
 
-`op.New(...)` は構築時に partial 設定を拒否するので、安全でない OP が誤ってトラフィックを受け取ることはありません。必須 4 オプションは:
+`op.New(...)` は構築時に partial 設定を拒否するので、安全でない OP が誤ってトラフィックを受け取ることはありません。3 オプションは無条件で必須です。`WithCookieKeys` は `authorization_code` grant を有効にしている場合に必須になり、これはデフォルトで有効です:
 
 | Option | 必須である理由 |
 |---|---|
 | [`op.WithIssuer`](#withissuer) | JWT の `iss` claim、discovery URL、cookie scope を決める。ここを誤れば下流の検査がすべて誤る。 |
 | [`op.WithStore`](#withstore) | authcode、session、refresh chain、JTI replay set、client を保持する場所。ストレージ無しでは状態を置く場所がない。 |
 | [`op.WithKeyset`](#withkeyset) | ID トークン / JWT アクセストークン / JARM の署名鍵。`ES256` 署名を生成できる ECDSA P-256 の `crypto.Signer` 無しには発行を拒否する。 |
-| [`op.WithCookieKeys`](#withcookiekeys) | cookie payload の AES-256-GCM 鍵に使う 32 バイトのランダム素材。session と CSRF cookie は署名のみではなく暗号化される。 |
+| [`op.WithCookieKeys`](#withcookiekeys) | cookie payload の AES-256-GCM 鍵に使う 32 バイトのランダム素材。必須になるのは有効な grant に `authorization_code` が含まれる場合のみ（デフォルトの grant 集合は `authorization_code` と `refresh_token`）。この grant を無効にした client_credentials 専用の OP は cookie key 無しでも起動できる。session と CSRF cookie は署名のみではなく暗号化される。 |
 
 ## `WithIssuer`
 
@@ -73,7 +73,7 @@ op.WithCookieKeys(key)
 op.WithCookieKeys(currentKey, previousKey)
 ```
 
-32 バイトは session / CSRF cookie の暗号化に使う AES-256-GCM 鍵を seed します。`WithCookieKeys` で鍵をローテーションでき、先頭鍵で暗号化、後続鍵で復号を試みるので、稼働中セッションを切らずに鍵をスワップできます。
+32 バイトは session / CSRF cookie の暗号化に使う AES-256-GCM 鍵を seed します。`WithCookieKeys` で鍵をローテーションでき、先頭鍵で暗号化、後続鍵で復号を試みるので、稼働中セッションを切らずに鍵をスワップできます。`op.New` がこのオプションを要求するのは、有効な grant に `authorization_code` が含まれる場合のみです。この grant はデフォルトで有効なのでほとんどの構成では必須になりますが、たとえば `client_credentials` のみに絞った OP なら cookie key 無しでも起動できます。
 
 ::: warning Cookie 方式は不可変
 cookie は常に `__Host-` prefix（`Domain` 無し、`Path=/`、`Secure`）。セッション cookie は `SameSite=Lax`、同意 / ログアウト POST には double-submit と Origin / Referer チェック。これらはすべて変更不可 — 譲れないセキュリティの最低ラインです。

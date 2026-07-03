@@ -5,7 +5,7 @@ description: 約 30 行で動く OpenID Connect Provider。
 
 # 最小構成 OP
 
-OP を起動する最短経路。必須 4 オプションは `WithIssuer`、`WithStore`、`WithKeyset`、`WithCookieKeys` — どれかを欠くと `op.New` は error を返します。
+OP を起動する最短経路。`WithIssuer`、`WithStore`、`WithKeyset` のいずれかを欠くと `op.New` は error を返します。`WithCookieKeys` も、`authorization_code` grant を有効にしている場合は必須です。デフォルトの grant 集合（`authorization_code` と `refresh_token`）はこれを含むため、この最小構成（デフォルト grant）では実質的に 4 つとも必須になります。
 
 ::: code-group
 
@@ -130,7 +130,7 @@ func main() {
 :::
 
 ::: details この OP で今すぐ試せること
-1. `curl http://localhost:8080/oidc/.well-known/openid-configuration` — discovery。
+1. `curl http://localhost:8080/.well-known/openid-configuration` — discovery。mount prefix に関わらず常にルート直下にマウントされます。
 2. `curl http://localhost:8080/oidc/jwks` — ID トークン検証用の公開 JWKS。
 3. デフォルトの mount prefix は `/oidc` です。`op.WithMountPrefix("/")` で変更可。
 4. クライアントと authenticator を登録するまで認可は error を返します。

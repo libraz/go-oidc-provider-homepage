@@ -54,12 +54,12 @@ The first entry in the `Keyset` is always the active signer; subsequent entries 
 Wait at least:
 
 - The longest issued token TTL (default `WithAccessTokenTTL` = 5 min).
-- Plus the longest RP-side JWKS cache window (`max-age=86400` by default — 24 h).
+- Plus the longest RP-side JWKS cache window (`max-age=3600` by default — 1 h).
 
-So the safe minimum is **24 hours after rotation** before dropping the old `kid`. Operators with shorter access-token TTL still want to wait the JWKS cache window so RPs that mid-rotation cached the old set don't reject a token they could have validated.
+So the safe minimum is **roughly 1 hour after rotation** (the default 1-hour JWKS cache window plus your access-token TTL) before dropping the old `kid`. Operators with a longer access-token TTL should add that TTL on top of the JWKS cache window so RPs that mid-rotation cached the old set don't reject a token they could have validated.
 
 ::: tip Rotation overlap signal
-Pass `op.WithJWKSRotationActive(predicate)` at provider construction — when the predicate returns true, the JWKS response advertises a 5-minute `Cache-Control: public, max-age=300, must-revalidate` instead of the long-cache default (`max-age=86400, stale-while-revalidate=3600`). Hold the predicate true during the overlap window so RP caches refresh promptly. See [JWKS endpoint](/operations/jwks#rotation-cache-control).
+Pass `op.WithJWKSRotationActive(predicate)` at provider construction — when the predicate returns true, the JWKS response advertises a 5-minute `Cache-Control: public, max-age=300, must-revalidate` instead of the long-cache default (`max-age=3600, stale-while-revalidate=3600`). Hold the predicate true during the overlap window so RP caches refresh promptly. See [JWKS endpoint](/operations/jwks#rotation-cache-control).
 :::
 
 ## Cookie key rotation

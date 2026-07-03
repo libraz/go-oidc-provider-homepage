@@ -49,27 +49,96 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 
 低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。`/authorize` のリダイレクトから RP のコールバックに戻る `code` 付きリダイレクトまでの間は、すべて SPA 上で完結します。
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant U as User browser
-    participant SPA as SPA バンドル(自前のコード、自前のルーター)
-    participant OP as OP
+<svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="spa-interaction-seq-title">JSON driver 構成の SPA interaction のシーケンス: ブラウザが SPA shell を読み込み、各 prompt を OP から JSON で取得して回答を送り返し、終端の redirect エンベロープに従う。</title>
+  <style>
+    .lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);stroke:none}
+    .mono{font-family:var(--vp-font-family-mono);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
+    .actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
+    .sub{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3);stroke:none}
+    .num{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}
+    .op-accent{stroke:var(--vp-c-brand-2)}
+    .op-text{fill:var(--vp-c-brand-2);stroke:none}
+    .life{stroke-width:1.2;stroke-dasharray:3 4;opacity:0.45}
+    .note{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.4}
+    .badge{stroke-width:1.4;opacity:0.55}
+  </style>
 
-    U->>OP: GET /authorize?...
-    OP->>OP: interaction uid + cookie 生成
-    OP->>U: 302 -> /login/{uid}(自前のルート)
-    U->>SPA: GET /login/{uid}
-    SPA->>U: 200 index.html (SPA shell)
-    U->>OP: GET /interaction/{uid}<br/>Accept: application/json
-    OP->>U: 200 { type: "login", inputs: [...], state_ref, csrf_token }
-    U->>U: SPA がログインフォームを描画
-    U->>OP: POST /interaction/{uid}<br/>{ state_ref, values }
-    OP->>U: 200 { type: "consent.scope", ... } or { redirect: "..." }
-    U->>OP: POST /interaction/{uid}(consent の値)
-    OP->>U: 200 { redirect: "/auth?...&code=..." }
-    U->>SPA: window.location = redirect
-```
+  <line class="life" x1="120" y1="56" x2="120" y2="505"/>
+  <line class="life" x1="385" y1="56" x2="385" y2="505"/>
+  <line class="life op-accent" x1="650" y1="56" x2="650" y2="505"/>
+
+  <rect x="45" y="16" width="150" height="40" rx="5"/>
+  <text class="actor" x="120" y="41" text-anchor="middle">ユーザのブラウザ</text>
+  <rect x="310" y="16" width="150" height="40" rx="5"/>
+  <text class="actor" x="385" y="34" text-anchor="middle">SPA バンドル</text>
+  <text class="sub" x="385" y="48" text-anchor="middle">自前のコード・自前のルーター</text>
+  <rect class="op-accent" x="575" y="16" width="150" height="40" rx="5"/>
+  <text class="actor op-text" x="650" y="41" text-anchor="middle">OP</text>
+
+  <circle class="badge" cx="22" cy="88" r="9"/><text class="num" x="22" y="91.5" text-anchor="middle">1</text>
+  <line x1="120" y1="88" x2="650" y2="88"/>
+  <path d="M642,84 L650,88 L642,92"/>
+  <text class="mono" x="385" y="82" text-anchor="middle">GET /authorize?...</text>
+
+  <circle class="badge" cx="22" cy="121" r="9"/><text class="num" x="22" y="124.5" text-anchor="middle">2</text>
+  <rect class="note" x="553" y="109" width="194" height="24" rx="4"/>
+  <text class="lbl" x="650" y="124.5" text-anchor="middle">interaction uid + cookie 生成</text>
+
+  <circle class="badge" cx="22" cy="154" r="9"/><text class="num" x="22" y="157.5" text-anchor="middle">3</text>
+  <line x1="650" y1="154" x2="120" y2="154"/>
+  <path d="M128,150 L120,154 L128,158"/>
+  <text x="385" y="148" text-anchor="middle"><tspan class="mono">302 → /login/{uid}</tspan><tspan class="lbl">(自前のルート)</tspan></text>
+
+  <circle class="badge" cx="22" cy="187" r="9"/><text class="num" x="22" y="190.5" text-anchor="middle">4</text>
+  <line x1="120" y1="187" x2="385" y2="187"/>
+  <path d="M377,183 L385,187 L377,191"/>
+  <text class="mono" x="252" y="181" text-anchor="middle">GET /login/{uid}</text>
+
+  <circle class="badge" cx="22" cy="220" r="9"/><text class="num" x="22" y="223.5" text-anchor="middle">5</text>
+  <line x1="385" y1="220" x2="120" y2="220"/>
+  <path d="M128,216 L120,220 L128,224"/>
+  <text x="252" y="214" text-anchor="middle"><tspan class="mono">200 index.html</tspan><tspan class="lbl"> (SPA shell)</tspan></text>
+
+  <circle class="badge" cx="22" cy="253" r="9"/><text class="num" x="22" y="256.5" text-anchor="middle">6</text>
+  <line x1="120" y1="253" x2="650" y2="253"/>
+  <path d="M642,249 L650,253 L642,257"/>
+  <text class="mono" x="385" y="247" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
+
+  <circle class="badge" cx="22" cy="286" r="9"/><text class="num" x="22" y="289.5" text-anchor="middle">7</text>
+  <line x1="650" y1="286" x2="120" y2="286"/>
+  <path d="M128,282 L120,286 L128,290"/>
+  <text class="mono" x="385" y="280" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
+
+  <circle class="badge" cx="22" cy="319" r="9"/><text class="num" x="22" y="322.5" text-anchor="middle">8</text>
+  <rect class="note" x="42" y="307" width="156" height="24" rx="4"/>
+  <text class="lbl" x="120" y="322.5" text-anchor="middle">SPA がログインフォームを描画</text>
+
+  <circle class="badge" cx="22" cy="352" r="9"/><text class="num" x="22" y="355.5" text-anchor="middle">9</text>
+  <line x1="120" y1="352" x2="650" y2="352"/>
+  <path d="M642,348 L650,352 L642,356"/>
+  <text class="mono" x="385" y="346" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
+
+  <circle class="badge" cx="22" cy="385" r="9"/><text class="num" x="22" y="388.5" text-anchor="middle">10</text>
+  <line x1="650" y1="385" x2="120" y2="385"/>
+  <path d="M128,381 L120,385 L128,389"/>
+  <text x="385" y="379" text-anchor="middle"><tspan class="mono">200 { type:"consent.scope", … }</tspan><tspan class="lbl"> または </tspan><tspan class="mono">{ type:"redirect", … }</tspan></text>
+
+  <circle class="badge" cx="22" cy="418" r="9"/><text class="num" x="22" y="421.5" text-anchor="middle">11</text>
+  <line x1="120" y1="418" x2="650" y2="418"/>
+  <path d="M642,414 L650,418 L642,422"/>
+  <text x="385" y="412" text-anchor="middle"><tspan class="mono">POST /interaction/{uid}</tspan><tspan class="lbl">(consent の値)</tspan></text>
+
+  <circle class="badge" cx="22" cy="451" r="9"/><text class="num" x="22" y="454.5" text-anchor="middle">12</text>
+  <line x1="650" y1="451" x2="120" y2="451"/>
+  <path d="M128,447 L120,451 L128,455"/>
+  <text class="mono" x="385" y="445" text-anchor="middle">200 { type:"redirect", location:"/auth?…&amp;code=…" }</text>
+
+  <circle class="badge" cx="22" cy="484" r="9"/><text class="num" x="22" y="487.5" text-anchor="middle">13</text>
+  <line x1="120" y1="484" x2="385" y2="484"/>
+  <path d="M377,480 L385,484 L377,488"/>
+  <text class="mono" x="252" y="478" text-anchor="middle">window.location.href = location</text>
+</svg>
 
 ステートマシンは OP が所有します。SPA は次の prompt を取得し、ユーザの回答を送り返すと、OP が次に何を出すかを決めます。
 

@@ -91,7 +91,7 @@ If you wrote your own `op.Store`, the contract test suite at [`op/store/contract
 2. Restore that substore in isolation.
 3. Resume writes.
 
-The transactional cluster invariant guarantees clients / codes / refresh tokens / access tokens / IATs share one backend, so partial restore inside that cluster is a SQL-level operation (table-level restore from binlog or PITR). Volatile substores are independent — losing `Sessions` doesn't impact `RefreshTokens`.
+The transactional cluster invariant guarantees authorization codes / refresh tokens / grants / PARs / access tokens / grant revocations share one backend, so partial restore inside that cluster is a SQL-level operation (table-level restore from binlog or PITR). Volatile substores are independent — losing `Sessions` doesn't impact `RefreshTokens`.
 
 ## Cookie key recovery
 

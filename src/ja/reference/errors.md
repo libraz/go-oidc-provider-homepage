@@ -97,7 +97,7 @@ JSON 応答です。RFC 6749 §5.2 + RFC 9449(DPoP)。
 | `use_dpop_nonce` | 400 | DPoP §8 のサーバ nonce が必要。クライアントは `DPoP-Nonce` を載せて再送する |
 | `server_error` | 500 | 内部障害 |
 
-`401 invalid_client` は常に `WWW-Authenticate: Basic realm="<issuer>"` (`/userinfo` では `Bearer realm=...`)を載せます(RFC 6749 §5.2)。
+`401 invalid_client` は、クライアントが HTTP Basic で認証した場合に `WWW-Authenticate: Basic realm="oidc"` を載せます(realm は issuer URL ではなく固定文字列です)。`/userinfo` 自身の 401 は別系統で、`Bearer realm="userinfo"` を載せます(RFC 6749 §5.2)。
 
 ## UserInfo エンドポイント(`/userinfo`)
 
@@ -108,7 +108,7 @@ bearer 検証を行います。RFC 6750 §3.1 + RFC 9449。
 | `invalid_token` | 401 | bearer 欠落、期限切れ、失効済み、alg 不一致 |
 | `invalid_dpop_proof` | 401 | DPoP proof JWS の不正、再送、`cnf.jkt` 不一致 |
 | `use_dpop_nonce` | 401 | DPoP §8 のサーバ nonce が必要 |
-| `insufficient_scope` | 403 | 要求された claim に対して scope が不足 |
+| `invalid_request` | 400 | bearer リクエストが不正(トークン多重指定、誤ったチャネルなど)。リクエストボディがサイズ上限を超えた場合は 413 |
 
 ## Introspection / Revocation(`/introspect`、`/revoke`)
 

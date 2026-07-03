@@ -30,17 +30,81 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | Authorization code | one-time consumption + TTL | `DefaultAuthCodeTTL = 60 s` | [/concepts/authorization-code-pkce](/concepts/authorization-code-pkce) |
 | Refresh token (rotation grace) | acceptance of the just-rotated previous token | `refresh.GraceTTLDefault = 60 s` (configurable via `op.WithRefreshGracePeriod`) | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 | DPoP proof — `iat` window | symmetric tolerance around server time | `dpop.DefaultIatWindow = 60 s` | [/concepts/dpop](/concepts/dpop) |
-| DPoP proof — `jti` cache | dedup against replay | matches the iat window (`replayLeew`) | [/concepts/dpop](/concepts/dpop) |
+| DPoP proof — `jti` cache | dedup against replay | `iat + 2 * DefaultIatWindow` (`replayLeew`, ~120 s) | [/concepts/dpop](/concepts/dpop) |
 | JAR (RFC 9101) request object — `jti` cache | dedup against replay | OP-side cache evicted at the request object's own `exp` | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
 | JAR — future skew | `nbf` / `iat` tolerance | `jar.DefaultMaxFutureSkew = 60 s` | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
 | PAR (RFC 9126) `request_uri` lifetime | one-time, short-lived | `parendpoint.DefaultTTL = 60 s` | [/concepts/fapi](/concepts/fapi) |
 | Back-Channel Logout token | OP signs once, RP dedups | OP does not enforce a `jti` cache; RP-side responsibility | [/use-cases/back-channel-logout](/use-cases/back-channel-logout) |
-| ID Token | `iat` + `exp` | `exp - iat = AccessTokenTTL` of the request | [/concepts/tokens](/concepts/tokens) |
+| ID Token | `iat` + `exp` | `exp - iat = defaultIDTokenTTL = 10 min` (fixed, independent of the request's access-token TTL) | [/concepts/tokens](/concepts/tokens) |
 | Access token (JWT or opaque) | `iat` + `exp` | `DefaultAccessTokenTTL = 5 min`, capped at `AccessTokenTTLMax = 24 h` (FAPI profile caps at 10 min) | [/concepts/tokens](/concepts/tokens) |
 | Refresh token (absolute lifetime) | `exp` from issuance | `timex.RefreshTokenTTLDefault = 30 days` | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
-| `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp`; clock leeway 60 s | [/concepts/client-types](/concepts/client-types) |
+| `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
 
 The constants in the "Default window" column are the source of truth — every entry in the table comes from a `grep` against `~/Projects/go-oidc-provider/internal/...` rather than from documentation alone. If the library raises or lowers a default, this table is the page to refresh first.
+
+The same windows, drawn to scale on a logarithmic time axis, make the shape obvious at a glance: every replay-and-clock window collapses into a tight band at or just past 60 seconds, token lifetimes step up to a few minutes, and only the refresh token's absolute lifetime lives out at 30 days — with nothing in between.
+
+<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:720px;height:auto">
+<title id="clock-replay-window-scale-title">Logarithmic comparison of every clock and replay window go-oidc-provider enforces, from the 60-second replay band to the 30-day refresh-token lifetime.</title>
+<style>#crws .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#crws .d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-1);stroke:none}#crws .d-val{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-tick{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}#crws .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#crws .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-leg{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-grid{stroke:currentColor;stroke-width:1;opacity:.16;stroke-dasharray:2 3}#crws .d-lane{stroke:currentColor;stroke-width:1;opacity:.08}#crws .d-axis{stroke:currentColor;stroke-width:1;opacity:.28}#crws .d-op-fill{fill:var(--vp-c-brand-2);stroke:none}#crws .d-op-store{fill:none;stroke:var(--vp-c-brand-2);stroke-width:1.6;stroke-dasharray:3 2}</style>
+<line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
+<line class="d-grid" x1="374.9" y1="58" x2="374.9" y2="362"/>
+<line class="d-grid" x1="449.6" y1="58" x2="449.6" y2="362"/>
+<line class="d-grid" x1="582.1" y1="58" x2="582.1" y2="362"/>
+<line class="d-grid" x1="724" y1="58" x2="724" y2="362"/>
+<line class="d-axis" x1="250" y1="362" x2="724" y2="362"/>
+<line class="d-lane" x1="250" y1="70" x2="724" y2="70"/>
+<line class="d-lane" x1="250" y1="101" x2="724" y2="101"/>
+<line class="d-lane" x1="250" y1="132" x2="724" y2="132"/>
+<line class="d-lane" x1="250" y1="163" x2="724" y2="163"/>
+<line class="d-lane" x1="250" y1="194" x2="724" y2="194"/>
+<line class="d-lane" x1="250" y1="225" x2="724" y2="225"/>
+<line class="d-lane" x1="250" y1="256" x2="724" y2="256"/>
+<line class="d-lane" x1="250" y1="287" x2="724" y2="287"/>
+<line class="d-lane" x1="250" y1="318" x2="724" y2="318"/>
+<line class="d-lane" x1="250" y1="349" x2="724" y2="349"/>
+<rect class="d-op-store" x="274.4" y="65.5" width="9" height="9" rx="1"/>
+<rect class="d-op-store" x="274.4" y="96.5" width="9" height="9" rx="1"/>
+<circle class="d-op-fill" cx="278.9" cy="132" r="4.5"/>
+<circle class="d-op-fill" cx="278.9" cy="163" r="4.5"/>
+<circle class="d-op-fill" cx="278.9" cy="194" r="4.5"/>
+<rect class="d-op-store" x="274.4" y="220.5" width="9" height="9" rx="1"/>
+<rect class="d-op-store" x="303.3" y="251.5" width="9" height="9" rx="1"/>
+<circle class="d-op-fill" cx="346" cy="287" r="4.5"/>
+<circle class="d-op-fill" cx="374.9" cy="318" r="4.5"/>
+<circle class="d-op-fill" cx="724" cy="349" r="4.5"/>
+<text class="d-cap" x="8" y="18">Clock and replay windows, to scale</text>
+<text class="d-sub" x="8" y="34">logarithmic axis — window length after issuance</text>
+<circle class="d-op-fill" cx="470" cy="14" r="4.5"/>
+<text class="d-leg" x="480" y="18">clock / TTL freshness</text>
+<rect class="d-op-store" x="465.5" y="29.5" width="9" height="9" rx="1"/>
+<text class="d-leg" x="480" y="37">store-backed replay dedup</text>
+<text class="d-lbl" x="238" y="73.5" text-anchor="end">Authorization code</text>
+<text class="d-lbl" x="238" y="104.5" text-anchor="end">PAR <tspan class="d-mono">request_uri</tspan></text>
+<text class="d-lbl" x="238" y="135.5" text-anchor="end">Refresh token — grace</text>
+<text class="d-lbl" x="238" y="166.5" text-anchor="end">DPoP proof — <tspan class="d-mono">iat</tspan></text>
+<text class="d-lbl" x="238" y="197.5" text-anchor="end">JAR — future skew</text>
+<text class="d-lbl" x="238" y="228.5" text-anchor="end"><tspan class="d-mono">client_assertion</tspan></text>
+<text class="d-lbl" x="238" y="259.5" text-anchor="end">DPoP proof — <tspan class="d-mono">jti</tspan> cache</text>
+<text class="d-lbl" x="238" y="290.5" text-anchor="end">Access token</text>
+<text class="d-lbl" x="238" y="321.5" text-anchor="end">ID token</text>
+<text class="d-lbl" x="238" y="352.5" text-anchor="end">Refresh token — absolute</text>
+<text class="d-val" x="289" y="73.5">60 s</text>
+<text class="d-val" x="289" y="104.5">60 s</text>
+<text class="d-val" x="289" y="135.5">60 s</text>
+<text class="d-val" x="289" y="166.5">±60 s</text>
+<text class="d-val" x="289" y="197.5">60 s</text>
+<text class="d-val" x="289" y="228.5">±60 s</text>
+<text class="d-val" x="318" y="259.5">≈120 s</text>
+<text class="d-val" x="356" y="290.5">5 min · FAPI 10 min</text>
+<text class="d-val" x="385" y="321.5">10 min</text>
+<text class="d-val" x="715" y="352.5" text-anchor="end">30 days</text>
+<text class="d-tick" x="278.9" y="375" text-anchor="middle">1 min</text>
+<text class="d-tick" x="374.9" y="375" text-anchor="middle">10 min</text>
+<text class="d-tick" x="449.6" y="375" text-anchor="middle">1 h</text>
+<text class="d-tick" x="582.1" y="375" text-anchor="middle">1 day</text>
+<text class="d-tick" x="724" y="375" text-anchor="middle">30 days</text>
+</svg>
 
 ## What "replay" means here
 
@@ -60,7 +124,7 @@ Read these three together as the model: the artifact's *use* defines the defense
 
 For multi-instance deployments, the substore must be shared across instances or every instance must be sticky-routed for the lifetime of a given `jti`. Backing it with the in-memory implementation across multiple replicas defeats the defense — replica A and replica B will each accept the same proof exactly once. A fast shared cache (Redis, Memcached) is the typical choice; the deployment guidance in [/operations/multi-instance](/operations/multi-instance) discusses the volatile / durable split that this implies.
 
-`ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed") and a total cache flush opens at most a window of attacker-controlled replay equal to each artifact's remaining lifetime — bounded by the `iat` window for DPoP, by `exp` for JAR / `client_assertion`. This is why none of the windows above is much larger than 60 seconds.
+`ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed") and a total cache flush opens at most a window of attacker-controlled replay equal to each artifact's remaining lifetime — bounded by twice the `iat` window for DPoP, by `exp` for JAR / `client_assertion`. This is why none of the windows above is much larger than 120 seconds.
 
 The other deployment knob is the wall clock itself. Every replica runs the same OP code with the same defaults; if their clocks disagree by more than the relevant window, the replicas will disagree about whether a given artifact is fresh. NTP discipline across the whole fleet is part of the security posture, not a "nice to have".
 

@@ -16,6 +16,75 @@ outline: 2
 
 このページは、`op.New` に渡せる公開オプションを並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
+<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="opt-decision-title">設定の目的（新規 OP / FAPI 切り替え / 単一機能 / grant 制限 / 送信者制約 / トークン形式）を、それを担う op.New オプションに振り分け、該当なしなら下の表へ導く決定木。</title>
+  <style>
+  .od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
+  </style>
+  <rect x="24" y="24" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="54" text-anchor="middle">OP を新規に立ち上げる？</text>
+  <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>
+  <text class="od-b od-op" x="553" y="55" text-anchor="middle">必須オプション</text>
+  <line x1="324" y1="50" x2="426" y2="50"/>
+  <path d="M419 46 L426 50 L419 54"/>
+  <text class="od-s od-t2" x="376" y="42" text-anchor="middle">はい</text>
+  <line x1="174" y1="76" x2="174" y2="94"/>
+  <path d="M170 87 L174 94 L178 87"/>
+  <text class="od-s od-t2" x="190" y="90">いいえ</text>
+  <rect x="24" y="96" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="126" text-anchor="middle">FAPI 2.0 を 1 行で有効化？</text>
+  <rect class="od-sop" x="430" y="100" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="126" text-anchor="middle">WithProfile(...)</text>
+  <line x1="324" y1="122" x2="426" y2="122"/>
+  <path d="M419 118 L426 122 L419 126"/>
+  <text class="od-s od-t2" x="376" y="114" text-anchor="middle">はい</text>
+  <line x1="174" y1="148" x2="174" y2="166"/>
+  <path d="M170 159 L174 166 L178 159"/>
+  <text class="od-s od-t2" x="190" y="162">いいえ</text>
+  <rect x="24" y="168" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="198" text-anchor="middle">機能を 1 つだけ有効化？</text>
+  <rect class="od-sop" x="430" y="172" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="198" text-anchor="middle">WithFeature(...)</text>
+  <line x1="324" y1="194" x2="426" y2="194"/>
+  <path d="M419 190 L426 194 L419 198"/>
+  <text class="od-s od-t2" x="376" y="186" text-anchor="middle">はい</text>
+  <line x1="174" y1="220" x2="174" y2="238"/>
+  <path d="M170 231 L174 238 L178 231"/>
+  <text class="od-s od-t2" x="190" y="234">いいえ</text>
+  <rect x="24" y="240" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="270" text-anchor="middle"><tspan class="od-m">/token</tspan> の grant を絞る？</text>
+  <rect class="od-sop" x="430" y="244" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="270" text-anchor="middle">WithGrants(...)</text>
+  <line x1="324" y1="266" x2="426" y2="266"/>
+  <path d="M419 262 L426 266 L419 270"/>
+  <text class="od-s od-t2" x="376" y="258" text-anchor="middle">はい</text>
+  <line x1="174" y1="292" x2="174" y2="310"/>
+  <path d="M170 303 L174 310 L178 303"/>
+  <text class="od-s od-t2" x="190" y="306">いいえ</text>
+  <rect x="24" y="312" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="342" text-anchor="middle">送信者制約付きトークン？</text>
+  <rect class="od-sop" x="430" y="316" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="342" text-anchor="middle">WithFeature(DPoP|MTLS)</text>
+  <line x1="324" y1="338" x2="426" y2="338"/>
+  <path d="M419 334 L426 338 L419 342"/>
+  <text class="od-s od-t2" x="376" y="330" text-anchor="middle">はい</text>
+  <line x1="174" y1="364" x2="174" y2="382"/>
+  <path d="M170 375 L174 382 L178 375"/>
+  <text class="od-s od-t2" x="190" y="378">いいえ</text>
+  <rect x="24" y="384" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="414" text-anchor="middle">JWT か opaque か？</text>
+  <rect class="od-sop" x="430" y="388" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="414" text-anchor="middle">WithAccessTokenFormat(...)</text>
+  <line x1="324" y1="410" x2="426" y2="410"/>
+  <path d="M419 406 L426 410 L419 414"/>
+  <text class="od-s od-t2" x="376" y="402" text-anchor="middle">はい</text>
+  <line x1="174" y1="436" x2="174" y2="454"/>
+  <path d="M170 447 L174 454 L178 447"/>
+  <text class="od-s od-t2" x="190" y="450">いいえ</text>
+  <rect x="24" y="456" width="652" height="48" rx="6"/>
+  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">該当なし — 下の表をセクションごとに参照。</text>
+</svg>
+
 - **これから新規に OP を立ち上げる** → まず必須の 4 つ: [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、[`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys)。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
 - **FAPI 2.0 を 1 行で有効にしたい** → `WithProfile(profile.FAPI2Baseline)`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)。プロファイルは mTLS が明示されていなければ DPoP を既定選択します。`profile.IGovHigh` は予約値で、現時点では拒否されます。[ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
 - **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。PKCE は標準で有効です。Dynamic Registration、RAR、Grant Management は追加設定が必要なので、それぞれ専用オプションから有効化します。
@@ -77,6 +146,8 @@ outline: 2
 | `WithMFAEncryptionKeys` | 32 byte の鍵 | TOTP シークレットを AES-256-GCM で保存時暗号化 | なし |
 | `WithAuthnLockoutStore` | `op.AuthnLockoutStore` | `RuleAfterFailedAttempts` が参照する subject 単位の失敗回数を永続化 | in-memory |
 | `WithACRPolicy` | `op.ACRPolicy`(interface) | ステップアップの acr / aal マッピング | identity |
+
+同梱の SQL アダプタは `store.AuthnLockoutStore` を実装していません — スキーマに authn-factor 用のロックアウトテーブルが無いためです。オプションを未設定のままにすると cross-factor 追跡は無効になり、TOTP / email-OTP それぞれの標準カウンタだけが働きます。オプションを設定すると cross-factor 追跡が有効になりますが、永続化は組み込み側の責任になります。in-memory リファレンス実装(`inmem.Store.AuthnLockouts`)はプロセスローカルで、再起動時にリセットされるためです。カウンタを再起動後も維持したい、あるいはレプリカ間で共有したいデプロイでは、耐久性のある共有ストレージに基づく独自の `store.AuthnLockoutStore` を用意する必要があります。
 
 ## UI
 

@@ -31,21 +31,58 @@ In short, the nonce flow blocks two classes of attack:
 
 ## The flow
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant RP
-  participant OP
-
-  RP->>OP: POST /token<br/>DPoP: <proof, no nonce>
-  OP->>RP: 400 use_dpop_nonce<br/>DPoP-Nonce: <nonce-1>
-  RP->>RP: build new proof with nonce=nonce-1
-  RP->>OP: POST /token<br/>DPoP: <proof, nonce=nonce-1>
-  OP->>RP: 200 { access_token (DPoP-bound) }<br/>DPoP-Nonce: <nonce-2>
-  Note over RP: every subsequent call carries the latest nonce
-  RP->>OP: GET /userinfo<br/>DPoP: <proof, nonce=nonce-2>
-  OP->>RP: 200 { user claims }<br/>DPoP-Nonce: <nonce-3>
-```
+<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="dpop-nonce-flow-title">Sequence of the DPoP nonce handshake: the OP rejects the first proof with use_dpop_nonce and a DPoP-Nonce header, the client retries with the nonce claim, and every later call carries the newest rotating nonce.</title>
+  <style>
+    .dpop-nonce-dg text{stroke:none;fill:currentColor;}
+    .dpop-nonce-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+    .dpop-nonce-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+    .dpop-nonce-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+    .dpop-nonce-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+    .dpop-nonce-dg .op-accent{stroke:var(--vp-c-brand-2);}
+    .dpop-nonce-dg .op-fill{fill:var(--vp-c-brand-2);}
+    .dpop-nonce-dg .life{opacity:0.3;stroke-width:1;}
+    .dpop-nonce-dg .note{opacity:0.4;stroke-width:1;}
+  </style>
+  <line class="life" x1="130" y1="68" x2="130" y2="472"/>
+  <line class="life op-accent" x1="630" y1="68" x2="630" y2="472"/>
+  <rect x="55" y="14" width="150" height="30" rx="5"/>
+  <rect class="op-accent" x="555" y="14" width="150" height="30" rx="5"/>
+  <text class="d-actor" x="130" y="33" text-anchor="middle">RP / client</text>
+  <text class="d-actor op-fill" x="630" y="33" text-anchor="middle">OP</text>
+  <text class="d-cap" x="130" y="58" text-anchor="middle">holds priv_dpop</text>
+  <text class="d-cap op-fill" x="630" y="58" text-anchor="middle">this library</text>
+  <text class="d-mono" x="380" y="98" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+  <text class="d-mono" x="380" y="111" text-anchor="middle">no nonce yet</text>
+  <path d="M130,120 H630"/>
+  <path d="M623,116 L630,120 L623,124"/>
+  <text class="d-mono" x="380" y="150" text-anchor="middle">400 use_dpop_nonce</text>
+  <text class="d-mono" x="380" y="163" text-anchor="middle">DPoP-Nonce: nonce-1</text>
+  <path d="M630,172 H130"/>
+  <path d="M137,168 L130,172 L137,176"/>
+  <path d="M130,196 h16 v16 h-16"/>
+  <path d="M137,206 L130,210 L137,214"/>
+  <text class="d-prose" x="156" y="200">Rebuild the proof</text>
+  <text class="d-mono" x="156" y="213">nonce = nonce-1</text>
+  <text class="d-mono" x="380" y="246" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+  <text class="d-mono" x="380" y="259" text-anchor="middle">nonce = nonce-1</text>
+  <path d="M130,268 H630"/>
+  <path d="M623,264 L630,268 L623,272"/>
+  <text class="d-mono" x="380" y="298" text-anchor="middle">200 · access_token (DPoP-bound)</text>
+  <text class="d-mono" x="380" y="311" text-anchor="middle">DPoP-Nonce: nonce-2</text>
+  <path d="M630,320 H130"/>
+  <path d="M137,316 L130,320 L137,324"/>
+  <rect class="note" x="238" y="336" width="284" height="24" rx="4"/>
+  <text class="d-prose" x="380" y="352" text-anchor="middle">Every later call carries the newest nonce</text>
+  <text class="d-mono" x="380" y="386" text-anchor="middle">GET /userinfo · DPoP: &lt;proof&gt;</text>
+  <text class="d-mono" x="380" y="399" text-anchor="middle">nonce = nonce-2</text>
+  <path d="M130,408 H630"/>
+  <path d="M623,404 L630,408 L623,412"/>
+  <text class="d-mono" x="380" y="438" text-anchor="middle">200 · { user claims }</text>
+  <text class="d-mono" x="380" y="451" text-anchor="middle">DPoP-Nonce: nonce-3</text>
+  <path d="M630,460 H130"/>
+  <path d="M137,456 L130,460 L137,464"/>
+</svg>
 
 ## Wiring
 
@@ -76,7 +113,9 @@ A process-local nonce source breaks across replicas — instance B has no record
 |---|---|---|
 | `/token` | always when a `DPoPNonceSource` is configured | `op.WithDPoPNonceSource` |
 | `/userinfo` | always when a `DPoPNonceSource` is configured | same |
-| `/par` | accepted but not required | n/a |
+| `/par` | always when a `DPoPNonceSource` is configured | same |
+
+`/par` and `/token` issue and require the nonce symmetrically, so an SPA that pushes authorization requests runs the same nonce-retry loop at `/par` that it already runs at `/token`.
 
 FAPI 2.0 Message Signing forces the nonce on; FAPI 2.0 Baseline allows it. The library mirrors the spec — flipping the profile flips the default for you.
 

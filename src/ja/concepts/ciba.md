@@ -33,30 +33,80 @@ CIBA は [device flow](/ja/concepts/device-code) とは別の形の問題を解�
 
 ## フローの動き方（poll mode）
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant POS as 利用デバイス<br/>（POS 端末）
-    participant OP as OP（go-oidc-provider）
-    participant Phone as 認証デバイス<br/>（スタッフのスマホ）
-
-    POS->>OP: POST /bc-authorize<br/>client_id=pos-terminal&login_hint=alice<br/>scope=openid profile&binding_message="Acme Coffee で 800 円"
-    OP->>OP: HintResolver(login_hint, "alice") → sub=alice123
-    OP->>Phone: out-of-band push<br/>（「Acme Coffee で 800 円を承認?」）
-    OP->>POS: 200 { auth_req_id, expires_in: 600, interval: 5 }
-
-    par POS は poll
-        loop interval 秒ごと
-            POS->>OP: POST /token<br/>grant_type=urn:openid:params:grant-type:ciba<br/>auth_req_id=...
-            OP-->>POS: 400 { error: "authorization_pending" }
-        end
-    and ユーザはスマホで承認
-        Phone->>OP: 組み込み側のフック approve(auth_req_id, sub=alice123)
-    end
-
-    POS->>OP: POST /token（次の poll）
-    OP->>POS: 200 { access_token, id_token, refresh_token? }
-```
+<svg role="img" aria-labelledby="ciba-poll-flow-title" viewBox="0 0 760 456" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<title id="ciba-poll-flow-title">CIBA poll モードのシーケンス図。POS 端末が /bc-authorize を呼び、OP が hint を解決してスタッフのスマホへ push し、POS はユーザが承認するまで /token を poll してトークンが発行される。</title>
+<style>
+.ciba-tx{fill:currentColor;stroke:none;}
+.ciba-fb{font-family:var(--vp-font-family-base);}
+.ciba-fm{font-family:var(--vp-font-family-mono);}
+.ciba-accent{stroke:var(--vp-c-brand-2);}
+.ciba-sec{stroke:#7c6fb0;}
+.dark .ciba-sec{stroke:#b3a7e0;}
+.ciba-accent-f{fill:var(--vp-c-brand-2);}
+.ciba-sec-f{fill:#7c6fb0;}
+.dark .ciba-sec-f{fill:#b3a7e0;}
+.ciba-muted{opacity:.62;}
+.ciba-life{stroke-width:1.5;stroke-dasharray:3 4;opacity:.5;}
+.ciba-frag{stroke-width:1.4;stroke-dasharray:5 4;opacity:.55;}
+</style>
+<line class="ciba-life" x1="93" y1="50" x2="93" y2="446"/>
+<line class="ciba-life ciba-accent" x1="430" y1="50" x2="430" y2="446"/>
+<line class="ciba-life ciba-sec" x1="680" y1="50" x2="680" y2="446"/>
+<rect x="18" y="10" width="150" height="40" rx="6"/>
+<rect class="ciba-accent" x="352" y="10" width="156" height="40" rx="6"/>
+<rect class="ciba-sec" x="605" y="10" width="150" height="40" rx="6"/>
+<text class="ciba-tx ciba-fb" x="93" y="28" text-anchor="middle" font-size="11.5" font-weight="600">利用デバイス</text>
+<text class="ciba-tx ciba-fb ciba-muted" x="93" y="42" text-anchor="middle" font-size="10.5">（POS 端末）</text>
+<text class="ciba-tx ciba-fb ciba-accent-f" x="430" y="28" text-anchor="middle" font-size="11.5" font-weight="600">OP</text>
+<text class="ciba-tx ciba-fm ciba-accent-f ciba-muted" x="430" y="42" text-anchor="middle" font-size="10.5">go-oidc-provider</text>
+<text class="ciba-tx ciba-fb ciba-sec-f" x="680" y="28" text-anchor="middle" font-size="11.5" font-weight="600">認証デバイス</text>
+<text class="ciba-tx ciba-fb ciba-muted" x="680" y="42" text-anchor="middle" font-size="10.5">（スタッフのスマホ）</text>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="100" font-size="10">1</text>
+<text class="ciba-tx ciba-fm" x="261" y="71" text-anchor="middle" font-size="11">POST /bc-authorize</text>
+<text class="ciba-tx ciba-fm ciba-muted" x="261" y="84" text-anchor="middle" font-size="10.5">login_hint=alice · scope=openid · binding_message</text>
+<line x1="93" y1="97" x2="430" y2="97"/>
+<polyline points="423,93 430,97 423,101"/>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="118" font-size="10">2</text>
+<path class="ciba-accent" d="M430 108 H462 V122 H430"/>
+<polyline class="ciba-accent" points="437,118 430,122 437,126"/>
+<text class="ciba-tx ciba-fm ciba-accent-f" x="470" y="116" font-size="11">HintResolver → sub=alice123</text>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="173" font-size="10">3</text>
+<text class="ciba-tx ciba-fb" x="555" y="147" text-anchor="middle" font-size="11">out-of-band push</text>
+<text class="ciba-tx ciba-fb ciba-sec-f" x="555" y="160" text-anchor="middle" font-size="10.5">Acme Coffee で 800 円を承認?</text>
+<line class="ciba-accent" x1="430" y1="170" x2="680" y2="170"/>
+<polyline class="ciba-accent" points="673,166 680,170 673,174"/>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="207" font-size="10">4</text>
+<text class="ciba-tx ciba-fm" x="261" y="192" text-anchor="middle" font-size="11">200 · { auth_req_id, expires_in: 600, interval: 5 }</text>
+<line class="ciba-accent" x1="430" y1="204" x2="93" y2="204"/>
+<polyline class="ciba-accent" points="100,200 93,204 100,208"/>
+<rect class="ciba-frag" x="30" y="216" width="710" height="156" rx="4"/>
+<text class="ciba-tx ciba-fm ciba-muted" x="40" y="230" font-size="10" font-weight="600">par</text>
+<rect class="ciba-frag" x="46" y="234" width="430" height="74" rx="4"/>
+<text class="ciba-tx ciba-fb ciba-muted" x="54" y="247" font-size="10">loop · interval 秒ごとに poll</text>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="277" font-size="10">5</text>
+<text class="ciba-tx ciba-fm" x="261" y="262" text-anchor="middle" font-size="11">POST /token · grant_type=…:ciba · auth_req_id</text>
+<line x1="93" y1="274" x2="430" y2="274"/>
+<polyline points="423,270 430,274 423,278"/>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="301" font-size="10">6</text>
+<text class="ciba-tx ciba-fm" x="261" y="288" text-anchor="middle" font-size="11">400 · { error: authorization_pending }</text>
+<line class="ciba-accent" x1="430" y1="298" x2="93" y2="298"/>
+<polyline class="ciba-accent" points="100,294 93,298 100,302"/>
+<line class="ciba-frag" x1="30" y1="320" x2="740" y2="320"/>
+<text class="ciba-tx ciba-fb ciba-muted" x="555" y="333" text-anchor="middle" font-size="10.5">ユーザがスマホで承認</text>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="361" font-size="10">7</text>
+<text class="ciba-tx ciba-fm" x="555" y="346" text-anchor="middle" font-size="11">approve(auth_req_id, sub=alice123)</text>
+<line class="ciba-sec" x1="680" y1="358" x2="430" y2="358"/>
+<polyline class="ciba-sec" points="437,354 430,358 437,362"/>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="411" font-size="10">8</text>
+<text class="ciba-tx ciba-fm" x="278" y="396" text-anchor="end" font-size="11">POST /token</text>
+<text class="ciba-tx ciba-fb ciba-muted" x="284" y="396" font-size="10.5">（次の poll）</text>
+<line x1="93" y1="408" x2="430" y2="408"/>
+<polyline points="423,404 430,408 423,412"/>
+<text class="ciba-tx ciba-fm ciba-muted" x="8" y="439" font-size="10">9</text>
+<text class="ciba-tx ciba-fm" x="261" y="424" text-anchor="middle" font-size="11">200 · { access_token, id_token, refresh_token? }</text>
+<line class="ciba-accent" x1="430" y1="436" x2="93" y2="436"/>
+<polyline class="ciba-accent" points="100,432 93,436 100,440"/>
+</svg>
 
 利用デバイスはユーザの credential を持ちません。ユーザは利用デバイスに何も打ちません。認証デバイス — ユーザが銀行アプリにサインイン済みなのですでに認証されている — だけが consent を行使する場所になります。
 

@@ -79,7 +79,7 @@ JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り�
 - 署名済み JARM JWT を、解決した受信者鍵に対して登録済みの `alg` / `enc` で暗号化します。
 - 暗号化に失敗した場合、OP は平文の `?code=...` リダイレクトへフォールバックせず、`server_error` を返します。クライアントが暗号化された応答を要求しているのに code を平文で漏らすのは、fail-closed(失敗時は応答そのものを止める)よりも悪い結果になるためです。
 
-`alg` / `enc` の allow-list は、ID トークン / userinfo / introspection の暗号化と同じ閉じたリスト(`op.SupportedEncryptionAlgs` と `op.SupportedEncryptionEncs`)を使います: RSA-OAEP ファミリ(`SHA-256` / `SHA-512`)、ECDH-ES バリアント、AES-GCM の鍵 wrap、`A128GCM` / `A256GCM` のコンテンツ暗号化が対象です。`RSA1_5`、`dir`、AES-CBC-HS 系のコンテンツ暗号化は意図的に除外しています。alg マトリクスと根拠は [JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
+`alg` / `enc` の allow-list は、ID トークン / userinfo / introspection の暗号化と同じ閉じたリスト(`op.SupportedEncryptionAlgs` と `op.SupportedEncryptionEncs`)を使います: 鍵管理は `RSA-OAEP-256`、`ECDH-ES`、`ECDH-ES+A128KW` / `ECDH-ES+A256KW`、コンテンツ暗号化は `A128GCM` / `A256GCM` が対象です。`RSA1_5`、`dir`、`A*KW` / `A*GCMKW`、AES-CBC-HS 系のコンテンツ暗号化は意図的に除外しています。alg マトリクスと根拠は [JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
 
 OP は discovery で `authorization_encryption_alg_values_supported` と `_enc_values_supported` を、JARM 機能と `op.WithEncryptionKeyset` の両方が組み込まれているときにだけ広告します(`internal/discovery/document.go`)。
 

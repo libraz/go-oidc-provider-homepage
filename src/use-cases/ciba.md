@@ -124,11 +124,17 @@ func handleApproval(w http.ResponseWriter, r *http.Request, st *inmem.Store) {
 
     switch decision {
     case "approve":
+        // acr is the Authentication Context Class Reference the
+        // authentication device actually satisfied. The token endpoint
+        // stamps it verbatim onto id_token.acr; it is independent of the
+        // acr_values the consumption device requested at /bc-authorize,
+        // and may be left "" when the deployment has no ACR vocabulary.
         // authTime is the wall-clock when the user authenticated on the
         // authentication device. Token endpoint stamps id_token.auth_time
         // from it (omit-on-zero); clients that registered RequireAuthTime
         // enforce the gate against this value.
-        if err := st.CIBARequests().Approve(r.Context(), authReqID, sub, time.Now()); err != nil {
+        acr := "" // or the ACR the authentication device satisfied
+        if err := st.CIBARequests().Approve(r.Context(), authReqID, sub, acr, time.Now()); err != nil {
             http.Error(w, "approve failed", 500)
             return
         }
@@ -174,7 +180,7 @@ Consumption devices may pin the issued access token to a resource server by send
 
 ## `amr` and `acr` in the CIBA id_token
 
-The id_token issued at the end of a CIBA flow stamps `acr` from `ACRValues[0]` (when non-empty) so RPs can read the requested authentication context class. **`amr` is not populated** because the CIBA request record does not carry a verified authentication-method signal. OIDC Core §2 defines `acr` and `amr` as distinct concepts with no defined synonymy.
+The id_token issued at the end of a CIBA flow stamps `acr` from the ACR the authentication device actually satisfied — the value the embedder's callback passes as the `acr` argument to `CIBARequestStore.Approve` — not from the requested `acr_values`. It is empty when the callback passes `""`, which is the expected posture for deployments with no comparable ACR vocabulary. **`amr` is not populated** because the CIBA request record does not carry a verified authentication-method signal. OIDC Core §2 defines `acr` and `amr` as distinct concepts with no defined synonymy.
 
 If your RP currently reads `amr` from a CIBA id_token, expect an empty / absent claim until a substore extension lands that supplies real method strings.
 

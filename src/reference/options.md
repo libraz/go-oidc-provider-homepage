@@ -16,6 +16,75 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 
 This page is a flat reference of the public `op.New` options. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
 
+<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="opt-decision-title">Decision tree routing a configuration goal — fresh OP, FAPI switch, single feature, grant restriction, sender-constraint, or token format — to the op.New option that handles it, falling through to the full table.</title>
+  <style>
+  .od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
+  </style>
+  <rect x="24" y="24" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="54" text-anchor="middle">Booting a fresh OP?</text>
+  <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>
+  <text class="od-b od-op" x="553" y="55" text-anchor="middle">Required options</text>
+  <line x1="324" y1="50" x2="426" y2="50"/>
+  <path d="M419 46 L426 50 L419 54"/>
+  <text class="od-s od-t2" x="376" y="42" text-anchor="middle">Yes</text>
+  <line x1="174" y1="76" x2="174" y2="94"/>
+  <path d="M170 87 L174 94 L178 87"/>
+  <text class="od-s od-t2" x="190" y="90">No</text>
+  <rect x="24" y="96" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="126" text-anchor="middle">Enable FAPI 2.0 in one switch?</text>
+  <rect class="od-sop" x="430" y="100" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="126" text-anchor="middle">WithProfile(...)</text>
+  <line x1="324" y1="122" x2="426" y2="122"/>
+  <path d="M419 118 L426 122 L419 126"/>
+  <text class="od-s od-t2" x="376" y="114" text-anchor="middle">Yes</text>
+  <line x1="174" y1="148" x2="174" y2="166"/>
+  <path d="M170 159 L174 166 L178 159"/>
+  <text class="od-s od-t2" x="190" y="162">No</text>
+  <rect x="24" y="168" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="198" text-anchor="middle">Just one feature, no profile?</text>
+  <rect class="od-sop" x="430" y="172" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="198" text-anchor="middle">WithFeature(...)</text>
+  <line x1="324" y1="194" x2="426" y2="194"/>
+  <path d="M419 190 L426 194 L419 198"/>
+  <text class="od-s od-t2" x="376" y="186" text-anchor="middle">Yes</text>
+  <line x1="174" y1="220" x2="174" y2="238"/>
+  <path d="M170 231 L174 238 L178 231"/>
+  <text class="od-s od-t2" x="190" y="234">No</text>
+  <rect x="24" y="240" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="270" text-anchor="middle">Restrict grants at <tspan class="od-m">/token</tspan>?</text>
+  <rect class="od-sop" x="430" y="244" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="270" text-anchor="middle">WithGrants(...)</text>
+  <line x1="324" y1="266" x2="426" y2="266"/>
+  <path d="M419 262 L426 266 L419 270"/>
+  <text class="od-s od-t2" x="376" y="258" text-anchor="middle">Yes</text>
+  <line x1="174" y1="292" x2="174" y2="310"/>
+  <path d="M170 303 L174 310 L178 303"/>
+  <text class="od-s od-t2" x="190" y="306">No</text>
+  <rect x="24" y="312" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="342" text-anchor="middle">Sender-constrained access tokens?</text>
+  <rect class="od-sop" x="430" y="316" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="342" text-anchor="middle">WithFeature(DPoP|MTLS)</text>
+  <line x1="324" y1="338" x2="426" y2="338"/>
+  <path d="M419 334 L426 338 L419 342"/>
+  <text class="od-s od-t2" x="376" y="330" text-anchor="middle">Yes</text>
+  <line x1="174" y1="364" x2="174" y2="382"/>
+  <path d="M170 375 L174 382 L178 375"/>
+  <text class="od-s od-t2" x="190" y="378">No</text>
+  <rect x="24" y="384" width="300" height="52" rx="6"/>
+  <text class="od-b od-t1" x="174" y="414" text-anchor="middle">JWT vs opaque access tokens?</text>
+  <rect class="od-sop" x="430" y="388" width="246" height="44" rx="22"/>
+  <text class="od-m od-op" x="553" y="414" text-anchor="middle">WithAccessTokenFormat(...)</text>
+  <line x1="324" y1="410" x2="426" y2="410"/>
+  <path d="M419 406 L426 410 L419 414"/>
+  <text class="od-s od-t2" x="376" y="402" text-anchor="middle">Yes</text>
+  <line x1="174" y1="436" x2="174" y2="454"/>
+  <path d="M170 447 L174 454 L178 447"/>
+  <text class="od-s od-t2" x="190" y="450">No</text>
+  <rect x="24" y="456" width="652" height="48" rx="6"/>
+  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">None match — browse the full option table below by section.</text>
+</svg>
+
 - **You're booting a fresh OP for the first time** → start with the four required options: [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
 - **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). The profile auto-selects DPoP unless you explicitly enable mTLS. `profile.IGovHigh` is reserved and rejected today. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
 - **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. PKCE is on by default. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
@@ -77,6 +146,8 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
 | `WithMFAEncryptionKeys` | 32-byte key(s) | AES-256-GCM seal of TOTP secrets at rest | none |
 | `WithAuthnLockoutStore` | `op.AuthnLockoutStore` | persists per-subject failed-attempt counters consulted by `RuleAfterFailedAttempts` | in-memory |
 | `WithACRPolicy` | `op.ACRPolicy` (interface) | step-up acr/aal mapping | identity |
+
+The bundled SQL adapter does not implement `store.AuthnLockoutStore` — its schema has no authn-factor lockout table. Leaving the option unset disables cross-factor tracking, so only the built-in per-factor TOTP / email-OTP counters apply; setting the option activates cross-factor tracking, but persistence then becomes the embedder's responsibility, since the in-memory reference (`inmem.Store.AuthnLockouts`) is process-local and resets on restart. Deployments that need the counter to survive a restart or to be shared across replicas must supply their own `store.AuthnLockoutStore` backed by durable, shared storage.
 
 ## UI
 

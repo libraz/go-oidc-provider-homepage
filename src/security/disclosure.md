@@ -33,24 +33,49 @@ The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/g
 
 The rough flow once a report lands:
 
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#374151","primaryTextColor":"#fff","lineColor":"#888"}}}%%
-flowchart TB
-  R[Report received] --> A[Acknowledge<br/>when I'm next online]
-  A --> T[Triage<br/>reproduce / classify]
-  T -->|confirmed| F[Fix or mitigation plan<br/>severity drives priority]
-  T -->|out of scope| X[Close with reason]
-  F --> P[Coordinated disclosure window]
-  P --> R2[Release patched version]
-  R2 --> G[Publish GHSA<br/>request CVE if applicable]
-  style R fill:#0c5460,color:#fff
-  style A fill:#0c5460,color:#fff
-  style T fill:#0c5460,color:#fff
-  style F fill:#0c5460,color:#fff
-  style P fill:#0c5460,color:#fff
-  style R2 fill:#0c5460,color:#fff
-  style G fill:#0c5460,color:#fff
-```
+<svg role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:640px;height:auto;margin:1.5rem auto;">
+  <title id="disclosure-flow-title">The vulnerability-report pipeline: a report is received, acknowledged, triaged, and either closed as out of scope or fixed, disclosed, released, and published as a GHSA.</title>
+  <style>
+    .d-title{font-family:var(--vp-font-family-base);font-weight:600;font-size:14px;fill:var(--vp-c-text-1);stroke:none}
+    .d-sub{font-family:var(--vp-font-family-base);font-weight:400;font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
+    .d-edge{font-family:var(--vp-font-family-base);font-weight:500;font-size:11px;fill:var(--vp-c-text-2);stroke:none}
+    .op-accent{stroke:var(--vp-c-brand-2)}
+  </style>
+  <!-- boxes -->
+  <rect x="20" y="20" width="230" height="54" rx="8"/>
+  <rect x="20" y="114" width="230" height="54" rx="8" class="op-accent"/>
+  <rect x="20" y="208" width="230" height="54" rx="8" class="op-accent"/>
+  <rect x="20" y="320" width="230" height="54" rx="8" class="op-accent"/>
+  <rect x="20" y="414" width="230" height="54" rx="8" class="op-accent"/>
+  <rect x="20" y="508" width="230" height="54" rx="8" class="op-accent"/>
+  <rect x="20" y="602" width="230" height="54" rx="8" class="op-accent"/>
+  <rect x="315" y="208" width="205" height="54" rx="8"/>
+  <!-- connectors -->
+  <path d="M135 74 L135 114"/><path d="M129 108 L135 114 L141 108"/>
+  <path d="M135 168 L135 208"/><path d="M129 202 L135 208 L141 202"/>
+  <path d="M135 262 L135 320"/><path d="M129 314 L135 320 L141 314"/>
+  <path d="M135 374 L135 414"/><path d="M129 408 L135 414 L141 408"/>
+  <path d="M135 468 L135 508"/><path d="M129 502 L135 508 L141 502"/>
+  <path d="M135 562 L135 602"/><path d="M129 596 L135 602 L141 596"/>
+  <path d="M250 235 L315 235"/><path d="M309 229 L315 235 L309 241"/>
+  <!-- labels -->
+  <text class="d-title" x="135" y="52" text-anchor="middle">Report received</text>
+  <text class="d-title" x="135" y="135" text-anchor="middle">Acknowledge</text>
+  <text class="d-sub" x="135" y="153" text-anchor="middle">when I'm next online</text>
+  <text class="d-title" x="135" y="229" text-anchor="middle">Triage</text>
+  <text class="d-sub" x="135" y="247" text-anchor="middle">reproduce / classify</text>
+  <text class="d-title" x="135" y="341" text-anchor="middle">Fix or mitigation plan</text>
+  <text class="d-sub" x="135" y="359" text-anchor="middle">severity drives priority</text>
+  <text class="d-title" x="135" y="435" text-anchor="middle">Coordinated disclosure</text>
+  <text class="d-sub" x="135" y="453" text-anchor="middle">window</text>
+  <text class="d-title" x="135" y="540" text-anchor="middle">Release patched version</text>
+  <text class="d-title" x="135" y="623" text-anchor="middle">Publish GHSA</text>
+  <text class="d-sub" x="135" y="641" text-anchor="middle">request CVE if applicable</text>
+  <text class="d-title" x="417" y="240" text-anchor="middle">Close with reason</text>
+  <!-- edge labels -->
+  <text class="d-edge" x="143" y="295" text-anchor="start">confirmed</text>
+  <text class="d-edge" x="282" y="227" text-anchor="middle">out of scope</text>
+</svg>
 
 Realistic timing: acknowledgement usually takes a few days; severe issues get worked on right away, lower-severity ones may wait until I have a weekend free. If a week goes by without a reply, please ping again — it's not rudeness, just a missed notification or a busy stretch.
 

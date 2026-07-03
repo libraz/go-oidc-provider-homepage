@@ -40,18 +40,51 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 | アーティファクト | 形式 | Audience (`aud`) | 行き先 | 寿命 | 読む人 |
 |---|---|---|---|---|---|
-| **ID トークン** | 署名 JWT（常に） | RP の `client_id` | OP → RP のみ | 数分（既定 5 分） | RP（誰がログインしたか確認） |
+| **ID トークン** | 署名 JWT（常に） | RP の `client_id` | OP → RP のみ | 数分（既定 10 分） | RP（誰がログインしたか確認） |
 | **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
 | **UserInfo response** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
-```mermaid
-flowchart LR
-  OP((OP)) -- ID Token --> RP
-  OP -- access_token --> RP
-  RP -- access_token --> RS[(RS)]
-  RP -- access_token --> UI[OP /userinfo]
-  UI -- claims JSON --> RP
-```
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行し、RP はアクセストークンをリソースサーバと OP の /userinfo エンドポイントに提示し、/userinfo は claim の JSON を返す図。</title>
+  <style>
+    .d-h{font-family:var(--vp-font-family-base);font-size:15px;font-weight:600;stroke:none}
+    .d-txt{font-family:var(--vp-font-family-base);font-size:12px;stroke:none;fill:var(--vp-c-text-1)}
+    .d-sub{font-family:var(--vp-font-family-base);font-size:11px;stroke:none;fill:var(--vp-c-text-2)}
+    .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-text-2)}
+    .d-mono-op{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-brand-2)}
+    .d-op{stroke:var(--vp-c-brand-2)}
+    .d-op-t{fill:var(--vp-c-brand-2)}
+    .d-fill1{fill:var(--vp-c-text-1)}
+    .d-rs{stroke:var(--vp-c-text-3)}
+    .d-rs-t{fill:var(--vp-c-text-3)}
+  </style>
+  <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
+  <rect x="272" y="52" width="132" height="156" rx="10"/>
+  <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>
+  <text class="d-h d-op-t" x="90" y="126" text-anchor="middle">OP</text>
+  <text class="d-sub" x="90" y="145" text-anchor="middle">本ライブラリ</text>
+  <text class="d-h d-fill1" x="338" y="126" text-anchor="middle">RP</text>
+  <text class="d-sub" x="338" y="145" text-anchor="middle">クライアント</text>
+  <text class="d-h d-rs-t" x="626" y="126" text-anchor="middle">RS</text>
+  <text class="d-sub" x="626" y="145" text-anchor="middle">リソースサーバ</text>
+  <text class="d-mono-op" x="90" y="228" text-anchor="middle">/userinfo</text>
+  <line class="d-op" x1="156" y1="84" x2="270" y2="84"/>
+  <path class="d-op" d="M272,84 l-7,-4 M272,84 l-7,4"/>
+  <text class="d-txt" x="214" y="76" text-anchor="middle">ID トークン</text>
+  <line class="d-op" x1="156" y1="108" x2="270" y2="108"/>
+  <path class="d-op" d="M272,108 l-7,-4 M272,108 l-7,4"/>
+  <text class="d-mono" x="214" y="100" text-anchor="middle">access_token</text>
+  <line class="d-op" x1="272" y1="152" x2="158" y2="152"/>
+  <path class="d-op" d="M156,152 l7,-4 M156,152 l7,4"/>
+  <text class="d-mono" x="214" y="144" text-anchor="middle">access_token</text>
+  <line class="d-op" x1="156" y1="178" x2="270" y2="178"/>
+  <path class="d-op" d="M272,178 l-7,-4 M272,178 l-7,4"/>
+  <text class="d-txt" x="214" y="192" text-anchor="middle">claim の JSON</text>
+  <line class="d-rs" x1="404" y1="130" x2="558" y2="130"/>
+  <path class="d-rs" d="M560,130 l-7,-4 M560,130 l-7,4"/>
+  <text class="d-mono" x="482" y="122" text-anchor="middle">access_token</text>
+  <text class="d-mono" x="482" y="146" text-anchor="middle">Authorization: Bearer</text>
+</svg>
 
 ## ID トークン —「誰がログインしたか」
 
@@ -70,7 +103,7 @@ flowchart LR
 | `amr` | Authentication Methods References — `pwd`、`otp`、`mfa`、`hwk` 等。 | RFC 8176 |
 
 ::: details `acr` とは
-**`acr`**（Authentication Context Class Reference）は「ログインの強度」を表す 1 本の文字列です。語彙は OP 側で決めて構わず、`urn:mace:incommon:iap:silver`、NIST SP 800-63 のレベル、FAPI 系の `urn:openbanking:psd2:sca` などが代表例です。RP は `/authorize` の `acr_values=...` で最低水準を要求し、ユーザのセッションがそれを満たせない場合、OP は再認証を促す（step-up、RFC 9470）か要求を拒否します。`amr` と混同しないでください — `acr` は *水準*、`amr` は *その水準に到達するために使った手段* です。
+**`acr`**（Authentication Context Class Reference）は「ログインの強度」を表す 1 本の文字列です。語彙は OP 側で決めて構わず、`urn:mace:incommon:iap:silver`、NIST SP 800-63 のレベル、FAPI 系の `urn:openbanking:psd2:sca` などが代表例です。RP は `/auth` の `acr_values=...` で最低水準を要求し、ユーザのセッションがそれを満たせない場合、OP は再認証を促す（step-up、RFC 9470）か要求を拒否します。`amr` と混同しないでください — `acr` は *水準*、`amr` は *その水準に到達するために使った手段* です。
 :::
 
 ::: details `amr` とは
@@ -78,7 +111,7 @@ flowchart LR
 :::
 
 ::: details `auth_time` とは
-**`auth_time`** は、ユーザが *OP に対して認証した* 時刻の Unix timestamp です。`iat`（*このトークン* が発行された時刻）とは別物です。1 時間前にログインしたユーザがリフレッシュ直後だと、`iat` は新しくても `auth_time` は古いままになります。RP は `max_age` ポリシー（「30 分以上経っていたら再認証」）の判定に使い、OP は RP が `/authorize` に `max_age` を載せて来たときにサーバ側でも強制します。
+**`auth_time`** は、ユーザが *OP に対して認証した* 時刻の Unix timestamp です。`iat`（*このトークン* が発行された時刻）とは別物です。1 時間前にログインしたユーザがリフレッシュ直後だと、`iat` は新しくても `auth_time` は古いままになります。RP は `max_age` ポリシー（「30 分以上経っていたら再認証」）の判定に使い、OP は RP が `/auth` に `max_age` を載せて来たときにサーバ側でも強制します。
 :::
 
 ::: details `azp` とは

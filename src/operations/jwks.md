@@ -33,7 +33,7 @@ Response body shape:
 }
 ```
 
-Every entry carries `alg: "ES256"`, `use: "sig"`, `kty: "EC"`, and `crv: "P-256"`. The OP only signs with ES256; encryption keys (`enc`) and other algs are not advertised.
+Every entry in the signing keyset carries `alg: "ES256"`, `use: "sig"`, `kty: "EC"`, and `crv: "P-256"` — the OP only signs with ES256. If you configure `WithEncryptionKeyset`, the OP additionally appends the encryption keyset's public halves (`use: "enc"`) after the signing keys; see [Key rotation](/operations/key-rotation) for how the two keysets rotate independently.
 
 ::: info Why ES256-only on the keyset
 The JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) is the set the OP **verifies** — relevant when an RP signs `private_key_jwt` client assertions or JAR request objects with one of those algs. The keys the OP **signs with** are restricted to ES256. See [Required options § WithKeyset](/getting-started/required-options#withkeyset).
@@ -44,7 +44,7 @@ The JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) is the set the OP **ver
 | Header | Value | Notes |
 |---|---|---|
 | `Content-Type` | `application/jwk-set+json` | per RFC 7517 |
-| `Cache-Control` | `public, max-age=86400, stale-while-revalidate=3600` | 24 h cache, 1 h SWR |
+| `Cache-Control` | `public, max-age=3600, stale-while-revalidate=3600` | 1 h cache, 1 h SWR |
 | `ETag` | `"<sha256-hex>"` | strong validator over the marshalled body |
 | `Allow` | `GET, HEAD` | other methods get 405 |
 

@@ -79,7 +79,7 @@ A client that registered `authorization_encrypted_response_alg` and `authorizati
 - The signed JARM JWT is encrypted to the resolved recipient using the registered `alg` / `enc` pair.
 - If the encryption fails, the OP refuses to fall back to a plaintext `?code=...` redirect — it returns `server_error` instead. Sending the code in the clear after the client demanded an encrypted envelope would be a worse outcome than failing closed.
 
-The `alg` / `enc` allow-list is the same closed list the library uses for ID Token / userinfo / introspection encryption (`op.SupportedEncryptionAlgs` and `op.SupportedEncryptionEncs`): RSA-OAEP family with `SHA-256` / `SHA-512`, ECDH-ES variants, AES-GCM key wrap, and `A128GCM` / `A256GCM` content encryption. `RSA1_5`, `dir`, and the AES-CBC-HS content encryption variants are intentionally excluded. See [JWE encryption](/use-cases/jwe-encryption) for the full alg matrix and the rationale.
+The `alg` / `enc` allow-list is the same closed list the library uses for ID Token / userinfo / introspection encryption (`op.SupportedEncryptionAlgs` and `op.SupportedEncryptionEncs`): `RSA-OAEP-256`, `ECDH-ES`, `ECDH-ES+A128KW` / `ECDH-ES+A256KW` for key management, and `A128GCM` / `A256GCM` for content encryption. `RSA1_5`, `dir`, `A*KW` / `A*GCMKW`, and the AES-CBC-HS content encryption variants are intentionally excluded. See [JWE encryption](/use-cases/jwe-encryption) for the full alg matrix and the rationale.
 
 The OP advertises `authorization_encryption_alg_values_supported` and `_enc_values_supported` in discovery only when both the JARM feature and `op.WithEncryptionKeyset` are wired (see `internal/discovery/document.go`).
 

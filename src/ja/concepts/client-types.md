@@ -72,6 +72,58 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 
 本ライブラリが実装するのは IANA "OAuth Token Endpoint Authentication Methods" レジストリの 6 メソッドです。閉じた集合は `op.AuthMethod` 定数で公開されています。
 
+次の決定木は、クライアントの構造から登録する `token_endpoint_auth_method` の値までを辿ります — public client は `none`、confidential client は `client_secret_*` 系、FAPI grade client は非対称メソッドに落ちます。
+
+<figure style="margin:1.6rem 0;text-align:center">
+<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 720 268" width="720" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<title id="authmethod-decision-title">クライアントの構造（public / confidential / FAPI grade）から OP が強制する token_endpoint_auth_method の値までを辿る決定木。</title>
+<style>
+text{stroke:none}
+.dt-leaf{stroke:var(--vp-c-brand-2)}
+.dt-title{font-family:var(--vp-font-family-base);fill:currentColor;font-weight:600;font-size:13px}
+.dt-sub{font-family:var(--vp-font-family-base);fill:currentColor;opacity:.55;font-size:10.5px}
+.dt-edge{font-family:var(--vp-font-family-base);fill:currentColor;opacity:.6;font-size:10.5px}
+.dt-code{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:11px}
+.dt-root-code{font-family:var(--vp-font-family-mono);fill:currentColor;opacity:.6;font-size:10.5px}
+.dt-note{font-family:var(--vp-font-family-mono);fill:currentColor;opacity:.5;font-size:10px}
+</style>
+<rect x="260" y="12" width="200" height="44" rx="6"/>
+<text class="dt-title" x="360" y="32" text-anchor="middle">クライアントの構造</text>
+<text class="dt-root-code" x="360" y="47" text-anchor="middle">token_endpoint_auth_method</text>
+<path d="M360 56 V64 M120 64 H600 M120 64 V74 M360 64 V74 M600 64 V74"/>
+<path d="M120 90 V96 M360 90 V96 M600 90 V96"/>
+<text class="dt-edge" x="120" y="84" text-anchor="middle">シークレットを持てない</text>
+<text class="dt-edge" x="360" y="84" text-anchor="middle">シークレットを保持</text>
+<text class="dt-edge" x="600" y="84" text-anchor="middle">FAPI 2.0 プロファイル</text>
+<rect x="20" y="96" width="200" height="48" rx="6"/>
+<text class="dt-title" x="120" y="118" text-anchor="middle">public client</text>
+<text class="dt-sub" x="120" y="134" text-anchor="middle">SPA · native · CLI</text>
+<rect x="260" y="96" width="200" height="48" rx="6"/>
+<text class="dt-title" x="360" y="118" text-anchor="middle">confidential client</text>
+<text class="dt-sub" x="360" y="134" text-anchor="middle">バックエンド · サービス</text>
+<rect x="500" y="96" width="200" height="48" rx="6"/>
+<text class="dt-title" x="600" y="118" text-anchor="middle">FAPI grade client</text>
+<text class="dt-sub" x="600" y="134" text-anchor="middle">送信者制約付き</text>
+<path d="M120 144 V158 M360 144 V158 M600 144 V158"/>
+<rect class="dt-leaf" x="20" y="158" width="200" height="28" rx="6"/>
+<text class="dt-code" x="120" y="176" text-anchor="middle">none</text>
+<text class="dt-note" x="120" y="200" text-anchor="middle">+ PKCE (S256)</text>
+<rect class="dt-leaf" x="260" y="158" width="200" height="28" rx="6"/>
+<text class="dt-code" x="360" y="176" text-anchor="middle">client_secret_basic</text>
+<path d="M360 186 V192"/>
+<rect class="dt-leaf" x="260" y="192" width="200" height="28" rx="6"/>
+<text class="dt-code" x="360" y="210" text-anchor="middle">client_secret_post</text>
+<rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
+<text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
+<path d="M600 186 V192"/>
+<rect class="dt-leaf" x="500" y="192" width="200" height="28" rx="6"/>
+<text class="dt-code" x="600" y="210" text-anchor="middle">tls_client_auth</text>
+<path d="M600 220 V226"/>
+<rect class="dt-leaf" x="500" y="226" width="200" height="28" rx="6"/>
+<text class="dt-code" x="600" y="244" text-anchor="middle">self_signed_tls_client_auth</text>
+</svg>
+</figure>
+
 | メソッド | 事前共有シークレット？ | 非対称？ | FAPI 2.0？ | 主な用途 |
 |---|---|---|---|---|
 | `none` | — | — | 不可 | public client（SPA、native、CLI）+ PKCE。 |

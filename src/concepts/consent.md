@@ -25,6 +25,57 @@ description: When the consent screen is shown, when it is skipped, what first-pa
 
 The library evaluates four cases on every authorize flow.
 
+<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" width="700" style="width:100%;height:auto;max-width:700px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="consent-shown-decision-title">Decision tree over grant state: a prompt=consent request, a missing grant, or a requested scope outside the existing grant each show the consent screen; otherwise the existing grant covers the request and the authorization code is minted without a prompt.</title>
+  <style>
+    #consent-shown-decision text { stroke: none; }
+    #consent-shown-decision .lbl { font-family: var(--vp-font-family-base); font-size: 13px; fill: var(--vp-c-text-1); }
+    #consent-shown-decision .mono { font-family: var(--vp-font-family-mono); font-size: 12px; fill: var(--vp-c-text-1); }
+    #consent-shown-decision .sub { font-family: var(--vp-font-family-base); font-size: 11.5px; fill: var(--vp-c-text-2); }
+    #consent-shown-decision .edge { font-family: var(--vp-font-family-base); font-size: 11px; fill: var(--vp-c-text-2); }
+    #consent-shown-decision .accent { stroke: var(--vp-c-brand-2); }
+  </style>
+  <rect x="24" y="28" width="270" height="48" rx="8"/>
+  <rect x="24" y="120" width="270" height="48" rx="8"/>
+  <rect x="24" y="212" width="270" height="48" rx="8"/>
+  <rect x="24" y="304" width="270" height="48" rx="8" class="accent"/>
+  <rect x="470" y="28" width="210" height="48" rx="8"/>
+  <rect x="470" y="120" width="210" height="48" rx="8"/>
+  <rect x="470" y="212" width="210" height="48" rx="8"/>
+  <text class="lbl" x="159" y="47" text-anchor="middle">Request carries</text>
+  <text x="159" y="64" text-anchor="middle"><tspan class="mono">prompt=consent</tspan><tspan class="lbl">?</tspan></text>
+  <text class="lbl" x="159" y="139" text-anchor="middle">No existing grant for</text>
+  <text x="159" y="156" text-anchor="middle"><tspan class="mono">(subject, client_id)</tspan><tspan class="lbl">?</tspan></text>
+  <text class="lbl" x="159" y="231" text-anchor="middle">Requested scope outside</text>
+  <text class="lbl" x="159" y="248" text-anchor="middle">the existing grant?</text>
+  <text class="lbl" x="159" y="323" text-anchor="middle">Existing grant covers request</text>
+  <text class="sub" x="159" y="340" text-anchor="middle">&#8594; skip, mint authorization code</text>
+  <text class="lbl" x="575" y="47" text-anchor="middle">Forced re-prompt</text>
+  <text class="sub" x="575" y="64" text-anchor="middle">&#8594; show consent</text>
+  <text class="lbl" x="575" y="139" text-anchor="middle">First-time grant</text>
+  <text class="sub" x="575" y="156" text-anchor="middle">&#8594; show consent</text>
+  <text class="lbl" x="575" y="231" text-anchor="middle">Scope delta</text>
+  <text class="sub" x="575" y="248" text-anchor="middle">&#8594; show consent</text>
+  <path d="M294 52 H464"/>
+  <path d="M464 48 L470 52 L464 56"/>
+  <path d="M294 144 H464"/>
+  <path d="M464 140 L470 144 L464 148"/>
+  <path d="M294 236 H464"/>
+  <path d="M464 232 L470 236 L464 240"/>
+  <path d="M159 76 V114"/>
+  <path d="M155 114 L159 120 L163 114"/>
+  <path d="M159 168 V206"/>
+  <path d="M155 206 L159 212 L163 206"/>
+  <path d="M159 260 V298"/>
+  <path d="M155 298 L159 304 L163 298"/>
+  <text class="edge" x="382" y="46" text-anchor="middle">yes</text>
+  <text class="edge" x="382" y="138" text-anchor="middle">yes</text>
+  <text class="edge" x="382" y="230" text-anchor="middle">yes</text>
+  <text class="edge" x="170" y="101">no</text>
+  <text class="edge" x="170" y="193">no</text>
+  <text class="edge" x="170" y="285">no</text>
+</svg>
+
 | Case | Behaviour |
 |---|---|
 | **First-time grant** — no prior `Grant` for this `(subject, client_id)` pair. | Prompt. The user sees the full scope list. On submit, the library writes a `Grant` row with the approved scopes. |

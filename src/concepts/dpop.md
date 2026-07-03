@@ -40,23 +40,66 @@ A DPoP proof is a JWT (RFC 9449 §4) signed with a private key the client contro
 | `ath` | Optional. SHA-256 of the access token, required when the proof is presented alongside an access token (RFC 9449 §4.2). |
 | `nonce` | Optional. Server-supplied value when the OP runs the §8 / §9 nonce flow. |
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant RP as RP (holds priv_dpop)
-    participant OP
-    participant RS
-
-    RP->>RP: build DPoP proof JWT<br/>{ jti, htm:POST, htu:.../token, iat }<br/>headers: { typ:dpop+jwt, alg:ES256, jwk: pub_dpop }<br/>signed with priv_dpop
-    RP->>OP: POST /token<br/>DPoP: <proof>
-    OP->>OP: verify proof: typ/alg/jwk, htm/htu match,<br/>iat fresh, jti unseen, optional nonce
-    OP->>OP: bind access_token.cnf.jkt = SHA-256(jwk thumbprint)
-    OP->>RP: 200 { access_token, ... }<br/>token_type: DPoP
-    RP->>RP: build new DPoP proof for the API call<br/>(includes ath = SHA-256(access_token))
-    RP->>RS: GET /api<br/>Authorization: DPoP <access_token><br/>DPoP: <proof for this method+url>
-    RS->>RS: verify proof + verify token's cnf.jkt matches proof.jwk
-    RS->>RP: 200
-```
+<svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="dpop-proof-flow-title">Sequence of a DPoP proof: the client signs a per-request proof, the OP binds cnf.jkt into the access token, and the resource server re-checks the proof against the binding.</title>
+  <style>
+    .dpop-flow-dg text{stroke:none;fill:currentColor;}
+    .dpop-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+    .dpop-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+    .dpop-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+    .dpop-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+    .dpop-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
+    .dpop-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
+    .dpop-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
+    .dpop-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
+    .dpop-flow-dg .life{opacity:0.3;stroke-width:1;}
+  </style>
+  <line class="life" x1="110" y1="68" x2="110" y2="540"/>
+  <line class="life op-accent" x1="380" y1="68" x2="380" y2="540"/>
+  <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="540"/>
+  <rect x="35" y="14" width="150" height="30" rx="5"/>
+  <rect class="op-accent" x="305" y="14" width="150" height="30" rx="5"/>
+  <rect class="rs-stroke" x="575" y="14" width="150" height="30" rx="5"/>
+  <text class="d-actor" x="110" y="33" text-anchor="middle">RP / client</text>
+  <text class="d-actor op-fill" x="380" y="33" text-anchor="middle">OP</text>
+  <text class="d-actor rs-fill" x="650" y="33" text-anchor="middle">Resource server</text>
+  <text class="d-cap" x="110" y="58" text-anchor="middle">holds priv_dpop</text>
+  <text class="d-cap op-fill" x="380" y="58" text-anchor="middle">this library</text>
+  <text class="d-cap rs-fill" x="650" y="58" text-anchor="middle">verifies binding</text>
+  <path d="M110,99 h16 v12 h-16"/>
+  <path d="M117,107 L110,111 L117,115"/>
+  <text class="d-prose" x="134" y="96">Build &amp; sign DPoP proof</text>
+  <text class="d-mono" x="134" y="108">jti · htm:POST · htu:/token · iat</text>
+  <text class="d-mono" x="134" y="120">hdr: typ dpop+jwt · alg ES256 · jwk</text>
+  <path d="M110,160 H380"/>
+  <path d="M373,156 L380,160 L373,164"/>
+  <text class="d-mono" x="245" y="152" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+  <path class="op-accent" d="M380,199 h16 v12 h-16"/>
+  <path class="op-accent" d="M387,207 L380,211 L387,215"/>
+  <text class="d-prose op-fill" x="404" y="201">Verify proof</text>
+  <text class="d-mono" x="404" y="213">typ/alg/jwk, htm/htu, iat, jti, nonce</text>
+  <path class="op-accent" d="M380,252 h16 v12 h-16"/>
+  <path class="op-accent" d="M387,260 L380,264 L387,268"/>
+  <text class="d-prose op-fill" x="404" y="254">Bind access token</text>
+  <text class="d-mono" x="404" y="266">cnf.jkt = SHA-256(jwk thumbprint)</text>
+  <path d="M380,312 H110"/>
+  <path d="M117,308 L110,312 L117,316"/>
+  <text class="d-mono" x="245" y="304" text-anchor="middle">200 · access_token · token_type: DPoP</text>
+  <path d="M110,351 h16 v12 h-16"/>
+  <path d="M117,359 L110,363 L117,367"/>
+  <text class="d-prose" x="134" y="353">Build new proof for the API call</text>
+  <text class="d-mono" x="134" y="365">adds ath = SHA-256(access_token)</text>
+  <path d="M110,417 H650"/>
+  <path d="M643,413 L650,417 L643,421"/>
+  <text class="d-mono" x="380" y="409" text-anchor="middle">GET /api · Authorization: DPoP · DPoP: &lt;proof&gt;</text>
+  <path class="rs-stroke" d="M650,456 h-16 v12 h16"/>
+  <path class="rs-stroke" d="M643,464 L650,468 L643,472"/>
+  <text class="d-prose rs-fill" x="626" y="458" text-anchor="end">Verify proof</text>
+  <text class="d-mono" x="626" y="470" text-anchor="end">+ cnf.jkt == proof.jwk thumbprint</text>
+  <path d="M650,520 H110"/>
+  <path d="M117,516 L110,520 L117,524"/>
+  <text class="d-mono" x="380" y="512" text-anchor="middle">200 OK</text>
+</svg>
 
 The OP and the RS run the same checklist. The RS additionally verifies that the proof's `jwk` thumbprint equals the access token's `cnf.jkt`.
 

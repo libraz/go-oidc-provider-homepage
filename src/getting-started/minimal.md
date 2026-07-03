@@ -5,7 +5,7 @@ description: A runnable OpenID Connect Provider in ~30 lines.
 
 # Minimal OP
 
-The shortest path to a running OP. The four required options are `WithIssuer`, `WithStore`, `WithKeyset`, and `WithCookieKeys` — `op.New` returns an error if any are missing.
+The shortest path to a running OP. `op.New` returns an error if `WithIssuer`, `WithStore`, or `WithKeyset` is missing. `WithCookieKeys` is required too whenever the `authorization_code` grant is enabled, which it is by default (along with `refresh_token`) — so for this minimal, default-grants config all four are effectively mandatory.
 
 ::: code-group
 
@@ -130,7 +130,7 @@ func main() {
 :::
 
 ::: details What you can do with this OP right now
-1. `curl http://localhost:8080/oidc/.well-known/openid-configuration` — discovery.
+1. `curl http://localhost:8080/.well-known/openid-configuration` — discovery, always mounted at the root regardless of mount prefix.
 2. `curl http://localhost:8080/oidc/jwks` — public JWKS for verifying ID tokens.
 3. The default mount prefix is `/oidc` — change it with `op.WithMountPrefix("/")`.
 4. Authorization will return errors until you register a client and an authenticator.

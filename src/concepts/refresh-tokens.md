@@ -24,25 +24,75 @@ A **refresh token** is a long-lived credential the RP exchanges for a fresh acce
 
 Every successful `grant_type=refresh_token` call **rotates** the refresh token: the old one is invalidated and a new one is returned.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant RP as RP
-    participant OP as OP
+<svg class="rr-flow-dg" role="img" aria-labelledby="refresh-rotation-flow-title" viewBox="0 0 760 452" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="refresh-rotation-flow-title">Refresh-token rotation: each exchange invalidates the presented token and mints a new one in the same chain, and replaying an already-rotated token is detected as reuse and revokes the whole chain.</title>
+  <style>
+    .rr-flow-dg text{stroke:none;fill:currentColor;}
+    .rr-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+    .rr-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+    .rr-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+    .rr-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+    .rr-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
+    .rr-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
+    .rr-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
+    .rr-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
+    .rr-flow-dg .life{opacity:0.3;stroke-width:1;}
+  </style>
+  <line class="life" x1="110" y1="68" x2="110" y2="438"/>
+  <line class="life op-accent" x1="380" y1="68" x2="380" y2="438"/>
+  <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="438"/>
+  <rect x="35" y="14" width="150" height="30" rx="5"/>
+  <rect class="op-accent" x="305" y="14" width="150" height="30" rx="5"/>
+  <rect class="rs-stroke" x="575" y="14" width="150" height="30" rx="5"/>
+  <text class="d-actor" x="110" y="33" text-anchor="middle">RP / client</text>
+  <text class="d-actor op-fill" x="380" y="33" text-anchor="middle">OP</text>
+  <text class="d-actor rs-fill" x="650" y="33" text-anchor="middle">Attacker</text>
+  <text class="d-cap" x="110" y="58" text-anchor="middle">renews tokens</text>
+  <text class="d-cap op-fill" x="380" y="58" text-anchor="middle">this library</text>
+  <text class="d-cap rs-fill" x="650" y="58" text-anchor="middle">stole rt1</text>
 
-    RP->>OP: POST /token<br/>grant_type=authorization_code<br/>...
-    OP->>RP: 200 { access_token, refresh_token: rt1, ... }
-    note over RP,OP: access_token expires
-    RP->>OP: POST /token<br/>grant_type=refresh_token<br/>refresh_token=rt1
-    OP->>OP: rotate: invalidate rt1<br/>mint rt2 in same chain
-    OP->>RP: 200 { access_token, refresh_token: rt2 }
-    note over RP,OP: ... attacker steals rt1 ...
-    RP->>OP: POST /token grant_type=refresh_token refresh_token=rt2
-    OP->>RP: 200 { access_token, refresh_token: rt3 }
-    Note over OP: legit RP keeps rotating
-    OP->>OP: attacker tries rt1 (already used)
-    OP->>OP: rt1 reuse detected -> revoke entire chain (rt1..rt3)
-```
+  <path d="M110,100 H380"/>
+  <path d="M373,96 L380,100 L373,104"/>
+  <text class="d-mono" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
+
+  <path d="M380,140 H110"/>
+  <path d="M117,136 L110,140 L117,144"/>
+  <text class="d-mono" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
+
+  <text class="d-mono rs-fill" x="245" y="166" text-anchor="middle">access_token expires</text>
+
+  <path d="M110,196 H380"/>
+  <path d="M373,192 L380,196 L373,200"/>
+  <text class="d-mono" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
+
+  <path class="op-accent" d="M380,211 h16 v12 h-16"/>
+  <path class="op-accent" d="M387,215 L380,219 L387,223"/>
+  <text class="d-prose op-fill" x="404" y="208">Rotate refresh token</text>
+  <text class="d-mono" x="404" y="220">invalidate rt1 · mint rt2 (same chain)</text>
+
+  <path d="M380,256 H110"/>
+  <path d="M117,252 L110,256 L117,260"/>
+  <text class="d-mono" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
+
+  <path d="M110,292 H380"/>
+  <path d="M373,288 L380,292 L373,296"/>
+  <text class="d-mono" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
+
+  <path d="M380,328 H110"/>
+  <path d="M117,324 L110,328 L117,332"/>
+  <text class="d-mono" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
+
+  <text class="d-mono rs-fill" x="515" y="354" text-anchor="middle">attacker steals rt1</text>
+
+  <path class="rs-stroke" d="M650,384 H380"/>
+  <path class="rs-stroke" d="M387,380 L380,384 L387,388"/>
+  <text class="d-mono rs-fill" x="515" y="376" text-anchor="middle">replay refresh_token=rt1 (already consumed)</text>
+
+  <path class="op-accent" d="M380,401 h16 v12 h-16"/>
+  <path class="op-accent" d="M387,405 L380,409 L387,413"/>
+  <text class="d-prose op-fill" x="404" y="398">Reuse detected → revoke chain</text>
+  <text class="d-mono" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
+</svg>
 
 ::: warning Reuse detection invalidates the chain
 If a previously-rotated refresh token is presented again, the OP treats it as a stolen-credential signal and **revokes the entire chain** — both the stolen token and the legitimate token derived from it. Both parties have to re-authenticate. This is intentional: it's the strongest signal the OP can give that something has gone wrong.

@@ -5,14 +5,14 @@ description: The four options op.New refuses to start without — and why each o
 
 # Required options
 
-`op.New(...)` rejects partial configurations at construction time, so an unsafe OP cannot accidentally take traffic. The four required options are:
+`op.New(...)` rejects partial configurations at construction time, so an unsafe OP cannot accidentally take traffic. Three options are unconditionally required; `WithCookieKeys` is required whenever the `authorization_code` grant is enabled, which is the default:
 
 | Option | Why it's required |
 |---|---|
 | [`op.WithIssuer`](#withissuer) | Defines the JWT `iss` claim, the discovery URL, and the cookie scope. Wrong here, every downstream check is wrong. |
 | [`op.WithStore`](#withstore) | Where authcodes, sessions, refresh chains, JTI replay sets, and clients live. The library is storage-agnostic; without a store it has nowhere to put state. |
 | [`op.WithKeyset`](#withkeyset) | The signing keys for ID tokens / JWT access tokens / JARM. The library refuses to mint tokens without an ECDSA P-256 `crypto.Signer` that can produce `ES256` signatures. |
-| [`op.WithCookieKeys`](#withcookiekeys) | 32 bytes of random material used as an AES-256-GCM key for cookie payloads. Session and CSRF cookies are encrypted, not just signed. |
+| [`op.WithCookieKeys`](#withcookiekeys) | 32 bytes of random material used as an AES-256-GCM key for cookie payloads. Required only when the enabled grants include `authorization_code` (the default grant set is `authorization_code` + `refresh_token`); a client-credentials-only OP with that grant disabled can boot without it. Session and CSRF cookies are encrypted, not just signed. |
 
 ## `WithIssuer`
 
@@ -71,7 +71,7 @@ op.WithCookieKeys(key)
 op.WithCookieKeys(currentKey, previousKey)
 ```
 
-The 32 bytes seed an AES-256-GCM cipher used to encrypt session and CSRF cookies. Keys rotate with `WithCookieKeys`: the first key is used to encrypt; subsequent keys are tried for decryption so a rolling key swap doesn't bounce active sessions.
+The 32 bytes seed an AES-256-GCM cipher used to encrypt session and CSRF cookies. Keys rotate with `WithCookieKeys`: the first key is used to encrypt; subsequent keys are tried for decryption so a rolling key swap doesn't bounce active sessions. `op.New` only enforces this option when the `authorization_code` grant is among the enabled grants — that grant is on by default, so most configurations need it, but an OP restricted to, say, `client_credentials` alone can start without cookie keys.
 
 ::: warning Cookie scheme is non-negotiable
 Cookies always use the `__Host-` prefix (no `Domain`, `Path=/`, `Secure`). `SameSite=Lax` for the session, double-submit + Origin / Referer check on the consent / logout POST. None of this is configurable — it's the floor.

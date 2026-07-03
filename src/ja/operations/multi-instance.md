@@ -8,11 +8,54 @@ outline: 2
 
 OP はリクエストをまたいでステートレスで、すべてのレプリカが設定済みの `op.Store` 経由で読み書きします。レプリカ 1 から N に増やすということは、論点が「プロセスメモリに何があるか」から「何が共有され、何が揮発で、どの fan-out 挙動が許容できるか」に移る、ということです。
 
+<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<title id="mi-replica-topology-title">レプリカ構成: ロードバランサが 1 クライアントの /token と /userinfo を N 個の OP レプリカへ round-robin で振り分け、全レプリカが 1 つの永続ストアと 1 つの揮発 Redis 層を共有する。</title>
+<defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<style>.mi-topo text{stroke:none}.mi-topo .lbl{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);text-anchor:middle}.mi-topo .sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);text-anchor:middle}.mi-topo .op-text{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-brand-2);text-anchor:middle}.mi-topo .mono{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2)}.mi-topo .op-accent{stroke:var(--vp-c-brand-2)}.mi-topo .store{stroke-dasharray:6 5}</style>
+<rect x="280" y="16" width="160" height="44" rx="6"/>
+<text class="lbl" x="360" y="43">RP / クライアント</text>
+<path d="M360 60 L360 90" marker-end="url(#mi-arrow)"/>
+<rect x="240" y="96" width="240" height="44" rx="6"/>
+<text class="lbl" x="360" y="115">ロードバランサ</text>
+<text class="sub" x="360" y="131">round-robin</text>
+<text class="mono" x="200" y="150" text-anchor="middle">POST /token</text>
+<text class="mono" x="520" y="150" text-anchor="middle">GET /userinfo</text>
+<path d="M320 140 L126 172" marker-end="url(#mi-arrow)"/>
+<path d="M360 140 L360 172" marker-end="url(#mi-arrow)"/>
+<path d="M400 140 L594 172" marker-end="url(#mi-arrow)"/>
+<rect class="op-accent" x="24" y="176" width="176" height="56" rx="6"/>
+<rect class="op-accent" x="272" y="176" width="176" height="56" rx="6"/>
+<rect class="op-accent" x="520" y="176" width="176" height="56" rx="6"/>
+<text class="op-text" x="112" y="200">OP #1</text>
+<text class="sub" x="112" y="218">nonce 発行</text>
+<text class="op-text" x="360" y="208">OP #2</text>
+<text class="op-text" x="608" y="200">OP #3</text>
+<text class="sub" x="608" y="218">nonce 検証</text>
+<path d="M112 232 L112 268"/>
+<path d="M360 232 L360 268"/>
+<path d="M608 232 L608 268"/>
+<path d="M112 268 L608 268"/>
+<path d="M184 268 L184 294"/>
+<path d="M536 268 L536 294"/>
+<rect class="store" x="24" y="296" width="320" height="132" rx="6"/>
+<text class="lbl" x="184" y="320">永続ストア(共有)</text>
+<text class="mono" x="40" y="348">clients · codes · refresh/access tokens</text>
+<text class="mono" x="40" y="368">grants · IATs · PARs</text>
+<text class="sub" x="184" y="408">全レプリカで 1 バックエンド</text>
+<rect class="store" x="376" y="296" width="320" height="132" rx="6"/>
+<text class="lbl" x="536" y="320">揮発 Redis 層</text>
+<text class="mono" x="392" y="348">Sessions · Interactions</text>
+<text class="mono" x="392" y="368">ConsumedJTIs · DPoP nonces</text>
+<text class="sub" x="536" y="408">再起動 / maxmemory で追い出し</text>
+</svg>
+
 ## 自動で共有されるもの
 
 `op.Store` に乗っているものは構造的に共有されます。永続サブストア(clients、codes、リフレッシュトークン、アクセストークン、grants、IATs、PARs)は 1 つのバックエンド(SQL または自前の実装)に対して、全レプリカが読み書きします。`composite.PushedAuthRequests` は `composite.TxClusterKinds` の一員なので、splitter は永続アンカー以外への振り分けを拒否します。
 
 Redis 層に置ける揮発サブストアは `Sessions`、`Interactions`、`ConsumedJTIs`(JAR / DPoP / private_key_jwt の replay set)です。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。DPoP server-nonce ストアはサブストアではなく、`op.WithDPoPNonceSource` 経由で差し込む別の seam です。
+
+`op.WithAuthnLockoutStore` 経由で組み込む authn-factor 用のロックアウトカウンタも、永続サブストアには含まれません。同梱の SQL アダプタは `store.AuthnLockoutStore` を実装していないため、SQL をバックエンドにした N レプリカ構成でも、カウンタは既定のまま process-local な in-memory リファレンス実装(`inmem.Store.AuthnLockouts`)を使い続け、再起動でリセットされ、レプリカ間でも共有されません。ブルートフォース対策のロックアウトを再起動後も維持したい、あるいはレプリカ間で一貫させたいデプロイでは、耐久性のある共有ストレージに基づく独自の `store.AuthnLockoutStore` を用意する必要があります。
 
 ## 明示的に対処が必要なもの
 

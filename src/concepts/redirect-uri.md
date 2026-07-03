@@ -5,7 +5,7 @@ description: How redirect_uri exact-match works, what RFC 8252 loopback relaxati
 
 # Redirect URI
 
-A **redirect URI** is the URL the OP sends the user back to after `/authorize` finishes — with `?code=...&state=...` on success, or `?error=...&state=...` on failure. The RP registers one (or more) at client-creation time; the OP compares the registered value against the `redirect_uri` query parameter on every authorize request. Mismatches reject the request before the user is sent anywhere.
+A **redirect URI** is the URL the OP sends the user back to after `/auth` finishes — with `?code=...&state=...` on success, or `?error=...&state=...` on failure. The RP registers one (or more) at client-creation time; the OP compares the registered value against the `redirect_uri` query parameter on every authorize request. Mismatches reject the request before the user is sent anywhere.
 
 ::: tip Mental model in 30 seconds
 - The `redirect_uri` is **byte-for-byte exact-match** by default. `/cb` and `/cb/` are different URIs.

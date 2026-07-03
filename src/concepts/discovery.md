@@ -37,7 +37,7 @@ A representative subset of the fields a beginner will actually see and use. Ever
 | `device_authorization_endpoint` | URL of `/device_authorization` — present only when the device-code grant is wired. |
 | `grant_types_supported` | Grant types the OP accepts at `/token`: `authorization_code`, `refresh_token`, `client_credentials`, … |
 | `response_types_supported` | Response types `/authorize` accepts. The library advertises only `code` (the OIDC Core "code flow"). |
-| `response_modes_supported` | How `/authorize` returns the result: `query`, `fragment`, `form_post`, `jwt` (JARM). |
+| `response_modes_supported` | How `/authorize` returns the result: `query`, `form_post`, plus `query.jwt`, `fragment.jwt`, `form_post.jwt`, `jwt` when JARM is enabled. |
 | `id_token_signing_alg_values_supported` | JWS algorithms used to sign ID Tokens. The library publishes `ES256` only because OP signing keys are ECDSA P-256. |
 | `request_object_signing_alg_values_supported` | JWS algorithms accepted on JAR `request=` parameters: `RS256`, `PS256`, `ES256`, `EdDSA`. |
 | `token_endpoint_auth_methods_supported` | How confidential RPs authenticate at `/token`: `client_secret_basic`, `client_secret_post`, `private_key_jwt`, plus `tls_client_auth` / `self_signed_tls_client_auth` when mTLS is enabled. Public clients use `none` in registration metadata, but the discovery advertisement does not list `none`. |

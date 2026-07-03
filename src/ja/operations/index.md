@@ -24,7 +24,7 @@ description: ライブラリが解決しない本番運用上の論点 — 鍵�
 | `/metrics` HTTP ルート | ルーター側の責務。ライブラリは `WithPrometheus(reg)` でカウンタを渡すだけです。`/metrics` は権限境界に合わせて好きな場所にマウントしてください |
 | HTTP リクエスト時間ヒストグラム | HTTP ミドルウェアの領域(`otelhttp`、`prometheus/promhttp`)。OP は OIDC の業務カウンタだけを出します |
 | エンドポイントハンドラ内部の trace 埋め込み | 公開表面は `http.Handler`。差し込み口で 1 回 `otelhttp.NewMiddleware` でラップすれば足ります |
-| レートリミット | 上流(Cloudflare、Envoy、お好みの Go ミドルウェア)。チェイン上のどこかでリクエストが拒否された場合、OP は `rate_limit.exceeded` を発火しますが、リミッタ自体は実装しません |
+| レートリミット | 上流(Cloudflare、Envoy、お好みの Go ミドルウェア)。OP は `rate_limit.exceeded` という監査イベントの定数を、そのミドルウェアが発行するための共有語彙として定義するだけで、自身では発火させません。リミッタ自体も実装しません |
 | ヘルスチェック | 組み込み側の領域。OP は liveness と readiness の切り分けに意見を持ちません |
 | バックグラウンド worker | OP はリクエストをまたいでステートレスです。クリーンアップ用の goroutine も持ちません。TTL による追い出しはストア側の責務です |
 
@@ -32,7 +32,7 @@ description: ライブラリが解決しない本番運用上の論点 — 鍵�
 
 このセクション全体に効く決定:
 
-1. **トランザクショナルクラスタはバックエンドを 1 つに集約します。** composite store は、clients / codes / リフレッシュトークン / アクセストークン / IATs を 2 つのバックエンドにまたがらせることを拒否します。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照。
+1. **トランザクショナルクラスタはバックエンドを 1 つに集約します。** composite store は、認可コード / リフレッシュトークン / grants / PAR / アクセストークン / grant revocation を 2 つのバックエンドにまたがらせることを拒否します。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照。
 2. **揮発サブストアは best-effort です。** Sessions、DPoP nonce、JAR `jti` レジストリは、永続化無しの Redis でも構いません。追い出しは通常運転の一部であり、OP は緩い側に倒れる(fail-open)のではなく、ギャップを監査ログに残します。[マルチインスタンス展開](/ja/operations/multi-instance) を参照。
 3. **バックグラウンド goroutine は持ちません。** TTL のクリーンアップはストアの責務です。SQL アダプタは DB の scheduler 経由で定期的に prune し、Redis アダプタはネイティブの TTL を使います。プロセス内 janitor がホットリロードで漏れることはありません。
 4. **設定変更は新しい `Provider` の構築を伴います。** 鍵ローテーション、クライアント追加、scope 変更 — どれも新しい `*Provider` を構築して、ハンドラをアトミックに差し替えます。監督プロセス側の pattern は [鍵ローテーション](/ja/operations/key-rotation) を参照してください。

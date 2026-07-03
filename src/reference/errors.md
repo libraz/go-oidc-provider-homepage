@@ -97,7 +97,7 @@ JSON. RFC 6749 §5.2 + RFC 9449 (DPoP).
 | `use_dpop_nonce` | 400 | DPoP §8 server nonce required; client must retry with `DPoP-Nonce` |
 | `server_error` | 500 | internal failure |
 
-`401 invalid_client` always carries `WWW-Authenticate: Basic realm="<issuer>"` (or `Bearer realm=...` for `/userinfo`) per RFC 6749 §5.2.
+`401 invalid_client` carries `WWW-Authenticate: Basic realm="oidc"` — the realm is a fixed literal, not the issuer URL — when the client authenticated via HTTP Basic; `/userinfo`'s own 401s use a separate `Bearer realm="userinfo"` challenge, per RFC 6749 §5.2.
 
 ## UserInfo endpoint (`/userinfo`)
 
@@ -108,7 +108,7 @@ Bearer-token validation. RFC 6750 §3.1 + RFC 9449.
 | `invalid_token` | 401 | bearer missing, expired, revoked, alg mismatch |
 | `invalid_dpop_proof` | 401 | DPoP proof JWS invalid / replay / `cnf.jkt` mismatch |
 | `use_dpop_nonce` | 401 | DPoP §8 server-nonce required |
-| `insufficient_scope` | 403 | scope insufficient for the requested claims |
+| `invalid_request` | 400 | malformed bearer request (multiple tokens, wrong channel); 413 when the request body exceeds the size cap |
 
 ## Introspection / Revocation (`/introspect`, `/revoke`)
 
