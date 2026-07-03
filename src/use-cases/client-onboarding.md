@@ -16,9 +16,7 @@ description: Five ways to register, update, and remove RPs against your OP — w
 
 ## At a glance — five patterns
 
-<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
-<title id="onbo-spectrum-title">The five client-onboarding patterns placed on a trust spectrum from fully operator-controlled (static registration) to no trust on the wire (out-of-band CLI); the middle two patterns are gated by a token carried on the wire.</title>
-<style>
+<style scoped>
 #onbo-spectrum text{fill:currentColor;stroke:none}
 #onbo-spectrum .lbl{font-family:var(--vp-font-family-base)}
 #onbo-spectrum .mono{font-family:var(--vp-font-family-mono)}
@@ -34,6 +32,9 @@ description: Five ways to register, update, and remove RPs against your OP — w
 #onbo-spectrum .op-accent{stroke:var(--vp-c-brand-2)}
 #onbo-spectrum .op-fill{fill:var(--vp-c-brand-2)}
 </style>
+
+<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
+<title id="onbo-spectrum-title">The five client-onboarding patterns placed on a trust spectrum from fully operator-controlled (static registration) to no trust on the wire (out-of-band CLI); the middle two patterns are gated by a token carried on the wire.</title>
 <g>
 <rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="34" cy="30" r="11"/>

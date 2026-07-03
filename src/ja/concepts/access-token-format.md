@@ -35,11 +35,12 @@ description: 設計判断のためのページ。JWT が既定で opaque はオ�
 
 ### JWT（RFC 9068） — RS がローカルで検証
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 684 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-jwt-local-title">JWT アクセストークン: RP が Bearer JWT を提示し、RS はキャッシュした OP の JWKS でローカル検証するため、OP はリクエストのホットパスに乗らない。</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="28" y="38" width="118" height="56" rx="6"/>
   <text class="atf-b atf-t1" x="87" y="70" text-anchor="middle">RP</text>
   <rect x="420" y="24" width="236" height="84" rx="6"/>
@@ -59,11 +60,12 @@ RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `au
 
 ### Opaque — RS は毎回 OP に問い合わせる
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 720 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-opaque-introspect-title">opaque アクセストークン: RP が Bearer opaque を提示し、RS は毎リクエスト OP の introspection エンドポイントを呼んでトークンを解決する。</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="28" y="38" width="112" height="52" rx="6"/>
   <text class="atf-b atf-t1" x="84" y="68" text-anchor="middle">RP</text>
   <rect class="atf-srs" x="248" y="38" width="112" height="52" rx="6"/>
@@ -146,11 +148,12 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 
 **JWT 形式:**
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-jwt-revocation-title">JWT の失効到達範囲: end_session による grant tombstone の切り替えは OP の userinfo / introspect では参照されるが、オフライン JWT 検証をする RS では参照されない。</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
   <rect x="214" y="84" width="190" height="80" rx="6" stroke-dasharray="5 4"/>
@@ -178,11 +181,12 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 
 **Opaque 形式:**
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-opaque-revocation-title">opaque の失効到達範囲: end_session による opaque サブストアの切り替えは OP の userinfo / introspect でも、各 RS の introspect 呼び出しでも参照される。</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
   <rect x="214" y="84" width="190" height="80" rx="6" stroke-dasharray="5 4"/>
@@ -304,11 +308,12 @@ provider, err := op.New(
 
 判断は概ね「誰を信頼するか」「RS にどこまで要求できるか」「アクセストークン TTL がどれだけ短いか」で決まります。
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 700 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-choosing-format-title">introspection の要件・アクセストークン TTL・RS の構成から opaque / JWT / per-audience 混成を選ぶ決定木。</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="24" y="24" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="48" text-anchor="middle">全 RS に毎回</text>
   <text class="atf-c atf-t1" x="194" y="68" text-anchor="middle"><tspan class="atf-m">/introspect</tspan> を要求できる？</text>

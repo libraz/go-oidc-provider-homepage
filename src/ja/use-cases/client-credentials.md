@@ -32,17 +32,18 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 ## アーキテクチャ
 
+<style scoped>
+.d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
+.d-tok{font-family:var(--vp-font-family-mono);font-size:11px;fill:currentColor;stroke:none}
+.d-bt{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
+.d-bs{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
+.d-op{stroke:var(--vp-c-brand-2)}
+.d-opt{fill:var(--vp-c-brand-2)}
+.d-rs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" width="736" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="cc-svc-flow-title">サービス間 client_credentials フロー: Service A が OP からアクセストークンを取得し、それを付けて Service B を呼び出し、Service B が OP でトークンを検証する。</title>
-  <style>
-    .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
-    .d-tok{font-family:var(--vp-font-family-mono);font-size:11px;fill:currentColor;stroke:none}
-    .d-bt{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
-    .d-bs{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
-    .d-op{stroke:var(--vp-c-brand-2)}
-    .d-opt{fill:var(--vp-c-brand-2)}
-    .d-rs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="20" y="48" width="150" height="68" rx="6"/>
   <rect class="d-op" x="305" y="48" width="150" height="68" rx="6"/>
   <rect class="d-rs" x="590" y="48" width="150" height="68" rx="6"/>

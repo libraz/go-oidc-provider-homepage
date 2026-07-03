@@ -16,11 +16,12 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 
 This page is a flat reference of the public `op.New` options. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
 
+<style scoped>
+.od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
+</style>
+
 <svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="opt-decision-title">Decision tree routing a configuration goal — fresh OP, FAPI switch, single feature, grant restriction, sender-constraint, or token format — to the op.New option that handles it, falling through to the full table.</title>
-  <style>
-  .od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
-  </style>
   <rect x="24" y="24" width="300" height="52" rx="6"/>
   <text class="od-b od-t1" x="174" y="54" text-anchor="middle">Booting a fresh OP?</text>
   <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>

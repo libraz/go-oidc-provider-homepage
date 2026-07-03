@@ -22,20 +22,21 @@ description: Service-to-service tokens with no end user. RFC 6749 §4.4.
 - **`private_key_jwt`** — client authentication where the client signs a short-lived JWT with its private key; the OP verifies it against the registered public key. Stronger than a shared secret because the secret never leaves the client.
 :::
 
+<style scoped>
+#cc-flow text { font-family: var(--vp-font-family-base); fill: currentColor; stroke: none; }
+#cc-flow .mono { font-family: var(--vp-font-family-mono); }
+#cc-flow .c-op { stroke: var(--vp-c-brand-2); }
+#cc-flow .c-rs { stroke: var(--vp-c-text-3); }
+#cc-flow .tf-op { fill: var(--vp-c-brand-2); }
+#cc-flow .tf-rs { fill: var(--vp-c-text-3); }
+#cc-flow .life { stroke-width: 1; opacity: .4; }
+#cc-flow .box { stroke-width: 2; }
+#cc-flow .arw { stroke-width: 2; }
+#cc-flow .num { stroke-width: 1.5; }
+</style>
+
 <svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
   <title id="cc-flow-title">Client credentials flow: Service A authenticates to the OP, receives an access token, then presents it as a bearer token to Service B.</title>
-  <style>
-    #cc-flow text { font-family: var(--vp-font-family-base); fill: currentColor; stroke: none; }
-    #cc-flow .mono { font-family: var(--vp-font-family-mono); }
-    #cc-flow .c-op { stroke: var(--vp-c-brand-2); }
-    #cc-flow .c-rs { stroke: var(--vp-c-text-3); }
-    #cc-flow .tf-op { fill: var(--vp-c-brand-2); }
-    #cc-flow .tf-rs { fill: var(--vp-c-text-3); }
-    #cc-flow .life { stroke-width: 1; opacity: .4; }
-    #cc-flow .box { stroke-width: 2; }
-    #cc-flow .arw { stroke-width: 2; }
-    #cc-flow .num { stroke-width: 1.5; }
-  </style>
   <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
   <text x="90" y="26" text-anchor="middle" font-size="13" font-weight="600">Service A</text>
   <text x="90" y="40" text-anchor="middle" font-size="9.5" opacity=".7">(your backend)</text>

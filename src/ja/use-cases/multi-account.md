@@ -34,19 +34,20 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 
 ## 動作
 
+<style scoped>
+.d-lbl{font-family:var(--vp-font-family-base);fill:currentColor;font-size:12px}
+.d-mono{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
+.d-sm{font-size:10px}
+.d-ph{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:10px;letter-spacing:1.5px}
+.d-acc{fill:var(--vp-c-brand-2)}
+.d-mut{opacity:.6}
+.d-op{stroke:var(--vp-c-brand-2)}
+.d-life{stroke-opacity:.35}
+text{stroke:none}
+</style>
+
 <svg role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="multi-account-chooser-flow-title">3 回の /authorize 往復のシーケンス。初回ログインで chooser group を発行し、prompt=login でアカウントを追加、prompt=select_account でアクティブセッションを切り替える。</title>
-  <style>
-    .d-lbl{font-family:var(--vp-font-family-base);fill:currentColor;font-size:12px}
-    .d-mono{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
-    .d-sm{font-size:10px}
-    .d-ph{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:10px;letter-spacing:1.5px}
-    .d-acc{fill:var(--vp-c-brand-2)}
-    .d-mut{opacity:.6}
-    .d-op{stroke:var(--vp-c-brand-2)}
-    .d-life{stroke-opacity:.35}
-    text{stroke:none}
-  </style>
 
   <!-- actors -->
   <rect x="60" y="14" width="120" height="34" rx="6"/>

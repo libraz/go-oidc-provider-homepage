@@ -33,15 +33,16 @@ Redis アダプタも同様です。
 
 ## アーキテクチャ
 
+<style scoped>
+text { stroke: none; }
+.lbl { font-family: var(--vp-font-family-base); fill: currentColor; }
+.mono { font-family: var(--vp-font-family-mono); fill: currentColor; }
+.arch-op { stroke: var(--vp-c-brand-2); }
+.arch-db { stroke-dasharray: 7 5; }
+</style>
+
 <svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 816 300" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="sql-store-arch-title">op.Provider は Store インターフェース越しに storeadapter/sql と会話し、各サブストアが SQL データベース内の専用テーブルへ永続化される。</title>
-  <style>
-    text { stroke: none; }
-    .lbl { font-family: var(--vp-font-family-base); fill: currentColor; }
-    .mono { font-family: var(--vp-font-family-mono); fill: currentColor; }
-    .arch-op { stroke: var(--vp-c-brand-2); }
-    .arch-db { stroke-dasharray: 7 5; }
-  </style>
   <rect x="12" y="123" width="142" height="54" rx="8" class="arch-op"/>
   <text x="83" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="14" font-weight="600">op.Provider</text>
   <path d="M154 150 H300"/>

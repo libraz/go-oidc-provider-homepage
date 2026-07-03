@@ -25,15 +25,16 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 > Conformance ≠ Security. An OFCS-passing OP can still be exploitable (alg confusion, PKCE downgrade, redirect_uri partial match, timing attacks on secret compare). The next sections describe how each class is closed structurally rather than by runtime checks alone.
 
+<style scoped>
+.op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
+.op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
+.op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
+.op-fp-flow{stroke:var(--vp-c-brand-2);}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
   <title id="posture-five-properties-title">The five separate properties behind "is this safe?" — conformance, correctness, security, supply-chain, and operational assurance, read in order.</title>
-  <style>
-    .op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
-    .op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
-    .op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
-    .op-fp-flow{stroke:var(--vp-c-brand-2);}
-  </style>
   <rect x="0" y="16" width="124" height="84" rx="6"/>
   <rect x="149" y="16" width="124" height="84" rx="6"/>
   <rect x="298" y="16" width="124" height="84" rx="6"/>

@@ -42,19 +42,20 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 順番に 4 つの問いを通ってください。最初の問いでだいたい片付きます。
 
+<style scoped>
+.dtx-q{stroke:currentColor;stroke-width:1.6}
+.dtx-op{stroke:var(--vp-c-brand-2);stroke-width:1.8}
+.dtx-rp{stroke:currentColor;stroke-width:1.8}
+.dtx-edge{stroke:currentColor;stroke-width:1.6}
+.dtx-qt{font-family:var(--vp-font-family-base);font-size:12.5px;fill:var(--vp-c-text-1);stroke:none}
+.dtx-leaf{font-family:var(--vp-font-family-base);font-size:13.5px;font-weight:700;fill:var(--vp-c-text-1);stroke:none}
+.dtx-leaf-op{font-family:var(--vp-font-family-base);font-size:13.5px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
+.dtx-lbl{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;fill:var(--vp-c-text-3);stroke:none}
+.dtx-sub{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
+</style>
+
 <svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 660 480" width="660" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="nobrowser-choice-title">4 つの問いを順にたどって CIBA と Device Code のどちらを選ぶかを示す判定木。</title>
-  <style>
-    .dtx-q{stroke:currentColor;stroke-width:1.6}
-    .dtx-op{stroke:var(--vp-c-brand-2);stroke-width:1.8}
-    .dtx-rp{stroke:currentColor;stroke-width:1.8}
-    .dtx-edge{stroke:currentColor;stroke-width:1.6}
-    .dtx-qt{font-family:var(--vp-font-family-base);font-size:12.5px;fill:var(--vp-c-text-1);stroke:none}
-    .dtx-leaf{font-family:var(--vp-font-family-base);font-size:13.5px;font-weight:700;fill:var(--vp-c-text-1);stroke:none}
-    .dtx-leaf-op{font-family:var(--vp-font-family-base);font-size:13.5px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
-    .dtx-lbl{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;fill:var(--vp-c-text-3);stroke:none}
-    .dtx-sub{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
-  </style>
   <rect class="dtx-q" x="20" y="20" width="320" height="58" rx="6"/>
   <rect class="dtx-q" x="20" y="118" width="320" height="58" rx="6"/>
   <rect class="dtx-q" x="20" y="216" width="320" height="58" rx="6"/>
@@ -122,22 +123,23 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 ### Device Code（RFC 8628）
 
+<style scoped>
+.dcx-op{stroke:var(--vp-c-brand-2)}
+.dcx-rp{stroke:currentColor}
+.dcx-user{stroke:var(--vp-c-text-3)}
+.dcx-frame{stroke:currentColor;stroke-width:1.4;opacity:.42}
+.dcx-life{stroke-width:1.4;opacity:.32}
+.dcx-actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
+.dcx-actor-op{font-family:var(--vp-font-family-base);font-size:13px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
+.dcx-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-3);stroke:none}
+.dcx-hdr{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.04em;fill:var(--vp-c-text-3);stroke:none}
+.dcx-note{font-family:var(--vp-font-family-base);font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
+.dcx-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);stroke:none}
+.dcx-step{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
+</style>
+
 <svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 720 452" width="720" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="dc-seq-title">Device Code（RFC 8628）のシーケンス。ブラウザを持たないデバイスが OP を poll する一方、ユーザは別のブラウザで user_code を入力して承認する。</title>
-  <style>
-    .dcx-op{stroke:var(--vp-c-brand-2)}
-    .dcx-rp{stroke:currentColor}
-    .dcx-user{stroke:var(--vp-c-text-3)}
-    .dcx-frame{stroke:currentColor;stroke-width:1.4;opacity:.42}
-    .dcx-life{stroke-width:1.4;opacity:.32}
-    .dcx-actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
-    .dcx-actor-op{font-family:var(--vp-font-family-base);font-size:13px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
-    .dcx-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-3);stroke:none}
-    .dcx-hdr{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.04em;fill:var(--vp-c-text-3);stroke:none}
-    .dcx-note{font-family:var(--vp-font-family-base);font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-    .dcx-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);stroke:none}
-    .dcx-step{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
-  </style>
   <line class="dcx-rp dcx-life" x1="115" y1="50" x2="115" y2="446"/>
   <line class="dcx-op dcx-life" x1="360" y1="50" x2="360" y2="446"/>
   <line class="dcx-user dcx-life" x1="605" y1="50" x2="605" y2="446"/>
@@ -176,22 +178,23 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 ### CIBA（Core 1.0、poll モード）
 
+<style scoped>
+.cbx-op{stroke:var(--vp-c-brand-2)}
+.cbx-rp{stroke:currentColor}
+.cbx-user{stroke:var(--vp-c-text-3)}
+.cbx-frame{stroke:currentColor;stroke-width:1.4;opacity:.42}
+.cbx-life{stroke-width:1.4;opacity:.32}
+.cbx-actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
+.cbx-actor-op{font-family:var(--vp-font-family-base);font-size:13px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
+.cbx-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-3);stroke:none}
+.cbx-hdr{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.04em;fill:var(--vp-c-text-3);stroke:none}
+.cbx-note{font-family:var(--vp-font-family-base);font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
+.cbx-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);stroke:none}
+.cbx-step{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
+</style>
+
 <svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" width="720" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ciba-seq-title">CIBA（OIDC Core 1.0、poll モード）のシーケンス。RP が /bc-authorize で login_hint を渡し、OP がそれを解決してユーザの事前登録デバイスに push し、RP は承認まで poll する。</title>
-  <style>
-    .cbx-op{stroke:var(--vp-c-brand-2)}
-    .cbx-rp{stroke:currentColor}
-    .cbx-user{stroke:var(--vp-c-text-3)}
-    .cbx-frame{stroke:currentColor;stroke-width:1.4;opacity:.42}
-    .cbx-life{stroke-width:1.4;opacity:.32}
-    .cbx-actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
-    .cbx-actor-op{font-family:var(--vp-font-family-base);font-size:13px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
-    .cbx-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-3);stroke:none}
-    .cbx-hdr{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.04em;fill:var(--vp-c-text-3);stroke:none}
-    .cbx-note{font-family:var(--vp-font-family-base);font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-    .cbx-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);stroke:none}
-    .cbx-step{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
-  </style>
   <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
   <line class="cbx-op cbx-life" x1="360" y1="50" x2="360" y2="554"/>
   <line class="cbx-user cbx-life" x1="605" y1="50" x2="605" y2="554"/>

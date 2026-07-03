@@ -11,16 +11,17 @@ description: 動く最小の OP+RP のペア — 必須 4 オプション、デ�
 
 ## アーキテクチャ
 
+<style scoped>
+.d-label{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);}
+.d-sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);}
+.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);}
+.d-mono-2{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2);}
+.d-mono-sm{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2);}
+.op-accent{stroke:var(--vp-c-brand-2);}
+</style>
+
 <svg role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block;">
   <title id="minimal-op-arch-title">単一の Go プロセス: ブラウザが rpkit RP を操作し、RP が op.New に OIDC で接続、OP は in-memory ストアを読み書きし、揮発鍵で署名します。</title>
-  <style>
-    .d-label{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);}
-    .d-sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);}
-    .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);}
-    .d-mono-2{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2);}
-    .d-mono-sm{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2);}
-    .op-accent{stroke:var(--vp-c-brand-2);}
-  </style>
   <rect x="150" y="28" width="560" height="246" rx="10" stroke-opacity="0.4"/>
   <text class="d-sub" x="166" y="49">単一プロセス</text>
   <rect x="16" y="122" width="104" height="56" rx="6"/>

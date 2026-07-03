@@ -75,9 +75,8 @@ The library implements six methods, all from the IANA "OAuth Token Endpoint Auth
 The decision tree traces each client shape down to the `token_endpoint_auth_method` value it registers — a public client lands on `none`, a confidential client on a `client_secret_*` method, and a FAPI-grade client on an asymmetric method.
 
 <figure style="margin:1.6rem 0;text-align:center">
-<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 720 268" width="720" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="authmethod-decision-title">Decision tree from client shape — public, confidential, or FAPI-grade — down to the token_endpoint_auth_method value the OP enforces.</title>
-<style>
+
+<style scoped>
 text{stroke:none}
 .dt-leaf{stroke:var(--vp-c-brand-2)}
 .dt-title{font-family:var(--vp-font-family-base);fill:currentColor;font-weight:600;font-size:13px}
@@ -87,6 +86,9 @@ text{stroke:none}
 .dt-root-code{font-family:var(--vp-font-family-mono);fill:currentColor;opacity:.6;font-size:10.5px}
 .dt-note{font-family:var(--vp-font-family-mono);fill:currentColor;opacity:.5;font-size:10px}
 </style>
+
+<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 720 268" width="720" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<title id="authmethod-decision-title">Decision tree from client shape — public, confidential, or FAPI-grade — down to the token_endpoint_auth_method value the OP enforces.</title>
 <rect x="260" y="12" width="200" height="44" rx="6"/>
 <text class="dt-title" x="360" y="32" text-anchor="middle">Client shape</text>
 <text class="dt-root-code" x="360" y="47" text-anchor="middle">token_endpoint_auth_method</text>

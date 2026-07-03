@@ -25,16 +25,17 @@ description: When the consent screen is shown, when it is skipped, what first-pa
 
 The library evaluates four cases on every authorize flow.
 
+<style scoped>
+#consent-shown-decision text { stroke: none; }
+#consent-shown-decision .lbl { font-family: var(--vp-font-family-base); font-size: 13px; fill: var(--vp-c-text-1); }
+#consent-shown-decision .mono { font-family: var(--vp-font-family-mono); font-size: 12px; fill: var(--vp-c-text-1); }
+#consent-shown-decision .sub { font-family: var(--vp-font-family-base); font-size: 11.5px; fill: var(--vp-c-text-2); }
+#consent-shown-decision .edge { font-family: var(--vp-font-family-base); font-size: 11px; fill: var(--vp-c-text-2); }
+#consent-shown-decision .accent { stroke: var(--vp-c-brand-2); }
+</style>
+
 <svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" width="700" style="width:100%;height:auto;max-width:700px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="consent-shown-decision-title">Decision tree over grant state: a prompt=consent request, a missing grant, or a requested scope outside the existing grant each show the consent screen; otherwise the existing grant covers the request and the authorization code is minted without a prompt.</title>
-  <style>
-    #consent-shown-decision text { stroke: none; }
-    #consent-shown-decision .lbl { font-family: var(--vp-font-family-base); font-size: 13px; fill: var(--vp-c-text-1); }
-    #consent-shown-decision .mono { font-family: var(--vp-font-family-mono); font-size: 12px; fill: var(--vp-c-text-1); }
-    #consent-shown-decision .sub { font-family: var(--vp-font-family-base); font-size: 11.5px; fill: var(--vp-c-text-2); }
-    #consent-shown-decision .edge { font-family: var(--vp-font-family-base); font-size: 11px; fill: var(--vp-c-text-2); }
-    #consent-shown-decision .accent { stroke: var(--vp-c-brand-2); }
-  </style>
   <rect x="24" y="28" width="270" height="48" rx="8"/>
   <rect x="24" y="120" width="270" height="48" rx="8"/>
   <rect x="24" y="212" width="270" height="48" rx="8"/>

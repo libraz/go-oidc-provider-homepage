@@ -35,16 +35,17 @@ Use this page when the login decision depends on more than "password accepted": 
 
 ## Composition
 
+<style scoped>
+text{stroke:none}
+.d-lbl{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1)}
+.d-cap{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2)}
+.d-mono{font-family:var(--vp-font-family-mono)}
+.d-accent{stroke:var(--vp-c-brand-2)}
+.d-accent-t{fill:var(--vp-c-brand-2)}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="mfa-loginflow-title">Login flow composition: a primary password step, a rules layer that decides which factor steps run, then token issuance.</title>
-  <style>
-    text{stroke:none}
-    .d-lbl{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1)}
-    .d-cap{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2)}
-    .d-mono{font-family:var(--vp-font-family-mono)}
-    .d-accent{stroke:var(--vp-c-brand-2)}
-    .d-accent-t{fill:var(--vp-c-brand-2)}
-  </style>
   <rect x="330" y="16" width="140" height="38" rx="6"/>
   <rect x="290" y="78" width="220" height="50" rx="6"/>
   <rect x="17" y="352" width="176" height="42" rx="6"/>

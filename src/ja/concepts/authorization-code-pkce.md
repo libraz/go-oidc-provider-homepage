@@ -24,35 +24,36 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
 
 ## 完全なシーケンス
 
+<style scoped>
+text{stroke:none}
+.actor{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-1)}
+.actor-op{fill:var(--vp-c-brand-2)}
+.actor-rs{fill:var(--vp-c-text-3)}
+.asub{font-family:var(--vp-font-family-base);font-size:9px;fill:var(--vp-c-text-3)}
+.lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-1)}
+.sub{font-family:var(--vp-font-family-base);font-size:9.5px;fill:var(--vp-c-text-2)}
+.mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-2)}
+.num{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3)}
+.note{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-1)}
+.notemono{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2)}
+.box{fill:var(--vp-c-bg);stroke:currentColor}
+.box-op{stroke:var(--vp-c-brand-2)}
+.box-rs{stroke:var(--vp-c-text-3)}
+.lane{fill:none;stroke:var(--vp-c-divider);stroke-width:1.3;stroke-dasharray:2 5}
+.lane-op{stroke:var(--vp-c-brand-2)}
+.lane-rs{stroke:var(--vp-c-text-3)}
+.msg{fill:none;stroke:currentColor}
+.self{fill:none;stroke:currentColor}
+.op-accent{stroke:var(--vp-c-brand-2)}
+.notebox{fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider);stroke-width:1.3}
+</style>
+
 <svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" style="width:100%;height:auto;max-width:684px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="acpkce-seq-title">認可コード + PKCE のシーケンス: ブラウザ、Relying Party、OpenID Provider、Resource Server の間で、ログインから PKCE 検証付きトークン発行、Bearer トークンでの API 呼び出しまでのやり取りを示す図。</title>
   <defs>
     <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
     <marker id="acp-ahb" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" class="op-accent" stroke-width="1.4"/></marker>
   </defs>
-  <style>
-    text{stroke:none}
-    .actor{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-1)}
-    .actor-op{fill:var(--vp-c-brand-2)}
-    .actor-rs{fill:var(--vp-c-text-3)}
-    .asub{font-family:var(--vp-font-family-base);font-size:9px;fill:var(--vp-c-text-3)}
-    .lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-1)}
-    .sub{font-family:var(--vp-font-family-base);font-size:9.5px;fill:var(--vp-c-text-2)}
-    .mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-2)}
-    .num{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3)}
-    .note{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-1)}
-    .notemono{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2)}
-    .box{fill:var(--vp-c-bg);stroke:currentColor}
-    .box-op{stroke:var(--vp-c-brand-2)}
-    .box-rs{stroke:var(--vp-c-text-3)}
-    .lane{fill:none;stroke:var(--vp-c-divider);stroke-width:1.3;stroke-dasharray:2 5}
-    .lane-op{stroke:var(--vp-c-brand-2)}
-    .lane-rs{stroke:var(--vp-c-text-3)}
-    .msg{fill:none;stroke:currentColor}
-    .self{fill:none;stroke:currentColor}
-    .op-accent{stroke:var(--vp-c-brand-2)}
-    .notebox{fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider);stroke-width:1.3}
-  </style>
   <!-- lifelines -->
   <line class="lane" x1="70" y1="54" x2="70" y2="706"/>
   <line class="lane" x1="250" y1="54" x2="250" y2="706"/>

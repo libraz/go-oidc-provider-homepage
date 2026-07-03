@@ -29,21 +29,22 @@ Modern threat models prefer delegation — the audit chain is intact, revocation
 
 ## Impersonation vs Delegation, side by side
 
+<style scoped>
+.tx-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:currentColor}
+.tx-sub{font-family:var(--vp-font-family-base);font-size:8.5px;fill:currentColor;opacity:.55}
+.tx-band{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;letter-spacing:.03em;fill:currentColor}
+.tx-mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:currentColor}
+.tx-note{font-family:var(--vp-font-family-base);font-size:10px;fill:currentColor;opacity:.85}
+.tx-acc{stroke:var(--vp-c-brand-2)}
+.tx-acc-f{fill:var(--vp-c-brand-2)}
+.tx-rs{stroke:#7c6ba6}
+.tx-rs-f{fill:#7c6ba6}
+.dark .tx-rs{stroke:#b3a4d6}
+.dark .tx-rs-f{fill:#b3a4d6}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tx-imp-del-title">Three ways Service A can call Service B on Alice's behalf — plain forwarding is rejected, impersonation drops the actor, delegation records the act chain.</title>
-  <style>
-    .tx-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:currentColor}
-    .tx-sub{font-family:var(--vp-font-family-base);font-size:8.5px;fill:currentColor;opacity:.55}
-    .tx-band{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;letter-spacing:.03em;fill:currentColor}
-    .tx-mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:currentColor}
-    .tx-note{font-family:var(--vp-font-family-base);font-size:10px;fill:currentColor;opacity:.85}
-    .tx-acc{stroke:var(--vp-c-brand-2)}
-    .tx-acc-f{fill:var(--vp-c-brand-2)}
-    .tx-rs{stroke:#7c6ba6}
-    .tx-rs-f{fill:#7c6ba6}
-    .dark .tx-rs{stroke:#b3a4d6}
-    .dark .tx-rs-f{fill:#b3a4d6}
-  </style>
   <!-- actor headers -->
   <rect x="34" y="16" width="104" height="40" rx="6"/>
   <text class="tx-lbl" x="86" y="33" text-anchor="middle">Frontend</text>

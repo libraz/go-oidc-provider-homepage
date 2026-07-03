@@ -25,15 +25,16 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 > 適合性 ≠ セキュリティ です。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
 
+<style scoped>
+.op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
+.op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
+.op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
+.op-fp-flow{stroke:var(--vp-c-brand-2);}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
   <title id="posture-five-properties-title">「これは安全か？」を支える 5 つの独立した性質 — 適合性・正しさ・セキュリティ・サプライチェーン・運用の保証を順に並べた図。</title>
-  <style>
-    .op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
-    .op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
-    .op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
-    .op-fp-flow{stroke:var(--vp-c-brand-2);}
-  </style>
   <rect x="0" y="16" width="124" height="84" rx="6"/>
   <rect x="149" y="16" width="124" height="84" rx="6"/>
   <rect x="298" y="16" width="124" height="84" rx="6"/>

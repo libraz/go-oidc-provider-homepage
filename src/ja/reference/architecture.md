@@ -37,9 +37,8 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 `op.New` は `*http.ServeMux` を構築し、設定されたパスにハンドラをマウントします(下図はデフォルト):
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
-<svg role="img" aria-labelledby="hg-ja-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;height:auto">
-<title id="hg-ja-title">op.New が返す http.Handler は、ServeMux が各リクエストパスを対応する内部エンドポイントハンドラへ振り分けます。</title>
-<style>
+
+<style scoped>
 .hg-box{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .hg-op{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .hg-line{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -50,6 +49,9 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 .hg-pkg{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);font-size:10px}
 .hg-drv{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-3);font-size:10px}
 </style>
+
+<svg role="img" aria-labelledby="hg-ja-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;height:auto">
+<title id="hg-ja-title">op.New が返す http.Handler は、ServeMux が各リクエストパスを対応する内部エンドポイントハンドラへ振り分けます。</title>
 <defs><marker id="hg-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
 <rect class="hg-op" x="24" y="217" width="180" height="60" rx="8"/>
 <text class="hg-t1" x="114" y="240" text-anchor="middle">op.New</text>
@@ -124,9 +126,8 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 最も流量の多いパスです。概略は次のとおりです。
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
-<svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:850px;height:auto">
-<title id="seq-ja-title">authorize から token までの正常系: ブラウザが /authorize と interaction を進め、RP が /token で code を引き換えます。</title>
-<style>
+
+<style scoped>
 .seq-ll{stroke:currentColor;stroke-width:2}
 .seq-llop{stroke:var(--vp-c-brand-2);stroke-width:2}
 .seq-llst{stroke:currentColor;stroke-width:2;stroke-dasharray:5 5}
@@ -144,6 +145,9 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 .seq-mono{font-family:var(--vp-font-family-mono)}
 .seq-num{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3)}
 </style>
+
+<svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:850px;height:auto">
+<title id="seq-ja-title">authorize から token までの正常系: ブラウザが /authorize と interaction を進め、RP が /token で code を引き換えます。</title>
 <defs>
 <marker id="seq-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
 <marker id="seq-ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--vp-c-text-3)"/></marker>
@@ -235,9 +239,8 @@ internal/authn/CompiledLoginFlow
 ```
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
-<svg role="img" aria-labelledby="lfp-ja-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px;height:auto">
-<title id="lfp-ja-title">WithLoginFlow は Primary / Rules / Decider / Risk の指定を CompiledLoginFlow にコンパイルし、オーケストレータがリクエストごとのループで実行します。</title>
-<style>
+
+<style scoped>
 .lfp-box{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .lfp-op{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .lfp-line{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
@@ -251,6 +254,9 @@ internal/authn/CompiledLoginFlow
 .lfp-mono{font-family:var(--vp-font-family-mono)}
 .lfp-nd{font-family:var(--vp-font-family-base);font-size:11px;fill:currentColor}
 </style>
+
+<svg role="img" aria-labelledby="lfp-ja-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px;height:auto">
+<title id="lfp-ja-title">WithLoginFlow は Primary / Rules / Decider / Risk の指定を CompiledLoginFlow にコンパイルし、オーケストレータがリクエストごとのループで実行します。</title>
 <defs>
 <marker id="lfp-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
 <marker id="lfp-arra" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--vp-c-brand-2)"/></marker>

@@ -28,22 +28,23 @@ description: RP がランタイムに自身を登録できるようにする —
 
 ## アーキテクチャ
 
+<style scoped>
+.d-box{fill:none;stroke:currentColor;stroke-width:2}
+.op-accent{stroke:var(--vp-c-brand-2)}
+.d-life{stroke:currentColor;stroke-width:1.5;opacity:.35}
+.d-life-op{stroke:var(--vp-c-brand-2);stroke-width:1.5;opacity:.5}
+.d-msg{stroke:currentColor;stroke-width:2;fill:none}
+.d-msg-oob{stroke:currentColor;stroke-width:2;fill:none;stroke-dasharray:5 4}
+.d-badge{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.5}
+.d-name{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
+.d-accent-fill{fill:var(--vp-c-brand-2)}
+.d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
+.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:currentColor;stroke:none}
+.d-badge-t{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:currentColor;stroke:none}
+</style>
+
 <svg role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" style="display:block;width:100%;max-width:760px;height:auto;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="dcr-seq-title">動的クライアント登録のシーケンス: 運用者が Initial Access Token を発行し out-of-band で新規 RP に渡すと、RP は POST /register で登録し、RFC 7592 で登録内容を読み取り・更新・削除する。</title>
-  <style>
-    .d-box{fill:none;stroke:currentColor;stroke-width:2}
-    .op-accent{stroke:var(--vp-c-brand-2)}
-    .d-life{stroke:currentColor;stroke-width:1.5;opacity:.35}
-    .d-life-op{stroke:var(--vp-c-brand-2);stroke-width:1.5;opacity:.5}
-    .d-msg{stroke:currentColor;stroke-width:2;fill:none}
-    .d-msg-oob{stroke:currentColor;stroke-width:2;fill:none;stroke-dasharray:5 4}
-    .d-badge{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.5}
-    .d-name{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
-    .d-accent-fill{fill:var(--vp-c-brand-2)}
-    .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
-    .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:currentColor;stroke:none}
-    .d-badge-t{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:currentColor;stroke:none}
-  </style>
   <line x1="130" y1="64" x2="130" y2="581" class="d-life"/>
   <line x1="420" y1="64" x2="420" y2="581" class="d-life-op"/>
   <line x1="710" y1="64" x2="710" y2="581" class="d-life"/>

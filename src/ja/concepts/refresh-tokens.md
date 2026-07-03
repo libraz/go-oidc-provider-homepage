@@ -24,20 +24,21 @@ description: ローテーション、再利用検知、grace 期間、`offline_a
 
 `grant_type=refresh_token` が成功するたびに、リフレッシュトークンは **ローテーション** します — 古いトークンは無効化され、新しいトークンが返されます。
 
+<style scoped>
+.rr-flow-dg text{stroke:none;fill:currentColor;}
+.rr-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.rr-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+.rr-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+.rr-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+.rr-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
+.rr-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
+.rr-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
+.rr-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
+.rr-flow-dg .life{opacity:0.3;stroke-width:1;}
+</style>
+
 <svg class="rr-flow-dg" role="img" aria-labelledby="refresh-rotation-flow-title" viewBox="0 0 760 452" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="refresh-rotation-flow-title">リフレッシュトークンのローテーション: 交換のたびに提示されたトークンを無効化して同じ chain 内で新しいトークンを発行し、ローテーション済みトークンの再提示は再利用として検知され chain 全体を失効させる。</title>
-  <style>
-    .rr-flow-dg text{stroke:none;fill:currentColor;}
-    .rr-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .rr-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-    .rr-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-    .rr-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-    .rr-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
-    .rr-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
-    .rr-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
-    .rr-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
-    .rr-flow-dg .life{opacity:0.3;stroke-width:1;}
-  </style>
   <line class="life" x1="110" y1="68" x2="110" y2="438"/>
   <line class="life op-accent" x1="380" y1="68" x2="380" y2="438"/>
   <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="438"/>

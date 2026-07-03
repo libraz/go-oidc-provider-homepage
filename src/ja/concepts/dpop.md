@@ -40,20 +40,21 @@ DPoP proof はクライアントが保有する秘密鍵で署名した JWT（RF
 | `ath` | 任意。アクセストークンの SHA-256。proof がアクセストークンと組で提示される場合は必須（RFC 9449 §4.2）。 |
 | `nonce` | 任意。OP が §8 / §9 の nonce フローを運用しているときにサーバから供給される値。 |
 
+<style scoped>
+.dpop-flow-dg text{stroke:none;fill:currentColor;}
+.dpop-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.dpop-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+.dpop-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+.dpop-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+.dpop-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
+.dpop-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
+.dpop-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
+.dpop-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
+.dpop-flow-dg .life{opacity:0.3;stroke-width:1;}
+</style>
+
 <svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-proof-flow-title">DPoP proof のシーケンス: クライアントがリクエスト毎に proof を署名し、OP がアクセストークンに cnf.jkt をバインドし、リソースサーバがそのバインドと proof を照合する。</title>
-  <style>
-    .dpop-flow-dg text{stroke:none;fill:currentColor;}
-    .dpop-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .dpop-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-    .dpop-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-    .dpop-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-    .dpop-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
-    .dpop-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
-    .dpop-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
-    .dpop-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
-    .dpop-flow-dg .life{opacity:0.3;stroke-width:1;}
-  </style>
   <line class="life" x1="110" y1="68" x2="110" y2="540"/>
   <line class="life op-accent" x1="380" y1="68" x2="380" y2="540"/>
   <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="540"/>

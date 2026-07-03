@@ -99,9 +99,12 @@ The library does **not** ship Front-Channel Logout, and the discovery document d
 
 `/end_session` is not just "delete the cookie." When the embedder has wired `Grants` and `AccessTokens` substores, the library walks every grant the subject holds and revokes the per-grant access-token shadow rows. JWT access tokens become inactive at OP-served boundaries (`/userinfo`, `/introspect`); opaque access tokens become inactive at every RS that introspects.
 
+<style scoped>
+.sc-b{font-family:var(--vp-font-family-base);fill:currentColor;stroke:none}.sc-m{font-family:var(--vp-font-family-mono);fill:currentColor;stroke:none}.sc-op{stroke:var(--vp-c-brand-2)}.sc-rs{stroke:var(--vp-c-text-2)}.sc-opf{fill:var(--vp-c-brand-2)}.sc-rsf{fill:var(--vp-c-text-2)}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 720 420" style="width:100%;height:auto;max-width:720px;margin:1.25rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="session-cascade-title">How one session row links to its cookies, and how /end_session cascades to grants, access tokens, and Back-Channel Logout notifications.</title>
-<style>.sc-b{font-family:var(--vp-font-family-base);fill:currentColor;stroke:none}.sc-m{font-family:var(--vp-font-family-mono);fill:currentColor;stroke:none}.sc-op{stroke:var(--vp-c-brand-2)}.sc-rs{stroke:var(--vp-c-text-2)}.sc-opf{fill:var(--vp-c-brand-2)}.sc-rsf{fill:var(--vp-c-text-2)}</style>
 <defs>
 <marker id="sc-arw" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></marker>
 <marker id="sc-arw-op" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" class="sc-op" stroke-width="1.3"/></marker>

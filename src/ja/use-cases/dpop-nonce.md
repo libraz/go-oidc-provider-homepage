@@ -31,19 +31,20 @@ description: RFC 9449 §8 / §9 — サーバ供給の nonce を DPoP proof に�
 
 ## フロー
 
+<style scoped>
+.dpop-nonce-dg text{stroke:none;fill:currentColor;}
+.dpop-nonce-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.dpop-nonce-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+.dpop-nonce-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+.dpop-nonce-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+.dpop-nonce-dg .op-accent{stroke:var(--vp-c-brand-2);}
+.dpop-nonce-dg .op-fill{fill:var(--vp-c-brand-2);}
+.dpop-nonce-dg .life{opacity:0.3;stroke-width:1;}
+.dpop-nonce-dg .note{opacity:0.4;stroke-width:1;}
+</style>
+
 <svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-nonce-flow-title">DPoP nonce ハンドシェイクのシーケンス: OP は最初の proof を use_dpop_nonce と DPoP-Nonce ヘッダで拒否し、クライアントは nonce claim を入れて再試行し、以降の呼び出しは毎回ローテーションされる最新 nonce を運ぶ。</title>
-  <style>
-    .dpop-nonce-dg text{stroke:none;fill:currentColor;}
-    .dpop-nonce-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .dpop-nonce-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-    .dpop-nonce-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-    .dpop-nonce-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-    .dpop-nonce-dg .op-accent{stroke:var(--vp-c-brand-2);}
-    .dpop-nonce-dg .op-fill{fill:var(--vp-c-brand-2);}
-    .dpop-nonce-dg .life{opacity:0.3;stroke-width:1;}
-    .dpop-nonce-dg .note{opacity:0.4;stroke-width:1;}
-  </style>
   <line class="life" x1="130" y1="68" x2="130" y2="472"/>
   <line class="life op-accent" x1="630" y1="68" x2="630" y2="472"/>
   <rect x="55" y="14" width="150" height="30" rx="5"/>

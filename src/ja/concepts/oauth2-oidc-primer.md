@@ -53,18 +53,19 @@ description: OAuth 2.0 のロールと OpenID Connect が追加するものを�
 
 ## 3 つのロール
 
+<style scoped>
+.diag-roles text{stroke:none;fill:var(--vp-c-text-1)}
+.diag-roles .p{font-family:var(--vp-font-family-base)}
+.diag-roles .m{font-family:var(--vp-font-family-mono)}
+.diag-roles .sub{fill:var(--vp-c-text-2)}
+.diag-roles .op{stroke:var(--vp-c-brand-2)}
+.diag-roles .opf{fill:var(--vp-c-brand-2)}
+.diag-roles .rs{stroke:var(--vp-c-text-3)}
+.diag-roles .rsf{fill:var(--vp-c-text-3)}
+</style>
+
 <svg class="diag diag-roles" role="img" aria-labelledby="roles-title" viewBox="0 0 760 202" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="roles-title">OAuth / OIDC の 3 つのロール: RP は OP に認証を委任してトークンを受け取り、Bearer アクセストークンで RS を呼び出す。</title>
-  <style>
-    .diag-roles text{stroke:none;fill:var(--vp-c-text-1)}
-    .diag-roles .p{font-family:var(--vp-font-family-base)}
-    .diag-roles .m{font-family:var(--vp-font-family-mono)}
-    .diag-roles .sub{fill:var(--vp-c-text-2)}
-    .diag-roles .op{stroke:var(--vp-c-brand-2)}
-    .diag-roles .opf{fill:var(--vp-c-brand-2)}
-    .diag-roles .rs{stroke:var(--vp-c-text-3)}
-    .diag-roles .rsf{fill:var(--vp-c-text-3)}
-  </style>
   <defs>
     <marker id="roles-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -146,19 +147,20 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 ## 最もよく見かけるフロー: 認可コード + PKCE
 
+<style scoped>
+.diag-authcode text{stroke:none;fill:var(--vp-c-text-1)}
+.diag-authcode .p{font-family:var(--vp-font-family-base)}
+.diag-authcode .m{font-family:var(--vp-font-family-mono)}
+.diag-authcode .sub{fill:var(--vp-c-text-2)}
+.diag-authcode .life{stroke:var(--vp-c-divider);stroke-width:1.5}
+.diag-authcode .op{stroke:var(--vp-c-brand-2)}
+.diag-authcode .opf{fill:var(--vp-c-brand-2)}
+.diag-authcode .rs{stroke:var(--vp-c-text-3)}
+.diag-authcode .rsf{fill:var(--vp-c-text-3)}
+</style>
+
 <svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" style="width:100%;height:auto;max-width:772px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authcode-title">認可コード + PKCE のシーケンス: ブラウザがユーザを RP と OP の間で運んでログインと code 交換を行い、その後 RP が access token で RS を呼び出す。</title>
-  <style>
-    .diag-authcode text{stroke:none;fill:var(--vp-c-text-1)}
-    .diag-authcode .p{font-family:var(--vp-font-family-base)}
-    .diag-authcode .m{font-family:var(--vp-font-family-mono)}
-    .diag-authcode .sub{fill:var(--vp-c-text-2)}
-    .diag-authcode .life{stroke:var(--vp-c-divider);stroke-width:1.5}
-    .diag-authcode .op{stroke:var(--vp-c-brand-2)}
-    .diag-authcode .opf{fill:var(--vp-c-brand-2)}
-    .diag-authcode .rs{stroke:var(--vp-c-text-3)}
-    .diag-authcode .rsf{fill:var(--vp-c-text-3)}
-  </style>
   <defs>
     <marker id="authcode-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>

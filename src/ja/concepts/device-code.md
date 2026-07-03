@@ -24,22 +24,23 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 
 ## フローの動き方
 
+<style scoped>
+.dcf-fp{font-family:var(--vp-font-family-base);}
+.dcf-fm{font-family:var(--vp-font-family-mono);}
+.dcf-neu{fill:currentColor;}
+.dcf-acc{fill:var(--vp-c-brand-2);}
+.dcf-mut{fill:var(--vp-c-text-3);}
+.dcf-sacc{stroke:var(--vp-c-brand-2);}
+.dcf-smut{stroke:var(--vp-c-text-3);}
+.dcf-frame{fill:none;stroke:var(--vp-c-text-3);stroke-width:1.5;}
+.dcf-life{stroke-width:1.5;opacity:.32;}
+.dcf-ret{stroke-dasharray:5 4;}
+.dcf-tabbg{fill:var(--vp-c-bg);stroke:var(--vp-c-text-3);stroke-width:1.5;}
+svg text{stroke:none;}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 700 570" style="width:100%;height:auto;max-width:720px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="device-code-flow-title">デバイス認可のシーケンス: デバイスが device_code と user_code を要求し、ユーザが別画面で承認する間トークンエンドポイントを poll し、最後にアクセストークンを受け取る。</title>
-  <style>
-    .dcf-fp{font-family:var(--vp-font-family-base);}
-    .dcf-fm{font-family:var(--vp-font-family-mono);}
-    .dcf-neu{fill:currentColor;}
-    .dcf-acc{fill:var(--vp-c-brand-2);}
-    .dcf-mut{fill:var(--vp-c-text-3);}
-    .dcf-sacc{stroke:var(--vp-c-brand-2);}
-    .dcf-smut{stroke:var(--vp-c-text-3);}
-    .dcf-frame{fill:none;stroke:var(--vp-c-text-3);stroke-width:1.5;}
-    .dcf-life{stroke-width:1.5;opacity:.32;}
-    .dcf-ret{stroke-dasharray:5 4;}
-    .dcf-tabbg{fill:var(--vp-c-bg);stroke:var(--vp-c-text-3);stroke-width:1.5;}
-    svg text{stroke:none;}
-  </style>
 
   <!-- actors -->
   <rect x="12" y="14" width="128" height="40" rx="5"/>

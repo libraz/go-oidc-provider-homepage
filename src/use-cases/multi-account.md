@@ -34,19 +34,20 @@ This library implements it as a **chooser group** inside the OP's internal sessi
 
 ## How it works
 
+<style scoped>
+.d-lbl{font-family:var(--vp-font-family-base);fill:currentColor;font-size:12px}
+.d-mono{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
+.d-sm{font-size:10px}
+.d-ph{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:10px;letter-spacing:1.5px}
+.d-acc{fill:var(--vp-c-brand-2)}
+.d-mut{opacity:.6}
+.d-op{stroke:var(--vp-c-brand-2)}
+.d-life{stroke-opacity:.35}
+text{stroke:none}
+</style>
+
 <svg role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="multi-account-chooser-flow-title">Sequence of three /authorize round-trips: first login issues a chooser group, prompt=login adds an account, prompt=select_account switches the active session.</title>
-  <style>
-    .d-lbl{font-family:var(--vp-font-family-base);fill:currentColor;font-size:12px}
-    .d-mono{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
-    .d-sm{font-size:10px}
-    .d-ph{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:10px;letter-spacing:1.5px}
-    .d-acc{fill:var(--vp-c-brand-2)}
-    .d-mut{opacity:.6}
-    .d-op{stroke:var(--vp-c-brand-2)}
-    .d-life{stroke-opacity:.35}
-    text{stroke:none}
-  </style>
 
   <!-- actors -->
   <rect x="60" y="14" width="120" height="34" rx="6"/>

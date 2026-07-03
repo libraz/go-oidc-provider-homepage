@@ -99,9 +99,12 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 
 `/end_session` は単に「cookie を消す」だけではありません。組み込み側が `Grants` と `AccessTokens` の substore を組み込んでいる場合、本ライブラリは subject が保持するすべての grant を歩き、grant ごとのアクセストークン shadow row を失効させます。JWT アクセストークンは OP が応答するエンドポイント（`/userinfo`、`/introspect`）で inactive になります。opaque アクセストークンは introspection を経由するすべての RS で inactive になります。
 
+<style scoped>
+.sc-b{font-family:var(--vp-font-family-base);fill:currentColor;stroke:none}.sc-m{font-family:var(--vp-font-family-mono);fill:currentColor;stroke:none}.sc-op{stroke:var(--vp-c-brand-2)}.sc-rs{stroke:var(--vp-c-text-2)}.sc-opf{fill:var(--vp-c-brand-2)}.sc-rsf{fill:var(--vp-c-text-2)}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 720 420" style="width:100%;height:auto;max-width:720px;margin:1.25rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="session-cascade-title">1 つのセッション行が cookie とどう結び付くか、そして /end_session が grant・アクセストークン・Back-Channel Logout 通知へどうカスケードするか。</title>
-<style>.sc-b{font-family:var(--vp-font-family-base);fill:currentColor;stroke:none}.sc-m{font-family:var(--vp-font-family-mono);fill:currentColor;stroke:none}.sc-op{stroke:var(--vp-c-brand-2)}.sc-rs{stroke:var(--vp-c-text-2)}.sc-opf{fill:var(--vp-c-brand-2)}.sc-rsf{fill:var(--vp-c-text-2)}</style>
 <defs>
 <marker id="sc-arw" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></marker>
 <marker id="sc-arw-op" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" class="sc-op" stroke-width="1.3"/></marker>

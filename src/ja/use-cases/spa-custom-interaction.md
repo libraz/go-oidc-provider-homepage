@@ -49,20 +49,21 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 
 低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。`/authorize` のリダイレクトから RP のコールバックに戻る `code` 付きリダイレクトまでの間は、すべて SPA 上で完結します。
 
+<style scoped>
+.lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);stroke:none}
+.mono{font-family:var(--vp-font-family-mono);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
+.actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
+.sub{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3);stroke:none}
+.num{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}
+.op-accent{stroke:var(--vp-c-brand-2)}
+.op-text{fill:var(--vp-c-brand-2);stroke:none}
+.life{stroke-width:1.2;stroke-dasharray:3 4;opacity:0.45}
+.note{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.4}
+.badge{stroke-width:1.4;opacity:0.55}
+</style>
+
 <svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="spa-interaction-seq-title">JSON driver 構成の SPA interaction のシーケンス: ブラウザが SPA shell を読み込み、各 prompt を OP から JSON で取得して回答を送り返し、終端の redirect エンベロープに従う。</title>
-  <style>
-    .lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);stroke:none}
-    .mono{font-family:var(--vp-font-family-mono);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
-    .actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
-    .sub{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3);stroke:none}
-    .num{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}
-    .op-accent{stroke:var(--vp-c-brand-2)}
-    .op-text{fill:var(--vp-c-brand-2);stroke:none}
-    .life{stroke-width:1.2;stroke-dasharray:3 4;opacity:0.45}
-    .note{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.4}
-    .badge{stroke-width:1.4;opacity:0.55}
-  </style>
 
   <line class="life" x1="120" y1="56" x2="120" y2="505"/>
   <line class="life" x1="385" y1="56" x2="385" y2="505"/>

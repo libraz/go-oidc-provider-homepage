@@ -52,17 +52,18 @@ DPoP の JWK thumbprint と同じ理由です。固定長の digest は再エン
 
 ## リバースプロキシ構成
 
+<style scoped>
+.d-label{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none}
+.d-sub{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2);stroke:none}
+.d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-2);stroke:none}
+.d-layer{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);stroke:none;letter-spacing:.16em}
+.d-op{font-family:var(--vp-font-family-base);fill:var(--vp-c-brand-2);stroke:none}
+.op-accent{stroke:var(--vp-c-brand-2)}
+.d-faint{stroke:var(--vp-c-divider);stroke-width:1}
+</style>
+
 <svg role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" width="760" style="max-width:100%;height:auto;margin:1.5rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="mtls-proxy-trust-title">リバースプロキシの信頼境界: TLS 終端プロキシがクライアント証明書をヘッダに載せ、OP は trusted CIDR 内のリクエストからのみそれを参照し、前送りされた証明書を正本として扱い、live handshake 証明書との不一致は invalid_request で拒否します。</title>
-  <style>
-    .d-label{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none}
-    .d-sub{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2);stroke:none}
-    .d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-2);stroke:none}
-    .d-layer{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);stroke:none;letter-spacing:.16em}
-    .d-op{font-family:var(--vp-font-family-base);fill:var(--vp-c-brand-2);stroke:none}
-    .op-accent{stroke:var(--vp-c-brand-2)}
-    .d-faint{stroke:var(--vp-c-divider);stroke-width:1}
-  </style>
   <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="10">PUBLIC</text>
   <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="10">EDGE</text>
   <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="10">OP TRUST ZONE</text>

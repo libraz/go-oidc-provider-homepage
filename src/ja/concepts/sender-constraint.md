@@ -57,21 +57,22 @@ FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトー�
 
 ## 使い分けの指針
 
+<style scoped>
+.sc-tree text{stroke:none;fill:currentColor;}
+.sc-tree .t-start{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+.sc-tree .t-q{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.sc-tree .t-sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);}
+.sc-tree .t-out{font-family:var(--vp-font-family-base);font-size:14px;font-weight:700;}
+.sc-tree .t-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+.sc-tree .t-edge{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-3);}
+.sc-tree .op-accent{stroke:var(--vp-c-brand-2);}
+.sc-tree .op-fill{fill:var(--vp-c-brand-2);}
+.sc-tree .rs-stroke{stroke:var(--vp-c-text-3);}
+.sc-tree .rs-fill{fill:var(--vp-c-text-3);}
+</style>
+
 <svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 710 490" style="width:100%;height:auto;max-width:710px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="sc-choose-tree-title">送信者制約を選ぶための決定木。ブラウザ中心のクライアントは DPoP、PKI 証明書を持つバックエンドは mTLS、B2B や規制環境は mTLS または両方、異種混在環境は両方を有効化し、迷ったら既定は DPoP。</title>
-  <style>
-    .sc-tree text{stroke:none;fill:currentColor;}
-    .sc-tree .t-start{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-    .sc-tree .t-q{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .sc-tree .t-sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);}
-    .sc-tree .t-out{font-family:var(--vp-font-family-base);font-size:14px;font-weight:700;}
-    .sc-tree .t-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-    .sc-tree .t-edge{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-3);}
-    .sc-tree .op-accent{stroke:var(--vp-c-brand-2);}
-    .sc-tree .op-fill{fill:var(--vp-c-brand-2);}
-    .sc-tree .rs-stroke{stroke:var(--vp-c-text-3);}
-    .sc-tree .rs-fill{fill:var(--vp-c-text-3);}
-  </style>
   <rect x="60" y="8" width="230" height="36" rx="8"/>
   <text class="t-start" x="175" y="30" text-anchor="middle">送信者制約の選び方</text>
   <line x1="175" y1="44" x2="175" y2="64"/>

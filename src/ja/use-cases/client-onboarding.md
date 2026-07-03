@@ -16,9 +16,7 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 
 ## 全体像 — 5 つのパターン
 
-<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
-<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(out-of-band CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
-<style>
+<style scoped>
 #onbo-spectrum text{fill:currentColor;stroke:none}
 #onbo-spectrum .lbl{font-family:var(--vp-font-family-base)}
 #onbo-spectrum .mono{font-family:var(--vp-font-family-mono)}
@@ -34,6 +32,9 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 #onbo-spectrum .op-accent{stroke:var(--vp-c-brand-2)}
 #onbo-spectrum .op-fill{fill:var(--vp-c-brand-2)}
 </style>
+
+<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
+<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(out-of-band CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
 <g>
 <rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="34" cy="30" r="11"/>

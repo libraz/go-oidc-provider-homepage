@@ -16,11 +16,12 @@ outline: 2
 
 このページは、`op.New` に渡せる公開オプションを並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
+<style scoped>
+.od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
+</style>
+
 <svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="opt-decision-title">設定の目的（新規 OP / FAPI 切り替え / 単一機能 / grant 制限 / 送信者制約 / トークン形式）を、それを担う op.New オプションに振り分け、該当なしなら下の表へ導く決定木。</title>
-  <style>
-  .od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
-  </style>
   <rect x="24" y="24" width="300" height="52" rx="6"/>
   <text class="od-b od-t1" x="174" y="54" text-anchor="middle">OP を新規に立ち上げる？</text>
   <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>

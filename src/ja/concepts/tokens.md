@@ -44,20 +44,21 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
 | **UserInfo response** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
+<style scoped>
+.d-h{font-family:var(--vp-font-family-base);font-size:15px;font-weight:600;stroke:none}
+.d-txt{font-family:var(--vp-font-family-base);font-size:12px;stroke:none;fill:var(--vp-c-text-1)}
+.d-sub{font-family:var(--vp-font-family-base);font-size:11px;stroke:none;fill:var(--vp-c-text-2)}
+.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-text-2)}
+.d-mono-op{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-brand-2)}
+.d-op{stroke:var(--vp-c-brand-2)}
+.d-op-t{fill:var(--vp-c-brand-2)}
+.d-fill1{fill:var(--vp-c-text-1)}
+.d-rs{stroke:var(--vp-c-text-3)}
+.d-rs-t{fill:var(--vp-c-text-3)}
+</style>
+
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行し、RP はアクセストークンをリソースサーバと OP の /userinfo エンドポイントに提示し、/userinfo は claim の JSON を返す図。</title>
-  <style>
-    .d-h{font-family:var(--vp-font-family-base);font-size:15px;font-weight:600;stroke:none}
-    .d-txt{font-family:var(--vp-font-family-base);font-size:12px;stroke:none;fill:var(--vp-c-text-1)}
-    .d-sub{font-family:var(--vp-font-family-base);font-size:11px;stroke:none;fill:var(--vp-c-text-2)}
-    .d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-text-2)}
-    .d-mono-op{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-brand-2)}
-    .d-op{stroke:var(--vp-c-brand-2)}
-    .d-op-t{fill:var(--vp-c-brand-2)}
-    .d-fill1{fill:var(--vp-c-text-1)}
-    .d-rs{stroke:var(--vp-c-text-3)}
-    .d-rs-t{fill:var(--vp-c-text-3)}
-  </style>
   <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
   <rect x="272" y="52" width="132" height="156" rx="10"/>
   <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>

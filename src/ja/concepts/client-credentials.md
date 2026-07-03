@@ -22,20 +22,21 @@ description: エンドユーザ無しのサービス間トークン。RFC 6749 �
 - **`private_key_jwt`** — クライアント認証方式のひとつ。クライアントが秘密鍵で短寿命の JWT に署名し、OP は登録済みの公開鍵で検証します。共有秘密と違い、秘密がクライアントの外に出ないので強度が高い。
 :::
 
+<style scoped>
+#cc-flow text { font-family: var(--vp-font-family-base); fill: currentColor; stroke: none; }
+#cc-flow .mono { font-family: var(--vp-font-family-mono); }
+#cc-flow .c-op { stroke: var(--vp-c-brand-2); }
+#cc-flow .c-rs { stroke: var(--vp-c-text-3); }
+#cc-flow .tf-op { fill: var(--vp-c-brand-2); }
+#cc-flow .tf-rs { fill: var(--vp-c-text-3); }
+#cc-flow .life { stroke-width: 1; opacity: .4; }
+#cc-flow .box { stroke-width: 2; }
+#cc-flow .arw { stroke-width: 2; }
+#cc-flow .num { stroke-width: 1.5; }
+</style>
+
 <svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
   <title id="cc-flow-title">client_credentials フロー: Service A が OP に認証してアクセストークンを受け取り、それを bearer token として Service B に提示する。</title>
-  <style>
-    #cc-flow text { font-family: var(--vp-font-family-base); fill: currentColor; stroke: none; }
-    #cc-flow .mono { font-family: var(--vp-font-family-mono); }
-    #cc-flow .c-op { stroke: var(--vp-c-brand-2); }
-    #cc-flow .c-rs { stroke: var(--vp-c-text-3); }
-    #cc-flow .tf-op { fill: var(--vp-c-brand-2); }
-    #cc-flow .tf-rs { fill: var(--vp-c-text-3); }
-    #cc-flow .life { stroke-width: 1; opacity: .4; }
-    #cc-flow .box { stroke-width: 2; }
-    #cc-flow .arw { stroke-width: 2; }
-    #cc-flow .num { stroke-width: 1.5; }
-  </style>
   <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
   <text x="90" y="26" text-anchor="middle" font-size="13" font-weight="600">Service A</text>
   <text x="90" y="40" text-anchor="middle" font-size="9.5" opacity=".7">(あなたのバックエンド)</text>

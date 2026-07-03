@@ -33,9 +33,7 @@ The consumption device never asks the user for credentials — it just asks the 
 
 ## How the flow runs (poll mode)
 
-<svg role="img" aria-labelledby="ciba-poll-flow-title" viewBox="0 0 760 456" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="ciba-poll-flow-title">CIBA poll-mode sequence: the POS terminal calls /bc-authorize, the OP resolves the hint and pushes to the staff phone, and the POS polls /token until the user approves and a token is issued.</title>
-<style>
+<style scoped>
 .ciba-tx{fill:currentColor;stroke:none;}
 .ciba-fb{font-family:var(--vp-font-family-base);}
 .ciba-fm{font-family:var(--vp-font-family-mono);}
@@ -49,6 +47,9 @@ The consumption device never asks the user for credentials — it just asks the 
 .ciba-life{stroke-width:1.5;stroke-dasharray:3 4;opacity:.5;}
 .ciba-frag{stroke-width:1.4;stroke-dasharray:5 4;opacity:.55;}
 </style>
+
+<svg role="img" aria-labelledby="ciba-poll-flow-title" viewBox="0 0 760 456" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<title id="ciba-poll-flow-title">CIBA poll-mode sequence: the POS terminal calls /bc-authorize, the OP resolves the hint and pushes to the staff phone, and the POS polls /token until the user approves and a token is issued.</title>
 <line class="ciba-life" x1="93" y1="50" x2="93" y2="446"/>
 <line class="ciba-life ciba-accent" x1="430" y1="50" x2="430" y2="446"/>
 <line class="ciba-life ciba-sec" x1="680" y1="50" x2="680" y2="446"/>

@@ -40,18 +40,19 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 
 ## Architecture
 
+<style scoped>
+.fapi2-flow-dg text{stroke:none;fill:currentColor;}
+.fapi2-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
+.fapi2-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
+.fapi2-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
+.fapi2-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
+.fapi2-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
+.fapi2-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
+.fapi2-flow-dg .life{opacity:0.3;stroke-width:1;}
+</style>
+
 <svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 720 456" width="720" style="width:100%;height:auto;max-width:720px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline sequence: the RP pushes the authorization request to /par, the OP returns a request_uri, and after /authorize and /token the OP issues DPoP-bound tokens signed with ES256.</title>
-  <style>
-    .fapi2-flow-dg text{stroke:none;fill:currentColor;}
-    .fapi2-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-    .fapi2-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-    .fapi2-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-    .fapi2-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-    .fapi2-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
-    .fapi2-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
-    .fapi2-flow-dg .life{opacity:0.3;stroke-width:1;}
-  </style>
   <line class="life" x1="150" y1="68" x2="150" y2="448"/>
   <line class="life op-accent" x1="570" y1="68" x2="570" y2="448"/>
   <rect x="75" y="14" width="150" height="30" rx="5"/>

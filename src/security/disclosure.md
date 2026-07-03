@@ -33,14 +33,15 @@ The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/g
 
 The rough flow once a report lands:
 
+<style scoped>
+.d-title{font-family:var(--vp-font-family-base);font-weight:600;font-size:14px;fill:var(--vp-c-text-1);stroke:none}
+.d-sub{font-family:var(--vp-font-family-base);font-weight:400;font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
+.d-edge{font-family:var(--vp-font-family-base);font-weight:500;font-size:11px;fill:var(--vp-c-text-2);stroke:none}
+.op-accent{stroke:var(--vp-c-brand-2)}
+</style>
+
 <svg role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:640px;height:auto;margin:1.5rem auto;">
   <title id="disclosure-flow-title">The vulnerability-report pipeline: a report is received, acknowledged, triaged, and either closed as out of scope or fixed, disclosed, released, and published as a GHSA.</title>
-  <style>
-    .d-title{font-family:var(--vp-font-family-base);font-weight:600;font-size:14px;fill:var(--vp-c-text-1);stroke:none}
-    .d-sub{font-family:var(--vp-font-family-base);font-weight:400;font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-    .d-edge{font-family:var(--vp-font-family-base);font-weight:500;font-size:11px;fill:var(--vp-c-text-2);stroke:none}
-    .op-accent{stroke:var(--vp-c-brand-2)}
-  </style>
   <!-- boxes -->
   <rect x="20" y="20" width="230" height="54" rx="8"/>
   <rect x="20" y="114" width="230" height="54" rx="8" class="op-accent"/>

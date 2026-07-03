@@ -29,24 +29,25 @@ description: セッション終了時に全 RP へサーバ間通知 — OIDC Ba
 
 ## アーキテクチャ
 
+<style scoped>
+.bcl-svg text{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none;}
+.bcl-svg .m{font-family:var(--vp-font-family-mono);}
+.bcl-svg .nm{font-weight:600;font-size:13px;}
+.bcl-svg .rl{font-size:9px;fill:var(--vp-c-text-2);}
+.bcl-svg .lb{font-size:12px;}
+.bcl-svg .lbm{font-size:10.5px;fill:var(--vp-c-text-2);}
+.bcl-svg .fr{font-size:11px;fill:var(--vp-c-text-2);}
+.bcl-svg .bn{font-size:10px;font-weight:600;fill:var(--vp-c-text-2);}
+.bcl-svg .accent{stroke:var(--vp-c-brand-2);}
+.bcl-svg .accentt{fill:var(--vp-c-brand-2);}
+.bcl-svg .life{stroke-width:1.4;opacity:.28;}
+.bcl-svg .frame{stroke-width:1.4;opacity:.5;}
+.bcl-svg .ret{opacity:.55;}
+.bcl-svg .bg{fill:var(--vp-c-bg);}
+</style>
+
 <svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" style="width:100%;height:auto;max-width:760px" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して署名済み logout token を RP B と RP C に fan-out したうえで RP A へリダイレクトする。</title>
-  <style>
-    .bcl-svg text{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none;}
-    .bcl-svg .m{font-family:var(--vp-font-family-mono);}
-    .bcl-svg .nm{font-weight:600;font-size:13px;}
-    .bcl-svg .rl{font-size:9px;fill:var(--vp-c-text-2);}
-    .bcl-svg .lb{font-size:12px;}
-    .bcl-svg .lbm{font-size:10.5px;fill:var(--vp-c-text-2);}
-    .bcl-svg .fr{font-size:11px;fill:var(--vp-c-text-2);}
-    .bcl-svg .bn{font-size:10px;font-weight:600;fill:var(--vp-c-text-2);}
-    .bcl-svg .accent{stroke:var(--vp-c-brand-2);}
-    .bcl-svg .accentt{fill:var(--vp-c-brand-2);}
-    .bcl-svg .life{stroke-width:1.4;opacity:.28;}
-    .bcl-svg .frame{stroke-width:1.4;opacity:.5;}
-    .bcl-svg .ret{opacity:.55;}
-    .bcl-svg .bg{fill:var(--vp-c-bg);}
-  </style>
 
   <path class="life" d="M70 48V372"/>
   <path class="life" d="M220 48V372"/>

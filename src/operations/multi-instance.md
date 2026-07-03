@@ -8,10 +8,13 @@ outline: 2
 
 The OP is stateless across HTTP requests; every replica reads and writes through the configured `op.Store`. Going from one replica to N shifts the conversation from "what's in process memory" to "what's shared, what's volatile, and what fan-out behaviour is acceptable".
 
+<style scoped>
+.mi-topo text{stroke:none}.mi-topo .lbl{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);text-anchor:middle}.mi-topo .sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);text-anchor:middle}.mi-topo .op-text{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-brand-2);text-anchor:middle}.mi-topo .mono{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2)}.mi-topo .op-accent{stroke:var(--vp-c-brand-2)}.mi-topo .store{stroke-dasharray:6 5}
+</style>
+
 <svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="mi-replica-topology-title">Replica topology: a load balancer round-robins one client's /token and /userinfo across N OP replicas, all sharing one durable store and one volatile Redis tier.</title>
 <defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<style>.mi-topo text{stroke:none}.mi-topo .lbl{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);text-anchor:middle}.mi-topo .sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);text-anchor:middle}.mi-topo .op-text{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-brand-2);text-anchor:middle}.mi-topo .mono{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2)}.mi-topo .op-accent{stroke:var(--vp-c-brand-2)}.mi-topo .store{stroke-dasharray:6 5}</style>
 <rect x="280" y="16" width="160" height="44" rx="6"/>
 <text class="lbl" x="360" y="43">RP / client</text>
 <path d="M360 60 L360 90" marker-end="url(#mi-arrow)"/>

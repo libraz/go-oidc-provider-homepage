@@ -83,9 +83,12 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 
 複数 redirect-URI ホストを持ち `sector_identifier_uri` を持たないクライアントは sector を解決できず、issuance が `server_error` で失敗します。複数ホストへ fan-out するクライアントには `sector_identifier_uri` を必須にしてください。
 
+<style scoped>
+#psfd .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#psfd .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#psfd .d-mono{font-family:var(--vp-font-family-mono);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-muted{fill:var(--vp-c-text-3)}#psfd .d-op{stroke:var(--vp-c-brand-2)}#psfd .d-op-t{fill:var(--vp-c-brand-2);stroke:none}#psfd .d-store{stroke-dasharray:5 4}#psfd .d-flow{opacity:.5}
+</style>
+
 <svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:700px;height:auto">
 <title id="pairwise-sub-fanout-title">1 つの internal_user_id が 2 つの RP sector それぞれに異なる pairwise sub を導出する図。sector は各クライアントの sector_identifier_uri から解決されます。</title>
-<style>#psfd .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#psfd .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#psfd .d-mono{font-family:var(--vp-font-family-mono);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-muted{fill:var(--vp-c-text-3)}#psfd .d-op{stroke:var(--vp-c-brand-2)}#psfd .d-op-t{fill:var(--vp-c-brand-2);stroke:none}#psfd .d-store{stroke-dasharray:5 4}#psfd .d-flow{opacity:.5}</style>
 <text class="d-cap" x="8" y="18">pairwise sub の fan-out</text>
 <text class="d-sub" x="8" y="34">1 つの internal_user_id → sector ごとに異なる sub</text>
 <rect x="16" y="136" width="150" height="50" rx="8"/>

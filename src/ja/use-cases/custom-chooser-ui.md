@@ -65,9 +65,7 @@ provider, err := op.New(
 
 ## Flow
 
-<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
-<title id="chooser-flow-title">カスタムチューザ UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
-<style>
+<style scoped>
 .ccui-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;stroke:none;fill:currentColor}
 .ccui-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;stroke:none;fill:currentColor}
 .ccui-mono{font-family:var(--vp-font-family-mono);font-size:12px;stroke:none;fill:currentColor}
@@ -77,6 +75,9 @@ provider, err := op.New(
 .ccui-opf{fill:var(--vp-c-brand-2)}
 .ccui-secf{fill:var(--vp-c-text-3)}
 </style>
+
+<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
+<title id="chooser-flow-title">カスタムチューザ UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
 <rect x="30" y="14" width="120" height="36" rx="6"/>
 <rect x="300" y="14" width="120" height="36" rx="6" class="ccui-op"/>
 <rect x="558" y="14" width="144" height="36" rx="6" class="ccui-sec"/>

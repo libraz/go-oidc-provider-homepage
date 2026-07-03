@@ -35,11 +35,12 @@ The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token
 
 ### JWT (RFC 9068) — the RS validates locally
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 684 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-jwt-local-title">JWT access tokens: the RP presents a Bearer JWT that the RS verifies locally against a cached OP JWKS, keeping the OP off the request hot path.</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="28" y="38" width="118" height="56" rx="6"/>
   <text class="atf-b atf-t1" x="87" y="70" text-anchor="middle">RP</text>
   <rect x="420" y="24" width="236" height="84" rx="6"/>
@@ -59,11 +60,12 @@ The RS holds a cached JWKS, validates the JWT signature offline, checks `aud` an
 
 ### Opaque — the RS asks the OP every time
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 720 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-opaque-introspect-title">Opaque access tokens: the RP presents a Bearer opaque token and the RS resolves it by calling the OP introspection endpoint on every request.</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="28" y="38" width="112" height="52" rx="6"/>
   <text class="atf-b atf-t1" x="84" y="68" text-anchor="middle">RP</text>
   <rect class="atf-srs" x="248" y="38" width="112" height="52" rx="6"/>
@@ -144,11 +146,12 @@ This is the half of the trade-off most often glossed over.
 
 **JWT format:**
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-jwt-revocation-title">JWT revocation reach: an end_session flip in the grant-tombstone store is consulted at the OP userinfo and introspect endpoints but not by a resource server doing offline JWT verification.</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
   <rect x="214" y="84" width="190" height="80" rx="6" stroke-dasharray="5 4"/>
@@ -176,11 +179,12 @@ This is the half of the trade-off most often glossed over.
 
 **Opaque format:**
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-opaque-revocation-title">Opaque revocation reach: an end_session flip in the opaque store is consulted at the OP userinfo and introspect endpoints and by every resource-server introspect call.</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
   <rect x="214" y="84" width="190" height="80" rx="6" stroke-dasharray="5 4"/>
@@ -298,11 +302,12 @@ The default `RevocationStrategyGrantTombstone` requires `Store.GrantRevocations(
 
 The decision is mostly about who you trust, what you can ask of the RS, and how short the access-token TTL is.
 
+<style scoped>
+.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
+</style>
+
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 700 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-choosing-format-title">Decision tree for choosing between opaque, JWT, and a per-audience mix based on introspection requirements, access-token TTL, and RS topology.</title>
-  <style>
-  .atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-  </style>
   <rect x="24" y="24" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="48" text-anchor="middle">Can every RS be required</text>
   <text class="atf-c atf-t1" x="194" y="68" text-anchor="middle">to call <tspan class="atf-m">/introspect</tspan> per request?</text>
