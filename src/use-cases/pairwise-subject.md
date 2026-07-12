@@ -76,6 +76,12 @@ A high-entropy secret (≥ 256 bits) shared across every replica of the OP. It i
 "Public" or "pairwise". The OP records the active subject mode in its metadata substore (the `__op_init` sentinel) at first construction. Every subsequent boot must match — switching strategies on a non-empty store would silently re-key every issued grant, breaking refresh-token rotation and JWT introspection consistency. Mid-life switching is treated as a hard configuration error.
 :::
 
+::: info Reusing the generator outside the OP
+`provider.SubjectGenerator()` returns the same generator instance the OP was built with. Use it when an admin report, audit job, or migration needs to derive the same `sub` values without sending a browser through `/authorize`.
+
+When `WithPairwiseSubject` is enabled, issuance still decides per client: `subject_type=pairwise` uses pairwise derivation, while `public` or unset uses the default UUIDv7 subject. Out-of-band code that needs the exact issued `sub` must inspect the client's `SubjectType` before calling the generator.
+:::
+
 Where `sector_identifier` is:
 
 1. The host of the client's `sector_identifier_uri` (when registered).

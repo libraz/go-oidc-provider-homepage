@@ -3,7 +3,7 @@ title: クライアントオンボーディングのパターン
 description: RP を OP に登録・更新・削除する 5 つの方法 — 適用場面、コードの差し込み口、本ライブラリが意図的に提供しないもの。
 ---
 
-# ユースケース — クライアントオンボーディングのパターン
+# 使い方 — クライアントオンボーディングのパターン
 
 「OAuth / OIDC のクライアントを作る」と一口に言っても、運用上の形は 5 通りあり、IETF / OIDF が仕様化しているのはそのうち 1 つだけです。このページはその地図です。各パターンが活きる場面、ライブラリが提供する差し込み口、そして付随するセキュリティの責任範囲を整理します。標準化された経路は [動的クライアント登録](/ja/use-cases/dynamic-registration) のみで、残りの 4 つは運用設計の領域です。「ライブラリの責任」と「組み込み側の責任」の境界は、思っているよりも明確に分かれています。
 
@@ -16,25 +16,8 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 
 ## 全体像 — 5 つのパターン
 
-<style scoped>
-#onbo-spectrum text{fill:currentColor;stroke:none}
-#onbo-spectrum .lbl{font-family:var(--vp-font-family-base)}
-#onbo-spectrum .mono{font-family:var(--vp-font-family-mono)}
-#onbo-spectrum .card{fill:none;stroke:currentColor;stroke-width:1.5}
-#onbo-spectrum .badge{fill:none;stroke:currentColor;stroke-width:1.5}
-#onbo-spectrum .seam{fill:none;stroke:currentColor;stroke-width:1.2}
-#onbo-spectrum .store{stroke-dasharray:4 3}
-#onbo-spectrum .divider{stroke:currentColor;stroke-width:1;opacity:.25}
-#onbo-spectrum .hair{stroke:currentColor;stroke-width:1;opacity:.3}
-#onbo-spectrum .axis{stroke:currentColor;stroke-width:2;opacity:.45}
-#onbo-spectrum .band{stroke:currentColor;stroke-width:3;opacity:.7}
-#onbo-spectrum .muted{opacity:.6}
-#onbo-spectrum .op-accent{stroke:var(--vp-c-brand-2)}
-#onbo-spectrum .op-fill{fill:var(--vp-c-brand-2)}
-</style>
-
 <svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
-<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(out-of-band CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
+<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(仕様外の経路を使う CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
 <g>
 <rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="34" cy="30" r="11"/>
@@ -44,7 +27,7 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 <line class="divider" x1="24" y1="82" x2="132" y2="82"/>
 <text class="lbl muted" x="24" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
 <text class="lbl" x="24" y="110" font-size="9.5">運用者の</text>
-<text class="lbl" x="24" y="123" font-size="9.5">config</text>
+<text class="lbl" x="24" y="123" font-size="9.5">設定</text>
 <rect class="seam" x="24" y="132" width="108" height="20" rx="4"/>
 <text class="mono" x="78" y="145" text-anchor="middle" font-size="8">WithStaticClients</text>
 </g>
@@ -91,7 +74,7 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 <rect class="card" x="574" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="594" cy="30" r="11"/>
 <text class="lbl" x="594" y="34" text-anchor="middle" font-size="11" font-weight="700">5</text>
-<text class="lbl" x="584" y="58" font-size="11" font-weight="600">out-of-band</text>
+<text class="lbl" x="584" y="58" font-size="11" font-weight="600">仕様外経路</text>
 <text class="lbl" x="584" y="72" font-size="11" font-weight="600">CLI</text>
 <line class="divider" x1="584" y1="82" x2="692" y2="82"/>
 <text class="lbl muted" x="584" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
@@ -116,13 +99,13 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 <text class="lbl muted" x="428" y="214" text-anchor="middle" font-size="9">信頼は通信路上の token</text>
 </svg>
 
-| パターン | 信頼の起点 | metadata を書く主体 | 向いている場面 |
+| パターン | 信頼の起点 | メタデータ を書く主体 | 向いている場面 |
 |---|---|---|---|
-| 静的登録 | 運用者の config | デプロイ時に運用者 | 内部アプリの固定的な一覧 |
+| 静的登録 | 運用者の設定 | 配備時に運用者 | 内部アプリの固定的な一覧 |
 | IaC / GitOps プロビジョニング | 運用者の CI パイプライン | パイプラインが `store.ClientRegistry` 経由で書く | RP 定義をソース管理に置く構成 |
 | 標準化された DCR (RFC 7591 + 7592) | 運用者発行の IAT、クライアント単位の RAT | RP 自身が `/register` で登録 | マルチテナント SaaS、開発者セルフサービス |
 | scope で保護した管理 API | 管理用クライアントの AT（scope と claim で境界を定義） | 組み込み側の HTTP ハンドラ → `store.ClientRegistry` | 中央コントロールプレーン / IDM GUI |
-| out-of-band CLI / 管理ツール | out-of-band 認証（通信路上には認証なし） | 管理用バイナリがストアを直接書く | SRE のバッチ取り込み、リカバリ |
+| 仕様外の経路を使う CLI / 管理ツール | 仕様外の認証（通信路上には認証なし） | 管理用バイナリがストアを直接書く | SRE のバッチ取り込み、リカバリ |
 
 標準仕様だけを追うのであれば 3 行目で読むのを止めて構いません。4 行目と 5 行目は運用設計の領域です — 本ライブラリは差し込み口（store API）は公開しますが、その上に乗るエンドポイント自体は提供しません。セキュリティの責任範囲がアプリケーションごとに異なるためです。
 
@@ -162,11 +145,11 @@ provider, err := op.New(
 
 シードの射影は、DCR が `POST /register` の段階で適用しているのと同じ redirect URI 形式のルールを `op.New` の時点で適用します。形式に違反するシードは構築時に失敗するので、ランタイムまで漏れ出すことはありません。`ConfidentialClient.Secret` は `op.HashClientSecret`（argon2id）でハッシュしてからストアに到達するため、平文がストアに永続化されることはありません。
 
-このパターンが向くのは、RP の数が少なく、OP と同じチームが運用していて、変更が他の config と同じデプロイパイプラインを通る構成です。
+このパターンが向くのは、RP の数が少なく、OP と同じチームが運用していて、変更が他の 設定 と同じ配備パイプラインを通る構成です。
 
 ## 2. IaC / GitOps プロビジョニング
 
-RP の一覧をソース管理（Terraform / Pulumi モジュール、Kustomize オーバーレイ、Helm の values ファイルなど）に置くなら、マニフェストを読んで OP のストアを直接書くプロビジョニングバイナリが向いています。本ライブラリは `store.ClientRegistry` で書き込み口を公開しており、DCR をサポートするバックエンドはこのインターフェースを満たします。
+RP の一覧をソース管理（Terraform / Pulumi モジュール、Kustomize 上書き、Helm の values ファイルなど）に置くなら、マニフェストを読んで OP のストアを直接書くプロビジョニングバイナリが向いています。本ライブラリは `store.ClientRegistry` で書き込み口を公開しており、DCR をサポートするバックエンドはこのインターフェースを満たします。
 
 ```go
 storage, err := oidcsql.New(db, oidcsql.Postgres())
@@ -199,7 +182,7 @@ for _, plan := range desired {
 
 ここでの区別子としては `store.ClientSourceAdmin` が適切です。ファーストパーティ自動同意の対象という観点では `ClientSourceStatic` と同じ扱いになりつつ、OP 自身が `/register` 経由で作成したレコードと監査ログ解析で識別できます。形式のバリデーションはプロビジョニングバイナリ側の責任です。`RegisterClient` は単にストアへ書き込むだけで、登録ハンドラ側のルールセットは実行されません。OP プロセスがクライアント情報の in-memory キャッシュを保持するなら、無効化の手段（SIGHUP によるリロード、バイナリから呼び出す管理エンドポイント、バックエンドが提供する TTL 失効など）を用意します。
 
-マニフェスト内のクレデンシャル素材は、他のデプロイ時クレデンシャルと同じ扱いです — 暗号化された state、CI プリンシパルの最小権限、CI ログへの echo 禁止。
+マニフェスト内のクレデンシャル素材は、他の配備時クレデンシャルと同じ扱いです — 暗号化された state、CI プリンシパルの最小権限、CI ログへの echo 禁止。
 
 ## 3. 標準化された DCR (RFC 7591 + 7592)
 
@@ -220,7 +203,7 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 })
 ```
 
-`iat.Value` は out-of-band で RP に渡します。TTL は短く、`MaxUses: 1` を維持してください。IAT が漏洩してもリプレイされないようにするためです。RP は 201 応答で `registration_access_token`（RAT）を受け取り、自分の登録に対する RFC 7592 の read / update / delete だけに使います。RFC 7592 §2 はクライアント A の RAT がクライアント B の操作を承認してはならないことを明示しています。詳細（バリデータが適用するセキュリティ最低ラインや、ラウンドトリップする metadata field）は [動的クライアント登録](/ja/use-cases/dynamic-registration) を参照してください。
+`iat.Value` は 仕様外の経路で RP に渡します。TTL は短く、`MaxUses: 1` を維持してください。IAT が漏洩してもリプレイされないようにするためです。RP は 201 応答で `registration_access_token`（RAT）を受け取り、自分の登録に対する RFC 7592 の read / update / delete だけに使います。RFC 7592 §2 はクライアント A の RAT がクライアント B の操作を承認してはならないことを明示しています。詳細（バリデータが適用するセキュリティ最低ラインや、往復するメタデータ項目）は [動的クライアント登録](/ja/use-cases/dynamic-registration) を参照してください。
 
 ## 4. scope で保護した管理 API
 
@@ -258,10 +241,10 @@ func adminCreateClient(registry store.ClientRegistry) http.HandlerFunc {
 }
 ```
 
-このハンドラ自体を本ライブラリがマウントすることはありません。公開 OP ホストに置くか、別の管理ホストに置くか、クラスタ内ネットワークだけに閉じるかはデプロイ上の選択であり、いずれもセキュリティ境界そのものではありません。境界は、ストアに触れる前にハンドラが検証するアクセストークンです。したがって、以下のルールを強制する責任は組み込み側が負うことになります。
+このハンドラ自体を本ライブラリがマウントすることはありません。公開 OP ホストに置くか、別の管理ホストに置くか、クラスタ内ネットワークだけに閉じるかは配備上の選択であり、いずれもセキュリティ境界そのものではありません。境界は、ストアに触れる前にハンドラが検証するアクセストークンです。したがって、以下のルールを強制する責任は組み込み側が負うことになります。
 
 ::: warning パターン 4 のセキュリティ責任範囲
-- **管理 AT の漏洩 = scope 内のすべてのクライアントの乗っ取り**。AT の TTL を短く保ち、管理用クライアントには送信者制約（DPoP または mTLS）を必須にして、bearer が盗まれてもホスト外でリプレイできないようにします。
+- **管理 AT の漏洩 = scope 内のすべてのクライアントの乗っ取り**。AT の TTL を短く保ち、管理用クライアントには送信者制約（DPoP または mTLS）を必須にして、Bearer 値が盗まれてもホスト外でリプレイできないようにします。
 - **権限昇格ガード**。呼び出し側 AT 自身が持っていない grant type / scope / FAPI 機能を持つクライアントを生成・昇格するメタデータは、ハンドラが必ず拒否しなければなりません。`store.ClientRegistry` はハンドラ層を介さない単純な書き込みであり、このチェックは行いません。このチェックを省くのが、この種の API が CVE 級の脆弱性を抱える典型的な経路です。
 - **テナント境界**。マルチテナントを持つ場合、境界は呼び出し側 AT の tenant claim をハンドラが読み、読み取りをフィルタし、書き込み範囲をテナントに絞ることでのみ成立します。本ライブラリにテナントの概念はありません。
 - **監査ログ**。すべての CRUD 操作を、呼び出し側の `client_id` と対象の `client_id` を添えて記録します。本ライブラリの `op.AuditDCR*` イベントは `/register`（OP 自身が所有するパス）でしか発火しません — 組み込み側の管理 API はこのカタログには載りません。
@@ -270,7 +253,7 @@ func adminCreateClient(registry store.ClientRegistry) http.HandlerFunc {
 - **エンドポイントに rate limit を適用する**。JWKS の取得や `sector_identifier_uri` の検証は実 I/O のコストを伴います。無制限の管理エンドポイントは DoS の増幅手段になります。
 :::
 
-## 5. out-of-band CLI / 管理ツール
+## 5. 仕様外の経路を使う CLI / 管理ツール
 
 パターン 4 ですら過剰な場面、たとえば SRE のバッチ取り込み、リカバリフロー、ローカルのマイグレーションスクリプトでは、ストアに直接接続して `RegisterClient` を呼ぶバイナリが最もオーバーヘッドの少ない選択肢です。
 
@@ -304,4 +287,4 @@ if err := registry.RegisterClient(ctx, c); err != nil { /* ... */ }
 
 - [動的クライアント登録](/ja/use-cases/dynamic-registration) — RFC 7591 / 7592 の詳細。パターン 4 と 5 がミラーすべきセキュリティの最低ラインを含みます。
 - [Public / Internal スコープ](/ja/use-cases/scopes) — 管理用クライアントが使う scope 語彙の設計。
-- [設計判断](/ja/security/design-judgments) — `software_statement` 拒否などのデフォルトを意図して選んでいる理由。
+- [設計判断](/ja/security/design-judgments) — `software_statement` 拒否などの既定を意図して選んでいる理由。

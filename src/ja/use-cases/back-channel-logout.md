@@ -3,13 +3,13 @@ title: バックチャネルログアウト
 description: セッション終了時に全 RP へサーバ間通知 — OIDC Back-Channel Logout 1.0。
 ---
 
-# ユースケース — バックチャネルログアウト
+# 使い方 — バックチャネルログアウト
 
 ## そもそも「バックチャネルログアウト」とは？
 
 ユーザは「Acme でサインイン」ボタンを介して、同じ OP に紐づく複数の RP にサインインしているのが普通です。あるアプリ（RP A）で **ログアウト** をクリックしても、他の RP B / RP C はそれぞれローカル cookie を保持したままなので、「アプリ A ではログアウトしたのにアプリ B ではログイン状態のまま」というズレが残ります。
 
-**バックチャネルログアウト** は、このズレを OP 側から閉じる fan-out 機構です。各 RP は OP に対してサーバサイドのコールバック URL を事前登録しておきます。セッション終了時、OP は **署名済み `logout_token` を各 RP の URL に直接 POST** します（ブラウザを経由しない＝バックチャネル）。RP はトークンを検証してローカル cookie を破棄します。
+**バックチャネルログアウト** は、このズレを OP 側から閉じる 一斉通知 機構です。各 RP は OP に対してサーバサイドのコールバック URL を事前登録しておきます。セッション終了時、OP は **署名済み `logout_token` を各 RP の URL に直接 POST** します（ブラウザを経由しない＝バックチャネル）。RP はトークンを検証してローカル cookie を破棄します。
 
 対になる仕組みとして *フロントチャネルログアウト* もありますが、こちらは `<iframe>` とサードパーティ cookie に依存しており、現代のブラウザでは段階的に動かなくなりつつあります。バックチャネル方式が現実的な選択肢です。
 
@@ -29,25 +29,8 @@ description: セッション終了時に全 RP へサーバ間通知 — OIDC Ba
 
 ## アーキテクチャ
 
-<style scoped>
-.bcl-svg text{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none;}
-.bcl-svg .m{font-family:var(--vp-font-family-mono);}
-.bcl-svg .nm{font-weight:600;font-size:13px;}
-.bcl-svg .rl{font-size:9px;fill:var(--vp-c-text-2);}
-.bcl-svg .lb{font-size:12px;}
-.bcl-svg .lbm{font-size:10.5px;fill:var(--vp-c-text-2);}
-.bcl-svg .fr{font-size:11px;fill:var(--vp-c-text-2);}
-.bcl-svg .bn{font-size:10px;font-weight:600;fill:var(--vp-c-text-2);}
-.bcl-svg .accent{stroke:var(--vp-c-brand-2);}
-.bcl-svg .accentt{fill:var(--vp-c-brand-2);}
-.bcl-svg .life{stroke-width:1.4;opacity:.28;}
-.bcl-svg .frame{stroke-width:1.4;opacity:.5;}
-.bcl-svg .ret{opacity:.55;}
-.bcl-svg .bg{fill:var(--vp-c-bg);}
-</style>
-
 <svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" style="width:100%;height:auto;max-width:760px" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して署名済み logout token を RP B と RP C に fan-out したうえで RP A へリダイレクトする。</title>
+  <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して署名済み logout token を RP B と RP C に 一斉通知 したうえで RP A へリダイレクトする。</title>
 
   <path class="life" d="M70 48V372"/>
   <path class="life" d="M220 48V372"/>
@@ -88,7 +71,7 @@ description: セッション終了時に全 RP へサーバ間通知 — OIDC Ba
   <text class="bn" x="312" y="154.5" text-anchor="middle">3</text>
 
   <rect class="frame" x="350" y="176" width="396" height="94" rx="8"/>
-  <text class="fr" x="360" y="193">セッション内の全 RP に fan-out</text>
+  <text class="fr" x="360" y="193">セッション内の全 RP に 一斉通知</text>
   <text class="lbm m" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = 署名 JWT</text>
 
   <path class="accent" d="M380 228L540 228M533 224L540 228L533 232"/>
@@ -129,7 +112,7 @@ RP は署名と `aud` を検証し、ローカルセッションを破棄した�
 
 ## 実装
 
-クライアント別の `BackchannelLogoutURI` で RP をオプトインさせます。
+クライアント別の `BackchannelLogoutURI` で RP ごとに有効化します。
 
 ```go
 op.WithStaticClients(op.PublicClient{
@@ -141,7 +124,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`BackchannelLogoutURI` フィールドは `op.ConfidentialClient` と `op.PrivateKeyJWTClient` にも同じ名前で存在します — いずれの型付き seed からもオプトインできます。
+`BackchannelLogoutURI` フィールドは `op.ConfidentialClient` と `op.PrivateKeyJWTClient` にも同じ名前で存在します。いずれの型付きクライアント定義からも有効化できます。
 
 ライブラリ全体のオプション:
 
@@ -163,12 +146,31 @@ op.WithAllowInsecureBackchannelLogoutForDev()
 
 ## SSRF 防御
 
-::: warning デフォルトでプライベートネットワーク宛先を拒否
+::: warning 既定でプライベートネットワーク宛先を拒否
 配送処理は、host が loopback / link-local / RFC 1918 / IPv6 ULA に解決される `backchannel_logout_uri` への POST を **拒否** します。これがないと、任意 URL を登録できる RP が OP の内部ネットワークへの SSRF オラクルになります。
 
-dial 段階の deny-list の手前に、登録時に URL の形を判定するゲートが重なっています。`backchannel_logout_uri` は `https` 必須、fragment 不可、userinfo 不可、host 必須 — `https://attacker:internal@rp.example.com/...` も `https://rp.example.com/cb#anchor` も `invalid_client_metadata` で弾かれます。`backchannel_logout_session_required=true` と空の URI の組み合わせも拒否します。配送先を持たないクライアントが `sid` 配送にオプトインできないようにするためです。
+接続先アドレスの拒否リストに加えて、登録時にも URL の形を検査します。`backchannel_logout_uri` は `https` 必須、fragment 不可、userinfo 不可、host 必須です。`https://attacker:internal@rp.example.com/...` も `https://rp.example.com/cb#anchor` も `invalid_client_metadata` で弾かれます。`backchannel_logout_session_required=true` と空の URI の組み合わせも拒否します。配送先を持たないクライアントが `sid` 配送を有効化できないようにするためです。
 
-RP を private DNS で前段するときはオプトインを明示します。
+```jsonc
+// NG: userinfo と fragment は登録時に拒否
+{
+  "backchannel_logout_uri": "https://attacker:internal@rp.example.com/logout#sid",
+  "backchannel_logout_session_required": true
+}
+
+// NG: sid 配送を要求しているのに配送先がない
+{
+  "backchannel_logout_session_required": true
+}
+
+// OK: public HTTPS の配送先を明示する
+{
+  "backchannel_logout_uri": "https://rp.example.com/backchannel-logout",
+  "backchannel_logout_session_required": true
+}
+```
+
+RP を private DNS の内側に置くときは明示的に許可します。
 
 ```go
 op.WithBackchannelAllowPrivateNetwork(true)
@@ -179,16 +181,16 @@ op.WithBackchannelAllowPrivateNetwork(true)
 
 ## 揮発ストアのギャップ（とそれを示す監査イベント）
 
-Back-channel fan-out は OP の `SessionStore` を辿り、終了セッションに紐づく全 RP を見つけます。**揮発** session ストア（永続化無しの Redis、Memcached、maxmemory による追い出し下の in-memory）配下では、セッション確立から `/end_session` までの間に追い出された行は気付かれずに失われ、対応する RP には何も通知されません。
+Back-channel 一斉通知 は OP の `SessionStore` を辿り、終了セッションに紐づく全 RP を見つけます。**揮発** session ストア（永続化無しの Redis、Memcached、maxmemory による追い出し下の in-memory）配下では、セッション確立から `/end_session` までの間に追い出された行は気付かれずに失われ、対応する RP には何も通知されません。
 
 ライブラリはこのギャップを監査イベントとして可視化します。
 
 | イベント | 意味 |
 |---|---|
-| `op.AuditBCLNoSessionsForSubject` | 呼出側がセッションを指定（`id_token_hint` 付き `/end_session` または `Provider.Logout`）したが、fan-out で解決した RP が 0 件だった。 |
+| `op.AuditBCLNoSessionsForSubject` | 呼出側がセッションを指定（`id_token_hint` 付き `/end_session` または `Provider.Logout`）したが、一斉通知 で解決した RP が 0 件だった。 |
 
 揮発配置では、これは OIDC Back-Channel Logout 1.0 §2.7 の "best effort" の下限です。永続配置では予期せぬギャップを意味します。イベント extras に設定済みの `op.SessionDurabilityPosture`（`SessionDurabilityVolatile` または `SessionDurabilityDurable`）を載せておくことで、SOC ダッシュボードはストアアダプタの型に依存せず両者を区別できます。
 
 ## フロントチャネルログアウト（別の機構）
 
-OIDC Front-Channel Logout 1.0（ブラウザ側 iframe fan-out）は別仕様で、ライブラリは意図的に実装していません。Back-channel がデプロイ可能な選択です — 第三者 cookie に依存せず、origin を跨いで動作し、fan-out 時にユーザのブラウザが開いている必要もありません。
+OIDC Front-Channel Logout 1.0（ブラウザ側 iframe 一斉通知）は別仕様で、ライブラリは意図的に実装していません。Back-channel が配備可能な選択です — 第三者 cookie に依存せず、origin を跨いで動作し、一斉通知 時にユーザのブラウザが開いている必要もありません。

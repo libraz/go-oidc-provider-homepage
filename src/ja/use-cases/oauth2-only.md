@@ -3,9 +3,9 @@ title: 純粋 OAuth 2.0（openid なし）
 description: OAuth 2.0 を OIDC と同居させる。同じ OP が非 OIDC クライアントに access-only トークンを発行。
 ---
 
-# ユースケース — 純粋 OAuth 2.0
+# 使い方 — 純粋 OAuth 2.0
 
-OIDC Core 1.0 §3.1.2.1 は authorize 要求に `openid` scope を必須としています。これがないと OP は拒否します。これは正しいデフォルトですが、Bearer トークンだけを欲しがる非 OIDC RP がいる場合もあります。本ライブラリは 1 つの緩和オプションで **両方** の形を同じ OP に同居させられます。
+OIDC Core 1.0 §3.1.2.1 は authorize 要求に `openid` scope を必須としています。これがないと OP は拒否します。これは正しい既定ですが、Bearer トークンだけを欲しがる非 OIDC RP がいる場合もあります。本ライブラリは 1 つの緩和オプションで **両方** の形を同じ OP に同居させられます。
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework

@@ -62,7 +62,7 @@ FAPI 1.0 had two bands. **Read-Only** was for use cases that only retrieved data
 FAPI 2.0 has two bands:
 
 ::: tip Baseline — the floor
-Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, `private_key_jwt` / mTLS client authentication. This is the floor for any FAPI 2.0 deployment.
+Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS sender constraint, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, and `private_key_jwt` client authentication. This is the floor for any FAPI 2.0 deployment.
 :::
 
 ::: tip Message Signing — non-repudiation
@@ -117,7 +117,7 @@ RS256 (RSA-SHA256, PKCS#1 v1.5 padding) is structurally vulnerable to padding-or
 "Negotiation" used to be the OAuth way: the client and OP advertise the algorithms they support, then settle on one. The problem is that one party advertising a weak algorithm — `none`, `HS256`, RS256 with PKCS#1 v1.5 — can be tricked into accepting it on a forged token. FAPI fixes the set in advance. The OP's discovery document still lists the algorithms (so clients know what to use), but the **server** refuses to accept anything off the list, regardless of what arrives in a header. This pattern (announce the allow-list, enforce server-side) is how the library handles every alg knob.
 :::
 
-::: details `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` — three ways to authenticate a client
+::: details `private_key_jwt` — FAPI client authentication
 Confidential clients have to prove their identity to the token endpoint. FAPI 2.0 limits the choice to three asymmetric methods:
 
 | Method | Source | What the client presents | OP-side verification |
@@ -126,7 +126,9 @@ Confidential clients have to prove their identity to the token endpoint. FAPI 2.
 | **`tls_client_auth`** | RFC 8705 §2.1.1 | An X.509 certificate presented during the TLS handshake | Validate the chain against a configured trust anchor and match against the registered subject DN / SAN |
 | **`self_signed_tls_client_auth`** | RFC 8705 §2.2 | A self-signed X.509 certificate | Match the certificate's public key against the client's registered JWKS (no CA-chain walk) |
 
-All three avoid the `client_secret_basic` failure mode (a long-lived shared secret leaks once and is silently bad forever). Pick whichever fits your existing identity infrastructure — the FAPI profile accepts any of them.
+All three avoid the `client_secret_basic` failure mode (a long-lived shared secret leaks once and is silently bad forever).
+
+Implementation note: the token-endpoint client-auth path is `private_key_jwt`. The mTLS verifier exists internally and mTLS token binding is wired, but `tls_client_auth` / `self_signed_tls_client_auth` are not dispatched as token-endpoint authentication methods. Use mTLS as the sender-constraint layer, not as the `/token` client-auth method.
 :::
 
 ## FAPI 2.0 × RFC mandate matrix
@@ -145,7 +147,7 @@ FAPI is a *profile* — it does not reinvent OAuth or OIDC. It tightens which ex
 | **Resource Indicators (RFC 8707)** | optional | optional | optional |
 | **`iss` parameter on authorization response (RFC 9207)** | required | required | n/a (CIBA has no front-channel) |
 | **OAuth 2.0 Security BCP (RFC 9700)** | required | required | required |
-| **Token-endpoint client auth** | `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` | same | same |
+| **Token-endpoint client auth** | `private_key_jwt`; FAPI also permits `tls_client_auth` / `self_signed_tls_client_auth`, but this library uses mTLS as sender constraint rather than `/token` client auth | same | same |
 | **`client_secret_basic` / `_post` / `_jwt`** | forbidden | forbidden | forbidden |
 | **ID Token signing alg** | `ES256` | same | same |
 | **`alg=none`** | forbidden | forbidden | forbidden |
@@ -189,7 +191,7 @@ op.New(
 The profile call:
 
 1. Auto-enables `feature.PAR` and `feature.JAR`.
-2. Intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
+2. Intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list. Use `private_key_jwt` for the token-endpoint client-auth path; mTLS remains available for sender-constrained access tokens.
 3. Requires at least one sender-constraint feature: explicit `feature.MTLS` is preserved, otherwise `feature.DPoP` is selected as the canonical default.
 4. Locks OP-issued ID Tokens to `ES256`; rejects non-P-256 OP signing keys.
 5. Forces exact-match `redirect_uri` comparison.

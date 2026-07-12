@@ -29,21 +29,6 @@ description: あるトークンを別のトークンに交換する仕組み —
 
 ## なりすまし(Impersonation)と委譲(Delegation)を並べて見る
 
-<style scoped>
-text{stroke:none}
-.tx-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:currentColor}
-.tx-sub{font-family:var(--vp-font-family-base);font-size:8.5px;fill:currentColor;opacity:.55}
-.tx-band{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;letter-spacing:.03em;fill:currentColor}
-.tx-mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:currentColor}
-.tx-note{font-family:var(--vp-font-family-base);font-size:10px;fill:currentColor;opacity:.85}
-.tx-acc{stroke:var(--vp-c-brand-2)}
-.tx-acc-f{fill:var(--vp-c-brand-2)}
-.tx-rs{stroke:#7c6ba6}
-.tx-rs-f{fill:#7c6ba6}
-.dark .tx-rs{stroke:#b3a4d6}
-.dark .tx-rs-f{fill:#b3a4d6}
-</style>
-
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tx-imp-del-title">service A が Alice の代理で service B を呼ぶ 3 通り — 単純な転送は拒否され、なりすましは actor を落とし、委譲は act chain を記録する。</title>
   <!-- actor headers -->
@@ -156,5 +141,5 @@ example はロール別ファイルに分割されています（`op.go` で OP 
 
 ## 続きはこちら
 
-- [ユースケース: token-exchange の組み込み](/ja/use-cases/token-exchange) — `op.RegisterTokenExchange`、`TokenExchangePolicy` の契約、audience の構成、`op.PtrBool(true)` による refresh 発行のオプトイン。
+- [使い方: token-exchange の組み込み](/ja/use-cases/token-exchange) — `op.RegisterTokenExchange`、`TokenExchangePolicy` の契約、audience の構成、`op.PtrBool(true)` による refresh 発行のオプトイン。
 - [Custom Grant の組み込み](/ja/use-cases/custom-grant) — token exchange は OP がルーティングする「カスタム grant_type」の同梱例。独自 URN を書く組み込み側は `op.WithCustomGrant` 経由で同じ形をたどる。

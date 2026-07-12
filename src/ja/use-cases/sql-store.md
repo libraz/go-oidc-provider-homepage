@@ -3,7 +3,7 @@ title: 永続化（SQL）
 description: SQLite / MySQL / PostgreSQL に対して OP を運用（database/sql アダプタ経由）。
 ---
 
-# ユースケース — 永続化（SQL）
+# 使い方 — 永続化（SQL）
 
 ## OP は何を保存するのか、どこに保存するかが効くのか
 
@@ -11,11 +11,11 @@ OP が保持する行のうち、OAuth / OIDC 仕様が **再起動越しに保�
 
 - **リフレッシュトークンチェーン**（RFC 6749 §6, RFC 9700 §4.14）— 失えば全ユーザのセッションが切れる。
 - **登録クライアント**（DCR が ON なら OIDC Dynamic Client Registration 1.0 / RFC 7591、OFF なら静的シード）— 失えば全 RP が動かなくなる。
-- **セッション**（OIDC RP-Initiated Logout 1.0 / Back-Channel Logout 1.0）— ログアウトの fan-out に必要。
+- **セッション**（OIDC RP-Initiated Logout 1.0 / Back-Channel Logout 1.0）— ログアウトの 一斉通知 に必要。
 - **同意グラント**（OIDC Core 1.0 §3.1.2.4）— 失えば再起動のたびに全ユーザに再同意を強いることになる。
 - **監査 / introspection / revocation の shadow 行** — [Tokens](/ja/concepts/tokens) で説明したアクセストークン registry。
 
-デフォルトの `inmem` ストアは再起動で全てを失う点で、テスト・デモには十分ですが本番には不向きです。ライブラリは [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) を同梱しており、`database/sql` アダプタで **SQLite / MySQL 8.0+ / PostgreSQL 14+** を対象にします。
+既定の `inmem` ストアは再起動で全てを失う点で、テスト・デモには十分ですが本番には不向きです。ライブラリは [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) を同梱しており、`database/sql` アダプタで **SQLite / MySQL 8.0+ / PostgreSQL 14+** を対象にします。
 
 > **ソース:**
 > - [`examples/06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store) — SQLite クイックスタート（CGO 不要）。
@@ -23,7 +23,7 @@ OP が保持する行のうち、OAuth / OIDC 仕様が **再起動越しに保�
 
 ## なぜサブモジュール
 
-SQL アダプタは **別 Go モジュール** として公開されているので、driver 依存（SQL driver、migration ライブラリ）はオプトインするまで `go.sum` に混入しません:
+SQL アダプタは **別 Go モジュール** として公開されているので、明示的に追加するまで driver 依存（SQL driver、migration ライブラリ）は `go.sum` に混入しません:
 
 ```sh
 go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
@@ -32,14 +32,6 @@ go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
 Redis アダプタも同様です。
 
 ## アーキテクチャ
-
-<style scoped>
-text { stroke: none; }
-.lbl { font-family: var(--vp-font-family-base); fill: currentColor; }
-.mono { font-family: var(--vp-font-family-mono); fill: currentColor; }
-.arch-op { stroke: var(--vp-c-brand-2); }
-.arch-db { stroke-dasharray: 7 5; }
-</style>
 
 <svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 816 300" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="sql-store-arch-title">op.Provider は Store インターフェース越しに storeadapter/sql と会話し、各サブストアが SQL データベース内の専用テーブルへ永続化される。</title>
@@ -67,7 +59,7 @@ text { stroke: none; }
   <text x="538" y="262" dominant-baseline="central" class="lbl" font-size="12" fill="var(--vp-c-text-3)">… ほか</text>
 </svg>
 
-各サブストア（`AuthCodeStore`、`RefreshTokenStore`、`ClientStore`、`SessionStore` など）がテーブルにマップされます。
+各サブストア（`AuthorizationCodeStore`、`RefreshTokenStore`、`ClientStore`、`SessionStore` など）がテーブルにマップされます。
 
 ::: info 新しいサブストア
 SQL アダプタは以下のテーブルを同梱します:
@@ -77,7 +69,7 @@ SQL アダプタは以下のテーブルを同梱します:
 
 どちらもトランザクションクラスタの一部で、起点となる grant / refresh の書き込みと同時にコミットされます — カスケードが途中で切れて「失効した grant の隣に、まだ引き換え可能なトークンが残る」状況にはなりません。
 
-同梱アダプタを使わずカスタムの `Store` 実装をシップする場合は、`OpaqueAccessTokens()` と `GrantRevocations()` の実装が **必須** です。`OpaqueAccessTokens()` は `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` も `WithAccessTokenFormatPerAudience` も opaque audience を指さない限り `nil` を返してかまいません。`GrantRevocations()` を `nil` にできるのは、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示している場合だけです(非 FAPI デプロイ専用) — 既定の `RevocationStrategyGrantTombstone` は構築時にこのサブストアを必須とします。それ以外は `op.New` が構成エラーを返します。
+同梱アダプタを使わずカスタムの `Store` 実装をシップする場合は、`OpaqueAccessTokens()` と `GrantRevocations()` の実装が **必須** です。`OpaqueAccessTokens()` は `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` も `WithAccessTokenFormatPerAudience` も opaque audience を指さない限り `nil` を返してかまいません。`GrantRevocations()` を `nil` にできるのは、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示している場合だけです(非 FAPI 配備専用) — 既定の `RevocationStrategyGrantTombstone` は構築時にこのサブストアを必須とします。それ以外は `op.New` が構成エラーを返します。
 :::
 
 ## コード
@@ -110,7 +102,7 @@ provider, err := op.New(
 ```
 
 ::: tip マイグレーション
-`*sql.Store.Migrate(ctx)` がアクティブな dialect 用の同梱スキーマを適用します。最初のリクエストが届く前のデプロイ時に実行してください。`Schema()` は同じ DDL を文字列で返すので、自前の migration ツールに渡すこともできます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
+`*sql.Store.Migrate(ctx)` がアクティブな dialect 用の同梱スキーマを適用します。最初のリクエストが届く前の配備時に実行してください。`Schema()` は同じ DDL を文字列で返すので、自前の migration ツールに渡すこともできます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
 :::
 
 ## テーブル名を差し替える
@@ -126,7 +118,7 @@ storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[strin
 }))
 ```
 
-map のキーは物理名ではなく論理的なレコード種別です。受け付けるキーは 18 個すべてで、`clients`、`authorization_codes`、`refresh_tokens`、`access_tokens`、`opaque_access_tokens`、`grant_revocations`、`revoked_jtis`、`grants`、`sessions`、`par_records`、`interactions`、`consumed_jtis`、`users`、`initial_access_tokens`、`registration_access_tokens`、`op_metadata`、`device_codes`、`ciba_requests` です。未知のキーを渡すと `oidcsql.New` が即座にエラーを返すので、タイポは最初のクエリではなく構築時に検出できます。
+map のキーは物理名ではなく論理的なレコード種別です。受け付けるキーは 18 個すべてで、`clients`、`authorization_codes`、`refresh_tokens`、`access_tokens`、`opaque_access_tokens`、`grant_revocations`、`revoked_jtis`、`grants`、`sessions`、`par_records`、`interactions`、`consumed_jtis`、`users`、`initial_access_tokens`、`registration_access_tokens`、`op_メタデータ`、`device_codes`、`ciba_requests` です。未知のキーを渡すと `oidcsql.New` が即座にエラーを返すので、タイポは最初のクエリではなく構築時に検出できます。
 
 解決後の物理テーブル名はすべて相互に異なる必要があります。2 つの論理ストアが同じテーブルへ map される場合や、override が未指定の既定テーブル名と衝突する場合、`oidcsql.New` は構築時に失敗します。スキーマ書き換えは exact-name ベースなので、`clients` の override が `client_secrets` のような部分文字列を誤って書き換えることもありません。
 
@@ -152,7 +144,7 @@ db.SetConnMaxLifetime(30 * time.Minute)
 
 ## ユーザ名 + password による認証情報
 
-SQL アダプタは `store.UserPasswordStore`（inmem リファレンスアダプタと同じインターフェース）を実装するので、ビルトインの [`op.PrimaryPassword`](/ja/use-cases/mfa-step-up) Step を SQL バックエンドに対してそのまま組み込めます。glue コードは不要です:
+SQL アダプタは `store.UserPasswordStore`（inmem リファレンスアダプタと同じインターフェース）を実装するので、組み込みの [`op.PrimaryPassword`](/ja/use-cases/mfa-step-up) Step を SQL バックエンドに対してそのまま組み込めます。glue コードは不要です:
 
 ```go
 flow := op.LoginFlow{

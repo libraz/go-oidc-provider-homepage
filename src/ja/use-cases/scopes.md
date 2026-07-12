@@ -3,7 +3,7 @@ title: Public / Internal スコープ
 description: scope を「discovery に出す（Public）」と「管理用途で出さない（Internal）」に分離 — OP は前者だけ宣伝、両方発行。
 ---
 
-# ユースケース — Public / Internal スコープ
+# 使い方 — Public / Internal スコープ
 
 ## そもそも scope とは
 
@@ -46,7 +46,7 @@ op.WithScope(op.InternalScope("internal:audit")),
 - OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します。discovery 文書が OIDC Discovery 1.0 §3 に違反しないようにするためです。
 
 ::: tip OIDC 標準スコープ
-`openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込みデフォルトで自動登録されます。明示宣言は不要 — 例は **OP 独自の** scope カタログに焦点を当てています。
+`openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込み既定で自動登録されます。明示宣言は不要 — 例は **OP 独自の** scope カタログに焦点を当てています。
 :::
 
 ## カスタム claim を `Scope.Claims` で開示する
@@ -111,5 +111,5 @@ curl -s http://localhost:8080/.well-known/openid-configuration | jq .scopes_supp
 | シナリオ | 選択 |
 |---|---|
 | 同じ OP に社内管理アプリを乗せ、ユーザ向け discovery には隠したい | `InternalScope` |
-| 限定 allow-list でロールアウト中の β scope | `InternalScope` + scope 自体の `AllowedClients` を埋める |
+| 限定許可リストで段階公開中の β scope | `InternalScope` + scope 自体の `AllowedClients` を埋める |
 | 全 scope を公開し誰でも要求できる API marketplace | すべて `PublicScope` |

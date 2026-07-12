@@ -1,6 +1,6 @@
 ---
 title: アーキテクチャ概観
-description: リクエストが OP の中をどう流れるか — パッケージ構成、ハンドラの配置、ストレージの差し込み口。
+description: リクエストが OP の中をどう流れるか — パッケージ構成、ハンドラの公開、ストレージの差し込み口。
 outline: 2
 ---
 
@@ -21,7 +21,7 @@ op/interaction/             ← ログイン UI 用 HTML / JSON ドライバの�
 
 internal/                   ← 外部からは import 不可(Go の可視性)
   authn/                    ← LoginFlow オーケストレータ、Authenticator runtime
-  authorize、parendpoint、tokenendpoint、userinfo、
+  authorizeendpoint、parendpoint、tokenendpoint、userinfo、
   introspectendpoint、revokeendpoint、registrationendpoint、
   endsession、backchannel
   jose、jwks、keys          ← 署名 / 検証 / 鍵セット
@@ -34,21 +34,9 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 ## ハンドラグラフ
 
-`op.New` は `*http.ServeMux` を構築し、設定されたパスにハンドラをマウントします(下図はデフォルト):
+`op.New` は `*http.ServeMux` を構築し、設定されたパスにハンドラを登録します(下図は既定):
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
-
-<style scoped>
-.hg-box{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.hg-op{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.hg-line{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.hg-t1{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:13px;font-weight:600}
-.hg-t2{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
-.hg-t3{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);font-size:10px}
-.hg-path{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:12px}
-.hg-pkg{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);font-size:10px}
-.hg-drv{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-3);font-size:10px}
-</style>
 
 <svg role="img" aria-labelledby="hg-ja-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;height:auto">
 <title id="hg-ja-title">op.New が返す http.Handler は、ServeMux が各リクエストパスを対応する内部エンドポイントハンドラへ振り分けます。</title>
@@ -106,7 +94,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 </svg>
 </div>
 
-`feature.*`（`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`）で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション（`WithDynamicRegistration` など）が渡されたときだけマウントされます。バックチャネルログアウトはマウントされた feature-gated エンドポイントではなく、`/end_session` から発火する送信専用の fan-out です（各 RP に登録された `backchannel_logout_uri` へ logout token を POST します）。discovery 文書も、実際にマウントされたエンドポイントだけを公開します。
+`feature.*`（`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`）で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション（`WithDynamicRegistration` など）が渡されたときだけ公開されます。バックチャネルログアウトは feature-gated エンドポイントではなく、`/end_session` から発火する送信専用の一斉通知です（各 RP に登録された `backchannel_logout_uri` へ logout token を POST します）。discovery 文書も、実際に公開されたエンドポイントだけを広告します。
 
 ## クロスカットなミドルウェア
 
@@ -114,7 +102,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 | Layer | ソース | 役割 |
 |---|---|---|
-| **CORS** | `internal/cors` | discovery と `/jwks` は public CORS。`/userinfo`、`/token`、interaction / session の JSON 面、マウント済み protocol endpoint（`/par`、`/revoke`、`/introspect`、`/register`、`/bc-authorize`、`/device_authorization`、`/end_session` など）は厳格な許可リスト |
+| **CORS** | `internal/cors` | discovery と `/jwks` は public CORS。`/userinfo`、`/token`、interaction / session の JSON 面、公開済みのプロトコルエンドポイント（`/par`、`/revoke`、`/introspect`、`/register`、`/bc-authorize`、`/device_authorization`、`/end_session` など）は厳格な許可リスト |
 | **信頼プロキシ** | `internal/httpx` | `WithTrustedProxies` を元に、`X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 |
 | **Cookie** | `internal/cookie` | `__Host-` プリフィックス、AES-256-GCM、session は `SameSite=Lax`、互換可能なところは `Strict` |
 | **CSRF** | `internal/csrf` | consent / logout の POST に対して double-submit + Origin / Referer チェック |
@@ -126,25 +114,6 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 最も流量の多いパスです。概略は次のとおりです。
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
-
-<style scoped>
-.seq-ll{stroke:currentColor;stroke-width:2}
-.seq-llop{stroke:var(--vp-c-brand-2);stroke-width:2}
-.seq-llst{stroke:currentColor;stroke-width:2;stroke-dasharray:5 5}
-.seq-lllf{stroke:var(--vp-c-text-3);stroke-width:2}
-.seq-box{fill:none;stroke:currentColor;stroke-width:2}
-.seq-boxop{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2}
-.seq-boxst{fill:none;stroke:currentColor;stroke-width:2;stroke-dasharray:5 5}
-.seq-boxlf{fill:none;stroke:var(--vp-c-text-3);stroke-width:2}
-.seq-msg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.seq-ret{fill:none;stroke:var(--vp-c-text-3);stroke-width:1.5;stroke-dasharray:5 4;stroke-linecap:round}
-.seq-hd{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:currentColor}
-.seq-hdop{fill:var(--vp-c-brand-2)}
-.seq-hdlf{fill:var(--vp-c-text-3)}
-.seq-lbl{font-family:var(--vp-font-family-base);font-size:11.5px;fill:currentColor}
-.seq-mono{font-family:var(--vp-font-family-mono)}
-.seq-num{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3)}
-</style>
 
 <svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:850px;height:auto">
 <title id="seq-ja-title">authorize から token までの正常系: ブラウザが /authorize と interaction を進め、RP が /token で code を引き換えます。</title>
@@ -193,7 +162,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 <text class="seq-lbl" x="461" y="313"><tspan class="seq-mono">Result</tspan> (subject + AAL + AMR)</text>
 <line class="seq-msg" x1="440" y1="352" x2="250" y2="352" marker-end="url(#seq-ah)"/>
 <text class="seq-num" x="256" y="347">9</text>
-<text class="seq-lbl" x="271" y="347">200 同意プロンプト → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
+<text class="seq-lbl" x="271" y="347">200 同意画面 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
 <line class="seq-msg" x1="250" y1="386" x2="440" y2="386" marker-end="url(#seq-ah)"/>
 <text class="seq-num" x="256" y="381">10</text>
 <text class="seq-lbl" x="271" y="381"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (同意)</text>
@@ -240,21 +209,6 @@ internal/authn/CompiledLoginFlow
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<style scoped>
-.lfp-box{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.lfp-op{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.lfp-line{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.lfp-oln{fill:none;stroke:var(--vp-c-brand-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.lfp-t1{font-family:var(--vp-font-family-mono);font-size:12px;font-weight:600;fill:currentColor}
-.lfp-t1a{font-family:var(--vp-font-family-mono);font-size:12px;font-weight:600;fill:var(--vp-c-brand-2)}
-.lfp-fld{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-3)}
-.lfp-sub{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3)}
-.lfp-lba{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-brand-2)}
-.lfp-cap{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-3)}
-.lfp-mono{font-family:var(--vp-font-family-mono)}
-.lfp-nd{font-family:var(--vp-font-family-base);font-size:11px;fill:currentColor}
-</style>
-
 <svg role="img" aria-labelledby="lfp-ja-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px;height:auto">
 <title id="lfp-ja-title">WithLoginFlow は Primary / Rules / Decider / Risk の指定を CompiledLoginFlow にコンパイルし、オーケストレータがリクエストごとのループで実行します。</title>
 <defs>
@@ -282,7 +236,7 @@ internal/authn/CompiledLoginFlow
 <text class="lfp-nd" x="126" y="232" text-anchor="middle"><tspan class="lfp-mono">Primary.Begin /</tspan></text>
 <text class="lfp-nd" x="126" y="248" text-anchor="middle"><tspan class="lfp-mono">Continue → Step</tspan></text>
 <rect class="lfp-op" x="252" y="210" width="172" height="52" rx="8"/>
-<text class="lfp-nd" x="338" y="232" text-anchor="middle">プロンプト → ユーザ送信</text>
+<text class="lfp-nd" x="338" y="232" text-anchor="middle">画面表示 → ユーザ送信</text>
 <text class="lfp-nd" x="338" y="248" text-anchor="middle">Result が <tspan class="lfp-mono">Identity</tspan> を確定</text>
 <rect class="lfp-op" x="452" y="210" width="200" height="52" rx="8"/>
 <text class="lfp-nd" x="552" y="232" text-anchor="middle"><tspan class="lfp-mono">LoginContext</tspan> → <tspan class="lfp-mono">Decider</tspan></text>
@@ -301,25 +255,25 @@ internal/authn/CompiledLoginFlow
 各 authorize リクエストでは:
 
 1. `Primary.Begin` が `interaction.Step`（Prompt または Result）を返します。
-2. UI ドライバ（HTML または SPA）がプロンプトを描画し、ユーザが送信します。
-3. `Primary.Continue` が `Result`（`Identity` がバインドされている）まで進めます。
+2. UI ドライバ（HTML または SPA）が画面を描画し、ユーザが送信します。
+3. `Primary.Continue` が `Result`（`Identity` が確定している）まで進めます。
 4. オーケストレータが `LoginContext` を組み立てます（subject、scope、完了したステップ、リスクスコア、ACR values）。
 5. `Decider` が動きます（nil 以外の場合）。`Pass` 以外の判定はそこで短絡します。
 6. それ以外は `Rules` を順に評価します。最初にマッチしたルールの `Step.Kind()` が `CompletedSteps` にまだ含まれていなければ発火します。
 7. 発火するルールが無くなるまで繰り返し、その後にセッションを発行します。
 
-`ExternalStep` 経由で自前の factor を差し込む手順は、[ユースケース: カスタム authenticator](/ja/use-cases/custom-authenticator) を参照してください。
+`ExternalStep` 経由で自前の factor を差し込む手順は、[使い方: カスタム authenticator](/ja/use-cases/custom-authenticator) を参照してください。
 
 ## ストレージの差し込み口
 
 ライブラリは、組み込み側の `users` テーブルを直接読み書きしません。`op.Store` interface(小さなサブストアの和集合)越しに会話します:
 
-| サブストア | 何が入るか | 配置の目安 |
+| サブストア | 何が入るか | 置き場所の目安 |
 |---|---|---|
 | `Clients` | OAuth クライアントレジストリ | 通常は永続 |
 | `Users` | subject + claim | 組み込み側の実装。既存の users テーブルにマッピングすることが多い |
 | `AuthorizationCodes` | one-shot な code(PKCE challenge、scope) | 永続 |
-| `RefreshTokens` | refresh chain、ローテーション履歴 | 永続 |
+| `RefreshTokens` | リフレッシュトークンの連鎖、ローテーション履歴 | 永続 |
 | `AccessTokens` | JWT id 側 / opaque token | 永続 |
 | `OpaqueAccessTokens` | opaque AT lookup | 永続 |
 | `Grants` | (user, client) ごとの consent scope | 永続 |
@@ -327,15 +281,15 @@ internal/authn/CompiledLoginFlow
 | `Sessions` | ブラウザセッションのレコード | 揮発に置いてもよい |
 | `Interactions` | 試行ごとの interaction 状態 | 揮発に置いてもよい |
 | `ConsumedJTIs` | JAR / DPoP `jti` のリプレイ検出集合 | 揮発に置いてもよい |
-| `PARs` | pushed authorization request | 揮発に置いてもよい |
+| `PARs` | pushed authorization request | PAR が authorization-code transaction に参加する構成では永続 |
 | `IATs` / `RATs` | DCR の Initial / Registration Access Token | 永続 |
 | `DeviceCodes` | RFC 8628 のデバイス認可レコード | 永続 |
 | `CIBARequests` | OpenID Connect CIBA の backchannel authentication レコード | 永続 |
 | `Metadata` | OP 内部の key/value 状態(例: `subject_mode` マーカー) | 永続(未対応バックエンドは nil 可) |
 
-「揮発に置いてもよい」サブストアは [`composite`](/ja/use-cases/hot-cold-redis) アダプタ越しに Redis 層へ配置できます。composite は構築時に「永続バックエンドは 1 つ」を強制するので、トランザクショナルクラスタが 2 つのストアにまたがって分裂することはありません。
+「揮発に置いてもよい」サブストアは [`composite`](/ja/use-cases/hot-cold-redis) アダプタ越しに Redis 層へ置けます。composite は構築時に「永続バックエンドは 1 つ」を強制するので、トランザクション対象のサブストアが 2 つのストアに分裂することはありません。
 
-MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`RecoveryStore`)は `op.Store` のサブストアではありません。`LoginFlow` を組み立てる際に、対応する authenticator の `Step`(`StepEmailOTP.Store`、`StepTOTP.Store`、`StepPasskey.Store`、`StepRecovery.Store`)へ直接渡します。
+MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`RecoveryStore`)は `op.Store` のサブストアではありません。`LoginFlow` を組み立てる際に、対応する authenticator の `Step`(`StepEmailOTP.Store`、`StepTOTP.Store`、`StepPasskey.Store`、`StepRecovery.Store`)へ直接渡します。これらの factor store 実装を同梱しているのは in-memory 参考実装だけです。本番では、[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) の SQL-backed `store.TOTPStore` のような耐久 store を組み込み側で用意します。
 
 詳細は [hot/cold ストレージ](/ja/use-cases/hot-cold-redis) を参照してください。
 

@@ -3,13 +3,13 @@ title: サービス間 (client_credentials)
 description: バックエンド間トークン、エンドユーザ無し、同意無し。
 ---
 
-# ユースケース — サービス間 (`client_credentials`)
+# 使い方 — サービス間 (`client_credentials`)
 
 ## `client_credentials` グラントとは
 
 OAuth 2.0 にはクライアントがアクセストークンを取得するための「grant type」が 4 種類あります。3 つは人間を介し（`authorization_code` / `device_code` / 非推奨の `password`）、1 つは介しません。
 
-**`client_credentials`**（RFC 6749 §4.4）は人を介さないケース用です。Service A が登録済みの `client_id` + 認証情報を持ち、`/token` でそれを直接アクセストークンに交換します。トークンは **サービス自身** を表現するため、`id_token` も `refresh_token` も同意プロンプトもありません（再発行は安いので refresh は不要）。
+**`client_credentials`**（RFC 6749 §4.4）は人を介さないケース用です。Service A が登録済みの `client_id` + 認証情報を持ち、`/token` でそれを直接アクセストークンに交換します。トークンは **サービス自身** を表現するため、`id_token` も `refresh_token` も同意画面もありません（再発行は安いので refresh は不要）。
 
 cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブラウザもエンドユーザもいない場面で正解の grant です。
 
@@ -32,25 +32,15 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 ## アーキテクチャ
 
-<style scoped>
-.d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
-.d-tok{font-family:var(--vp-font-family-mono);font-size:11px;fill:currentColor;stroke:none}
-.d-bt{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
-.d-bs{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
-.d-op{stroke:var(--vp-c-brand-2)}
-.d-opt{fill:var(--vp-c-brand-2)}
-.d-rs{stroke:var(--vp-c-text-3)}
-</style>
-
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" width="736" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" width="736" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="cc-svc-flow-title">サービス間 client_credentials フロー: Service A が OP からアクセストークンを取得し、それを付けて Service B を呼び出し、Service B が OP でトークンを検証する。</title>
   <rect x="20" y="48" width="150" height="68" rx="6"/>
   <rect class="d-op" x="305" y="48" width="150" height="68" rx="6"/>
   <rect class="d-rs" x="590" y="48" width="150" height="68" rx="6"/>
   <text class="d-bt" x="95" y="80" text-anchor="middle">Service A</text>
   <text class="d-bs" x="95" y="98" text-anchor="middle">confidential クライアント</text>
-  <text class="d-bt d-opt" x="380" y="80" text-anchor="middle">OP</text>
-  <text class="d-bs" x="380" y="98" text-anchor="middle">認可サーバー</text>
+  <text class="d-bt d-op-text" x="380" y="80" text-anchor="middle">OP</text>
+  <text class="d-bs d-op-sub" x="380" y="98" text-anchor="middle">認可サーバー</text>
   <text class="d-bt" x="665" y="80" text-anchor="middle">Service B</text>
   <text class="d-bs" x="665" y="98" text-anchor="middle">resource server</text>
   <line x1="176" y1="68" x2="299" y2="68"/>
@@ -117,7 +107,7 @@ curl -s -u service-a:<secret> \
 ```
 
 ::: tip Confidential クライアントのみ
-`client_credentials` は実認証情報を持つクライアント（`client_secret_basic`、`client_secret_post`、`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）に制限されます。public クライアント（`token_endpoint_auth_method=none`）は使えません。
+`client_credentials` は実認証情報を持つクライアント（`client_secret_basic`、`client_secret_post`、`private_key_jwt`）に制限されます。public クライアント（`token_endpoint_auth_method=none`）は使えません。mTLS 送信者制約は別レイヤであり、それ単体で grant を認証しません。
 :::
 
 ## 本番グレード: basic ではなく `private_key_jwt`
@@ -132,7 +122,7 @@ op.WithStaticClients(op.PrivateKeyJWTClient{
 })
 ```
 
-`PrivateKeyJWTClient` seed は `token_endpoint_auth_method=private_key_jwt` を自動でセットします。この typed seed には `AuthMethod` フィールドはありません。
+`PrivateKeyJWTClient` seed は `token_endpoint_auth_method=private_key_jwt` を自動でセットします。この 型付きクライアント定義 には `AuthMethod` フィールドはありません。
 
 これで Service A はトークン要求毎に自分の秘密鍵で JWT assertion に署名:
 

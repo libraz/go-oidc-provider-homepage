@@ -8,6 +8,38 @@ pageClass: rfc-matrix-page
 
 本ライブラリがコード中で参照しているすべての規格を、実装パッケージとゲートになるオプション・feature と対応づけて一覧化しています。
 
+<svg role="img" aria-labelledby="rfc-matrix-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="rfc-matrix-title">RFC 対応一覧の読み方: 仕様を OP の責務かどうかで分け、実装済み、部分実装、予定、対象外、拒否に分類する。</title>
+<rect class="rfc-main" x="36" y="102" width="154" height="76" rx="8"/>
+  <text class="rfc-text" x="113" y="132" text-anchor="middle">仕様</text>
+  <text class="rfc-sub" x="113" y="154" text-anchor="middle">RFC / OIDC / FAPI</text>
+
+  <rect class="rfc-box" x="284" y="54" width="174" height="56" rx="8"/>
+  <text class="rfc-text" x="371" y="88" text-anchor="middle">OP の責務</text>
+  <rect class="rfc-box" x="284" y="170" width="174" height="56" rx="8"/>
+  <text class="rfc-text" x="371" y="204" text-anchor="middle">OP の責務外</text>
+
+  <rect class="rfc-box" x="560" y="28" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="56" text-anchor="middle">full / partial</text>
+  <rect class="rfc-box" x="560" y="88" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="116" text-anchor="middle">planned</text>
+  <rect class="rfc-box" x="560" y="160" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="188" text-anchor="middle">out</text>
+  <rect class="rfc-box" x="560" y="220" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="248" text-anchor="middle">refused</text>
+
+  <path class="rfc-flow" d="M190 140 C234 118 250 84 280 84"/>
+  <path class="rfc-flow" d="M190 140 C234 162 250 200 280 200"/>
+  <path class="rfc-flow" d="M458 82 C500 66 516 50 556 50"/>
+  <path class="rfc-flow" d="M548 46 L557 50 L548 54"/>
+  <path class="rfc-flow" d="M458 94 C500 100 516 110 556 110"/>
+  <path class="rfc-flow" d="M548 106 L557 110 L548 114"/>
+  <path class="rfc-flow" d="M458 198 H556"/>
+  <path class="rfc-flow" d="M548 194 L557 198 L548 202"/>
+  <path class="rfc-flow" d="M458 208 C500 232 516 242 556 242"/>
+  <path class="rfc-flow" d="M548 238 L557 242 L548 246"/>
+</svg>
+
 ## ステータスの凡例
 
 <span class="status-pill full">full</span> その仕様について本ライブラリが対象とする OP 側 surface を end-to-end で実装しています。<br/>
@@ -49,9 +81,9 @@ pageClass: rfc-matrix-page
 | **RFC 8485** Vectors of Trust | <span class="status-pill partial">partial</span>（ACR/AAL マッピング経由で消費） | `op/aal.go`、`op/acr.go` |
 | **RFC 8628** Device Authorization Grant | <span class="status-pill full">full</span>（`op.WithDeviceCodeGrant` で有効化。`slow_down` の段階的な延長は `LastPolledAt` と原子的に永続化、`op/devicecodekit` が総当たり対策と revoke 用 audit hook を同梱） | `internal/devicecode`、`internal/devicecodeendpoint`、`op/devicecodekit` |
 | **RFC 8693** OAuth 2.0 Token Exchange | <span class="status-pill full">full</span>（`op.RegisterTokenExchange` でゲート。actor が subject と異なる場合は act チェーン必須、cnf はリクエストの DPoP / mTLS で再バインド） | `internal/customgrant/tokenexchange` |
-| **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill full">full</span>（`feature.MTLS` でゲート。`mtls_endpoint_aliases` を discovery で公開） | `internal/mtls` |
-| **RFC 8707** Resource Indicators | <span class="status-pill partial">partial</span>（authorize / token / device / CIBA での正規化と client allow-list 検証を実装。v1.x の組み込み grant は多くの経路で単一 resource 値に絞る） | `internal/resourceindicator`、`internal/authorize`、`internal/tokenendpoint`、`internal/devicecodeendpoint`、`internal/cibaendpoint` |
-| **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span>（alg allow-list、typ チェック） | `internal/jose` |
+| **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill partial">partial</span>（`feature.MTLS` は証明書バインドアクセストークンと `mtls_endpoint_aliases` を接続。token endpoint の `tls_client_auth` / `self_signed_tls_client_auth` 振り分けは未接続） | `internal/mtls` |
+| **RFC 8707** Resource Indicators | <span class="status-pill partial">partial</span>（authorize / token / device / CIBA での正規化と client 許可リスト 検証を実装。v1.x の組み込み grant は多くの経路で単一 resource 値に絞る） | `internal/resourceindicator`、`internal/authorize`、`internal/tokenendpoint`、`internal/devicecodeendpoint`、`internal/cibaendpoint` |
+| **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span>（alg 許可リスト、typ チェック） | `internal/jose` |
 | **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill full">full</span> | `internal/tokens` |
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span>（`feature.JAR` でゲート） | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span>（`feature.PAR` でゲート） | `internal/parendpoint` |

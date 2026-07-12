@@ -93,6 +93,8 @@ Two helpers cover the common shapes:
 
 Standard OIDC scopes are recognised automatically with built-in defaults. Calling `WithScope` for a standard name (e.g. `email`) overrides the built-in entry — typically to attach translations or extra claim mappings — but registering one with `Public: false` fails `op.New` so the discovery document never advertises an OIDC scope as missing.
 
+`op.Scope.Parse` is a convenience helper for embedder-side strings and splits on any Unicode whitespace run. The protocol path remains stricter: wire-facing scope parsing uses RFC 6749's ASCII-space grammar, so tabs or newlines in `/authorize` / `/par` input are not a portability feature to rely on.
+
 See [Use case: Scopes](/use-cases/scopes) for the full walkthrough including i18n labels, claim mapping, and consent-prompt rendering.
 
 ## Scopes vs RFC 8707 resource indicators

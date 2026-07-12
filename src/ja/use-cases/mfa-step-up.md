@@ -3,7 +3,7 @@ title: MFA / step-up
 description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up。
 ---
 
-# ユースケース — MFA / step-up
+# 使い方 — MFA / step-up
 
 ライブラリの認証層は 3 つのプリミティブの合成で構築されます:
 
@@ -36,19 +36,11 @@ description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 c
 > - [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — リスクベースの step-up。
 > - [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — N 失敗後 captcha。
 > - [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up。
+> - [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — 本番寄りの factor 永続化向け SQL-backed `store.TOTPStore`。
 
 ## 構成
 
-<style scoped>
-text{stroke:none}
-.d-lbl{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1)}
-.d-cap{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2)}
-.d-mono{font-family:var(--vp-font-family-mono)}
-.d-accent{stroke:var(--vp-c-brand-2)}
-.d-accent-t{fill:var(--vp-c-brand-2)}
-</style>
-
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="mfa-loginflow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="mfa-loginflow-title">ログインフローの構成: primary パスワード step、どの factor step を走らせるか判定する rule 層、その後のトークン発行。</title>
   <rect x="330" y="16" width="140" height="38" rx="6"/>
   <rect x="290" y="78" width="220" height="50" rx="6"/>

@@ -1,18 +1,51 @@
 ---
 title: OFCS 適合状況
-description: go-oidc-provider が OpenID Foundation Conformance Suite に対してどう走るか — 4 plans、最新スコア、設計上 fail させる module、REVIEW の意味。
+description: go-oidc-provider が OpenID Foundation Conformance Suite に対してどう走るか — 4 プラン、最新スコア、設計上失敗させる module、REVIEW の意味。
 ---
 
 # OFCS 適合状況
 
-`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS plan を scaffold します。本ページの baseline は、そのうち現在の 4 plan security snapshot を `cmd/op-demo` インスタンスに対して end-to-end で実行した結果です。
+`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、そのうち現在の 4 プラン security snapshot を `cmd/op-demo` インスタンスに対して end-to-end で実行した結果です。
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
 
 ::: warning 個人開発、認証取得は無し
-これは個人開発者が維持するプロジェクトです。OpenID Foundation 会員費は支払っておらず、**形式的な OIDC 認証は取得していません**。本ページの数値は、下に示す plan set の再現可能なスナップショットです。これは有償の OpenID Foundation 認証の代替ではなく、そのように引用しないでください。
+これは個人開発者が維持するプロジェクトです。OpenID Foundation 会員費は支払っておらず、**形式的な OIDC 認証は取得していません**。本ページの数値は、下に示すプラン集合の再現可能なスナップショットです。これは有償の OpenID Foundation 認証の代替ではなく、そのように引用しないでください。
 :::
+
+<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="ofcs-snapshot-title">OFCS スナップショットの読み方: 4 つのプランを op-demo に対して実行し、PASSED、REVIEW、SKIPPED、FAILED を集計する。</title>
+  <rect class="ofcs-box" x="28" y="42" width="170" height="54" rx="8"/>
+  <text class="ofcs-text" x="113" y="75" text-anchor="middle">OIDC Core</text>
+  <rect class="ofcs-box" x="28" y="112" width="170" height="54" rx="8"/>
+  <text class="ofcs-text" x="113" y="145" text-anchor="middle">FAPI Baseline</text>
+  <rect class="ofcs-box" x="28" y="182" width="170" height="54" rx="8"/>
+  <text class="ofcs-text" x="113" y="215" text-anchor="middle">Message Signing</text>
+  <rect class="ofcs-box" x="28" y="252" width="170" height="38" rx="8"/>
+  <text class="ofcs-text" x="113" y="277" text-anchor="middle">FAPI-CIBA</text>
+
+  <rect class="ofcs-main" x="294" y="108" width="172" height="84" rx="8"/>
+  <text class="ofcs-text" x="380" y="142" text-anchor="middle">cmd/op-demo</text>
+  <text class="ofcs-sub" x="380" y="164" text-anchor="middle">対象 OP インスタンス</text>
+
+  <rect class="ofcs-box" x="562" y="42" width="170" height="54" rx="8"/>
+  <text class="ofcs-text" x="647" y="75" text-anchor="middle">PASSED</text>
+  <rect class="ofcs-box" x="562" y="112" width="170" height="54" rx="8"/>
+  <text class="ofcs-text" x="647" y="145" text-anchor="middle">REVIEW</text>
+  <rect class="ofcs-box" x="562" y="182" width="170" height="54" rx="8"/>
+  <text class="ofcs-text" x="647" y="215" text-anchor="middle">SKIPPED</text>
+  <rect class="ofcs-box" x="562" y="252" width="170" height="38" rx="8"/>
+  <text class="ofcs-text" x="647" y="277" text-anchor="middle">FAILED</text>
+
+  <path class="ofcs-flow" d="M198 69 C246 74 258 120 290 134"/>
+  <path class="ofcs-flow" d="M198 139 H290"/>
+  <path class="ofcs-flow" d="M198 209 C246 204 258 176 290 162"/>
+  <path class="ofcs-flow" d="M198 271 C256 252 270 190 292 170"/>
+  <path class="ofcs-flow" d="M466 150 H558"/>
+  <path class="ofcs-flow" d="M550 146 L559 150 L550 154"/>
+  <text class="ofcs-sub" x="512" y="136" text-anchor="middle">実行結果を集計</text>
+</svg>
 
 ## この snapshot が検査する範囲
 
@@ -25,13 +58,12 @@ description: go-oidc-provider が OpenID Foundation Conformance Suite に対し�
 
 ## 最新 baseline
 
-取得日時: 2026-06-14T07:18:03Z<br/>
-リリースラベル: `v0.9.4`<br/>
-リポジトリ SHA: [`2d915fe`](https://github.com/libraz/go-oidc-provider/commit/2d915fe8cbd4a997375f66aeb20eb6c40ea70fed)<br/>
+取得日時: 2026-07-12T16:56:58Z<br/>
+リポジトリ SHA: [`8db1b80`](https://github.com/libraz/go-oidc-provider/commit/8db1b80e0164414c3079b60f2d4de41d79c0facd)<br/>
 OFCS イメージ: `release-v5.1.45`
 
 ::: info スナップショットの状態
-下の pass / review / skip 件数は、現在公開している 4 plan snapshot です。v0.9.4 ではハーネスのイメージ固定とリリースメタデータを更新しています。新しい認証 baseline として引用する前に、再現ワークフローを実行してください。
+下の pass / review / skip 件数は、現在公開している 4 plan security snapshot です。ローカルの実行成果物は `conformance/baselines/` 配下の対応する timestamp 付き JSON です。新しい認証 baseline として引用する前に、再現ワークフローを実行してください。
 :::
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | 合計 |
@@ -60,49 +92,9 @@ OFCS イメージ: `release-v5.1.45`
   </div>
 </div>
 
-<style>
-.status-bars {
-  display: grid;
-  gap: 10px;
-  margin: 24px 0;
-  max-width: 680px;
-}
-.status-bar-row {
-  display: grid;
-  grid-template-columns: 92px 1fr 44px;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-}
-.status-bar-row span {
-  color: var(--vp-c-text-2);
-  font-weight: 600;
-}
-.status-bar-row strong {
-  text-align: right;
-}
-.status-bar {
-  height: 10px;
-  overflow: hidden;
-  background: var(--vp-c-bg-soft);
-  border-radius: 999px;
-}
-.status-bar i {
-  display: block;
-  height: 100%;
-  background: #0c5460;
-}
-.status-bar.review i {
-  background: #8a5a00;
-}
-.status-bar.skipped i {
-  background: #5f6368;
-}
-</style>
-
 ## 各テストプランが検証する範囲
 
-OFCS の各テストプランは、それぞれ特定の仕様プロファイルを検証します。以下の表は、プランごとに「該当コードパスを有効化するライブラリオプション」と「その挙動を解説しているページ」を対応づけたものです。組み込み側は、自分の deployment が同じ構成を露出しているかをこの表で確認できます。
+OFCS の各テストプランは、それぞれ特定の仕様プロファイルを検証します。以下の表は、プランごとに「該当コードパスを有効化するライブラリオプション」と「その挙動を解説しているページ」を対応づけたものです。組み込み側は、自分の配備が同じ構成を公開しているかをこの表で確認できます。
 
 ### `oidcc-basic-certification-test-plan` — OIDC Core 1.0
 
@@ -127,7 +119,7 @@ OFCS の各テストプランは、それぞれ特定の仕様プロファイル
 | 認可レスポンスの `iss` (RFC 9207) | プロファイルが強制 | [/ja/concepts/issuer](/ja/concepts/issuer) |
 | ID トークン署名アルゴリズム `ES256` | プロファイルが強制。OP 発行 ID トークンは `PS256` / `RS256` では署名しない | [/ja/concepts/jose-basics](/ja/concepts/jose-basics) |
 | `RS256`(FAPI 文脈)・`HS*`・`none` の拒否 | `internal/jose/alg.go` の closed enum で禁止 | [/ja/security/design-judgments](/ja/security/design-judgments) |
-| `private_key_jwt` または `tls_client_auth` | プロファイルが強制（FAPI allow-list と交差） | [/ja/concepts/client-types](/ja/concepts/client-types) |
+| `private_key_jwt` | profile が強制 | [/ja/concepts/client-types](/ja/concepts/client-types) |
 | DPoP または mTLS による送信者制約 | `op.WithFeature(feature.DPoP)` か `op.WithFeature(feature.MTLS)` のいずれか（FAPI 2.0 では少なくとも一方が必須） | [/ja/concepts/sender-constraint](/ja/concepts/sender-constraint)、[/ja/concepts/dpop](/ja/concepts/dpop)、[/ja/concepts/mtls](/ja/concepts/mtls) |
 | `redirect_uri` 完全一致 | プロファイルが強制 | [/ja/concepts/redirect-uri](/ja/concepts/redirect-uri) |
 | リフレッシュトークンのローテーションと再利用検知 | 既定で有効 | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
@@ -254,8 +246,8 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 - `feature.JAR`（`FAPI2Baseline` で自動有効化） — `request` / `request_uri` を署名 JWT として検証
 - `feature.JARM`（`FAPI2MessageSigning` で追加で自動有効化） — 認可レスポンスを JWT として署名
 - 送信者制約付きアクセストークン — プロファイルは DPoP-or-mTLS 要件を課します。組み込み側が `feature.MTLS`（`cnf.x5t#S256`）を明示的に有効化した場合はそれで要件を満たし、DPoP 既定は追加されません。どちらも明示されていない場合、`op.New` は `feature.DPoP`（`cnf.jkt`）を標準の既定として選ぶため、素の `op.WithProfile(profile.FAPI2Baseline)` でも sender-constrained access token 付きで起動します。DPoP が有効なら discovery は `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` を宣伝
-- JOSE alg allow-list はコードベース全体で `RS256 / PS256 / ES256 / EdDSA` にロック、`HS*` と `none` は **構造的** に到達不能（`internal/jose/alg.go` 参照）
-- `token_endpoint_auth_methods_supported` を FAPI allow-list（`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）と交差
+- JOSE alg 許可リストはコードベース全体で `RS256 / PS256 / ES256 / EdDSA` にロック、`HS*` と `none` は **構造的** に到達不能（`internal/jose/alg.go` 参照）
+- `token_endpoint_auth_methods_supported` を FAPI 本番経路（`private_key_jwt`）に交差
 - `redirect_uri` 完全一致を強制
 - クライアント別 `RequestObjectSigningAlg` / `TokenEndpointAuthSigningAlg` で各 FAPI クライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込みつつ、discovery doc にはコードベース全体のリストを掲載
 

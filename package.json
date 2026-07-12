@@ -13,6 +13,7 @@
     "build": "vitepress build",
     "preview": "vitepress preview",
     "lint": "biome check src .vitepress",
+    "lint:fix": "biome check --write src .vitepress",
     "format": "biome format --write src .vitepress"
   },
   "keywords": [

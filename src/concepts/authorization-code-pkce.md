@@ -5,7 +5,11 @@ description: The dominant OIDC flow, walked end-to-end with a full sequence diag
 
 # Authorization Code + PKCE
 
-The most common OIDC flow. Used by every web app, mobile app, SPA, and desktop app that logs a human in. PKCE (Proof Key for Code Exchange, RFC 7636) is mandatory in this library — both because OAuth 2.0 BCP (RFC 9700) and FAPI 2.0 require it, and because there's no plausible deployment in 2026 that benefits from disabling it.
+The most common OIDC flow. Used by every web app, mobile app, SPA, and desktop app that logs a human in. PKCE (Proof Key for Code Exchange, RFC 7636) is mandatory for every public or native client in this library, and mandatory for all authorization-code clients under FAPI profiles. Confidential clients outside a FAPI profile can still run the older OIDC Core shape, but new deployments should send `S256` everywhere.
+
+::: warning Current behavior
+Public and native clients that omit `code_challenge` are rejected at `/authorize` with `invalid_request`. Register these clients with PKCE and always send `code_challenge_method=S256`; the OP no longer issues a non-PKCE authorization code to a client that cannot authenticate at `/token`.
+:::
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework (§5.2 error codes)
@@ -187,7 +191,7 @@ text{stroke:none}
 | `code` | `/authorize` response | Single-use. This library defaults to a 60 s max-age; RFC 6749 §4.1.2 recommends a 10-minute maximum. |
 | `code_verifier` | `/token` | The pre-image of `code_challenge`. The OP recomputes the SHA-256. |
 | `grant_type=authorization_code` | `/token` | Selects this grant. |
-| Client auth | `/token` | One of `client_secret_basic`, `client_secret_post`, `private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`, or `none` (PKCE-only). |
+| Client auth | `/token` | One of `client_secret_basic`, `client_secret_post`, `private_key_jwt`, or `none` (PKCE-only). mTLS sender constraint is separate from token-endpoint client authentication. |
 
 ::: details `state` vs `nonce` — what's the difference?
 Both are random opaque values, both defend against replay-style attacks, but they protect different legs of the flow:

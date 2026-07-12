@@ -7,65 +7,72 @@ description: Where the library's behaviour is the result of a deliberate read of
 
 Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authorization server may". Several places need an explicit reading because the literature disagrees with itself, or because a literal reading collides with another spec. This page lists those calls.
 
+<div class="dj-hero">
+  <div>
+    <p class="dj-kicker">Security ADR index</p>
+    <p class="dj-lede">Use this page when you need to know whether a behaviour is an accident, a spec compromise, or a deliberate security posture. Each entry names the conflict, the chosen rule, and the implementation surface that enforces it.</p>
+  </div>
+  <div class="dj-stats" aria-label="Design judgment summary">
+    <span><strong>31</strong> decisions</span>
+    <span><strong>5</strong> surfaces</span>
+    <span><strong>fail-fast</strong> defaults</span>
+  </div>
+</div>
+
 ::: tip How to read this page
-Start with the decision map for the surface you are changing. Each detailed entry then follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The decision sits in the highlighted callout; cited package paths under `op/` and `internal/` point to the implementation.
+Start with the cards for the surface you are changing. Each detailed entry then follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The highlighted callout is the operative rule; cited package paths under `op/` and `internal/` point to the implementation.
 :::
 
 ## Decision map
 
-### Protocol profiles and discovery
-
-| Decision | Surface | Short answer |
-|---|---|---|
-| [#7](#dj-7) | Profile constraint resolution | Disjunction via `*config` helpers; handlers see only `bool` |
-| [#8](#dj-8) | ACR / AAL vocabulary | Two-layer model: internal AAL ladder plus wire `acr` mapping |
-| [#12](#dj-12) | Discovery narrowing on profile | Built once from construction inputs; golden tests catch drift |
-| [#13](#dj-13) | `client_assertion` audience | Accept FAPI and OIDC Core shapes via `Audience` + `AuxAudiences` |
-| [#25](#dj-25) | DPoP nonce vs `client_assertion` replay | Verify the DPoP nonce before consuming assertion `jti` |
-| [#26](#dj-26) | CIBA / FAPI-CIBA polling and errors | Poll mode only; bounded slow-down strikes; CIBA JAR failures collapse to `invalid_request` |
-
-### Tokens, grants, and revocation
-
-| Decision | Surface | Short answer |
-|---|---|---|
-| [#2](#dj-2) | Refresh-token rotation grace window | 60 s grace by default; chain reuse retires the chain |
-| [#3](#dj-3) | `offline_access` — gate or UX signal | Default: TTL/UX signal; `WithStrictOfflineAccess()` makes it the issuance and exchange gate |
-| [#15](#dj-15) | DPoP refresh-token binding policy | Bind for public clients, leave unbound for confidential |
-| [#16](#dj-16) | Introspection same-client gate | Cross-client lookup collapses to the uniform `{"active": false}` |
-| [#17](#dj-17) | `/end_session` access-token cascade scope | Cascade by default when registry/opaque substores are wired |
-| [#18](#dj-18) | Access-token format default | JWT default; opaque opt-in; per-RFC 8707-resource override |
-| [#19](#dj-19) | JWT access-token revocation strategy default | Grant-tombstone default; FAPI rejects "no revocation" |
-| [#28](#dj-28) | Custom-grant refresh tokens | Handler signals intent; OP owns the refresh-token value and lineage |
-| [#29](#dj-29) | Device-code revocation cascade | `devicecodekit.Revoke` denies the row and revokes issued access tokens when a registry is wired |
-
-### Registration, issuer, and outbound fetch
-
-| Decision | Surface | Short answer |
-|---|---|---|
-| [#4](#dj-4) | RFC 8252 loopback redirect port handling | Default exact-match; native loopback wildcard is a narrow opt-in |
-| [#9](#dj-9) | Issuer identifier validation | Reject non-canonical issuer shapes at construction time |
-| [#20](#dj-20) | DCR `client_secret` storage and disclosure | Hash-only at rest; plaintext is a one-time response artifact |
-| [#21](#dj-21) | RFC 7592 PUT omission semantics | Defaulted fields reset; optional metadata clears |
-| [#22](#dj-22) | `sector_identifier_uri` fetch bounds | One bounded fetch; native clients accept all OIDC loopback hosts |
-| [#23](#dj-23) | Outbound JWKS / metadata fetch SSRF boundary | Custom transports may widen trust, but the dial-time SSRF gate stays in place |
-| [#24](#dj-24) | Open DCR omitted `scope` | Default to no scopes unless `OpenRegistrationDefaultScopes` is configured |
-
-### Browser, session, and UI boundaries
-
-| Decision | Surface | Short answer |
-|---|---|---|
-| [#5](#dj-5) | Session Management / Front-Channel Logout | Not implemented; RP-Initiated Logout + Back-Channel Logout are the supported substitutes |
-| [#10](#dj-10) | Sessions in or out of the transactional cluster | Separate substore; volatile stores OK; BCL is best-effort under volatility |
-
-### JOSE and request objects
-
-| Decision | Surface | Short answer |
-|---|---|---|
-| [#1](#dj-1) | PAR `request_uri` one-time-use timing | Find at `/authorize`, consume at code emission |
-| [#6](#dj-6) | JAR `request=` replay defence | OP-side `jti` cache, evicted at `exp`; default-on with JAR |
-| [#11](#dj-11) | JOSE `alg=none` / HMAC lockout | Closed enum; `none` and `HS*` do not exist in the accepted type |
-| [#14](#dj-14) | PKCE `plain` vs `S256` | `S256`-only across all profiles |
-| [#27](#dj-27) | JWE allow-list and nesting cap | Closed `alg`/`enc` allow-list; total JOSE nesting capped at 10 layers |
+<div class="dj-map">
+  <section class="dj-group">
+    <h3>Protocol profiles and discovery</h3>
+    <a href="#dj-7"><strong>#7</strong><span>Profile rules resolve through config helpers; handlers receive booleans.</span></a>
+    <a href="#dj-8"><strong>#8</strong><span>ACR on the wire is separated from the internal AAL ladder.</span></a>
+    <a href="#dj-12"><strong>#12</strong><span>Discovery is built once from construction inputs and pinned by golden tests.</span></a>
+    <a href="#dj-13"><strong>#13</strong><span><code>client_assertion</code> accepts both OIDC token-endpoint and FAPI issuer audiences.</span></a>
+    <a href="#dj-25"><strong>#25</strong><span>DPoP nonce challenges happen before assertion <code>jti</code> consumption.</span></a>
+    <a href="#dj-26"><strong>#26</strong><span>CIBA is poll mode only; slow-down strikes are bounded.</span></a>
+  </section>
+  <section class="dj-group">
+    <h3>Tokens, grants, and revocation</h3>
+    <a href="#dj-2"><strong>#2</strong><span>Refresh rotation has a 60 s grace window and chain compromise retirement.</span></a>
+    <a href="#dj-3"><strong>#3</strong><span><code>offline_access</code> is a UX / TTL signal by default; strict mode makes it a gate.</span></a>
+    <a href="#dj-15"><strong>#15</strong><span>DPoP refresh-token chains bind for public clients, not confidential clients.</span></a>
+    <a href="#dj-16"><strong>#16</strong><span>Cross-client introspection returns the same inactive shape as unknown tokens.</span></a>
+    <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> cascades access-token revocation when substores are wired.</span></a>
+    <a href="#dj-18"><strong>#18</strong><span>JWT access tokens are the default; opaque is opt-in and can vary by resource.</span></a>
+    <a href="#dj-19"><strong>#19</strong><span>JWT revocation uses grant tombstones by default; FAPI rejects no-revocation.</span></a>
+    <a href="#dj-28"><strong>#28</strong><span>Custom grants ask for refresh tokens; the OP owns value and lineage.</span></a>
+    <a href="#dj-29"><strong>#29</strong><span><code>devicecodekit.Revoke</code> owns the cascade when a registry is available.</span></a>
+    <a href="#dj-31"><strong>#31</strong><span>Grant Management stays explicit while the draft surface is unstable.</span></a>
+  </section>
+  <section class="dj-group">
+    <h3>Registration, issuer, and outbound fetch</h3>
+    <a href="#dj-4"><strong>#4</strong><span>Loopback port wildcarding is a narrow native-app opt-in.</span></a>
+    <a href="#dj-9"><strong>#9</strong><span>Non-canonical issuer identifiers are rejected at construction time.</span></a>
+    <a href="#dj-20"><strong>#20</strong><span>DCR client secrets are hash-only at rest and disclosed once.</span></a>
+    <a href="#dj-21"><strong>#21</strong><span>RFC 7592 PUT resets defaulted fields and clears optional metadata.</span></a>
+    <a href="#dj-22"><strong>#22</strong><span><code>sector_identifier_uri</code> uses bounded fetch, 24 h success cache, and change detection.</span></a>
+    <a href="#dj-23"><strong>#23</strong><span>Custom transports can change trust, not bypass the dial-time SSRF gate.</span></a>
+    <a href="#dj-24"><strong>#24</strong><span>Open DCR omitted <code>scope</code> means no registered scopes unless configured.</span></a>
+  </section>
+  <section class="dj-group">
+    <h3>Browser, session, and UI boundaries</h3>
+    <a href="#dj-5"><strong>#5</strong><span>Iframe logout specs are not implemented; BCL and RP-Initiated Logout are.</span></a>
+    <a href="#dj-10"><strong>#10</strong><span>Sessions may live outside the transactional cluster; volatile BCL is best-effort.</span></a>
+    <a href="#dj-30"><strong>#30</strong><span>Cookie keys are conditional: required only when browser authorization is enabled.</span></a>
+  </section>
+  <section class="dj-group">
+    <h3>JOSE and request objects</h3>
+    <a href="#dj-1"><strong>#1</strong><span>PAR <code>request_uri</code> is looked up at entry and consumed when a code is emitted.</span></a>
+    <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> replay defence is default-on with an OP-side <code>jti</code> cache.</span></a>
+    <a href="#dj-11"><strong>#11</strong><span><code>alg=none</code> and <code>HS*</code> do not exist in the accepted algorithm type.</span></a>
+    <a href="#dj-14"><strong>#14</strong><span>PKCE is <code>S256</code> only across all profiles.</span></a>
+    <a href="#dj-27"><strong>#27</strong><span>JWE algorithms are allow-listed and JOSE nesting is capped.</span></a>
+  </section>
+</div>
 
 <a class="faq-anchor" id="dj-1"></a>
 
@@ -252,7 +259,7 @@ The OP rejects `plain` **regardless of profile**. `internal/pkce.Method` is the 
 **Conflict:** "MAY bind" is genuinely two-handed. **Always-bind** locks confidential clients to a single DPoP key for the chain's lifetime, which clashes with FAPI 2.0 OFCS plans that explicitly rotate the DPoP key across refresh requests. **Never-bind** leaves public-client refresh tokens (SPAs, native apps) as raw bearer secrets — exactly the threat model RFC 9449 §1 cites as motivating sender constraints.
 
 ::: tip Decision
-**Bind for public clients, leave unbound for confidential.** A client whose `TokenEndpointAuthMethod` is `"none"` (the public-client signal) gets its refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per §5.4. Confidential clients (`private_key_jwt`, `client_secret_*`, `tls_client_auth`) leave the refresh chain unbound, free to rotate DPoP keys per request — but the access tokens minted on each refresh are still bound to whatever key was presented, so any holder of those access tokens still needs the matching private key. Implemented in `internal/tokenendpoint.refreshDPoPJKT`; once a chain is bound, the §5.4 persistence rule kicks in and prevents an opportunistic upgrade from locking later key rotation.
+**Bind for public clients, leave unbound for confidential.** A client whose `TokenEndpointAuthMethod` is `"none"` (the public-client signal) gets its refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per §5.4. Confidential clients (`private_key_jwt`, `client_secret_*`) leave the refresh chain unbound, free to rotate DPoP keys per request — but the access tokens minted on each refresh are still bound to whatever key was presented, so any holder of those access tokens still needs the matching private key. Implemented in `internal/tokenendpoint.refreshDPoPJKT`; once a chain is bound, the §5.4 persistence rule kicks in and prevents an opportunistic upgrade from locking later key rotation.
 :::
 
 <a class="faq-anchor" id="dj-16"></a>
@@ -368,7 +375,9 @@ The spec fixes neither a timeout nor a body cap. OIDC Registration §2 lists `lo
 **Conflict:** "Fetch with the language default" implicitly means "hold a goroutine open until the upstream eventually answers", and the request body is unbounded — both are footguns at registration time. On `localhost`, OIDC Registration §2 and RFC 8252 §8.3 disagree: the OIDC text accepts it for native, the OAuth text warns against it. A web client that registers `http://localhost/cb` is a separate question from a native client that does the same.
 
 ::: tip Decision
-**Fetch is bounded to a 5 s timeout, a 5 MiB body cap, HTTPS only, no caching, no later re-fetch.** Failure or containment mismatch produces `400 invalid_client_metadata`; the cause goes to the audit log but never to the response body so upstream details (host, TLS state, partial bytes) do not leak.
+**Fetch is bounded to a 5 s timeout, a 64 KiB body cap, HTTPS only, no redirects, and a 24 h success cache.** Failures are not cached. A cache hit still re-runs the redirect-URI subset check against the currently registering client, so the cache never widens what a different client can register under the same sector.
+
+When a later fetch observes that the remote document's canonical hash changed, the resolver returns `ErrSectorContentChanged` once and evicts the stale entry. The next valid registration for that URI repopulates the cache with the new document, which lets legitimate RP-side rotations recover without an OP restart while still surfacing unexpected sector changes to operators. Failure or containment mismatch produces `400 invalid_client_metadata`; the cause goes to the audit log but never to the response body so upstream details (host, TLS state, partial bytes) do not leak.
 
 For loopback hosts, the registration layer splits on `application_type`. Web clients (the default) accept `127.0.0.1` and `[::1]` over `http`; the textual `localhost` is rejected unless the embedder explicitly opts in via `op.WithAllowLocalhostLoopback()`. Native clients (`application_type=native`) accept all three loopback hosts unconditionally per OIDC Registration §2, plus claimed `https` redirects and reverse-DNS custom URI schemes (`com.example.app:/cb`) per RFC 8252 §7.1. Custom schemes that lack a `.` are rejected because non-reverse-DNS schemes collide across applications. The authorize-time port wildcard for loopback URIs is governed by a separate per-client opt-in (#dj-4) and composes with this rule without overlap. Implemented in `internal/registrationendpoint/sector_identifier.go` and `internal/registrationendpoint/metadata.go` (`validateRedirectURI` / `validateNativeRedirectURIScheme`).
 :::
@@ -467,4 +476,35 @@ Issuance is gated on the client being registered for `refresh_token`; if it is n
 **The public helper owns the cascade when the registry is available.** `devicecodekit.Revoke` first denies the device-code row, then calls `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` when `Deps.AccessTokens` is non-nil. Every access token issued from a device-code grant carries the device-code ID as its grant identity, so the existing per-grant revocation primitive covers the whole issued set.
 
 A nil registry is still valid for JWT-stateless deployments or deployments that drive revocation out of band: the row is denied and the audit event fires, but the helper does not pretend an access-token cascade happened. When the registry is wired, `device_code.revoked` includes `revoked_access_tokens` so operators can alert on unexpectedly low or failed cascades. Implemented in `op/devicecodekit.Revoke` and the `store.AccessTokenRegistry` adapters.
+:::
+
+<a class="faq-anchor" id="dj-30"></a>
+
+## 30. Cookie keys — always required, or required only for browser authorization?
+
+**Spec:** OIDC Core and OAuth 2.0 define the authorization and token protocols, but they do not mandate that an OP use browser cookies at all. Cookie encryption is an implementation detail of this library's interaction/session binding.
+
+**Conflict:** Two implementation postures are plausible:
+
+- **Always require cookie keys** — simpler documentation and fewer branches, but a `client_credentials`-only OP or other no-browser deployment must configure a secret it will never use.
+- **Require cookie keys only when browser authorization is enabled** — more precise and friendlier to machine-to-machine deployments, but the option layer must know which grants need encrypted cookies before any handler is mounted.
+
+::: tip Decision
+`WithIssuer`, `WithStore`, and `WithKeyset` are unconditional construction requirements. `WithCookieKeys` is required when the enabled grant set contains `authorization_code`, which is true for the default grant set. The authorization-code flow uses encrypted session / CSRF cookies to bind browser interaction state; `client_credentials`-only deployments that explicitly remove `authorization_code` can boot without cookie keys.
+
+The rule is centralised in `validateCookieKeysRequired`, so future grants that need authorize-endpoint cookies can opt into the same check without changing handler code. Individual keys must still be exactly 32 bytes, matching AES-256-GCM. Implemented in `op/options_validate.go`; documented in [Required options](/getting-started/required-options).
+:::
+
+<a class="faq-anchor" id="dj-31"></a>
+
+## 31. Grant Management — draft surface, explicit opt-in
+
+**Spec:** OAuth 2.0 Grant Management is still an IETF draft. It defines stable `grant_id` values plus `create`, `replace`, `merge`, `query`, and `revoke` actions, but the wire shape may still change before publication.
+
+**Conflict:** A long-lived consent OP benefits from naming grants and letting clients query or revoke them later. Enabling a draft feature by default, however, would expose a moving wire contract to every deployment and make the discovery document advertise semantics the operator may not be ready to support.
+
+::: tip Decision
+Grant Management is **off by default and explicitly marked experimental**. `op.WithGrantManagement(actions, actionRequired)` must name the exact action set the OP accepts; the same set is advertised in discovery and enforced at PAR / authorize-time (`create` / `replace` / `merge`) and endpoint-time (`query` / `revoke`). Unknown actions, duplicate actions, an empty action set, or an action/`grant_id` mismatch fail at construction or request validation.
+
+When enabled, token responses carry `grant_id` and the `/grant_management` query / revoke endpoint is mounted. The draft remains isolated behind this option so a future wire-incompatible draft bump can be handled as an explicit migration rather than an accidental default change. Implemented in `op/grant_management.go`, `internal/parendpoint`, `internal/authorizeendpoint`, `internal/grantmgmtendpoint`, and `internal/tokenendpoint`.
 :::

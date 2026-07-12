@@ -1,6 +1,6 @@
 ---
 title: OFCS 再現レシピ
-description: OpenID Foundation Conformance Suite を go-oidc-provider に対して実行する手順 — どのプランがどの op-demo フラグに対応するか、関連する実装はどこにあるか、baseline をキャプチャして regression diff を取る方法。
+description: OpenID Foundation Conformance Suite を go-oidc-provider に対して実行する手順 — どのプランがどの op-demo フラグに対応するか、関連する実装はどこにあるか、ベースラインをキャプチャして回帰差分を取る方法。
 ---
 
 # OFCS 再現レシピ
@@ -12,6 +12,41 @@ description: OpenID Foundation Conformance Suite を go-oidc-provider に対し�
 ::: warning 個人開発、認証取得は無し
 本サイトの数値は再現可能なスナップショットであり、本ページはその再現手順を扱います。これは有償の OpenID Foundation 認証の代替ではありません。ローカルでスイートを実行して自分の組み込みを検証する用途には使えますが、ローカルの PASS 数を認証として引用しないでください。
 :::
+
+<svg role="img" aria-labelledby="ofcs-reproduce-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="ofcs-reproduce-title">OFCS 再現手順: 証明書を生成し、OFCS と op-demo を起動し、プランを登録し、ベースラインを保存し、差分を確認する。</title>
+<rect class="repro-box" x="24" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="86" y="122" text-anchor="middle">証明書生成</text>
+  <text class="repro-sub" x="86" y="144" text-anchor="middle">certs</text>
+
+  <rect class="repro-box" x="174" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="236" y="122" text-anchor="middle">OFCS 起動</text>
+  <text class="repro-sub" x="236" y="144" text-anchor="middle">docker compose</text>
+
+  <rect class="repro-main" x="324" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="386" y="122" text-anchor="middle">op-demo 起動</text>
+  <text class="repro-sub" x="386" y="144" text-anchor="middle">profile を選択</text>
+
+  <rect class="repro-box" x="474" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="536" y="122" text-anchor="middle">プラン登録</text>
+  <text class="repro-sub" x="536" y="144" text-anchor="middle">seed-plans</text>
+
+  <rect class="repro-box" x="624" y="50" width="112" height="58" rx="8"/>
+  <text class="repro-text" x="680" y="84" text-anchor="middle">実行</text>
+  <rect class="repro-box" x="624" y="148" width="112" height="58" rx="8"/>
+  <text class="repro-text" x="680" y="182" text-anchor="middle">差分確認</text>
+
+  <path class="repro-flow" d="M148 128 H170"/>
+  <path class="repro-flow" d="M162 124 L171 128 L162 132"/>
+  <path class="repro-flow" d="M298 128 H320"/>
+  <path class="repro-flow" d="M312 124 L321 128 L312 132"/>
+  <path class="repro-flow" d="M448 128 H470"/>
+  <path class="repro-flow" d="M462 124 L471 128 L462 132"/>
+  <path class="repro-flow" d="M598 118 C620 100 622 84 620 80"/>
+  <path class="repro-flow" d="M612 80 L621 78 L618 87"/>
+  <path class="repro-flow" d="M680 108 V144"/>
+  <path class="repro-flow" d="M676 136 L680 145 L684 136"/>
+</svg>
 
 ## 前提
 
@@ -35,7 +70,7 @@ make conformance-up
 1. `scripts/conformance.sh certs` — OP listener 用の自己署名 RSA-2048 証明書(`localhost` + `host.docker.internal` をカバー)、FAPI 2.0 mtls / mtls2 plan slot が使うクライアント証明書ペア、OFCS コンテナがマウントして OP を信頼するための JKS truststore を生成します。
 2. `scripts/conformance.sh ofcs-up` — `docker compose up -d` で OFCS コンテナを起動し、`https://localhost:8443` の応答を待ちます。
 3. `scripts/conformance.sh op-up` — `cmd/op-demo` をビルドして `https://127.0.0.1:9443` で起動し、スイートが使う全プランの redirect URI を seed します。
-4. `scripts/conformance.sh seed-plans` — `conformance/plans/` の各プランテンプレートを OFCS REST API に POST し、生成された plan ID を出力します。
+4. `scripts/conformance.sh seed-plans` — `conformance/plans/` の各プランテンプレートを OFCS REST API に POST し、生成されたプラン ID を出力します。
 
 OFCS state を保持する mongo volume も含めてすべて停止する場合は:
 
@@ -45,7 +80,7 @@ make conformance-down
 
 ## プラン、op-demo フラグ、有効化される実装
 
-OFCS テストプランによって検証するライブラリ機能が異なります。下表は各プランに対し、対応する `cmd/op-demo` の起動方法と、そのプロファイルが有効化する `op.With...` オプションを通読できる該当ソースファイルを対応づけたものです。
+OFCS テストプランによって検証するライブラリ機能が異なります。下表は各プランに対し、対応する `cmd/op-demo` の起動方法と、そのプロファイルが有効化する `op.With...` オプションを読める該当ソースファイルを対応づけたものです。
 
 | OFCS プラン | `op-demo` 起動 | 該当ソース |
 |---|---|---|
@@ -154,9 +189,9 @@ OFCS は主に 4 種の終端 result value を返し、ハーネスは advisory 
 
 REVIEW / SKIPPED の各 module がどれで、なぜそうなっているかの詳細は [OFCS 適合状況](/ja/compliance/ofcs#review-中の-modules) にあります。
 
-## baseline のキャプチャと差分取得
+## ベースラインのキャプチャと差分取得
 
-ハーネスは「現状を凍結し、変更が baseline に対して regression を起こさないか検証する」サイクルを中心に組まれています。
+ハーネスは「現状を凍結し、変更がベースラインに対して回帰を起こさないか検証する」サイクルを中心に組まれています。
 
 ```sh
 make conformance-up
@@ -170,12 +205,12 @@ make conformance-baseline-diff \
     BASELINE_NEW=conformance/baselines/<utc>-post-change.json
 ```
 
-`baseline-diff` は、2 つのスナップショット間で **PASSED を失った** module が 1 つでもあれば非 0 で終了します。diff は module を次に分類します。
+`baseline-diff` は、2 つのスナップショット間で **PASSED を失った** module が 1 つでもあれば非 0 で終了します。差分は module を次に分類します。
 
 - **regressions** — `PASSED` から非 `PASSED` への遷移(ゲート対象)。
 - **fixes** — 非 `PASSED` から `PASSED` への遷移。
 - **non-pass churn** — どちらも非 `PASSED` だが状態が異なる(例: REVIEW → SKIPPED)。
-- **catalog drift** — module が片方のスナップショットにしか存在しない(OFCS pin を bump したときに典型的に発生)。
+- **catalog drift** — module が片方のスナップショットにしか存在しない(OFCS pin を上げたときに典型的に発生)。
 
 snapshot ファイルは gitignore 対象です。環境固有の瞬間を記録するため、マシン / OFCS リリース間でのちらつきが大きいからです。標準のスナップショットを 1 つ保持したい場合は、`conformance/baselines/` の下からコピーアウトして自分で commit するパスに置いてください。
 

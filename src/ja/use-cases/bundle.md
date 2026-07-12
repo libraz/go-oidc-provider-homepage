@@ -1,11 +1,11 @@
 ---
 title: 総合バンドル
-description: 典型的な組み込み側が触るオプションを一通り束ねたリファレンス実装 — login flow、MFA、captcha、リスク、scope、profile、信頼 proxy、logger。
+description: 典型的な組み込み側が触るオプションを一通り束ねた参考実装 — ログイン処理、MFA、captcha、リスク判定、scope、プロファイル、信頼プロキシ、ロガー。
 ---
 
-# ユースケース — 総合バンドル
+# 使い方 — 総合バンドル
 
-`01-minimal` は動く最小の OP、`02-bundle` は **本番形** の OP 実装が end-to-end でどう見えるかを示します — login flow、MFA、captcha、リスク、scope カタログ、信頼 proxy 正規化、推奨 logger まで。
+`01-minimal` は動く最小の OP です。`02-bundle` は **本番に近い形** の OP 実装が全体としてどう見えるかを示します。ログイン処理、MFA、captcha、リスク判定、scope カタログ、信頼プロキシの正規化、推奨ロガーまでをまとめています。
 
 > **ソース:** [`examples/02-bundle/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/02-bundle)
 
@@ -17,10 +17,10 @@ description: 典型的な組み込み側が触るオプションを一通り束�
 | MFA | `op.RuleAlways(op.StepTOTP{...})` |
 | Captcha | `op.RuleAfterFailedAttempts(n, op.StepCaptcha{...})` |
 | リスク | `op.RuleRisk(threshold, step)` + `LoginFlow.Risk` の assessor |
-| クライアント | `op.WithStaticClients(...)`（typed seed） |
-| Scope | `op.WithScope(op.PublicScope(...))` / `op.WithScope(op.InternalScope(...))` を scope ごとに |
+| クライアント | `op.WithStaticClients(...)`（型付きクライアント定義） |
+| scope | `op.WithScope(op.PublicScope(...))` / `op.WithScope(op.InternalScope(...))` を scope ごとに |
 | プロファイル | `op.WithProfile(...)`（既定はコメントアウト、FAPI を見たければオン） |
-| Proxy | `op.WithTrustedProxies(cidrs ...)` |
+| 信頼プロキシ | `op.WithTrustedProxies(cidrs ...)` |
 | ロガー | `op.WithLogger(slog.Logger)` |
 
 ## チェックリストとして使う

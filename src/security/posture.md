@@ -70,7 +70,7 @@ These are not "we remembered to validate"; they are decisions made at the type /
 
 ### 1. The constructor refuses zero-value boots
 
-`op.New(...)` returns `error` — not a "use defaults" handler — when a required option is missing. `WithIssuer` and `WithStore` are unconditionally required; `WithKeyset` is required as soon as any flow that signs or verifies tokens is enabled; `WithCookieKeys` is required whenever the `authorization_code` grant is enabled. There is no usable zero-value `Provider`.
+`op.New(...)` returns `error` — not a "use defaults" handler — when a required option is missing. `WithIssuer`, `WithStore`, and `WithKeyset` are unconditionally required; `WithCookieKeys` is required whenever the `authorization_code` grant is enabled, including the default grant set. There is no usable zero-value `Provider`.
 
 ::: details Why this matters
 Most "default-on" framework libraries silently boot on missing config. This shape closes the class of "OP came up with no signing key / guessable cookie key / wrong issuer" errors before a single request is served. See `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` for the build-time errors emitted on absence.
@@ -111,7 +111,7 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | Defence | Source of truth | Spec |
 |---|---|---|
 | `__Host-` cookies, AES-256-GCM, double-submit CSRF, Origin/Referer check | `internal/cookie`, `internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
-| PKCE required on `authorization_code`; `plain` refused | `internal/pkce` | RFC 7636 |
+| PKCE required for public / native authorization-code clients and for every authorization-code client under FAPI profiles; `plain` refused | `internal/authorize`, `internal/pkce` | RFC 7636, RFC 9700 |
 | Refresh-token rotation + reuse detection (chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14 |
 | Sender-constrained tokens (DPoP `cnf.jkt`, mTLS `cnf.x5t#S256`) | `internal/dpop`, `internal/mtls`, `internal/tokens` | RFC 9449, RFC 8705 |
 | `iss` in authorization response | `internal/authorize` | RFC 9207 |
@@ -128,11 +128,16 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | `op.New` rejects configurations whose enabled grants / features need a substore the wired store does not expose | `op/options_validate.go`, `op/storeadapter/redis` | — (defence in depth) |
 | Client verification keys (`client_assertion`, JAR request objects) held to the OP key-shape floor: RSA ≥ 2048 bits, EC curve matches the declared `alg` | `internal/clientauth`, `internal/jar`, `internal/jose` (`AssertAlgKeyShape`) | RFC 7518 §3.3, RFC 8725 §3.2 |
 | `private_key_jwt` clients using `jwks_uri` recover from legitimate RP key rotation by doing one throttled cache-bypassing refetch on unknown `kid`; random unknown kids cannot amplify outbound fetches | `internal/clientauth`, `internal/jar` | RFC 7523, OIDC Dynamic Registration |
+| `private_key_jwt` assertion verification selects by JWS `kid`, caps trial verifications even when `kid` is absent, equalises the no-keys rejection path, and memoizes client lookup per request | `internal/clientauth` | RFC 7515 §4.1.4, RFC 7523 |
+| JWKS parsing rejects private and symmetric keys before verification paths see them | `internal/clientauth`, `internal/jar`, `internal/jose` | RFC 8725 |
+| DPoP-bound access tokens presented under the `Bearer` scheme are rejected at `/userinfo`; sender-constrained tokens must use the `DPoP` scheme | `internal/endpointsupport`, `internal/userinfo` | RFC 9449 §7.1 |
+| Tampered or undecodable authorization-endpoint session cookies are cleared and treated as no session, instead of being carried forward | `internal/authorizeendpoint`, `internal/cookie` | RFC 6265bis |
 | One-time auth factors (email-OTP, TOTP, recovery codes) single-use via atomic compare-and-set (`ErrAlreadyConsumed` on replay); cross-factor lockout stamped atomically (`StampLock`) | `internal/authn`, `op/store` | — (defence in depth) |
 | Wrong-code branches for TOTP, email-OTP, and recovery codes all increment the shared retry path and observer, so captcha / lockout gates see second-factor brute-force attempts | `internal/authn` | — (defence in depth) |
 | Refresh-token `id` / `parent_id` hashed at rest, looked up in constant time | `internal/tokenendpoint`, `op/store` | RFC 9700 §2.2.2 |
 | Refresh-token rotation re-checks the parent under the same critical section / transaction as the child insert, so replay revocation cannot race a successful descendant save | `op/storeadapter/sql`, `op/storeadapter/inmem` | RFC 9700 §2.2.2 |
 | Token exchange re-verifies the post-policy decision: granted scope must remain within the requested subject-token-bounded scope, and granted audience must remain within the requested audience | `internal/customgrant/tokenexchange` | RFC 8693 |
+| Persisted opaque access tokens minted during a token response are revoked on post-mint `server_error` paths, so a failed response does not leave a valid orphan token behind | `internal/tokenendpoint`, `op/store` | — (defence in depth) |
 
 ## Tooling
 

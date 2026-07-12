@@ -1,9 +1,9 @@
 ---
-title: マルチアカウントチューザ
+title: マルチアカウント選択
 description: 1 ブラウザに複数ユーザがログイン中の状態を OP が chooser group として保持し、prompt=select_account を UI 差し込み口経由で扱う。
 ---
 
-# ユースケース — マルチアカウントチューザ
+# 使い方 — マルチアカウント選択
 
 ## `prompt=select_account` とは
 
@@ -21,11 +21,11 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 
 ::: details このページで触れる仕様
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.1（`prompt` パラメータ）、§3.1.2.4（同意との相互作用）
-- [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html) — 「全員ログアウト」発火時の fan-out
+- [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html) — 「全員ログアウト」発火時の 一斉通知
 :::
 
 ::: details 用語の補足
-- **`prompt` パラメータ** — RP が `/authorize` に乗せて、OP に UI の出し方を指示するヒントです。`none`（UI を出さず、既存セッションを返すか失敗）、`login`（再ログイン強制）、`consent`（同意プロンプト強制）、`select_account`（アカウント選択 UI）の 4 種があり、空白区切りで複数指定できます。
+- **`prompt` パラメータ** — RP が `/authorize` に乗せて、OP に UI の出し方を指示するヒントです。`none`（UI を出さず、既存セッションを返すか失敗）、`login`（再ログイン強制）、`consent`（同意画面強制）、`select_account`（アカウント選択 UI）の 4 種があり、空白区切りで複数指定できます。
 - **Chooser group** — 同一ブラウザで同時にサインイン中のセッション群。大手 SaaS では「アカウント切り替え」メニューとして表面化します。OP がサーバ側で group を保持し、cookie はブラウザを単一セッションではなく group に紐づけます。
 - **`sub`（subject）** — OP-RP ペアごとにスコープされる、ユーザの安定不透明識別子です。chooser でアカウントを切り替えると、次の `id_token` に乗る `sub` が変わります — 同じブラウザ、別の identity ということになります。
 :::
@@ -34,19 +34,7 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 
 ## 動作
 
-<style scoped>
-.d-lbl{font-family:var(--vp-font-family-base);fill:currentColor;font-size:12px}
-.d-mono{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
-.d-sm{font-size:10px}
-.d-ph{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:10px;letter-spacing:1.5px}
-.d-acc{fill:var(--vp-c-brand-2)}
-.d-mut{opacity:.6}
-.d-op{stroke:var(--vp-c-brand-2)}
-.d-life{stroke-opacity:.35}
-text{stroke:none}
-</style>
-
-<svg role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="multi-account-flow" role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="multi-account-chooser-flow-title">3 回の /authorize 往復のシーケンス。初回ログインで chooser group を発行し、prompt=login でアカウントを追加、prompt=select_account でアクティブセッションを切り替える。</title>
 
   <!-- actors -->
@@ -114,7 +102,7 @@ text{stroke:none}
 
 ## 実装
 
-`prompt=select_account` 用の interaction はビルトインです。アクティブな chooser group の全アカウントを並べた `interaction.ChooserPromptData` エンベロープを返します。同梱 HTML ドライバではビルトインテンプレートが一覧を描画し、ユーザは `SessionID` を POST で送り返します。サーバ描画の流れを保ちつつテンプレートだけ持ちたい場合は、`op.WithChooserUI(op.ChooserUI{Template: tmpl})` を渡します。
+`prompt=select_account` 用の interaction は組み込みです。アクティブなアカウント選択グループの全アカウントを並べた `interaction.ChooserPromptData` 応答を返します。同梱 HTML ドライバでは組み込みテンプレートが一覧を描画し、ユーザは `SessionID` を POST で送り返します。サーバ描画の流れを保ちつつテンプレートだけ持ちたい場合は、`op.WithChooserUI(op.ChooserUI{Template: tmpl})` を渡します。
 
 JSON ドライバ（`op.WithInteractionDriver(interaction.JSONDriver{})`）では、SPA 側が同じ情報を JSON として受け取り、`SessionID` を POST で送り返します。`op.WithSPAUI` を使う場合、`WithChooserUI` が同時指定されていてもアカウント選択画面の描画は SPA が受け持ちます。このとき chooser テンプレートは使われず、`op.New` がその旨の警告を出します。
 
@@ -131,6 +119,6 @@ JSON ドライバ（`op.WithInteractionDriver(interaction.JSONDriver{})`）で�
 
 ## 続きはこちら
 
-- [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) — chooser をサーバ描画のまま保ち、アカウント選択テンプレートだけ差し替える。
-- [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) — chooser を SPA から扱う。
-- [Back-Channel Logout](/ja/use-cases/back-channel-logout) — 全員ログアウト時の fan-out。
+- [カスタムアカウント選択 UI](/ja/use-cases/custom-chooser-ui) — chooser をサーバ描画のまま保ち、アカウント選択テンプレートだけ差し替える。
+- [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) — アカウント選択を SPA から扱う。
+- [Back-Channel Logout](/ja/use-cases/back-channel-logout) — 全員ログアウト時の 一斉通知。

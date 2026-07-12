@@ -36,7 +36,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 | Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | Profile flags `RequiredAnyOf=[DPoP, MTLS]`; if neither is configured, the constructor auto-selects DPoP as the no-infrastructure default. |
 | ES256 signing | RFC 7518 | `id_token_signing_alg_values_supported` is `["ES256"]` unconditionally; `RS256` / `none` / HS* never advertised. |
 | `redirect_uri` exact match | FAPI 2.0 §5.3 | No wildcards. Byte-identical comparison. |
-| `private_key_jwt` or mTLS client auth | FAPI 2.0 §3.1.3 | Token endpoint auth-method list intersected with FAPI allow-list. |
+| `private_key_jwt` client auth | FAPI 2.0 §3.1.3 | Use `private_key_jwt` for the token endpoint auth path. mTLS can satisfy sender constraint, but mTLS client-auth dispatch is not wired. |
 
 ## Architecture
 
@@ -128,13 +128,15 @@ provider, err := op.New(
 The `WithProfile` call:
 
 1. Enables `feature.PAR` and `feature.JAR` automatically.
-2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §3.1.3 allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`).
+2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §3.1.3 allow-list; configure clients with `private_key_jwt` for the token endpoint.
 3. Keeps `id_token_signing_alg_values_supported = ["ES256"]` (the OP only ever advertises and signs `ES256` id_tokens; FAPI 2.0's anti-`RS256` clause is satisfied by construction).
 4. Forces `redirect_uri` exact match (no wildcards anywhere).
 5. Satisfies the DPoP-or-mTLS sender-constraint requirement by preserving an explicit `feature.MTLS` opt-in when present, or by adding `feature.DPoP` when neither binding was selected.
 
 ::: tip mTLS instead of DPoP
-The profile's default sender binding is DPoP because it needs no TLS client-certificate plumbing. If your deployment standardizes on mTLS, enable `feature.MTLS` explicitly and configure `op.WithMTLSProxy(...)` for a TLS-terminating proxy; that explicit choice suppresses the DPoP default. See [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) for FAPI-grade TLS helpers.
+The profile's default sender binding is DPoP because it needs no TLS client-certificate plumbing. If your deployment standardizes on mTLS, enable `feature.MTLS` explicitly and configure `op.WithMTLSProxy(...)` for a TLS-terminating proxy; that explicit choice suppresses the DPoP default.
+
+This is mTLS sender constraint, not token endpoint mTLS client authentication. Keep the client registered with `private_key_jwt` and use the forwarded certificate only to bind issued access tokens.
 :::
 
 ## Verifying the surface

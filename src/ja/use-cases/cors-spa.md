@@ -3,7 +3,7 @@ title: SPA 向け CORS
 description: 異なる origin の SPA が OP のユーザ向けエンドポイントを呼べるようにする。
 ---
 
-# ユースケース — SPA 向け CORS
+# 使い方 — SPA 向け CORS
 
 ## SPA とは何か、なぜ CORS が要るのか
 
@@ -13,6 +13,40 @@ description: 異なる origin の SPA が OP のユーザ向けエンドポイ�
 2. OP と **異なる origin** で配信されることが普通（`app.example.com` vs `op.example.com`）。ブラウザの **CORS**（Fetch 仕様 / Cross-Origin Resource Sharing）が、SPA から JS で呼び出すエンドポイントごとに OP 側で origin を明示的に許可することを要求します。
 
 本ページは CORS レイヤを扱います。PKCE 自体は [Authorization Code + PKCE](/ja/concepts/authorization-code-pkce) を参照。
+
+<svg role="img" aria-labelledby="cors-spa-flow-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="cors-spa-flow-title">SPA の CORS フロー: ブラウザが Origin 付きで preflight を送り、OP が許可リストを確認し、許可された場合だけ本リクエストのレスポンスを SPA に読ませる。</title>
+<rect class="cors-box" x="32" y="92" width="156" height="82" rx="8"/>
+  <text class="cors-text" x="110" y="124" text-anchor="middle">SPA</text>
+  <text class="cors-sub" x="110" y="146" text-anchor="middle">app.example.com</text>
+
+  <rect class="cors-main" x="302" y="82" width="156" height="102" rx="8"/>
+  <text class="cors-text" x="380" y="116" text-anchor="middle">ブラウザ</text>
+  <text class="cors-sub" x="380" y="138" text-anchor="middle">same-origin policy</text>
+  <text class="cors-sub" x="380" y="156" text-anchor="middle">preflight を実行</text>
+
+  <rect class="cors-box" x="572" y="92" width="156" height="82" rx="8"/>
+  <text class="cors-text" x="650" y="124" text-anchor="middle">OP</text>
+  <text class="cors-sub" x="650" y="146" text-anchor="middle">許可リストを確認</text>
+
+  <rect class="cors-box" x="302" y="236" width="156" height="52" rx="8"/>
+  <text class="cors-text" x="380" y="268" text-anchor="middle">PKCE / Bearer</text>
+
+  <path class="cors-flow" d="M188 132 H298"/>
+  <text class="cors-sub" x="243" y="118" text-anchor="middle">fetch()</text>
+  <path class="cors-flow" d="M290 128 L299 132 L290 136"/>
+  <path class="cors-flow" d="M458 116 H568"/>
+  <text class="cors-sub" x="513" y="102" text-anchor="middle">OPTIONS + Origin</text>
+  <path class="cors-flow" d="M560 112 L569 116 L560 120"/>
+  <path class="cors-flow" d="M572 150 H462"/>
+  <text class="cors-sub" x="517" y="174" text-anchor="middle">Allow-Origin</text>
+  <path class="cors-flow" d="M470 146 L461 150 L470 154"/>
+  <path class="cors-flow" d="M458 156 C514 218 582 216 650 176"/>
+  <text class="cors-sub" x="564" y="218" text-anchor="middle">本リクエスト</text>
+  <path class="cors-flow" d="M644 185 L651 175 L640 178"/>
+  <path class="cors-flow" d="M380 184 V232"/>
+  <path class="cors-flow" d="M376 224 L380 233 L384 224"/>
+</svg>
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework
@@ -45,7 +79,7 @@ op.New(
   op.WithCORSOrigins(
     "https://app.example.com",       // 本番 SPA
     "https://staging.example.com",
-    "http://localhost:5173",          // ローカル開発 — Vite デフォルト
+    "http://localhost:5173",          // ローカル開発 — Vite 既定
   ),
   op.WithStaticClients(op.PublicClient{
     ID:           "spa-client",
@@ -93,7 +127,7 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`op.PublicClient` は SPA / native アプリ向けの型付きシードで、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。OP の厳格な CORS ラッパは `/token` も覆うので、許可リストに入った SPA は JavaScript から PKCE code exchange を実行できます。
+`op.PublicClient` は SPA / native アプリ向けの型付きクライアント定義で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。OP の厳格な CORS ラッパは `/token` も覆うので、許可リストに入った SPA は JavaScript から PKCE code exchange を実行できます。
 
 OP は全クライアントで `code_challenge_method=plain` を拒否 — `S256` のみ — なので SPA の PKCE は本物の PKCE、レガシー変種ではありません。
 
@@ -103,7 +137,7 @@ CORS で origin を許可しても、OP のセッション cookie は **op.examp
 
 ## エンドポイント別の CORS の効き方
 
-直前の表は、ライブラリが厳格な CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が許可リストにあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的なデプロイで *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
+直前の表は、ライブラリが厳格な CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が許可リストにあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的な配備で *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
 
 許可リストは 2 つの集合の和です。`WithCORSOrigins` で明示した origin と、クライアントストアに登録された全 `redirect_uri` の origin です。SPA クライアントを `RedirectURIs: []string{"https://app.example.com/callback"}` で登録すれば、`https://app.example.com` は自動で CORS 許可リストに入ります。`WithCORSOrigins` は、`redirect_uri` として登場しないブラウザ側 origin（別の管理用 SPA、ステータスページ、localhost 開発 origin など）のためにあります。
 

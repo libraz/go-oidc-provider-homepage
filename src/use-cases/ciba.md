@@ -166,6 +166,8 @@ This is the user's only defense against a CIBA phishing flow. Treat it as requir
 
 The OP validates `binding_message` (trimmed length and control-character checks) and persists the raw value, not an HTML-escaped copy. Escape it at render time in your authentication-device UI; do not pre-escape before sending it to `/bc-authorize`, or transaction text containing `&`, `<`, `>`, `"`, or `'` will stop matching what the cashier saw.
 
+For `scope`, the CIBA handler accepts the same spec-conformant ASCII-space form clients should send, and also tokenizes Unicode whitespace with `strings.Fields` for lenient CIBA clients. Do not depend on tabs or newlines for cross-endpoint portability; `/authorize` and `/par` keep the stricter wire grammar.
+
 ## RFC 8707 `resource=`
 
 Consumption devices may pin the issued access token to a resource server by sending `resource=<absolute URI>` on `/bc-authorize`. The endpoint enforces the same gate as `/authorize` and `/token`:
@@ -191,7 +193,7 @@ If your RP currently reads `amr` from a CIBA id_token, expect an empty / absent 
 - `RequiredFeatures` = `[JAR]` — `/bc-authorize` requests must be JWT-Secured (RFC 9101).
 - `RequiredAnyOf` = `[[DPoP, MTLS]]` — sender constraint is mandatory; DPoP is selected by default unless the deployment explicitly enables mTLS.
 - `MaxAccessTokenTTL` = 10 min.
-- Client authentication = `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` (the FAPI 2.0 set; `client_secret_basic` rejected).
+- Client authentication = `private_key_jwt` (`client_secret_basic` rejected). mTLS may satisfy the sender-constraint requirement when `feature.MTLS` is configured, but not the `/token` client-auth method.
 - `RequiresAccessTokenRevocation` = true.
 - JAR enforcement on `/bc-authorize`: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` are all required; the request-object lifetime is capped at 60 minutes (FAPI 2.0 Message Signing §5.6). FAPI 2.0 Baseline and Message Signing keep `jti` optional; FAPI-CIBA opts into the stricter shape.
 - `requested_expiry > 600s` is a hard `invalid_request` (FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 ten-minute cap). Vanilla CIBA keeps the silent-clamp posture.

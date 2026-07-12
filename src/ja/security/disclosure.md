@@ -33,14 +33,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 報告を受領してからのおおまかな流れです。
 
-<style scoped>
-.d-title{font-family:var(--vp-font-family-base);font-weight:600;font-size:14px;fill:var(--vp-c-text-1);stroke:none}
-.d-sub{font-family:var(--vp-font-family-base);font-weight:400;font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-.d-edge{font-family:var(--vp-font-family-base);font-weight:500;font-size:11px;fill:var(--vp-c-text-2);stroke:none}
-.op-accent{stroke:var(--vp-c-brand-2)}
-</style>
-
-<svg role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:640px;height:auto;margin:1.5rem auto;">
+<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:640px;height:auto;margin:1.5rem auto;">
   <title id="disclosure-flow-title">脆弱性報告の処理フロー: 報告を受領し、受領確認と triage を経て、スコープ外ならクローズ、有効なら修正・協調開示・リリースを経て GHSA を公開する流れ。</title>
   <!-- boxes -->
   <rect x="20" y="20" width="230" height="54" rx="8"/>
@@ -127,7 +120,7 @@ govulncheck ./...
 スコープ内（積極的に報告してほしい内容）:
 
 - `op.WithProfile(profile.FAPI2*)` が課すセキュリティゲート（PAR、JAR、DPoP、JARM、alg リスト、redirect_uri 完全一致）のバイパス。
-- アルゴリズム混同（`none`、`HS*`、またはコードベースの allow-list 外の alg を verifier に受理させる経路）。
+- アルゴリズム混同（`none`、`HS*`、またはコードベースの許可リスト外の alg を verifier に受理させる経路）。
 - トークン偽造、ID トークンの署名バイパス、`iss` ミックスアップ経路。
 - 関連 RFC が許容する範囲を超える PKCE / nonce / state replay 経路。
 - chain revocation を伴わないリフレッシュトークンの再利用。

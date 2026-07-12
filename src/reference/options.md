@@ -87,9 +87,9 @@ text{stroke:none}
   <text class="od-b od-t1" x="350" y="484" text-anchor="middle">None match — browse the full option table below by section.</text>
 </svg>
 
-- **You're booting a fresh OP for the first time** → start with the four required options: [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
+- **You're booting a fresh OP for the first time** → start with [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), and usually [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). `WithCookieKeys` is required when `authorization_code` is enabled, which is the default grant set. See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
 - **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). The profile auto-selects DPoP unless you explicitly enable mTLS. `profile.IGovHigh` is reserved and rejected today. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
-- **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. PKCE is on by default. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
+- **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. Public and native clients always require PKCE; FAPI profiles require it for every authorization-code client. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
 - **You want to restrict the grant types accepted at `/token`** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`. The convenience options `WithDeviceCodeGrant()`, `WithCIBA(...)`, `WithCustomGrant(...)`, and `RegisterTokenExchange(...)` mount the additional endpoints those grants need.
 - **You want sender-constrained access tokens** → DPoP path: `WithFeature(feature.DPoP)` plus optional `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`. mTLS path: `WithFeature(feature.MTLS)` plus optional `WithMTLSProxy(headerName, trustedCIDRs)`. See [Concepts: sender-constrained tokens](/concepts/sender-constraint), [DPoP](/concepts/dpop), [mTLS](/concepts/mtls), and [Use case: DPoP nonce](/use-cases/dpop-nonce).
 - **You want JWT versus opaque access tokens** → `WithAccessTokenFormat(...)` for the OP-wide default and `WithAccessTokenFormatPerAudience(...)` for RFC 8707 resource-scoped overrides. See [Concepts: access-token format](/concepts/access-token-format).
@@ -106,14 +106,14 @@ text{stroke:none}
 - **You want audit logging on a separate sink from app logs** → `WithAuditLogger(*slog.Logger)`. See [Audit event catalog](/reference/audit-events).
 - **You want to swap the entire interaction surface for a SPA** → `WithInteractionDriver(interaction.Driver)`. See [Use case: SPA custom interaction](/use-cases/spa-custom-interaction).
 
-## Required (the four `op.New` refuses to start without)
+## Required and conditionally required
 
 | Option | Value | Section | Default |
 |---|---|---|---|
 | [`WithIssuer`](/getting-started/required-options#withissuer) | `string` | discovery `issuer`, JWT `iss`, cookie scope | — |
 | [`WithStore`](/getting-started/required-options#withstore) | `op.Store` | every persistent substore | — |
 | [`WithKeyset`](/getting-started/required-options#withkeyset) | `op.Keyset` (P-256 / ES256) | JWKS, JWS signing | — |
-| [`WithCookieKeys`](/getting-started/required-options#withcookiekeys) | 32-byte key(s) | session / CSRF cookie AES-256-GCM | — |
+| [`WithCookieKeys`](/getting-started/required-options#withcookiekeys) | 32-byte key(s) | session / CSRF cookie AES-256-GCM | required when `authorization_code` is enabled |
 
 ## Profile, features, grants
 
@@ -121,7 +121,7 @@ text{stroke:none}
 |---|---|---|---|
 | `WithProfile` | `profile.Profile` | activates a security profile in one switch (FAPI 2.0 Baseline / Message Signing / FAPI-CIBA), including DPoP as the default sender-constrained token method when the profile requires DPoP-or-mTLS and mTLS was not explicitly enabled. `profile.IGovHigh` is reserved for v2+ and currently rejected at `op.New` because its runtime constraints have not landed. | none |
 | `WithFeature` | `feature.Flag` (one per call; repeatable) | enables PAR / DPoP / mTLS / JAR / JARM / introspect / revoke individually | conservative defaults |
-| `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token` | `authorization_code`, `refresh_token` |
+| `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token`; may be called at most once, so compose the full set before passing options to `op.New` | `authorization_code`, `refresh_token` |
 | `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `address`, `phone`, `offline_access` |
 | `WithOpenIDScopeOptional` | _(no args)_ | makes pure OAuth 2.0 (`scope` without `openid`) acceptable | `openid` required |
 | `WithStrictOfflineAccess` | _(no args)_ | gates `refresh_token` issuance behind explicit `offline_access` consent | lax (refresh on any `openid` grant) |
@@ -149,7 +149,11 @@ text{stroke:none}
 | `WithAuthnLockoutStore` | `op.AuthnLockoutStore` | persists per-subject failed-attempt counters consulted by `RuleAfterFailedAttempts` | in-memory |
 | `WithACRPolicy` | `op.ACRPolicy` (interface) | step-up acr/aal mapping | identity |
 
-The bundled SQL adapter does not implement `store.AuthnLockoutStore` — its schema has no authn-factor lockout table. Leaving the option unset disables cross-factor tracking, so only the built-in per-factor TOTP / email-OTP counters apply; setting the option activates cross-factor tracking, but persistence then becomes the embedder's responsibility, since the in-memory reference (`inmem.Store.AuthnLockouts`) is process-local and resets on restart. Deployments that need the counter to survive a restart or to be shared across replicas must supply their own `store.AuthnLockoutStore` backed by durable, shared storage.
+The bundled SQL adapter does not implement `store.AuthnLockoutStore` — its schema has no authn-factor lockout table. Leaving the option unset disables cross-factor tracking, so only the built-in per-factor TOTP / email-OTP counters apply; setting the option activates cross-factor tracking for the built-in possession / recovery factors (`StepTOTP`, `StepEmailOTP`, `StepRecoveryCode`). It does not automatically wrap primary password / passkey authentication or `ExternalStep` custom factors; those remain owned by the embedder's user store or custom authenticator. Persistence then becomes the embedder's responsibility, since the in-memory reference (`inmem.Store.AuthnLockouts`) is process-local and resets on restart. Deployments that need the counter to survive a restart or to be shared across replicas must supply their own `store.AuthnLockoutStore` backed by durable, shared storage.
+
+Authentication-factor records are intentionally outside `op.Store`. `StepTOTP`, `StepPasskey`, `StepRecoveryCode`, and `StepEmailOTP` receive their own stores because enrollment schema, encryption keys, and account-recovery policy belong to the embedding application. The in-memory adapter is a reference only; production deployments should supply durable stores. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) shows a SQL-backed `store.TOTPStore` that shares one database with the core adapter.
+
+Two factor-store contracts matter for durability-sensitive deployments. `store.EmailOTPStore.Get` must keep records readable until `EmailOTPRecord.RetainUntil`, not merely until the code's `ExpiresAt`, so resend caps and brute-force counters survive an expired code. `store.RecoveryStore.Consume` must compare the presented code hash with the currently stored slot and reject stale hashes, so regenerated recovery batches revoke old leaked codes instead of burning a slot in the new batch.
 
 ## UI
 
@@ -190,6 +194,7 @@ The bundled SQL adapter does not implement `store.AuthnLockoutStore` — its sch
 | `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported`; `false` also makes authorize / PAR ignore `claims` payloads after malformed JSON has been rejected | true |
 | `WithACRValuesSupported` | `...string` (variadic) | publishes `acr_values_supported`; FAPI / eIDAS / NIST 800-63 deployments use this to advertise honored ACR values | empty (omitted from discovery) |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata` (typed `service_documentation`, policy / TOS / UI locale / mTLS alias fields plus `Extra map[string]any`) | injects RFC 8414 / OIDC Discovery metadata not owned by the OP; `UILocalesSupported` overrides the auto-derived locale list when non-empty, and `Extra` keys that collide with OP-controlled fields are rejected | none |
+| `WithPARLifetime` | `time.Duration` | overrides the lifetime of `request_uri` values issued by `/par`; expiry is checked when the browser presents the URI at `/authorize`, while later code emission remains single-use | 60 s |
 | `WithJWKSRotationActive` | `func() bool` | predicate that flips JWKS `Cache-Control` to short-cache during a rotation window | always long-cache |
 
 ## Subject strategy

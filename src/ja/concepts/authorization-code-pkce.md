@@ -5,7 +5,11 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
 
 # 認可コード + PKCE
 
-最も一般的な OIDC フローです。Web アプリ、モバイルアプリ、SPA、デスクトップアプリで人がログインするとき、ほぼすべてがこれです。本ライブラリでは PKCE (Proof Key for Code Exchange、RFC 7636) は必須です — OAuth 2.0 BCP (RFC 9700) と FAPI 2.0 が要求するため、また 2026 年現在 PKCE を無効にする合理的な構成は存在しないためです。
+最も一般的な OIDC フローです。Web アプリ、モバイルアプリ、SPA、デスクトップアプリで人がログインするとき、ほぼすべてがこの形です。本ライブラリでは、公開クライアント（public client）とネイティブアプリには常に PKCE（Proof Key for Code Exchange、RFC 7636）が必須です。FAPI プロファイル下では、すべての認可コードクライアントに PKCE が必須になります。FAPI ではない confidential client は古い OIDC Core の形も扱えますが、新規構築では常に `S256` を送ってください。
+
+::: warning 現在の挙動
+公開クライアントやネイティブアプリが `code_challenge` を省略すると、`/authorize` で `invalid_request` として拒否されます。これらのクライアントは PKCE 前提で登録し、必ず `code_challenge_method=S256` を送ってください。`/token` でクライアント認証できないクライアントに対して、OP は非 PKCE の認可コードを発行しません。
+:::
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework（§5.2 エラーコード）
@@ -16,37 +20,13 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
 :::
 
 ::: details 用語の補足
-- **認可コード（authorization code）** — OP がブラウザリダイレクト経由で RP に渡す 1 回限りの opaque 文字列。RP はこれを `/token` でトークンに交換します。
+- **認可コード（authorization code）** — OP がブラウザリダイレクト経由で RP に渡す、1 回限りの不透明な文字列。RP はこれを `/token` でトークンに交換します。
 - **PKCE**（「ピクシー」と読む） — `code_verifier` と `code_challenge` を使った小さな手続きで、「このコードを引き換えに来たクライアントは、フローを始めたクライアントと同一」と OP に証明させる仕組み。リダイレクトされたコードを悪意あるアプリに横取りされるのを防ぎます。詳しい解説は後述。
-- **`state`** — RP が authorize 要求に乗せ、コールバックで検査するランダム opaque 値。リダイレクトの CSRF 防御。
-- **`nonce`** — ID トークンに紐づくランダム opaque 値。RP 側でのリプレイ防御。
+- **`state`** — RP が authorize 要求に乗せ、コールバックで検査するランダムな不透明値。リダイレクトの CSRF 防御。
+- **`nonce`** — ID トークンに紐づくランダムな不透明値。RP 側でのリプレイ防御。
 :::
 
 ## 完全なシーケンス
-
-<style scoped>
-text{stroke:none}
-.actor{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-1)}
-.actor-op{fill:var(--vp-c-brand-2)}
-.actor-rs{fill:var(--vp-c-text-3)}
-.asub{font-family:var(--vp-font-family-base);font-size:9px;fill:var(--vp-c-text-3)}
-.lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-1)}
-.sub{font-family:var(--vp-font-family-base);font-size:9.5px;fill:var(--vp-c-text-2)}
-.mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-2)}
-.num{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3)}
-.note{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-1)}
-.notemono{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2)}
-.box{fill:var(--vp-c-bg);stroke:currentColor}
-.box-op{stroke:var(--vp-c-brand-2)}
-.box-rs{stroke:var(--vp-c-text-3)}
-.lane{fill:none;stroke:var(--vp-c-divider);stroke-width:1.3;stroke-dasharray:2 5}
-.lane-op{stroke:var(--vp-c-brand-2)}
-.lane-rs{stroke:var(--vp-c-text-3)}
-.msg{fill:none;stroke:currentColor}
-.self{fill:none;stroke:currentColor}
-.op-accent{stroke:var(--vp-c-brand-2)}
-.notebox{fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider);stroke-width:1.3}
-</style>
 
 <svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" style="width:100%;height:auto;max-width:684px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="acpkce-seq-title">認可コード + PKCE のシーケンス: ブラウザ、Relying Party、OpenID Provider、Resource Server の間で、ログインから PKCE 検証付きトークン発行、Bearer トークンでの API 呼び出しまでのやり取りを示す図。</title>
@@ -187,7 +167,7 @@ text{stroke:none}
 | `code` | `/authorize` レスポンス | 単発。本ライブラリは max-age 60 秒をデフォルトとする。RFC 6749 §4.1.2 は上限 10 分を推奨。 |
 | `code_verifier` | `/token` | `code_challenge` の原像。OP が SHA-256 を再計算。 |
 | `grant_type=authorization_code` | `/token` | この grant を選択。 |
-| Client auth | `/token` | `client_secret_basic` / `client_secret_post` / `private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth` / `none`（PKCE のみ）のいずれか。 |
+| Client auth | `/token` | `client_secret_basic` / `client_secret_post` / `private_key_jwt` / `none`（PKCE のみ）のいずれか。mTLS 送信者制約は token endpoint クライアント認証とは別です。 |
 
 ::: details `state` と `nonce` の違い
 両方ともランダムな opaque 値で、両方とも replay 系攻撃を防ぎますが、守る経路が違います。
@@ -199,7 +179,7 @@ text{stroke:none}
 :::
 
 ::: details `code_verifier` / `code_challenge` / `S256` とは
-**`code_verifier`** は RP が生成して *自分だけが持っている* 高エントロピのランダム文字列です。RFC 7636 §4.1 で 43〜128 文字の URL セーフ文字と定められています。
+**`code_verifier`** は RP が生成して *自分だけが持っている* 推測困難なランダム文字列です。RFC 7636 §4.1 で 43〜128 文字の URL セーフ文字と定められています。
 
 **`code_challenge`** は RP が `/authorize` で OP に送る値です。`code_challenge_method=S256` の場合、`BASE64URL(SHA-256(code_verifier))` — つまり一方向ハッシュです。OP には逆算できず、後で `/token` に verifier 本体を送ったときに RP の所有を証明できる形になります。
 

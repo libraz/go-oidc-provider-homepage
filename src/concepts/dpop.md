@@ -104,6 +104,8 @@ A DPoP proof is a JWT (RFC 9449 §4) signed with a private key the client contro
 
 The OP and the RS run the same checklist. The RS additionally verifies that the proof's `jwk` thumbprint equals the access token's `cnf.jkt`.
 
+DPoP-bound access tokens must be presented with `Authorization: DPoP <token>`, not `Authorization: Bearer <token>`. The OP enforces this on `/userinfo`: a sender-constrained token under the Bearer scheme is rejected even if the token bytes are otherwise valid, because RFC 9449 §7.1 makes the scheme part of the proof-of-possession contract.
+
 ## Confirmation claim — `cnf.jkt`
 
 The first proof at `/token` pins the binding. The OP computes a SHA-256 thumbprint of the proof's `jwk` (RFC 7638 fixes the canonical fields that go into the digest) and writes it into the issued access token as `cnf.jkt`. Every subsequent request that uses this access token must carry a proof signed by **the same key**, so the RS can recompute the thumbprint and compare.
@@ -142,7 +144,7 @@ Access tokens are always DPoP-bound when `feature.DPoP` is enabled and the clien
 Refresh tokens follow [Design judgment #15](/security/design-judgments#dj-15) — bind for public clients, leave unbound for confidential:
 
 - **Public clients** (`token_endpoint_auth_method = "none"`, typically SPAs and native apps) get their refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per RFC 9449 §5.4. A leaked refresh token is useless without the matching key — exactly the threat model RFC 9449 §1 cites.
-- **Confidential clients** (`private_key_jwt`, `tls_client_auth`) leave the refresh chain unbound. They can rotate DPoP keys per request (the OFCS plans exercise this) without locking the chain to a single key for its lifetime. The access tokens minted on each refresh are still bound to the key presented on that exchange, so the leak surface is limited to the access token.
+- **Confidential clients** (`private_key_jwt`, `client_secret_*`) leave the refresh chain unbound. They can rotate DPoP keys per request (the OFCS plans exercise this) without locking the chain to a single key for its lifetime. The access tokens minted on each refresh are still bound to the key presented on that exchange, so the leak surface is limited to the access token.
 
 The trade-off is explicit: confidential clients gain key-rotation flexibility at the cost of leaving the refresh chain as a raw bearer secret. Confidential clients already authenticate to the token endpoint with a long-lived asymmetric credential, so a refresh-token leak alone does not let an attacker mint new tokens.
 

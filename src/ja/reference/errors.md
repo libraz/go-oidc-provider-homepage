@@ -10,6 +10,37 @@ OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf
 
 このページは両方を網羅した一覧です。
 
+<svg role="img" aria-labelledby="error-routing-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="error-routing-title">OP のエラー分類: op.New の構成エラーは起動時に返り、エンドポイント処理エラーは JSON、redirect、HTML エラーページのいずれかで返る。</title>
+<rect class="err-box" x="32" y="58" width="170" height="70" rx="8"/>
+  <text class="err-text" x="117" y="88" text-anchor="middle">構築時エラー</text>
+  <text class="err-sub" x="117" y="110" text-anchor="middle">op.New が返す</text>
+
+  <rect class="err-box" x="32" y="174" width="170" height="70" rx="8"/>
+  <text class="err-text" x="117" y="204" text-anchor="middle">処理時エラー</text>
+  <text class="err-sub" x="117" y="226" text-anchor="middle">各エンドポイント</text>
+
+  <rect class="err-main" x="300" y="76" width="160" height="90" rx="8"/>
+  <text class="err-text" x="380" y="112" text-anchor="middle">閉じたカタログ</text>
+  <text class="err-sub" x="380" y="134" text-anchor="middle">error + description</text>
+
+  <rect class="err-box" x="558" y="34" width="170" height="54" rx="8"/>
+  <text class="err-text" x="643" y="68" text-anchor="middle">JSON 応答</text>
+  <rect class="err-box" x="558" y="116" width="170" height="54" rx="8"/>
+  <text class="err-text" x="643" y="150" text-anchor="middle">redirect</text>
+  <rect class="err-box" x="558" y="198" width="170" height="54" rx="8"/>
+  <text class="err-text" x="643" y="232" text-anchor="middle">HTML エラー</text>
+
+  <path class="err-flow" d="M202 94 C242 94 258 108 296 116"/>
+  <path class="err-flow" d="M202 210 C252 200 268 158 296 138"/>
+  <path class="err-flow" d="M460 112 C500 84 516 62 554 62"/>
+  <path class="err-flow" d="M546 58 L555 62 L546 66"/>
+  <path class="err-flow" d="M460 124 H554"/>
+  <path class="err-flow" d="M546 120 L555 124 L546 128"/>
+  <path class="err-flow" d="M460 138 C504 160 516 226 554 226"/>
+  <path class="err-flow" d="M546 222 L555 226 L546 230"/>
+</svg>
+
 ## エラーの形
 
 通信路上に出るエラーはすべて、OAuth 2.0 / OIDC の規約に従います:
@@ -40,7 +71,7 @@ if op.IsClientError(err) { /* 4xx 系 */ }
 if op.IsServerError(err) { /* 5xx 系 */ }
 ```
 
-sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性で判定します。同じ OAuth コードを共有する別の sentinel が存在し得るので(たとえば、複数の `configuration_error`)、両者は同じ意味になるとは限りません。
+sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性で判定します。同じ OAuth コードを共有する別の sentinel が存在し得るため(たとえば、複数の `configuration_error`)、両者が同じ意味になるとは限りません。
 
 ## 構築時エラー(`op.New`)
 
@@ -49,7 +80,7 @@ sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性
 | Sentinel | コード | 発生条件 |
 |---|---|---|
 | `op.ErrIssuerRequired` | `configuration_error` | `WithIssuer` を渡していない |
-| `op.ErrIssuerInvalid` | `configuration_error` | issuer が absolute https でない、または query / fragment を持つ |
+| `op.ErrIssuerInvalid` | `configuration_error` | issuer が絶対 `https` URL でない、または query / fragment を持つ |
 | `op.ErrStoreRequired` | `configuration_error` | `WithStore` を渡していない |
 | `op.ErrKeysetRequired` | `configuration_error` | `WithKeyset` を渡していない、または空 |
 | `op.ErrCookieKeysRequired` | `configuration_error` | `authorization_code` grant が有効なのに `WithCookieKeys` を渡していない |
@@ -90,7 +121,7 @@ JSON 応答です。RFC 6749 §5.2 + RFC 9449(DPoP)。
 |---|---|---|
 | `invalid_request` | 400 | grant の body の不正、パラメータ欠落 |
 | `invalid_grant` | 400 | code の有効期限切れ / 消費済み、リフレッシュトークンがローテーション猶予を超過、PKCE verifier 不一致 |
-| `invalid_client` | 401 | クライアント認証失敗(クレデンシャル無し、secret 違い、`private_key_jwt` / mTLS 証明書不正) |
+| `invalid_client` | 401 | クライアント認証失敗(クレデンシャル無し、secret 違い、`private_key_jwt` 不正) |
 | `unauthorized_client` | 400 | このクライアントは当該 grant を許可されていない |
 | `unsupported_grant_type` | 400 | `WithGrants` で有効化されていない grant |
 | `invalid_scope` | 400 | refresh が元より広い scope を要求している |
@@ -153,7 +184,7 @@ OIDC RP-Initiated Logout 1.0。ブラウザ向けです。`post_logout_redirect_
 | `invalid_request` | `id_token_hint` の不正、`client_id` 不一致 |
 | `invalid_request_uri` | (JAR 形式の logout request 利用時)`request_uri` の期限切れ |
 
-## クラス単位での dispatch
+## クラス単位での振り分け
 
 各コードを個別に switch するのではなく、述語を使うのが推奨です:
 

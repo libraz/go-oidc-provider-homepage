@@ -8,6 +8,47 @@ outline: 2
 
 OP 自体はステートレスです。復旧方針は完全に `op.Store` の性質に依存します。「何が永続で、何が揮発で、サブストアごとの RPO（recovery point objective）はどこか」を整理する作業です。
 
+<svg role="img" aria-labelledby="backup-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="backup-split-title">バックアップ方針: OP 本体はステートレスで、永続サブストアは復元対象、短命状態は捨てて再作成、replay 防御用集合は復元しない。</title>
+<rect class="bkp-main" x="38" y="112" width="152" height="74" rx="8"/>
+  <text class="bkp-text" x="114" y="142" text-anchor="middle">OP プロセス</text>
+  <text class="bkp-sub" x="114" y="164" text-anchor="middle">ステートレス</text>
+
+  <rect class="bkp-box" x="300" y="34" width="178" height="62" rx="8"/>
+  <text class="bkp-text" x="389" y="64" text-anchor="middle">永続サブストア</text>
+  <text class="bkp-sub" x="389" y="82" text-anchor="middle">Clients / Grants / MFA</text>
+
+  <rect class="bkp-box" x="300" y="119" width="178" height="62" rx="8"/>
+  <text class="bkp-text" x="389" y="149" text-anchor="middle">短命状態</text>
+  <text class="bkp-sub" x="389" y="167" text-anchor="middle">PAR / code / interaction</text>
+
+  <rect class="bkp-box" x="300" y="204" width="178" height="62" rx="8"/>
+  <text class="bkp-text" x="389" y="234" text-anchor="middle">復元禁止</text>
+  <text class="bkp-sub" x="389" y="252" text-anchor="middle">ConsumedJTIs</text>
+
+  <rect class="bkp-box" x="578" y="34" width="144" height="62" rx="8"/>
+  <text class="bkp-text" x="650" y="64" text-anchor="middle">バックアップ</text>
+  <text class="bkp-sub" x="650" y="82" text-anchor="middle">RPO を設定</text>
+
+  <rect class="bkp-box" x="578" y="119" width="144" height="62" rx="8"/>
+  <text class="bkp-text" x="650" y="149" text-anchor="middle">再試行</text>
+  <text class="bkp-sub" x="650" y="167" text-anchor="middle">自然に回復</text>
+
+  <rect class="bkp-box" x="578" y="204" width="144" height="62" rx="8"/>
+  <text class="bkp-text" x="650" y="234" text-anchor="middle">破棄</text>
+  <text class="bkp-sub" x="650" y="252" text-anchor="middle">巻き戻さない</text>
+
+  <path class="bkp-flow" d="M190 150 C238 132 260 66 296 66"/>
+  <path class="bkp-flow" d="M190 150 H296"/>
+  <path class="bkp-flow" d="M190 150 C238 168 260 234 296 234"/>
+  <path class="bkp-flow" d="M478 65 H574"/>
+  <path class="bkp-flow" d="M566 61 L575 65 L566 69"/>
+  <path class="bkp-flow" d="M478 150 H574"/>
+  <path class="bkp-flow" d="M566 146 L575 150 L566 154"/>
+  <path class="bkp-flow" d="M478 235 H574"/>
+  <path class="bkp-flow" d="M566 231 L575 235 L566 239"/>
+</svg>
+
 ## バックアップ優先度
 
 | サブストア | 優先度 | RPO 目標 | 理由 |
@@ -62,7 +103,7 @@ DB 標準のバックアップツールがそのまま使えます。選択肢�
 これらに対しては RDB snapshot と AOF persistence が標準の Redis の選択肢です:
 
 - **AOF off、RDB off** — 純揮発。再起動で session が追い出されます。正当な方針なので `WithSessionDurabilityPosture` を合わせてください。
-- **RDB のみ** — 定期 snapshot。再起動は越えますが、直近の活動は失われます。session を「数分単位の損失は許容、再起動は越えたい」というユースケースで選ぶ形です。
+- **RDB のみ** — 定期 snapshot。再起動は越えますが、直近の活動は失われます。session を「数分単位の損失は許容、再起動は越えたい」という使い方で選ぶ形です。
 - **AOF + fsync everysec** — SQL に近い耐久性。揮発サブストアではあまり選ばれません。
 
 ### 自前ストアを書いている場合

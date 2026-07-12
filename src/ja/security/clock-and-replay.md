@@ -44,10 +44,6 @@ type Clock interface {
 
 同じ猶予を対数時間軸で実スケールに並べると、形が一目で分かります。リプレイと時計に関する猶予はいずれも 60 秒前後の狭い帯に収まり、トークンの寿命は数分に上がり、リフレッシュトークンの絶対寿命だけが 30 日という遠い位置にあります。その間には何もありません。
 
-<style scoped>
-#crws .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#crws .d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-1);stroke:none}#crws .d-val{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-tick{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}#crws .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#crws .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-leg{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-grid{stroke:currentColor;stroke-width:1;opacity:.16;stroke-dasharray:2 3}#crws .d-lane{stroke:currentColor;stroke-width:1;opacity:.08}#crws .d-axis{stroke:currentColor;stroke-width:1;opacity:.28}#crws .d-op-fill{fill:var(--vp-c-brand-2);stroke:none}#crws .d-op-store{fill:none;stroke:var(--vp-c-brand-2);stroke-width:1.6;stroke-dasharray:3 2}
-</style>
-
 <svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:720px;height:auto">
 <title id="clock-replay-window-scale-title">go-oidc-provider が適用する時刻・リプレイ猶予を、60 秒のリプレイ帯から 30 日のリフレッシュトークン寿命まで対数軸で並べた比較図。</title>
 <line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>

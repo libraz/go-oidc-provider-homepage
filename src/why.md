@@ -53,7 +53,7 @@ The constructor refuses to start if the declared profile and the declared option
 
 Heavyweight IdPs often make user storage part of the product boundary: import users, sync them, accept their profile schema, then route login through their screens. That is a poor fit when the account model is already part of your Go service.
 
-`op.WithStore(s store.Store)` plugs into a tiny set of substore interfaces (`store.AuthCodeStore`, `store.SessionStore`, `store.UserStore`, …). The library never reads or writes your `users` table directly — your store implementation does.
+`op.WithStore(s store.Store)` plugs into a tiny set of substore interfaces (`store.AuthorizationCodeStore`, `store.SessionStore`, `store.UserStore`, …). The library never reads or writes your `users` table directly — your store implementation does.
 
 ```go
 op.New(
@@ -123,7 +123,7 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` so
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
-Each release is regressed against the OpenID Foundation conformance suite. Latest published baseline metadata (`v0.9.4`, sha `2d915fe`):
+Each release is regressed against the OpenID Foundation conformance suite. Latest published baseline metadata (sha `8db1b80`):
 
 | Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
 |---|---:|---:|---:|---:|---:|

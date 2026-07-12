@@ -40,7 +40,7 @@ discovery がなければ、すべての RP がエンドポイント URL・署�
 | `response_modes_supported` | `/authorize` の応答方式: `query`、`form_post`、加えて JARM 有効時は `query.jwt`、`fragment.jwt`、`form_post.jwt`、`jwt`。 |
 | `id_token_signing_alg_values_supported` | ID トークンの署名に使う JWS アルゴリズム。OP 署名鍵は ECDSA P-256 のため、本ライブラリは `ES256` のみを公開します。 |
 | `request_object_signing_alg_values_supported` | JAR の `request=` パラメータで受理する JWS アルゴリズム: `RS256`、`PS256`、`ES256`、`EdDSA`。 |
-| `token_endpoint_auth_methods_supported` | confidential RP が `/token` で認証する方式: `client_secret_basic`、`client_secret_post`、`private_key_jwt`、mTLS 有効時は `tls_client_auth` / `self_signed_tls_client_auth`。public client は登録 metadata では `none` を使いますが、discovery の広告には `none` を列挙しません。 |
+| `token_endpoint_auth_methods_supported` | confidential RP が `/token` で認証する方式: `client_secret_basic`、`client_secret_post`、`private_key_jwt`。FAPI profile では `private_key_jwt` に絞られます。public client は登録 metadata では `none` を使いますが、discovery の広告には `none` を列挙しません。mTLS 送信者制約の metadata は `mtls_endpoint_aliases` で別に広告します。 |
 | `code_challenge_methods_supported` | PKCE 変換。本ライブラリが広告するのは **`S256` のみ**。 |
 | `subject_types_supported` | `public` と、`op.WithPairwiseSubject(...)` を組み込んだ場合は `pairwise`。 |
 | `claims_supported` | OP が返せる claim。`op.WithClaimsSupported(...)` で操作者が制御。 |

@@ -3,10 +3,10 @@ import { defineConfig } from 'vitepress'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
-const docsVersion = '0.9.4'
+const docsVersion = '0.9.5'
 const docsVersionTag = `v${docsVersion}`
 const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
-const releaseNotesUrl = `${changelogUrl}#v094--2026-06-14`
+const releaseNotesUrl = `${changelogUrl}#v095--2026-07-13`
 
 const softwareApplicationJsonLd = {
   '@context': 'https://schema.org',
@@ -269,6 +269,7 @@ export default defineConfig({
               {
                 text: 'Storage',
                 items: [
+                  { text: 'Choosing a storage layout', link: '/use-cases/storage-decision' },
                   { text: 'Persistent storage (SQL)', link: '/use-cases/sql-store' },
                   {
                     text: 'Hot/cold split (Redis volatile)',
@@ -649,6 +650,7 @@ export default defineConfig({
             {
               text: 'Storage',
               items: [
+                { text: 'Choosing a storage layout', link: '/use-cases/storage-decision' },
                 { text: 'Persistent storage (SQL)', link: '/use-cases/sql-store' },
                 { text: 'Hot/cold split (Redis volatile)', link: '/use-cases/hot-cold-redis' },
                 { text: 'Bring your own store backend', link: '/use-cases/byo-store' }
@@ -948,6 +950,7 @@ export default defineConfig({
               {
                 text: 'ストレージ',
                 items: [
+                  { text: 'ストレージ構成の選び方', link: '/ja/use-cases/storage-decision' },
                   { text: 'SQL ストア', link: '/ja/use-cases/sql-store' },
                   {
                     text: 'Hot / Cold 分離（Redis 揮発）',
@@ -1379,6 +1382,7 @@ export default defineConfig({
             {
               text: 'ストレージ',
               items: [
+                { text: 'ストレージ構成の選び方', link: '/ja/use-cases/storage-decision' },
                 { text: 'SQL ストア', link: '/ja/use-cases/sql-store' },
                 { text: 'Hot / Cold 分離（Redis 揮発）', link: '/ja/use-cases/hot-cold-redis' },
                 { text: 'ストアを自前実装', link: '/ja/use-cases/byo-store' }

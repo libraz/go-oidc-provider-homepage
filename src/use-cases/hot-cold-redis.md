@@ -14,6 +14,8 @@ OPs hold two very different shapes of state:
 
 Putting both in the same backend is wasteful: durable storage doesn't need the QPS the volatile state generates, and volatile storage doesn't need the durability guarantees the cold state requires. The composite adapter lets you split them.
 
+One nuance the table below makes precise: *volatile-shaped* data and *volatile-tier* placement are different axes. Most short-lived state (the JTI replay set, interaction state) routes to the volatile tier, but the PAR `request_uri` does not — it is losable in isolation, yet the OP consumes it inside the atomic authorization-code path, so it belongs to the transactional cluster and routes to the durable tier. Data shape suggests a tier; the cluster invariant overrides it.
+
 ::: details Specs referenced on this page
 - [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126) — Pushed Authorization Requests (PAR — `request_uri` is volatile state)
 - [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519) — JWT, including `jti` (replay-set state)
@@ -89,7 +91,7 @@ text{stroke:none}
   <text class="hcr-t" x="670" y="203" text-anchor="middle">Redis</text>
 </svg>
 
-The composite store enforces a transactional-cluster invariant: substores that need to commit atomically together (e.g. `AuthCodeStore` and `RefreshTokenStore`) **must** be on the same backend. The composite constructor refuses configurations that would split a transactional cluster.
+The composite store enforces a transactional-cluster invariant: substores that need to commit atomically together (e.g. `AuthorizationCodeStore` and `RefreshTokenStore`) **must** be on the same backend. The composite constructor refuses configurations that would split a transactional cluster.
 
 ## Code
 
@@ -153,18 +155,18 @@ provider, err := op.New(
 |---|---|
 | `ClientStore` | durable (SQL) |
 | `UserStore` | durable (SQL) |
-| `AuthCodeStore` | durable (SQL — short-lived but in transactional cluster) |
+| `AuthorizationCodeStore` | durable (SQL — short-lived but in transactional cluster) |
 | `RefreshTokenStore` | durable (SQL) |
 | `AccessTokenRegistry` | durable (SQL — populated only under `RevocationStrategyJTIRegistry`) |
 | `OpaqueAccessTokenStore` | durable (SQL — populated only when opaque AT format is configured) |
 | `GrantRevocationStore` | durable (SQL — backs the default grant-tombstone revocation) |
+| `PushedAuthRequestStore` | durable (SQL — `request_uri` is short-lived but in the transactional cluster) |
 | `SessionStore` | route to either tier with `composite.With(composite.Sessions, ...)`; declare your placement intent via `WithSessionDurabilityPosture` (default `SessionDurabilityVolatile`) so the back-channel logout audit signal classifies expected vs unexpected gaps |
 | `InteractionStore` | volatile (Redis) |
 | `ConsumedJTIStore` | volatile (Redis) |
-| `PARStore` | volatile (Redis) |
 
-::: info Why the new substores stay on the durable side
-`OpaqueAccessTokenStore` and `GrantRevocationStore` are part of the transactional cluster: their writes commit atomically with the grant or refresh-token write that triggered them. The Redis adapter returns `nil` from both accessors so the composite splitter cannot route them to a non-transactional backend; embedders who need either substore configure SQL on the durable side. The default revocation strategy (`RevocationStrategyGrantTombstone`) requires `GrantRevocations()` to be non-nil at `op.New`, so a Redis-only deployment that wants to leave the durable side empty must explicitly pin `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI only — FAPI profiles reject `None`).
+::: info Why some short-lived substores stay on the durable side
+`PushedAuthRequestStore`, `OpaqueAccessTokenStore`, and `GrantRevocationStore` are part of the transactional cluster (`composite.TxClusterKinds`): each one commits or CAS-updates in the same consistency domain as the auth-code, grant, or refresh-token write that drives it. PAR is the counter-intuitive one — the `request_uri` it holds is short-lived and high-churn, so it *looks* like volatile state, but the OP consumes it inside the authorization-code path, and splitting it onto a separate backend would fracture that domain. The Redis adapter returns `nil` from all three accessors, so the composite splitter cannot route them to a non-transactional backend; embedders who need any of them configure SQL on the durable side. `op.New` refuses to start a PAR-enabled profile whose routed `PushedAuthRequests()` is nil. The default revocation strategy (`RevocationStrategyGrantTombstone`) requires `GrantRevocations()` to be non-nil at `op.New`, so a Redis-only deployment that wants to leave the durable side empty must explicitly pin `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI only — FAPI profiles reject `None`).
 :::
 
 ::: details Why SessionStore can be either

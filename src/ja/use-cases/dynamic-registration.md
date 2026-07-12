@@ -3,11 +3,11 @@ title: 動的クライアント登録
 description: RP がランタイムに自身を登録できるようにする — RFC 7591 / RFC 7592。
 ---
 
-# ユースケース — 動的クライアント登録
+# 使い方 — 動的クライアント登録
 
 ## 動的クライアント登録とは
 
-最も素朴な構成では、RP を 1 つ統合するたびに、OP 運用者が `client_id` / `client_secret` / redirect URI / scope などを config に手で書き足します。社内アプリ数個なら問題ありませんが、毎週新しい連携が増えるパブリックなエコシステムにはスケールしません。
+最も素朴な構成では、RP を 1 つ統合するたびに、OP 運用者が `client_id` / `client_secret` / redirect URI / scope などを 設定 に手で書き足します。社内アプリ数個なら問題ありませんが、毎週新しい連携が増えるパブリックなエコシステムにはスケールしません。
 
 **動的クライアント登録 (DCR)** は、RP が実行時に自分自身を登録できる JSON API です。RP がメタデータを POST すると、OP は新しい `client_id` と認証情報を返します。乱用を防ぐため、登録は **Initial Access Token (IAT)** で受け付け範囲を制限します。IAT は運用者が事前に発行するトークンで、許可するメタデータ・有効期限・single-use などの制約をかけられます。
 
@@ -20,7 +20,7 @@ description: RP がランタイムに自身を登録できるようにする —
 :::
 
 ::: details 用語の補足
-- **Initial Access Token (IAT)** — 運用者が out-of-band（仕様外の経路）で発行する短寿命の bearer トークン。OP は IAT 無しの `POST /register` を拒否します — 任意の匿名呼び出しからクライアント生成を防ぐゲートです。
+- **Initial Access Token (IAT)** — 運用者が仕様外の経路で発行する短寿命の Bearer トークン。OP は IAT 無しの `POST /register` を拒否します。任意の匿名呼び出しからクライアント生成を防ぐためです。
 - **Registration Access Token (RAT)** — 登録成功時の 201 応答に新しい `client_id` と一緒に含まれます。RP は `registration_client_uri` に対して RAT を使って RFC 7592 の読み取り / 更新 / 削除を実行します。
 :::
 
@@ -28,23 +28,8 @@ description: RP がランタイムに自身を登録できるようにする —
 
 ## アーキテクチャ
 
-<style scoped>
-.d-box{fill:none;stroke:currentColor;stroke-width:2}
-.op-accent{stroke:var(--vp-c-brand-2)}
-.d-life{stroke:currentColor;stroke-width:1.5;opacity:.35}
-.d-life-op{stroke:var(--vp-c-brand-2);stroke-width:1.5;opacity:.5}
-.d-msg{stroke:currentColor;stroke-width:2;fill:none}
-.d-msg-oob{stroke:currentColor;stroke-width:2;fill:none;stroke-dasharray:5 4}
-.d-badge{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.5}
-.d-name{font-family:var(--vp-font-family-base);font-size:14px;font-weight:600;fill:currentColor;stroke:none}
-.d-accent-fill{fill:var(--vp-c-brand-2)}
-.d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:currentColor;stroke:none}
-.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:currentColor;stroke:none}
-.d-badge-t{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:currentColor;stroke:none}
-</style>
-
-<svg role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" style="display:block;width:100%;max-width:760px;height:auto;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="dcr-seq-title">動的クライアント登録のシーケンス: 運用者が Initial Access Token を発行し out-of-band で新規 RP に渡すと、RP は POST /register で登録し、RFC 7592 で登録内容を読み取り・更新・削除する。</title>
+<svg class="dcr-flow" role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" style="display:block;width:100%;max-width:760px;height:auto;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="dcr-seq-title">動的クライアント登録のシーケンス: 運用者が Initial Access Token を発行し仕様外の経路で新規 RP に渡すと、RP は POST /register で登録し、RFC 7592 で登録内容を読み取り・更新・削除する。</title>
   <line x1="130" y1="64" x2="130" y2="581" class="d-life"/>
   <line x1="420" y1="64" x2="420" y2="581" class="d-life-op"/>
   <line x1="710" y1="64" x2="710" y2="581" class="d-life"/>
@@ -62,7 +47,7 @@ description: RP がランタイムに自身を登録できるようにする —
   <text x="275" y="134" text-anchor="middle" class="d-mono">&lt;iat&gt;</text>
   <line x1="138" y1="179" x2="708" y2="179" class="d-msg-oob"/>
   <polyline points="701,175 708,179 701,183" class="d-msg"/>
-  <text x="420" y="171" text-anchor="middle" class="d-lbl">out-of-band で受け渡し <tspan class="d-mono">&lt;iat&gt;</tspan></text>
+  <text x="420" y="171" text-anchor="middle" class="d-lbl">仕様外の経路で受け渡し <tspan class="d-mono">&lt;iat&gt;</tspan></text>
   <line x1="702" y1="246" x2="422" y2="246" class="d-msg"/>
   <polyline points="429,242 422,246 429,250" class="d-msg"/>
   <text x="565" y="208" text-anchor="middle" class="d-mono">POST /register</text>
@@ -121,7 +106,7 @@ provider, err := op.New(
   }),
 )
 
-// IAT を運用で発行 — RP には out-of-band で渡す。
+// IAT を運用で発行。RP には仕様外の経路で渡す。
 iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
   TTL:     24 * time.Hour,
   MaxUses: 1,
@@ -143,7 +128,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 })
 ```
 
-`OpenRegistrationDefaultScopes` は明示的なオプトインです。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録は変わらず — Initial Access Token を提示した場合は `store.InitialAccessToken.AllowedScopes` が優先します。
+`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録は変わらず — Initial Access Token を提示した場合は `store.InitialAccessToken.AllowedScopes` が優先します。
 
 ::: warning オープン登録の scope 既定は空です
 `scope` を省略したオープンな POST には、組み込み側が `OpenRegistrationDefaultScopes` を設定しない限り既定 scope は付きません。登録直後のクライアントに `openid` などの基準 scope を要求させたい場合は、このオプションを明示してください。
@@ -166,29 +151,75 @@ op.WithDynamicRegistration(op.RegistrationOption{
 ## 譲れないセキュリティの最低ライン
 
 ::: warning Loopback の `redirect_uris` と DNS rebinding
-`application_type` のデフォルトは `web` です。Web クライアントが `http` の `redirect_uri` を登録できるのは host が **IP リテラル** `127.0.0.1` または `[::1]` のときだけで、文字列 `localhost` はデフォルトで拒否します — RFC 8252 §8.3 の DNS-rebinding 窓を閉じるためです。`localhost` を正当に使う Web クライアントは `op.WithAllowLocalhostLoopback()` でオプトインします。安全側のデフォルトからの逸脱が設定箇所に可視化される設計です。
+`application_type` の既定は `web` です。Web クライアントが `http` の `redirect_uri` を登録できるのは host が **IP リテラル** `127.0.0.1` または `[::1]` のときだけで、文字列 `localhost` は既定で拒否します — RFC 8252 §8.3 の DNS-rebinding 窓を閉じるためです。`localhost` を正当に使う Web クライアントは `op.WithAllowLocalhostLoopback()` を明示します。安全側の既定からの逸脱が設定箇所に見える設計です。
 
 ネイティブクライアント（`application_type=native`）は OIDC Registration §2 に従い、3 種類の loopback host（`127.0.0.1` / `[::1]` / `localhost`）すべてを `http` で無条件に受け付けます。さらに claimed `https`、および RFC 8252 §7.1 の reverse-DNS custom URI scheme（例: `com.example.app:/callback`）も登録できます。`.` を含まない custom scheme はアプリ間で衝突しやすいため拒否します。
+
+```jsonc
+// NG: web client の http://localhost は既定で拒否
+{
+  "application_type": "web",
+  "redirect_uris": ["http://localhost:5173/callback"]
+}
+
+// OK: web client の loopback 開発は IP リテラルを使う
+{
+  "application_type": "web",
+  "redirect_uris": ["http://127.0.0.1:5173/callback"]
+}
+
+// OK: native client では localhost loopback も許容される
+{
+  "application_type": "native",
+  "redirect_uris": ["http://localhost:49152/callback"]
+}
+```
 :::
 
 ## 登録時に強制している内容
 
-DCR は `full` ではなく `partial` の表記ですが、`partial` の差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反するメタデータを拒否します:
+DCR は完全実装とは表記していませんが、対応しない差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反するメタデータを拒否します:
 
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
 - `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
 - `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ(`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`)は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール(絶対 URI、`https`、host 必須、userinfo 不可)は通常通り適用されます。
-- `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` と空の `backchannel_logout_uri` の組み合わせは `invalid_client_metadata` で拒否します — 配送先を持たないクライアントが `sid` 配送にオプトインできないようにするためです。
+- `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` と空の `backchannel_logout_uri` の組み合わせは `invalid_client_metadata` で拒否します — 配送先を持たないクライアントが `sid` 配送を有効化できないようにするためです。
 - `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証(OIDC Core §8.1)。取得は 5 秒のタイムアウトと 64 KiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
 - `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
 - `request_object_signing_alg` は `RS256` / `PS256` / `ES256` / `EdDSA` に限定されます。
+
+URI 系メタデータの典型的な境界は次の形です。
+
+```jsonc
+// NG: jwks と jwks_uri の同時指定、userinfo、fragment は拒否
+{
+  "jwks": { "keys": [] },
+  "jwks_uri": "https://client.example.com/jwks.json",
+  "client_uri": "https://user:pass@client.example.com/app",
+  "policy_uri": "https://client.example.com/policy#v1"
+}
+
+// OK: URI 系メタデータは https 絶対 URI、fragment / userinfo 無し
+{
+  "jwks_uri": "https://client.example.com/jwks.json",
+  "client_uri": "https://client.example.com/app",
+  "policy_uri": "https://client.example.com/policy"
+}
+
+// OK: request_uris だけは request file hash の fragment を許容
+{
+  "request_uris": [
+    "https://client.example.com/request.jwt#sha256-abc123"
+  ]
+}
+```
 
 ## 意図的な制約
 
 `full` を名乗らない残差は、設計判断であって積み残しではありません。判断の根拠は [設計判断](/ja/security/design-judgments) ページに別エントリとして残しています — `client_secret` の非開示（[#dj-20](/ja/security/design-judgments#dj-20)）、PUT 省略のセマンティクス（[#dj-21](/ja/security/design-judgments#dj-21)）、`sector_identifier_uri` の fetch と native loopback ルール（[#dj-22](/ja/security/design-judgments#dj-22)）。
 
 - **`GET /register/{id}` では `client_secret` を再掲しない。** ストアは hash しか保持せず、平文は最初の `POST /register` と、後述する 2 つの PUT ケースだけで応答に乗ります。RFC 7591 §3.2.1 は読み取り応答での `client_secret` を OPTIONAL としており、非準拠ではありません。
-- **PUT の省略は削除ではなくサーバデフォルトへのリセット。** `PUT /register/{client_id}` で `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` のいずれかを省略すると、そのフィールドは OP のデフォルト値に戻ります。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）は空値になります。
+- **PUT の省略は削除ではなくサーバ既定へのリセット。** `PUT /register/{client_id}` で `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` のいずれかを省略すると、そのフィールドは OP の既定値に戻ります。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）は空値になります。
 - **PUT が `client_secret` を再掲するのは (a) `none` から confidential への auth method 昇格、(b) 明示的な rotation 要求のいずれか。** 通常のメタデータ編集の応答には平文 secret は含まれません。
 - **PUT の body にサーバ管理のフィールドを含めてはならない。** `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` を含めると `400 invalid_request`。認証中のクライアントの `client_secret` と一致しない値を送っても `400` になります。
 - **`backchannel_logout_uri` と `backchannel_logout_session_required` は end-to-end でラウンドトリップします。** いずれも `POST /register` で永続化され、`GET /register/{client_id}` で返却、`PUT /register/{client_id}` で上書きできます。
@@ -214,9 +245,9 @@ curl -X DELETE -H "Authorization: Bearer $RAT" $RCU
 
 DCR が活きるのは:
 
-- 各テナントが自分の RP を持ち込み、設定変更のロールアウトを避けたい multi-tenant SaaS。
+- 各テナントが自分の RP を持ち込み、設定変更の段階公開を避けたい multi-tenant SaaS。
 - チームが自分でクライアントクレデンシャルを取得できる内部 developer platform。
 
-DCR がオーバーキル（かつ不要な攻撃面）になるのは:
+DCR が過剰で、不要な攻撃面になりやすいのは:
 
 - RP が 10 個、全部内部、全部既知のケース。`op.WithStaticClients(...)` の方がシンプルで可動部品も少なくて済みます。

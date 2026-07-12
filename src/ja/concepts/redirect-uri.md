@@ -36,6 +36,19 @@ RFC 9700 §4.1 はこれを閉じています。
 
 本ライブラリはこれを文字通り実装します。クライアントが登録した文字列だけが、その登録を満たす唯一の文字列です。`https://app.example.com/cb` を登録したなら、リクエストは正確にそれでなければなりません — `https://app.example.com/cb/` でも、`https://APP.example.com/cb` でも、`https://app.example.com/cb?env=prod` でもありません。
 
+```text
+登録値:
+  https://app.example.com/cb
+
+NG:
+  https://app.example.com/cb/
+  https://APP.example.com/cb
+  https://app.example.com/cb?env=prod
+
+OK:
+  https://app.example.com/cb
+```
+
 ## 本ライブラリが拒否する形
 
 登録時（DCR でも `op.WithStaticClients` でも）:

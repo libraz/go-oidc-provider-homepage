@@ -1,10 +1,10 @@
 ---
-title: observability
-description: OP に対する logging / tracing / Prometheus の組み込み。
+title: 可観測性
+description: OP に対するログ、監査ログ、Prometheus、トレースの組み込み。
 outline: 2
 ---
 
-# observability
+# 可観測性
 
 本番で必要な可視化は 3 系統あります:
 
@@ -12,10 +12,42 @@ outline: 2
 |---|---|---|---|
 | 運用ログ | リクエストエラー、設定の問題、起動時の状態 | `WithLogger(*slog.Logger)` | 構造化ログの送り先 |
 | 監査イベント | 各プロトコル動作([カタログ](/ja/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC パイプライン |
-| metrics | OIDC の業務カウンタ | `WithPrometheus(*prometheus.Registry)` | `/metrics` ルート |
-| tracing | リクエストスパン | 内蔵なし | `http.Handler` を `otelhttp.NewMiddleware` でラップ |
+| メトリクス | OIDC の業務カウンタ | `WithPrometheus(*prometheus.Registry)` | `/metrics` ルート |
+| トレース | リクエストスパン | 内蔵なし | `http.Handler` を `otelhttp.NewMiddleware` でラップ |
 
 ライブラリはこれらを意図的に分離しています。任意のサブセットだけを組み込むことができます。
+
+<svg role="img" aria-labelledby="observability-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="observability-split-title">OP は業務イベントを出し、HTTP 層と運用基盤がログ、監査ログ、メトリクス、トレースに振り分ける構造。</title>
+<rect class="obs-box" x="24" y="104" width="138" height="72" rx="8"/>
+  <text class="obs-text" x="93" y="134" text-anchor="middle">HTTP 層</text>
+  <text class="obs-sub" x="93" y="154" text-anchor="middle">リクエスト ID / トレース</text>
+
+  <rect class="obs-main" x="242" y="92" width="170" height="96" rx="8"/>
+  <text class="obs-text" x="327" y="126" text-anchor="middle">OP ハンドラ</text>
+  <text class="obs-sub" x="327" y="148" text-anchor="middle">プロトコル処理</text>
+  <text class="obs-sub" x="327" y="166" text-anchor="middle">監査イベント</text>
+
+  <rect class="obs-box" x="508" y="24" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="54" text-anchor="middle">運用ログ</text>
+  <rect class="obs-box" x="508" y="92" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="122" text-anchor="middle">監査ログ</text>
+  <rect class="obs-box" x="508" y="160" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="190" text-anchor="middle">Prometheus</text>
+  <rect class="obs-box" x="508" y="228" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="258" text-anchor="middle">OpenTelemetry</text>
+
+  <path class="obs-flow" d="M162 140 H238"/>
+  <path class="obs-flow" d="M232 136 L240 140 L232 144"/>
+  <path class="obs-flow" d="M412 120 C450 78 466 48 504 48"/>
+  <path class="obs-flow" d="M496 44 L505 48 L496 52"/>
+  <path class="obs-flow" d="M412 132 H504"/>
+  <path class="obs-flow" d="M496 128 L505 132 L496 136"/>
+  <path class="obs-flow" d="M412 152 C452 164 466 184 504 184"/>
+  <path class="obs-flow" d="M496 180 L505 184 L496 188"/>
+  <path class="obs-flow" d="M162 170 C300 260 390 252 504 252"/>
+  <path class="obs-flow" d="M496 248 L505 252 L496 256"/>
+</svg>
 
 ## 構造化ログ
 
@@ -57,7 +89,7 @@ op.New(
 1 つの `*slog.Logger` を fan-out 用のハンドラに通せば、ファイル + Loki + Splunk に同時に流せます。OP 側は `logger.LogAttrs(...)` を呼ぶだけです。
 :::
 
-## Prometheus metrics
+## Prometheus メトリクス
 
 ```go
 reg := prometheus.NewRegistry()
@@ -76,7 +108,7 @@ go http.ListenAndServe("127.0.0.1:9090", mux)
 
 ライブラリは `/metrics` をマウントしません。ルートと境界は組み込み側が選択します。カウンタは監査カタログと同じ範囲に絞られています(厳選した部分集合。[`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics) を参照)。
 
-### OP が出**さない** metrics
+### OP が出**さない**メトリクス
 
 これらは OP ではなく HTTP ミドルウェアの領域です:
 
@@ -101,9 +133,9 @@ instrumented := promhttp.InstrumentHandlerInFlight(inFlight,
 http.Handle("/", instrumented)
 ```
 
-この分離があるおかげで、HTTP 層を差し替え(chi、gin、fiber など) ても、OP 側の metrics には手を入れる必要がありません。
+この分離があるため、HTTP 層を差し替え(chi、gin、fiber など) ても、OP 側のメトリクスには手を入れる必要がありません。
 
-## tracing
+## トレース
 
 OP は `http.Handler` を返します。OpenTelemetry の HTTP ミドルウェアで 1 度だけラップしてください:
 
@@ -115,14 +147,14 @@ http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 
 リクエストのライフサイクルがスパンでカバーされます。エンドポイント内部の子スパンは現状は発火していません。「`/token` の中で PKCE 検証にどれだけかかったか」のような段階別の trace は、HTTP 層から見える粒度に留まります。
 
-::: info 将来の tracing
+::: info 将来のトレース
 段階別スパンは計画していますが、公開トレーシング面は意図的に小さく保っています。同等のカバレッジを高カーディナリティと引き換えに欲しい場合は、監査イベントカタログ(イベント単位の発火)を使えます。
 :::
 
 ## リクエスト ID
 
 OP は `X-Request-ID` や `Traceparent` ヘッダからリクエスト ID を抽出することはなく、自ら ID を生成することもありません。
-監査 `Event` 構造体には相関用の `RequestID` フィールドがありますが、OP がこれを自動的に埋めることはなく、リクエストとレスポンスの相関付けは([tracing](#tracing)で HTTP 層全般について述べたのと同じく)組み込み側の責務です。
+監査 `Event` 構造体には相関用の `RequestID` フィールドがありますが、OP がこれを自動的に埋めることはなく、リクエストとレスポンスの相関付けは([トレース](#トレース)で HTTP 層全般について述べたのと同じく)組み込み側の責務です。
 
 エッジでリクエスト ID を生成し、レスポンスに刻んで RP のログと相関を取れるようにし、OP の周りで組み込む自前のログでも相関キーとして使ってください:
 
@@ -152,7 +184,7 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 | `/token` の 5xx 率 | HTTP ミドルウェアのヒストグラム | 5 分窓で 0.5 % 超 |
 | `refresh.replay_detected` の発生率 | 監査ログ → Loki / ES | 0 超(非ゼロ自体が要調査) |
 | `bcl.no_sessions_for_subject` の発生率 | 監査ログ | `posture=durable` 環境でのスパイク |
-| アクティブセッション数 | ストアの query または自前 metric | 30 % 超の低下 |
+| アクティブセッション数 | ストアのクエリまたは自前メトリクス | 30 % 超の低下 |
 | JWKS リクエスト率 | HTTP ミドルウェア | RP キャッシュの健全性指標 |
 
 最初の 3 つが本番異常の S/N が高い指標です。4 つ目はストア drift。残り 2 つは RP 側の regression を捕まえます。
@@ -204,6 +236,6 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 |---|---|
 | 運用 | 7 〜 30 日 |
 | audit | **コンプライアンス要件次第**。典型的には 1 〜 7 年 |
-| metrics | 高解像度で 30 〜 90 日、その後はロールアップ |
+| メトリクス | 高解像度で 30 〜 90 日、その後はロールアップ |
 
 監査ログはロングテールでコストの掛かる系統です。保管はそれ用に分離して見積もってください。1 イベント自体は小さいですが、高負荷な OP では量が多くなります。

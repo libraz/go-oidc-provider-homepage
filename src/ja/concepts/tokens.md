@@ -1,15 +1,15 @@
 ---
 title: ID トークン / アクセストークン / userinfo
-description: 似ているが別物の 3 つのアーティファクト —「JWT vs opaque」が実装に効いてくる本当の理由。
+description: 似ているが別物の 3 つの要素 —「JWT vs opaque」が実装に効いてくる本当の理由。
 ---
 
 # ID トークン / アクセストークン / userinfo
 
-OIDC は 3 種の identity アーティファクトを扱います。一見どれもユーザ情報を持ち、どれも OP が発行または返却するので交換可能に見えますが、別物です。これを混同するのはバグの典型例です。
+OIDC は 3 種の ID 関連データを扱います。一見どれもユーザ情報を持ち、どれも OP が発行または返却するので交換可能に見えますが、別物です。これを混同するのはバグの典型例です。
 
 ::: tip 30 秒で頭に入れる相関図
 - **ID トークン** — 「このユーザがこの RP にログインした」という署名付きの認証結果。audience は RP。API には送らない。
-- **アクセストークン** — RP が API に渡す Bearer 資格情報。audience はリソースサーバ。**既定形式は JWT（RFC 9068）、opaque はオプトイン。**
+- **アクセストークン** — RP が API に渡す Bearer 資格情報。audience はリソースサーバ。**既定形式は JWT（RFC 9068）、opaque は明示時のみ。**
 - **UserInfo** — `GET /userinfo` にアクセストークンを載せて最新 claim を取りに行くエンドポイント。トークンではなく JSON レスポンス。
 :::
 
@@ -38,32 +38,19 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 ## 一覧
 
-| アーティファクト | 形式 | Audience (`aud`) | 行き先 | 寿命 | 読む人 |
+| 要素 | 形式 | Audience (`aud`) | 行き先 | 寿命 | 読む人 |
 |---|---|---|---|---|---|
 | **ID トークン** | 署名 JWT（常に） | RP の `client_id` | OP → RP のみ | 数分（既定 10 分） | RP（誰がログインしたか確認） |
 | **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
-| **UserInfo response** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
+| **UserInfo 応答** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
-<style scoped>
-.d-h{font-family:var(--vp-font-family-base);font-size:15px;font-weight:600;stroke:none}
-.d-txt{font-family:var(--vp-font-family-base);font-size:12px;stroke:none;fill:var(--vp-c-text-1)}
-.d-sub{font-family:var(--vp-font-family-base);font-size:11px;stroke:none;fill:var(--vp-c-text-2)}
-.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-text-2)}
-.d-mono-op{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-brand-2)}
-.d-op{stroke:var(--vp-c-brand-2)}
-.d-op-t{fill:var(--vp-c-brand-2)}
-.d-fill1{fill:var(--vp-c-text-1)}
-.d-rs{stroke:var(--vp-c-text-3)}
-.d-rs-t{fill:var(--vp-c-text-3)}
-</style>
-
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行し、RP はアクセストークンをリソースサーバと OP の /userinfo エンドポイントに提示し、/userinfo は claim の JSON を返す図。</title>
   <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
   <rect x="272" y="52" width="132" height="156" rx="10"/>
   <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>
-  <text class="d-h d-op-t" x="90" y="126" text-anchor="middle">OP</text>
-  <text class="d-sub" x="90" y="145" text-anchor="middle">本ライブラリ</text>
+  <text class="d-h d-op-text" x="90" y="126" text-anchor="middle">OP</text>
+  <text class="d-sub d-op-sub" x="90" y="145" text-anchor="middle">本ライブラリ</text>
   <text class="d-h d-fill1" x="338" y="126" text-anchor="middle">RP</text>
   <text class="d-sub" x="338" y="145" text-anchor="middle">クライアント</text>
   <text class="d-h d-rs-t" x="626" y="126" text-anchor="middle">RS</text>
@@ -125,6 +112,18 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 ::: warning ID トークンを `Authorization: Bearer` に乗せない
 ID トークンの audience は RP であって RS ではありません。Bearer として API に送ると *技術的には* 通ってしまいます（JWT なので）が、意味的には誤りで、RP のシークレット相当 claim（email など）をユーザが触る全 API に晒すことになります。**API にはアクセストークンを使ってください。**
+
+```http
+# NG: aud が RP の client_id なので、RS が受け取るトークンではない
+GET /api/invoices HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJ...id_token...
+
+# OK: aud が API / resource server を指す access token を送る
+GET /api/invoices HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJ...access_token...
+```
 :::
 
 ## アクセストークン —「このクライアントはこの API を呼べる」
@@ -134,34 +133,34 @@ ID トークンの audience は RP であって RS ではありません。Beare
 | 形式 | 検証方法 | OP 側の状態 |
 |---|---|---|
 | **Opaque** | RS が毎回 `/introspect`（RFC 7662）を呼ぶ。 | OP がトークンに対応する行を保持。 |
-| **JWT (RFC 9068)** | RS が署名 + `aud` + `exp` を self-contained に検証。 | ステートレス — 検証に行は不要。 |
+| **JWT (RFC 9068)** | RS が署名 + `aud` + `exp` を自己完結的に検証。 | ステートレス — 検証に行は不要。 |
 
 ### ここが本題: session_end / userinfo / revocation はトークン履歴に依存する
 
 ::: warning 純粋ステートレス JWT には「まだ有効か」を表す手段が `exp` 以外にない
-スライド上はきれいに見えますが、本番では複数の OIDC フローを壊します。ステートレス JWT アクセストークンを運用する OP は「失効処理そのものを諦める」か「外部 deny-list を別途用意する」かの二択になります。
+スライド上はきれいに見えますが、本番では複数の OIDC フローを壊します。ステートレス JWT アクセストークンを運用する OP は「失効処理そのものを諦める」か「外部の拒否リストを別途用意する」かの二択になります。
 :::
 
 | フロー | 本来の判定 | 純粋ステートレス JWT で壊れる箇所 |
 |---|---|---|
 | **`/userinfo`**（OIDC Core §5.3） | このトークンは今もユーザを正しく代表しているか | OP が参照する材料を持たない。ログアウト済みユーザに対しても claim が返る。 |
 | **`/end_session`**（RP-Initiated Logout） | セッションを終了させる | JWT は `exp` まで動き続ける。「ログアウト」した直後でも、漏洩したトークンがあと 10 分 API を呼び出せる。 |
-| **`/revoke`**（RFC 7009） | 特定トークンを無効化 | no-op。RFC 7009 §2.2 は self-contained トークンに revocation を実装しないことを許容しています。 |
+| **`/revoke`**（RFC 7009） | 特定トークンを無効化 | 実質的に何もしない。RFC 7009 §2.2 は self-contained トークンに revocation を実装しないことを許容しています。 |
 | **`/introspect`**（RFC 7662） | revoke 済みトークンに `active: false` を返す | 反映できるのは署名 / `exp` だけ。セッション状態には到達しない。 |
 
 「JWT vs opaque」記事ではしばしば軽く流される論点ですが、本番運用では重く効いてきます。
 
 ### 本ライブラリの設計
 
-本ライブラリは JWT（RFC 9068）を既定とし、opaque をオプトインとして用意します。どちらの形式も **OP 側で revoke 可能** です。意味があるのは次の 2 軸: **(1) RS は毎リクエスト OP に問い合わせる必要があるか?** と **(2) ログアウトカスケードはどこまで届くか?** です。
+本ライブラリは JWT（RFC 9068）を既定とし、opaque は明示時だけ使えるようにしています。どちらの形式も **OP 側で revoke 可能** です。意味があるのは次の 2 軸: **(1) RS は毎リクエスト OP に問い合わせる必要があるか?** と **(2) ログアウトカスケードはどこまで届くか?** です。
 
-| | **既定 — JWT（RFC 9068）** | **オプトイン — Opaque** |
+| | **既定 — JWT（RFC 9068）** | **明示時のみ — Opaque** |
 |---|---|---|
 | 通信路上の形式 | base64url JWT（`header.payload.signature`） | ランダムな bearer 文字列 |
 | RS 側の検証 | JWKS でオフライン検証 | リクエスト毎に `/introspect` を呼ぶ |
 | 発行時の OP 側状態 | なし — JWT の `gid` private claim だけ | `store.OpaqueAccessTokenStore` にハッシュ化した行 |
 | カスケードの到達範囲 | OP が経由する境界（`/userinfo`、`/introspect`） | RS の全リクエスト |
-| 発行時の監査証跡 | 既定では無し。`RevocationStrategyJTIRegistry` をオプトインすると発行ごとに 1 行 | 発行ごとに 1 行(自動) |
+| 発行時の監査証跡 | 既定では無し。`RevocationStrategyJTIRegistry` を明示すると発行ごとに 1 行 | 発行ごとに 1 行(自動) |
 | 設定方法 | （既定） | `op.WithAccessTokenFormat(...)` あるいは RFC 8707 の resource 毎に `op.WithAccessTokenFormatPerAudience(...)` |
 
 ::: warning カスケードの及ぶ範囲は形式に依存する
@@ -175,15 +174,15 @@ opaque 形式はこのギャップを閉じます — すべての使用が OP �
 ::: details `jti` / `gid` / tombstone とは
 各アクセストークン JWT は `jti`（RFC 7519 §4.1.7、トークンごとの一意 ID）と `gid` という private claim（OP 側の GrantID、omitempty）を含みます。`gid` は OP だけが解釈する claim で、RS は無視します。
 
-**既定 — grant-tombstone 戦略。** OP は grant ごとの小さな tombstone テーブルを保持し、検証時に JWT の `gid` を tombstone と突き合わせます。単一 AT の `/revocation` は `jti` をキーにした deny-list 行を 1 件書き込みます。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
+**既定 — grant-tombstone 戦略。** OP は grant ごとの小さな tombstone テーブルを保持し、検証時に JWT の `gid` を tombstone と突き合わせます。単一 AT の `/revocation` は `jti` をキーにした拒否リスト行を 1 件書き込みます。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
 
-**オプトイン — JTI registry 戦略**（`RevocationStrategyJTIRegistry`）。OP は発行ごとに `jti` をキーにした shadow 行を 1 件書き込み、失効時には行の `Revoked` 列を反転させます。発行ごとの監査証跡が必要なときに有効。
+**明示時のみ — JTI registry 戦略**（`RevocationStrategyJTIRegistry`）。OP は発行ごとに `jti` をキーにした shadow 行を 1 件書き込み、失効時には行の `Revoked` 列を反転させます。発行ごとの監査証跡が必要なときに有効。
 
 **Opaque 形式。** 別サブストアを使います。行は bearer ID の SHA-256 digest をキーにし、RS は JWT を解読するのではなく `/introspect` を呼んで行に到達します。
 :::
 
 ::: tip JWT と opaque の選択は意図的な設計判断
-トレードオフ・負荷の形・設定オプションは専用ページにまとめてあります: [アクセストークンの形式 — JWT と opaque](/ja/concepts/access-token-format)。`WithAccessTokenFormat` を切り替える前に必ず読んでください — この選択は RS のコード、運用上のレイテンシ、そして自分のデプロイにとって「ログアウトされた」が何を意味するか、に直接効いてきます。
+トレードオフ・負荷の形・設定オプションは専用ページにまとめてあります: [アクセストークンの形式 — JWT と opaque](/ja/concepts/access-token-format)。`WithAccessTokenFormat` を切り替える前に必ず読んでください — この選択は RS のコード、運用上のレイテンシ、そして自分の配備で「ログアウトされた」が何を意味するか、に直接効いてきます。
 :::
 
 ::: info `aud` についての注意
@@ -196,13 +195,13 @@ opaque 形式はこのギャップを閉じます — すべての使用が OP �
 
 | キャッシュ戦略 | レイテンシ / OP 負荷 | 失効ギャップ |
 |---|---|---|
-| **キャッシュなし** — RS は API 呼び出しごとに `/introspect` を呼ぶ。 | RS のホットパスでレイテンシが最大、OP の `/introspect` が呼び出しごとの依存になる。 | ゼロ — API 呼び出しは毎回 OP の現在状態を観測。 |
+| **キャッシュなし** — RS は API 呼び出しごとに `/introspect` を呼ぶ。 | RS の処理経路でレイテンシが最大、OP の `/introspect` が呼び出しごとの依存になる。 | ゼロ — API 呼び出しは毎回 OP の現在状態を観測。 |
 | **長いキャッシュ**（例: 5 分） | OP 負荷は最小、ただしキャッシュエントリが期限切れになるまで失効が伝播しない。 | TTL の分まで — ログアウトしたユーザのトークンがキャッシュ窓の残り時間だけ動き続ける。 |
 | **短いキャッシュ**（60 秒以下） | OP 負荷は有界、レイテンシペナルティは窓の最初の呼び出しのみ。 | TTL の分まで — 多くの運用セキュリティ要件を満たすほど短く、バーストを吸収するには十分長い。 |
 
-::: tip 推奨デフォルト
+::: tip 推奨する既定
 - **キャッシュキーはアクセストークンのハッシュ**（bearer 文字列の SHA-256）にする。`client_id` 単独はダメ — 同じクライアントの異なるセッションがキャッシュ行を共有してしまう。
-- **セキュリティ重視 API は TTL 60 秒以下** — アカウント変更、決済、管理用エンドポイントなど。30 秒は無難なデフォルトで、ギャップを「ユーザが気付かない程度」に抑えられます。
+- **セキュリティ重視 API は TTL 60 秒以下** — アカウント変更、決済、管理用エンドポイントなど。30 秒は無難な既定で、ギャップを「ユーザが気付かない程度」に抑えられます。
 - **`op.AuditTokenRevoked` を購読しているなら、それで invalidate する。** RS が OP の監査ストリームに繋がっていれば、有界ギャップは「監査パイプラインの伝播速度」相当 — 通常は 1 秒以下になります。
 - **破壊的アクションではキャッシュしない。** アカウント削除、送金、ロール付与、巻き戻しできない書き込みは、毎回 OP に再確認を取ってください。レイテンシコストは確かに発生しますが、代替は「ユーザがログアウトボタンを押したのにキャッシュ窓の間に攻撃者が口座を空にした」です。
 :::
@@ -210,7 +209,7 @@ opaque 形式はこのギャップを閉じます — すべての使用が OP �
 このトレードオフは revocation 有効の JWT アクセストークンにも対称に当てはまります。JWT の検証は JWKS に対するオフライン検証 — RS は OP を呼ぶ必要すらありません — が、**オフライン検証では失効が見えません**。OP が経由する境界（`/introspect`・`/userinfo`）と、その背後の grant-tombstone 参照こそが失効の正本です（tombstone 戦略については[設計判断 #19](/ja/security/design-judgments#dj-19) を参照）。`/userinfo` と同じ失効到達距離を RS で得たい場合は、次のいずれかになります:
 
 1. `/introspect` を呼ぶ（上記いずれかのキャッシュ戦略と組み合わせて）
-2. OP の監査ストリームを購読して、`op.AuditTokenRevoked` をオフライン JWT 検証用の deny-list ソースとして扱う
+2. OP の監査ストリームを購読して、`op.AuditTokenRevoked` をオフライン JWT 検証用の拒否リストの入力として扱う
 
 どちらもしない — 純粋オフライン JWT 検証、introspection なし、監査購読なし — を選ぶと、失効はリフレッシュトークンの次回ローテーション時にしか伝播しません。低リスク API では受容可能な選択ですが、これは意図的なトレードオフであって、仕様が暗黙に保証してくれる既定値ではありません。
 
@@ -247,16 +246,16 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 | `op.WithStrictOfflineAccess()` | 発行とリフレッシュ交換を OIDC Core §11 の厳格解釈に切り替え、`offline_access` が granted scope に含まれているときに限りリフレッシュトークンを発行・受理する（下の callout 参照） | off（緩い設定。`openid` + クライアントの `refresh_token` grant で発行）|
 
 ::: details `offline_access` とは
-**`offline_access`** は OIDC 標準 scope（Core §11）で、「ユーザがその場にいなくてもアプリに動き続けてほしい」を表明する scope です。実運用上は、リフレッシュトークン発行に対するユーザ向け同意ゲートとして働きます。OP は通常より強い同意プロンプト（「あなたが居ないときも、このアプリはあなたの代わりに動けます」）を出し、本ライブラリではここで発行されたリフレッシュトークンを別 TTL バケット（`WithRefreshTokenOfflineTTL`）に振り分けるので、ログイン状態の維持フローを通常の短寿命リフレッシュより長く生かせます。
+**`offline_access`** は OIDC 標準 scope（Core §11）で、「ユーザがその場にいなくてもアプリに動き続けてほしい」を表明する scope です。実運用上は、リフレッシュトークン発行に対するユーザ向け同意条件として働きます。OP は通常より強い同意画面（「あなたが居ないときも、このアプリはあなたの代わりに動けます」）を出し、本ライブラリではここで発行されたリフレッシュトークンを別 TTL バケット（`WithRefreshTokenOfflineTTL`）に振り分けるので、ログイン状態の維持フローを通常の短寿命リフレッシュより長く生かせます。
 :::
 
 ::: details `WithStrictOfflineAccess` を入れる理由
-OIDC Core §11 の既定（緩やかな）解釈では、granted scope に `openid` が含まれ、かつクライアントの `GrantTypes` に `refresh_token` がある場合にリフレッシュトークンが発行されます。このとき `offline_access` は同意プロンプトの UX とどの TTL バケットを使うかを切り替えるだけです。同意プロンプトと実際の発行ゲートをビット単位で揃えたいときに厳格解釈を選んでください。代償として、ログイン状態を維持したい RP はすべて明示的に `offline_access` を要求する必要があります。
+OIDC Core §11 の既定（緩やかな）解釈では、granted scope に `openid` が含まれ、かつクライアントの `GrantTypes` に `refresh_token` がある場合にリフレッシュトークンが発行されます。このとき `offline_access` は同意画面の内容とどの TTL バケットを使うかを切り替えるだけです。同意画面と実際の発行条件をビット単位で揃えたいときに厳格解釈を選んでください。代償として、ログイン状態を維持したい RP はすべて明示的に `offline_access` を要求する必要があります。
 :::
 
 ## 次に読む
 
-- [アクセストークンの形式 — JWT と opaque](/ja/concepts/access-token-format) — 既定の JWT とオプトインの opaque、その設計判断。負荷の形、ヘッダサイズ、失効の到達範囲、混在デプロイ向けの per-audience 選択。
-- [送信者制約](/ja/concepts/sender-constraint) — DPoP（RFC 9449）/ mTLS（RFC 8705）でアクセストークンをクライアント保有鍵にバインド。
-- [ユースケース: client_credentials](/ja/use-cases/client-credentials) — エンドユーザの無いアクセストークン。
+- [アクセストークンの形式 — JWT と opaque](/ja/concepts/access-token-format) — 既定の JWT と明示時のみの opaque、その設計判断。負荷の形、ヘッダサイズ、失効の到達範囲、混在配備向けの per-audience 選択。
+- [送信者制約](/ja/concepts/sender-constraint) — DPoP（RFC 9449）/ mTLS（RFC 8705）でアクセストークンをクライアント保有鍵に結び付ける。
+- [使い方: client_credentials](/ja/use-cases/client-credentials) — エンドユーザの無いアクセストークン。
 - [Back-Channel Logout](/ja/use-cases/back-channel-logout) — OP がどのように他 RP にログアウトを伝播し、shadow 行の失効をカスケードさせるか。

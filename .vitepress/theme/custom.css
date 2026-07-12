@@ -60,6 +60,127 @@
   --vp-c-brand-soft: rgba(147, 197, 253, 0.18);
 }
 
+/* ---- Design judgments page ---- */
+
+.dj-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  gap: 24px;
+  align-items: stretch;
+  margin: 28px 0 24px;
+  padding: 22px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.08), rgba(15, 23, 42, 0.02));
+}
+
+.dark .dj-hero {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(255, 255, 255, 0.03));
+}
+
+.dj-kicker {
+  margin: 0 0 8px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+}
+
+.dj-lede {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: var(--vp-c-text-1);
+}
+
+.dj-stats {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.dj-stats span {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-2);
+  font-size: 0.86rem;
+}
+
+.dj-stats strong {
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+}
+
+.dj-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0 34px;
+}
+
+.dj-group {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--vp-c-bg-soft);
+}
+
+.dj-group h3 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  letter-spacing: 0;
+}
+
+.dj-group a {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 9px 0;
+  border-top: 1px solid var(--vp-c-divider);
+  text-decoration: none;
+  color: var(--vp-c-text-2);
+  font-weight: 400;
+}
+
+.dj-group a:first-of-type {
+  border-top: 0;
+}
+
+.dj-group a:hover span {
+  color: var(--vp-c-brand-1);
+}
+
+.dj-group strong {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.82rem;
+  color: var(--vp-c-brand-1);
+}
+
+.dj-group span {
+  line-height: 1.45;
+  font-weight: 400;
+  transition: color 0.15s ease;
+}
+
+.dj-group code {
+  font-size: 0.86em;
+}
+
+@media (max-width: 860px) {
+  .dj-hero,
+  .dj-map {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---- Hero ---- */
 
 .op-hero {
@@ -526,26 +647,13 @@ html[lang="ja"] .vp-doc td {
   letter-spacing: 0.01em;
 }
 
-/* Cap prose measure. The widened content column (see below) was added
- * for reference tables/code blocks, which are excluded here so they keep
- * full width; 74ch resolves to ~74 Latin chars and, because `ch` tracks
- * the narrow '0' glyph, ~37 full-width JA chars — a comfortable measure
- * for both. */
+/* Let running prose use the same measure as the widened document column.
+ * Tables, code blocks, paragraphs, lists, and quotes now share the same
+ * wrapping boundary instead of prose stopping at a separate 74ch cap. */
 .vp-doc p,
 .vp-doc ul,
 .vp-doc ol,
 .vp-doc blockquote {
-  max-width: 74ch;
-}
-
-/* `::: info` / `::: tip` / etc. callouts read as a panel, not running
- * prose — match the full-width tables/code blocks get instead of the
- * 74ch prose measure, so the tinted background isn't wider than its
- * own text (or narrower than the tables it sits next to). */
-.vp-doc .custom-block p,
-.vp-doc .custom-block ul,
-.vp-doc .custom-block ol,
-.vp-doc .custom-block blockquote {
   max-width: none;
 }
 
@@ -968,4 +1076,2833 @@ div[class*="language-"] code {
 
 .vp-doc a.doc-ref:hover::before {
   opacity: 1;
+}
+
+/* ---- Markdown extracted styles ---- */
+
+/* Source: src/ja/compliance/ofcs-reproduce.md */
+.repro-box {
+  fill: var(--vp-c-bg-soft);
+}
+.repro-main {
+  fill: var(--vp-c-brand-soft);
+}
+.repro-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 13px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.repro-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    11.5px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.repro-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/compliance/rfc-matrix.md */
+.rfc-box {
+  fill: var(--vp-c-bg-soft);
+}
+.rfc-main {
+  fill: var(--vp-c-brand-soft);
+}
+.rfc-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.rfc-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.rfc-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/concepts/access-token-format.md */
+text {
+  stroke: none;
+}
+.atf-t1 {
+  fill: var(--vp-c-text-1);
+}
+.atf-t2 {
+  fill: var(--vp-c-text-2);
+}
+.atf-op {
+  fill: var(--vp-c-brand-2);
+}
+.atf-rs {
+  fill: var(--vp-c-text-3);
+}
+.atf-b {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.atf-c {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.atf-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.atf-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+.atf-sop {
+  stroke: var(--vp-c-brand-2);
+}
+.atf-srs {
+  stroke: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/access-token-format.md */
+text {
+  stroke: none;
+}
+.atf-t1 {
+  fill: var(--vp-c-text-1);
+}
+.atf-t2 {
+  fill: var(--vp-c-text-2);
+}
+.atf-op {
+  fill: var(--vp-c-brand-2);
+}
+.atf-rs {
+  fill: var(--vp-c-text-3);
+}
+.atf-b {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.atf-c {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.atf-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.atf-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+.atf-sop {
+  stroke: var(--vp-c-brand-2);
+}
+.atf-srs {
+  stroke: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/access-token-format.md */
+text {
+  stroke: none;
+}
+.atf-t1 {
+  fill: var(--vp-c-text-1);
+}
+.atf-t2 {
+  fill: var(--vp-c-text-2);
+}
+.atf-op {
+  fill: var(--vp-c-brand-2);
+}
+.atf-rs {
+  fill: var(--vp-c-text-3);
+}
+.atf-b {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.atf-c {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.atf-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.atf-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+.atf-sop {
+  stroke: var(--vp-c-brand-2);
+}
+.atf-srs {
+  stroke: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/access-token-format.md */
+text {
+  stroke: none;
+}
+.atf-t1 {
+  fill: var(--vp-c-text-1);
+}
+.atf-t2 {
+  fill: var(--vp-c-text-2);
+}
+.atf-op {
+  fill: var(--vp-c-brand-2);
+}
+.atf-rs {
+  fill: var(--vp-c-text-3);
+}
+.atf-b {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.atf-c {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.atf-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.atf-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+.atf-sop {
+  stroke: var(--vp-c-brand-2);
+}
+.atf-srs {
+  stroke: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/access-token-format.md */
+text {
+  stroke: none;
+}
+.atf-t1 {
+  fill: var(--vp-c-text-1);
+}
+.atf-t2 {
+  fill: var(--vp-c-text-2);
+}
+.atf-op {
+  fill: var(--vp-c-brand-2);
+}
+.atf-rs {
+  fill: var(--vp-c-text-3);
+}
+.atf-b {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.atf-c {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.atf-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.atf-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+.atf-sop {
+  stroke: var(--vp-c-brand-2);
+}
+.atf-srs {
+  stroke: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/authorization-code-pkce.md */
+text {
+  stroke: none;
+}
+.actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+}
+.actor-op {
+  fill: var(--vp-c-brand-2);
+}
+.actor-rs {
+  fill: var(--vp-c-text-3);
+}
+.asub {
+  font-family: var(--vp-font-family-base);
+  font-size: 9px;
+  fill: var(--vp-c-text-3);
+}
+.lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-1);
+}
+.sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-2);
+}
+.mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--vp-c-text-2);
+}
+.num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  fill: var(--vp-c-text-3);
+}
+.note {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+  fill: var(--vp-c-text-1);
+}
+.notemono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-2);
+}
+.box {
+  fill: var(--vp-c-bg);
+  stroke: currentColor;
+}
+.box-op {
+  stroke: var(--vp-c-brand-2);
+}
+.box-rs {
+  stroke: var(--vp-c-text-3);
+}
+.lane {
+  fill: none;
+  stroke: var(--vp-c-divider);
+  stroke-width: 1.3;
+  stroke-dasharray: 2 5;
+}
+.lane-op {
+  stroke: var(--vp-c-brand-2);
+}
+.lane-rs {
+  stroke: var(--vp-c-text-3);
+}
+.msg {
+  fill: none;
+  stroke: currentColor;
+}
+.self {
+  fill: none;
+  stroke: currentColor;
+}
+.op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.notebox {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-divider);
+  stroke-width: 1.3;
+}
+
+/* Source: src/ja/concepts/ciba.md */
+.ciba-tx {
+  fill: currentColor;
+  stroke: none;
+}
+.ciba-fb {
+  font-family: var(--vp-font-family-base);
+}
+.ciba-fm {
+  font-family: var(--vp-font-family-mono);
+}
+.ciba-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.ciba-sec {
+  stroke: #7c6fb0;
+}
+.dark .ciba-sec {
+  stroke: #b3a7e0;
+}
+.ciba-accent-f {
+  fill: var(--vp-c-brand-2);
+}
+.ciba-sec-f {
+  fill: #7c6fb0;
+}
+.dark .ciba-sec-f {
+  fill: #b3a7e0;
+}
+.ciba-muted {
+  opacity: 0.62;
+}
+.ciba-life {
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  opacity: 0.5;
+}
+.ciba-frag {
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+  opacity: 0.55;
+}
+
+/* Source: src/ja/concepts/client-credentials.md */
+#cc-flow text {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  stroke: none;
+}
+#cc-flow .mono {
+  font-family: var(--vp-font-family-mono);
+}
+#cc-flow .c-op {
+  stroke: var(--vp-c-brand-2);
+}
+#cc-flow .c-rs {
+  stroke: var(--vp-c-text-3);
+}
+#cc-flow .tf-op {
+  fill: var(--vp-c-brand-2);
+}
+#cc-flow .tf-rs {
+  fill: var(--vp-c-text-3);
+}
+#cc-flow .life {
+  stroke-width: 1;
+  opacity: 0.4;
+}
+#cc-flow .box {
+  stroke-width: 2;
+}
+#cc-flow .arw {
+  stroke-width: 2;
+}
+#cc-flow .num {
+  stroke-width: 1.5;
+}
+
+/* Source: src/ja/concepts/client-types.md */
+text {
+  stroke: none;
+}
+.dt-leaf {
+  stroke: var(--vp-c-brand-2);
+}
+.dt-title {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  font-weight: 600;
+  font-size: 13px;
+}
+.dt-sub {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  opacity: 0.55;
+  font-size: 10.5px;
+}
+.dt-edge {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  opacity: 0.6;
+  font-size: 10.5px;
+}
+.dt-code {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-brand-2);
+  font-size: 11px;
+}
+.dt-root-code {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  opacity: 0.6;
+  font-size: 10.5px;
+}
+.dt-note {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  opacity: 0.5;
+  font-size: 10px;
+}
+
+/* Source: src/ja/concepts/consent.md */
+#consent-shown-decision text {
+  stroke: none;
+}
+#consent-shown-decision .lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  fill: var(--vp-c-text-1);
+}
+#consent-shown-decision .mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  fill: var(--vp-c-text-1);
+}
+#consent-shown-decision .sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-2);
+}
+#consent-shown-decision .edge {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+}
+#consent-shown-decision .accent {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/concepts/device-code.md */
+.dcf-fp {
+  font-family: var(--vp-font-family-base);
+}
+.dcf-fm {
+  font-family: var(--vp-font-family-mono);
+}
+.dcf-neu {
+  fill: currentColor;
+}
+.dcf-acc {
+  fill: var(--vp-c-brand-2);
+}
+.dcf-mut {
+  fill: var(--vp-c-text-3);
+}
+.dcf-sacc {
+  stroke: var(--vp-c-brand-2);
+}
+.dcf-smut {
+  stroke: var(--vp-c-text-3);
+}
+.dcf-frame {
+  fill: none;
+  stroke: var(--vp-c-text-3);
+  stroke-width: 1.5;
+}
+.dcf-life {
+  stroke-width: 1.5;
+  opacity: 0.32;
+}
+.dcf-ret {
+  stroke-dasharray: 5 4;
+}
+.dcf-tabbg {
+  fill: var(--vp-c-bg);
+  stroke: var(--vp-c-text-3);
+  stroke-width: 1.5;
+}
+svg text {
+  stroke: none;
+}
+
+/* Source: src/ja/concepts/dpop.md */
+.dpop-flow-dg text {
+  stroke: none;
+  fill: currentColor;
+}
+.dpop-flow-dg .d-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dpop-flow-dg .d-cap {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+}
+.dpop-flow-dg .d-prose {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+}
+.dpop-flow-dg .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.dpop-flow-dg .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.dpop-flow-dg .rs-stroke {
+  stroke: var(--vp-c-text-3);
+}
+.dpop-flow-dg .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.dpop-flow-dg .rs-fill {
+  fill: var(--vp-c-text-3);
+}
+.dpop-flow-dg .life {
+  opacity: 0.3;
+  stroke-width: 1;
+}
+
+/* Source: src/ja/concepts/fapi.md */
+.fapi-layers text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.fapi-layers .h {
+  font-family: var(--vp-font-family-base);
+  font-size: 15px;
+  font-weight: 700;
+}
+.fapi-layers .t {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.fapi-layers .m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.fapi-layers .sub {
+  fill: var(--vp-c-text-2);
+}
+.fapi-layers .accent {
+  stroke: var(--vp-c-brand-2);
+}
+.fapi-layers .accent-text {
+  fill: var(--vp-c-brand-2);
+}
+.fapi-layers .soft {
+  fill: var(--vp-c-bg-soft);
+}
+
+/* Source: src/ja/concepts/jarm.md */
+.jarm-box {
+  fill: var(--vp-c-bg-soft);
+}
+.jarm-main {
+  fill: var(--vp-c-brand-soft);
+}
+.jarm-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jarm-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jarm-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/concepts/jose-basics.md */
+.jose-box {
+  fill: var(--vp-c-bg-soft);
+}
+.jose-main {
+  fill: var(--vp-c-brand-soft);
+}
+.jose-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jose-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jose-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/concepts/mtls.md */
+.mtls-proxy-flow .d-label {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.mtls-proxy-flow .d-sub {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.mtls-proxy-flow .d-mono {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.mtls-proxy-flow .d-layer {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-text-3);
+  stroke: none;
+  letter-spacing: 0.16em;
+}
+.mtls-proxy-flow .d-op {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.mtls-proxy-flow .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.mtls-proxy-flow .d-faint {
+  stroke: var(--vp-c-divider);
+  stroke-width: 1;
+}
+
+/* Source: src/ja/concepts/no-browser-flows.md */
+.dtx-q {
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.dtx-op {
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 1.8;
+}
+.dtx-rp {
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.dtx-edge {
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.dtx-qt {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.dtx-leaf {
+  font-family: var(--vp-font-family-base);
+  font-size: 13.5px;
+  font-weight: 700;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.dtx-leaf-op {
+  font-family: var(--vp-font-family-base);
+  font-size: 13.5px;
+  font-weight: 700;
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.dtx-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  font-weight: 600;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.dtx-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+
+/* Source: src/ja/concepts/no-browser-flows.md */
+.dcx-op {
+  stroke: var(--vp-c-brand-2);
+}
+.dcx-rp {
+  stroke: currentColor;
+}
+.dcx-user {
+  stroke: var(--vp-c-text-3);
+}
+.dcx-frame {
+  stroke: currentColor;
+  stroke-width: 1.4;
+  opacity: 0.42;
+}
+.dcx-life {
+  stroke-width: 1.4;
+  opacity: 0.32;
+}
+.dcx-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.dcx-actor-op {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.dcx-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.dcx-hdr {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.dcx-note {
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.dcx-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.dcx-step {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+
+/* Source: src/ja/concepts/no-browser-flows.md */
+.cbx-op {
+  stroke: var(--vp-c-brand-2);
+}
+.cbx-rp {
+  stroke: currentColor;
+}
+.cbx-user {
+  stroke: var(--vp-c-text-3);
+}
+.cbx-frame {
+  stroke: currentColor;
+  stroke-width: 1.4;
+  opacity: 0.42;
+}
+.cbx-life {
+  stroke-width: 1.4;
+  opacity: 0.32;
+}
+.cbx-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.cbx-actor-op {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.cbx-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.cbx-hdr {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.cbx-note {
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.cbx-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.cbx-step {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+
+/* Source: src/ja/concepts/oauth2-oidc-primer.md */
+.diag-roles text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.diag-roles .p {
+  font-family: var(--vp-font-family-base);
+}
+.diag-roles .m {
+  font-family: var(--vp-font-family-mono);
+}
+.diag-roles .sub {
+  fill: var(--vp-c-text-2);
+}
+.diag-roles .op {
+  stroke: var(--vp-c-brand-2);
+}
+.diag-roles .opf {
+  fill: var(--vp-c-brand-2);
+}
+.diag-roles .rs {
+  stroke: var(--vp-c-text-3);
+}
+.diag-roles .rsf {
+  fill: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/oauth2-oidc-primer.md */
+.diag-authcode text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.diag-authcode .p {
+  font-family: var(--vp-font-family-base);
+}
+.diag-authcode .m {
+  font-family: var(--vp-font-family-mono);
+}
+.diag-authcode .sub {
+  fill: var(--vp-c-text-2);
+}
+.diag-authcode .life {
+  stroke: var(--vp-c-divider);
+  stroke-width: 1.5;
+}
+.diag-authcode .op {
+  stroke: var(--vp-c-brand-2);
+}
+.diag-authcode .opf {
+  fill: var(--vp-c-brand-2);
+}
+.diag-authcode .rs {
+  stroke: var(--vp-c-text-3);
+}
+.diag-authcode .rsf {
+  fill: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/refresh-tokens.md */
+.rr-flow-dg text {
+  stroke: none;
+  fill: currentColor;
+}
+.rr-flow-dg .d-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.rr-flow-dg .d-cap {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+}
+.rr-flow-dg .d-prose {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+}
+.rr-flow-dg .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.rr-flow-dg .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.rr-flow-dg .rs-stroke {
+  stroke: var(--vp-c-text-3);
+}
+.rr-flow-dg .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.rr-flow-dg .rs-fill {
+  fill: var(--vp-c-text-3);
+}
+.rr-flow-dg .life {
+  opacity: 0.3;
+  stroke-width: 1;
+}
+
+/* Source: src/ja/concepts/sender-constraint.md */
+.sc-tree text {
+  stroke: none;
+  fill: currentColor;
+}
+.sc-tree .t-start {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+}
+.sc-tree .t-q {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.sc-tree .t-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+}
+.sc-tree .t-out {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 700;
+}
+.sc-tree .t-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.sc-tree .t-edge {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--vp-c-text-3);
+}
+.sc-tree .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.sc-tree .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.sc-tree .rs-stroke {
+  stroke: var(--vp-c-text-3);
+}
+.sc-tree .rs-fill {
+  fill: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/concepts/sessions-and-logout.md */
+.sc-b {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  stroke: none;
+}
+.sc-m {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  stroke: none;
+}
+.sc-op {
+  stroke: var(--vp-c-brand-2);
+}
+.sc-rs {
+  stroke: var(--vp-c-text-2);
+}
+.sc-opf {
+  fill: var(--vp-c-brand-2);
+}
+.sc-rsf {
+  fill: var(--vp-c-text-2);
+}
+
+/* Source: src/ja/concepts/token-exchange.md */
+text {
+  stroke: none;
+}
+.tx-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: currentColor;
+}
+.tx-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 8.5px;
+  fill: currentColor;
+  opacity: 0.55;
+}
+.tx-band {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  fill: currentColor;
+}
+.tx-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: currentColor;
+}
+.tx-note {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+  fill: currentColor;
+  opacity: 0.85;
+}
+.tx-acc {
+  stroke: var(--vp-c-brand-2);
+}
+.tx-acc-f {
+  fill: var(--vp-c-brand-2);
+}
+.tx-rs {
+  stroke: #7c6ba6;
+}
+.tx-rs-f {
+  fill: #7c6ba6;
+}
+.dark .tx-rs {
+  stroke: #b3a4d6;
+}
+.dark .tx-rs-f {
+  fill: #b3a4d6;
+}
+
+/* Source: src/ja/concepts/tokens.md */
+.tokens-flow .d-h {
+  font-family: var(--vp-font-family-base);
+  font-size: 15px;
+  font-weight: 600;
+  stroke: none;
+}
+.tokens-flow .d-txt {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.tokens-flow .d-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  stroke: none;
+  fill: var(--vp-c-text-2);
+}
+.tokens-flow .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  stroke: none;
+  fill: var(--vp-c-text-2);
+}
+.tokens-flow .d-mono-op {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  stroke: none;
+  fill: var(--vp-c-brand-2);
+}
+.tokens-flow .d-op {
+  fill: var(--vp-c-brand-2);
+  stroke: var(--vp-c-brand-2);
+}
+.tokens-flow line.d-op,
+.tokens-flow path.d-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+}
+.tokens-flow .d-op-text {
+  fill: #fff;
+  stroke: none;
+}
+.tokens-flow .d-op-sub {
+  fill: rgba(255, 255, 255, 0.82);
+  stroke: none;
+}
+.tokens-flow .d-fill1 {
+  fill: var(--vp-c-text-1);
+}
+.tokens-flow .d-rs {
+  stroke: var(--vp-c-text-3);
+}
+.tokens-flow .d-rs-t {
+  fill: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/faq.md */
+.faq-box {
+  fill: var(--vp-c-bg-soft);
+}
+.faq-main {
+  fill: var(--vp-c-brand-soft);
+}
+.faq-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.faq-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.faq-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/getting-started/minimal.md */
+.min-box {
+  fill: var(--vp-c-bg-soft);
+}
+.min-main {
+  fill: var(--vp-c-brand-soft);
+}
+.min-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.min-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.min-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/index.md */
+.home-box {
+  fill: var(--vp-c-bg-soft);
+}
+.home-main {
+  fill: var(--vp-c-brand-soft);
+}
+.home-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.home-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.home-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/operations/backup.md */
+.bkp-box {
+  fill: var(--vp-c-bg-soft);
+}
+.bkp-main {
+  fill: var(--vp-c-brand-soft);
+}
+.bkp-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.bkp-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.bkp-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/operations/jwks.md */
+.jwks-box {
+  fill: var(--vp-c-bg-soft);
+}
+.jwks-main {
+  fill: var(--vp-c-brand-soft);
+}
+.jwks-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jwks-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jwks-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/operations/key-rotation.md */
+.rot-box {
+  fill: var(--vp-c-bg-soft);
+}
+.rot-main {
+  fill: var(--vp-c-brand-soft);
+}
+.rot-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 13px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.rot-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    11.5px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.rot-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/operations/multi-instance.md */
+.mi-topo text {
+  stroke: none;
+}
+.mi-topo .lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  fill: var(--vp-c-text-1);
+  text-anchor: middle;
+}
+.mi-topo .sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+  text-anchor: middle;
+}
+.mi-topo .op-text {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--vp-c-brand-2);
+  text-anchor: middle;
+}
+.mi-topo .mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+}
+.mi-topo .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.mi-topo .store {
+  stroke-dasharray: 6 5;
+}
+
+/* Source: src/ja/operations/observability.md */
+.obs-box {
+  fill: var(--vp-c-bg-soft);
+}
+.obs-main {
+  fill: var(--vp-c-brand-soft);
+}
+.obs-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.obs-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.obs-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/reference/architecture.md */
+.hg-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hg-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hg-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hg-t1 {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-brand-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.hg-t2 {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  font-size: 11px;
+}
+.hg-t3 {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-text-3);
+  font-size: 10px;
+}
+.hg-path {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  font-size: 12px;
+}
+.hg-pkg {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-text-3);
+  font-size: 10px;
+}
+.hg-drv {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-text-3);
+  font-size: 10px;
+}
+
+/* Source: src/ja/reference/architecture.md */
+.seq-ll {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.seq-llop {
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 2;
+}
+.seq-llst {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+.seq-lllf {
+  stroke: var(--vp-c-text-3);
+  stroke-width: 2;
+}
+.seq-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.seq-boxop {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 2;
+}
+.seq-boxst {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+}
+.seq-boxlf {
+  fill: none;
+  stroke: var(--vp-c-text-3);
+  stroke-width: 2;
+}
+.seq-msg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.seq-ret {
+  fill: none;
+  stroke: var(--vp-c-text-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  stroke-linecap: round;
+}
+.seq-hd {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  fill: currentColor;
+}
+.seq-hdop {
+  fill: var(--vp-c-brand-2);
+}
+.seq-hdlf {
+  fill: var(--vp-c-text-3);
+}
+.seq-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  fill: currentColor;
+}
+.seq-mono {
+  font-family: var(--vp-font-family-mono);
+}
+.seq-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/reference/architecture.md */
+.lfp-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lfp-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lfp-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lfp-oln {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lfp-t1 {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+  fill: currentColor;
+}
+.lfp-t1a {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--vp-c-brand-2);
+}
+.lfp-fld {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--vp-c-text-3);
+}
+.lfp-sub {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--vp-c-text-3);
+}
+.lfp-lba {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-brand-2);
+}
+.lfp-cap {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-3);
+}
+.lfp-mono {
+  font-family: var(--vp-font-family-mono);
+}
+.lfp-nd {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: currentColor;
+}
+
+/* Source: src/ja/reference/audit-events.md */
+.aud-box {
+  fill: var(--vp-c-bg-soft);
+}
+.aud-main {
+  fill: var(--vp-c-brand-soft);
+}
+.aud-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.aud-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.aud-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/reference/errors.md */
+.err-box {
+  fill: var(--vp-c-bg-soft);
+}
+.err-main {
+  fill: var(--vp-c-brand-soft);
+}
+.err-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.err-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.err-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/reference/options.md */
+text {
+  stroke: none;
+}
+.od-t1 {
+  fill: var(--vp-c-text-1);
+}
+.od-t2 {
+  fill: var(--vp-c-text-2);
+}
+.od-op {
+  fill: var(--vp-c-brand-2);
+}
+.od-b {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.od-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.od-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+}
+.od-sop {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/security/clock-and-replay.md */
+#crws .d-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+#crws .d-mono {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+#crws .d-val {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+#crws .d-tick {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+#crws .d-cap {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+#crws .d-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+#crws .d-leg {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+#crws .d-grid {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.16;
+  stroke-dasharray: 2 3;
+}
+#crws .d-lane {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.08;
+}
+#crws .d-axis {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.28;
+}
+#crws .d-op-fill {
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+#crws .d-op-store {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 2;
+}
+
+/* Source: src/ja/security/cve-matrix.md */
+.cve-box {
+  fill: var(--vp-c-bg-soft);
+}
+.cve-main {
+  fill: var(--vp-c-brand-soft);
+}
+.cve-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.cve-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.cve-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/security/design-judgments.md */
+.djf-box {
+  fill: var(--vp-c-bg-soft);
+}
+.djf-main {
+  fill: var(--vp-c-brand-soft);
+}
+.djf-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.djf-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.djf-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/security/disclosure.md */
+.disclosure-flow .d-title {
+  font-family: var(--vp-font-family-base);
+  font-weight: 600;
+  font-size: 14px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.disclosure-flow .d-sub {
+  font-family: var(--vp-font-family-base);
+  font-weight: 400;
+  font-size: 11.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.disclosure-flow .d-edge {
+  font-family: var(--vp-font-family-base);
+  font-weight: 500;
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.disclosure-flow .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/security/posture.md */
+.op-fp-title {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.op-fp-prose {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+}
+.op-fp-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+}
+.op-fp-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--vp-c-brand-2);
+}
+.op-fp-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/back-channel-logout.md */
+.bcl-svg text {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.bcl-svg .m {
+  font-family: var(--vp-font-family-mono);
+}
+.bcl-svg .nm {
+  font-weight: 600;
+  font-size: 13px;
+}
+.bcl-svg .rl {
+  font-size: 9px;
+  fill: var(--vp-c-text-2);
+}
+.bcl-svg .lb {
+  font-size: 12px;
+}
+.bcl-svg .lbm {
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+}
+.bcl-svg .fr {
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+}
+.bcl-svg .bn {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--vp-c-text-2);
+}
+.bcl-svg .accent {
+  stroke: var(--vp-c-brand-2);
+}
+.bcl-svg .accentt {
+  fill: var(--vp-c-brand-2);
+}
+.bcl-svg .life {
+  stroke-width: 1.4;
+  opacity: 0.28;
+}
+.bcl-svg .frame {
+  stroke-width: 1.4;
+  opacity: 0.5;
+}
+.bcl-svg .ret {
+  opacity: 0.55;
+}
+.bcl-svg .bg {
+  fill: var(--vp-c-bg);
+}
+
+/* Source: src/ja/use-cases/ciba.md */
+.ciba-box {
+  fill: var(--vp-c-bg-soft);
+}
+.ciba-op {
+  fill: var(--vp-c-brand-soft);
+}
+.ciba-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.ciba-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.ciba-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/client-credentials.md */
+.cc-svc-flow .d-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  fill: currentColor;
+  stroke: none;
+}
+.cc-svc-flow .d-tok {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: currentColor;
+  stroke: none;
+}
+.cc-svc-flow .d-bt {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 600;
+  fill: currentColor;
+  stroke: none;
+}
+.cc-svc-flow .d-bs {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.cc-svc-flow .d-op {
+  fill: var(--vp-c-brand-2);
+  stroke: var(--vp-c-brand-2);
+}
+.cc-svc-flow .d-op-text {
+  fill: #fff;
+  stroke: none;
+}
+.cc-svc-flow .d-op-sub {
+  fill: rgba(255, 255, 255, 0.82);
+  stroke: none;
+}
+.cc-svc-flow .d-rs {
+  stroke: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/use-cases/client-onboarding.md */
+#onbo-spectrum text {
+  fill: currentColor;
+  stroke: none;
+}
+#onbo-spectrum .lbl {
+  font-family: var(--vp-font-family-base);
+}
+#onbo-spectrum .mono {
+  font-family: var(--vp-font-family-mono);
+}
+#onbo-spectrum .card {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+#onbo-spectrum .badge {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+#onbo-spectrum .seam {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+#onbo-spectrum .store {
+  stroke-dasharray: 4 3;
+}
+#onbo-spectrum .divider {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.25;
+}
+#onbo-spectrum .hair {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.3;
+}
+#onbo-spectrum .axis {
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.45;
+}
+#onbo-spectrum .band {
+  stroke: currentColor;
+  stroke-width: 3;
+  opacity: 0.7;
+}
+#onbo-spectrum .muted {
+  opacity: 0.6;
+}
+#onbo-spectrum .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+#onbo-spectrum .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/cors-spa.md */
+.cors-box {
+  fill: var(--vp-c-bg-soft);
+}
+.cors-main {
+  fill: var(--vp-c-brand-soft);
+}
+.cors-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.cors-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.cors-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/custom-authenticator.md */
+.auth-flow text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.auth-flow .h {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 700;
+}
+.auth-flow .t {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.auth-flow .m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.auth-flow .sub {
+  fill: var(--vp-c-text-2);
+}
+.auth-flow .accent {
+  stroke: var(--vp-c-brand-2);
+}
+.auth-flow .accent-text {
+  fill: var(--vp-c-brand-2);
+}
+.auth-flow .soft {
+  fill: var(--vp-c-bg-soft);
+}
+
+/* Source: src/ja/use-cases/custom-chooser-ui.md */
+.ccui-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  stroke: none;
+  fill: currentColor;
+}
+.ccui-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  stroke: none;
+  fill: currentColor;
+}
+.ccui-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  stroke: none;
+  fill: currentColor;
+}
+.ccui-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  font-weight: 600;
+  stroke: none;
+}
+.ccui-op {
+  stroke: var(--vp-c-brand-2);
+}
+.ccui-sec {
+  stroke: var(--vp-c-text-3);
+}
+.ccui-opf {
+  fill: var(--vp-c-brand-2);
+}
+.ccui-secf {
+  fill: var(--vp-c-text-3);
+}
+
+/* Source: src/ja/use-cases/custom-grant.md */
+.cg-sign text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.cg-sign .h {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 700;
+}
+.cg-sign .t {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.cg-sign .m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.cg-sign .sub {
+  fill: var(--vp-c-text-2);
+}
+.cg-sign .accent {
+  stroke: var(--vp-c-brand-2);
+}
+.cg-sign .accent-text {
+  fill: var(--vp-c-brand-2);
+}
+.cg-sign .soft {
+  fill: var(--vp-c-bg-soft);
+}
+
+/* Source: src/ja/use-cases/device-code.md */
+.dc-box {
+  fill: var(--vp-c-bg-soft);
+}
+.dc-op {
+  fill: var(--vp-c-brand-soft);
+}
+.dc-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.dc-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.dc-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/dpop-nonce.md */
+.dpop-nonce-dg text {
+  stroke: none;
+  fill: currentColor;
+}
+.dpop-nonce-dg .d-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dpop-nonce-dg .d-cap {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+}
+.dpop-nonce-dg .d-prose {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+}
+.dpop-nonce-dg .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.dpop-nonce-dg .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.dpop-nonce-dg .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.dpop-nonce-dg .life {
+  opacity: 0.3;
+  stroke-width: 1;
+}
+.dpop-nonce-dg .note {
+  opacity: 0.4;
+  stroke-width: 1;
+}
+
+/* Source: src/ja/use-cases/dynamic-registration.md */
+.dcr-flow .d-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.dcr-flow .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.dcr-flow .d-life {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  opacity: 0.35;
+}
+.dcr-flow .d-life-op {
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 1.5;
+  opacity: 0.5;
+}
+.dcr-flow .d-msg {
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+.dcr-flow .d-msg-oob {
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 5 4;
+}
+.dcr-flow .d-badge {
+  fill: var(--vp-c-bg);
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.dcr-flow .d-name {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 600;
+  fill: currentColor;
+  stroke: none;
+}
+.dcr-flow .d-accent-fill {
+  fill: var(--vp-c-brand-2);
+}
+.dcr-flow .d-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  fill: currentColor;
+  stroke: none;
+}
+.dcr-flow .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  fill: currentColor;
+  stroke: none;
+}
+.dcr-flow .d-badge-t {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Source: src/ja/use-cases/fapi2-baseline.md */
+.fapi2-flow-dg text {
+  stroke: none;
+  fill: currentColor;
+}
+.fapi2-flow-dg .d-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.fapi2-flow-dg .d-cap {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+}
+.fapi2-flow-dg .d-prose {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+}
+.fapi2-flow-dg .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.fapi2-flow-dg .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.fapi2-flow-dg .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.fapi2-flow-dg .life {
+  opacity: 0.3;
+  stroke-width: 1;
+}
+
+/* Source: src/ja/use-cases/hot-cold-redis.md */
+text {
+  stroke: none;
+}
+.hcr-t {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.hcr-m {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+}
+.hcr-edge {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.hcr-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.hcr-accent-t {
+  fill: var(--vp-c-brand-2);
+}
+.hcr-db {
+  stroke-dasharray: 5 4;
+}
+
+/* Source: src/ja/use-cases/i18n.md */
+.i18n-chain-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.i18n-chain-store {
+  stroke-dasharray: 6 5;
+}
+.i18n-chain-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.i18n-chain-flow {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.i18n-chain-axis {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.4;
+}
+.i18n-chain-tok {
+  font-family: var(--vp-font-family-mono);
+  font-size: 15px;
+  font-weight: 600;
+  stroke: none;
+  fill: currentColor;
+}
+.i18n-chain-tok-accent {
+  fill: var(--vp-c-brand-2);
+}
+.i18n-chain-desc {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  stroke: none;
+  fill: currentColor;
+  opacity: 0.6;
+}
+.i18n-chain-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  stroke: none;
+  fill: currentColor;
+  opacity: 0.5;
+}
+.i18n-chain-axislabel {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  stroke: none;
+  fill: currentColor;
+  opacity: 0.55;
+  letter-spacing: 0.08em;
+}
+
+/* Source: src/ja/use-cases/index.md */
+.uc-box {
+  fill: var(--vp-c-bg-soft);
+}
+.uc-main {
+  fill: var(--vp-c-brand-soft);
+}
+.uc-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.uc-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.uc-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/jwe-encryption.md */
+.jwe-box {
+  fill: var(--vp-c-bg-soft);
+}
+.jwe-main {
+  fill: var(--vp-c-brand-soft);
+}
+.jwe-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jwe-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.jwe-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/mfa-step-up.md */
+.mfa-loginflow text {
+  stroke: none;
+}
+.mfa-loginflow .d-lbl {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-text-1);
+}
+.mfa-loginflow .d-cap {
+  font-family: var(--vp-font-family-base);
+  fill: var(--vp-c-text-2);
+}
+.mfa-loginflow .d-mono {
+  font-family: var(--vp-font-family-mono);
+}
+.mfa-loginflow .d-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.mfa-loginflow .d-accent-t {
+  fill: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/minimal-op.md */
+.minimal-op-flow text {
+  stroke: none;
+}
+.minimal-op-flow .d-label {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  fill: var(--vp-c-text-1);
+}
+.minimal-op-flow .d-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+}
+.minimal-op-flow .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-1);
+}
+.minimal-op-flow .d-mono-2 {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+}
+.minimal-op-flow .d-mono-sm {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-2);
+}
+.minimal-op-flow .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* Source: src/ja/use-cases/multi-account.md */
+.multi-account-flow .d-lbl {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  font-size: 12px;
+}
+.multi-account-flow .d-mono {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  font-size: 11px;
+}
+.multi-account-flow .d-sm {
+  font-size: 10px;
+}
+.multi-account-flow .d-ph {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-brand-2);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+.multi-account-flow .d-acc {
+  fill: var(--vp-c-brand-2);
+}
+.multi-account-flow .d-mut {
+  opacity: 0.6;
+}
+.multi-account-flow .d-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+}
+.multi-account-flow .d-life {
+  stroke-opacity: 0.35;
+}
+.multi-account-flow text {
+  stroke: none;
+}
+
+/* Source: src/ja/use-cases/pairwise-subject.md */
+#psfd .d-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+#psfd .d-cap {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+#psfd .d-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+#psfd .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+#psfd .d-muted {
+  fill: var(--vp-c-text-3);
+}
+#psfd .d-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+}
+#psfd .d-op-t {
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+#psfd .d-store {
+  stroke-dasharray: 5 4;
+}
+#psfd .d-flow {
+  opacity: 0.5;
+}
+
+/* Source: src/ja/use-cases/spa-custom-interaction.md */
+.lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.sub {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.op-text {
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.life {
+  stroke-width: 1.2;
+  stroke-dasharray: 3 4;
+  opacity: 0.45;
+}
+.note {
+  fill: var(--vp-c-bg);
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.badge {
+  stroke-width: 1.4;
+  opacity: 0.55;
+}
+
+/* Source: src/ja/use-cases/sql-store.md */
+text {
+  stroke: none;
+}
+.lbl {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+}
+.mono {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+}
+.arch-op {
+  stroke: var(--vp-c-brand-2);
+}
+.arch-db {
+  stroke-dasharray: 7 5;
+}
+
+/* Source: src/ja/use-cases/storage-decision.md */
+.storage-choice text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.storage-choice .t {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+.storage-choice .h {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 700;
+}
+.storage-choice .m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.storage-choice .sub {
+  fill: var(--vp-c-text-2);
+}
+.storage-choice .accent {
+  stroke: var(--vp-c-brand-2);
+}
+.storage-choice .accent-text {
+  fill: var(--vp-c-brand-2);
+}
+.storage-choice .soft {
+  fill: var(--vp-c-bg-soft);
+}
+
+/* Source: src/ja/use-cases/token-exchange.md */
+.tx-flow text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.tx-flow .h {
+  font-family: var(--vp-font-family-base);
+  font-size: 14px;
+  font-weight: 700;
+}
+.tx-flow .t {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+}
+.tx-flow .m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.tx-flow .sub {
+  fill: var(--vp-c-text-2);
+}
+.tx-flow .accent {
+  stroke: var(--vp-c-brand-2);
+}
+.tx-flow .accent-text {
+  fill: var(--vp-c-brand-2);
+}
+.tx-flow .soft {
+  fill: var(--vp-c-bg-soft);
+}
+
+/* Source: src/ja/why.md */
+.why-split text {
+  stroke: none;
+  fill: var(--vp-c-text-1);
+}
+.why-split .p {
+  font-family: var(--vp-font-family-base);
+}
+.why-split .m {
+  font-family: var(--vp-font-family-mono);
+}
+.why-split .sub {
+  fill: var(--vp-c-text-2);
+}
+.why-split .op {
+  stroke: var(--vp-c-brand-2);
+}
+.why-split .opf {
+  fill: var(--vp-c-brand-2);
+}
+.why-split .soft {
+  fill: var(--vp-c-bg-soft);
 }

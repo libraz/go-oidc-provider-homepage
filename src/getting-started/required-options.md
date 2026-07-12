@@ -1,6 +1,6 @@
 ---
 title: Required options
-description: The four options op.New refuses to start without — and why each one matters.
+description: The options op.New refuses to start without — and why each one matters.
 ---
 
 # Required options
@@ -34,7 +34,7 @@ op.WithStore(inmem.New())
 op.WithStore(myCompositeStore)
 ```
 
-The `op.Store` interface is the union of small substore interfaces (`AuthCodeStore`, `RefreshTokenStore`, `SessionStore`, `ClientStore`, …). You usually compose a `Store` from one of the bundled adapters:
+The `op.Store` interface is the union of small substore interfaces (`AuthorizationCodeStore`, `RefreshTokenStore`, `SessionStore`, `ClientStore`, …). You usually compose a `Store` from one of the bundled adapters:
 
 - [`op/storeadapter/inmem`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/inmem) — every substore in memory. Reference + dev + tests.
 - [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) — durable substores against `database/sql`.

@@ -1,29 +1,29 @@
 ---
-title: カスタムアカウントチューザ UI
+title: カスタムアカウント選択 UI
 description: prompt=select_account のサーバ描画テンプレートを差し替えつつ、state、CSRF、セッション切替は OP に保持させる。
 ---
 
-# ユースケース — カスタムアカウントチューザ UI
+# 使い方 — カスタムアカウント選択 UI
 
 `prompt=select_account` には 2 つの関心事があります。
 
 - **セッションの意味論**: ブラウザが複数の有効アカウントを含む chooser group を持ち、選択されたセッションが次の `sub` を決める
 - **描画面**: アカウント一覧を表示し、選択された `SessionID` を POST するページ
 
-[マルチアカウントチューザ](/ja/use-cases/multi-account) は前者を扱います。このページは後者、つまりブランド付きのサーバ描画のアカウント選択画面を持ちつつ、state、CSRF、最後の `Sessions.Switch` は OP に任せるための `op.WithChooserUI` を扱います。
+[マルチアカウント選択](/ja/use-cases/multi-account) は前者を扱います。このページは後者、つまりブランド付きのサーバ描画のアカウント選択画面を持ちつつ、state、CSRF、最後の `Sessions.Switch` は OP に任せるための `op.WithChooserUI` を扱います。
 
-> **ソース:** [`examples/12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) は、デフォルトの HTML interaction ドライバで `op.WithChooserUI` を使う例です。JSON ドライバ / SPA 経路は [`examples/13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) と対比してください。
+> **ソース:** [`examples/12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) は、既定の HTML interaction ドライバで `op.WithChooserUI` を使う例です。JSON ドライバ / SPA 経路は [`examples/13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) と対比してください。
 
 ## 使いどころ
 
 | 目的 | 使うもの |
 |---|---|
-| 同梱 chooser をそのまま使う | オプション不要。デフォルト HTML ドライバが描画 |
+| 同梱 chooser をそのまま使う | オプション不要。既定 HTML ドライバが描画 |
 | chooser の HTML / 文言 / レイアウトだけ変え、サーバ描画に留める | `op.WithChooserUI(op.ChooserUI{Template: tmpl})` |
 | chooser を SPA の中で描画する | `op.WithSPAUI` または `interaction.JSONDriver` |
 | アカウントのグループ化や切替のロジックを変える | テンプレートではなく session store / authenticator 側 |
 
-`WithChooserUI` は意図的に狭い差し込み口です。差し替えるのはテンプレートだけで、テンプレートが任意の subject を選んだり、セッションを発行したり、OP の state machine を迂回したりする経路ではありません。
+`WithChooserUI` は意図的に狭い差し込み口です。差し替えるのはテンプレートだけで、テンプレートが任意の subject を選んだり、セッションを発行したり、OP の 状態遷移 を迂回したりする経路ではありません。
 
 ## テンプレートの契約
 
@@ -65,19 +65,8 @@ provider, err := op.New(
 
 ## Flow
 
-<style scoped>
-.ccui-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;stroke:none;fill:currentColor}
-.ccui-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;stroke:none;fill:currentColor}
-.ccui-mono{font-family:var(--vp-font-family-mono);font-size:12px;stroke:none;fill:currentColor}
-.ccui-num{font-family:var(--vp-font-family-mono);font-size:11px;font-weight:600;stroke:none}
-.ccui-op{stroke:var(--vp-c-brand-2)}
-.ccui-sec{stroke:var(--vp-c-text-3)}
-.ccui-opf{fill:var(--vp-c-brand-2)}
-.ccui-secf{fill:var(--vp-c-text-3)}
-</style>
-
 <svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
-<title id="chooser-flow-title">カスタムチューザ UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
+<title id="chooser-flow-title">カスタム選択 UI UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
 <rect x="30" y="14" width="120" height="36" rx="6"/>
 <rect x="300" y="14" width="120" height="36" rx="6" class="ccui-op"/>
 <rect x="558" y="14" width="144" height="36" rx="6" class="ccui-sec"/>
@@ -133,7 +122,7 @@ provider, err := op.New(
 
 ## SPA interaction との優先関係
 
-`op.WithSPAUI` を使う場合、chooser の描画は JSON の状態取得を通じて SPA が受け持ちます。`WithSPAUI` と `WithChooserUI` が同時に設定されている場合、SPA 経路が優先され、chooser テンプレートは起動時の警告付きで無視されます。デプロイごとに UI の所有者を 1 つに絞ってください。
+`op.WithSPAUI` を使う場合、chooser の描画は JSON の状態取得を通じて SPA が受け持ちます。`WithSPAUI` と `WithChooserUI` が同時に設定されている場合、SPA 経路が優先され、chooser テンプレートは起動時の警告付きで無視されます。配備ごとに UI の所有者を 1 つに絞ってください。
 
 | UI の所有者 | オプション |
 |---|---|
@@ -150,6 +139,6 @@ provider, err := op.New(
 
 ## 続きはこちら
 
-- [マルチアカウントチューザ](/ja/use-cases/multi-account) — chooser group の意味論と `Sessions.Switch`。
-- [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) — 同じ prompt を JSON ドライバで扱う経路。
+- [マルチアカウント選択](/ja/use-cases/multi-account) — chooser group の意味論と `Sessions.Switch`。
+- [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) — 同じ prompt を JSON ドライバで扱う経路。
 - [カスタム同意 UI](/ja/use-cases/custom-consent-ui) — consent 向けの同等のサーバ描画テンプレート差し込み口。

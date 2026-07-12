@@ -3,7 +3,7 @@ title: Claims リクエストパラメータ
 description: OIDC Core 1.0 §5.5 — RP が `claims` パラメータで claim を指定し、OP が id_token / userinfo に投影。
 ---
 
-# ユースケース — Claims リクエストパラメータ
+# 使い方 — Claims リクエストパラメータ
 
 ## `claims` パラメータとは
 

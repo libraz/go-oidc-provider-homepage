@@ -1,41 +1,41 @@
 ---
 title: OAuth 2.0 / OIDC 入門
-description: OAuth 2.0 のロールと OpenID Connect が追加するものを、ゼロから一通り。はじめての方向け。
+description: OAuth 2.0 の役割分担と OpenID Connect が追加するものを、ゼロから一通り。はじめての方向け。
 ---
 
 # OAuth 2.0 / OpenID Connect 入門
 
-認証・認可に初めて触れる方には、関連する規格が略語の羅列に見えるかもしれません: OAuth、OIDC、JWT、OP、RP、RS、PAR、JAR、JARM、DPoP、mTLS、PKCE、FAPI…。ただ、まず押さえるべき **ロールは 3 つだけ** です。ほとんどの規格は、この 3 ロール間のフローを少しずつ強化したものです。
+認証・認可に初めて触れる方には、関連する規格が略語の羅列に見えるかもしれません: OAuth、OIDC、JWT、OP、RP、RS、PAR、JAR、JARM、DPoP、mTLS、PKCE、FAPI…。ただ、まず押さえるべき **役割は 3 つだけ** です。ほとんどの規格は、この 3 つの役割の間で行われる処理を少しずつ強化したものです。
 
-::: details 略号の早見表(まずここを開いてください)
-**3 つのロール**
+::: details 略号の早見表（まずここを開いてください）
+**3 つの役割**
 - **OP**(OpenID Provider) — ユーザを認証してトークンを発行するサーバ。`go-oidc-provider` はここに該当します。純粋 OAuth 文脈では **AS**(Authorization Server)とも呼ばれます。
 - **RP**(Relying Party) — OP を使ってユーザをログインさせるクライアントアプリ。OAuth の文脈では **client** とも呼ばれます。
 - **RS**(Resource Server) — アクセストークンを受け取ってデータを返す API。
 
 **トークンと暗号**
-- **JWT**(JSON Web Token、RFC 7519) — `header.payload.signature` を `.` で繋いだ base64url 文字列。自己記述的で署名検証可能。
+- **JWT**(JSON Web Token、RFC 7519) — `header.payload.signature` を `.` でつないだ base64url 文字列。中身を読め、署名も検証できます。
 - **JWS**(JSON Web Signature、RFC 7515) — JWT が使う署名方式。
-- **JWE**(JSON Web Encryption、RFC 7516) — 暗号化版。外側のエンベロープが内側の JWS を包みます。
+- **JWE**(JSON Web Encryption、RFC 7516) — 暗号化版。外側の入れ物が内側の JWS を包みます。
 - **JWK** / **JWKS**(RFC 7517) — JSON Web Key / Key **Set**。OP の公開鍵集合で `/jwks` から取得します。
 - **PKCE**(RFC 7636) — 認可コードに対する所持証明。認可コードを横取りされてもトークンに交換されないようにします。発音は「ピクシー」。
 
-**プロファイル / ハードニング略号**
+**プロファイル / 強化の略号**
 - **PAR**(RFC 9126) — Pushed Authorization Request。RP がまず authorize 要求を OP に POST し、ブラウザは `request_uri` 参照だけを運びます。
 - **JAR**(RFC 9101) — JWT-Secured Authorization Request。authorize 要求自体を署名 JWT にします。
 - **JARM**(OpenID FAPI) — JWT-Secured Authorization Response Mode。authorize **応答** を署名 JWT にします。
-- **DPoP**(RFC 9449) — Demonstrating Proof of Possession。クライアントが保持する鍵にトークンをリクエストごとにバインドします。
-- **mTLS**(RFC 8705) — mutual TLS。考え方は DPoP と同じで、バインドの主体がクライアントの TLS 証明書になります。
+- **DPoP**(RFC 9449) — Demonstrating Proof of Possession。クライアントが保持する鍵にトークンをリクエストごとに結びつけます。
+- **mTLS**(RFC 8705) — mutual TLS。考え方は DPoP と同じで、結びつける先がクライアントの TLS 証明書になります。
 - **FAPI**(Financial-grade API) — 上記をまとめて固定する OpenID プロファイル。
 - **CIBA** — Client-Initiated Backchannel Authentication。ブラウザを持たないデバイスから、ユーザのスマートフォンなどへ認証要求を送るバックチャネル認証。
 
-**早期に登場する identity claim**
+**早めに出てくる identity claim**
 - **`sub`** — Subject。当該 OP におけるユーザの不透明な識別子。
 - **`aud`** — Audience。トークンの宛先。
 - **`iss`** — Issuer。トークンに署名した OP。
 - **`scope`** — 半角スペース区切りの権限リスト(`openid profile email` など)。
 - **`acr`**(Authentication Context Class Reference) — 認証手段が提供した保証水準。step-up で使われます。
-- **`amr`**(Authentication Methods References) — 実際に使った factor を表す RFC 8176 の値(`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt`)。
+- **`amr`**(Authentication Methods References) — 実際に使った認証要素を表す RFC 8176 の値(`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt`)。
 - **`cnf`** — confirmation。トークンが結びついている鍵(DPoP の `jkt` thumbprint または mTLS の `x5t#S256`)。
 :::
 
@@ -51,21 +51,10 @@ description: OAuth 2.0 のロールと OpenID Connect が追加するものを�
 - [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
 :::
 
-## 3 つのロール
-
-<style scoped>
-.diag-roles text{stroke:none;fill:var(--vp-c-text-1)}
-.diag-roles .p{font-family:var(--vp-font-family-base)}
-.diag-roles .m{font-family:var(--vp-font-family-mono)}
-.diag-roles .sub{fill:var(--vp-c-text-2)}
-.diag-roles .op{stroke:var(--vp-c-brand-2)}
-.diag-roles .opf{fill:var(--vp-c-brand-2)}
-.diag-roles .rs{stroke:var(--vp-c-text-3)}
-.diag-roles .rsf{fill:var(--vp-c-text-3)}
-</style>
+## 3 つの役割
 
 <svg class="diag diag-roles" role="img" aria-labelledby="roles-title" viewBox="0 0 760 202" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="roles-title">OAuth / OIDC の 3 つのロール: RP は OP に認証を委任してトークンを受け取り、Bearer アクセストークンで RS を呼び出す。</title>
+  <title id="roles-title">OAuth / OIDC の 3 つの役割: RP は OP に認証を委任してトークンを受け取り、Bearer アクセストークンで RS を呼び出す。</title>
   <defs>
     <marker id="roles-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -96,9 +85,9 @@ description: OAuth 2.0 のロールと OpenID Connect が追加するものを�
   <text class="p sub" x="380" y="178" text-anchor="middle" font-size="10"><tspan class="m">Bearer</tspan> アクセストークン</text>
 </svg>
 
-ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE フロー](#最もよく見かけるフロー-認可コード-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
+ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE](#最もよく見かける処理-認可コード-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
 
-::: tip 同じソフトが複数のロールを兼ねることもある
+::: tip 同じソフトが複数の役割を兼ねることもある
 たとえば「Backend for Frontend」は、ユーザをログインさせる **RP** であると同時に、SPA からアクセストークン付きで呼ばれる **RS** でもあります。
 :::
 
@@ -120,21 +109,21 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 - **Opaque token** — 受け手にとっては意味のないランダム文字列。中身を知るには発行元の introspection エンドポイント（RFC 7662）に問い合わせ、対応する行を引きに行く必要があります。
 - **JWT** — 自己記述的。中身がトークンにエンコードされていて、署名の検証だけで（オフラインで）受け手が中身を信用できます。
 
-トレードオフは「リクエストごとに OP に問い合わせるか」対「OP からきめ細かい失効を制御しづらくなるか」のどちらを取るかです。本ライブラリの折衷案は [tokens](/ja/concepts/tokens) を参照してください。
+判断軸は「リクエストごとに OP に問い合わせるか」「OP からきめ細かい失効を制御しづらくなるか」のどちらを重く見るかです。本ライブラリの折衷案は [tokens](/ja/concepts/tokens) を参照してください。
 :::
 
 ::: details どちらを使えばいい？
 - 純粋な OAuth 2.0: 「このトークンは `POST /things` を呼べる」だけが言えれば良い API。サービス間通信でよく使われます。
 - OIDC: 人間がログインして、アプリが「こんにちは Alice」と言いたいケース。Web・モバイルのログインはほぼすべて OIDC です。
 
-`go-oidc-provider` はデフォルトで OIDC（`openid` scope 必須）として動作し、`op.WithOpenIDScopeOptional()` で純粋 OAuth 2.0 にも切り替えられます。
+`go-oidc-provider` は既定で OIDC（`openid` scope 必須）として動作し、`op.WithOpenIDScopeOptional()` で純粋 OAuth 2.0 にも切り替えられます。
 :::
 
 ## 出てくる 4 種類のトークン
 
 | トークン | 寿命 | 何のためのもの | 行き先 |
 |---|---|---|---|
-| **認可コード** | 数十秒（既定 60 秒） | 1 回限りの不透明な文字列。 | server-to-server: RP → OP `/token`。 |
+| **認可コード** | 数十秒（既定 60 秒） | 1 回限りの不透明な文字列。 | サーバ間通信: RP → OP `/token`。 |
 | **アクセストークン** | 数分（既定 5 分） | API を呼ぶときの `Authorization: Bearer …` に乗せる。JWT または opaque。 | RP → RS。 |
 | **リフレッシュトークン** | 数日〜数週間（既定 30 日） | 長寿命。再認証なしに新しいアクセストークンを取得するために使う。 | RP → OP `/token`。 |
 | **ID トークン** | 数分（既定 10 分） | ユーザが誰かを証明する署名付き JWT。**API には送らない**。 | OP → RP、RP 内で消費。 |
@@ -143,21 +132,21 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 よくある落とし穴です。ID トークンの audience は RP であって RS ではありません。API に `Authorization: Bearer` で送ると技術的には通ってしまうことがありますが、意味的には誤りです。RP 向けの claim（email など）を、ユーザが触る全 API に晒すことになります。
 
 **API にはアクセストークンを使ってください。** RFC 7662 の introspection、もしくは RFC 9068 の self-contained JWT として検証します。
+
+```http
+# NG: OP が RP に発行した ID トークンを API に渡している
+GET /orders HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJ...id_token...
+
+# OK: API audience のアクセストークンを渡す
+GET /orders HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJ...access_token...
+```
 :::
 
-## 最もよく見かけるフロー: 認可コード + PKCE
-
-<style scoped>
-.diag-authcode text{stroke:none;fill:var(--vp-c-text-1)}
-.diag-authcode .p{font-family:var(--vp-font-family-base)}
-.diag-authcode .m{font-family:var(--vp-font-family-mono)}
-.diag-authcode .sub{fill:var(--vp-c-text-2)}
-.diag-authcode .life{stroke:var(--vp-c-divider);stroke-width:1.5}
-.diag-authcode .op{stroke:var(--vp-c-brand-2)}
-.diag-authcode .opf{fill:var(--vp-c-brand-2)}
-.diag-authcode .rs{stroke:var(--vp-c-text-3)}
-.diag-authcode .rsf{fill:var(--vp-c-text-3)}
-</style>
+## 最もよく見かける処理: 認可コード + PKCE
 
 <svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" style="width:100%;height:auto;max-width:772px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authcode-title">認可コード + PKCE のシーケンス: ブラウザがユーザを RP と OP の間で運んでログインと code 交換を行い、その後 RP が access token で RS を呼び出す。</title>
@@ -244,27 +233,27 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | **Audience（`aud`）** | トークンの宛先。ID トークンは `aud = client_id`、アクセストークンは `aud = resource server` です。 |
 | **Issuer（`iss`）** | トークンに署名した OP。RP も RS も自分の期待値と一致するか確認します。 |
 | **JWKS** | JSON Web Key Set。OP の公開鍵集合で、`/jwks` から取得します。RP は ID トークンの検証に使います。 |
-| **Discovery 文書** | `/.well-known/openid-configuration`。エンドポイント、対応 scope、対応 alg などをまとめた JSON カタログ。 |
+| **Discovery 文書** | `/.well-known/openid-configuration`。エンドポイント、対応 scope、対応 alg などをまとめた JSON の一覧。 |
 
 ::: details `acr` と `amr` を 1 段落で
-`acr` は認証が **どれだけ強かったか**（`aal2` のような保証水準ラベル）を表し、`amr` は **どの factor を使ったか**（`["pwd","otp"]` のような配列）を表します。RP が機微な操作のために高い保証を要求するときは `acr_values` で高い `acr` を要求し、OP は step-up 認証を実行して ID トークンを再発行します。RFC 8176(Authentication Method Reference Values)が標準 `amr` 値を規定し、RFC 9470(OAuth 2.0 Step Up Authentication Challenge Protocol)が `WWW-Authenticate: error="insufficient_user_authentication"` 経由の step-up を標準化しています。組み込み手順は [MFA / step-up](/ja/use-cases/mfa-step-up) を参照してください。
+`acr` は認証が **どれだけ強かったか**（`aal2` のような保証水準ラベル）を表し、`amr` は **どの認証要素を使ったか**（`["pwd","otp"]` のような配列）を表します。RP が機微な操作のために高い保証を要求するときは `acr_values` で高い `acr` を要求し、OP は step-up 認証を実行して ID トークンを再発行します。RFC 8176(Authentication Method Reference Values)が標準 `amr` 値を規定し、RFC 9470(OAuth 2.0 Step Up Authentication Challenge Protocol)が `WWW-Authenticate: error="insufficient_user_authentication"` 経由の step-up を標準化しています。組み込み手順は [MFA / step-up](/ja/use-cases/mfa-step-up) を参照してください。
 :::
 
 ## FAPI 2.0 が追加するもの
 
-金融グレード・医療グレードの OP を作るなら、OIDC の上に **FAPI 2.0** の要求を重ねる必要があります。送信者制約付きトークン（DPoP / mTLS）、PAR（authorize 要求を先に server-to-server で送る）、JAR（要求自体を署名 JWT にする）、より絞られた alg allow-list が要求されます。本ライブラリではプロファイル指定 1 行で有効化できます。
+金融グレード・医療グレードの OP を作るなら、OIDC の上に **FAPI 2.0** の要求を重ねる必要があります。送信者制約付きトークン（DPoP / mTLS）、PAR（authorize 要求を先にサーバ間で送る）、JAR（要求自体を署名 JWT にする）、より絞られた alg 許可リストが要求されます。本ライブラリではプロファイル指定 1 行で有効化できます。
 
 ```go
 op.WithProfile(profile.FAPI2Baseline)
 ```
 
-略号を一通り解説した入門は [FAPI 2.0 入門](/ja/concepts/fapi) にあります。DPoP / mTLS の仕組みは [送信者制約](/ja/concepts/sender-constraint) を、フル構成は [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
+略号を一通り解説した入門は [FAPI 2.0 入門](/ja/concepts/fapi) にあります。DPoP / mTLS の仕組みは [送信者制約](/ja/concepts/sender-constraint) を、全体構成は [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
 
 ## 続きはこちら
 
-- [認可コードフロー + PKCE](/ja/concepts/authorization-code-pkce) — 上記フローを sequence 図とパラメータ用語集で詳説。
+- [認可コード + PKCE](/ja/concepts/authorization-code-pkce) — 上記の流れをシーケンス図とパラメータ用語集で詳説。
 - [Client Credentials](/ja/concepts/client-credentials) — サービス間通信、エンドユーザなし。
-- [リフレッシュトークン](/ja/concepts/refresh-tokens) — ローテーション、再利用検知、grace 期間。
+- [リフレッシュトークン](/ja/concepts/refresh-tokens) — ローテーション、再利用検知、猶予期間。
 - [ID トークン / アクセストークン / userinfo](/ja/concepts/tokens) — 似て非なる 3 つのアーティファクト。
 - [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — FAPI 2.0 が実際に追加する仕組み。
 - [FAPI 2.0 入門](/ja/concepts/fapi) — FAPI プロファイルとは何か、PAR / JAR / JARM などの各略号が何をしているか、なぜプロファイルが「OIDC + ベストプラクティス」より勝るのか。

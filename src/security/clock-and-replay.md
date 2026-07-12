@@ -40,7 +40,7 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | Refresh token (absolute lifetime) | `exp` from issuance | `timex.RefreshTokenTTLDefault = 30 days` | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 | `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
 
-The constants in the "Default window" column are the source of truth — every entry in the table comes from a `grep` against `~/Projects/go-oidc-provider/internal/...` rather than from documentation alone. If the library raises or lowers a default, this table is the page to refresh first.
+The constants in the "Default window" column are the source of truth — every entry in the table comes from a `grep` against the library's `internal/...` packages rather than from documentation alone. If the library raises or lowers a default, this table is the page to refresh first.
 
 The same windows, drawn to scale on a logarithmic time axis, make the shape obvious at a glance: every replay-and-clock window collapses into a tight band at or just past 60 seconds, token lifetimes step up to a few minutes, and only the refresh token's absolute lifetime lives out at 30 days — with nothing in between.
 

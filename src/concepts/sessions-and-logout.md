@@ -70,6 +70,8 @@ The OP does the following:
 3. Deletes the cookie and the `store.SessionStore` row.
 4. If the `post_logout_redirect_uri` is registered for the client, redirects the browser back with `state` echoed.
 
+For native and public clients, the same RFC 8252 loopback any-port rule used for `redirect_uri` also applies to `post_logout_redirect_uri`: a client may register a fixed loopback URI and return with a different ephemeral port at logout. Host, scheme, and path still have to match the registered shape; only the port varies.
+
 The point is **end the OP's session for this browser**. The RP that initiated the logout already knows about it (it's the one that redirected); other RPs don't, unless the OP also runs Back-Channel Logout.
 
 ### Back-Channel Logout 1.0

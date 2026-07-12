@@ -25,10 +25,10 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 
 ## Latest baseline
 
-Captured: 2026-06-14T07:18:03Z<br/> Release label: `v0.9.4`<br/> Repository SHA: [`2d915fe`](https://github.com/libraz/go-oidc-provider/commit/2d915fe8cbd4a997375f66aeb20eb6c40ea70fed)<br/> OFCS image: `release-v5.1.45`
+Captured: 2026-07-12T16:56:58Z<br/> Repository SHA: [`8db1b80`](https://github.com/libraz/go-oidc-provider/commit/8db1b80e0164414c3079b60f2d4de41d79c0facd)<br/> OFCS image: `release-v5.1.45`
 
 ::: info Snapshot status
-The pass / review / skip counts below are the current published four-plan snapshot. The v0.9.4 release updates the harness image pin and release metadata; run the reproduction workflow before citing a fresh certification baseline.
+The pass / review / skip counts below are the current published four-plan security snapshot. The local run artifact is the matching timestamped JSON under `conformance/baselines/`; run the reproduction workflow before citing a fresh certification baseline.
 :::
 
 | Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | Total |
@@ -124,7 +124,7 @@ Each OFCS test plan exercises a specific spec profile. The tables below map ever
 | `iss` in authorization response (RFC 9207) | profile-enforced | [/concepts/issuer](/concepts/issuer) |
 | `ES256` for ID Token signing | profile-enforced; OP-issued ID Tokens are never signed with `PS256` or `RS256` | [/concepts/jose-basics](/concepts/jose-basics) |
 | Refusal of `RS256` (FAPI), `HS*`, `none` | closed alg type at `internal/jose/alg.go` | [/security/design-judgments](/security/design-judgments) |
-| `private_key_jwt` or `tls_client_auth` | profile-enforced (intersected with FAPI allow-list) | [/concepts/client-types](/concepts/client-types) |
+| `private_key_jwt` | profile-enforced | [/concepts/client-types](/concepts/client-types) |
 | DPoP or mTLS sender constraint | `op.WithFeature(feature.DPoP)` or `op.WithFeature(feature.MTLS)` (at least one is mandatory under FAPI 2.0) | [/concepts/sender-constraint](/concepts/sender-constraint), [/concepts/dpop](/concepts/dpop), [/concepts/mtls](/concepts/mtls) |
 | `redirect_uri` exact match | profile-enforced | [/concepts/redirect-uri](/concepts/redirect-uri) |
 | Refresh token rotation + reuse detection | enabled by default | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
@@ -252,7 +252,7 @@ The harness:
 - `feature.JARM` (additionally auto-enabled by `FAPI2MessageSigning`) — authorization responses signed as JWTs
 - Sender-constrained access tokens — the profile imposes a DPoP-or-mTLS requirement. If the embedder explicitly enables `feature.MTLS` (`cnf.x5t#S256`), that satisfies the requirement and suppresses the DPoP default. Otherwise `op.New` selects `feature.DPoP` (`cnf.jkt`) as the canonical default, so a plain `op.WithProfile(profile.FAPI2Baseline)` still boots with sender-constrained access tokens. Discovery advertises `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` when DPoP is active.
 - JOSE alg allow-list locked to `RS256 / PS256 / ES256 / EdDSA` codebase-wide; `HS*` and `none` are **structurally** unreachable (see `internal/jose/alg.go`)
-- `token_endpoint_auth_methods_supported` intersected with FAPI's allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`)
+- `token_endpoint_auth_methods_supported` intersected with the FAPI production path (`private_key_jwt`)
 - `redirect_uri` exact-string match enforced
 - per-client `RequestObjectSigningAlg` / `TokenEndpointAuthSigningAlg` narrowing pins each FAPI client to `PS256` (or `ES256` / `EdDSA`); the discovery doc still advertises the codebase-wide list
 

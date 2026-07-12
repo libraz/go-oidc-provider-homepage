@@ -65,7 +65,7 @@ text { stroke: none; }
   <text x="538" y="262" dominant-baseline="central" class="lbl" font-size="12" fill="var(--vp-c-text-3)">… and more</text>
 </svg>
 
-Every substore (`AuthCodeStore`, `RefreshTokenStore`, `ClientStore`, `SessionStore`, etc.) maps to a table.
+Every substore (`AuthorizationCodeStore`, `RefreshTokenStore`, `ClientStore`, `SessionStore`, etc.) maps to a table.
 
 ::: info New substores
 The SQL adapter bundles tables for the opaque-access-token substore (`oidc_opaque_access_tokens`, populated only when `op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or `op.WithAccessTokenFormatPerAudience(...)` is configured) and for the grant-revocation substore (`oidc_grant_revocations` plus `oidc_revoked_jtis`, the backing store for the default `RevocationStrategyGrantTombstone`). Both are part of the transactional cluster — they commit alongside the grant or refresh write that triggered them, so a half-committed cascade cannot leave a revoked grant next to a still-redeemable token.

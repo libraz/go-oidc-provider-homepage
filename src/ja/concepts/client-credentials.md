@@ -22,19 +22,6 @@ description: エンドユーザ無しのサービス間トークン。RFC 6749 �
 - **`private_key_jwt`** — クライアント認証方式のひとつ。クライアントが秘密鍵で短寿命の JWT に署名し、OP は登録済みの公開鍵で検証します。共有秘密と違い、秘密がクライアントの外に出ないので強度が高い。
 :::
 
-<style scoped>
-#cc-flow text { font-family: var(--vp-font-family-base); fill: currentColor; stroke: none; }
-#cc-flow .mono { font-family: var(--vp-font-family-mono); }
-#cc-flow .c-op { stroke: var(--vp-c-brand-2); }
-#cc-flow .c-rs { stroke: var(--vp-c-text-3); }
-#cc-flow .tf-op { fill: var(--vp-c-brand-2); }
-#cc-flow .tf-rs { fill: var(--vp-c-text-3); }
-#cc-flow .life { stroke-width: 1; opacity: .4; }
-#cc-flow .box { stroke-width: 2; }
-#cc-flow .arw { stroke-width: 2; }
-#cc-flow .num { stroke-width: 1.5; }
-</style>
-
 <svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
   <title id="cc-flow-title">client_credentials フロー: Service A が OP に認証してアクセストークンを受け取り、それを bearer token として Service B に提示する。</title>
   <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
@@ -59,7 +46,7 @@ description: エンドユーザ無しのサービス間トークン。RFC 6749 �
   <path class="arw c-op" d="M369 148 h20 v10 h-20"/>
   <path class="arw c-op" d="M376 153 L369 158 L376 163"/>
   <text x="398" y="151" font-size="11"><tspan class="mono">scope</tspan> をクライアントの</text>
-  <text x="398" y="165" font-size="11"><tspan class="mono">allow-list</tspan> と照合</text>
+  <text x="398" y="165" font-size="11"><tspan class="mono">許可リスト</tspan> と照合</text>
   <circle class="num c-op" cx="360" cy="150" r="9" fill="var(--vp-c-bg)"/>
   <text class="mono tf-op" x="360" y="154" text-anchor="middle" font-size="11">2</text>
   <text x="225" y="194" text-anchor="middle" font-size="11">200 OK</text>
@@ -84,7 +71,7 @@ description: エンドユーザ無しのサービス間トークン。RFC 6749 �
 </svg>
 
 ::: warning Confidential クライアントのみ
-`client_credentials` は本ライブラリでは構造的に **confidential クライアント**（実認証情報を持つもの: `client_secret_basic`、`client_secret_post`、`private_key_jwt`、`tls_client_auth`、`self_signed_tls_client_auth`）に制限されます。public クライアント（SPA / ネイティブ、`token_endpoint_auth_method=none`）は使えません。
+`client_credentials` は本ライブラリでは構造的に **confidential クライアント**（実認証情報を持つもの: `client_secret_basic`、`client_secret_post`、`private_key_jwt`）に制限されます。public クライアント（SPA / ネイティブ、`token_endpoint_auth_method=none`）は使えません。mTLS は発行アクセストークンの結び付けには使えますが、`client_credentials` の認証方式ではありません。
 
 エンドユーザがいないため、PKCE / 同意 / `id_token` / **リフレッシュトークン** はありません。クライアントはアクセストークンが期限切れになったら grant を再実行します。
 :::
@@ -113,7 +100,7 @@ handler, err := op.New(
 )
 ```
 
-登録クライアントは `GrantTypes` でオプトインします。
+登録クライアント側でも `GrantTypes` に明示します。
 
 ```go
 op.WithStaticClients(op.ConfidentialClient{
@@ -137,12 +124,12 @@ op.WithStaticClients(op.ConfidentialClient{
 `client_credentials` アクセストークンは次を持ちます:
 
 - `iss` — OP issuer
-- `aud` — resource server 識別子（typed seed の `Resources []string` フィールドで RFC 8707 のリソース識別子を許可する。DCR の場合は同等の `resources` メタデータ）
+- `aud` — resource server 識別子（型付きクライアント定義の `Resources []string` フィールドで RFC 8707 のリソース識別子を許可する。DCR の場合は同等の `resources` メタデータ）
 - `client_id` — 要求元クライアント
 - `sub = client_id` — RFC 9068 §2.2 / FAPI 2.0 の慣習。クライアント自身が subject(自分自身として動く)
 - `scope` — 要求 scope のうち付与された部分集合
 
-`op.WithFeature(feature.MTLS)` または DPoP が設定されクライアントが送信者制約を提示した場合、トークンには加えて RFC 7800 の `cnf` (Confirmation) claim が乗りバインドされます。
+`op.WithFeature(feature.MTLS)` または DPoP が設定され、クライアントが送信者制約を提示した場合、トークンには加えて RFC 7800 の `cnf` (Confirmation) claim が入り、鍵または証明書に結び付けられます。
 
 ::: details なぜ `sub = client_id` なのか
 ユーザを伴うフローでは `sub` はエンドユーザの安定識別子です。`client_credentials` にはエンドユーザがいないので、RFC 9068 §2.2 が `sub` を `client_id` に等しくすることを要求しています — *クライアント自身* が subject として動いている、という建付けです。`sub` を見て「誰がやったか」を記録する RS は依然として安定識別子を得られますが、サービストークンの場合の識別子は人ではなく登録済みサービスを指す、という前提を持つ必要があります。よくあるバグは「`sub` は必ず user テーブルの行を指す」と思い込むこと — サービストークンでは *client* テーブルの行を指します。
@@ -154,20 +141,20 @@ op.WithStaticClients(op.ConfidentialClient{
 - クライアント登録時の `Resources []string`（クライアントが要求してよい RFC 8707 リソース識別子の許可リスト）。または
 - ランタイムの `resource=...` リクエストパラメータ（RFC 8707）— 許可リストの範囲内であること。
 
-`Resources` が未設定でランタイムの `resource` パラメータも無い場合、OP はデプロイ定義のデフォルトにフォールバックします。RS は自分の識別子と一致しない `aud` を持つトークンを拒否するべきです — RS から盗まれたトークンを別の RS に再生される攻撃に対する audience-restriction 防御です。
+`Resources` が未設定でランタイムの `resource` パラメータも無い場合、OP は配備側で定めた既定にフォールバックします。RS は自分の識別子と一致しない `aud` を持つトークンを拒否するべきです — RS から盗まれたトークンを別の RS に再生される攻撃に対する audience-restriction 防御です。
 :::
 
-::: details bearer と送信者制約の違い
-デフォルトでは、`client_credentials` アクセストークンは **bearer** トークン（RFC 6750）です — 「持っている者が使える」。漏洩した bearer トークンは、有効期限まで攻撃者にも機能します。
+::: details Bearer と送信者制約の違い
+既定では、`client_credentials` アクセストークンは **Bearer** トークン（RFC 6750）です — 「持っている者が使える」。漏洩した Bearer トークンは、有効期限まで攻撃者にも機能します。
 
-**送信者制約付き** アクセストークン（RFC 8705 mTLS、または RFC 9449 DPoP）は、`cnf` claim でトークンを正規クライアントが保持する鍵にバインドします。RS は API 呼び出しごとに、呼び出し元がその鍵を保有していることを証明させます。漏洩しても、対応する秘密鍵が無いと使えません — そして秘密鍵はクライアントの外に出ません。
+**送信者制約付き** アクセストークン（RFC 8705 mTLS、または RFC 9449 DPoP）は、`cnf` claim でトークンを正規クライアントが保持する鍵に結び付けます。RS は API 呼び出しごとに、呼び出し元がその鍵を保有していることを証明させます。漏洩しても、対応する秘密鍵が無いと使えません — そして秘密鍵はクライアントの外に出ません。
 
-規制対応のサービス間通信（FAPI 2.0、PSD2、OBL）では送信者制約が標準的な既定値です。mesh 層で mTLS が強制されている内部サービス間通信では、素の bearer でも実用上問題ない場合があります。
+規制対応のサービス間通信（FAPI 2.0、PSD2、OBL）では送信者制約が標準的な既定値です。mesh 層で mTLS が強制されている内部サービス間通信では、素の Bearer でも実用上問題ない場合があります。
 :::
 
 ## 動作確認
 
-[`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) は `client_secret_basic` クライアントでの end-to-end 実行版です。
+[`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) は `client_secret_basic` クライアントでの一連の実行例です。
 
 ```sh
 (cd examples/05-client-credentials && go run -tags example .)
@@ -175,5 +162,5 @@ op.WithStaticClients(op.ConfidentialClient{
 
 ## 次に読むもの
 
-- [送信者制約 (DPoP / mTLS)](/ja/concepts/sender-constraint) — サービストークンをクライアント保有鍵にバインドし、盗難トークンを無効化する。
-- [ユースケース: 本番の client_credentials](/ja/use-cases/client-credentials)。
+- [送信者制約 (DPoP / mTLS)](/ja/concepts/sender-constraint) — サービストークンをクライアント保有鍵に結び付け、盗難トークンを無効化する。
+- [使い方: 本番の client_credentials](/ja/use-cases/client-credentials)。

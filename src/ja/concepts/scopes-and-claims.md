@@ -62,7 +62,7 @@ OIDC Core §5.4 が標準 scope に対応する claim を固定しています�
 | `email` | `email`、`email_verified` |
 | `address` | `address` |
 | `phone` | `phone_number`、`phone_number_verified` |
-| `offline_access` | （claim なし — リフレッシュトークン発行のためのユーザ向け同意プロンプトと、適用されるリフレッシュトークンの TTL バケットを制御） |
+| `offline_access` | （claim なし — リフレッシュトークン発行のためのユーザ向け同意画面と、適用されるリフレッシュトークンの TTL バケットを制御） |
 
 `scope=openid email` の要求は、ユーザ claim カタログから `sub`、`email`、`email_verified` を release します。それ以外は何も release しません。`scope=openid profile email` なら `profile` 群が丸ごと加わります。
 
@@ -93,7 +93,9 @@ op.WithScope(op.Scope{
 
 OIDC 標準 scope は組み込みのデフォルトで自動認識されます。標準名（例: `email`）に対して `WithScope` を呼ぶと組み込みエントリが上書きされます — 翻訳や追加の claim mapping を付与する目的で使うのが典型です — が、`Public: false` で標準 scope を登録すると `op.New` が失敗します。discovery 文書が「標準 scope を欠落」と公告するのを防ぐためです。
 
-i18n ラベル、claim mapping、consent prompt のレンダリングを含む詳細は[ユースケース: scope](/ja/use-cases/scopes)を参照してください。
+`op.Scope.Parse` は組み込み側の文字列処理用ヘルパで、Unicode whitespace の連続で分割します。一方、通信路上の scope parsing は RFC 6749 の ASCII space grammar を使うため、`/authorize` / `/par` 入力に tab や改行を混ぜることを互換性前提にしないでください。
+
+i18n ラベル、claim mapping、consent prompt のレンダリングを含む詳細は[使い方: scope](/ja/use-cases/scopes)を参照してください。
 
 ## scope と RFC 8707 resource indicator
 
@@ -107,10 +109,10 @@ i18n ラベル、claim mapping、consent prompt のレンダリングを含む�
 
 scope は **権限の幅** を、resource indicator は **対象 audience** を表現します。1 つの authorize 要求に両方を載せることもできます — `scope=openid read:projects&resource=https://billing.example.com&resource=https://projects.example.com` は OP に「resource ごとに 1 つずつ、grant された scope 集合を持つアクセストークンを 2 つ発行せよ」と要求します。
 
-OIDC §5.5 の `claims` パラメータ（scope 単位ではなく特定の claim を細かく要求する）は[ユースケース: claims request](/ja/use-cases/claims-request)に、per-audience format のトレードオフは[アクセストークン形式](/ja/concepts/access-token-format)にあります。
+OIDC §5.5 の `claims` パラメータ（scope 単位ではなく特定の claim を細かく要求する）は[使い方: claims request](/ja/use-cases/claims-request)に、per-audience format のトレードオフは[アクセストークン形式](/ja/concepts/access-token-format)にあります。
 
 ## 次に読む
 
 - [ID トークン / アクセストークン / userinfo](/ja/concepts/tokens) — 各アーティファクトに何が入るか、scope がどう形を決めるか。
-- [ユースケース: scope](/ja/use-cases/scopes) — i18n ラベル、claim mapping、allowed-clients、consent prompt のサーフェス。
-- [ユースケース: claims request](/ja/use-cases/claims-request) — 細かい claim 選択のための OIDC §5.5 `claims` パラメータ。
+- [使い方: scope](/ja/use-cases/scopes) — i18n ラベル、claim mapping、allowed-clients、consent prompt の公開面。
+- [使い方: claims request](/ja/use-cases/claims-request) — 細かい claim 選択のための OIDC §5.5 `claims` パラメータ。

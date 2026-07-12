@@ -152,7 +152,7 @@ Fire from request-validation paths that detect abuse signals or operator-visible
 |---|---|---|---|
 | `AuditRateLimitExceeded` | request rejected by rate limiter — **embedder-emitted** vocabulary; the library does not implement a generic per-IP / per-endpoint HTTP throttle | warn | — |
 | `AuditRateLimitBypassed` | rate-limit bypass token consumed (operator override) — **embedder-emitted** vocabulary; same scoping as `AuditRateLimitExceeded` | warn | — |
-| `AuditPKCEViolation` | PKCE verifier mismatch / `plain` rejected / missing on FAPI | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
+| `AuditPKCEViolation` | PKCE verifier mismatch / `plain` rejected / missing on public, native, or FAPI-required authorization requests | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditRedirectURIMismatch` | redirect URI did not match the registered list | warn | [Concepts: redirect URI](/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | a legacy alg path was reached (telemetry; rejected by the verifier) | warn | [Concepts: JOSE basics](/concepts/jose-basics) |
 | `AuditCORSPreflightAllowed` | a CORS preflight matched the strict allowlist | info | [Use case: CORS for SPA](/use-cases/cors-spa) |

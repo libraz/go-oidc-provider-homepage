@@ -25,14 +25,6 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 > 適合性 ≠ セキュリティ です。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
 
-<style scoped>
-.op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-.op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
-.op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
-.op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
-.op-fp-flow{stroke:var(--vp-c-brand-2);}
-</style>
-
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
   <title id="posture-five-properties-title">「これは安全か？」を支える 5 つの独立した性質 — 適合性・正しさ・セキュリティ・サプライチェーン・運用の保証を順に並べた図。</title>
   <rect x="0" y="16" width="124" height="84" rx="6"/>
@@ -69,7 +61,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 ### 1. コンストラクタはゼロ値起動を拒否する
 
-`op.New(...)` は `error` を返します — 必須オプションが欠けるとエラーで弾かれます。`WithIssuer` と `WithStore` は無条件で必須、`WithKeyset` はトークン署名・検証を伴うフローを有効にした時点で必須、`WithCookieKeys` は `authorization_code` grant を有効にした時点で必須です。利用可能なゼロ値の `Provider` は存在しません。
+`op.New(...)` は `error` を返します — 必須オプションが欠けるとエラーで弾かれます。`WithIssuer`、`WithStore`、`WithKeyset` は無条件で必須、`WithCookieKeys` は `authorization_code` grant が有効な場合（デフォルトの grant 集合を含む）に必須です。利用可能なゼロ値の `Provider` は存在しません。
 
 ::: details なぜ重要か
 多くの「デフォルト ON」型のフレームワークは設定不足でも気付かれずに起動します。本ライブラリの設計では「OP が立ち上がったが署名鍵がない / 推測可能な cookie 鍵 / 誤った issuer」といった種類のバグを、最初の 1 リクエストが届く前に閉じます。詳細は `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` の不在時に出るビルド時エラーを参照してください。
@@ -83,7 +75,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 |---|---|
 | JWT ライブラリが `alg=none` を受理 | `Algorithm(s)` は不明値・空文字を拒否 |
 | 公開鍵経路で `HS256` を受理 | `HS*` は型に存在しない |
-| 配置ごとの alg「フィーチャーフラグ」 | depguard の `jose-isolation` ルールで `go-jose/v4` を直接 import できるパッケージを allow-list で固定。新規呼び出し元は明示的に追加する必要がある |
+| 配置ごとの alg「フィーチャーフラグ」 | depguard の `jose-isolation` ルールで `go-jose/v4` を直接 import できるパッケージを 許可リストで固定。新規呼び出し元は明示的に追加する必要がある |
 
 ### 3. `crypto/rand` のみ — `math/rand` 禁止
 
@@ -110,7 +102,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 | 防御 | ソース | 仕様 |
 |---|---|---|
 | `__Host-` cookie、AES-256-GCM、double-submit CSRF、Origin/Referer チェック | `internal/cookie`、`internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
-| `authorization_code` grant に PKCE 必須、`plain` は拒否 | `internal/pkce` | RFC 7636 |
+| public / native の authorization-code client、および FAPI プロファイル下の全 authorization-code client に PKCE 必須。`plain` は拒否 | `internal/authorize`、`internal/pkce` | RFC 7636、RFC 9700 |
 | リフレッシュトークンのローテーション + 再利用検知(chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14 |
 | 送信者制約付きトークン(DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`) | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
 | 認可応答に `iss` を付与 | `internal/authorize` | RFC 9207 |
@@ -118,20 +110,25 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 | ループバック redirect の制約強化 | `internal/registrationendpoint`、`internal/authorize` | RFC 8252 |
 | 外向き HTTP fetch の制約（許可 scheme、body 上限、Accept、timeout、redirect、cache）を JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout 配送に適用。dial 段階で loopback / link-local / RFC 1918 / IPv6 ULA を拒否し、`BaseTransport` が `*http.Transport` 以外なら URL ゲートでフォールバック | `internal/securefetch`、`internal/netsec` | OWASP SSRF、OIDC Back-Channel Logout 1.0 |
 | OP 側の request_object replay 対策(`jti`) | `internal/jar` | RFC 9101 §10.8 |
-| 各検証経路でのアルゴリズム allow-list | `internal/jose` | RFC 8725 |
+| 各検証経路でのアルゴリズム許可リスト | `internal/jose` | RFC 8725 |
 | Issuer 正規化(末尾スラッシュなどの揺れを防ぐ) | `op/options_validate.go` | RFC 9207 |
-| Resource indicator の正規化(scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否)を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の allow-list に適用 | `internal/resourceindicator` | RFC 8707 §2 |
+| Resource indicator の正規化(scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否)を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の 許可リストに適用 | `internal/resourceindicator` | RFC 8707 §2 |
 | `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否(RFC 8707 の `resource=` のみ例外)。認証情報を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
 | Argon2id パラメータを OWASP 2024 ベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
 | DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
 | 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 | クライアント検証鍵（`client_assertion`、JAR request object）を OP の鍵 shape 最低水準に保持: RSA は 2048 bit 以上、EC 曲線は宣言された `alg` と一致 | `internal/clientauth`、`internal/jar`、`internal/jose`（`AssertAlgKeyShape`） | RFC 7518 §3.3、RFC 8725 §3.2 |
 | `jwks_uri` を使う `private_key_jwt` クライアントは、未知の `kid` を見たときに 1 回だけ throttle 付きでキャッシュを迂回して再取得し、正当な RP 鍵ローテーションから復帰する。ランダムな未知 `kid` は外向き fetch を増幅できない | `internal/clientauth`、`internal/jar` | RFC 7523、OIDC Dynamic Registration |
+| `private_key_jwt` assertion 検証は JWS `kid` で鍵を選択し、`kid` 無しでも試行検証数を上限付きにし、鍵無し拒否のタイミングを均し、リクエスト内の client lookup を 1 回にまとめる | `internal/clientauth` | RFC 7515 §4.1.4、RFC 7523 |
+| JWKS parse 時に秘密鍵と対称鍵を拒否し、検証経路へ渡さない | `internal/clientauth`、`internal/jar`、`internal/jose` | RFC 8725 |
+| DPoP-bound access token を `Bearer` scheme で `/userinfo` に提示した場合は拒否。送信者制約付き token は `DPoP` scheme が必須 | `internal/endpointsupport`、`internal/userinfo` | RFC 9449 §7.1 |
+| 改ざん・decode 不能な authorization endpoint の session cookie は持ち越さず、clear して「session なし」と扱う | `internal/authorizeendpoint`、`internal/cookie` | RFC 6265bis |
 | ワンタイム認証 factor（email-OTP、TOTP、recovery code）を atomic な compare-and-set で単回使用化（再提示時は `ErrAlreadyConsumed`）。cross-factor の lockout は atomic に刻む（`StampLock`） | `internal/authn`、`op/store` | — (defence in depth) |
 | TOTP / email-OTP / recovery code の誤入力分岐はすべて共有 retry path と observer を通るため、captcha / lockout gate が second-factor brute-force を観測できる | `internal/authn` | — (defence in depth) |
 | リフレッシュトークンの `id` / `parent_id` を保存時にハッシュ化し、定数時間で参照 | `internal/tokenendpoint`、`op/store` | RFC 9700 §2.2.2 |
 | Refresh-token rotation は child insert と同じ critical section / transaction 内で parent を再確認し、replay revocation が成功済み descendant save と競合して取り逃がすことを防ぐ | `op/storeadapter/sql`、`op/storeadapter/inmem` | RFC 9700 §2.2.2 |
 | Token exchange は policy 適用後の決定を再検証し、付与 scope が要求済み subject-token-bounded scope 内、付与 audience が要求済み audience 内に残ることを強制する | `internal/customgrant/tokenexchange` | RFC 8693 |
+| token response の途中で `server_error` になった場合、mint 済みの永続 opaque access token row を revoke し、有効な孤児 token を残さない | `internal/tokenendpoint`、`op/store` | — (defence in depth) |
 
 ## ツールチェーン
 

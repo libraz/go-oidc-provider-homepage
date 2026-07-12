@@ -90,7 +90,7 @@ JSON. RFC 6749 §5.2 + RFC 9449 (DPoP).
 |---|---|---|
 | `invalid_request` | 400 | malformed grant body, missing parameter |
 | `invalid_grant` | 400 | code expired / consumed, refresh token rotated past grace, PKCE verifier mismatch |
-| `invalid_client` | 401 | client auth failed (no credentials, wrong secret, invalid `private_key_jwt` / mTLS cert) |
+| `invalid_client` | 401 | client auth failed (no credentials, wrong secret, invalid `private_key_jwt`) |
 | `unauthorized_client` | 400 | client not allowed for this grant type |
 | `unsupported_grant_type` | 400 | grant not enabled in `WithGrants` |
 | `invalid_scope` | 400 | refresh requested wider scope than original |

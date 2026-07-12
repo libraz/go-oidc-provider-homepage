@@ -3,7 +3,7 @@ title: Prometheus メトリクス
 description: 厳選した業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
 ---
 
-# ユースケース — Prometheus メトリクス
+# 使い方 — Prometheus メトリクス
 
 OIDC 業務系メトリクス（トークン発行、refresh rotation、監査イベント数）を既存 Prometheus スタックに乗せたい。ただしライブラリが `/metrics` を勝手にマウントするのは避けたい — それは利用者側のルータの仕事です。
 
@@ -51,7 +51,7 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 | Token endpoint | `oidc_token_issued_total{grant_type,client_id}`、`oidc_tokens_refreshed_total{client_id}`、refresh / authorization-code replay 検知、method / reason 別の client-auth 失敗 |
 | 認証 | result / authenticator 別の login attempt |
 | 拡張フロー | DCR、Device Authorization、Device Code、CIBA、Token Exchange のイベントカウンタ。label は audit event の sub-name |
-| Logout / revocation | back-channel 配送結果、session が無い fan-out gap、token / refresh-chain / grant revocation の副作用失敗 |
+| Logout / revocation | back-channel 配送結果、session が無い 一斉通知 gap、token / refresh-chain / grant revocation の副作用失敗 |
 | 運用シグナル | introspection 認証エラー、DPoP loose-method-case bridge の受理、retired JWKS `kid` の提示 |
 
 metrics bridge は audit emitter から供給されます。1 回の audit event が slog stream と対応 counter の両方を更新するため、組み込み側が metrics 用に別 emit する必要はありません。

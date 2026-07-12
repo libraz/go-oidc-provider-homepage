@@ -5,12 +5,12 @@ description: public / confidential / FAPI grade のクライアント分類、�
 
 # クライアント種別
 
-**クライアント** とは、OP にトークンを要求するアプリケーションのことです。クライアントは構造的に **public**（シークレットを保持できない）と **confidential**（保持できる）の 2 つに分かれ、FAPI 2.0 デプロイは confidential のさらに上に高水準の要件を積みます。どのバケットに属するかが token endpoint での認証メソッドを決め、その選択はリフレッシュトークンのポリシー、sender constraint の必須化、consent prompt をスキップできるかどうかに連鎖していきます。
+**クライアント** とは、OP にトークンを要求するアプリケーションのことです。クライアントは構造的に **public**（シークレットを保持できない）と **confidential**（保持できる）の 2 つに分かれ、FAPI 2.0 構成は confidential のさらに上に高水準の要件を積みます。どの区分に属するかが token endpoint での認証メソッドを決め、その選択はリフレッシュトークンのポリシー、送信者制約の必須化、同意画面をスキップできるかどうかに連鎖していきます。
 
 ::: tip 30 秒で頭に入れる相関図
 - **public client** — SPA、ネイティブアプリ、モバイルアプリ。コードがユーザの手に届くのでシークレットは保持できません。`none` + PKCE を使います。
 - **confidential client** — バックエンドサービス、機械間呼び出し。シークレットや秘密鍵を保持できます。`client_secret_*` または `private_key_jwt` を使います。
-- **FAPI grade client** — sender-constrained token（DPoP / mTLS）、PAR、非対称鍵認証で強化された confidential client。
+- **FAPI grade client** — 送信者制約付きトークン（DPoP / mTLS）、PAR、非対称鍵認証で強化された confidential client。
 :::
 
 ::: details このページで触れる仕様
@@ -36,18 +36,35 @@ public client は「ユーザの端末で人をログインさせる」クライ
 - モバイル / デスクトップアプリが custom URI scheme、claimed `https`、または loopback redirect で認可コードを受け取る。
 - CLI がローカル loopback listener を開き、ブラウザログイン後に認可コードを受け取る。
 
-バックエンドだけで動く server-side RP や service-to-service 呼び出しでは、secret や秘密鍵を保持できるので confidential client を選びます。
+バックエンドだけで動くサーバ側 RP やサービス間呼び出しでは、secret や秘密鍵を保持できるので confidential client を選びます。
 
 ### なぜ仕様として分かれているか
 
 この分類は、クライアントを「シークレットを持てるかどうか」で正しく扱うためにあります。SPA やモバイルアプリに `client_secret` を要求すると、開発者は secret を JavaScript bundle、アプリ binary、設定ファイルのどこかに埋め込むしかありません。その値は配布先の全ユーザ、つまり攻撃者にも渡るので、仕様上は秘密として扱えません。
+
+```jsonc
+// NG: SPA bundle に secret を同梱するしかなく、secret として扱えない
+{
+  "client_id": "browser-spa",
+  "token_endpoint_auth_method": "client_secret_basic",
+  "client_secret": "shipped-in-javascript"
+}
+
+// OK: public client として登録し、code + PKCE で守る
+{
+  "client_id": "browser-spa",
+  "token_endpoint_auth_method": "none",
+  "grant_types": ["authorization_code"],
+  "redirect_uris": ["https://app.example.com/callback"]
+}
+```
 
 そこで OAuth / OIDC は public client を明示的に認めます。長寿命 secret で認証したふりをする代わりに、登録済み `client_id`、redirect URI の完全一致、リクエストごとの PKCE、refresh token rotation、必要に応じた DPoP で保護します。public client は「信用しないクライアント」ではなく、「secret を保持できない前提で別の防御を積むクライアント」です。
 
 本ライブラリは `TokenEndpointAuthMethod` が `"none"` のクライアントを public として扱います。シークレットの不在を補う構造的な保護は次のとおりです。
 
 - **PKCE が必須**。OP は `S256` のみを受理し、`plain` はプロファイルに関係なく拒否します（[設計判断 #14](/ja/security/design-judgments#dj-14)）。`code_verifier` は「フローを開始したクライアントと終わらせるクライアントが同じである」ことを示すリクエストごとのシークレット — これがなければ、redirect で奪われた認可コードだけでトークンが発行されてしまいます。
-- **リフレッシュトークンはローテーションされ、DPoP に bind される**。リフレッシュ交換が成功するたびに前のリフレッシュトークンは無効化され、次のトークンはクライアントが提示した DPoP 鍵に bind されます。public client で漏洩した refresh は、対応する鍵がなければ再利用できません。すでにローテーション済みのトークンが再提示された場合は chain 全体が失効します。詳細は[設計判断 #15](/ja/security/design-judgments#dj-15)。
+- **リフレッシュトークンはローテーションされ、DPoP に結び付けられる**。リフレッシュ交換が成功するたびに前のリフレッシュトークンは無効化され、次のトークンはクライアントが提示した DPoP 鍵に結び付けられます。public client で漏洩したリフレッシュトークンは、対応する鍵がなければ再利用できません。すでにローテーション済みのトークンが再提示された場合は連鎖全体が失効します。詳細は[設計判断 #15](/ja/security/design-judgments#dj-15)。
 - **loopback redirect が許容される**。RFC 8252 §7.3 により、CLI は OS が割り当てる ephemeral port を `127.0.0.1` / `[::1]` 上で利用できます。詳細は[Redirect URI](/ja/concepts/redirect-uri)。
 
 public client も ID トークン・リフレッシュトークンの受領、`/userinfo` の呼び出しが可能です — フル機能の RP として扱われ、ただ厳しい環境で動いているだけです。
@@ -59,12 +76,12 @@ confidential client とは、ユーザの手の届かないストレージにシ
 confidential client が得られるもの:
 
 - **token endpoint での認証**。すべての `POST /token` でクレデンシャルを送り、OP は何かを発行する前にそれを検証します。検証メソッドは下表のいずれかです。
-- **緩めのリフレッシュトークンポリシー**。他のクライアントと同様にローテーションされますが、chain 自体はデフォルトで DPoP bind されません — 各リフレッシュで発行されるアクセストークンは提示された鍵に bind されますが、refresh chain そのものはリフレッシュごとに鍵を切り替えられます。詳細は[設計判断 #15](/ja/security/design-judgments#dj-15)。
+- **緩めのリフレッシュトークンポリシー**。他のクライアントと同様にローテーションされますが、連鎖自体は既定では DPoP に結び付けられません — 各リフレッシュで発行されるアクセストークンは提示された鍵に結び付けられますが、リフレッシュトークンの連鎖そのものはリフレッシュごとに鍵を切り替えられます。詳細は[設計判断 #15](/ja/security/design-judgments#dj-15)。
 - **first-party 自動同意の対象になり得る**。`op.WithFirstPartyClients(...)` で審査済みの社内クライアントの consent prompt をスキップできます — 対象は静的・admin プロビジョン由来のクライアントのみで、DCR 由来は意図的に除外されます。
 
 ## FAPI grade client
 
-FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: PAR が必須、request object が署名される（JAR / Message Signing）、アクセストークンが sender-constrained（DPoP または mTLS）、認証は非対称鍵（`private_key_jwt`、`tls_client_auth`、または `self_signed_tls_client_auth`）。`op.WithProfile(profile.FAPI2Baseline)` を有効にすると、本ライブラリは discovery 文書の `token_endpoint_auth_methods_supported` を narrow します。詳細は[FAPI 2.0 入門](/ja/concepts/fapi)。
+FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: PAR が必須、request object が署名される（JAR / Message Signing）、アクセストークンが送信者制約付き（DPoP または mTLS）、token endpoint 認証は非対称鍵方式です。本ライブラリは token endpoint クライアント認証に `private_key_jwt` を使います。mTLS は送信者制約レイヤとして使えますが、`tls_client_auth` / `self_signed_tls_client_auth` は `/token` では振り分けられません。詳細は[FAPI 2.0 入門](/ja/concepts/fapi)。
 
 プロトコル上「FAPI クライアント種別」が別物として存在するわけではありません — FAPI grade client は追加要件を満たした confidential client です。本ライブラリは構築時およびリクエスト時にその一致を強制します。
 
@@ -75,17 +92,6 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 次の決定木は、クライアントの構造から登録する `token_endpoint_auth_method` の値までを辿ります — public client は `none`、confidential client は `client_secret_*` 系、FAPI grade client は非対称メソッドに落ちます。
 
 <figure style="margin:1.6rem 0;text-align:center">
-
-<style scoped>
-text{stroke:none}
-.dt-leaf{stroke:var(--vp-c-brand-2)}
-.dt-title{font-family:var(--vp-font-family-base);fill:currentColor;font-weight:600;font-size:13px}
-.dt-sub{font-family:var(--vp-font-family-base);fill:currentColor;opacity:.55;font-size:10.5px}
-.dt-edge{font-family:var(--vp-font-family-base);fill:currentColor;opacity:.6;font-size:10.5px}
-.dt-code{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:11px}
-.dt-root-code{font-family:var(--vp-font-family-mono);fill:currentColor;opacity:.6;font-size:10.5px}
-.dt-note{font-family:var(--vp-font-family-mono);fill:currentColor;opacity:.5;font-size:10px}
-</style>
 
 <svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 720 268" width="720" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="authmethod-decision-title">クライアントの構造（public / confidential / FAPI grade）から OP が強制する token_endpoint_auth_method の値までを辿る決定木。</title>
@@ -117,12 +123,7 @@ text{stroke:none}
 <text class="dt-code" x="360" y="210" text-anchor="middle">client_secret_post</text>
 <rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
 <text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
-<path d="M600 186 V192"/>
-<rect class="dt-leaf" x="500" y="192" width="200" height="28" rx="6"/>
-<text class="dt-code" x="600" y="210" text-anchor="middle">tls_client_auth</text>
-<path d="M600 220 V226"/>
-<rect class="dt-leaf" x="500" y="226" width="200" height="28" rx="6"/>
-<text class="dt-code" x="600" y="244" text-anchor="middle">self_signed_tls_client_auth</text>
+<text class="dt-note" x="600" y="200" text-anchor="middle">+ DPoP / mTLS sender constraint</text>
 </svg>
 </figure>
 
@@ -132,8 +133,8 @@ text{stroke:none}
 | `client_secret_basic` | あり | — | 不可 | 共有シークレット保持のバックエンド。HTTP Basic で送る。confidential client の既定。 |
 | `client_secret_post` | あり | — | 不可 | 同じシークレットを form body で送る。新規デプロイには非推奨 — Basic が標準的な通信路上の形式。 |
 | `private_key_jwt` | — | あり | 可 | バックエンドが自分の秘密鍵で短寿命 JWT assertion に署名し、OP が登録 JWKS で検証。FAPI が推奨するメソッド。 |
-| `tls_client_auth` | — | あり（PKI） | 可 | mTLS handshake。OP がクライアントの X.509 証明書を、登録された subject DN または SAN と照合。 |
-| `self_signed_tls_client_auth` | — | あり（pin） | 可 | mTLS handshake。OP はクライアント JWKS に登録された JWK サムプリントで証明書を pin します。CA は介在しません。 |
+| `tls_client_auth` | — | あり（PKI） | RFC 検証器のみ | RFC 8705 検証器は内部にありますが、`/token` のクライアント認証方式としては振り分けられません。 |
+| `self_signed_tls_client_auth` | — | あり（pin） | RFC 検証器のみ | RFC 8705 検証器は内部にありますが、`/token` のクライアント認証方式としては振り分けられません。 |
 
 `client_secret_jwt`（HS256 共有シークレット JWT）は **実装していません**。共有シークレット JWT は漏洩シークレットの被害範囲を広げる一方で、`private_key_jwt` が提供しないものを何ひとつ提供しません。本ライブラリはこの攻撃面を増やしません。
 

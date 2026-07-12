@@ -54,7 +54,7 @@ op.New(
 )
 ```
 
-Empty fields keep the default. Defaults match OIDC Core 1.0 conventions: `/auth`, `/token`, `/userinfo`, `/end_session`, `/jwks`, plus `/par`, `/introspect`, `/revoke`, `/register` when their respective features are enabled.
+Empty fields keep the default. Defaults match OIDC Core 1.0 conventions: `/auth`, `/token`, `/userinfo`, `/end_session`, `/jwks`, plus option-gated protocol endpoints such as `/par`, `/introspect`, `/revoke`, `/register`, `/device_authorization`, `/bc-authorize`, and `/grant_management`.
 
 ## What the OP does NOT mount
 
@@ -66,13 +66,13 @@ The OP is intentionally narrow about what it puts on your router:
 | `/jwks` | `/healthz`, `/readyz` |
 | `/auth`, `/token`, `/userinfo` | request-duration histogram middleware |
 | `/end_session` | OpenTelemetry HTTP server span middleware |
-| Optional: `/par`, `/introspect`, `/revoke`, `/register` | a `/debug/pprof` mount |
+| Optional: `/par`, `/introspect`, `/revoke`, `/register`, `/device_authorization`, `/bc-authorize`, `/grant_management` | a `/debug/pprof` mount |
 | Optional: `/interaction/*`, `/session/*` (when SPA driver is used) | a generic per-IP rate limiter |
 
 This is deliberate. The OP emits **business** metrics, traces, and audit events through `op.WithPrometheus`, `op.WithLogger`, and `op.WithAuditLogger` into registries / handlers that you own. **HTTP-lifecycle observation is embedder territory** — you wrap the router with `otelhttp` / `promhttp.InstrumentHandler` according to your SRE conventions.
 
 ::: tip TLS / proxies
-The OP expects to run behind a TLS-terminating ingress. Use `op.WithTrustedProxies(cidrs ...)` to whitelist the proxy ranges that provide `X-Forwarded-For`, and `op.WithMTLSProxy(headerName, cidrs)` if you're terminating client TLS at the proxy and forwarding the certificate in a header for RFC 8705 mTLS client auth.
+The OP expects to run behind a TLS-terminating ingress. Use `op.WithTrustedProxies(cidrs ...)` to whitelist the proxy ranges that provide `X-Forwarded-For`, and `op.WithMTLSProxy(headerName, cidrs)` if you're terminating client TLS at the proxy and forwarding the certificate in a header for RFC 8705 certificate-bound access tokens.
 :::
 
 ## Next

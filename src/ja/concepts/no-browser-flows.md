@@ -5,9 +5,9 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 # ブラウザを使わないフロー: CIBA と Device Code
 
-[Device Code（RFC 8628）](/ja/concepts/device-code)と[CIBA（OpenID Connect Client-Initiated Backchannel Authentication 1.0）](/ja/concepts/ciba)は、仕様エコシステムが同じ大きな状況に対して用意している 2 つの grant です。状況とは「アクセストークンを欲しがるデバイスがまともなブラウザを持てない」こと。スマート TV、ゲーム機、CLI ツール、IoT、音声アシスタント、POS 端末、コールセンタの操作画面、ユーザの代わりに動くサーバ側プロセス、などです。
+[Device Code（RFC 8628）](/ja/concepts/device-code)と[CIBA（OpenID Connect Client-Initiated Backchannel Authentication 1.0）](/ja/concepts/ciba)は、同じ大きな状況に対して仕様が用意している 2 つの grant です。状況とは「アクセストークンを欲しがるデバイスがまともなブラウザを持てない」こと。スマート TV、ゲーム機、CLI ツール、IoT、音声アシスタント、POS 端末、コールセンタの操作画面、ユーザの代わりに動くサーバ側プロセス、などです。
 
-遠目に見ると 2 つのフローは同じ形に見えます — 「2 つの面が OP で合流して、ユーザはスマホで承認する」。実際には違います。両者は **誰がリクエストを起こすか** と **ユーザがどう OP に識別されるか** で分かれており、その 1 点が他のほぼ全ての違い（通信路上のエンドポイント、polling の主体、anti-phishing の主軸、適用される規制プロファイル）を決めています。
+遠目に見ると 2 つのフローは同じ形に見えます — 「2 つの面が OP で合流して、ユーザはスマホで承認する」。実際には違います。両者は **誰がリクエストを起こすか** と **ユーザがどう OP に識別されるか** で分かれており、その 1 点が他のほぼ全ての違い（通信路上のエンドポイント、ポーリングの主体、フィッシング対策の主軸、適用される規制プロファイル）を決めています。
 
 本ページは選択ガイドです。仕様としての動き方は[Device Code](/ja/concepts/device-code)と[CIBA](/ja/concepts/ciba)の各ページに置いてあります。
 
@@ -15,7 +15,7 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 **Device Code（RFC 8628）.** ブラウザを持たないデバイスが OP に「使い切りのコードをくれ」と頼み、自分の画面に表示し、ユーザに「この URL をスマホで開いて、このコードを入力して」と告げます。ユーザは手元のブラウザで認証して承認します。その間デバイスは `/token` を poll し続け、承認が降りるのを待ちます。ユーザの識別は **フローの途中で発覚** します — TV の前に誰がやって来るかは OP もデバイスも事前には知りません。
 
-**CIBA（Core 1.0）.** RP はすでにユーザが誰かを知っています — `login_hint`（`alice@example.com`、口座番号など）、`id_token_hint`（過去に発行された ID トークン）、`login_hint_token`（上流のシステムが発行した署名付き JWT）のいずれかで。RP は OP に「このユーザを out-of-band で認証してくれ」と頼みます。OP は事前登録された認証デバイス（push 通知、SMS、アプリの確認プロンプト）に通知を飛ばします。その間 RP は poll する（ping / push モードならコールバックを待つ）。ユーザの識別は **RP が事前に与えるもの** です — どのデバイスへ push するか、OP はそれがないと決められません。
+**CIBA（Core 1.0）.** RP はすでにユーザが誰かを知っています — `login_hint`（`alice@example.com`、口座番号など）、`id_token_hint`（過去に発行された ID トークン）、`login_hint_token`（上流のシステムが発行した署名付き JWT）のいずれかで。RP は OP に「このユーザを別経路で認証してくれ」と頼みます。OP は事前登録された認証デバイス（push 通知、SMS、アプリの確認画面）に通知を飛ばします。その間 RP は poll する（ping / push モードならコールバックを待つ）。ユーザの識別は **RP が事前に与えるもの** です — どのデバイスへ push するか、OP はそれがないと決められません。
 
 ## 比較
 
@@ -24,12 +24,12 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 | 発端 | ブラウザを持たないデバイス（入力デバイス → OP） | RP / API クライアント（RP → OP） |
 | ユーザの識別 | ユーザが別のブラウザに `user_code` を入力 | RP が `login_hint` / `id_token_hint` / `login_hint_token` を事前に渡す |
 | ユーザ側の端末 | ユーザが手元に持っている任意のブラウザ | OP に事前登録された backchannel push 用のデバイス |
-| anti-phishing の主軸 | デバイスが表示する `user_code` + ユーザが verification URI のホストを目視 | ユーザの認証デバイスに表示する `binding_message` |
+| フィッシング対策の主軸 | デバイスが表示する `user_code` + ユーザが verification URI のホストを目視 | ユーザの認証デバイスに表示する `binding_message` |
 | ブラウザの関与 | あり（ユーザのスマホ側） | 任意 / 不要（push 通知で確認が完結する） |
 | ポーリング主体 | ブラウザを持たないデバイス | RP |
 | 仕様上のエンドポイント | `/device_authorization` | `/bc-authorize` |
 | token grant_type | `urn:ietf:params:oauth:grant-type:device_code` | `urn:openid:params:grant-type:ciba` |
-| 主な用途 | TV アプリ、CLI ツール、kiosk、音声アシスタント、入力手段が乏しい IoT | 強力な顧客認証（PSD2 風）、金融 / ヘルスケアでの out-of-band 承認、画面共有なしでアクセスをリセットするカスタマーサポートのフロー |
+| 主な用途 | TV アプリ、CLI ツール、kiosk、音声アシスタント、入力手段が乏しい IoT | 強力な顧客認証（PSD2 風）、金融 / ヘルスケアでの別経路承認、画面共有なしでアクセスをリセットするカスタマーサポートのフロー |
 | 本ライブラリでの対応 | RFC 8628 — フル対応、`op.WithDeviceCodeGrant()` で有効化 | OIDC CIBA Core 1.0 — 現リリースでは poll モードのみ。ping / push は将来対応 |
 | ブルートフォース対策 | `op/devicecodekit` の constant-time 比較 + N-strike ロックアウト（`MaxUserCodeStrikes`） | poll-abuse ロックアウト — `auth_req_id` 単位で `/token` 再試行を rate-limit、閾値超過で `AuditCIBAPollAbuseLockout` |
 | FAPI プロファイルとの関係 | FAPI 2.0 には組み込まれていない（RFC 8628 自体で Baseline 相当の構成は十分） | FAPI-CIBA — FAPI 2.0 Baseline / Message Signing とは別プロファイル。JAR + DPoP \| mTLS + access TTL 10 分上限を必須化 |
@@ -41,18 +41,6 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 ## どちらを選ぶか — 判定木
 
 順番に 4 つの問いを通ってください。最初の問いでだいたい片付きます。
-
-<style scoped>
-.dtx-q{stroke:currentColor;stroke-width:1.6}
-.dtx-op{stroke:var(--vp-c-brand-2);stroke-width:1.8}
-.dtx-rp{stroke:currentColor;stroke-width:1.8}
-.dtx-edge{stroke:currentColor;stroke-width:1.6}
-.dtx-qt{font-family:var(--vp-font-family-base);font-size:12.5px;fill:var(--vp-c-text-1);stroke:none}
-.dtx-leaf{font-family:var(--vp-font-family-base);font-size:13.5px;font-weight:700;fill:var(--vp-c-text-1);stroke:none}
-.dtx-leaf-op{font-family:var(--vp-font-family-base);font-size:13.5px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
-.dtx-lbl{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;fill:var(--vp-c-text-3);stroke:none}
-.dtx-sub{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
-</style>
 
 <svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 660 480" width="660" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="nobrowser-choice-title">4 つの問いを順にたどって CIBA と Device Code のどちらを選ぶかを示す判定木。</title>
@@ -80,13 +68,13 @@ description: いずれも「アクセストークンを欲しがるデバイス�
   <text class="dtx-qt" x="180" y="241" text-anchor="middle">ユーザは認証デバイスを</text>
   <text class="dtx-qt" x="180" y="257" text-anchor="middle">事前登録しているか?</text>
   <text class="dtx-qt" x="180" y="339" text-anchor="middle">規制下の金融 / ヘルスケアで</text>
-  <text class="dtx-qt" x="180" y="355" text-anchor="middle">out-of-band 承認が要件か?</text>
+  <text class="dtx-qt" x="180" y="355" text-anchor="middle">別経路承認が要件か?</text>
   <text class="dtx-leaf-op" x="560" y="54" text-anchor="middle">CIBA</text>
   <text class="dtx-leaf" x="560" y="152" text-anchor="middle">Device Code</text>
   <text class="dtx-leaf" x="560" y="250" text-anchor="middle">Device Code</text>
   <text class="dtx-leaf-op" x="560" y="348" text-anchor="middle">CIBA</text>
   <text class="dtx-leaf" x="190" y="440" text-anchor="middle">Device Code</text>
-  <text class="dtx-sub" x="190" y="454" text-anchor="middle">デフォルト</text>
+  <text class="dtx-sub" x="190" y="454" text-anchor="middle">既定</text>
   <text class="dtx-lbl" x="405" y="43" text-anchor="middle">はい</text>
   <text class="dtx-lbl" x="405" y="141" text-anchor="middle">はい</text>
   <text class="dtx-lbl" x="405" y="239" text-anchor="middle">いいえ</text>
@@ -109,34 +97,19 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 **3. ユーザは認証デバイスを事前登録しているか?**
 
-- **CIBA は前提とします。** 事前登録された送信先がないと OP は push の宛先を持ちません。そのデバイスをプロビジョニングする工程（銀行アプリ、スタッフのスマホ、規制当局が発行する authenticator、等）はデプロイの一部です。
+- **CIBA は前提とします。** 事前登録された送信先がないと OP は push の宛先を持ちません。そのデバイスを事前登録する工程（銀行アプリ、スタッフのスマホ、規制当局が発行する authenticator、等）は配備の一部です。
 - **Device Code は前提としません。** ユーザがサインインできる任意のブラウザセッションで動きます。本人のスマホ、同僚のラップトップ、店舗の kiosk、いずれでも。
 
-**4. これは規制下の金融 / ヘルスケアで、out-of-band 承認が要件になっているか?**
+**4. これは規制下の金融 / ヘルスケアで、別経路承認が要件になっているか?**
 
 - **CIBA は元々その目的で設計されています。** FAPI-CIBA プロファイルは CIBA Core の上に JAR、送信者制約付きトークン（DPoP または mTLS）、access TTL 10 分上限を上乗せします。`binding_message` は規制当局が見る audit の根拠（「ユーザは何を承認したのかを正確に見ていた」）です。
 - **Device Code は汎用的な仕組みです。** 適切に組めば十分機能しますが、規制当局が SCA で名指ししてくる形にはなっていません。
 
-判定木を抜けてもまだ迷うなら、デフォルトとしては「画面はあるがブラウザがない」一般消費者向けには **Device Code**、「RP がユーザを把握済みで、out-of-band で承認だけしてほしい」業務向けには **CIBA** を選んでください。
+判定木を抜けてもまだ迷うなら、既定としては「画面はあるがブラウザがない」一般消費者向けには **Device Code**、「RP がユーザを把握済みで、別経路で承認だけしてほしい」業務向けには **CIBA** を選んでください。
 
 ## シーケンス図
 
 ### Device Code（RFC 8628）
-
-<style scoped>
-.dcx-op{stroke:var(--vp-c-brand-2)}
-.dcx-rp{stroke:currentColor}
-.dcx-user{stroke:var(--vp-c-text-3)}
-.dcx-frame{stroke:currentColor;stroke-width:1.4;opacity:.42}
-.dcx-life{stroke-width:1.4;opacity:.32}
-.dcx-actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
-.dcx-actor-op{font-family:var(--vp-font-family-base);font-size:13px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
-.dcx-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-3);stroke:none}
-.dcx-hdr{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.04em;fill:var(--vp-c-text-3);stroke:none}
-.dcx-note{font-family:var(--vp-font-family-base);font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-.dcx-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);stroke:none}
-.dcx-step{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
-</style>
 
 <svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 720 452" width="720" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="dc-seq-title">Device Code（RFC 8628）のシーケンス。ブラウザを持たないデバイスが OP を poll する一方、ユーザは別のブラウザで user_code を入力して承認する。</title>
@@ -178,21 +151,6 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 ### CIBA（Core 1.0、poll モード）
 
-<style scoped>
-.cbx-op{stroke:var(--vp-c-brand-2)}
-.cbx-rp{stroke:currentColor}
-.cbx-user{stroke:var(--vp-c-text-3)}
-.cbx-frame{stroke:currentColor;stroke-width:1.4;opacity:.42}
-.cbx-life{stroke-width:1.4;opacity:.32}
-.cbx-actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
-.cbx-actor-op{font-family:var(--vp-font-family-base);font-size:13px;font-weight:700;fill:var(--vp-c-brand-2);stroke:none}
-.cbx-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-3);stroke:none}
-.cbx-hdr{font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.04em;fill:var(--vp-c-text-3);stroke:none}
-.cbx-note{font-family:var(--vp-font-family-base);font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-.cbx-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);stroke:none}
-.cbx-step{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3);stroke:none}
-</style>
-
 <svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" width="720" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ciba-seq-title">CIBA（OIDC Core 1.0、poll モード）のシーケンス。RP が /bc-authorize で login_hint を渡し、OP がそれを解決してユーザの事前登録デバイスに push し、RP は承認まで poll する。</title>
   <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
@@ -216,7 +174,7 @@ description: いずれも「アクセストークンを欲しがるデバイス�
   <path class="cbx-op" d="M360 158 H398 V184 H367 M367 180 L360 184 L367 188"/>
   <text class="cbx-note" x="406" y="176" text-anchor="start"><tspan class="cbx-step">2  </tspan><tspan class="cbx-mono">HintResolver</tspan> → subject</text>
   <path class="cbx-op" d="M360 210 H605 M598 206 L605 210 L598 214"/>
-  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>out-of-band push</text>
+  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>別経路 push</text>
   <rect class="cbx-frame" x="510" y="224" width="190" height="34" rx="4"/>
   <text class="cbx-note" x="605" y="245" text-anchor="middle">「Acme Coffee で 800 円を承認?」</text>
   <path class="cbx-op" d="M360 286 H115 M122 282 L115 286 L122 290"/>
@@ -243,11 +201,11 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 **Phishing — 攻撃者がユーザを騙して *攻撃者の* リクエストを承認させる.**
 
 - Device Code: ユーザは入力する URL のホストを目視で確認します。`user_code` 自体に session 単位の秘密値はありません（エントロピは意図的に控えめ）。ユーザがホストを打ち間違えたり phishing メールのリンクを踏んだりすれば、同じ `user_code` が攻撃者のサイトでも通ってしまいます。
-- CIBA: `binding_message` が `/bc-authorize` に同梱され、ユーザの認証デバイスに表示されます。ユーザは「Acme POS 端末 #14: Acme Coffee で 800 円を承認?」を見てから承認します。文脈のない裸の push プロンプト（「異常なアクティビティを検知しました、承認しますか?」）が失敗モードです。
+- CIBA: `binding_message` が `/bc-authorize` に同梱され、ユーザの認証デバイスに表示されます。ユーザは「Acme POS 端末 #14: Acme Coffee で 800 円を承認?」を見てから承認します。文脈のない push 確認画面（「異常なアクティビティを検知しました、承認しますか?」）が失敗モードです。
 
 **`user_code` への replay / brute-force.**
 
-- Device Code: `user_code` はユーザが手で入力できるよう短く（`BDWP-HQPK` 等）作られています。原理的には brute-force 可能です。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) を同梱しており、`VerifyUserCode` が constant-time 比較を行い、ミスごとに strike カウンタを増やし、`MaxUserCodeStrikes`（デフォルト 5）でレコードをロックアウトします。組み込み側が用意する verification ページは **必ず** このヘルパを経由する必要があります。
+- Device Code: `user_code` はユーザが手で入力できるよう短く（`BDWP-HQPK` 等）作られています。原理的には総当たり可能です。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) を同梱しており、`VerifyUserCode` が定数時間比較を行い、ミスごとに strike カウンタを増やし、`MaxUserCodeStrikes`（既定 5）でレコードをロックアウトします。組み込み側が用意する verification ページは **必ず** このヘルパを経由する必要があります。
 - CIBA: ユーザが手で打つコードはありません。`auth_req_id` は不透明値で OP が発行します。
 
 **`/token` ポーリングへの replay / abuse.**
@@ -276,6 +234,6 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 - [Device Code 入門](/ja/concepts/device-code) — RFC 8628 の動き方、polling 応答、`user_code` brute-force の防御。
 - [CIBA 入門](/ja/concepts/ciba) — CIBA Core 1.0 の動き方、hint の種類、`binding_message`、FAPI-CIBA プロファイル。
-- [ユースケース: device-code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、verification ページの契約、cascade revocation。
-- [ユースケース: CIBA の組み込み](/ja/use-cases/ciba) — `op.WithCIBA`、`HintResolver` の契約、FAPI-CIBA の制約。
-- [Audit イベント](/ja/reference/audit-events) — payload 形式付きの全カタログ。
+- [使い方: device-code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、verification ページの契約、cascade revocation。
+- [使い方: CIBA の組み込み](/ja/use-cases/ciba) — `op.WithCIBA`、`HintResolver` の契約、FAPI-CIBA の制約。
+- [Audit イベント](/ja/reference/audit-events) — 中身の形式付きの全カタログ。

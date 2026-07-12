@@ -13,6 +13,40 @@ outline: 2
 
 どちらも、新しい `*Provider` を構築してハンドラをアトミックに差し替える形でローテーションします。スライスをその場で書き換える API はありません。
 
+<svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="key-rotation-title">鍵ローテーションの基本手順: 新鍵を先頭にした設定で新しい Provider を構築し、ハンドラを差し替え、キャッシュ期間後に旧鍵を外す。</title>
+<rect class="rot-box" x="26" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="90" y="130" text-anchor="middle">新鍵を生成</text>
+  <text class="rot-sub" x="90" y="152" text-anchor="middle">new kid</text>
+
+  <rect class="rot-box" x="184" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="248" y="130" text-anchor="middle">先頭に配置</text>
+  <text class="rot-sub" x="248" y="152" text-anchor="middle">新鍵, 旧鍵</text>
+
+  <rect class="rot-main" x="342" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="406" y="130" text-anchor="middle">op.New</text>
+  <text class="rot-sub" x="406" y="152" text-anchor="middle">再検証</text>
+
+  <rect class="rot-box" x="500" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="564" y="130" text-anchor="middle">差し替え</text>
+  <text class="rot-sub" x="564" y="152" text-anchor="middle">atomic handler</text>
+
+  <rect class="rot-box" x="658" y="100" width="78" height="72" rx="8"/>
+  <text class="rot-text" x="697" y="130" text-anchor="middle">旧鍵</text>
+  <text class="rot-sub" x="697" y="152" text-anchor="middle">撤去</text>
+
+  <path class="rot-flow" d="M154 136 H180"/>
+  <path class="rot-flow" d="M172 132 L181 136 L172 140"/>
+  <path class="rot-flow" d="M312 136 H338"/>
+  <path class="rot-flow" d="M330 132 L339 136 L330 140"/>
+  <path class="rot-flow" d="M470 136 H496"/>
+  <path class="rot-flow" d="M488 132 L497 136 L488 140"/>
+  <path class="rot-flow" d="M628 136 H654"/>
+  <path class="rot-flow" d="M646 132 L655 136 L646 140"/>
+  <text class="rot-sub" x="620" y="212" text-anchor="middle">TTL + JWKS キャッシュ期間を待つ</text>
+  <path class="rot-flow" d="M564 172 C590 214 664 214 697 174"/>
+</svg>
+
 ## 署名鍵のローテーション
 
 ### サイクル

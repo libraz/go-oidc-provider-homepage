@@ -6,10 +6,39 @@ outline: 2
 
 # FAQ
 
-このページは「最初に見るべき場所」のひとつです。下に並んでいる質問は理屈ではなく、Maintainer が examples を書いたり Conformance ハーネスを回したりする途中で実際にハマったものばかりです。
+このページは「最初に見るべき場所」のひとつです。下に並んでいる質問は理屈ではなく、メンテナが examples を書いたり Conformance ハーネスを回したりする途中で実際にハマったものばかりです。
+
+<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="faq-route-title">FAQ の読み方: まずセットアップ、次に FAPI やトークンなど目的別の領域へ進み、最後にエラーや採用判断を確認する。</title>
+<rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
+  <text class="faq-text" x="117" y="146" text-anchor="middle">まず起動</text>
+  <text class="faq-sub" x="117" y="168" text-anchor="middle">必須オプション / issuer</text>
+
+  <rect class="faq-box" x="292" y="36" width="176" height="56" rx="8"/>
+  <text class="faq-text" x="380" y="70" text-anchor="middle">FAPI / DPoP</text>
+  <rect class="faq-box" x="292" y="112" width="176" height="56" rx="8"/>
+  <text class="faq-text" x="380" y="146" text-anchor="middle">トークン / storage</text>
+  <rect class="faq-box" x="292" y="188" width="176" height="56" rx="8"/>
+  <text class="faq-text" x="380" y="222" text-anchor="middle">UI / SPA / MFA</text>
+
+  <rect class="faq-box" x="566" y="76" width="154" height="62" rx="8"/>
+  <text class="faq-text" x="643" y="108" text-anchor="middle">エラー対応</text>
+  <text class="faq-sub" x="643" y="126" text-anchor="middle">よくある失敗</text>
+  <rect class="faq-box" x="566" y="172" width="154" height="62" rx="8"/>
+  <text class="faq-text" x="643" y="204" text-anchor="middle">採用判断</text>
+  <text class="faq-sub" x="643" y="222" text-anchor="middle">本番投入 / 報告</text>
+
+  <path class="faq-flow" d="M194 152 C234 106 252 66 288 64"/>
+  <path class="faq-flow" d="M194 152 H288"/>
+  <path class="faq-flow" d="M194 152 C236 190 252 216 288 216"/>
+  <path class="faq-flow" d="M468 112 C510 110 526 108 562 108"/>
+  <path class="faq-flow" d="M554 104 L563 108 L554 112"/>
+  <path class="faq-flow" d="M468 188 C510 198 526 204 562 204"/>
+  <path class="faq-flow" d="M554 200 L563 204 L554 208"/>
+</svg>
 
 <ul class="faq-index">
-  <li><a href="#setup-basics"><div class="faq-index-title">セットアップと基本</div><div class="faq-index-desc">必須 4 オプション、マウント先、Issuer 正規化、最小構成</div></a></li>
+  <li><a href="#setup-basics"><div class="faq-index-title">セットアップと基本</div><div class="faq-index-desc">必須オプション、マウント先、Issuer 正規化、最小構成</div></a></li>
   <li><a href="#fapi"><div class="faq-index-title">FAPI 2.0</div><div class="faq-index-desc">Baseline と Message Signing、DPoP / mTLS の選択</div></a></li>
   <li><a href="#tokens"><div class="faq-index-title">トークンとローテーション</div><div class="faq-index-desc">リフレッシュ rotation の grace、<code>offline_access</code>、TTL 分離</div></a></li>
   <li><a href="#dpop"><div class="faq-index-title">DPoP と送信者制約</div><div class="faq-index-desc">DPoP nonce の配布、対応アルゴリズムの絞り込み理由</div></a></li>
@@ -30,14 +59,14 @@ outline: 2
 
 ### `op.New(...)` がエラーを返すのはなぜ？
 
-必須 4 オプションに「安全なデフォルト」が存在しないためです。ゼロ値で黙って動くのではなく、`op.New` は構築時にエラーを返して止めます:
+中心的なオプションには「安全なデフォルト」が存在しないためです。ゼロ値で黙って動くのではなく、`op.New` は構築時にエラーを返して止めます。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須で、`WithCookieKeys` は authorization-code grant を有効にする場合（既定の grant セットを含む）に必須です:
 
 | オプション | これが無いと |
 |---|---|
 | `WithIssuer` | OP が署名 / 名前空間に使う識別子が無い |
 | `WithStore` | clients / codes / tokens の永続化先が無い |
 | `WithKeyset` | ID トークンに署名できない |
-| `WithCookieKeys` | session / CSRF cookie を封緘できない |
+| `WithCookieKeys` | ブラウザの認可フローで使う session / CSRF cookie を封緘できない |
 
 エラーは欠けた項目名を明示するので、起動時のタイポは「実行時の謎」ではなくビルド時エラーになります。
 
@@ -60,7 +89,7 @@ handler, err := op.New(
 )
 ```
 
-4 オプションのみ、暗黙のデフォルトはなし。詳細は <a class="doc-ref" href="/ja/getting-started/minimal">最小構成 OP</a>。
+これは通常のブラウザフローの最小形です。常時必須の 3 オプションに、authorization-code grant 用の cookie 鍵を足しています。詳細は <a class="doc-ref" href="/ja/getting-started/minimal">最小構成 OP</a>。
 
 ### 「Issuer の末尾にスラッシュは禁止」って本当？
 
@@ -89,7 +118,7 @@ RP の検証側でも、片側に正規形でない 1 文字が紛れただけ�
 | スイッチ | 効果 |
 |---|---|
 | feature 有効化 | `feature.PAR` と `feature.JAR` を ON。`feature.MTLS` が明示されていなければ `feature.DPoP` を既定選択 |
-| クライアント認証 | `token_endpoint_auth_methods_supported` を FAPI 許可リスト(`private_key_jwt` / `tls_client_auth` / `self_signed_tls_client_auth`)に絞り込み |
+| クライアント認証 | `token_endpoint_auth_methods_supported` を `private_key_jwt` に絞り込み |
 | alg 制約 | 署名 alg を FAPI 部分集合にロック |
 | `redirect_uri` | 完全一致を強制(ワイルドカード不可) |
 | PKCE | すべての code 要求で必須 |
@@ -109,7 +138,7 @@ RP 側で **非否認性 (non-repudiation)** — authorize 要求 / 応答の署
 
 ### DPoP なしで FAPI 2.0 を回せる？
 
-可能です。`feature.MTLS` を有効化し、FAPI クライアントを `tls_client_auth` / `self_signed_tls_client_auth` で構成すれば mTLS 送信者バインディングに切り替わります。FAPI 2.0 §3.1.4 は「DPoP **または** mTLS」を要求しており、本ライブラリはどちらでも受理します。
+可能です。`feature.MTLS` を有効化し、`op.WithMTLSProxy(...)` で proxy からの証明書ヘッダを構成すれば mTLS 送信者バインディングに切り替わります。FAPI 2.0 §3.1.4 は「DPoP **または** mTLS」を要求しますが、FAPI クライアントは `/token` クライアント認証には引き続き `private_key_jwt` を使います。
 
 <div id="tokens" class="faq-anchor"></div>
 
@@ -125,16 +154,15 @@ RP 側で **非否認性 (non-repudiation)** — authorize 要求 / 応答の署
 
 ### リフレッシュトークンが返ってこないのはなぜ？
 
-次の **3 つすべて** が必要です。
+既定では次の **2 つ両方** が必要です。
 
 1. 付与された scope に `openid` が含まれている。
-2. 付与された scope に `offline_access` が含まれている。
-3. クライアントの `GrantTypes` に `refresh_token` が含まれている。
+2. クライアントの `GrantTypes` に `refresh_token` が含まれている。
 
-ひとつでも欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、`refresh_token` フィールドは付きません。
+どちらかが欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、`refresh_token` フィールドは付きません。OIDC Core 1.0 §11 の既定(lax)の解釈では、`offline_access` はリフレッシュトークン受領の必須条件では **ありません** — offline 用の TTL bucket を選び、同意・監査の表示を形づくる役割です。
 
-::: details なぜ既定が厳しい解釈なの？
-OIDC Core 1.0 §11 は `offline_access` 無しでもリフレッシュトークンを発行できる余地を残していますが、それを許すと「同意 UI が約束した範囲」と「監査ログに残る範囲」がずれます。本ライブラリは両者が初期状態から一致するように、狭い解釈を既定にしています。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
+::: details `offline_access` を必須にしたい場合
+OIDC Core 1.0 §11 は狭い解釈も許容しており、その場合は付与 scope に `offline_access` があるときだけリフレッシュトークンを発行します。「同意 UI が約束した範囲」と「監査ログに残る範囲」を初期状態から完全に一致させたいなら `op.WithStrictOfflineAccess()` で opt-in してください。ただしその際は、stay-signed-in を求める RP がすべて明示的に `offline_access` を要求する必要があります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
 :::
 
 ### 「ログイン状態の維持」と通常セッションを TTL で分けたい
@@ -165,7 +193,7 @@ op.WithDPoPNonceSource(src)
 
 ### `dpop_signing_alg_values_supported` に RS256 が含まれていないのはなぜ？
 
-意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE allow-list よりも狭くしています。`RS256` は ID トークン署名では使えますが、DPoP proof は FAPI が推奨する部分集合に絞っています。
+意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。`RS256` は ID トークン署名では使えますが、DPoP proof は FAPI が推奨する部分集合に絞っています。
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -206,7 +234,7 @@ op.WithInteractionDriver(interaction.JSONDriver{})
 JSON ドライバは、HTML ドライバが使う `/interaction/{uid}` と同じパスで各プロンプト（`login` / `consent.scope` / `chooser` ほか）を JSON として返します。SPA（React / Vue / Svelte / Angular / vanilla、フレームワーク不問）はそこからプロンプトを取得し、`{state_ref, values}` を `X-CSRF-Token` ヘッダ（`prompt.csrf_token` をそのまま返す double-submit cookie）と共に POST します。終端で返る `{type:"redirect", location}` エンベロープを `window.location.href` で辿れば完了です。
 
 ::: info UI マウントオプション
-`op.WithSPAUI` は SPA の入口と JSON の状態取得面を OP 側でマウントします。このモードでは SPA の入口は `LoginMount/{uid}`、プロンプト JSON は `LoginMount/state/{uid}` です。`op.WithConsentUI` / `op.WithChooserUI` は同意画面とアカウント選択画面を組み込み側 HTML テンプレートで描画します。SPA の配信を自前のルータで持ちたい場合は `interaction.JSONDriver` も使えます。この場合の状態取得エンドポイントは `/interaction/{uid}` です。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction) と [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
+`op.WithSPAUI` は SPA の入口と JSON の状態取得面を OP 側でマウントします。このモードでは SPA の入口は `LoginMount/{uid}`、プロンプト JSON は `LoginMount/state/{uid}` です。`op.WithConsentUI` / `op.WithChooserUI` は同意画面とアカウント選択画面を組み込み側 HTML テンプレートで描画します。SPA の配信を自前のルータで持ちたい場合は `interaction.JSONDriver` も使えます。この場合の状態取得エンドポイントは `/interaction/{uid}` です。詳細は [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) と [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
 
 `WithSPAUI` と `WithConsentUI` は相互排他です。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA モードでは chooser テンプレートは使われず、chooser の描画も SPA が受け持つことを示す警告が出ます。
 :::
@@ -227,9 +255,9 @@ op.WithCORSOrigins("https://app.example.com")
 
 可能です。主な経路は次の 3 つです。
 
-- **同梱 HTML ドライバを残し、ロケール bundle で文言を上書き。** `op.WithLocale` を使うと、seed の `en` / `ja` bundle 上に変更したいキーだけを重ねられます — 同意画面の文言はこのキー単位の上書きでカバーできるので、ブランド・コピー差し替えはこちらで足ります。詳細は [ユースケース: i18n / ロケールネゴシエーション](/ja/use-cases/i18n)。
+- **同梱 HTML ドライバを残し、ロケール bundle で文言を上書き。** `op.WithLocale` を使うと、seed の `en` / `ja` bundle 上に変更したいキーだけを重ねられます — 同意画面の文言はこのキー単位の上書きでカバーできるので、ブランド・コピー差し替えはこちらで足ります。詳細は [使い方: i18n / ロケール解決](/ja/use-cases/i18n)。
 - **`op.WithConsentUI` でテンプレートを差し替える。** OP は組み込み側の `*html/template.Template` を `ConsentTemplateData` で描画し、state / CSRF / 同意永続化は引き続き OP が担当します。詳細は [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui)。
-- **JSON ドライバに切り替えて画面ごと自前で描画。** `op.WithInteractionDriver(interaction.JSONDriver{})` を渡すと同意プロンプトが JSON で返るので、自前のページ（または SPA）で描画できます。詳細は [SPA / カスタム interaction](/ja/use-cases/spa-custom-interaction)。
+- **JSON ドライバに切り替えて画面ごと自前で描画。** `op.WithInteractionDriver(interaction.JSONDriver{})` を渡すと同意プロンプトが JSON で返るので、自前のページ（または SPA）で描画できます。詳細は [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction)。
 
 <div id="auth-mfa" class="faq-anchor"></div>
 
@@ -339,7 +367,7 @@ redirect-URI 完全一致に引っかかっています。よくある原因 3 �
 
 ### `invalid_client: alg not allowed`
 
-クライアントの `request_object_signing_alg` / `token_endpoint_auth_signing_alg` がコードベースの allow-list（`RS256`、`PS256`、`ES256`、`EdDSA`）に含まれていません。FAPI 2.0 plan ではクライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込んでください — FAPI 2.0 は `RS256` を禁じています。
+クライアントの `request_object_signing_alg` / `token_endpoint_auth_signing_alg` がコードベースの許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）に含まれていません。FAPI 2.0 plan ではクライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込んでください — FAPI 2.0 は `RS256` を禁じています。
 
 ### `invalid_dpop_proof: jkt mismatch`
 

@@ -55,6 +55,14 @@ OIDC Discovery 1.0 §3 は、issuer 識別子を `/.well-known/openid-configurat
 - **path が正規形であること**。`..` セグメント、`.` セグメント、重複スラッシュ（`https://idp.example.com/a/../b`、`https://idp.example.com/a/./b`、`https://idp.example.com//oidc`）は拒否されます。検証は `path.Clean` を通し、round-trip しないものは弾きます。
 - **`https` であること**。唯一の例外は loopback の IP リテラル（`127.0.0.0/8` と `[::1]`）で、開発時の起動が TLS なしで済むよう plain `http` を許容します。テキストの `localhost` は **例外には含まれません** — DNS hijack の対象になるため（RFC 8252 §7.3 の理由）、本番デプロイや DNS rebinding を警戒する環境では IP リテラルでの記述に矯正されます。
 
+```go
+// NG: host の大文字、default port、末尾スラッシュが byte 一致を壊す
+op.WithIssuer("https://IDP.example.com:443/oidc/")
+
+// OK: 正規形を 1 つに固定する
+op.WithIssuer("https://idp.example.com/oidc")
+```
+
 これらのルールをまとめて適用することで、discovery 文書、発行する全トークン、認可応答の `iss` パラメタにわたって `iss` が byte 完全一致になることを保証します — RFC 9207 のミックスアップ防御で RP が比較するのはこの形です。
 
 これらをすべて通過した値が正規形として採用されます。渡した値が `iss` の値、discovery 文書内の `issuer` フィールド、FAPI 2.0 配下の `client_assertion` audience チェックの値、すべてに使われます。

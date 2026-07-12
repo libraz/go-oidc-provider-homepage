@@ -24,21 +24,6 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 
 ## フローの動き方
 
-<style scoped>
-.dcf-fp{font-family:var(--vp-font-family-base);}
-.dcf-fm{font-family:var(--vp-font-family-mono);}
-.dcf-neu{fill:currentColor;}
-.dcf-acc{fill:var(--vp-c-brand-2);}
-.dcf-mut{fill:var(--vp-c-text-3);}
-.dcf-sacc{stroke:var(--vp-c-brand-2);}
-.dcf-smut{stroke:var(--vp-c-text-3);}
-.dcf-frame{fill:none;stroke:var(--vp-c-text-3);stroke-width:1.5;}
-.dcf-life{stroke-width:1.5;opacity:.32;}
-.dcf-ret{stroke-dasharray:5 4;}
-.dcf-tabbg{fill:var(--vp-c-bg);stroke:var(--vp-c-text-3);stroke-width:1.5;}
-svg text{stroke:none;}
-</style>
-
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 700 570" style="width:100%;height:auto;max-width:720px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="device-code-flow-title">デバイス認可のシーケンス: デバイスが device_code と user_code を要求し、ユーザが別画面で承認する間トークンエンドポイントを poll し、最後にアクセストークンを受け取る。</title>
 
@@ -138,31 +123,31 @@ svg text{stroke:none;}
 | `200 { access_token, ... }` | ユーザが承認 | 通常の token 応答として処理 |
 
 ::: warning user_code は構造的に brute-force 可能
-`user_code` は短いから使い物になります — 長くしたら誰も入力しません。これは原理的に brute-force され得るということでもあり、ユーザが打つより速く `/device` を呼び出せる攻撃者が勝ってしまいます。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) でレコード単位のゲートを同梱しており、`VerifyUserCode` が constant-time 比較し、外したらストライクカウンタを加算、`MaxUserCodeStrikes`（既定 5）でレコードをロックアウトします。自前で verification ページを作る組み込み側は、このヘルパを使うか同等のゲートを実装する必要があります。
+`user_code` は短いから使い物になります。長くしたら誰も入力しません。これは原理的に brute-force され得るということでもあり、ユーザが打つより速く `/device` を呼び出せる攻撃者が勝ってしまいます。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) でレコード単位の防御を同梱しています。`VerifyUserCode` が constant-time 比較を行い、失敗したらストライクカウンタを加算し、`MaxUserCodeStrikes`（既定 5）でレコードをロックアウトします。自前で verification ページを作る組み込み側は、このヘルパを使うか同等の防御を実装する必要があります。
 :::
 
 ## 使うべきとき
 
-device flow を選ぶのは、デバイス側に以下のいずれかの制約があるとき:
+device flow を選ぶのは、デバイス側に以下のいずれかの制約があるときです。
 
 - **ブラウザがない** — set-top box、スマート TV、音声アシスタント
 - **キーボードがない / 入力が困難** — TV リモコン、ゲームコントローラの D-pad
 - **CLI ツール** で web server を立てない種類のもの（`gcloud auth login`、`gh auth login`、`kubectl oidc-login` など）
 - **Headless** な自動化文脈で、provisioning 時に一度だけペアリングする運用
 
-ブラウザが使えるクライアント（通常の SPA、custom URL scheme を持つネイティブアプリなど）には不要です — `authorization_code + PKCE` のほうが短く、安全で、UX も豊かです。RFC 8628 §3 自身も、device flow を標準的なフローが現実的でないときの **fallback** として位置づけています。
+ブラウザが使えるクライアント（通常の SPA、custom URL scheme を持つネイティブアプリなど）には不要です。`authorization_code + PKCE` のほうが短く、安全で、UX も豊かです。RFC 8628 §3 自身も、device flow を標準的なフローが現実的でないときの **fallback** として位置づけています。
 
 ## 動かしてみる
 
-[`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) は単一バイナリで RFC 8628 のラウンドトリップを実演します。OP を立ち上げ、boxed `user_code` パネル + `verification_uri_complete` のショートカットを表示し、数秒後にブラウザ承認をシミュレートして、OP が `access_token` + `id_token` を発行するまで poll します。
+[`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) は単一バイナリで RFC 8628 の往復を実演します。OP を立ち上げ、`user_code` パネルと `verification_uri_complete` のショートカットを表示し、数秒後にブラウザ承認をシミュレートして、OP が `access_token` + `id_token` を発行するまで poll します。
 
 ```sh
 (cd examples/31-device-code-cli && go run -tags example .)
 ```
 
-example はロール別ファイルに分割されています（`op.go` で OP の組み立て、`cli.go` でデバイス側の polling、`device.go` でブラウザ承認のシミュレーション、`probe.go` で self-verification）。各面を独立に読めます。
+example は役割別ファイルに分割されています（`op.go` で OP の組み立て、`cli.go` でデバイス側の polling、`device.go` でブラウザ承認のシミュレーション、`probe.go` で self-verification）。各面を独立に読めます。
 
 ## 続きはこちら
 
-- [ユースケース: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCode`、検証ページの契約、デバイス登録解除(unenroll)時に発行済みトークンを連鎖失効させる手順。
+- [使い方: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCode`、検証ページの契約、デバイス登録解除(unenroll)時に発行済みトークンを連鎖失効させる手順。
 - [CIBA 入門](/ja/concepts/ciba) — 「ユーザが別チャネルにいる」の概念的な兄弟。コード表示を使わない方式。

@@ -48,12 +48,12 @@ TLS protects the token while it is on the wire. Once the request reaches the app
 | Per-request artefact | Fresh JWS proof, signed in the application | Nothing extra — the binding lives at the TLS layer |
 | Proxy / TLS terminator dependency | None — works over plain HTTPS | Requires the terminator to forward the cert in a header |
 | `cnf` member | `cnf.jkt` (JWK thumbprint) | `cnf.x5t#S256` (X.509 thumbprint) |
-| Refresh token binding (default) | Bound for public clients, unbound for confidential ([Design judgment #15](/security/design-judgments#dj-15)) | Bound when the client uses mTLS at the token endpoint |
+| Refresh token binding (default) | Bound for public clients, unbound for confidential ([Design judgment #15](/security/design-judgments#dj-15)) | Access tokens can be certificate-bound; mTLS token-endpoint client authentication is not dispatched |
 | Replay defense beyond binding | `jti` cache, `iat` window, optional server nonce | TLS session reuse + cert thumbprint match |
 | FAPI 2.0 Baseline acceptance | Yes | Yes |
 | FAPI 2.0 Message Signing | Yes (with §8 / §9 nonce) | Yes |
 
-FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]`. If neither is enabled, construction now selects `feature.DPoP` as the default member; if you explicitly enable `feature.MTLS`, that choice satisfies the disjunction and DPoP is not added.
+FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both for token binding. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]`. If neither is enabled, construction selects `feature.DPoP` as the default member; if you explicitly enable `feature.MTLS`, that choice satisfies the disjunction and DPoP is not added. Use `private_key_jwt` for token endpoint client authentication even when mTLS supplies the sender constraint.
 
 ## Choosing between them
 

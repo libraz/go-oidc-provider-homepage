@@ -3,7 +3,7 @@ title: DPoP nonce フロー
 description: RFC 9449 §8 / §9 — サーバ供給の nonce を DPoP proof に組み込み、事前計算 proof 攻撃を阻止する。
 ---
 
-# ユースケース — DPoP nonce フロー
+# 使い方 — DPoP nonce フロー
 
 ## DPoP とは何か、nonce とは何か
 
@@ -30,18 +30,6 @@ description: RFC 9449 §8 / §9 — サーバ供給の nonce を DPoP proof に�
 > **ソース:** [`examples/51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce)
 
 ## フロー
-
-<style scoped>
-.dpop-nonce-dg text{stroke:none;fill:currentColor;}
-.dpop-nonce-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-.dpop-nonce-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-.dpop-nonce-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-.dpop-nonce-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-.dpop-nonce-dg .op-accent{stroke:var(--vp-c-brand-2);}
-.dpop-nonce-dg .op-fill{fill:var(--vp-c-brand-2);}
-.dpop-nonce-dg .life{opacity:0.3;stroke-width:1;}
-.dpop-nonce-dg .note{opacity:0.4;stroke-width:1;}
-</style>
 
 <svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-nonce-flow-title">DPoP nonce ハンドシェイクのシーケンス: OP は最初の proof を use_dpop_nonce と DPoP-Nonce ヘッダで拒否し、クライアントは nonce claim を入れて再試行し、以降の呼び出しは毎回ローテーションされる最新 nonce を運ぶ。</title>
@@ -87,7 +75,7 @@ description: RFC 9449 §8 / §9 — サーバ供給の nonce を DPoP proof に�
 
 ## 実装
 
-ライブラリは in-memory リファレンス実装を同梱しています。シングルプロセス用、HA セーフではありませんが、開発と小規模 deploy には十分:
+ライブラリは in-memory 参考実装を同梱しています。シングルプロセス用、HA セーフではありませんが、開発と小規模 deploy には十分:
 
 ```go
 import "github.com/libraz/go-oidc-provider/op"
@@ -118,7 +106,7 @@ op.New(
 
 `/par` と `/token` は nonce の発行・要求を対称に行うので、PAR（プッシュ型認可リクエスト）を使う SPA も `/token` と同じ nonce リトライループを `/par` 呼び出しで回すことになります。
 
-FAPI 2.0 Message Signing は nonce を強制、Baseline は許可。ライブラリは仕様に追従するので、プロファイルを切り替えればデフォルトも切り替わります。
+FAPI 2.0 Message Signing は nonce を強制、Baseline は許可。ライブラリは仕様に追従するので、プロファイルを切り替えれば既定も切り替わります。
 
 ## 動作確認
 
@@ -137,4 +125,4 @@ curl -i -X POST -H "DPoP: <nonce なしの proof>" \
 ## 続きはこちら
 
 - [送信者制約](/ja/concepts/sender-constraint) — DPoP がそもそも何のためにあるか。
-- [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — nonce をデフォルトで強制するプロファイル。
+- [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — nonce を既定で強制するプロファイル。

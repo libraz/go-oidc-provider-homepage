@@ -84,7 +84,7 @@ description: Service-to-service tokens with no end user. RFC 6749 §4.4.
 </svg>
 
 ::: warning Confidential clients only
-`client_credentials` is structurally restricted to **confidential** clients in this library — clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`). Public clients (SPAs / native, `token_endpoint_auth_method=none`) cannot use it.
+`client_credentials` is structurally restricted to **confidential** clients in this library — clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`). Public clients (SPAs / native, `token_endpoint_auth_method=none`) cannot use it. mTLS can bind issued access tokens, but it is not a `client_credentials` authentication method.
 
 There is no end user, so there is no PKCE, no consent, no `id_token`, and **no refresh token**. The client just re-runs the grant when the access token expires.
 :::

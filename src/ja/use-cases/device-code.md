@@ -3,9 +3,49 @@ title: Device Code（RFC 8628） — 組み込み
 description: device-authorization grant を有効化 — /device_authorization、ポーリング、slow_down、組み込み側が所有する verification ページ。
 ---
 
-# ユースケース — Device Code（RFC 8628）
+# 使い方 — Device Code（RFC 8628）
 
 device flow の概念的背景（何で、いつ選び、なぜ `slow_down` / `expired_token` が要るか）は [Device Code 入門](/ja/concepts/device-code) を先に読んでください。このページは組み込み手順を扱います。
+
+<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="device-code-flow-title">Device Code の流れ: 入力しづらいデバイスがコードを表示し、ユーザが別端末で承認し、デバイスが token をポーリングする。</title>
+<rect class="dc-box" x="32" y="76" width="168" height="86" rx="8"/>
+  <text class="dc-text" x="116" y="110" text-anchor="middle">入力しづらいデバイス</text>
+  <text class="dc-sub" x="116" y="132" text-anchor="middle">TV / CLI / プリンタ</text>
+
+  <rect class="dc-op" x="296" y="56" width="168" height="126" rx="8"/>
+  <text class="dc-text" x="380" y="94" text-anchor="middle">OP</text>
+  <text class="dc-sub" x="380" y="116" text-anchor="middle">/device_authorization</text>
+  <text class="dc-sub" x="380" y="136" text-anchor="middle">DeviceCodeStore</text>
+  <text class="dc-sub" x="380" y="156" text-anchor="middle">/token</text>
+
+  <rect class="dc-box" x="560" y="76" width="168" height="86" rx="8"/>
+  <text class="dc-text" x="644" y="110" text-anchor="middle">ユーザの端末</text>
+  <text class="dc-sub" x="644" y="132" text-anchor="middle">スマホ / PC</text>
+
+  <rect class="dc-box" x="32" y="246" width="168" height="58" rx="8"/>
+  <text class="dc-text" x="116" y="280" text-anchor="middle">コードを表示</text>
+  <rect class="dc-box" x="560" y="246" width="168" height="58" rx="8"/>
+  <text class="dc-text" x="644" y="280" text-anchor="middle">コード入力と同意</text>
+
+  <path class="dc-flow" d="M200 104 H292"/>
+  <text class="dc-sub" x="246" y="91" text-anchor="middle">1. 開始</text>
+  <path class="dc-flow" d="M284 100 L293 104 L284 108"/>
+  <path class="dc-flow" d="M296 146 H204"/>
+  <text class="dc-sub" x="250" y="169" text-anchor="middle">2. device_code / user_code</text>
+  <path class="dc-flow" d="M212 142 L203 146 L212 150"/>
+  <path class="dc-flow" d="M116 162 V242"/>
+  <path class="dc-flow" d="M112 234 L116 243 L120 234"/>
+  <path class="dc-flow" d="M200 275 H556"/>
+  <text class="dc-sub" x="380" y="260" text-anchor="middle">3. verification_uri へ移動</text>
+  <path class="dc-flow" d="M548 271 L557 275 L548 279"/>
+  <path class="dc-flow" d="M644 246 V166"/>
+  <path class="dc-flow" d="M640 174 L644 165 L648 174"/>
+  <text class="dc-sub" x="676" y="206" text-anchor="middle">4. 承認</text>
+  <path class="dc-flow" d="M116 246 C144 202 198 202 292 160"/>
+  <text class="dc-sub" x="218" y="218" text-anchor="middle">5. /token をポーリング</text>
+  <path class="dc-flow" d="M283 157 L293 160 L285 166"/>
+</svg>
 
 ::: details `device_code` と `user_code` の違い
 `/device_authorization` は 2 つの異なる識別子を返します。**`device_code`** は長い不透明文字列で、デバイス側だけが保持し、`/token` へのポーリングごとに送信します — 実質的に「この保留中の authorization」を表すベアラ資格情報です。**`user_code`** は短い人間が打てる文字列（"BDWP-HQPK" 等）で、デバイスが画面に表示し、ユーザがスマホやノート PC で入力します。寿命は同じ（`expires_in`）ですが、見せる相手が完全に異なります。ユーザは `device_code` を見ませんし、OP は `/token` で `user_code` を受け付けません。
@@ -16,7 +56,7 @@ device flow の概念的背景（何で、いつ選び、なぜ `slow_down` / `e
 :::
 
 ::: details `interval` とポーリングとは
-RFC 8628 では、デバイスはユーザがスマホなどで承認するのを待つあいだ `/token` を繰り返し呼び出します。`interval`（秒）は、OP が指定するポーリング間の最小待ち時間です。デバイスがそれより速く呼び出した場合、OP は `slow_down` を返し、デバイス側に保存された interval を引き上げます — 全レプリカが新しい下限を尊重します。既定は 5 秒。フリート側で障害復旧をすばやく回せるなら短縮の余地はありますが、5 秒のレイテンシがボトルネックになるケースだけにしてください。
+RFC 8628 では、デバイスはユーザがスマホなどで承認するのを待つあいだ `/token` を繰り返し呼び出します。`interval`（秒）は、OP が指定するポーリング間の最小待ち時間です。デバイスがそれより速く呼び出した場合、OP は `slow_down` を返し、デバイス側に保存された interval を引き上げます。全レプリカが新しい下限を尊重します。既定は 5 秒。短くできる場合もありますが、5 秒の待ち時間が実際に問題になっているときだけ検討してください。
 :::
 
 ## grant を有効化
@@ -57,7 +97,7 @@ provider, err := op.New(
 device-code サブストア（`store.DeviceCodeStore`）は必須です。in-memory と SQL の両アダプタが同梱しています — SQL アダプタは sqlite / mysql / postgres で `oidc_device_codes` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis のみの構成では composite アダプタで `DeviceCodes` を durable な層（SQL か in-memory）にルーティングしてください。
 
 ::: warning サブストアの存在は op.New で強制
-設定 store が nil 以外な `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じゲートが発火します — どちらの経路でもサブストアは必須です。
+設定 store が nil 以外な `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じ構成検査が働きます。どちらの経路でもサブストアは必須です。
 :::
 
 ## verification ページ
@@ -143,7 +183,7 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 
 ## RFC 8707 `resource=`
 
-デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。ハンドラは `/authorize` / `/token` と同じゲートを適用します:
+デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。ハンドラは `/authorize` / `/token` と同じ検査を適用します:
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否します。
 - 正規化後の値(scheme + host を小文字化、末尾 `/` 除去)はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
@@ -193,7 +233,7 @@ if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReason
 (cd examples/31-device-code-cli && go run -tags example .)
 ```
 
-OP を起動し、枠付きの `user_code` パネルと `verification_uri_complete` ショートカットを表示します。数秒後にブラウザ承認をシミュレートし、access_token + id_token が発行されるまでポーリングします。ファイルはロール別に分割（`op.go` / `cli.go` / `device.go` / `probe.go`）。
+OP を起動し、枠付きの `user_code` パネルと `verification_uri_complete` ショートカットを表示します。数秒後にブラウザ承認をシミュレートし、access_token + id_token が発行されるまでポーリングします。ファイルは役割別に分割（`op.go` / `cli.go` / `device.go` / `probe.go`）。
 
 ## 続きはこちら
 

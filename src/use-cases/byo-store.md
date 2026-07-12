@@ -48,13 +48,14 @@ The example proves the point by giving every table and column a deliberately non
 
 `principal` is the subject, `relying_party` is the client id, `ledger_id` is the grant id — the substore implementations are the sole place the physical schema is mapped onto the `store.*` structs.
 
-## Three contracts you must honour
+## Contracts you must honour
 
 The substore godoc is normative. A backend that compiles but ignores these does not satisfy the interface:
 
 1. **Hash-on-store.** `AuthorizationCode.ID`, `RefreshToken.ID`, and `PushedAuthRequest.URI` are opaque bearer secrets: possession alone redeems them. Hash the presented value (SHA-256, ideally HMAC'd with a server-side pepper) before persisting, store only the digest, and on `Find` / `Consume` hash the presented value to look the digest up, comparing in constant time. The example uses SHA-256 without a pepper to stay self-contained, matching the in-memory reference; production backends SHOULD add the pepper.
 2. **Sentinel errors.** Return `store.ErrNotFound`, `store.ErrAlreadyExists`, `store.ErrAlreadyConsumed`, `store.ErrConflict`, and `store.ErrTxRequired` exactly where the method godoc says (map `sql.ErrNoRows` → `ErrNotFound`; a second `Consume` → `ErrAlreadyConsumed`). Callers switch on these with `errors.Is`; returning a different error for a listed failure mode breaks the contract even though it compiles.
 3. **Atomicity.** Exchanging a code, rotating a refresh token, and consuming a PAR each cross several record kinds. The library relies on each substore's `Save` / `Consume` being individually atomic, and a backend that hosts the transactional cluster SHOULD also implement `store.Transactional` so multi-substore writes share one underlying transaction. The example implements it the same way the bundled adapter does: substores take a small `querier` interface that both `*sql.DB` and `*sql.Tx` satisfy, and `BeginTx` hands out cluster substores bound to one `*sql.Tx`.
+4. **PAR expiry belongs to `Find`, not `Consume`.** `PushedAuthRequestStore.Find` is the presentation-time expiry gate when the browser brings `request_uri` to `/authorize`. `Consume` enforces single-use only and must not reject solely because `ExpiresAt` passed after presentation; otherwise a long login / MFA / consent interaction could fail at code emission after the OP had already accepted the request.
 
 ## Which approach fits
 

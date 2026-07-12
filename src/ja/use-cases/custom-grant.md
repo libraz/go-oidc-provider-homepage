@@ -1,9 +1,9 @@
 ---
-title: Custom Grant — 組み込み
+title: カスタム grant — 組み込み
 description: 独自 grant_type URN を定義して OP にルーティングさせる — ハンドラ契約、BoundAccessToken、ParamPolicy。
 ---
 
-# ユースケース — Custom Grant
+# 使い方 — カスタム grant
 
 標準カタログにない `grant_type` が必要なシナリオがあります。ベンダ固有の service-token-exchange URN、内部の「外部 assertion から token を発行」パス、レガシ AS から移行中の暫定 shim など。`op.WithCustomGrant(...)` はディスパッチャを fork せずに、組み込み側が定義した URN を `/token` 経由でルーティングするための差し込み口です。
 
@@ -88,6 +88,38 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 
 ハンドラは **OP 署名**（`BoundAccessToken`）と **ハンドラ署名**（`AccessToken`）を選択します — 排他です。
 
+<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 350" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="custom-grant-signing-title">カスタム grant の 2 つの発行形態。BoundAccessToken は OP が署名、標準 claim、cnf、id_token、リフレッシュトークンを管理する。AccessToken はハンドラが署名済み値を返し、cnf や introspection 連携もハンドラ側の責任になる。</title>
+  <defs>
+    <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="280" y="20" width="200" height="52" rx="8"/>
+  <text class="h" x="380" y="43" text-anchor="middle">CustomGrantHandler</text>
+  <text class="m sub" x="380" y="61" text-anchor="middle">Handle(ctx, req)</text>
+
+  <rect class="accent" x="48" y="134" width="286" height="136" rx="8"/>
+  <text class="h accent-text" x="191" y="162" text-anchor="middle">BoundAccessToken を返す</text>
+  <text class="t" x="191" y="190" text-anchor="middle">OP が署名鍵を選び JWT を発行</text>
+  <text class="t sub" x="191" y="214" text-anchor="middle">標準 claim / `cnf` / TTL 上限</text>
+  <text class="t sub" x="191" y="236" text-anchor="middle">必要なら id_token / refresh も OP 管理</text>
+  <text class="m accent-text" x="191" y="258" text-anchor="middle">推奨: 通常はこちら</text>
+
+  <rect x="426" y="134" width="286" height="136" rx="8"/>
+  <text class="h" x="569" y="162" text-anchor="middle">AccessToken を返す</text>
+  <text class="t" x="569" y="190" text-anchor="middle">ハンドラが署名済み値を返す</text>
+  <text class="t sub" x="569" y="214" text-anchor="middle">外部 KMS / 独自 opaque backend 向け</text>
+  <text class="t sub" x="569" y="236" text-anchor="middle">`cnf` と失効連携は自前責任</text>
+  <text class="m sub" x="569" y="258" text-anchor="middle">明確な理由がある場合のみ</text>
+
+  <path d="M350 72 C330 104 250 112 191 130" marker-end="url(#cg-arrow)"/>
+  <path d="M410 72 C430 104 510 112 569 130" marker-end="url(#cg-arrow)"/>
+
+  <rect class="soft" x="102" y="302" width="556" height="34" rx="8"/>
+  <text class="t" x="380" y="324" text-anchor="middle">両方を同時に返すと `server_error`: 発行責任を 1 つに固定する</text>
+</svg>
+
 ::: details OP 署名 vs ハンドラ署名 — どちらを選ぶか
 **OP 署名**(`BoundAccessToken`)は、OP が登録済みの keyset から鍵を選んで JWT に署名し、リクエストの検証済み DPoP / mTLS 証明から `cnf` を押印し、予約 claim フィルタのもとで追加 claim をマージしてくれる形です。**ハンドラ署名**(`AccessToken`)は、外部 KMS / HSM で生成済みのトークン(または独自 introspection backend が解釈する opaque token)を持ち込み、OP にそのまま返させる形で、`cnf` を含むすべての責任をハンドラが負います。明確な理由がない限り OP 署名を選んでください。
 :::
@@ -125,7 +157,7 @@ op.ParamPolicy{
     // 許可する名前。未知の名前は invalid_request。
     Allowed: []string{"target_service", "act_as"},
 
-    // Allowed のうち重複値を許す subset。デフォルトは重複なし。
+    // Allowed のうち重複値を許す subset。既定は重複なし。
     // OP は名前ごとに CustomGrantDupCap（32）の hard cap を強制。
     DupesAllowed: []string{"target_service"},
 }
@@ -144,7 +176,7 @@ OP が `Handle` の前後に適用する最低ライン:
 
 ## リフレッシュトークン
 
-custom grant は、OP 管理のリフレッシュトークン発行にオプトインできます:
+custom grant は、OP 管理のリフレッシュトークン発行を明示的に有効化できます:
 
 ```go
 return op.CustomGrantResponse{

@@ -7,6 +7,37 @@ description: 認可応答を署名付き(任意で暗号化)JWT に包み、応�
 
 OP は既定では認可応答(`code`、`state`、`iss` など)を URL クエリや fragment にそのまま載せて返します。リダイレクトを書き換えられる立場の攻撃者 — 悪意のあるブラウザ拡張、改ざんされた中継、別の OP との mix-up — は、RP が応答を受け取る前にフィールドを差し替えることができます。**JARM**(OpenID Foundation FAPI WG 仕様 "JWT Secured Authorization Response Mode for OAuth 2.0"、RFC 9101 §10.2 が情報参照しています)は、この応答全体をひとつの署名付き JWT にまとめ、`response` 1 個のパラメータとして配送する方式です。応答そのものに改ざん検知性が乗り、OP が発行したことが暗号学的に立証できるようになります。
 
+<svg role="img" aria-labelledby="jarm-wrap-title" viewBox="0 0 760 340" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="jarm-wrap-title">通常の認可応答は code や state を個別のパラメータで返す。JARM はそれらを署名付き JWT に包み、response パラメータ 1 個で返す。</title>
+<text class="jarm-text" x="128" y="40" text-anchor="middle">通常の応答</text>
+  <rect class="jarm-box" x="40" y="62" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="128" y="94" text-anchor="middle">OP</text>
+  <text class="jarm-sub" x="128" y="116" text-anchor="middle">code / state / iss</text>
+  <rect class="jarm-box" x="544" y="62" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="632" y="96" text-anchor="middle">RP</text>
+  <text class="jarm-sub" x="632" y="118" text-anchor="middle">個別に検証</text>
+  <path class="jarm-flow" d="M216 102 H540"/>
+  <text class="jarm-sub" x="378" y="88" text-anchor="middle">?code=...&amp;state=...&amp;iss=...</text>
+  <path class="jarm-flow" d="M532 98 L541 102 L532 106"/>
+
+  <text class="jarm-text" x="128" y="198" text-anchor="middle">JARM 応答</text>
+  <rect class="jarm-box" x="40" y="220" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="128" y="252" text-anchor="middle">OP</text>
+  <text class="jarm-sub" x="128" y="274" text-anchor="middle">応答全体に署名</text>
+  <rect class="jarm-main" x="294" y="212" width="172" height="94" rx="8"/>
+  <text class="jarm-text" x="380" y="244" text-anchor="middle">JWT response</text>
+  <text class="jarm-sub" x="380" y="266" text-anchor="middle">iss / aud / exp</text>
+  <text class="jarm-sub" x="380" y="284" text-anchor="middle">code または error</text>
+  <rect class="jarm-box" x="544" y="220" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="632" y="252" text-anchor="middle">RP</text>
+  <text class="jarm-sub" x="632" y="274" text-anchor="middle">署名を検証</text>
+  <path class="jarm-flow" d="M216 260 H290"/>
+  <path class="jarm-flow" d="M282 256 L291 260 L282 264"/>
+  <path class="jarm-flow" d="M466 260 H540"/>
+  <text class="jarm-sub" x="503" y="246" text-anchor="middle">?response=&lt;JWT&gt;</text>
+  <path class="jarm-flow" d="M532 256 L541 260 L532 264"/>
+</svg>
+
 JARM は FAPI 2.0 Message Signing が FAPI 2.0 Baseline の上に重ねる 2 つの保護のうちの 1 つです。もう 1 つはリソースサーバ側での応答署名です。両者を合わせると完全な非否認性が得られます — すべての認可リクエストとすべての認可応答が、識別可能な発信者の署名で守られます。
 
 ::: details このページで触れる仕様
@@ -30,14 +61,14 @@ JARM は FAPI 2.0 Message Signing が FAPI 2.0 Baseline の上に重ねる 2 つ
 
 ## 通信路上の形式
 
-クライアントは authorize(または PAR)リクエストの `response_mode` に JARM 4 値のいずれかを指定してオプトインします(`internal/jarm/mode.go`):
+クライアントは authorize(または PAR)リクエストの `response_mode` に JARM 4 値のいずれかを指定して有効化します(`internal/jarm/mode.go`):
 
 | `response_mode` | 配送方法 | 用途 |
 |---|---|---|
 | `query.jwt` | リダイレクト URL の `?response=<JWT>` | Code フロー(v0.x が出荷する唯一のフローなので、裸の `jwt` エイリアスもここに解決) |
 | `fragment.jwt` | リダイレクト URL の `#response=<JWT>` | Hybrid / Implicit フロー(実装済みだが v0.x では実行されない) |
 | `form_post.jwt` | 自動 submit する HTML フォームの hidden `response` フィールド | URL バーに値を載せたくないブラウザ向け |
-| `jwt` | 裸のエイリアス。`response_type=code` なら `query.jwt`、`token` / `id_token` を含めば `fragment.jwt` に解決 | 既定挙動に任せたいクライアント |
+| `jwt` | 裸の別名。`response_type=code` なら `query.jwt`、`token` / `id_token` を含めば `fragment.jwt` に解決 | 既定挙動に任せたいクライアント |
 
 OP が返すパラメータは `response` 1 個だけで、その値が JWT です。リダイレクトには他に何も載りません。JWT の claim には元の応答フィールドが入ります(`internal/jarm/encode.go`):
 
@@ -68,7 +99,7 @@ v0.x にクライアント単位の `authorization_signed_response_alg` 上書�
 `alg=none` / `RS256` / `HS*` ファミリは型レベルで存在しません — 本ライブラリのあらゆる JOSE 接面に共通する閉じた enum 方針については [設計判断 #11](/ja/security/design-judgments#dj-11) を参照してください。
 
 ::: details なぜ alg を 1 つに絞り、交渉可能なリストにしないのか
-JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り違える("alg confusion")バグを生んできた経路です。本ライブラリは交渉を行わず、通信路上の allow-list と型レベルの enum を一致させ、リスト外の alg を名乗る入力は検証器に到達する前に拒否します。v0.x は ES256 だけを出荷していますが、これは FAPI 2.0 Message Signing が要求する集合と通信路を互換に保ちつつ、攻撃面を広げないための選択です。
+JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り違える("alg confusion")バグを生んできた経路です。本ライブラリは交渉を行わず、通信路上の許可リストと型レベルの enum を一致させ、リスト外の alg を名乗る入力は検証器に到達する前に拒否します。v0.x は ES256 だけを出荷していますが、これは FAPI 2.0 Message Signing が要求する集合と通信路を互換に保ちつつ、攻撃面を広げないための選択です。
 :::
 
 ## 暗号化
@@ -79,7 +110,7 @@ JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り�
 - 署名済み JARM JWT を、解決した受信者鍵に対して登録済みの `alg` / `enc` で暗号化します。
 - 暗号化に失敗した場合、OP は平文の `?code=...` リダイレクトへフォールバックせず、`server_error` を返します。クライアントが暗号化された応答を要求しているのに code を平文で漏らすのは、fail-closed(失敗時は応答そのものを止める)よりも悪い結果になるためです。
 
-`alg` / `enc` の allow-list は、ID トークン / userinfo / introspection の暗号化と同じ閉じたリスト(`op.SupportedEncryptionAlgs` と `op.SupportedEncryptionEncs`)を使います: 鍵管理は `RSA-OAEP-256`、`ECDH-ES`、`ECDH-ES+A128KW` / `ECDH-ES+A256KW`、コンテンツ暗号化は `A128GCM` / `A256GCM` が対象です。`RSA1_5`、`dir`、`A*KW` / `A*GCMKW`、AES-CBC-HS 系のコンテンツ暗号化は意図的に除外しています。alg マトリクスと根拠は [JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
+`alg` / `enc` の許可リストは、ID トークン / userinfo / introspection の暗号化と同じ閉じたリスト(`op.SupportedEncryptionAlgs` と `op.SupportedEncryptionEncs`)を使います: 鍵管理は `RSA-OAEP-256`、`ECDH-ES`、`ECDH-ES+A128KW` / `ECDH-ES+A256KW`、コンテンツ暗号化は `A128GCM` / `A256GCM` が対象です。`RSA1_5`、`dir`、`A*KW` / `A*GCMKW`、AES-CBC-HS 系のコンテンツ暗号化は意図的に除外しています。alg マトリクスと根拠は [JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
 
 OP は discovery で `authorization_encryption_alg_values_supported` と `_enc_values_supported` を、JARM 機能と `op.WithEncryptionKeyset` の両方が組み込まれているときにだけ広告します(`internal/discovery/document.go`)。
 
@@ -152,14 +183,14 @@ JARM signer は `op.New` の段階で OP の現用署名鍵を使って 1 度だ
 
 ## JARM と DPoP / mTLS の関係
 
-JARM は認可応答に署名し、[DPoP](/ja/concepts/dpop) と [mTLS](/ja/concepts/mtls) は発行されたトークンを正規クライアントが保有する鍵にバインドします。両層は直交しており — JARM は **code を配送するハンドシェイク段** を、送信者制約は **その code と引き換えに発行されるトークン** を、それぞれ守ります — FAPI 2.0 Message Signing は両方を要求します。
+JARM は認可応答に署名し、[DPoP](/ja/concepts/dpop) と [mTLS](/ja/concepts/mtls) は発行されたトークンを正規クライアントが保有する鍵に結び付けます。両層は直交しており — JARM は **code を配送するハンドシェイク段** を、送信者制約は **その code と引き換えに発行されるトークン** を、それぞれ守ります — FAPI 2.0 Message Signing は両方を要求します。
 
 JARM を使うリクエストはほぼ常に [PAR](/ja/use-cases/fapi2-baseline) と [JAR](https://datatracker.ietf.org/doc/html/rfc9101) も併用します。4 つを組み合わせると、認可リクエスト全体に署名・認可応答全体に署名・最後に送信者制約付きトークン、という構図が完成します。本ライブラリは `op.WithProfile(profile.FAPI2MessageSigning)` 下で PAR / JAR / JARM を自動有効化し、DPoP もしくは mTLS のいずれかを必須とする `RequiredAnyOf` 制約を併せて課します。mTLS が明示されていない場合は DPoP を既定として選びます。
 
 ## 次に読む
 
 - [FAPI 2.0](/ja/concepts/fapi) — JARM が FAPI 2.0 Baseline / Message Signing の対比のどこに位置づくか。
-- [送信者制約 — 選定ガイド](/ja/concepts/sender-constraint) — JARM と並走するトークンバインド層、DPoP と mTLS の選び方。
+- [送信者制約 — 選定ガイド](/ja/concepts/sender-constraint) — JARM と並走するトークン結び付け層、DPoP と mTLS の選び方。
 - [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — JARM を載せる前段の Baseline プロファイルの実装一式。
 - [JWE 暗号化](/ja/use-cases/jwe-encryption) — 暗号化 JARM、暗号化 ID トークン、暗号化 userinfo、暗号化 introspection(鍵集合 1 個で 4 接面分)。
 - [設計判断](/ja/security/design-judgments) — 閉じた alg enum(#11)など、JARM が継承する仕様上の判断材料。

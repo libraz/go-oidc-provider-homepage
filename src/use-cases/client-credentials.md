@@ -117,7 +117,7 @@ curl -s -u service-a:<secret> \
 ```
 
 ::: tip Confidential clients only
-`client_credentials` is restricted to clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`). A public client (`token_endpoint_auth_method=none`) can't use it.
+`client_credentials` is restricted to clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`). A public client (`token_endpoint_auth_method=none`) can't use it. mTLS sender constraint is separate and does not authenticate the grant by itself.
 :::
 
 ## Production-grade: `private_key_jwt` instead of basic

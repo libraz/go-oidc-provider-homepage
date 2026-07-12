@@ -6,17 +6,17 @@ description: Adding go-oidc-provider to a Go module.
 # Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v0.9.4
+go get github.com/libraz/go-oidc-provider/op@latest
 ```
 
 If you use the SQL or Redis adapter sub-modules, pin them to the same tag:
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v0.9.4
-go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v0.9.4
+go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
+go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@latest
 ```
 
-The library targets **Go 1.25+** (matches the `go.mod` directive). The storage-adapter sub-modules under `op/storeadapter/sql` and `op/storeadapter/redis` already required Go 1.25 for their testcontainers-driven integration tests; the root module now matches that floor.
+The module language floor is **Go 1.25+** (the `go.mod` directive is `go 1.25.0`). The release is built and tested with the pinned `toolchain go1.26.5`; use that toolchain or newer when you want the same TLS and dependency security baseline as the project CI.
 
 ## Modules and sub-modules
 

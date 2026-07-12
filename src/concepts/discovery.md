@@ -40,7 +40,7 @@ A representative subset of the fields a beginner will actually see and use. Ever
 | `response_modes_supported` | How `/authorize` returns the result: `query`, `form_post`, plus `query.jwt`, `fragment.jwt`, `form_post.jwt`, `jwt` when JARM is enabled. |
 | `id_token_signing_alg_values_supported` | JWS algorithms used to sign ID Tokens. The library publishes `ES256` only because OP signing keys are ECDSA P-256. |
 | `request_object_signing_alg_values_supported` | JWS algorithms accepted on JAR `request=` parameters: `RS256`, `PS256`, `ES256`, `EdDSA`. |
-| `token_endpoint_auth_methods_supported` | How confidential RPs authenticate at `/token`: `client_secret_basic`, `client_secret_post`, `private_key_jwt`, plus `tls_client_auth` / `self_signed_tls_client_auth` when mTLS is enabled. Public clients use `none` in registration metadata, but the discovery advertisement does not list `none`. |
+| `token_endpoint_auth_methods_supported` | How confidential RPs authenticate at `/token`: `client_secret_basic`, `client_secret_post`, `private_key_jwt`. FAPI profiles narrow this to `private_key_jwt`. Public clients use `none` in registration metadata, but the discovery advertisement does not list `none`; mTLS sender-constraint metadata is advertised separately via `mtls_endpoint_aliases`. |
 | `code_challenge_methods_supported` | PKCE transformations. The library advertises **only** `S256`. |
 | `subject_types_supported` | `public` and (when `op.WithPairwiseSubject(...)` is wired) `pairwise`. |
 | `claims_supported` | Claims the OP can return. Operator-controlled via `op.WithClaimsSupported(...)`. |

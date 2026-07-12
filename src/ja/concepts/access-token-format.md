@@ -1,17 +1,17 @@
 ---
 title: アクセストークンの形式 — JWT と opaque
-description: 設計判断のためのページ。JWT が既定で opaque はオプトイン。検証負荷の置き場所が違うだけで、信頼境界と運用形態に合うほうを選びます。
+description: 設計判断のためのページ。JWT が既定で opaque は明示時のみ。検証負荷の置き場所が違うだけで、信頼境界と運用形態に合うほうを選びます。
 ---
 
 # アクセストークンの形式 — JWT と opaque
 
-`go-oidc-provider` は **JWT（RFC 9068）形式のアクセストークンを既定で発行** し、**opaque 形式はオプトイン** で選べます。通信路上はどちらも `Authorization: Bearer …` という同じ形で運ばれますが、違うのは **誰がトークンを検証するか**、そして **revocation がどこまで届くか** です。
+`go-oidc-provider` は **JWT（RFC 9068）形式のアクセストークンを既定で発行** し、**opaque 形式は明示時のみ** 選べます。通信路上はどちらも `Authorization: Bearer …` という同じ形で運ばれますが、違うのは **誰がトークンを検証するか**、そして **revocation がどこまで届くか** です。
 
 これはライブラリ側で決められない設計判断で、組み込み側が選ぶことになります。RS（リソースサーバ）が OP に対してどの位置にいるか、即時失効をどこまで要求するか、負荷をどう分散したいかで答えが変わります。
 
 ::: tip 結論を先に
 - **既定は JWT（RFC 9068）。** RS は JWKS でオフライン検証します。`/end_session` のカスケードは OP のエンドポイント（`/userinfo` / `/introspect`）までしか届かず、オフライン検証している RS では `exp` までトークンが通り続けます。
-- **Opaque はオプトイン** (`op.WithAccessTokenFormat`)。全 RS リクエストが `/introspect` を経由するためカスケードはあらゆる RS に届きますが、OP がリクエストのホットパスに乗ります。
+- **Opaque は明示時のみ** (`op.WithAccessTokenFormat`)。全 RS リクエストが `/introspect` を経由するためカスケードはあらゆる RS に届きますが、OP がリクエストの処理経路に入ります。
 - **判断の核**: 「ログアウトされた」がユーザの通信不可までを意味するのか、それとも OP のエンドポイントでの拒否で十分なのか。ユーザ側帯域と OP の処理容量の配分は副次的な検討事項です。RFC 8707 の resource indicator ごとに混在させることも可能です（`op.WithAccessTokenFormatPerAudience`）。
 :::
 
@@ -35,13 +35,8 @@ description: 設計判断のためのページ。JWT が既定で opaque はオ�
 
 ### JWT（RFC 9068） — RS がローカルで検証
 
-<style scoped>
-text{stroke:none}
-.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-</style>
-
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 684 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="atf-jwt-local-title">JWT アクセストークン: RP が Bearer JWT を提示し、RS はキャッシュした OP の JWKS でローカル検証するため、OP はリクエストのホットパスに乗らない。</title>
+  <title id="atf-jwt-local-title">JWT アクセストークン: RP が Bearer JWT を提示し、RS はキャッシュした OP の JWKS でローカル検証するため、OP はリクエストの処理経路に入らない。</title>
   <rect x="28" y="38" width="118" height="56" rx="6"/>
   <text class="atf-b atf-t1" x="87" y="70" text-anchor="middle">RP</text>
   <rect x="420" y="24" width="236" height="84" rx="6"/>
@@ -57,14 +52,9 @@ text{stroke:none}
   <text class="atf-s atf-t2" x="312" y="114" text-anchor="middle">取得してキャッシュ（一度だけ）</text>
 </svg>
 
-RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `aud` / `exp` をチェックし、リクエストに応えます。OP は **リクエストのホットパスに乗りません**。JWT 自体が claim（`sub`、`scope`、`aud`、`auth_time`、`acr`、`cnf` …）を運ぶので、RS に必要な情報は全て揃っています。
+RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `aud` / `exp` をチェックし、リクエストに応えます。OP は **リクエストの処理経路に入りません**。JWT 自体が claim（`sub`、`scope`、`aud`、`auth_time`、`acr`、`cnf` …）を運ぶので、RS に必要な情報は全て揃っています。
 
 ### Opaque — RS は毎回 OP に問い合わせる
-
-<style scoped>
-text{stroke:none}
-.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-</style>
 
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 720 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-opaque-introspect-title">opaque アクセストークン: RP が Bearer opaque を提示し、RS は毎リクエスト OP の introspection エンドポイントを呼んでトークンを解決する。</title>
@@ -85,10 +75,10 @@ text{stroke:none}
   <text class="atf-m atf-t2" x="468" y="94" text-anchor="middle">{active, sub, scope, …}</text>
 </svg>
 
-opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 文字にしたランダム識別子です。claim を一切運びません。RS は毎リクエストごとに OP の `/introspect`（RFC 7662）でトークンを解決します（あるいは結果を意図的に短い時間幅だけキャッシュします）。OP は **リクエストのホットパスに乗ります**。
+opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 文字にしたランダム識別子です。claim を一切運びません。RS は毎リクエストごとに OP の `/introspect`（RFC 7662）でトークンを解決します（あるいは結果を意図的に短い時間幅だけキャッシュします）。OP は **リクエストの処理経路に入ります**。
 
 ::: details `jti` — それは何か
-`jti` は JWT 標準 claim（RFC 7519 §4.1.7）の "JWT ID" です。トークンごとに付ける一意の識別子で、特定のトークンを参照・失効・重複排除するときに使います。JWT アクセストークンには `jti` が含まれ、OP は旧来の JTI registry 戦略でこれをキーにし、deny-list テーブルでも重複排除キーとして使います。opaque トークンには `jti` がありません — bearer 文字列自体がすでに一意の識別子になるからです。
+`jti` は JWT 標準 claim（RFC 7519 §4.1.7）の "JWT ID" です。トークンごとに付ける一意の識別子で、特定のトークンを参照・失効・重複排除するときに使います。JWT アクセストークンには `jti` が含まれ、OP は旧来の JTI registry 戦略でこれをキーにし、拒否リストのテーブルでも重複排除キーとして使います。opaque トークンには `jti` がありません — bearer 文字列自体がすでに一意の識別子になるからです。
 :::
 
 ::: details `gid` — それは何か
@@ -99,7 +89,7 @@ opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 
 :::
 
 ::: tip 通信路上の見た目だけでは RS は形式を判別できない
-両形式とも `Authorization: Bearer <opaque-string>` として届きます。RFC 6750 は形式を区別しません。RS は audience やデプロイ側の取り決めで「この audience は opaque」「この audience は JWT」を知っている前提です — JWKS をどれと信じるかと同じ仕組みです。本ライブラリの discovery 文書は形式を **広告しません**。
+両形式とも `Authorization: Bearer <opaque-string>` として届きます。RFC 6750 は形式を区別しません。RS は audience や配備側の取り決めで「この audience は opaque」「この audience は JWT」を知っている前提です — JWKS をどれと信じるかと同じ仕組みです。本ライブラリの discovery 文書は形式を **広告しません**。
 :::
 
 ## トレードオフ
@@ -107,7 +97,7 @@ opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 
 | 観点 | JWT（既定） | Opaque |
 |---|---|---|
 | 検証場所 | RS。JWKS でオフライン | OP。`/introspect` 経由 |
-| OP 負荷 | 既定戦略では発行時に書き込み **0 件**、失効した grant ごとに 1 行のみ。オプトインの JTI registry では発行ごとに 1 行。詳細は下記の [JWT 失効戦略](#jwt-アクセストークン失効戦略) を参照。 | 発行ごとに 1 行 + RS リクエストごとに introspect 往復 |
+| OP 負荷 | 既定戦略では発行時に書き込み **0 件**、失効した grant ごとに 1 行のみ。明示時のみの JTI registry では発行ごとに 1 行。詳細は下記の [JWT 失効戦略](#jwt-アクセストークン失効戦略) を参照。 | 発行ごとに 1 行 + RS リクエストごとに introspect 往復 |
 | ヘッダサイズ | 大きい — header / claims / signature | 小さい — base64url 43 文字 |
 | RS レイテンシ下限 | ローカル暗号処理のみ | OP との往復（またはキャッシュ TTL）が乗る |
 | キャッシュ面 | RS が JWKS をキャッシュ（更新は稀） | RS が introspect 応答をトークンごとにキャッシュ |
@@ -130,14 +120,14 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 ::: info ユーザ側帯域とサーバ間 RTT は別軸
 「OP 負荷集中 vs RS 分散」とは別に **「ユーザ側回線が運ぶ byte 数」 vs 「サーバ間 RTT」** の軸があります。両者を混ぜて評価しないでください。
 
-- **JWT 経路。** RP → RS の毎リクエストに数百 byte 〜 1 KB 級の JWT が乗ります。これは **ユーザ側回線の帯域** を消費する側 — モバイル / 従量課金 / 衛星リンクのような IoT デプロイで効いてきます。サーバ間は静か（RS は OP を呼びません）。
+- **JWT 経路。** RP → RS の毎リクエストに数百 byte 〜 1 KB 級の JWT が乗ります。これは **ユーザ側回線の帯域** を消費する側 — モバイル / 従量課金 / 衛星リンクのような IoT 配備で効いてきます。サーバ間は静か（RS は OP を呼びません）。
 - **Opaque 経路。** RP → RS の Bearer は base64url で 43 byte、**ユーザ側帯域には優しい**。代わりに各 RS が OP に `/introspect` を呼び出す分の **サーバ間トラフィック** が増えます — 多くは内部 trust zone 内の往復で、ユーザ体感帯域には乗りません。
 
 つまり「OP の容量計画」と「ユーザ体感の通信量」は同じ問題ではありません。モバイルクライアントが多い API では opaque のほうがユーザ体感が軽くなる一方、OP は強くする必要がある、と分けて評価する価値があります。
 :::
 
 ::: info OP 側のストレージコストは **対称ではありません**
-既定の JWT 戦略（grant tombstone）は **発行時にデータベースへ書き込みを行わず**、失効した grant ごとに 1 行だけ書き込みます — 定常状態の行数は `O(失効した grant 数)` です。オプトインの JTI registry 戦略は発行ごとに 1 行（`jti` をキーにした shadow 行）を保持します。opaque 形式は常に発行ごとに 1 行（ハッシュ化した bearer ID をキーにした行）を保持します。
+既定の JWT 戦略（grant tombstone）は **発行時にデータベースへ書き込みを行わず**、失効した grant ごとに 1 行だけ書き込みます — 定常状態の行数は `O(失効した grant 数)` です。明示時のみの JTI registry 戦略は発行ごとに 1 行（`jti` をキーにした shadow 行）を保持します。opaque 形式は常に発行ごとに 1 行（ハッシュ化した bearer ID をキーにした行）を保持します。
 
 「JWT も opaque もトークン 1 本ごとに 1 行」という説明は旧 JTI registry 既定の前提でした — 現在の既定では、JWT の発行経路は純粋な計算処理だけで完結します。詳細は下記の [JWT 失効戦略](#jwt-アクセストークン失効戦略) を参照。RS 側の差（JWT は RS にとってステートレス、opaque はそうではない）は変わりません。
 :::
@@ -149,11 +139,6 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 `/end_session`（および `/revoke`、code 再利用検出のカスケード）は subject の grant に紐付くすべてのアクセストークンに対し、OP 側のレコードを revoked 状態へ切り替えます。両形式ともこの切り替えは記録されますが、問題は **どの経路がそれに気付くか** です。
 
 **JWT 形式:**
-
-<style scoped>
-text{stroke:none}
-.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-</style>
 
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-jwt-revocation-title">JWT の失効到達範囲: end_session による grant tombstone の切り替えは OP の userinfo / introspect では参照されるが、オフライン JWT 検証をする RS では参照されない。</title>
@@ -183,11 +168,6 @@ text{stroke:none}
 </svg>
 
 **Opaque 形式:**
-
-<style scoped>
-text{stroke:none}
-.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-</style>
 
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-opaque-revocation-title">opaque の失効到達範囲: end_session による opaque サブストアの切り替えは OP の userinfo / introspect でも、各 RS の introspect 呼び出しでも参照される。</title>
@@ -236,7 +216,7 @@ opaque AT を `/introspect` に問い合わせるとき、(a) 別クライアン
 
 もうひとつのカスケードのきっかけは **RFC 6749 §4.1.2 の認可コード再利用検出** です。盗まれた code が二度目に提示された瞬間、その grant 配下のアクセストークンがすべて失効します。
 
-JWT 形式では grant tombstone を書き込み（オプトインの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。
+JWT 形式では grant tombstone を書き込み（明示時のみの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。
 
 ::: details カスケード失効とは
 ここで言う「カスケード」は「1 回の失効イベントが、同じ grant から派生したすべての成果物に届く」という意味です。`/end_session` が 1 回鳴れば、OP は grant を revoked 状態にし、その瞬間からその grant 配下のアクセストークン / リフレッシュトークン / shadow 行はすべて、OP に問い合わせるどの経路でも無効として扱われます。対比となる「リーフ失効」は「この特定のトークンだけ失効させ、同じ grant 配下のほかは有効に保つ」というやり方で、RFC 7009 の `/revocation` を 1 件の `jti` に対して使ったときの挙動がこれにあたります。
@@ -251,7 +231,7 @@ JWT 経路にはもうひとつの調整ポイントがあります — **OP が
 
 - **tombstone** — 「このキーで識別される対象は失効済み」を記録する 1 行。トークン本体は保存せず、grant ID と「失効した」事実だけを持ちます。検証はキー検索で tombstone テーブルを引きます。
 - **shadow 行** — 発行された各トークンを「影のように」追いかける行で、`jti` ごとに 1 行、`revoked_at` や監査用フィールドを持ちます。tombstone より重く（失効時ではなく発行時に書き込む）、その分すべてのトークンの完全な監査ログが残ります。
-- **JTI registry** — その shadow 行を保持するテーブルで、`jti` をキーにします。既定戦略では使いません — オプトインの `RevocationStrategyJTIRegistry` で使われます。
+- **JTI registry** — その shadow 行を保持するテーブルで、`jti` をキーにします。既定戦略では使いません — 明示時のみの `RevocationStrategyJTIRegistry` で使われます。
 - **いつ気にすべきか:** データベースのサイジングを行うときです。tombstone は `O(失効した grant 数)`、shadow 行は `O(発行レート × TTL)` で増えます。高負荷の OP では、千行単位と百万行単位の差になります。
 :::
 
@@ -261,12 +241,12 @@ JWT 経路にはもうひとつの調整ポイントがあります — **OP が
 |---|---|---|---|---|
 | **`RevocationStrategyGrantTombstone`**（既定） | **0 件** | 1（tombstone 行） | `O(失効した grant 数 + 失効した jti 数)` | OP は各 JWT に `gid` という private claim（GrantID）を含め、検証時に grant ごとの tombstone テーブルを参照します。FAPI 2.0 SP §5.3.2.2 適合。 |
 | `RevocationStrategyJTIRegistry` | 1（shadow 行） | N（grant 配下の AT ごとに 1 件 UPDATE） | `O(発行レート × AT_TTL)` | 発行された AT 1 本ごとに `store.AccessTokenRegistry` の shadow 行が 1 件作られます。AT 単位の監査ログが規制要件のときに固定推奨。FAPI 2.0 SP §5.3.2.2 適合。 |
-| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` は RFC 7009 §2.2 のとおり 200 を冪等に返しますが、実体としては no-op。JWT AT は `exp` まで有効なままです。**FAPI プロファイル下では `op.New` が拒否します**（FAPI 2.0 SP §5.3.2.2 がサーバ側 revocation を必須としているため）。 |
+| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` は RFC 7009 §2.2 のとおり 200 を冪等に返しますが、実体としては何もしません。JWT AT は `exp` まで有効なままです。**FAPI プロファイル下では `op.New` が拒否します**（FAPI 2.0 SP §5.3.2.2 がサーバ側 revocation を必須としているため）。 |
 
 ::: tip 既定は発行時に何も書きません
-既定戦略では `/token` のホットパスがデータベースに触れません。代わりに、grant が失効するとき（ログアウト、コード再利用カスケード、refresh chain 侵害）に grant ID をキーにした tombstone 行を 1 件だけ書き込みます。`/userinfo` と `/introspect` は JWT の `gid` を tombstone と突き合わせるので、失効した grant の JWT は OP のエンドポイントで即座に拒否されます。
+既定戦略では `/token` の処理経路がデータベースに触れません。代わりに、grant が失効するとき（ログアウト、コード再利用カスケード、リフレッシュトークン連鎖の侵害）に grant ID をキーにした tombstone 行を 1 件だけ書き込みます。`/userinfo` と `/introspect` は JWT の `gid` を tombstone と突き合わせるので、失効した grant の JWT は OP のエンドポイントで即座に拒否されます。
 
-`jti` 単位の `/revocation`（RFC 7009）は同じサブストアに deny-list 行を 1 件書き込みます。**grant tombstone へはまとめられません** — 同じ grant 配下のほかの AT はそのまま有効です。
+`jti` 単位の `/revocation`（RFC 7009）は同じサブストアに拒否リスト行を 1 件書き込みます。**grant tombstone へはまとめられません** — 同じ grant 配下のほかの AT はそのまま有効です。
 :::
 
 ::: info `gid` claim は private
@@ -290,7 +270,7 @@ provider, err := op.New(
     op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry),
 )
 
-// サーバ側 JWT 失効を無効化する（非 FAPI デプロイ専用）
+// サーバ側 JWT 失効を無効化する（非 FAPI 配備専用）
 provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
@@ -305,17 +285,12 @@ provider, err := op.New(
 :::
 
 ::: warning サブストアの存在は `op.New` で強制されます（BREAKING）
-既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が nil 以外なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は最初の `/revoke` / refresh 再利用検出で半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI デプロイは `RevocationStrategyNone` に固定する選択肢があります）。
+既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が nil 以外なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は最初の `/revoke` / refresh 再利用検出で半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI 配備は `RevocationStrategyNone` に固定する選択肢があります）。
 :::
 
 ## 形式の選び方
 
 判断は概ね「誰を信頼するか」「RS にどこまで要求できるか」「アクセストークン TTL がどれだけ短いか」で決まります。
-
-<style scoped>
-text{stroke:none}
-.atf-t1{fill:var(--vp-c-text-1)}.atf-t2{fill:var(--vp-c-text-2)}.atf-op{fill:var(--vp-c-brand-2)}.atf-rs{fill:var(--vp-c-text-3)}.atf-b{font-family:var(--vp-font-family-base);font-size:13px}.atf-c{font-family:var(--vp-font-family-base);font-size:12px}.atf-s{font-family:var(--vp-font-family-base);font-size:11px}.atf-m{font-family:var(--vp-font-family-mono);font-size:12px}.atf-sop{stroke:var(--vp-c-brand-2)}.atf-srs{stroke:var(--vp-c-text-3)}
-</style>
 
 <svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 700 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="atf-choosing-format-title">introspection の要件・アクセストークン TTL・RS の構成から opaque / JWT / per-audience 混成を選ぶ決定木。</title>
@@ -356,7 +331,7 @@ text{stroke:none}
   <text class="atf-b atf-t1" x="194" y="366" text-anchor="middle">Opaque</text>
 </svg>
 
-audience ごとの選択は実運用の現実解として有効です。OP に近い内部 RS は opaque で運用してログアウトを即時反映させ、公開向けの RS は JWT で運用して OP をホットパス依存にしない、といった切り分けができます。
+audience ごとの選択は実運用の現実解として有効です。OP に近い内部 RS は opaque で運用してログアウトを即時反映させ、公開向けの RS は JWT で運用して OP を処理経路上の依存にしない、といった切り分けができます。
 
 ## 設定例
 
@@ -412,7 +387,7 @@ opaque サブストアはリフレッシュトークン store と同じ「保存
 - `Find` / `RevokeByID` は提示されたトークンをハッシュ化し、digest の定数時間比較で行を引きます。
 - 期限切れ行は、code / リフレッシュトークン / PAR レコードを掃除する周期的な `GC` sweeper が同じループで落とします。
 
-通信路に流す byte 列には prefix もチェックサムも付けません — ブランド prefix は受動的な観測者にデプロイ判別の手がかりを与えるだけで、introspection 側のディスパッチには何も寄与しないからです。
+通信路に流す byte 列には prefix もチェックサムも付けません — ブランド prefix は受動的な観測者に配備判別の手がかりを与えるだけで、introspection 側のディスパッチには何も寄与しないからです。
 :::
 
 ## RS 側のコードへの影響

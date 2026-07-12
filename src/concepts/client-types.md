@@ -64,7 +64,7 @@ A confidential client gets:
 
 ## FAPI-grade clients
 
-FAPI 2.0 Baseline raises the bar on a confidential client: PAR is required, the request object is signed (JAR / Message Signing), the access token is sender-constrained (DPoP or mTLS), and the auth method is asymmetric (`private_key_jwt`, `tls_client_auth`, or `self_signed_tls_client_auth`). The library narrows the discovery document's `token_endpoint_auth_methods_supported` accordingly when `op.WithProfile(profile.FAPI2Baseline)` is active — see [FAPI 2.0 primer](/concepts/fapi).
+FAPI 2.0 Baseline raises the bar on a confidential client: PAR is required, the request object is signed (JAR / Message Signing), the access token is sender-constrained (DPoP or mTLS), and the token-endpoint auth method is asymmetric. This library uses `private_key_jwt` for token-endpoint client authentication; mTLS is available as the sender-constraint layer, while `tls_client_auth` / `self_signed_tls_client_auth` are not dispatched at `/token` — see [FAPI 2.0 primer](/concepts/fapi).
 
 There is no separate "FAPI client type" in the protocol; a FAPI-grade client is a confidential client that has met the additional requirements. The library enforces that match at construction and at request time.
 
@@ -117,12 +117,7 @@ text{stroke:none}
 <text class="dt-code" x="360" y="210" text-anchor="middle">client_secret_post</text>
 <rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
 <text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
-<path d="M600 186 V192"/>
-<rect class="dt-leaf" x="500" y="192" width="200" height="28" rx="6"/>
-<text class="dt-code" x="600" y="210" text-anchor="middle">tls_client_auth</text>
-<path d="M600 220 V226"/>
-<rect class="dt-leaf" x="500" y="226" width="200" height="28" rx="6"/>
-<text class="dt-code" x="600" y="244" text-anchor="middle">self_signed_tls_client_auth</text>
+<text class="dt-note" x="600" y="200" text-anchor="middle">+ DPoP / mTLS sender constraint</text>
 </svg>
 </figure>
 
@@ -132,8 +127,8 @@ text{stroke:none}
 | `client_secret_basic` | yes | — | No | Backend services with a shared secret, sent as HTTP Basic. The default for confidential clients. |
 | `client_secret_post` | yes | — | No | Same secret in the form body. Discouraged for new deployments — Basic is the canonical wire format. |
 | `private_key_jwt` | — | yes | Yes | Backend signs a short-lived JWT assertion with its own private key; OP verifies against the registered JWKS. The FAPI-preferred method. |
-| `tls_client_auth` | — | yes (PKI) | Yes | mTLS handshake; the OP matches the client's X.509 certificate against a registered subject DN or SAN. |
-| `self_signed_tls_client_auth` | — | yes (pinned) | Yes | mTLS handshake; the OP pins the certificate by JWK thumbprint registered in the client's JWKS. No CA involvement. |
+| `tls_client_auth` | — | yes (PKI) | RFC verifier only | RFC 8705 verifier exists internally, but this is not dispatched as a `/token` client-auth method. |
+| `self_signed_tls_client_auth` | — | yes (pinned) | RFC verifier only | RFC 8705 verifier exists internally, but this is not dispatched as a `/token` client-auth method. |
 
 `client_secret_jwt` (HS256-shared-secret JWT) is **not** implemented. A shared-secret JWT broadens the blast radius of a leaked secret without offering anything `private_key_jwt` does not, so the library refuses to grow the surface.
 

@@ -15,7 +15,7 @@ description: 同意画面が表示されるタイミング、スキップされ�
 
 ::: tip メンタルモデル
 - **grant** とは「ユーザ U が時刻 T に scope 集合 S をクライアント C に認めた」という記録の行。
-- 既存の grant でカバーされない scope を要する authorize フローの最初の 1 回で **同意プロンプト** が表示される。
+- 既存の grant でカバーされない scope を要する authorize フローの最初の 1 回で **同意画面** が表示される。
 - 同じ scope 集合内に収まる以降のフローは、プロンプトを **スキップ** する。
 - 新しい scope の追加（**scope delta**）は、その差分だけを尋ねるプロンプトを再度呼び出す。
 - grant を失効させると行が消え、次の authorize フローでは再びプロンプトが出る。
@@ -24,15 +24,6 @@ description: 同意画面が表示されるタイミング、スキップされ�
 ## 同意画面が表示されるタイミング
 
 本ライブラリは authorize フローのたびに次の 4 つを評価します。
-
-<style scoped>
-#consent-shown-decision text { stroke: none; }
-#consent-shown-decision .lbl { font-family: var(--vp-font-family-base); font-size: 13px; fill: var(--vp-c-text-1); }
-#consent-shown-decision .mono { font-family: var(--vp-font-family-mono); font-size: 12px; fill: var(--vp-c-text-1); }
-#consent-shown-decision .sub { font-family: var(--vp-font-family-base); font-size: 11.5px; fill: var(--vp-c-text-2); }
-#consent-shown-decision .edge { font-family: var(--vp-font-family-base); font-size: 11px; fill: var(--vp-c-text-2); }
-#consent-shown-decision .accent { stroke: var(--vp-c-brand-2); }
-</style>
 
 <svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" width="700" style="width:100%;height:auto;max-width:700px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="consent-shown-decision-title">grant の状態に対する判定木: prompt=consent、grant が無い、要求 scope が既存 grant の範囲外、のいずれかで同意画面を表示し、それ以外は既存 grant が要求をカバーするためプロンプトなしで認可コードを発行する。</title>
@@ -94,14 +85,14 @@ description: 同意画面が表示されるタイミング、スキップされ�
 
 ## ファーストパーティクライアント
 
-組み込み側によっては、信頼された少数のアプリ — 主力 web クライアント、社内管理コンソール、自社モバイルアプリ — を運用しており、デプロイ時点で操作者が scope カタログを事前承認しているため、同意画面はユーザを煩わせるだけ、ということがあります。こうしたクライアント向けに `op.WithFirstPartyClients(ids ...string)` は、指定した `client_id` 値について、`Grant` 行の有無に関わらず同意プロンプトを **スキップ** します。要求 scope が操作者の事前承認カタログに含まれている場合に限ります。
+組み込み側によっては、信頼された少数のアプリ — 主力 web クライアント、社内管理コンソール、自社モバイルアプリ — を運用しており、配備時点で操作者が scope カタログを事前承認しているため、同意画面はユーザを煩わせるだけ、ということがあります。こうしたクライアント向けに `op.WithFirstPartyClients(ids ...string)` は、指定した `client_id` 値について、`Grant` 行の有無に関わらず同意画面を **スキップ** します。要求 scope が操作者の事前承認カタログに含まれている場合に限ります。
 
 重要な注意 2 点。
 
 1. **スキップは記録される。** 本ライブラリは `Grant` 行を通常通り書き込み、`op.AuditConsentGrantedFirstParty` を発火します — 「このユーザは結局どの scope を承認したのか」という監査の問いには答えられます。変わるのは「ユーザが画面を見たかどうか」だけです。
-2. **`prompt=consent` はスキップを上書きする。** ファーストパーティクライアントが明示的に `prompt=consent` を要求した場合、プロンプトは表示されます。スキップは静かなデフォルト経路のための仕組みであって、上書きの選択肢は残します。
+2. **`prompt=consent` はスキップを上書きする。** ファーストパーティクライアントが明示的に `prompt=consent` を要求した場合、同意画面は表示されます。スキップは静かな既定経路のための仕組みであって、上書きの選択肢は残します。
 
-完全な設定（操作者側の scope カタログを含む）は [ファーストパーティのユースケース](/ja/use-cases/first-party) を参照。
+完全な設定（操作者側の scope カタログを含む）は [ファーストパーティの使い方](/ja/use-cases/first-party) を参照。
 
 ::: warning ファーストパーティは操作者が宣言するもので、ユーザが宣言するものではない
 ユーザは同意フローで「これはファーストパーティアプリです」とは見せられません。信頼の根拠は、操作者が `op.WithFirstPartyClients(...)` に `client_id` を列挙していることです。コードパスをエンドツーエンドで管理していないクライアントを列挙してはなりません — そうするとスキップが「告知のない scope 付与」に変わってしまいます。
@@ -121,14 +112,14 @@ op.WithConsentUI(op.ConsentUI{
 
 クライアント側で同意を描画する SPA（ログインフォームをすでに扱っている React アプリなど）では、SPA の入口と静的アセットも OP にマウントさせたい場合に `op.WithSPAUI(...)` を使います。このモードではブラウザは `LoginMount/{uid}` に着地し、SPA はプロンプトの状態を `LoginMount/state/{uid}` から取得します。SPA 本体を自前のルータで配信する場合は、低レベルな `op.WithInteractionDriver(interaction.JSONDriver{})` 経路を使います。この場合、状態取得エンドポイントは `/interaction/{uid}` のままです。
 
-`WithSPAUI` と `WithConsentUI` はどちらも同意描画面を所有するため相互排他です。コンストラクタは両方同時には受け付けません。route 形と使い分けは [SPA カスタムインタラクションのユースケース](/ja/use-cases/spa-custom-interaction) を参照してください。
+`WithSPAUI` と `WithConsentUI` はどちらも同意描画面を所有するため相互排他です。コンストラクタは両方同時には受け付けません。route 形と使い分けは [SPA カスタムインタラクションの使い方](/ja/use-cases/spa-custom-interaction) を参照してください。
 
 ## 同意の失効
 
 ユーザ（または管理者）はいつでも grant を失効できます。失効は 2 つの経路を通ります。
 
 1. **`/revoke`（RFC 7009）** — 単一トークン（refresh または access）を無効化します。これは背後の `Grant` 行には触れません — 同じ scope での次の authorize フローはまだ grant を見つけ、同意をスキップします。
-2. **Grant の失効** — `Grant` 行の `Revoked` 列を切り替えます。本ライブラリは `Grants` と `AccessTokens` の substore を通じてカスケードします — その grant に連なるすべての refresh chain が無効化され、すべてのアクセストークン shadow row が revoked に切り替わり、JWT AT は OP が応答するすべてのエンドポイント（`/userinfo`、`/introspect`）で inactive になります。ユーザの次の authorize フローはカバーする grant を見つけられず、再びプロンプトを出します。
+2. **Grant の失効** — `Grant` 行の `Revoked` 列を切り替えます。本ライブラリは `Grants` と `AccessTokens` の substore を通じてカスケードします — その grant に連なるすべてのリフレッシュトークン連鎖が無効化され、すべてのアクセストークン shadow row が revoked に切り替わり、JWT AT は OP が応答するすべてのエンドポイント（`/userinfo`、`/introspect`）で inactive になります。ユーザの次の authorize フローはカバーする grant を見つけられず、再び同意画面を出します。
 
 カスケードは `internal/revokeendpoint`、`op/store/grant_revocation.go`、`op/store/cascade.go` にまたがって実装されています。各経路はそれぞれの監査イベントを発火するので、ダッシュボードが何が起きたかを再構成できます。end-session カスケード（[セッションとログアウト](/ja/concepts/sessions-and-logout#end-session-カスケード)）も同じ仕組みを再利用します。
 
@@ -148,6 +139,6 @@ token endpoint と同意フローは、`op.WithAuditLogger` 経由で 5 つの�
 
 ## 次に読む
 
-- [ユースケース: ファーストパーティクライアント](/ja/use-cases/first-party) — 操作者側の scope カタログ、`op.WithFirstPartyClients`、監査ポスチャ。
-- [ユースケース: カスタム同意 UI](/ja/use-cases/custom-consent-ui) — `op.ConsentUI` の設定、テンプレート契約、CSRF の扱い。
+- [使い方: ファーストパーティクライアント](/ja/use-cases/first-party) — 操作者側の scope カタログ、`op.WithFirstPartyClients`、監査ポスチャ。
+- [使い方: カスタム同意 UI](/ja/use-cases/custom-consent-ui) — `op.ConsentUI` の設定、テンプレート契約、CSRF の扱い。
 - [リファレンス: 監査イベント](/ja/reference/audit-events) — 本ライブラリが発火するすべての監査イベントと付随する extras。

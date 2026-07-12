@@ -33,21 +33,6 @@ CIBA は [device flow](/ja/concepts/device-code) とは別の形の問題を解�
 
 ## フローの動き方（poll mode）
 
-<style scoped>
-.ciba-tx{fill:currentColor;stroke:none;}
-.ciba-fb{font-family:var(--vp-font-family-base);}
-.ciba-fm{font-family:var(--vp-font-family-mono);}
-.ciba-accent{stroke:var(--vp-c-brand-2);}
-.ciba-sec{stroke:#7c6fb0;}
-.dark .ciba-sec{stroke:#b3a7e0;}
-.ciba-accent-f{fill:var(--vp-c-brand-2);}
-.ciba-sec-f{fill:#7c6fb0;}
-.dark .ciba-sec-f{fill:#b3a7e0;}
-.ciba-muted{opacity:.62;}
-.ciba-life{stroke-width:1.5;stroke-dasharray:3 4;opacity:.5;}
-.ciba-frag{stroke-width:1.4;stroke-dasharray:5 4;opacity:.55;}
-</style>
-
 <svg role="img" aria-labelledby="ciba-poll-flow-title" viewBox="0 0 760 456" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="ciba-poll-flow-title">CIBA poll モードのシーケンス図。POS 端末が /bc-authorize を呼び、OP が hint を解決してスタッフのスマホへ push し、POS はユーザが承認するまで /token を poll してトークンが発行される。</title>
 <line class="ciba-life" x1="93" y1="50" x2="93" y2="446"/>
@@ -175,5 +160,5 @@ example はロール別ファイルに分割されています（`op.go` で OP 
 
 ## 続きはこちら
 
-- [ユースケース: CIBA の組み込み](/ja/use-cases/ciba) — `op.WithCIBA`、`HintResolver` の契約、FAPI-CIBA プロファイル制約、組み込み側の認証デバイスコールバックが `CIBARequestStore.Approve` に応答する手順。
+- [使い方: CIBA の組み込み](/ja/use-cases/ciba) — `op.WithCIBA`、`HintResolver` の契約、FAPI-CIBA プロファイル制約、組み込み側の認証デバイスコールバックが `CIBARequestStore.Approve` に応答する手順。
 - [Device Code 入門](/ja/concepts/device-code) — 「ユーザが別の利用面にいる」という同系統の概念。コード表示を使う方式。

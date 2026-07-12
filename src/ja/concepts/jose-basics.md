@@ -1,11 +1,51 @@
 ---
 title: "JOSE 基礎: JWS、JWE、JWK、JWKS、kid"
-description: OIDC を学ぶ方のための JOSE 入門最小セット — 各略語の意味、OIDC でどこに登場するか、本ライブラリがアルゴリズム allow-list を閉じている理由。
+description: OIDC を学ぶ方のための JOSE 入門最小セット — 各略語の意味、OIDC でどこに登場するか、本ライブラリがアルゴリズム許可リストを閉じている理由。
 ---
 
 # JOSE 基礎: JWS、JWE、JWK、JWKS、kid
 
 **JOSE**（JavaScript Object Signing and Encryption）は、JSON 形のトークンに対して署名・暗号化・鍵表現の方法を定める IETF 仕様群の総称です。OIDC 実装は JWS / JWE / JWK / JWKS の 4 つすべてを内部で扱います — 大抵は表に出ませんが、ときどき直接登場します。本ページは、`id_token`、`jwks_uri`、JAR の `request=` パラメータ、`kid` を理解するために押さえておきたい最小限を扱います。
+
+<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+  <title id="jose-map-title">JOSE の対応関係: JWS は署名、JWE は暗号化、JWK は鍵 1 個、JWKS は鍵集合、kid は集合から鍵を選ぶラベル。</title>
+<rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
+  <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>
+  <text class="jose-sub" x="133" y="110" text-anchor="middle">JWT に署名する</text>
+  <text class="jose-sub" x="133" y="128" text-anchor="middle">header.payload.signature</text>
+
+  <rect class="jose-box" x="292" y="54" width="178" height="88" rx="8"/>
+  <text class="jose-text" x="381" y="88" text-anchor="middle">JWE</text>
+  <text class="jose-sub" x="381" y="110" text-anchor="middle">署名済み JWT を包む</text>
+  <text class="jose-sub" x="381" y="128" text-anchor="middle">暗号化された外枠</text>
+
+  <rect class="jose-box" x="540" y="54" width="178" height="88" rx="8"/>
+  <text class="jose-text" x="629" y="88" text-anchor="middle">受信者</text>
+  <text class="jose-sub" x="629" y="110" text-anchor="middle">復号して署名検証</text>
+
+  <rect class="jose-box" x="170" y="224" width="178" height="72" rx="8"/>
+  <text class="jose-text" x="259" y="254" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="259" y="274" text-anchor="middle">公開鍵 1 個</text>
+
+  <rect class="jose-box" x="412" y="214" width="178" height="92" rx="8"/>
+  <text class="jose-text" x="501" y="244" text-anchor="middle">JWKS</text>
+  <text class="jose-sub" x="501" y="264" text-anchor="middle">JWK の集合</text>
+  <text class="jose-sub" x="501" y="282" text-anchor="middle">/jwks で公開</text>
+
+  <rect class="jose-main" x="292" y="164" width="178" height="42" rx="8"/>
+  <text class="jose-text" x="381" y="190" text-anchor="middle">kid = 鍵のラベル</text>
+
+  <path class="jose-flow" d="M222 98 H288"/>
+  <path class="jose-flow" d="M280 94 L289 98 L280 102"/>
+  <path class="jose-flow" d="M470 98 H536"/>
+  <path class="jose-flow" d="M528 94 L537 98 L528 102"/>
+  <path class="jose-flow" d="M381 206 C372 230 360 250 352 258"/>
+  <path class="jose-flow" d="M360 255 L351 259 L355 250"/>
+  <path class="jose-flow" d="M381 206 C400 234 418 252 408 258"/>
+  <path class="jose-flow" d="M408 249 L409 259 L400 254"/>
+  <path class="jose-flow" d="M348 260 H408"/>
+  <path class="jose-flow" d="M400 256 L409 260 L400 264"/>
+</svg>
 
 ::: details このページで触れる仕様
 - [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515) — JSON Web Signature（JWS）
@@ -20,9 +60,9 @@ description: OIDC を学ぶ方のための JOSE 入門最小セット — 各略
 :::
 
 ::: tip メンタルモデル
-- **JWS** が署名する。**JWE** が暗号化する。**JWK** は鍵 1 個。**JWKS** は鍵集合。**kid** はどの鍵かを選ぶ。
+- **JWS** が署名する。**JWE** が暗号化する。**JWK** は鍵 1 個。**JWKS** は鍵集合。**kid** はどの鍵かを選ぶラベル。
 - OIDC で目にする JWT はすべて JWS — `header.payload.signature`。
-- ID トークン / userinfo / authorize 応答が暗号化されるとき、署名の上にかぶさる外側のエンベロープが JWE。
+- ID トークン / userinfo / authorize 応答が暗号化されるとき、署名の上にかぶさる外側の層が JWE。
 - `/jwks` の JWKS のおかげで RP は ID トークンをオフラインで検証できる。OP は新しい鍵を先んじて追加してからローテーションする。
 :::
 
@@ -40,7 +80,7 @@ description: OIDC を学ぶ方のための JOSE 入門最小セット — 各略
 { "alg": "ES256", "kid": "2026-q1" }
 ```
 
-payload はトークンの claim（JSON オブジェクト）です。signature は `header + "." + payload` を覆い、`alg` で名付けたアルゴリズムと `kid` で名付けた鍵で計算されます。
+payload はトークンの claim（JSON オブジェクト）です。signature は `header + "." + payload` を覆い、`alg` で名付けたアルゴリズムと `kid` で選んだ鍵で計算されます。
 
 OIDC では JWS は次の用途で使われます。
 
@@ -68,11 +108,11 @@ OIDC では JWS は次の用途で使われます。
 | フィールド | 内容 |
 |---|---|
 | `alg` | **鍵管理アルゴリズム。** メッセージごとのコンテンツ鍵を受信者にどう届けるか: `RSA-OAEP-256`（RSA 鍵搬送）、`ECDH-ES`（ダイレクト ECDH）、`ECDH-ES+A128KW` / `ECDH-ES+A256KW`（ECDH と AES 鍵ラップ）。 |
-| `enc` | **コンテンツ暗号化アルゴリズム。** payload をどう暗号化するか: `A128GCM`、`A256GCM`。 |
+| `enc` | **コンテンツ暗号化アルゴリズム。** 本文をどう暗号化するか: `A128GCM`、`A256GCM`。 |
 
-OIDC では JWE は、組み込み側やクライアントが署名の上に機密性を重ねたいときに **外側のエンベロープ** として使われます — RP の公開鍵で暗号化された `id_token`、暗号化された userinfo 応答、暗号化された introspection 応答、暗号化された authorize 応答（暗号化付き JARM）。内側のアーティファクトは依然として JWS で、JWE はそれを包んでいるだけです。
+OIDC では JWE は、組み込み側やクライアントが署名の上に機密性を重ねたいときに **外側の暗号化層** として使われます。たとえば、RP の公開鍵で暗号化された `id_token`、暗号化された userinfo 応答、暗号化された introspection 応答、暗号化された authorize 応答（暗号化付き JARM）です。内側のアーティファクトは依然として JWS で、JWE はそれを包んでいるだけです。
 
-完全な設定（`op.WithEncryptionKeyset`、`op.WithSupportedEncryptionAlgs`）は [JWE 暗号化のユースケース](/ja/use-cases/jwe-encryption) を参照。
+完全な設定（`op.WithEncryptionKeyset`、`op.WithSupportedEncryptionAlgs`）は [JWE 暗号化の使い方](/ja/use-cases/jwe-encryption) を参照。
 
 ## JWK — JSON Web Key
 
@@ -93,9 +133,9 @@ OIDC では JWE は、組み込み側やクライアントが署名の上に機�
 | フィールド | 内容 |
 |---|---|
 | `kty` | 鍵種別: `RSA`、`EC`（楕円曲線）、`OKP`（Edwards 曲線: Ed25519、Ed448）。 |
-| `kid` | 鍵 id — JWKS から鍵を選び出すラベル。 |
+| `kid` | 鍵 ID — JWKS から鍵を選び出すラベル。 |
 | `use` | `sig`（署名）または `enc`（暗号）。 |
-| `alg` | この鍵が用いられるアルゴリズム — 呼び出し側が弱いものに差し替えられないよう pin される。 |
+| `alg` | この鍵が用いられるアルゴリズム。呼び出し側が弱いものに差し替えられないよう固定される。 |
 
 公開時の JWK には公開鍵だけが含まれ、対になる秘密鍵は OP に留まります。
 
@@ -112,16 +152,16 @@ OIDC では JWE は、組み込み側やクライアントが署名の上に機�
 }
 ```
 
-OP は公開署名鍵を `jwks_uri`（discovery 文書で広告）に公開します。RP は JWKS を 1 度取得してキャッシュし、ID トークンの署名検証にオフラインで使います。鍵ローテーション中、OP は RP のキャッシュが収束するのに十分な期間、前の鍵を集合に残します — [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
+OP は公開署名鍵を `jwks_uri`（discovery 文書で告知）に公開します。RP は JWKS を 1 度取得してキャッシュし、ID トークンの署名検証にオフラインで使います。鍵ローテーション中、OP は RP のキャッシュが収束するのに十分な期間、前の鍵を集合に残します — [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
 
 ::: details `jwks_uri` と JWS ヘッダの `jwk` の違い
-- **`jwks_uri`**（discovery のフィールド）は、OP が JWKS を serve する URL。安定でキャッシュ可能、RP は自身の都合で取得します。
+- **`jwks_uri`**（discovery のフィールド）は、OP が JWKS を配信する URL。安定でキャッシュ可能、RP は自身の都合で取得します。
 - **`jwk` JWS ヘッダ** は、トークンのヘッダに *インラインで* 埋め込まれた JWK。RFC 7515 は許容していますが、RFC 8725 §3.5 は「トークンが自分で名乗った鍵を信頼することは alg-confusion の典型的な落とし穴のひとつ」と警告しています — 誰でも JWS を作成し、自前の `jwk` をヘッダに付けて検証側に「これで検証して」と渡せるからです。**本ライブラリは入力トークンのインライン `jwk` ヘッダの盲信は決して行いません** — 出力アーティファクトの鍵は OP 自身の JWKS から、クライアント由来の JWS の検証鍵は設定されたクライアントの `jwks_uri` から取得します。
 :::
 
 ## kid — どの鍵を使うかの指定
 
-`kid` は鍵 id です。JWS が到着すると、検証側は次の手順を踏みます。
+`kid` は鍵 ID です。JWS が到着すると、検証側は次の手順を踏みます。
 
 1. JWS ヘッダから `kid` を読む。
 2. 関連する JWKS から、`kid` が一致する JWK を探す。
@@ -129,9 +169,9 @@ OP は公開署名鍵を `jwks_uri`（discovery 文書で広告）に公開し�
 
 `kid` がなければ、検証側は集合内のすべての鍵を順に試すことになります — 遅いだけでなく、攻撃者にどの鍵で混乱させるかを選ばせる足元の罠でもあります。本ライブラリは生成するすべての JWS に `kid` を必ず付け、関連する JWKS に `kid` が見つからない入力トークンを拒否します。
 
-`kid` がアクティブセットには一致しないが、最近 retired した鍵に一致する入力トークンについては、`op.AuditKeyRetiredKidPresented` を発火します — 鍵ローテーションについて来られていない RP をダッシュボードが特定できるようにするためです。詳細は [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
+`kid` が現行セットには一致しないが、最近退役した鍵に一致する入力トークンについては、`op.AuditKeyRetiredKidPresented` を発火します — 鍵ローテーションについて来られていない RP をダッシュボードが特定できるようにするためです。詳細は [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
 
-## なぜ本ライブラリは alg allow-list を閉じているか
+## なぜ本ライブラリは alg 許可リストを閉じているか
 
 JOSE のアルゴリズムレジストリには 2 つの攻撃クラスが住んでおり、その典型的な防御は「該当アルゴリズムを検証側が到達する型の中で決して名指さない」ことです。
 
@@ -149,7 +189,7 @@ JOSE のアルゴリズムレジストリには 2 つの攻撃クラスが住ん
 
 この 4 つが `internal/jose.Algorithm` の閉じた enum です。型のゼロ値デフォルトはなく、より広いレジストリへのフォールバックもありません。`depguard` の lint ルールが、`internal/jose/` の外で背後の JOSE パッケージを import することを禁じているので、将来のコード経路が `none` や `HS*` を不意に再導入することもありません。完全な背景は [設計判断 #11](/ja/security/design-judgments#dj-11) を参照。
 
-## JWE allow-list
+## JWE 許可リスト
 
 `internal/jose/jweparam.go` の JWE 許可集合も同様に閉じています。
 
@@ -158,10 +198,10 @@ JOSE のアルゴリズムレジストリには 2 つの攻撃クラスが住ん
 | `alg`（鍵管理） | `RSA-OAEP-256`、`ECDH-ES`、`ECDH-ES+A128KW`、`ECDH-ES+A256KW` | `RSA1_5`（Bleichenbacher クラス）、`dir`（鍵ラップなし）、`A*KW` / `A*GCMKW`（対称 — HMAC と同じ鍵配布の問題）。 |
 | `enc`（コンテンツ暗号化） | `A128GCM`、`A256GCM` | `A*CBC-HS*`（AES-CBC と HMAC — CBC-with-MAC 由来の歴史的落とし穴と、GCM より広い攻撃面）。 |
 
-絞り込みは意図的です — 拒否されているアルゴリズムにはいずれも、OAuth / OIDC エコシステムが既に retire した（RSA1_5）か、プロファイルとして採用しなかった（OAuth bearer の CBC-with-MAC）攻撃クラスが文書化されています。組み込み側は `op.WithSupportedEncryptionAlgs(algs, encs []string)` でデプロイごとに広告集合をさらに絞り込めますが、本ライブラリの allow-list を超えて広げることはできません。
+絞り込みは意図的です — 拒否されているアルゴリズムにはいずれも、OAuth / OIDC エコシステムが既に退役させた（RSA1_5）か、プロファイルとして採用しなかった（OAuth bearer の CBC-with-MAC）攻撃クラスが文書化されています。組み込み側は `op.WithSupportedEncryptionAlgs(algs, encs []string)` でデプロイごとに広告集合をさらに絞り込めますが、本ライブラリの許可リストを超えて広げることはできません。
 
 ## 次に読む
 
 - [ID トークン、アクセストークン、userinfo](/ja/concepts/tokens) — 各アーティファクトの内容と JWS 検証経路の違い。
 - [運用: 鍵ローテーション](/ja/operations/key-rotation) — JWKS のライフサイクル、kid の retirement、RP キャッシュの収束。
-- [ユースケース: JWE 暗号化](/ja/use-cases/jwe-encryption) — encryption keyset の設定と alg / enc リストの絞り込み。
+- [使い方: JWE 暗号化](/ja/use-cases/jwe-encryption) — encryption keyset の設定と alg / enc リストの絞り込み。

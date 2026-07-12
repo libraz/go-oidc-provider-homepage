@@ -9,7 +9,7 @@ outline: 2
 This page is the bottom of every section's "where do I look first?" answer. The questions below are not theoretical — every entry maps to something the maintainer hit while building examples or running the conformance harness, so if you are stuck on the same thing, the answer here is the one we use.
 
 <ul class="faq-index">
-  <li><a href="#setup-basics"><div class="faq-index-title">Setup &amp; basics</div><div class="faq-index-desc">Required four options, mount path, issuer normalization, minimal setup</div></a></li>
+  <li><a href="#setup-basics"><div class="faq-index-title">Setup &amp; basics</div><div class="faq-index-desc">Required options, mount path, issuer normalization, minimal setup</div></a></li>
   <li><a href="#fapi"><div class="faq-index-title">FAPI 2.0</div><div class="faq-index-desc">Baseline vs Message Signing, DPoP / mTLS choice</div></a></li>
   <li><a href="#tokens"><div class="faq-index-title">Tokens &amp; rotation</div><div class="faq-index-desc">Refresh rotation grace, <code>offline_access</code>, TTL split</div></a></li>
   <li><a href="#dpop"><div class="faq-index-title">DPoP &amp; sender-constraint</div><div class="faq-index-desc">DPoP nonce distribution, narrowed alg list rationale</div></a></li>
@@ -30,14 +30,14 @@ This page is the bottom of every section's "where do I look first?" answer. The 
 
 ### Why does `op.New(...)` return an error?
 
-The four required options have no safe default, so `op.New` refuses to boot without them rather than silently using zero values:
+The core options have no safe default, so `op.New` refuses to boot without them rather than silently using zero values. `WithIssuer`, `WithStore`, and `WithKeyset` are always required; `WithCookieKeys` is required when the authorization-code grant is enabled, including the default grant set:
 
 | Option | Without it |
 |---|---|
 | `WithIssuer` | OP can't sign / namespace anything. |
 | `WithStore` | OP has nowhere to persist clients, codes, tokens. |
 | `WithKeyset` | OP can't sign ID tokens. |
-| `WithCookieKeys` | OP can't seal session / CSRF cookies. |
+| `WithCookieKeys` | OP can't seal session / CSRF cookies for browser authorization flows. |
 
 The error names the missing piece, so a typo at boot is a build-time error, not a runtime mystery.
 
@@ -60,7 +60,7 @@ handler, err := op.New(
 )
 ```
 
-Four options, no implicit defaults. See [/getting-started/minimal](/getting-started/minimal).
+This is the usual browser-flow minimum: three always-required options plus cookie keys for the authorization-code grant. See [/getting-started/minimal](/getting-started/minimal).
 
 ### "Issuer must not have a trailing slash" — really?
 
@@ -89,7 +89,7 @@ In one call, it tightens six knobs the spec mandates:
 | Knob | Effect |
 |---|---|
 | Feature flags | enables `feature.PAR` and `feature.JAR`; selects `feature.DPoP` unless `feature.MTLS` is explicitly enabled |
-| Client auth | narrows `token_endpoint_auth_methods_supported` to the FAPI allow-list (`private_key_jwt`, `tls_client_auth`, `self_signed_tls_client_auth`) |
+| Client auth | narrows `token_endpoint_auth_methods_supported` to `private_key_jwt` |
 | Alg constraints | locks signature algorithms to the FAPI subset |
 | `redirect_uri` | enforces exact match (no wildcarding) |
 | PKCE | required on every code request |
@@ -109,7 +109,7 @@ If your RP needs **non-repudiation** of the authorization request / response —
 
 ### Can I run FAPI 2.0 without DPoP?
 
-Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring the FAPI client with `tls_client_auth` / `self_signed_tls_client_auth`. FAPI 2.0 §3.1.4 mandates "DPoP **or** mTLS"; the library honours either.
+Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring the proxy certificate header with `op.WithMTLSProxy(...)`. FAPI 2.0 §3.1.4 mandates "DPoP **or** mTLS"; the FAPI client still uses `private_key_jwt` for `/token` client authentication.
 
 <div id="tokens" class="faq-anchor"></div>
 
@@ -125,16 +125,15 @@ That's the **rotation grace window**. The default is 60 seconds: if the rotation
 
 ### Why didn't I get a refresh token?
 
-Three conditions, **all required**:
+By default two conditions must both hold:
 
 1. The granted scope contains `openid`.
-2. The granted scope contains `offline_access`.
-3. The client's `GrantTypes` includes `refresh_token`.
+2. The client's `GrantTypes` includes `refresh_token`.
 
-Drop any one and the token endpoint succeeds with `access_token` + `id_token` and no `refresh_token`.
+Drop either and the token endpoint succeeds with `access_token` + `id_token` and no `refresh_token`. On the default (lax) reading of OIDC Core 1.0 §11, `offline_access` is **not** required to receive a refresh token — it selects the offline TTL bucket and shapes the consent/audit surface.
 
-::: details Why strict by default?
-OIDC Core 1.0 §11 leaves room for OPs to issue refresh tokens without `offline_access`, but doing so makes the consent prompt and the audit trail disagree on what the user authorised. The library reads the strict interpretation so both agree out of the box. See <a class="doc-ref" href="/security/design-judgments">Design judgments §3</a>.
+::: details Making `offline_access` a hard requirement
+OIDC Core 1.0 §11 also permits the strict reading, where a refresh token is issued only when `offline_access` is in the granted scope. Opt in with `op.WithStrictOfflineAccess()` when you want the consent prompt and the audit trail to agree byte-for-byte on what the user authorised; every RP that wants stay-signed-in behaviour must then request `offline_access` explicitly. See <a class="doc-ref" href="/security/design-judgments">Design judgments §3</a>.
 :::
 
 ### Where do I split "stay signed in" from regular sessions?

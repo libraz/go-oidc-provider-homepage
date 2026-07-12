@@ -70,6 +70,8 @@ OP は次のことを行います。
 3. cookie と `store.SessionStore` 行を削除。
 4. `post_logout_redirect_uri` がそのクライアントに登録されていれば、`state` を反射させてブラウザをリダイレクト。
 
+native / public client では、`redirect_uri` と同じ RFC 8252 の loopback any-port ルールを `post_logout_redirect_uri` にも適用します。固定の loopback URI を登録しておき、logout 時には別の ephemeral port で戻る形を許容します。変動できるのは port だけで、host / scheme / path は登録形状と一致している必要があります。
+
 主眼は **このブラウザの OP セッションを終わらせる** ことです。リダイレクトを起点にした RP は当然ログアウトを把握していますが、他の RP は — OP が Back-Channel Logout も同時に動かしていない限り — 把握できません。
 
 ### Back-Channel Logout 1.0
@@ -98,10 +100,6 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 ## End-session カスケード
 
 `/end_session` は単に「cookie を消す」だけではありません。組み込み側が `Grants` と `AccessTokens` の substore を組み込んでいる場合、本ライブラリは subject が保持するすべての grant を歩き、grant ごとのアクセストークン shadow row を失効させます。JWT アクセストークンは OP が応答するエンドポイント（`/userinfo`、`/introspect`）で inactive になります。opaque アクセストークンは introspection を経由するすべての RS で inactive になります。
-
-<style scoped>
-.sc-b{font-family:var(--vp-font-family-base);fill:currentColor;stroke:none}.sc-m{font-family:var(--vp-font-family-mono);fill:currentColor;stroke:none}.sc-op{stroke:var(--vp-c-brand-2)}.sc-rs{stroke:var(--vp-c-text-2)}.sc-opf{fill:var(--vp-c-brand-2)}.sc-rsf{fill:var(--vp-c-text-2)}
-</style>
 
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 720 420" style="width:100%;height:auto;max-width:720px;margin:1.25rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="session-cascade-title">1 つのセッション行が cookie とどう結び付くか、そして /end_session が grant・アクセストークン・Back-Channel Logout 通知へどうカスケードするか。</title>
@@ -184,7 +182,7 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 | **Hot/cold 分離**（高トラフィック向けに推奨） | Redis（揮発） | セッション書き込みのレイテンシが低い。追い出しとログアウトが競合すると BCL は best-effort。 |
 | **すべて永続** | トランザクショナルストアと同じ SQL クラスタ | BCL 配送は完全配送が前提。セッション書き込みはトークン書き込みとレイテンシを共有。 |
 
-`op.WithSessionDurabilityPosture(...)` で組み込み側のスタンスを宣言することで、監査トレイル（`op.AuditBCLNoSessionsForSubject`）を正しく解釈できます。完全な実装例は [Hot / Cold 分離のユースケース](/ja/use-cases/hot-cold-redis) を参照。
+`op.WithSessionDurabilityPosture(...)` で組み込み側のスタンスを宣言することで、監査トレイル（`op.AuditBCLNoSessionsForSubject`）を正しく解釈できます。完全な実装例は [Hot / Cold 分離の使い方](/ja/use-cases/hot-cold-redis) を参照。
 
 ## セッションライフサイクルの監査イベント
 
@@ -199,6 +197,6 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 
 ## 次に読む
 
-- [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) — RP の `backchannel_logout_uri` の設定、署名鍵の選択、`logout_token` の payload。
+- [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) — RP の `backchannel_logout_uri` の設定、署名鍵の選択、`logout_token` の payload。
 - [設計判断](/ja/security/design-judgments) — #5、#10、#17 がログアウトポスチャの背後にある明示的解釈をカバーします。
 - [運用: マルチインスタンス](/ja/operations/multi-instance) — 揮発ストアでセッションを共有しつつロードバランサ越しに OP を動かす場合の話。

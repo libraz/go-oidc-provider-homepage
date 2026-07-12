@@ -1,6 +1,6 @@
 ---
 title: Minimal OP
-description: Smallest runnable OP+RP pair — four required options, a single password user, and one statically-registered client.
+description: Smallest runnable OP+RP pair — required OP options, a single password user, and one statically-registered client.
 ---
 
 # Use case — Minimal OP
@@ -101,7 +101,7 @@ func main() {
 }
 ```
 
-The four required options (`WithIssuer`, `WithStore`, `WithKeyset`, `WithCookieKeys`) on their own would let `/oidc/.well-known/openid-configuration` and `/oidc/jwks` answer; everything that depends on a user (authorize, token, userinfo) needs the `WithLoginFlow` + `WithStaticClients` pair. [`getting-started/minimal`](/getting-started/minimal) shows the four-option discovery-only shape if that is what you want.
+`WithIssuer`, `WithStore`, and `WithKeyset` on their own let `/oidc/.well-known/openid-configuration` and `/oidc/jwks` answer. `WithCookieKeys` becomes required as soon as the authorization-code grant is enabled, which is the default browser-flow setup. Everything that depends on a user (authorize, token, userinfo) also needs the `WithLoginFlow` + `WithStaticClients` pair. [`getting-started/minimal`](/getting-started/minimal) shows the discovery-only shape if that is what you want.
 
 ## What the OP exposes
 

@@ -3,7 +3,7 @@ title: Grant management
 description: OAuth 2.0 Grant Management エンドポイントで、長命な grant を id 指定で作成・置換・統合・照会・失効する。
 ---
 
-# ユースケース — Grant management
+# 使い方 — Grant management
 
 grant が長命になると、継続的な支払いマンデートや常設のデータアクセス同意のように、「一度認可して終わり」では足りない場面が出てきます。クライアントには、grant に名前を付ける、後から内容を追加する、いま保持している内容を読み戻す、不要になったら失効させる、という操作が必要です。[OAuth 2.0 Grant Management draft](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-grant-management) は各 grant に安定した `grant_id` と、それに対する 5 つのアクションを与えます。
 

@@ -3,11 +3,15 @@ title: mTLS (RFC 8705)
 description: Mutual-TLS Client Authentication and Certificate-Bound Access Tokens — bind a token to the TLS certificate the legitimate client presents.
 ---
 
-# mTLS — Mutual-TLS Client Authentication
+# mTLS — certificate-bound access tokens
 
 **mTLS** (RFC 8705) binds an access token to the X.509 certificate that authenticated the client during the TLS handshake. The OP records a SHA-256 thumbprint of the certificate as `cnf.x5t#S256` on the issued token; the resource server verifies that the cert presented on the call to the API has the same thumbprint. A leaked token alone is useless — the attacker would also need the certificate **and** its private key.
 
 mTLS is attractive in deployments that already operate a PKI: B2B service meshes, open-banking environments, and backend-only APIs where every party has a client certificate issued by an internal CA. Because the binding lives at the TLS layer, the application code does not have to sign anything per request; the trade-off is that the TLS terminator (reverse proxy, load balancer) must be configured to expose the verified certificate to the OP.
+
+::: warning Implementation boundary
+`feature.MTLS` wires certificate-bound access tokens (`cnf.x5t#S256`) and reverse-proxy certificate extraction. The standalone verifier for `tls_client_auth` / `self_signed_tls_client_auth` exists internally, but the token endpoint does not dispatch those methods as client authentication. Use `private_key_jwt` for FAPI token endpoint client authentication, and use mTLS as the sender-constraint layer.
+:::
 
 ::: details Specs referenced on this page
 - [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
@@ -16,9 +20,9 @@ mTLS is attractive in deployments that already operate a PKI: B2B service meshes
 - [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
 :::
 
-## Two sub-modes
+## Two RFC client-auth sub-modes
 
-RFC 8705 defines two `token_endpoint_auth_method` values that share the same binding mechanism but differ on **how the client identity is anchored**.
+RFC 8705 defines two `token_endpoint_auth_method` values that share the same certificate material but differ on **how the client identity is anchored**. The descriptions below explain the RFC model and the internal verifier shape; they are not selectable on the token endpoint dispatch path.
 
 ### `tls_client_auth` — PKI chain (RFC 8705 §2.1)
 
@@ -38,7 +42,7 @@ At least one non-empty pin is required. An entirely empty matcher fails closed w
 
 The client registers its public JWK (or JWKS URI). The OP does **not** walk a CA chain; instead, it hashes the cert's public key and matches the thumbprint against the client's registered JWKS. This mode lets a deployment use mTLS without operating a PKI — every client signs its own certificate.
 
-The two methods are mutually exclusive on a given client. Mixing them at registration is rejected; the OP picks the verifier based on the client's stored `token_endpoint_auth_method`.
+The two methods are mutually exclusive on a given client in the RFC model. Until endpoint dispatch is wired, register FAPI clients with `private_key_jwt` and enable `feature.MTLS` only for token binding.
 
 ## Confirmation claim — `cnf.x5t#S256`
 
@@ -124,7 +128,7 @@ If a trusted proxy forwards a client certificate header, that forwarded certific
 
 ## Wiring
 
-Minimal mTLS-only wiring:
+Minimal mTLS sender-constraint wiring:
 
 ```go
 import (
@@ -141,13 +145,13 @@ op.New(
 
 When the OP terminates TLS itself (test environments, single-tenant on-prem deployments), the `WithMTLSProxy` line can be omitted — the OP reads the certificate directly from `http.Request.TLS.PeerCertificates`.
 
-`op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[DPoP, MTLS]`. If neither is explicit, the profile selects DPoP as the default member. Deployments that want mTLS should enable `feature.MTLS`; that explicit choice satisfies the constraint and suppresses the DPoP default. Enabling both publishes both binding mechanisms in discovery; the client then chooses per request.
+`op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[DPoP, MTLS]`. If neither is explicit, the profile selects DPoP as the default member. Deployments that want mTLS sender constraint should enable `feature.MTLS`; that explicit choice satisfies the constraint and suppresses the DPoP default. Use `private_key_jwt` for the client's token endpoint authentication.
 
 ## Pitfalls
 
 - **TLS terminator must export the cert correctly.** Different proxies use different header names and encodings (DER, PEM, URL-encoded PEM). Lock the format on both ends and pin the header name in `WithMTLSProxy`.
 - **Certificate renewal needs operational coordination.** Rotating a `self_signed_tls_client_auth` cert means updating the registered JWKS at the same time, otherwise the new cert's thumbprint will not match. Plan the rollover so the old and new JWKs are both registered for the duration of the cert lifetime overlap.
-- **Mixing modes on the same client is rejected.** A client registered as `tls_client_auth` cannot opportunistically present a self-signed cert and have the OP fall through to `self_signed_tls_client_auth`. Pick one method and stick with it.
+- **Do not configure mTLS client authentication as the token endpoint method.** mTLS is the sender-constraint layer; `private_key_jwt` is the client-auth method for FAPI deployments.
 - **Empty matcher fails closed.** `tls_client_auth` requires at least one of `SubjectDN`, `SANDNS`, `SANURI`, `SANIP`, `SANEmail` populated. A registration that leaves them all empty is rejected at the verifier with `ErrNoMatcherConfigured`.
 - **`RemoteAddr` semantics behind multiple proxies.** When the OP sits behind two layers of proxy, only the **innermost** proxy's IP appears in `RemoteAddr` — that is the one that must be in `trustedCIDRs`. Outer proxies are irrelevant to the header allow-list because the OP never sees them directly.
 
@@ -169,5 +173,5 @@ When the OP terminates TLS itself (test environments, single-tenant on-prem depl
 
 - [DPoP (RFC 9449)](/concepts/dpop) — the alternative sender-constraint mechanism, bound to a client-held key.
 - [Sender constraint — selection guide](/concepts/sender-constraint) — comparison table and when to pick which.
-- [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — full wiring with mTLS client authentication.
+- [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — full wiring with `private_key_jwt` client authentication and sender constraint.
 - [Design judgments](/security/design-judgments) — resolved tensions in the spec stack.

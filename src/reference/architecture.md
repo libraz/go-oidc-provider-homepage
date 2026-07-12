@@ -21,7 +21,7 @@ op/interaction/             ← HTML / JSON driver seam for login UI
 
 internal/                   ← cannot be imported externally (Go visibility)
   authn/                    ← LoginFlow orchestrator, Authenticator runtime
-  authorize, parendpoint, tokenendpoint, userinfo,
+  authorizeendpoint, parendpoint, tokenendpoint, userinfo,
   introspectendpoint, revokeendpoint, registrationendpoint,
   endsession, backchannel
   jose, jwks, keys          ← signing / verification / key set
@@ -327,7 +327,7 @@ The library never reads or writes the embedder's `users` table directly. It talk
 | `Sessions` | browser session records | volatile-eligible |
 | `Interactions` | per-attempt interaction state | volatile-eligible |
 | `ConsumedJTIs` | JAR / DPoP `jti` replay set | volatile-eligible |
-| `PARs` | pushed authorization requests | volatile-eligible |
+| `PARs` | pushed authorization requests | durable when PAR participates in an authorization-code transaction |
 | `IATs` / `RATs` | DCR Initial / Registration Access Tokens | durable |
 | `DeviceCodes` | RFC 8628 device-authorization records | durable |
 | `CIBARequests` | OpenID Connect CIBA backchannel-authentication records | durable |
@@ -335,7 +335,7 @@ The library never reads or writes the embedder's `users` table directly. It talk
 
 Volatile-eligible substores can live in a Redis tier behind the [`composite`](/use-cases/hot-cold-redis) adapter. The composite store enforces a single durable backend at construction time so a transactional cluster cannot split across two stores.
 
-MFA factor stores (`EmailOTPStore`, `TOTPStore`, `PasskeyStore`, `RecoveryStore`) are not substores of `op.Store`. They are supplied directly to the corresponding authenticator `Step` (`StepEmailOTP.Store`, `StepTOTP.Store`, `StepPasskey.Store`, `StepRecovery.Store`) when the embedder builds the `LoginFlow`.
+MFA factor stores (`EmailOTPStore`, `TOTPStore`, `PasskeyStore`, `RecoveryStore`) are not substores of `op.Store`. They are supplied directly to the corresponding authenticator `Step` (`StepEmailOTP.Store`, `StepTOTP.Store`, `StepPasskey.Store`, `StepRecovery.Store`) when the embedder builds the `LoginFlow`. Only the in-memory reference ships implementations for these factor stores; production deployments supply durable stores, such as the SQL-backed `store.TOTPStore` in [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store).
 
 See [Architecture: storage tiering](/use-cases/hot-cold-redis) for production placement guidance.
 

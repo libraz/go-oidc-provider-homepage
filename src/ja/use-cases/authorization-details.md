@@ -3,7 +3,7 @@ title: Rich authorization requests（RFC 9396）
 description: authorization_details を受理し、各要素を登録済みの type で検証し、トークンと introspection に許可済みの内容を反映する。
 ---
 
-# ユースケース — Rich authorization requests（RFC 9396）
+# 使い方 — Rich authorization requests（RFC 9396）
 
 scope は粗い単位です。`scope=payments` は *このクライアントは送金してよい* を表しますが、*IBAN X から IBAN Y へ €40 を一度だけ動かす* までは表せません。[RFC 9396](https://datatracker.ietf.org/doc/html/rfc9396)（Rich Authorization Requests、通称 RAR）は `authorization_details` パラメータを追加します。これは型付きオブジェクトの JSON 配列で、クライアントは要求内容を細かく記述でき、OP はその内容を grant に束ね、その grant から発行されるトークンへ引き継げます。
 
@@ -27,7 +27,7 @@ RAR は、リソースサーバが金額、口座、location、action、datatype
 
 この分担は意図的です。本ライブラリは RFC 9396 §2.1 の **構造** を担います。値がオブジェクトの JSON 配列であること、各要素が OP の認識する非空文字列 `type` を持つこと、リクエスト全体が控えめなサイズ上限に収まることを確認します。type 固有の事柄、たとえば `payment_initiation` 要素が非空の `actions` 配列を持つこと、金額が正であること、location がこのクライアントの触れてよいものであることは、type に登録する `Validate` 関数へ委譲されます。
 
-validator なしで登録された type は、その type 配下で任意の payload を受理してしまいます。そのため nil の `Validate` は `op.New` で拒否され、OP は起動しません。
+validator なしで登録された type は、その type 配下で任意の中身を受理してしまいます。そのため nil の `Validate` は `op.New` で拒否され、OP は起動しません。
 
 ## 設定
 
@@ -58,7 +58,7 @@ op.New(
 
 `Validate` は復号済みの要素（`el["type"]` は登録した `Type` と一致済み）と、リクエストの属する認証済み `*store.Client` を受け取ります。そのため validator は、クライアントに権限のない `location` などを拒否できます。`el` を変更してはなりません。nil 以外のエラーを返すと、リクエスト全体を `invalid_authorization_details` で拒否します。
 
-各 `Type` は非空かつ一意である必要があり、重複は構築時に拒否されます。呼び出しを繰り返すと追記されるので、基本セットにデプロイ固有のオーバーレイを重ねられます。
+各 `Type` は非空かつ一意である必要があり、重複は構築時に拒否されます。呼び出しを繰り返すと追記されるので、基本セットに配備固有の上書きを重ねられます。
 
 discovery 文書はこう公開します:
 
