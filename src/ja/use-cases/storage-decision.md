@@ -1,6 +1,7 @@
 ---
 title: ストレージ構成の選び方
 description: 更地・既存 DB・Hot/Cold 分離という入口別に、各 OIDC サブストアの置き場と Redis に載せてよいものを判断するマップ。
+pageClass: pg-use-cases-storage-decision
 ---
 
 # 使い方 — ストレージ構成の選び方
@@ -20,10 +21,11 @@ description: 更地・既存 DB・Hot/Cold 分離という入口別に、各 OID
 | 状況 | 構成 | ガイド |
 |---|---|---|
 | **更地** — スキーマがまだ無い | SQL バックエンド 1 つ、アダプタ所有のテーブル | [SQL ストア](/ja/use-cases/sql-store) |
+| **AWS / DynamoDB** — AWS ネイティブな永続バックエンドを使いたい | サブストアごとに DynamoDB テーブル 1 つ | [DynamoDB ストア](/ja/use-cases/dynamodb-store) |
 | **既存データベース** — すでに `users` テーブルとマイグレーションを運用している | アダプタ所有の `oidc_*` テーブル(命名を合わせて変更)+ ID 情報を投影 | [ストアを自前実装](/ja/use-cases/byo-store) · [ユーザストアを自前実装](/ja/use-cases/byo-userstore) |
 | **スケール / 高頻度生成** — 揮発状態を永続ストアから外したい | `composite` で分離: 永続 SQL + 揮発 Redis | [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) |
 
-<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 430" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 430" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="storage-choice-title">ストレージ構成の選択。新規なら SQL アダプタ 1 つ、既存 users テーブルがあるなら OIDC テーブルだけ SQL アダプタに任せて UserStore を自前実装、高頻度の揮発状態を分離したいなら composite で SQL と Redis に分ける。</title>
   <defs>
     <marker id="storage-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">

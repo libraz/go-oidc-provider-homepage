@@ -1,13 +1,14 @@
 ---
 title: "JOSE 基礎: JWS、JWE、JWK、JWKS、kid"
 description: OIDC を学ぶ方のための JOSE 入門最小セット — 各略語の意味、OIDC でどこに登場するか、本ライブラリがアルゴリズム許可リストを閉じている理由。
+pageClass: pg-concepts-jose-basics
 ---
 
 # JOSE 基礎: JWS、JWE、JWK、JWKS、kid
 
 **JOSE**（JavaScript Object Signing and Encryption）は、JSON 形のトークンに対して署名・暗号化・鍵表現の方法を定める IETF 仕様群の総称です。OIDC 実装は JWS / JWE / JWK / JWKS の 4 つすべてを内部で扱います — 大抵は表に出ませんが、ときどき直接登場します。本ページは、`id_token`、`jwks_uri`、JAR の `request=` パラメータ、`kid` を理解するために押さえておきたい最小限を扱います。
 
-<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="jose-map-title">JOSE の対応関係: JWS は署名、JWE は暗号化、JWK は鍵 1 個、JWKS は鍵集合、kid は集合から鍵を選ぶラベル。</title>
 <rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
   <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>

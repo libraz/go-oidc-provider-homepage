@@ -26,15 +26,16 @@ The module language floor is **Go 1.25+** (the `go.mod` directive is `go 1.25.0`
 | `github.com/libraz/go-oidc-provider/op/storeadapter/inmem` | Reference / dev / test store. |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/sql` | SQLite / MySQL / Postgres durable store. Sub-module — keeps DB drivers out of your `go.sum` until you opt in. |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/redis` | Volatile substores (interactions, consumed JTIs). Sub-module. |
+| `github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb` | DynamoDB store. Experimental sub-module; keeps the AWS SDK out of your `go.sum` until you opt in. |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/composite` | Hot/cold splitter. |
 
 ::: tip Sub-modules
-The SQL and Redis adapters are published as Go sub-modules. You only pay the driver dependency cost on the modules that actually use them.
+The SQL, Redis, and DynamoDB adapters are published as Go sub-modules. You only pay the driver or AWS SDK dependency cost in modules that use them.
 :::
 
-## Pre-v1.0
+## Stability
 
-The library is **pre-v1.0**. Public API may change in any minor release until `v1.0.0`. Breaking changes are tracked in [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md). APIs whose godoc starts with `Experimental:` may change without a major bump even after v1.0.
+The library is at **v1.0.0**. Its public API follows Semantic Versioning, so breaking changes require a major release. A symbol whose godoc starts with `Experimental:` is the exception and may change in a minor release. Today that covers the login-flow and interaction-UI seams, Grant Management, and the DynamoDB adapter. The generated [experimental API manifest](https://github.com/libraz/go-oidc-provider/blob/main/api/experimental.txt) is the complete current list; everything absent from it is stable. See [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) for release details.
 
 ## Next
 

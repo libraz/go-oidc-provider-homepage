@@ -1,6 +1,7 @@
 ---
 title: バックチャネルログアウト
 description: セッション終了時に全 RP へサーバ間通知 — OIDC Back-Channel Logout 1.0。
+pageClass: pg-use-cases-back-channel-logout
 ---
 
 # 使い方 — バックチャネルログアウト
@@ -21,7 +22,7 @@ description: セッション終了時に全 RP へサーバ間通知 — OIDC Ba
 :::
 
 ::: details 用語の補足
-- **`logout_token`** — OP が署名して各 RP に POST する短寿命の JWT です。終了したセッションの subject (`sub`) または session id (`sid`) を運びます。アクセストークンとは別物で、RP は検証後に自身のローカルセッションを破棄するだけです。
+- **`logout_token`** — OP が署名して各 RP に POST する短寿命の JWT です。終了したセッションの subject (`sub`) を運びます。アクセストークンとは別物で、RP は検証後に自身のローカルセッションを破棄するだけです。
 - **SET（Security Event Token、RFC 8417）** — セキュリティイベント配送向けの JWT 形式です。`events` claim にイベント種別キー（ここでは `http://schemas.openid.net/event/backchannel-logout`）を入れることで、汎用 SET 受信側が適切なハンドラに振り分けられるよう設計されています。
 :::
 
@@ -29,7 +30,7 @@ description: セッション終了時に全 RP へサーバ間通知 — OIDC Ba
 
 ## アーキテクチャ
 
-<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" style="width:100%;height:auto;max-width:760px" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して署名済み logout token を RP B と RP C に 一斉通知 したうえで RP A へリダイレクトする。</title>
 
   <path class="life" d="M70 48V372"/>
@@ -92,7 +93,7 @@ description: セッション終了時に全 RP へサーバ間通知 — OIDC Ba
   <circle class="bg" cx="700" cy="320" r="8" stroke-width="1.5"/>
   <text class="bn" x="700" y="323.5" text-anchor="middle">7</text>
 
-  <text class="lb" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10.5">post_logout_redirect_uri</tspan></text>
+  <text class="lb" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
   <path class="accent" d="M380 356L220 356M227 352L220 356L227 360"/>
   <circle class="bg" cx="380" cy="356" r="8" stroke-width="1.5"/>
   <text class="bn" x="380" y="359.5" text-anchor="middle">8</text>
@@ -105,7 +106,7 @@ OP は RP 毎に `logout_token` に署名して RP の `backchannel_logout_uri` 
 | `iss` | OP issuer |
 | `aud` | RP の `client_id` |
 | `iat`、`jti` | 発行時刻 + replay nonce |
-| `sub` または `sid` | 終了したセッション |
+| `sub` | 終了したセッションの subject。`sid` は発行されません([後述](#通知先はどう解決されるか-そしてなぜ上限があるか)) |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
 RP は署名と `aud` を検証し、ローカルセッションを破棄したうえで 200 を返します。
@@ -179,17 +180,30 @@ op.WithBackchannelAllowPrivateNetwork(true)
 この緩和は意図的に選び取る必要があります — オプションを明示的に存在させることで、セキュリティ上のトレードオフが設定箇所に可視化されます。
 :::
 
-## 揮発ストアのギャップ（とそれを示す監査イベント）
+## 通知先はどう解決されるか（そしてなぜ上限があるか）
 
-Back-channel 一斉通知 は OP の `SessionStore` を辿り、終了セッションに紐づく全 RP を見つけます。**揮発** session ストア（永続化無しの Redis、Memcached、maxmemory による追い出し下の in-memory）配下では、セッション確立から `/end_session` までの間に追い出された行は気付かれずに失われ、対応する RP には何も通知されません。
+一斉通知の通知先は session の行ではなく **grant** から解決されます。coordinator は終了する session の subject を受け取り、その subject が同意している client の集合を grant ストアに問い合わせます。使うのは `store.GrantClientLister.ListClientIDsBySubject` で、これは `ListBySubject` とは別の keyset ページング付きのビューです。1 つの subject が同じ client に対して過去分を含む多数の grant 行を持ちうるため、専用のビューを置いています。一斉通知の各段階には意図的に上限が設けてあります。
 
-ライブラリはこのギャップを監査イベントとして可視化します。
+| 上限 | 既定値 | 何を抑えるか |
+|---|---|---|
+| 重複排除後の通知先 | `DefaultMaxTargets`(256) | 1 回のログアウトで通知する client 数。後段で絞るのではなく grant クエリ自体に上限を効かせる |
+| 同時配送数 | `DefaultMaxConcurrentDeliveries`(8) | 同時に走る outbound POST の本数 |
+
+通知先ページに `NextCursor` が付いて返った場合、上限を超える client が該当したということです。coordinator は黙って切り捨てず、その cursor を載せた overflow の監査イベントを出します。到達できない RP が 1 つあっても、一斉通知全体は失敗せず、その RP 個別の監査イベントとして現れます。
+
+::: tip `backchannel_logout_session_supported` は `false`
+discovery はこれを `false` として広告します。これは grant ベースの解決から直接導かれる帰結です。OP 側の session 識別子が特定の RP のものであることを OP は証明できないため、`sid` を Logout Token に載せることはありません。RP は `sub` を手がかりにローカル session を破棄してください。`backchannel_logout_session_required=true` を登録する client は、OP が出さないものを要求していることになります。
+:::
+
+## 通知先が 0 件になったとき
+
+subject が有効な grant を 1 つも持っていない場合(すべて失効済み、あるいは client が既に存在しない古いレコードだけ)、一斉通知には通知先がありません。本ライブラリはこれを監査イベントとして表面化させます。
 
 | イベント | 意味 |
 |---|---|
 | `op.AuditBCLNoSessionsForSubject` | 呼出側がセッションを指定（`id_token_hint` 付き `/end_session` または `Provider.Logout`）したが、一斉通知 で解決した RP が 0 件だった。 |
 
-揮発配置では、これは OIDC Back-Channel Logout 1.0 §2.7 の "best effort" の下限です。永続配置では予期せぬギャップを意味します。イベント extras に設定済みの `op.SessionDurabilityPosture`（`SessionDurabilityVolatile` または `SessionDurabilityDurable`）を載せておくことで、SOC ダッシュボードはストアアダプタの型に依存せず両者を区別できます。
+このイベントは呼出側が実際に session を指定した場合にだけ発火するので、browser session を持たない subject に対する `Provider.Logout` がノイズを生むことはありません。揮発 session 配置では、通知先 0 件は OIDC Back-Channel Logout 1.0 §2.7 の "best effort" の下限です。永続配置では予期せぬギャップを意味し、アラートに値します。イベント extras に設定済みの `op.SessionDurabilityPosture`（`SessionDurabilityVolatile` または `SessionDurabilityDurable`）を載せておくことで、SOC ダッシュボードはストアアダプタの型に依存せず両者を区別できます。
 
 ## フロントチャネルログアウト（別の機構）
 

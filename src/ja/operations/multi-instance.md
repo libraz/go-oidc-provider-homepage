@@ -2,13 +2,14 @@
 title: マルチインスタンス展開
 description: OP レプリカを複数立てる — DPoP nonce 共有、session 配置、sticky か round-robin かのトレードオフ。
 outline: 2
+pageClass: pg-operations-multi-instance
 ---
 
 # マルチインスタンス展開
 
-OP はリクエストをまたいでステートレスで、すべてのレプリカが設定済みの `op.Store` 経由で読み書きします。レプリカ 1 から N に増やすということは、論点が「プロセスメモリに何があるか」から「何が共有され、何が揮発で、どの fan-out 挙動が許容できるか」に移る、ということです。
+OP はリクエストをまたいでステートレスで、すべてのレプリカが設定済みの `store.Store` 経由で読み書きします。レプリカ 1 から N に増やすということは、論点が「プロセスメモリに何があるか」から「何が共有され、何が揮発で、どの fan-out 挙動が許容できるか」に移る、ということです。
 
-<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="mi-replica-topology-title">レプリカ構成: ロードバランサが 1 クライアントの /token と /userinfo を N 個の OP レプリカへ round-robin で振り分け、全レプリカが 1 つの永続ストアと 1 つの揮発 Redis 層を共有する。</title>
 <defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect x="280" y="16" width="160" height="44" rx="6"/>
@@ -50,11 +51,17 @@ OP はリクエストをまたいでステートレスで、すべてのレプ�
 
 ## 自動で共有されるもの
 
-`op.Store` に乗っているものは構造的に共有されます。永続サブストア(clients、codes、リフレッシュトークン、アクセストークン、grants、IATs、PARs)は 1 つのバックエンド(SQL または自前の実装)に対して、全レプリカが読み書きします。`composite.PushedAuthRequests` は `composite.TxClusterKinds` の一員なので、splitter は永続アンカー以外への振り分けを拒否します。
+`store.Store` に乗っているものは構造的に共有されます。永続サブストア(clients、codes、リフレッシュトークン、アクセストークン、grants、IATs、PARs)は 1 つのバックエンド(SQL または自前の実装)に対して、全レプリカが読み書きします。`composite.PushedAuthRequests` は `composite.TxClusterKinds` の一員なので、splitter は永続アンカー以外への振り分けを拒否します。
 
 Redis 層に置ける揮発サブストアは `Sessions`、`Interactions`、`ConsumedJTIs`(JAR / DPoP / private_key_jwt の replay set)です。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。DPoP server-nonce ストアはサブストアではなく、`op.WithDPoPNonceSource` 経由で差し込む別の seam です。
 
-`op.WithAuthnLockoutStore` 経由で組み込む authn-factor 用のロックアウトカウンタも、永続サブストアには含まれません。同梱の SQL アダプタは `store.AuthnLockoutStore` を実装していないため、SQL をバックエンドにした N レプリカ構成でも、カウンタは既定のまま process-local な in-memory リファレンス実装(`inmem.Store.AuthnLockouts`)を使い続け、再起動でリセットされ、レプリカ間でも共有されません。ブルートフォース対策のロックアウトを再起動後も維持したい、あるいはレプリカ間で一貫させたいデプロイでは、耐久性のある共有ストレージに基づく独自の `store.AuthnLockoutStore` を用意する必要があります。
+`op.WithAuthnLockoutStore` 経由で組み込む authn-factor 用のロックアウトカウンタも、`store.Store` のサブストアには含まれないため、明示的に渡します。同梱の SQL / DynamoDB adapter は、永続かつレプリカ間で共有される実装を `storage.AuthnLockouts()` として提供します。
+
+```go
+op.WithAuthnLockoutStore(storage.AuthnLockouts())
+```
+
+`inmem.Store.AuthnLockouts()` は process-local です。再起動でリセットされ、レプリカごとに別の試行回数枠を持ちます。別のバックエンドを使う場合に、cross-factor のブルートフォース対策を再起動後も維持し、全レプリカで一貫させるには、耐久性があり共有される `store.AuthnLockoutStore` を実装してください。
 
 ## 明示的に対処が必要なもの
 

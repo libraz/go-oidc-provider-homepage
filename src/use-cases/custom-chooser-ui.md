@@ -1,6 +1,7 @@
 ---
 title: Custom chooser UI
 description: Replace the server-rendered prompt=select_account chooser template while the OP keeps state, CSRF, and session switching.
+pageClass: pg-use-cases-custom-chooser-ui
 ---
 
 # Use case — Custom chooser UI
@@ -65,18 +66,7 @@ The field names are part of the OP contract. Keep `state_ref`, `csrf_token`, and
 
 ## Flow
 
-<style scoped>
-.ccui-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;stroke:none;fill:currentColor}
-.ccui-lbl{font-family:var(--vp-font-family-base);font-size:12.5px;stroke:none;fill:currentColor}
-.ccui-mono{font-family:var(--vp-font-family-mono);font-size:12px;stroke:none;fill:currentColor}
-.ccui-num{font-family:var(--vp-font-family-mono);font-size:11px;font-weight:600;stroke:none}
-.ccui-op{stroke:var(--vp-c-brand-2)}
-.ccui-sec{stroke:var(--vp-c-text-3)}
-.ccui-opf{fill:var(--vp-c-brand-2)}
-.ccui-secf{fill:var(--vp-c-text-3)}
-</style>
-
-<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="chooser-flow-title">Custom chooser UI flow: the browser requests prompt=select_account, the OP loads the chooser group and renders the template, then validates the submission before switching the session and redirecting to the RP.</title>
 <rect x="30" y="14" width="120" height="36" rx="6"/>
 <rect x="300" y="14" width="120" height="36" rx="6" class="ccui-op"/>
@@ -89,8 +79,8 @@ The field names are part of the OP contract. Keep `state_ref`, `csrf_token`, and
 <line x1="630" y1="50" x2="630" y2="405" class="ccui-sec"/>
 <line x1="90" y1="88" x2="360" y2="88"/>
 <polyline points="352,83 360,88 352,93"/>
-<circle class="ccui-op" cx="102" cy="74" r="8"/>
-<text class="ccui-num ccui-opf" x="102" y="78" text-anchor="middle">1</text>
+<circle class="ccui-op" cx="76" cy="74" r="8"/>
+<text class="ccui-num ccui-opf" x="76" y="78" text-anchor="middle">1</text>
 <text class="ccui-mono" x="225" y="80" text-anchor="middle">GET /authorize · prompt=select_account</text>
 <path d="M360,120 H406 V140 H366"/>
 <polyline points="368,135 360,140 368,145"/>

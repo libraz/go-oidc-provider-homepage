@@ -1,6 +1,7 @@
 ---
 title: CORS for SPA
 description: Allow a SPA on a different origin to call the OP's user-facing endpoints.
+pageClass: pg-use-cases-cors-spa
 ---
 
 # Use case — CORS for SPA
@@ -13,6 +14,40 @@ A **Single-Page Application (SPA)** is a JavaScript front-end (React, Vue, Svelt
 2. It is typically served from a **different origin** to the OP (`app.example.com` vs `op.example.com`). Browser **CORS** (Fetch spec, "Cross-Origin Resource Sharing") then requires the OP to explicitly allow the SPA's origin on every endpoint the SPA calls from JavaScript.
 
 This page covers the CORS layer. PKCE itself is covered in [Authorization Code + PKCE](/concepts/authorization-code-pkce).
+
+<svg role="img" aria-labelledby="cors-spa-flow-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="cors-spa-flow-title">The CORS flow for a SPA: the browser sends a preflight carrying Origin, the OP checks its allow-list, and only an approved origin lets the SPA read the real response.</title>
+<rect class="cors-box" x="32" y="92" width="156" height="82" rx="8"/>
+  <text class="cors-text" x="110" y="124" text-anchor="middle">SPA</text>
+  <text class="cors-sub" x="110" y="146" text-anchor="middle">app.example.com</text>
+
+  <rect class="cors-main" x="302" y="82" width="156" height="102" rx="8"/>
+  <text class="cors-text" x="380" y="116" text-anchor="middle">Browser</text>
+  <text class="cors-sub" x="380" y="138" text-anchor="middle">same-origin policy</text>
+  <text class="cors-sub" x="380" y="156" text-anchor="middle">runs the preflight</text>
+
+  <rect class="cors-box" x="572" y="92" width="156" height="82" rx="8"/>
+  <text class="cors-text" x="650" y="124" text-anchor="middle">OP</text>
+  <text class="cors-sub" x="650" y="146" text-anchor="middle">checks the allow-list</text>
+
+  <rect class="cors-box" x="302" y="236" width="156" height="52" rx="8"/>
+  <text class="cors-text" x="380" y="268" text-anchor="middle">PKCE / Bearer</text>
+
+  <path class="cors-flow" d="M188 132 H298"/>
+  <text class="cors-sub" x="243" y="118" text-anchor="middle">fetch()</text>
+  <path class="cors-flow" d="M290 128 L299 132 L290 136"/>
+  <path class="cors-flow" d="M458 116 H568"/>
+  <text class="cors-sub" x="513" y="102" text-anchor="middle">OPTIONS + Origin</text>
+  <path class="cors-flow" d="M560 112 L569 116 L560 120"/>
+  <path class="cors-flow" d="M572 150 H462"/>
+  <text class="cors-sub" x="517" y="174" text-anchor="middle">Allow-Origin</text>
+  <path class="cors-flow" d="M470 146 L461 150 L470 154"/>
+  <path class="cors-flow" d="M458 156 C514 218 582 216 650 176"/>
+  <text class="cors-sub" x="564" y="218" text-anchor="middle">actual request</text>
+  <path class="cors-flow" d="M644 185 L651 175 L640 178"/>
+  <path class="cors-flow" d="M380 184 V232"/>
+  <path class="cors-flow" d="M376 224 L380 233 L384 224"/>
+</svg>
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework

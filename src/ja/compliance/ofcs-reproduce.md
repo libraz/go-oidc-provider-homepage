@@ -1,6 +1,7 @@
 ---
 title: OFCS 再現レシピ
 description: OpenID Foundation Conformance Suite を go-oidc-provider に対して実行する手順 — どのプランがどの op-demo フラグに対応するか、関連する実装はどこにあるか、ベースラインをキャプチャして回帰差分を取る方法。
+pageClass: pg-compliance-ofcs-reproduce
 ---
 
 # OFCS 再現レシピ
@@ -13,7 +14,7 @@ description: OpenID Foundation Conformance Suite を go-oidc-provider に対し�
 本サイトの数値は再現可能なスナップショットであり、本ページはその再現手順を扱います。これは有償の OpenID Foundation 認証の代替ではありません。ローカルでスイートを実行して自分の組み込みを検証する用途には使えますが、ローカルの PASS 数を認証として引用しないでください。
 :::
 
-<svg role="img" aria-labelledby="ofcs-reproduce-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="ofcs-reproduce-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ofcs-reproduce-title">OFCS 再現手順: 証明書を生成し、OFCS と op-demo を起動し、プランを登録し、ベースラインを保存し、差分を確認する。</title>
 <rect class="repro-box" x="24" y="92" width="124" height="72" rx="8"/>
   <text class="repro-text" x="86" y="122" text-anchor="middle">証明書生成</text>
@@ -185,7 +186,7 @@ OFCS は主に 4 種の終端 result value を返し、ハーネスは advisory 
 - **REVIEW** — module は実行されたが、視覚的 / out-of-band の挙動(同意 UI 文言、エラーページのスクリーンショット)を人間のレビュアーが確認する必要があります。failure ではありません。ヘッドレスハーネスは `REVIEW` をそのまま記録します。有償認証ではこれを clear するために OFCS UI に向かう必要があります。
 - **SKIPPED** — module は OP が discovery / per-client metadata で広告していない機能に依存します。例えば、クライアント metadata が `PS256` を署名 alg として宣言している場合、`RS256` ネガティブテストはそのプローブが対象外なため skip されます。failure ではありません。
 - **WARNING** — module は非 failure の advisory result に到達した状態。最新 status page では FAILED とは分けて集計します。
-- **FAILED** — 観測された挙動が仕様と乖離。最新スナップショットでは全プラン通じて **FAILED 0 件** を記録しています。詳細は [OFCS 適合状況](/ja/compliance/ofcs#最新-baseline) を参照してください。
+- **FAILED** — module が suite の期待結果に到達しなかった状態。`make conformance-release-verify` がレビュー済みかつ期限内の exclusion と照合できない限り、release を止めます。現在の内訳は [OFCS 適合状況](/ja/compliance/ofcs#最新-baseline) を参照してください。
 
 REVIEW / SKIPPED の各 module がどれで、なぜそうなっているかの詳細は [OFCS 適合状況](/ja/compliance/ofcs#review-中の-modules) にあります。
 

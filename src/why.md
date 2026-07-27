@@ -1,6 +1,7 @@
 ---
 title: Why go-oidc-provider
 description: The pain points this library solves vs. rolling your own OIDC OP, vs. patching a heavyweight IdP into a Go service.
+pageClass: pg-why
 ---
 
 # Why go-oidc-provider
@@ -24,6 +25,37 @@ You're writing a Go service. You need to **be** an OpenID Connect Provider — i
 | **3. `go-oidc-provider`** | Library owns the protocol | You bring user accounts, storage, and UI |
 
 This page argues option 3 by walking through the things that hurt when you build options 1 or 2.
+
+<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 336" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="why-responsibility-title">How responsibility is split. The library owns the OIDC and OAuth protocol work; the embedder owns users, screens, storage, and HTTP routing.</title>
+  <defs>
+    <marker id="why-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="24" y="28" width="246" height="88" rx="8"/>
+  <text class="p" x="147" y="58" text-anchor="middle" font-size="15.5" font-weight="700">Your application</text>
+  <text class="p sub" x="147" y="82" text-anchor="middle" font-size="11.5">users / UI / storage</text>
+  <text class="m sub" x="147" y="100" text-anchor="middle" font-size="10.5">Authenticator · Store · Templates</text>
+  <rect class="op" x="310" y="28" width="246" height="88" rx="8"/>
+  <text class="p opf" x="433" y="58" text-anchor="middle" font-size="15.5" font-weight="700">go-oidc-provider</text>
+  <text class="p sub" x="433" y="82" text-anchor="middle" font-size="11.5">the OIDC / OAuth ceremony</text>
+  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/authorize · /token · JWKS</text>
+  <rect x="596" y="28" width="140" height="88" rx="8"/>
+  <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
+  <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">the consuming app</text>
+  <text class="p sub" x="666" y="100" text-anchor="middle" font-size="10.5">verifies tokens</text>
+  <path d="M270 72 H306" marker-end="url(#why-arrow)"/>
+  <path d="M556 72 H592" marker-end="url(#why-arrow)"/>
+  <rect class="soft" x="54" y="168" width="650" height="126" rx="8"/>
+  <text class="p" x="92" y="196" font-size="13.5" font-weight="700">Where the line falls</text>
+  <circle cx="98" cy="225" r="4" fill="currentColor"/>
+  <text class="p" x="116" y="230" font-size="11.5">Library: token issuance, signing, PKCE, CSRF, the consent and logout ceremonies</text>
+  <circle cx="98" cy="252" r="4" fill="currentColor"/>
+  <text class="p" x="116" y="257" font-size="11.5">You: user lookup, password verification, screens, storage, mounting on your router</text>
+  <circle cx="98" cy="279" r="4" fill="currentColor"/>
+  <text class="p" x="116" y="284" font-size="11.5">Unsafe legacy modes are not exposed; bundles like FAPI are pinned by a profile</text>
+</svg>
 
 ## Pain points, answered
 
@@ -53,17 +85,18 @@ The constructor refuses to start if the declared profile and the declared option
 
 Heavyweight IdPs often make user storage part of the product boundary: import users, sync them, accept their profile schema, then route login through their screens. That is a poor fit when the account model is already part of your Go service.
 
-`op.WithStore(s store.Store)` plugs into a tiny set of substore interfaces (`store.AuthorizationCodeStore`, `store.SessionStore`, `store.UserStore`, …). The library never reads or writes your `users` table directly — your store implementation does.
+`op.WithStore(s store.Store)` plugs into a small set of substore interfaces (`store.AuthorizationCodeStore`, `store.SessionStore`, `store.UserStore`, …). The library never reads or writes your `users` table directly. Pass an application-owned `store.UserStore` with `op.WithUserStore(...)` when claims should come from your existing table while protocol state stays in the adapter.
 
 ```go
 op.New(
   /* required options */
-  op.WithStore(myStore),              // protocol state
-  op.WithAuthenticators(passwordAuth), // your user lookup
+  op.WithStore(myStore),                 // protocol state
+  op.WithUserStore(applicationUsers),    // claims from your users table
+  op.WithLoginFlow(passwordLoginFlow),   // authentication against those records
 )
 ```
 
-Reference adapters: `inmem`, `sql` (SQLite / MySQL / Postgres), `redis` (volatile substores), `composite` (hot/cold splitter). DynamoDB is planned.
+Reference adapters: `inmem`, `sql` (SQLite / MySQL / Postgres), `redis` (volatile substores), `dynamodb` (one table per substore; experimental), and `composite` (hot/cold splitter). See [DynamoDB storage](/use-cases/dynamodb-store) for its provisioning model.
 
 ### "Cookies and CSRF on the consent POST are a minefield"
 
@@ -123,18 +156,10 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` so
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
-Each release is regressed against the OpenID Foundation conformance suite. Latest published baseline metadata (sha `8db1b80`):
-
-| Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
-|---|---:|---:|---:|---:|---:|
-| oidcc-basic-certification-test-plan | 30 | 3 | 2 | 0 | **0** |
-| fapi2-security-profile-id2-test-plan | 48 | 9 | 1 | 0 | **0** |
-| fapi2-message-signing-id1-test-plan | 60 | 9 | 2 | 0 | **0** |
-| fapi-ciba-id1-test-plan | 32 | 0 | 3 | 0 | **0** |
-| **Total (4 plans, 199 modules)** | **170** | **21** | **8** | **0** | **0** |
+Each release is regressed against the OpenID Foundation conformance suite. The v1.0.0 release snapshot (SHA `3ccc6bc`) covers all nine plans: **209 PASSED**, **39 REVIEW**, **15 SKIPPED**, **6 FAILED**, and **2 modules without a terminal verdict**. The strict release verifier accepted it with zero blockers because every failure or no-verdict result is a reviewed, expiry-bound exclusion; the full raw breakdown and rationale are on [OFCS conformance](/compliance/ofcs).
 
 ::: tip Reading REVIEW / SKIPPED
-`REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects). `WARNING` is an advisory result, not a failed module.
+`REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects). A raw `FAILED` or no-verdict result is never silently accepted: it must match a reviewed, unexpired exclusion for the release verifier to pass.
 :::
 
 ### "I need observable refresh-token rotation"

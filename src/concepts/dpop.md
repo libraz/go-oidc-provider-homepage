@@ -1,6 +1,7 @@
 ---
 title: DPoP (RFC 9449)
 description: Demonstrating Proof of Possession — bind an access token (and optionally a refresh token) to a client-held key so a leaked token alone is useless.
+pageClass: pg-concepts-dpop
 ---
 
 # DPoP — Demonstrating Proof of Possession
@@ -35,25 +36,12 @@ A DPoP proof is a JWT (RFC 9449 §4) signed with a private key the client contro
 |---|---|
 | `htm` | HTTP method of the request (`POST`, `GET`, …). Pinned to this exact request. |
 | `htu` | HTTP target URI with query / fragment stripped. Stops a proof for `/orders` from being replayed against `/admin/payouts`. |
-| `iat` | Time the proof was signed. Rejected if outside the OP's freshness window (default 60 s, see `dpop.DefaultIatWindow`). |
+| `iat` | Time the proof was signed. Rejected if outside the OP's freshness window (60 seconds by default). |
 | `jti` | Unique random value per proof. Cached by the OP for the freshness window so the same proof cannot be replayed. |
 | `ath` | Optional. SHA-256 of the access token, required when the proof is presented alongside an access token (RFC 9449 §4.2). |
 | `nonce` | Optional. Server-supplied value when the OP runs the §8 / §9 nonce flow. |
 
-<style scoped>
-.dpop-flow-dg text{stroke:none;fill:currentColor;}
-.dpop-flow-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-.dpop-flow-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-.dpop-flow-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-.dpop-flow-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-.dpop-flow-dg .op-accent{stroke:var(--vp-c-brand-2);}
-.dpop-flow-dg .rs-stroke{stroke:var(--vp-c-text-3);}
-.dpop-flow-dg .op-fill{fill:var(--vp-c-brand-2);}
-.dpop-flow-dg .rs-fill{fill:var(--vp-c-text-3);}
-.dpop-flow-dg .life{opacity:0.3;stroke-width:1;}
-</style>
-
-<svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-proof-flow-title">Sequence of a DPoP proof: the client signs a per-request proof, the OP binds cnf.jkt into the access token, and the resource server re-checks the proof against the binding.</title>
   <line class="life" x1="110" y1="68" x2="110" y2="540"/>
   <line class="life op-accent" x1="380" y1="68" x2="380" y2="540"/>
@@ -121,7 +109,7 @@ The thumbprint is a stable, short identifier that survives JSON re-encoding. RFC
 DPoP layers four independent gates so an attacker who captured a single proof gains nothing:
 
 - **`jti` deduplication.** The OP threads every accepted proof's `jti` through `store.ConsumedJTIStore.Mark` (see `internal/dpop/verify.go`). A repeated `jti` inside the freshness window returns `ErrProofReplayed` and the request fails. The store is the same one PAR / JAR replay defenses use, so a single Redis substore covers all three.
-- **`iat` window.** Proofs older or further in the future than `DefaultIatWindow` (60 seconds, symmetric) are rejected with `ErrProofIatWindow`. The window is short on purpose: it caps how long a stolen proof remains useful even if the `jti` cache is wiped.
+- **`iat` window.** Proofs older or further in the future than the 60-second symmetric freshness window are rejected with `ErrProofIatWindow`. The window is short on purpose: it caps how long a stolen proof remains useful even if the `jti` cache is wiped.
 - **`htm` + `htu` match.** A proof for one method or URL cannot be presented against another endpoint. The OP folds both sides through the RFC 9449 §4.3 canonical form (lower-cased scheme / host, default port stripped, query / fragment removed) before comparing.
 - **`ath` binding.** When a proof is paired with an access token, the proof must carry `ath = SHA-256(access_token)`. A proof minted for a different access token fails `ErrProofATHMismatch`.
 

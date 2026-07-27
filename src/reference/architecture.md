@@ -2,6 +2,7 @@
 title: Architecture overview
 description: Where each request goes inside the OP — the package layout, the handler dispatch, and the storage seams.
 outline: 2
+pageClass: pg-reference-architecture
 ---
 
 # Architecture overview
@@ -38,19 +39,7 @@ The boundary is enforced structurally: external code cannot reach into `internal
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<style scoped>
-.hg-box{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.hg-op{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.hg-line{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.hg-t1{font-family:var(--vp-font-family-mono);fill:var(--vp-c-brand-2);font-size:13px;font-weight:600}
-.hg-t2{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:11px}
-.hg-t3{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);font-size:10px}
-.hg-path{font-family:var(--vp-font-family-mono);fill:currentColor;font-size:12px}
-.hg-pkg{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);font-size:10px}
-.hg-drv{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-3);font-size:10px}
-</style>
-
-<svg role="img" aria-labelledby="hg-en-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;height:auto">
+<svg role="img" aria-labelledby="hg-en-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg">
 <title id="hg-en-title">op.New returns an http.Handler whose ServeMux dispatches each request path to its internal endpoint handler.</title>
 <defs><marker id="hg-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
 <rect class="hg-op" x="24" y="217" width="180" height="60" rx="8"/>
@@ -127,26 +116,7 @@ The most-trodden path. Roughly:
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<style scoped>
-.seq-ll{stroke:currentColor;stroke-width:2}
-.seq-llop{stroke:var(--vp-c-brand-2);stroke-width:2}
-.seq-llst{stroke:currentColor;stroke-width:2;stroke-dasharray:5 5}
-.seq-lllf{stroke:var(--vp-c-text-3);stroke-width:2}
-.seq-box{fill:none;stroke:currentColor;stroke-width:2}
-.seq-boxop{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2}
-.seq-boxst{fill:none;stroke:currentColor;stroke-width:2;stroke-dasharray:5 5}
-.seq-boxlf{fill:none;stroke:var(--vp-c-text-3);stroke-width:2}
-.seq-msg{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.seq-ret{fill:none;stroke:var(--vp-c-text-3);stroke-width:1.5;stroke-dasharray:5 4;stroke-linecap:round}
-.seq-hd{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:currentColor}
-.seq-hdop{fill:var(--vp-c-brand-2)}
-.seq-hdlf{fill:var(--vp-c-text-3)}
-.seq-lbl{font-family:var(--vp-font-family-base);font-size:11.5px;fill:currentColor}
-.seq-mono{font-family:var(--vp-font-family-mono)}
-.seq-num{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3)}
-</style>
-
-<svg role="img" aria-labelledby="seq-en-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:850px;height:auto">
+<svg role="img" aria-labelledby="seq-en-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg">
 <title id="seq-en-title">Authorize-to-token happy path: the browser drives /authorize and interaction, then the RP redeems the code at /token.</title>
 <defs>
 <marker id="seq-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
@@ -240,22 +210,7 @@ internal/authn/CompiledLoginFlow
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<style scoped>
-.lfp-box{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.lfp-op{fill:none;stroke:var(--vp-c-brand-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.lfp-line{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.lfp-oln{fill:none;stroke:var(--vp-c-brand-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.lfp-t1{font-family:var(--vp-font-family-mono);font-size:12px;font-weight:600;fill:currentColor}
-.lfp-t1a{font-family:var(--vp-font-family-mono);font-size:12px;font-weight:600;fill:var(--vp-c-brand-2)}
-.lfp-fld{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-3)}
-.lfp-sub{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-3)}
-.lfp-lba{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-brand-2)}
-.lfp-cap{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-3)}
-.lfp-mono{font-family:var(--vp-font-family-mono)}
-.lfp-nd{font-family:var(--vp-font-family-base);font-size:11px;fill:currentColor}
-</style>
-
-<svg role="img" aria-labelledby="lfp-en-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px;height:auto">
+<svg role="img" aria-labelledby="lfp-en-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg">
 <title id="lfp-en-title">WithLoginFlow compiles the Primary, Rules, Decider and Risk spec into a CompiledLoginFlow the orchestrator drives in a per-request loop.</title>
 <defs>
 <marker id="lfp-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
@@ -312,7 +267,7 @@ See [Use case: Custom authenticator](/use-cases/custom-authenticator) for how to
 
 ## Storage seams
 
-The library never reads or writes the embedder's `users` table directly. It talks to the `op.Store` interface which is the union of small substores:
+The library never reads or writes the embedder's `users` table directly. It talks to the `store.Store` interface, which is the union of small substores:
 
 | Substore | What lives there | Adapter notes |
 |---|---|---|
@@ -335,7 +290,7 @@ The library never reads or writes the embedder's `users` table directly. It talk
 
 Volatile-eligible substores can live in a Redis tier behind the [`composite`](/use-cases/hot-cold-redis) adapter. The composite store enforces a single durable backend at construction time so a transactional cluster cannot split across two stores.
 
-MFA factor stores (`EmailOTPStore`, `TOTPStore`, `PasskeyStore`, `RecoveryStore`) are not substores of `op.Store`. They are supplied directly to the corresponding authenticator `Step` (`StepEmailOTP.Store`, `StepTOTP.Store`, `StepPasskey.Store`, `StepRecovery.Store`) when the embedder builds the `LoginFlow`. Only the in-memory reference ships implementations for these factor stores; production deployments supply durable stores, such as the SQL-backed `store.TOTPStore` in [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store).
+MFA factor stores (`EmailOTPStore`, `TOTPStore`, `PasskeyStore`, `RecoveryStore`, `AuthnLockoutStore`) are not substores of `store.Store`. They are supplied directly to the matching login-flow values (`StepEmailOTP.Store`, `StepTOTP.Store`, `PrimaryPasskey.Store`, `StepRecoveryCode.Store`, and `WithAuthnLockoutStore`) when the embedder builds the `LoginFlow`. In-memory, SQL, and DynamoDB adapters expose these stores with matching accessors. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) uses the shipped SQL factor stores with the core OP tables in one database; custom backends implement the same contracts themselves.
 
 See [Architecture: storage tiering](/use-cases/hot-cold-redis) for production placement guidance.
 

@@ -2,6 +2,7 @@
 title: エラーカタログ
 description: OP が返す OAuth / OIDC のエラーコードと、各エラーの典型的な発生条件・対処を一覧化。
 outline: 2
+pageClass: pg-reference-errors
 ---
 
 # エラーカタログ
@@ -10,7 +11,7 @@ OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf
 
 このページは両方を網羅した一覧です。
 
-<svg role="img" aria-labelledby="error-routing-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="error-routing-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="error-routing-title">OP のエラー分類: op.New の構成エラーは起動時に返り、エンドポイント処理エラーは JSON、redirect、HTML エラーページのいずれかで返る。</title>
 <rect class="err-box" x="32" y="58" width="170" height="70" rx="8"/>
   <text class="err-text" x="117" y="88" text-anchor="middle">構築時エラー</text>
@@ -82,6 +83,7 @@ sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性
 | `op.ErrIssuerRequired` | `configuration_error` | `WithIssuer` を渡していない |
 | `op.ErrIssuerInvalid` | `configuration_error` | issuer が絶対 `https` URL でない、または query / fragment を持つ |
 | `op.ErrStoreRequired` | `configuration_error` | `WithStore` を渡していない |
+| `op.ErrUserStoreRequired` | `configuration_error` | `WithUserStore` に nil を渡した |
 | `op.ErrKeysetRequired` | `configuration_error` | `WithKeyset` を渡していない、または空 |
 | `op.ErrCookieKeysRequired` | `configuration_error` | `authorization_code` grant が有効なのに `WithCookieKeys` を渡していない |
 | `op.ErrDynamicRegistrationDisabled` | `configuration_error` | `WithDynamicRegistration` 無しで `Provider.IssueInitialAccessToken` を呼んだ |

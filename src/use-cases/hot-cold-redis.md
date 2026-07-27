@@ -1,6 +1,7 @@
 ---
 title: Hot/cold split (Redis volatile)
 description: Route volatile substores to Redis, durable substores to SQL — the canonical production deployment shape.
+pageClass: pg-use-cases-hot-cold-redis
 ---
 
 # Use case — Hot/cold split (Redis volatile)
@@ -36,17 +37,7 @@ One nuance the table below makes precise: *volatile-shaped* data and *volatile-t
 
 ## Architecture
 
-<style scoped>
-text{stroke:none}
-.hcr-t{fill:var(--vp-c-text-1);font-family:var(--vp-font-family-base);font-size:13px;}
-.hcr-m{fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px;}
-.hcr-edge{fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:12px;}
-.hcr-accent{stroke:var(--vp-c-brand-2);}
-.hcr-accent-t{fill:var(--vp-c-brand-2);}
-.hcr-db{stroke-dasharray:5 4;}
-</style>
-
-<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" width="728" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="max-width:100%;height:auto;">
+<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="hcr-arch-title">The composite store adapter routes durable substores to the SQL/MySQL backend and volatile substores to the Redis backend.</title>
   <marker id="hcr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
     <path d="M1 1 L9 5 L1 9" stroke-width="1.6"/>

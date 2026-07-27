@@ -1,6 +1,7 @@
 ---
 title: Authorization Code + PKCE
 description: The dominant OIDC flow, walked end-to-end with a full sequence diagram and parameter glossary.
+pageClass: pg-concepts-authorization-code-pkce
 ---
 
 # Authorization Code + PKCE
@@ -28,31 +29,7 @@ Public and native clients that omit `code_challenge` are rejected at `/authorize
 
 ## The full sequence
 
-<style scoped>
-text{stroke:none}
-.actor{font-family:var(--vp-font-family-base);font-size:11px;font-weight:600;fill:var(--vp-c-text-1)}
-.actor-op{fill:var(--vp-c-brand-2)}
-.actor-rs{fill:var(--vp-c-text-3)}
-.asub{font-family:var(--vp-font-family-base);font-size:9px;fill:var(--vp-c-text-3)}
-.lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-1)}
-.sub{font-family:var(--vp-font-family-base);font-size:9.5px;fill:var(--vp-c-text-2)}
-.mono{font-family:var(--vp-font-family-mono);font-size:10px;fill:var(--vp-c-text-2)}
-.num{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3)}
-.note{font-family:var(--vp-font-family-base);font-size:10px;fill:var(--vp-c-text-1)}
-.notemono{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2)}
-.box{fill:var(--vp-c-bg);stroke:currentColor}
-.box-op{stroke:var(--vp-c-brand-2)}
-.box-rs{stroke:var(--vp-c-text-3)}
-.lane{fill:none;stroke:var(--vp-c-divider);stroke-width:1.3;stroke-dasharray:2 5}
-.lane-op{stroke:var(--vp-c-brand-2)}
-.lane-rs{stroke:var(--vp-c-text-3)}
-.msg{fill:none;stroke:currentColor}
-.self{fill:none;stroke:currentColor}
-.op-accent{stroke:var(--vp-c-brand-2)}
-.notebox{fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider);stroke-width:1.3}
-</style>
-
-<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" style="width:100%;height:auto;max-width:684px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="acpkce-seq-title">Authorization Code + PKCE sequence: the browser, Relying Party, OpenID Provider, and Resource Server exchanges from login through PKCE-verified token issuance to a Bearer-token API call.</title>
   <defs>
     <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
@@ -87,8 +64,8 @@ text{stroke:none}
   <!-- 2 -->
   <text class="num" x="12" y="148" text-anchor="middle">2</text>
   <path class="msg" d="M250 145 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="160" y="130" text-anchor="middle">302 → OP</text>
-  <text class="mono" x="160" y="141" text-anchor="middle">/authorize · S256 · state · nonce</text>
+  <text class="lbl" x="160" y="127" text-anchor="middle">302 → OP</text>
+  <text class="mono" x="160" y="138" text-anchor="middle">/authorize · S256 · state · nonce</text>
   <!-- 3 -->
   <text class="num" x="12" y="177" text-anchor="middle">3</text>
   <path class="msg" d="M70 174 H430" marker-end="url(#acp-ah)"/>
@@ -122,8 +99,8 @@ text{stroke:none}
   <!-- 10 -->
   <text class="num" x="12" y="380" text-anchor="middle">10</text>
   <path class="msg" d="M430 377 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="158" y="362" text-anchor="middle">302 → redirect_uri</text>
-  <text class="mono" x="158" y="373" text-anchor="middle">code &amp; state</text>
+  <text class="lbl" x="158" y="359" text-anchor="middle">302 → redirect_uri</text>
+  <text class="mono" x="158" y="370" text-anchor="middle">code &amp; state</text>
   <!-- 11 -->
   <text class="num" x="12" y="409" text-anchor="middle">11</text>
   <path class="msg" d="M70 406 H250" marker-end="url(#acp-ah)"/>
@@ -135,8 +112,8 @@ text{stroke:none}
   <!-- 13 -->
   <text class="num" x="12" y="467" text-anchor="middle">13</text>
   <path class="msg" d="M250 464 H430" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="340" y="451" text-anchor="middle">POST /token</text>
-  <text class="mono" x="340" y="461" text-anchor="middle">code · code_verifier · client auth</text>
+  <text class="mono" x="340" y="448" text-anchor="middle">POST /token</text>
+  <text class="mono" x="340" y="458" text-anchor="middle">code · code_verifier · client auth</text>
   <!-- 14 -->
   <text class="num" x="12" y="496" text-anchor="middle">14</text>
   <path class="self op-accent" d="M430 486 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
@@ -145,8 +122,8 @@ text{stroke:none}
   <!-- 15 -->
   <text class="num" x="12" y="525" text-anchor="middle">15</text>
   <path class="msg" d="M430 522 H250" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="340" y="510" text-anchor="middle">200 OK</text>
-  <text class="mono" x="340" y="520" text-anchor="middle">access_token · id_token · refresh_token</text>
+  <text class="lbl" x="340" y="507" text-anchor="middle">200 OK</text>
+  <text class="mono" x="340" y="517" text-anchor="middle">access_token · id_token · refresh_token</text>
   <!-- 16 -->
   <text class="num" x="12" y="554" text-anchor="middle">16</text>
   <path class="self" d="M250 544 h32 v14 h-32" marker-end="url(#acp-ah)"/>
@@ -163,13 +140,13 @@ text{stroke:none}
   <!-- 19 -->
   <text class="num" x="12" y="641" text-anchor="middle">19</text>
   <path class="msg" d="M250 638 H610" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="520" y="626" text-anchor="middle">GET /api/me</text>
-  <text class="mono" x="520" y="636" text-anchor="middle">Authorization: Bearer …</text>
+  <text class="mono" x="520" y="623" text-anchor="middle">GET /api/me</text>
+  <text class="mono" x="520" y="633" text-anchor="middle">Authorization: Bearer …</text>
   <!-- 20 -->
   <text class="num" x="12" y="670" text-anchor="middle">20</text>
   <path class="msg" d="M610 667 H430" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="520" y="655" text-anchor="middle">(optional)</text>
-  <text class="mono" x="520" y="665" text-anchor="middle">introspect · verify JWT</text>
+  <text class="lbl" x="520" y="652" text-anchor="middle">(optional)</text>
+  <text class="mono" x="520" y="662" text-anchor="middle">introspect · verify JWT</text>
   <!-- 21 -->
   <text class="num" x="12" y="699" text-anchor="middle">21</text>
   <path class="msg" d="M610 696 H250" marker-end="url(#acp-ah)"/>
@@ -199,7 +176,7 @@ Both are random opaque values, both defend against replay-style attacks, but the
 - **`state`** travels on the **front channel** (browser query string). The RP stashes it in the user's session before redirecting and re-checks it on the callback. It defends the *redirect* against CSRF — an attacker can't forge a callback to your `/callback` and have your app accept it.
 - **`nonce`** travels in the **ID Token claim**. The RP stashes it in the user's session before redirecting and re-checks it after token exchange. It defends the *ID Token* against replay — an attacker can't reuse a stolen ID Token at a different RP, or at the same RP for a different login attempt.
 
-Use both. The OP rejects requests missing `state` for confidential clients in this library, and OIDC requires `nonce` whenever `response_type=code id_token` or `id_token` is involved.
+Use both when your RP validates an ID Token. OIDC makes `nonce` mandatory for response types that include an ID Token; this library accepts `response_type=code` only, so hybrid and implicit response types are rejected before the authorization flow starts.
 :::
 
 ::: details `code_verifier` / `code_challenge` / `S256` — what's that?
@@ -215,7 +192,7 @@ The `redirect_uri` on `/authorize` is checked **byte-for-byte** against the clie
 :::
 
 ::: details `response_type=code` — what's that?
-**`response_type=code`** asks for the **authorization code flow** — the OP returns a short-lived `code` on the redirect, and the RP swaps it at `/token` for the actual tokens. The alternatives (`token`, `id_token token`, `code id_token`, etc.) are legacy hybrid / implicit flows that OAuth 2.0 BCP (RFC 9700) discourages. This library implements `code` as the canonical path and treats hybrid forms as opt-in surface for compatibility, not new builds.
+**`response_type=code`** asks for the **authorization code flow** — the OP returns a short-lived `code` on the redirect, and the RP swaps it at `/token` for the actual tokens. The alternatives (`token`, `id_token token`, `code id_token`, etc.) are legacy hybrid / implicit flows that OAuth 2.0 BCP (RFC 9700) discourages. This library supports `code` only and rejects every other response type.
 :::
 
 ::: details PAR — what's that, and when do I need it?

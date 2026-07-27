@@ -1,6 +1,7 @@
 ---
 title: mTLS (RFC 8705)
 description: Mutual-TLS Client Authentication と Certificate-Bound Access Tokens — 正規クライアントが TLS で提示した証明書にアクセストークンを結び付ける方式。
+pageClass: pg-concepts-mtls
 ---
 
 # mTLS — 証明書結び付けアクセストークン
@@ -56,45 +57,45 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
 
 ## リバースプロキシ構成
 
-<svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" width="760" style="max-width:100%;height:auto;margin:1.5rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="mtls-proxy-trust-title">リバースプロキシの信頼境界: TLS 終端プロキシがクライアント証明書をヘッダに載せ、OP は信頼済み CIDR 内のリクエストからのみそれを参照し、前送りされた証明書を正本として扱い、実際の TLS ハンドシェイク証明書との不一致は invalid_request で拒否します。</title>
-  <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="10">PUBLIC</text>
-  <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="10">EDGE</text>
-  <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="10">OP TRUST ZONE</text>
+  <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="9.5">PUBLIC</text>
+  <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="9.5">EDGE</text>
+  <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="9.5">OP TRUST ZONE</text>
   <line x1="80" y1="120" x2="740" y2="120" class="d-faint"/>
   <rect x="260" y="28" width="300" height="64" rx="10"/>
-  <text x="410" y="53" text-anchor="middle" class="d-label" font-size="16" font-weight="600">クライアント</text>
-  <text x="410" y="77" text-anchor="middle" class="d-sub" font-size="12">X.509 クライアント証明書</text>
+  <text x="410" y="53" text-anchor="middle" class="d-label" font-size="15.5" font-weight="600">クライアント</text>
+  <text x="410" y="77" text-anchor="middle" class="d-sub" font-size="11.5">X.509 クライアント証明書</text>
   <path d="M410 92 L410 138"/>
   <path d="M405 131 L410 138 L415 131"/>
-  <text x="428" y="110" class="d-sub" font-size="11">TLS ハンドシェイク</text>
-  <text x="428" y="125" class="d-sub" font-size="10.5">クライアント証明書を提示</text>
+  <text x="428" y="110" class="d-sub" font-size="10.5">TLS ハンドシェイク</text>
+  <text x="428" y="125" class="d-sub" font-size="10">クライアント証明書を提示</text>
   <rect x="210" y="138" width="400" height="92" rx="10"/>
-  <text x="410" y="164" text-anchor="middle" class="d-label" font-size="15" font-weight="600">TLS 終端プロキシ</text>
-  <text x="410" y="188" text-anchor="middle" class="d-sub" font-size="11">クライアント証明書をヘッダに載せる</text>
-  <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11.5">X-SSL-Cert: &lt;PEM&gt;</text>
+  <text x="410" y="164" text-anchor="middle" class="d-label" font-size="14.5" font-weight="600">TLS 終端プロキシ</text>
+  <text x="410" y="188" text-anchor="middle" class="d-sub" font-size="10.5">クライアント証明書をヘッダに載せる</text>
+  <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11">X-SSL-Cert: &lt;PEM&gt;</text>
   <line x1="80" y1="262" x2="740" y2="262" stroke-width="1.5" stroke-dasharray="6 6"/>
-  <text x="88" y="256" class="d-sub" font-size="11">信頼境界</text>
+  <text x="88" y="256" class="d-sub" font-size="10.5">信頼境界</text>
   <path d="M410 230 L410 298"/>
   <path d="M405 291 L410 298 L415 291"/>
   <rect x="260" y="298" width="300" height="64" rx="10"/>
-  <text x="410" y="323" text-anchor="middle" class="d-label" font-size="13" font-weight="600">trusted-CIDR ゲート</text>
-  <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11.5">RemoteAddr ∈ trustedCIDRs?</text>
+  <text x="410" y="323" text-anchor="middle" class="d-label" font-size="12.5" font-weight="600">trusted-CIDR ゲート</text>
+  <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11">RemoteAddr ∈ trustedCIDRs?</text>
   <path d="M560 330 L634 330"/>
   <path d="M627 325 L634 330 L627 335"/>
-  <text x="598" y="322" text-anchor="middle" class="d-sub" font-size="10.5">範囲外</text>
+  <text x="598" y="322" text-anchor="middle" class="d-sub" font-size="10">範囲外</text>
   <rect x="636" y="304" width="112" height="52" rx="8"/>
-  <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10.5">ヘッダを無視</text>
-  <text x="692" y="344" text-anchor="middle" class="d-sub" font-size="10.5">fail closed</text>
+  <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10">ヘッダを無視</text>
+  <text x="692" y="344" text-anchor="middle" class="d-sub" font-size="10">fail closed</text>
   <path d="M410 362 L410 408"/>
   <path d="M405 401 L410 408 L415 401"/>
-  <text x="396" y="380" text-anchor="end" class="d-sub" font-size="10.5">範囲内</text>
-  <text x="396" y="395" text-anchor="end" class="d-sub" font-size="10.5">ヘッダが正本</text>
+  <text x="396" y="380" text-anchor="end" class="d-sub" font-size="10">範囲内</text>
+  <text x="396" y="395" text-anchor="end" class="d-sub" font-size="10">ヘッダが正本</text>
   <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
-  <text x="410" y="436" text-anchor="middle" class="d-op" font-size="15" font-weight="600">OP — 本ライブラリ</text>
-  <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="11">直接 TLS 終端時はハンドシェイク証明書</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="11">ヘッダとハンドシェイクの不一致 →</text>
-  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11.5">invalid_request</text>
+  <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — 本ライブラリ</text>
+  <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="10.5">直接 TLS 終端時はハンドシェイク証明書</text>
+  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">ヘッダとハンドシェイクの不一致 →</text>
+  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">invalid_request</text>
 </svg>
 
 本番では OP が自前で TLS を終端することはほぼありません。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが HTTP ヘッダ（`X-SSL-Cert`、`X-Forwarded-Client-Cert` など）で前送りする必要があります。

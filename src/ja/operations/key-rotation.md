@@ -2,6 +2,7 @@
 title: 鍵ローテーション
 description: 署名鍵と cookie 鍵を、有効なセッションを切らずにローテーションする方法。
 outline: 2
+pageClass: pg-operations-key-rotation
 ---
 
 # 鍵ローテーション
@@ -13,7 +14,7 @@ outline: 2
 
 どちらも、新しい `*Provider` を構築してハンドラをアトミックに差し替える形でローテーションします。スライスをその場で書き換える API はありません。
 
-<svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="key-rotation-title">鍵ローテーションの基本手順: 新鍵を先頭にした設定で新しい Provider を構築し、ハンドラを差し替え、キャッシュ期間後に旧鍵を外す。</title>
 <rect class="rot-box" x="26" y="100" width="128" height="72" rx="8"/>
   <text class="rot-text" x="90" y="130" text-anchor="middle">新鍵を生成</text>

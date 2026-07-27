@@ -1,6 +1,7 @@
 ---
 title: ID Token, access token, userinfo
 description: Three artefacts that look similar but answer different questions — and why "JWT vs opaque" actually matters.
+pageClass: pg-concepts-tokens
 ---
 
 # ID Token, access token, and userinfo
@@ -44,26 +45,13 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 | **Access token** | JWT by default (RFC 9068); opaque when configured — see below | The RS identifier | RP → RS via `Authorization: Bearer` | Minutes | The RS, to authorize an API call. |
 | **UserInfo response** | JSON | n/a (RP's `client_id` implied) | RP → OP `/userinfo` (with access token) → RP | Per-request | The RP, to get fresh claims. |
 
-<style scoped>
-.d-h{font-family:var(--vp-font-family-base);font-size:15px;font-weight:600;stroke:none}
-.d-txt{font-family:var(--vp-font-family-base);font-size:12px;stroke:none;fill:var(--vp-c-text-1)}
-.d-sub{font-family:var(--vp-font-family-base);font-size:11px;stroke:none;fill:var(--vp-c-text-2)}
-.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-text-2)}
-.d-mono-op{font-family:var(--vp-font-family-mono);font-size:11.5px;stroke:none;fill:var(--vp-c-brand-2)}
-.d-op{stroke:var(--vp-c-brand-2)}
-.d-op-t{fill:var(--vp-c-brand-2)}
-.d-fill1{fill:var(--vp-c-text-1)}
-.d-rs{stroke:var(--vp-c-text-3)}
-.d-rs-t{fill:var(--vp-c-text-3)}
-</style>
-
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tokens-flow-title">The OP issues an ID Token and an access token to the RP; the RP presents the access token to the resource server and to the OP's /userinfo endpoint, which returns claims JSON.</title>
   <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
   <rect x="272" y="52" width="132" height="156" rx="10"/>
   <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>
-  <text class="d-h d-op-t" x="90" y="126" text-anchor="middle">OP</text>
-  <text class="d-sub" x="90" y="145" text-anchor="middle">this library</text>
+  <text class="d-h d-op-text" x="90" y="126" text-anchor="middle">OP</text>
+  <text class="d-sub d-op-sub" x="90" y="145" text-anchor="middle">this library</text>
   <text class="d-h d-fill1" x="338" y="126" text-anchor="middle">RP</text>
   <text class="d-sub" x="338" y="145" text-anchor="middle">client app</text>
   <text class="d-h d-rs-t" x="626" y="126" text-anchor="middle">RS</text>

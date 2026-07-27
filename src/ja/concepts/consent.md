@@ -1,6 +1,7 @@
 ---
 title: 同意
 description: 同意画面が表示されるタイミング、スキップされる条件、ファーストパーティクライアントが何を変えるか、監査トレイルが何を記録するか。
+pageClass: pg-concepts-consent
 ---
 
 # 同意
@@ -25,7 +26,7 @@ description: 同意画面が表示されるタイミング、スキップされ�
 
 本ライブラリは authorize フローのたびに次の 4 つを評価します。
 
-<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" width="700" style="width:100%;height:auto;max-width:700px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="consent-shown-decision-title">grant の状態に対する判定木: prompt=consent、grant が無い、要求 scope が既存 grant の範囲外、のいずれかで同意画面を表示し、それ以外は既存 grant が要求をカバーするためプロンプトなしで認可コードを発行する。</title>
   <rect x="24" y="28" width="270" height="48" rx="8"/>
   <rect x="24" y="120" width="270" height="48" rx="8"/>

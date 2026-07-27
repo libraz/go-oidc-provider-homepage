@@ -1,6 +1,7 @@
 ---
 title: Pairwise subject（OIDC Core §8.1）
 description: sector ごとの仮名 sub claim — プライバシ保護のマルチテナント SaaS、プロセス間で決定的に再計算でき、途中切替は禁止。
+pageClass: pg-use-cases-pairwise-subject
 ---
 
 # 使い方 — Pairwise subject（OIDC Core §8.1）
@@ -89,7 +90,7 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 
 複数 redirect-URI ホストを持ち `sector_identifier_uri` を持たないクライアントは sector を解決できず、issuance が `server_error` で失敗します。複数ホストへ 一斉通知 するクライアントには `sector_identifier_uri` を必須にしてください。
 
-<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:700px;height:auto">
+<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="pairwise-sub-fanout-title">1 つの internal_user_id が 2 つの RP sector それぞれに異なる pairwise sub を導出する図。sector は各クライアントの sector_identifier_uri から解決されます。</title>
 <text class="d-cap" x="8" y="18">pairwise sub の 一斉通知</text>
 <text class="d-sub" x="8" y="34">1 つの internal_user_id → sector ごとに異なる sub</text>

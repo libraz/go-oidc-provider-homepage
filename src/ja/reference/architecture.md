@@ -2,6 +2,7 @@
 title: アーキテクチャ概観
 description: リクエストが OP の中をどう流れるか — パッケージ構成、ハンドラの公開、ストレージの差し込み口。
 outline: 2
+pageClass: pg-reference-architecture
 ---
 
 # アーキテクチャ概観
@@ -38,7 +39,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="hg-ja-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;height:auto">
+<svg role="img" aria-labelledby="hg-ja-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg">
 <title id="hg-ja-title">op.New が返す http.Handler は、ServeMux が各リクエストパスを対応する内部エンドポイントハンドラへ振り分けます。</title>
 <defs><marker id="hg-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
 <rect class="hg-op" x="24" y="217" width="180" height="60" rx="8"/>
@@ -115,7 +116,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:850px;height:auto">
+<svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg">
 <title id="seq-ja-title">authorize から token までの正常系: ブラウザが /authorize と interaction を進め、RP が /token で code を引き換えます。</title>
 <defs>
 <marker id="seq-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
@@ -209,7 +210,7 @@ internal/authn/CompiledLoginFlow
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="lfp-ja-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:740px;height:auto">
+<svg role="img" aria-labelledby="lfp-ja-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg">
 <title id="lfp-ja-title">WithLoginFlow は Primary / Rules / Decider / Risk の指定を CompiledLoginFlow にコンパイルし、オーケストレータがリクエストごとのループで実行します。</title>
 <defs>
 <marker id="lfp-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
@@ -266,7 +267,7 @@ internal/authn/CompiledLoginFlow
 
 ## ストレージの差し込み口
 
-ライブラリは、組み込み側の `users` テーブルを直接読み書きしません。`op.Store` interface(小さなサブストアの和集合)越しに会話します:
+ライブラリは、組み込み側の `users` テーブルを直接読み書きしません。`store.Store` interface(小さなサブストアの和集合)越しに会話します:
 
 | サブストア | 何が入るか | 置き場所の目安 |
 |---|---|---|
@@ -289,7 +290,7 @@ internal/authn/CompiledLoginFlow
 
 「揮発に置いてもよい」サブストアは [`composite`](/ja/use-cases/hot-cold-redis) アダプタ越しに Redis 層へ置けます。composite は構築時に「永続バックエンドは 1 つ」を強制するので、トランザクション対象のサブストアが 2 つのストアに分裂することはありません。
 
-MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`RecoveryStore`)は `op.Store` のサブストアではありません。`LoginFlow` を組み立てる際に、対応する authenticator の `Step`(`StepEmailOTP.Store`、`StepTOTP.Store`、`StepPasskey.Store`、`StepRecovery.Store`)へ直接渡します。これらの factor store 実装を同梱しているのは in-memory 参考実装だけです。本番では、[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) の SQL-backed `store.TOTPStore` のような耐久 store を組み込み側で用意します。
+MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`RecoveryStore`、`AuthnLockoutStore`)は `store.Store` のサブストアではありません。`LoginFlow` を組み立てる際に、対応する login-flow 値(`StepEmailOTP.Store`、`StepTOTP.Store`、`PrimaryPasskey.Store`、`StepRecoveryCode.Store`、`WithAuthnLockoutStore`)へ直接渡します。in-memory、SQL、DynamoDB adapter は同じ名前の accessor でこれらを公開します。[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) は、同梱 SQL factor store と OP のコアテーブルを 1 つの DB で使う例です。自前バックエンドでは同じ契約を実装します。
 
 詳細は [hot/cold ストレージ](/ja/use-cases/hot-cold-redis) を参照してください。
 

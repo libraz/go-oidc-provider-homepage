@@ -1,6 +1,7 @@
 ---
 title: Minimal OP
 description: Smallest runnable OP+RP pair — required OP options, a single password user, and one statically-registered client.
+pageClass: pg-use-cases-minimal-op
 ---
 
 # Use case — Minimal OP
@@ -11,17 +12,7 @@ You want a working Authorization Code + PKCE round-trip end-to-end with the abso
 
 ## Architecture
 
-<style scoped>
-text{stroke:none}
-.d-label{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);}
-.d-sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);}
-.d-mono{font-family:var(--vp-font-family-mono);font-size:11.5px;fill:var(--vp-c-text-1);}
-.d-mono-2{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2);}
-.d-mono-sm{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-2);}
-.op-accent{stroke:var(--vp-c-brand-2);}
-</style>
-
-<svg role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block;">
+<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="minimal-op-arch-title">A single Go process: a browser drives the rpkit RP, which speaks OIDC to op.New; the OP reads and writes the in-memory store and signs with an ephemeral keyset.</title>
   <rect x="150" y="28" width="560" height="246" rx="10" stroke-opacity="0.4"/>
   <text class="d-sub" x="166" y="49">Single process</text>

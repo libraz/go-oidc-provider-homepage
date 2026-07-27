@@ -1,13 +1,14 @@
 ---
 title: 最小構成 OP
 description: 約 30 行で動く OpenID Connect Provider。
+pageClass: pg-getting-started-minimal
 ---
 
 # 最小構成 OP
 
 OP を起動する最短経路です。`WithIssuer`、`WithStore`、`WithKeyset` のいずれかを欠くと `op.New` は error を返します。`WithCookieKeys` も、`authorization_code` grant を有効にしている場合は必須です。既定の grant 集合（`authorization_code` と `refresh_token`）はこれを含むため、この最小構成では実質的に 4 つとも必須になります。
 
-<svg role="img" aria-labelledby="minimal-options-title" viewBox="0 0 760 270" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="minimal-options-title" viewBox="0 0 760 270" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="minimal-options-title">最小構成 OP に必要な 4 要素: issuer、store、keyset、cookie keys を op.New に渡すと HTTP handler が返る。</title>
 <rect class="min-box" x="34" y="34" width="150" height="58" rx="8"/>
   <text class="min-text" x="109" y="68" text-anchor="middle">Issuer</text>

@@ -1,11 +1,40 @@
 ---
 title: Minimal OP
 description: A runnable OpenID Connect Provider in ~30 lines.
+pageClass: pg-getting-started-minimal
 ---
 
 # Minimal OP
 
 The shortest path to a running OP. `op.New` returns an error if `WithIssuer`, `WithStore`, or `WithKeyset` is missing. `WithCookieKeys` is required too whenever the `authorization_code` grant is enabled, which it is by default (along with `refresh_token`) — so for this minimal, default-grants config all four are effectively mandatory.
+
+<svg role="img" aria-labelledby="minimal-options-title" viewBox="0 0 760 270" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="minimal-options-title">The four pieces a minimal OP needs: issuer, store, keyset, and cookie keys go into op.New, which returns an HTTP handler.</title>
+<rect class="min-box" x="34" y="34" width="150" height="58" rx="8"/>
+  <text class="min-text" x="109" y="68" text-anchor="middle">Issuer</text>
+  <rect class="min-box" x="34" y="112" width="150" height="58" rx="8"/>
+  <text class="min-text" x="109" y="146" text-anchor="middle">Store</text>
+  <rect class="min-box" x="34" y="190" width="150" height="58" rx="8"/>
+  <text class="min-text" x="109" y="224" text-anchor="middle">Keyset</text>
+
+  <rect class="min-box" x="286" y="34" width="170" height="58" rx="8"/>
+  <text class="min-text" x="371" y="68" text-anchor="middle">Cookie keys</text>
+  <rect class="min-main" x="286" y="122" width="170" height="76" rx="8"/>
+  <text class="min-text" x="371" y="154" text-anchor="middle">op.New(...)</text>
+  <text class="min-sub" x="371" y="176" text-anchor="middle">validates the config</text>
+
+  <rect class="min-box" x="574" y="122" width="152" height="76" rx="8"/>
+  <text class="min-text" x="650" y="154" text-anchor="middle">HTTP handler</text>
+  <text class="min-sub" x="650" y="176" text-anchor="middle">ListenAndServe</text>
+
+  <path class="min-flow" d="M184 63 C230 64 252 118 282 148"/>
+  <path class="min-flow" d="M184 141 H282"/>
+  <path class="min-flow" d="M184 219 C230 214 252 184 282 172"/>
+  <path class="min-flow" d="M371 92 V118"/>
+  <path class="min-flow" d="M367 110 L371 119 L375 110"/>
+  <path class="min-flow" d="M456 160 H570"/>
+  <path class="min-flow" d="M562 156 L571 160 L562 164"/>
+</svg>
 
 ::: code-group
 

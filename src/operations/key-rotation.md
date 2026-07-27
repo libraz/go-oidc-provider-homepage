@@ -2,6 +2,7 @@
 title: Key rotation
 description: Rotating signing keys and cookie keys without dropping live sessions.
 outline: 2
+pageClass: pg-operations-key-rotation
 ---
 
 # Key rotation
@@ -12,6 +13,40 @@ Two distinct keys rotate on different cadences:
 - **Cookie keys** (`op.WithCookieKeys`) — the 32-byte AES-256-GCM keys used to seal session and CSRF cookies.
 
 Both are rotated by constructing a new `*Provider` and atomically swapping the handler. The library never mutates the slice in place.
+
+<svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="key-rotation-title">The shape of a key rotation: build a new Provider with the new key first in the list, swap the handler, then drop the old key once the cache window has passed.</title>
+<rect class="rot-box" x="26" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="90" y="130" text-anchor="middle">Generate key</text>
+  <text class="rot-sub" x="90" y="152" text-anchor="middle">new kid</text>
+
+  <rect class="rot-box" x="184" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="248" y="130" text-anchor="middle">Put it first</text>
+  <text class="rot-sub" x="248" y="152" text-anchor="middle">new, old</text>
+
+  <rect class="rot-main" x="342" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="406" y="130" text-anchor="middle">op.New</text>
+  <text class="rot-sub" x="406" y="152" text-anchor="middle">revalidates</text>
+
+  <rect class="rot-box" x="500" y="100" width="128" height="72" rx="8"/>
+  <text class="rot-text" x="564" y="130" text-anchor="middle">Swap</text>
+  <text class="rot-sub" x="564" y="152" text-anchor="middle">atomic handler</text>
+
+  <rect class="rot-box" x="658" y="100" width="78" height="72" rx="8"/>
+  <text class="rot-text" x="697" y="130" text-anchor="middle">Old key</text>
+  <text class="rot-sub" x="697" y="152" text-anchor="middle">retired</text>
+
+  <path class="rot-flow" d="M154 136 H180"/>
+  <path class="rot-flow" d="M172 132 L181 136 L172 140"/>
+  <path class="rot-flow" d="M312 136 H338"/>
+  <path class="rot-flow" d="M330 132 L339 136 L330 140"/>
+  <path class="rot-flow" d="M470 136 H496"/>
+  <path class="rot-flow" d="M488 132 L497 136 L488 140"/>
+  <path class="rot-flow" d="M628 136 H654"/>
+  <path class="rot-flow" d="M646 132 L655 136 L646 140"/>
+  <text class="rot-sub" x="620" y="212" text-anchor="middle">wait out the TTL and the JWKS cache window</text>
+  <path class="rot-flow" d="M564 172 C590 214 664 214 697 174"/>
+</svg>
 
 ## Signing key rotation
 

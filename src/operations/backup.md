@@ -2,11 +2,53 @@
 title: Backup & disaster recovery
 description: What to back up, what to skip, and the RPO targets per substore.
 outline: 2
+pageClass: pg-operations-backup
 ---
 
 # Backup & disaster recovery
 
-The OP itself is stateless. Recovery posture is entirely a property of your `op.Store` — what's persistent, what's volatile, and what your recovery point objective (RPO) is per substore.
+The OP itself is stateless. Recovery posture is entirely a property of your `store.Store` — what's persistent, what's volatile, and what your recovery point objective (RPO) is per substore.
+
+<svg role="img" aria-labelledby="backup-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="backup-split-title">Backup policy: the OP process is stateless, durable substores are restored, short-lived state is discarded and recreated, and the replay-defence set is never restored.</title>
+<rect class="bkp-main" x="38" y="112" width="152" height="74" rx="8"/>
+  <text class="bkp-text" x="114" y="142" text-anchor="middle">OP process</text>
+  <text class="bkp-sub" x="114" y="164" text-anchor="middle">stateless</text>
+
+  <rect class="bkp-box" x="300" y="34" width="178" height="62" rx="8"/>
+  <text class="bkp-text" x="389" y="64" text-anchor="middle">Durable substores</text>
+  <text class="bkp-sub" x="389" y="82" text-anchor="middle">Clients / Grants / MFA</text>
+
+  <rect class="bkp-box" x="300" y="119" width="178" height="62" rx="8"/>
+  <text class="bkp-text" x="389" y="149" text-anchor="middle">Short-lived state</text>
+  <text class="bkp-sub" x="389" y="167" text-anchor="middle">PAR / code / interaction</text>
+
+  <rect class="bkp-box" x="300" y="204" width="178" height="62" rx="8"/>
+  <text class="bkp-text" x="389" y="234" text-anchor="middle">Never restore</text>
+  <text class="bkp-sub" x="389" y="252" text-anchor="middle">ConsumedJTIs</text>
+
+  <rect class="bkp-box" x="578" y="34" width="144" height="62" rx="8"/>
+  <text class="bkp-text" x="650" y="64" text-anchor="middle">Back up</text>
+  <text class="bkp-sub" x="650" y="82" text-anchor="middle">set an RPO</text>
+
+  <rect class="bkp-box" x="578" y="119" width="144" height="62" rx="8"/>
+  <text class="bkp-text" x="650" y="149" text-anchor="middle">Retry</text>
+  <text class="bkp-sub" x="650" y="167" text-anchor="middle">recovers on its own</text>
+
+  <rect class="bkp-box" x="578" y="204" width="144" height="62" rx="8"/>
+  <text class="bkp-text" x="650" y="234" text-anchor="middle">Discard</text>
+  <text class="bkp-sub" x="650" y="252" text-anchor="middle">never roll back</text>
+
+  <path class="bkp-flow" d="M190 150 C238 132 260 66 296 66"/>
+  <path class="bkp-flow" d="M190 150 H296"/>
+  <path class="bkp-flow" d="M190 150 C238 168 260 234 296 234"/>
+  <path class="bkp-flow" d="M478 65 H574"/>
+  <path class="bkp-flow" d="M566 61 L575 65 L566 69"/>
+  <path class="bkp-flow" d="M478 150 H574"/>
+  <path class="bkp-flow" d="M566 146 L575 150 L566 154"/>
+  <path class="bkp-flow" d="M478 235 H574"/>
+  <path class="bkp-flow" d="M566 231 L575 235 L566 239"/>
+</svg>
 
 ## Backup priority
 
@@ -65,7 +107,7 @@ For these, RDB snapshots and AOF persistence are the standard Redis options. Pic
 
 ### Embedder-implemented store
 
-If you wrote your own `op.Store`, the contract test suite at [`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) verifies your implementation against the same expectations the bundled adapters meet. The contract does not prescribe a backup shape — that's up to you.
+If you wrote your own `store.Store`, the contract test suite at [`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) verifies your implementation against the same expectations the bundled adapters meet. The contract does not prescribe a backup shape — that's up to you.
 
 ## Recovery procedure
 

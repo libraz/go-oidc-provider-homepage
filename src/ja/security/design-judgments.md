@@ -1,13 +1,14 @@
 ---
 title: 設計判断
 description: RFC 同士が衝突する箇所で、本ライブラリがどの解釈を選び、何を退けたか。
+pageClass: pg-security-design-judgments
 ---
 
 # 設計判断
 
 OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなしています。複数の仕様で文言が矛盾する場面、あるいはある仕様の文字通りの読みが別の仕様と衝突する場面は珍しくなく、その都度どちらをどう取るかの解釈が必要になります。本ページではその選択を一覧化します。
 
-<svg role="img" aria-labelledby="design-judgment-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="design-judgment-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="design-judgment-title">設計判断の読み方: 複数仕様の衝突を確認し、本ライブラリの選択を決め、op.New や internal 実装で強制する。</title>
 <rect class="djf-box" x="36" y="78" width="154" height="76" rx="8"/>
   <text class="djf-text" x="113" y="108" text-anchor="middle">仕様文</text>
@@ -53,7 +54,7 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 <div class="dj-map">
   <section class="dj-group">
     <h3>プロファイルと discovery</h3>
-    <a href="#dj-7"><strong>#7</strong><span>プロファイル規則は config helper で解き、ハンドラは bool だけを見る。</span></a>
+    <a href="#dj-7"><strong>#7</strong><span>profile は feature を自動有効化し、配線のない grant は拒否する。</span></a>
     <a href="#dj-8"><strong>#8</strong><span>通信路上の ACR と内部 AAL 階層を分離する。</span></a>
     <a href="#dj-12"><strong>#12</strong><span>Discovery は構築時入力から 1 回生成し、golden test で固定する。</span></a>
     <a href="#dj-13"><strong>#13</strong><span><code>client_assertion</code> は OIDC の token endpoint audience と FAPI の issuer audience の両方を受ける。</span></a>
@@ -93,7 +94,7 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
     <h3>JOSE と request object</h3>
     <a href="#dj-1"><strong>#1</strong><span>PAR <code>request_uri</code> は入口で参照し、認可コード発行時に消費する。</span></a>
     <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> replay 防御は OP 側 <code>jti</code> cache で既定 ON。</span></a>
-    <a href="#dj-11"><strong>#11</strong><span><code>alg=none</code> と <code>HS*</code> は受理する algorithm 型に存在しない。</span></a>
+    <a href="#dj-11"><strong>#11</strong><span><code>none</code> と <code>HS*</code> を除外し、OP 発行の成果物は ES256 のみ。</span></a>
     <a href="#dj-14"><strong>#14</strong><span>PKCE は全プロファイルで <code>S256</code> のみ。</span></a>
     <a href="#dj-27"><strong>#27</strong><span>JWE alg は 許可リスト、JOSE nesting は上限付き。</span></a>
   </section>
@@ -181,14 +182,16 @@ OP 側で `jti` キャッシュを保持します。JAR ウィンドウごとに
 
 <a class="faq-anchor" id="dj-7"></a>
 
-## 7. プロファイル制約の解決 — switch ではなく disjunction
+## 7. プロファイルの宣言 — feature は自動化し、未配線の grant は拒否する
 
-**仕様**: 仕様文ではなく、内部アーキテクチャ上の話題です。`WithProfile(FAPI2Baseline)` と `WithProfile(FAPI2MessageSigning)` を同時に設定したとき、両プロファイルのルールの OR を、すべてのハンドラで一様に適用する必要があります。
+**仕様**: FAPI profile の要件には、PAR / JAR / JARM のように route へ追加できる feature と、デプロイ側が用意する collaborator を必要とするものがあります。OAuth 2.1 / RFC 9700 はすべての authorization-code request で PKCE を必須にしますが、互換性が必要な配備では OIDC Core の形も残さなければなりません。
 
-**衝突**: ハンドラごとに `switch profile` を書くと差分が出ます。新しいプロファイル(CIBA、iGov など)を追加したとき、既存ハンドラを全部見直さなければ、プロファイルが要求するルールがスキップされ、緩い側に倒れた状態(fail-open)になります。
+**衝突**: ハンドラごとに `switch profile` を書くと差分が出ます。すべての要件を自動有効化するのも誤りです。feature は安全に選べますが、store や resolver のない grant を mount すれば、endpoint だけが生えた中途半端な構成になります。
 
 ::: tip 選択
-**`*config` ヘルパー経由でプロファイル条件付きのセキュリティゲートを解決します**。各ゲート(たとえば `requireSenderConstrainedTokens`、`requirePAR`、`requireSignedRequestObject`)は、有効プロファイル集合をループして単一の `bool` を返し、ハンドラはその真偽値だけを参照します。`op/profile/constraints.go` のビルド時バリデータ (`RequiredFeatures`、`RequiredAnyOf`)が、ヘルパーが true と言う対象が実際に実装されていることを保証してくれるので、実行時パスは念のための nil チェックを省けます。
+**profile はポリシーを重ねますが、feature と grant の扱いを分けます**。`WithProfile` は必要な feature を自動有効化します。FAPI 2.0 Baseline は PAR / JAR を、Message Signing はさらに JARM を選び、FAPI profile は組み込み側が mTLS を明示しない限り DPoP を選びます。`profile.Baseline` は route に関わる feature を追加せず、confidential client を含むすべての authorization-code request で PKCE を必須にします。
+
+必要な grant は自動有効化しません。`profile.FAPICIBA` で CIBA grant がなければ `op.New` は失敗し、`WithCIBA(WithCIBAHintResolver(...))` を設定経路として示します。これにより collaborator のない `/bc-authorize` を mount せず、構築時に意味のあるエラーを返せます。解決後の profile、feature、grant、policy は `startup.profile` audit event として 1 回出力されるため、運用者は最初の request より前に実際の posture を確認できます。制約関数は `op/profile/constraints.go`、その適用は `WithProfile` と構築時 validation に集約しています。
 :::
 
 <a class="faq-anchor" id="dj-8"></a>
@@ -229,14 +232,16 @@ OP 側で `jti` キャッシュを保持します。JAR ウィンドウごとに
 
 <a class="faq-anchor" id="dj-11"></a>
 
-## 11. JOSE の `alg=none` と HMAC ファミリー
+## 11. JOSE の許可リストと ES256 専用の発行
 
 **仕様**: RFC 7518 は `none` と `HS256/384/512` を列挙しています。RFC 8725(JWT BCP)§3.1 は `none` ベースの JWT を信頼してはならないと規定し、§3.2 は HMAC 鍵を公開鍵と取り違える alg confusion について警告を出しています。
 
 **衝突**: 基盤の JOSE ライブラリは、レジストリ全体を既定で受理します。実行時チェックを足すのは壊れやすく、将来 JOSE ライブラリを直接 import する経路ができればすり抜けてしまいます。
 
 ::: tip 選択
-`internal/jose.Algorithm` を閉じた列挙型(`RS256`、`PS256`、`ES256`、`EdDSA`)とします。`none` と `HS*` は **そもそも型に存在しません**。`depguard`(lint)が `internal/jose/` 外からの JOSE パッケージの直接 import を禁止しているので、将来のコードがレジストリ全体に到達することはありません。alg 混同は構造的に閉じられています。
+`internal/jose.Algorithm` を閉じた列挙型(`RS256`、`PS256`、`ES256`、`EdDSA`)とします。`none` と `HS*` は **そもそも型に存在しません**。`depguard`(lint)が `internal/jose/` 外からの JOSE パッケージの直接 import を禁止しているので、将来のコードがレジストリ全体に到達することはありません。
+
+検証側の許可リストと発行側の方針は意図的に異なります。client assertion と request object は許可された非対称アルゴリズムを受け取れますが、OP が署名する成果物 — ID Token、JWT access token、署名付き UserInfo、JARM response — は P-256 鍵による ES256 だけを使います。これは v1.x で固定した方針です。OP 発行 token に RS256 / PS256 を求める RP は対象外です。発行を検証済みの 1 曲線に絞ることで、client assertion を標準どおり受けつつ、alg 交渉と downgrade path をなくします。
 :::
 
 <a class="faq-anchor" id="dj-12"></a>

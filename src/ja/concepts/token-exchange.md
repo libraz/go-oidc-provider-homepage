@@ -1,6 +1,7 @@
 ---
 title: Token Exchange（RFC 8693）
 description: あるトークンを別のトークンに交換する仕組み — 委譲となりすまし、`act` chain をやさしく解説。
+pageClass: pg-concepts-token-exchange
 ---
 
 # Token Exchange（RFC 8693）
@@ -29,7 +30,7 @@ description: あるトークンを別のトークンに交換する仕組み —
 
 ## なりすまし(Impersonation)と委譲(Delegation)を並べて見る
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tx-imp-del-title">service A が Alice の代理で service B を呼ぶ 3 通り — 単純な転送は拒否され、なりすましは actor を落とし、委譲は act chain を記録する。</title>
   <!-- actor headers -->
   <rect x="34" y="16" width="104" height="40" rx="6"/>

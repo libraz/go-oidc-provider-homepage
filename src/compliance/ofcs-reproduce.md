@@ -1,6 +1,7 @@
 ---
 title: Reproducing the OFCS run
 description: Step-by-step recipe for running the OpenID Foundation Conformance Suite against go-oidc-provider — which plan maps to which op-demo flag, where the wiring lives, how to capture and diff a baseline.
+pageClass: pg-compliance-ofcs-reproduce
 ---
 
 # Reproducing the OFCS run
@@ -12,6 +13,41 @@ If you are looking for the latest PASS/REVIEW/SKIPPED/WARNING counts, start at [
 ::: warning Personal project, not certified
 The numbers on this site are reproducible snapshots — this page tells you how to reproduce them. They are not a substitute for paid OpenID Foundation certification. Run the suite locally to verify your own embedder configuration; do not cite local PASS counts as certification.
 :::
+
+<svg role="img" aria-labelledby="ofcs-reproduce-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="ofcs-reproduce-title">Reproducing an OFCS run: generate certificates, start OFCS and op-demo, seed the plans, capture a baseline, and diff it.</title>
+<rect class="repro-box" x="24" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="86" y="122" text-anchor="middle">Generate certs</text>
+  <text class="repro-sub" x="86" y="144" text-anchor="middle">certs</text>
+
+  <rect class="repro-box" x="174" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="236" y="122" text-anchor="middle">Start OFCS</text>
+  <text class="repro-sub" x="236" y="144" text-anchor="middle">docker compose</text>
+
+  <rect class="repro-main" x="324" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="386" y="122" text-anchor="middle">Start op-demo</text>
+  <text class="repro-sub" x="386" y="144" text-anchor="middle">pick a profile</text>
+
+  <rect class="repro-box" x="474" y="92" width="124" height="72" rx="8"/>
+  <text class="repro-text" x="536" y="122" text-anchor="middle">Seed plans</text>
+  <text class="repro-sub" x="536" y="144" text-anchor="middle">seed-plans</text>
+
+  <rect class="repro-box" x="624" y="50" width="112" height="58" rx="8"/>
+  <text class="repro-text" x="680" y="84" text-anchor="middle">Run</text>
+  <rect class="repro-box" x="624" y="148" width="112" height="58" rx="8"/>
+  <text class="repro-text" x="680" y="182" text-anchor="middle">Diff</text>
+
+  <path class="repro-flow" d="M148 128 H170"/>
+  <path class="repro-flow" d="M162 124 L171 128 L162 132"/>
+  <path class="repro-flow" d="M298 128 H320"/>
+  <path class="repro-flow" d="M312 124 L321 128 L312 132"/>
+  <path class="repro-flow" d="M448 128 H470"/>
+  <path class="repro-flow" d="M462 124 L471 128 L462 132"/>
+  <path class="repro-flow" d="M598 118 C620 100 622 84 620 80"/>
+  <path class="repro-flow" d="M612 80 L621 78 L618 87"/>
+  <path class="repro-flow" d="M680 108 V144"/>
+  <path class="repro-flow" d="M676 136 L680 145 L684 136"/>
+</svg>
 
 ## Prerequisites
 
@@ -150,7 +186,7 @@ OFCS mainly reports four terminal result values, and the harness also preserves 
 - **REVIEW** — the module ran but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture (consent UI strings, error page screenshots). Not a failure. The headless harness records `REVIEW` as-is; paid certification would require sitting in front of the OFCS UI to clear it.
 - **SKIPPED** — the module depends on a feature this OP does not advertise in discovery or per-client metadata. For example, a per-client `RS256` negative test skips when the client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
 - **WARNING** — the module reached a non-failed advisory result. The current status page tracks these separately from FAILED.
-- **FAILED** — observed behaviour diverged from the spec. The current snapshot tracks **0 failures** across all plans; see [OFCS conformance status](/compliance/ofcs#latest-baseline) for the breakdown.
+- **FAILED** — the module did not reach the suite's expected result. It blocks the release unless `make conformance-release-verify` matches it to a reviewed, unexpired exclusion; see [OFCS conformance status](/compliance/ofcs#latest-baseline) for the current breakdown.
 
 The detailed breakdown of which modules currently sit in REVIEW or SKIPPED, and why, is on [OFCS conformance status](/compliance/ofcs#modules-currently-in-review).
 

@@ -1,11 +1,52 @@
 ---
 title: Device Code (RFC 8628) — wiring
 description: Enable the device-authorization grant — /device_authorization, polling, slow_down, and the embedder-owned verification page.
+pageClass: pg-use-cases-device-code
 ---
 
 # Use case — Device Code (RFC 8628)
 
 For the conceptual background — what device flow is, when to pick it, why `slow_down` and `expired_token` exist — read the [Device Code primer](/concepts/device-code) first. This page covers the wiring.
+
+<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="device-code-flow-title">The device-code flow: an input-constrained device shows a code, the user approves it on a second device, and the first device polls the token endpoint.</title>
+<rect class="dc-box" x="32" y="76" width="168" height="86" rx="8"/>
+  <text class="dc-text" x="116" y="110" text-anchor="middle">Input-constrained device</text>
+  <text class="dc-sub" x="116" y="132" text-anchor="middle">TV / CLI / printer</text>
+
+  <rect class="dc-op" x="296" y="56" width="168" height="126" rx="8"/>
+  <text class="dc-text" x="380" y="94" text-anchor="middle">OP</text>
+  <text class="dc-sub" x="380" y="116" text-anchor="middle">/device_authorization</text>
+  <text class="dc-sub" x="380" y="136" text-anchor="middle">DeviceCodeStore</text>
+  <text class="dc-sub" x="380" y="156" text-anchor="middle">/token</text>
+
+  <rect class="dc-box" x="560" y="76" width="168" height="86" rx="8"/>
+  <text class="dc-text" x="644" y="110" text-anchor="middle">User's own device</text>
+  <text class="dc-sub" x="644" y="132" text-anchor="middle">phone / laptop</text>
+
+  <rect class="dc-box" x="32" y="246" width="168" height="58" rx="8"/>
+  <text class="dc-text" x="116" y="280" text-anchor="middle">Displays the code</text>
+  <rect class="dc-box" x="560" y="246" width="168" height="58" rx="8"/>
+  <text class="dc-text" x="644" y="280" text-anchor="middle">Enters it and consents</text>
+
+  <path class="dc-flow" d="M200 104 H292"/>
+  <text class="dc-sub" x="246" y="91" text-anchor="middle">1. start</text>
+  <path class="dc-flow" d="M284 100 L293 104 L284 108"/>
+  <path class="dc-flow" d="M296 146 H204"/>
+  <text class="dc-sub" x="250" y="169" text-anchor="middle">2. device_code / user_code</text>
+  <path class="dc-flow" d="M212 142 L203 146 L212 150"/>
+  <path class="dc-flow" d="M116 162 V242"/>
+  <path class="dc-flow" d="M112 234 L116 243 L120 234"/>
+  <path class="dc-flow" d="M200 275 H556"/>
+  <text class="dc-sub" x="380" y="260" text-anchor="middle">3. go to verification_uri</text>
+  <path class="dc-flow" d="M548 271 L557 275 L548 279"/>
+  <path class="dc-flow" d="M644 246 V166"/>
+  <path class="dc-flow" d="M640 174 L644 165 L648 174"/>
+  <text class="dc-sub" x="676" y="206" text-anchor="middle">4. approve</text>
+  <path class="dc-flow" d="M116 246 C144 202 198 202 292 160"/>
+  <text class="dc-sub" x="218" y="218" text-anchor="middle">5. poll /token</text>
+  <path class="dc-flow" d="M283 157 L293 160 L285 166"/>
+</svg>
 
 ::: details `device_code` vs `user_code` — what's the difference?
 Two different identifiers come back from `/device_authorization`. **`device_code`** is a long opaque string the device keeps to itself and submits on every `/token` poll — it's effectively a bearer credential for "this pending authorization". **`user_code`** is the short, human-typeable string ("BDWP-HQPK") the device shows on its screen so the user can enter it on their phone or laptop. They live for the same duration (`expires_in`) but are presented to entirely different audiences; the user never sees `device_code`, the OP never accepts `user_code` on `/token`.

@@ -1,14 +1,14 @@
 ---
 title: RFC 対応一覧
 description: 本ライブラリがコード中で参照しているすべての規格を、実装パッケージとゲートになるオプション・feature とともに一覧化。
-pageClass: rfc-matrix-page
+pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 ---
 
 # RFC 対応一覧
 
 本ライブラリがコード中で参照しているすべての規格を、実装パッケージとゲートになるオプション・feature と対応づけて一覧化しています。
 
-<svg role="img" aria-labelledby="rfc-matrix-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="rfc-matrix-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="rfc-matrix-title">RFC 対応一覧の読み方: 仕様を OP の責務かどうかで分け、実装済み、部分実装、予定、対象外、拒否に分類する。</title>
 <rect class="rfc-main" x="36" y="102" width="154" height="76" rx="8"/>
   <text class="rfc-text" x="113" y="132" text-anchor="middle">仕様</text>
@@ -99,7 +99,7 @@ pageClass: rfc-matrix-page
 
 | ドラフト | ステータス | 場所 |
 |---|---|---|
-| **OAuth 2.0 Grant Management**（`draft-ietf-oauth-grant-management`） | <span class="status-pill partial">partial</span>（`op.WithGrantManagement` で有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントをマウントし、token 応答に `grant_id` を載せ、discovery で公開。IETF draft 追跡のため v1.0 までに surface が変わり得る） | `internal/grantmgmtendpoint`、`op/grant_management.go` |
+| **OAuth 2.0 Grant Management**（`draft-ietf-oauth-grant-management`） | <span class="status-pill partial">partial</span>（`op.WithGrantManagement` で有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントをマウントし、token 応答に `grant_id` を載せ、discovery で公開。IETF draft 追跡のため draft 更新で surface が変わり得る） | `internal/grantmgmtendpoint`、`op/grant_management.go` |
 
 ## JOSE 系
 
@@ -121,7 +121,9 @@ pageClass: rfc-matrix-page
 | **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span>（継続回帰検査） | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | —（FAPI 2.0 を使用） |
 | **FAPI-CIBA** | <span class="status-pill full">full</span>（poll mode。`JAR` + `DPoP\|MTLS` 必須、アクセストークン TTL 10 分上限、FAPI 2.0 client-auth セット、`requested_expiry` ≤ 600 秒、JAR `iss` / `aud` / `exp` / `nbf` 必須、request-object 寿命 ≤ 60 分（FAPI 2.0 Message Signing §5.6）、アクセストークン revocation 必須） | `op.WithProfile(profile.FAPICIBA)` |
-| **OpenID iGov High** | <span class="status-pill planned">planned</span>（v2） | `profile.IGovHigh`（定数あり。ランタイム制約が未着地のため、現状で `op.WithProfile(profile.IGovHigh)` を渡すと `op.New` が拒否） |
+| **OpenID iGov High** | <span class="status-pill out">out</span> | — |
+
+プロファイル列挙にはもうひとつ `profile.Baseline` があります。これは FAPI プロファイルではなく、OAuth 2.1 / RFC 9700 の姿勢を宣言し、confidential client も含めたすべての authorization-code request に PKCE を要求します。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile) を参照。
 
 ## その他、ライブラリが参照する RFC
 

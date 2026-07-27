@@ -2,11 +2,44 @@
 title: Audit event catalog
 description: Every op.Audit* event the OP emits, what fires it, and what the extras carry.
 outline: 2
+pageClass: pg-reference-audit-events
 ---
 
 # Audit event catalog
 
 The OP emits structured audit events from a closed catalog defined in `op/audit.go`. Each event is a stable string identifier of shape `<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can pre-aggregate by area without parsing free-form messages.
+
+<svg role="img" aria-labelledby="audit-flow-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="audit-flow-title">How audit events flow: each OP code path emits from one closed catalog, and the emission reaches slog, the SOC pipeline, and the Prometheus counters.</title>
+<rect class="aud-box" x="28" y="46" width="156" height="54" rx="8"/>
+  <text class="aud-text" x="106" y="80" text-anchor="middle">login / MFA</text>
+  <rect class="aud-box" x="28" y="123" width="156" height="54" rx="8"/>
+  <text class="aud-text" x="106" y="157" text-anchor="middle">token / grant</text>
+  <rect class="aud-box" x="28" y="200" width="156" height="54" rx="8"/>
+  <text class="aud-text" x="106" y="234" text-anchor="middle">DCR / device</text>
+
+  <rect class="aud-main" x="282" y="96" width="192" height="88" rx="8"/>
+  <text class="aud-text" x="378" y="130" text-anchor="middle">Audit event</text>
+  <text class="aud-sub" x="378" y="152" text-anchor="middle">op.Audit*</text>
+  <text class="aud-sub" x="378" y="170" text-anchor="middle">context in extras</text>
+
+  <rect class="aud-box" x="566" y="40" width="158" height="54" rx="8"/>
+  <text class="aud-text" x="645" y="74" text-anchor="middle">slog JSON</text>
+  <rect class="aud-box" x="566" y="123" width="158" height="54" rx="8"/>
+  <text class="aud-text" x="645" y="157" text-anchor="middle">SOC / SIEM</text>
+  <rect class="aud-box" x="566" y="206" width="158" height="54" rx="8"/>
+  <text class="aud-text" x="645" y="240" text-anchor="middle">Prometheus</text>
+
+  <path class="aud-flow" d="M184 73 C226 80 244 112 278 126"/>
+  <path class="aud-flow" d="M184 150 H278"/>
+  <path class="aud-flow" d="M184 227 C226 218 244 178 278 162"/>
+  <path class="aud-flow" d="M474 126 C514 100 526 68 562 68"/>
+  <path class="aud-flow" d="M554 64 L563 68 L554 72"/>
+  <path class="aud-flow" d="M474 150 H562"/>
+  <path class="aud-flow" d="M554 146 L563 150 L554 154"/>
+  <path class="aud-flow" d="M474 166 C516 190 526 234 562 234"/>
+  <path class="aud-flow" d="M554 230 L563 234 L554 238"/>
+</svg>
 
 ## Subscribing
 
@@ -25,6 +58,20 @@ If `WithAuditLogger` is not supplied, audit events fall through to the logger co
 A curated subset of these events is mirrored onto Prometheus counters when [`WithPrometheus`](/use-cases/prometheus) is configured. A single emission updates both the slog stream and the matching counter — there is no separate metrics emit step.
 :::
 
+## Enumerating the catalog in code
+
+The page below is generated from the same registry the OP itself uses, and that registry is public. `op.AuditEventCatalog()` returns a copy of every stable event as `[]op.AuditEventDefinition`:
+
+```go
+for _, def := range op.AuditEventCatalog() {
+    // def.Event       — the audit event identifier, e.g. "token.issued"
+    // def.MetricName  — the Prometheus counter it feeds; empty for audit-only events
+    // def.MetricLabel — the bounded label value for category counters; often empty
+}
+```
+
+Read it when you need the event set as data rather than as prose — provisioning SIEM rules, asserting in a test that a dashboard covers every event, or checking which events have a metric projection. Because the same registry drives both the in-tree emitters and the Prometheus bridge, event discovery and metric routing cannot drift apart.
+
 ## Common attributes
 
 Every event carries:
@@ -39,6 +86,14 @@ Every event carries:
 ## Event catalog
 
 The catalog is regrouped by feature area. Each group opens with a short note on what the events mean for SOC and operations, followed by a table of `event constant` (the Go identifier in `op/audit.go`), `when it fires`, `severity hint` (a starting point for routing — `info` for routine activity, `warn` for suspicious / failure conditions, `alert` for replay or store-fault signals), and the page that documents the surrounding behaviour.
+
+### Provider lifecycle
+
+`startup.profile` is the audit-stream anchor for an OP instance. It fires once after `op.New` has validated the configuration and before the provider is returned. Its extras include the declared `profiles`, `features`, and `grants`, plus the resolved PKCE, PAR, nonce, sender-constraint, client-authentication, token-TTL, token-format, JAR, JARM, and introspection policy.
+
+| Event constant | When it fires | Severity hint | Linked doc |
+|---|---|---|---|
+| `AuditStartupProfile` | a validated provider starts | info | [Options reference](/reference/options) |
 
 ### Account management
 

@@ -1,13 +1,14 @@
 ---
 title: CIBA ポーリング方式 — 組み込み
 description: Client-Initiated Backchannel Authentication を有効化 — /bc-authorize、HintResolver、FAPI-CIBA プロファイル、組み込み側が所有する認証デバイス。
+pageClass: pg-use-cases-ciba
 ---
 
 # 使い方 — CIBA（Client-Initiated Backchannel Authentication）
 
 CIBA の概念的背景（何で、device flow とどう違い、なぜ `binding_message` が重要か）は [CIBA 入門](/ja/concepts/ciba) を先に読んでください。このページは組み込み手順を扱います。
 
-<svg role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ciba-poll-title">CIBA ポーリング方式の流れ: 利用デバイスが bc-authorize を呼び、OP が認証デバイスへ承認依頼を届け、利用デバイスが token をポーリングする。</title>
 <rect class="ciba-box" x="28" y="94" width="160" height="82" rx="8"/>
   <text class="ciba-text" x="108" y="126" text-anchor="middle">利用デバイス</text>

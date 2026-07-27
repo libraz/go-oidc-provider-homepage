@@ -1,6 +1,7 @@
 ---
 title: カスタムアカウント選択 UI
 description: prompt=select_account のサーバ描画テンプレートを差し替えつつ、state、CSRF、セッション切替は OP に保持させる。
+pageClass: pg-use-cases-custom-chooser-ui
 ---
 
 # 使い方 — カスタムアカウント選択 UI
@@ -65,7 +66,7 @@ provider, err := op.New(
 
 ## Flow
 
-<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="chooser-flow-title">カスタム選択 UI UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
 <rect x="30" y="14" width="120" height="36" rx="6"/>
 <rect x="300" y="14" width="120" height="36" rx="6" class="ccui-op"/>
@@ -78,8 +79,8 @@ provider, err := op.New(
 <line x1="630" y1="50" x2="630" y2="405" class="ccui-sec"/>
 <line x1="90" y1="88" x2="360" y2="88"/>
 <polyline points="352,83 360,88 352,93"/>
-<circle class="ccui-op" cx="102" cy="74" r="8"/>
-<text class="ccui-num ccui-opf" x="102" y="78" text-anchor="middle">1</text>
+<circle class="ccui-op" cx="76" cy="74" r="8"/>
+<text class="ccui-num ccui-opf" x="76" y="78" text-anchor="middle">1</text>
 <text class="ccui-mono" x="225" y="80" text-anchor="middle">GET /authorize · prompt=select_account</text>
 <path d="M360,120 H406 V140 H366"/>
 <polyline points="368,135 360,140 368,145"/>

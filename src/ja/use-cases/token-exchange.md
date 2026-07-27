@@ -1,6 +1,7 @@
 ---
 title: トークン交換（RFC 8693） — 組み込み
 description: RFC 8693 token-exchange grant を有効化 — TokenExchangePolicy、`act` チェーン、audience 正規化、`cnf` の再バインド。
+pageClass: pg-use-cases-token-exchange
 ---
 
 # 使い方 — トークン交換（RFC 8693）
@@ -19,7 +20,7 @@ RFC 8693 §4.1 は `act` claim を「誰が誰の代わりに動作したか」�
 
 トークン交換は「入力トークンをそのまま別 audience にコピーする」処理ではありません。OP は subject と actor を検証し、scope と audience を狭め、`act` チェーンを構成し、送信者制約を呼び出し側の鍵へ付け替えてから、新しいアクセストークンを発行します。
 
-<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 420" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="token-exchange-flow-title">トークン交換の全体像。service-a が Alice の subject_token と自身の actor_token を OP に送り、OP が検証、scope 積集合、audience 正規化、act チェーン構築、cnf 再バインド、ポリシー判定を通して service-b 向けトークンを発行する。</title>
   <defs>
     <marker id="tx-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">

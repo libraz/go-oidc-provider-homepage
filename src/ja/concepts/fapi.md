@@ -1,6 +1,7 @@
 ---
 title: FAPI 2.0 入門
 description: FAPI とは何か、なぜ存在するか、各要件が何を防いでいるか — はじめての方向け。
+pageClass: pg-concepts-fapi
 ---
 
 # FAPI 2.0 入門
@@ -61,7 +62,7 @@ FAPI 1.0 には区分が 2 つありました。**Read-Only** はデータ取得
 
 FAPI 2.0 は 2 段構成です。
 
-<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 420" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="fapi-layers-title">FAPI 2.0 の層構造。OAuth 2.0 と OIDC の上に Baseline が安全な必須要件を固定し、Message Signing が署名付き要求・署名付き応答・DPoP nonce を追加して後から否認できない証拠を残す。</title>
   <rect class="soft" x="70" y="306" width="620" height="64" rx="8"/>
   <text class="h" x="380" y="332" text-anchor="middle">OAuth 2.0 + OpenID Connect</text>

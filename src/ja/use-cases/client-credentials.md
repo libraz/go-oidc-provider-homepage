@@ -1,6 +1,7 @@
 ---
 title: サービス間 (client_credentials)
 description: バックエンド間トークン、エンドユーザ無し、同意無し。
+pageClass: pg-use-cases-client-credentials
 ---
 
 # 使い方 — サービス間 (`client_credentials`)
@@ -32,7 +33,7 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 ## アーキテクチャ
 
-<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" width="736" style="max-width:100%;height:auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="cc-svc-flow-title">サービス間 client_credentials フロー: Service A が OP からアクセストークンを取得し、それを付けて Service B を呼び出し、Service B が OP でトークンを検証する。</title>
   <rect x="20" y="48" width="150" height="68" rx="6"/>
   <rect class="d-op" x="305" y="48" width="150" height="68" rx="6"/>
@@ -54,7 +55,7 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
   <text class="d-lbl" x="238" y="60" text-anchor="middle">1. <tspan class="d-tok">POST /token</tspan></text>
   <text class="d-lbl" x="238" y="110" text-anchor="middle">2. <tspan class="d-tok">access_token</tspan></text>
   <text class="d-lbl" x="522" y="68" text-anchor="middle">4. トークンを検証</text>
-  <text class="d-tok" x="522" y="100" text-anchor="middle" font-size="10.5">/introspect · /jwks</text>
+  <text class="d-tok" x="522" y="100" text-anchor="middle" font-size="10">/introspect · /jwks</text>
   <text class="d-lbl" x="380" y="140" text-anchor="middle">3. <tspan class="d-tok">Authorization: Bearer</tspan></text>
 </svg>
 

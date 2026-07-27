@@ -1,6 +1,7 @@
 ---
 title: 認可コード + PKCE フロー
 description: 最も使われる OIDC フローを最初から最後まで、シーケンス図とパラメータ用語集で解説。
+pageClass: pg-concepts-authorization-code-pkce
 ---
 
 # 認可コード + PKCE
@@ -28,7 +29,7 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
 
 ## 完全なシーケンス
 
-<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" style="width:100%;height:auto;max-width:684px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="acpkce-seq-title">認可コード + PKCE のシーケンス: ブラウザ、Relying Party、OpenID Provider、Resource Server の間で、ログインから PKCE 検証付きトークン発行、Bearer トークンでの API 呼び出しまでのやり取りを示す図。</title>
   <defs>
     <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
@@ -63,8 +64,8 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
   <!-- 2 -->
   <text class="num" x="12" y="148" text-anchor="middle">2</text>
   <path class="msg" d="M250 145 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="160" y="130" text-anchor="middle">302 → OP</text>
-  <text class="mono" x="160" y="141" text-anchor="middle">/authorize · S256 · state · nonce</text>
+  <text class="lbl" x="160" y="127" text-anchor="middle">302 → OP</text>
+  <text class="mono" x="160" y="138" text-anchor="middle">/authorize · S256 · state · nonce</text>
   <!-- 3 -->
   <text class="num" x="12" y="177" text-anchor="middle">3</text>
   <path class="msg" d="M70 174 H430" marker-end="url(#acp-ah)"/>
@@ -98,8 +99,8 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
   <!-- 10 -->
   <text class="num" x="12" y="380" text-anchor="middle">10</text>
   <path class="msg" d="M430 377 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="158" y="362" text-anchor="middle">302 → redirect_uri</text>
-  <text class="mono" x="158" y="373" text-anchor="middle">code &amp; state</text>
+  <text class="lbl" x="158" y="359" text-anchor="middle">302 → redirect_uri</text>
+  <text class="mono" x="158" y="370" text-anchor="middle">code &amp; state</text>
   <!-- 11 -->
   <text class="num" x="12" y="409" text-anchor="middle">11</text>
   <path class="msg" d="M70 406 H250" marker-end="url(#acp-ah)"/>
@@ -111,8 +112,8 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
   <!-- 13 -->
   <text class="num" x="12" y="467" text-anchor="middle">13</text>
   <path class="msg" d="M250 464 H430" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="340" y="451" text-anchor="middle">POST /token</text>
-  <text class="mono" x="340" y="461" text-anchor="middle">code · code_verifier · client auth</text>
+  <text class="mono" x="340" y="448" text-anchor="middle">POST /token</text>
+  <text class="mono" x="340" y="458" text-anchor="middle">code · code_verifier · client auth</text>
   <!-- 14 -->
   <text class="num" x="12" y="496" text-anchor="middle">14</text>
   <path class="self op-accent" d="M430 486 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
@@ -121,8 +122,8 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
   <!-- 15 -->
   <text class="num" x="12" y="525" text-anchor="middle">15</text>
   <path class="msg" d="M430 522 H250" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="340" y="510" text-anchor="middle">200 OK</text>
-  <text class="mono" x="340" y="520" text-anchor="middle">access_token · id_token · refresh_token</text>
+  <text class="lbl" x="340" y="507" text-anchor="middle">200 OK</text>
+  <text class="mono" x="340" y="517" text-anchor="middle">access_token · id_token · refresh_token</text>
   <!-- 16 -->
   <text class="num" x="12" y="554" text-anchor="middle">16</text>
   <path class="self" d="M250 544 h32 v14 h-32" marker-end="url(#acp-ah)"/>
@@ -139,13 +140,13 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
   <!-- 19 -->
   <text class="num" x="12" y="641" text-anchor="middle">19</text>
   <path class="msg" d="M250 638 H610" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="520" y="626" text-anchor="middle">GET /api/me</text>
-  <text class="mono" x="520" y="636" text-anchor="middle">Authorization: Bearer …</text>
+  <text class="mono" x="520" y="623" text-anchor="middle">GET /api/me</text>
+  <text class="mono" x="520" y="633" text-anchor="middle">Authorization: Bearer …</text>
   <!-- 20 -->
   <text class="num" x="12" y="670" text-anchor="middle">20</text>
   <path class="msg" d="M610 667 H430" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="520" y="655" text-anchor="middle">(任意)</text>
-  <text class="mono" x="520" y="665" text-anchor="middle">introspect · JWT 自己検証</text>
+  <text class="lbl" x="520" y="652" text-anchor="middle">(任意)</text>
+  <text class="mono" x="520" y="662" text-anchor="middle">introspect · JWT 自己検証</text>
   <!-- 21 -->
   <text class="num" x="12" y="699" text-anchor="middle">21</text>
   <path class="msg" d="M610 696 H250" marker-end="url(#acp-ah)"/>
@@ -175,7 +176,7 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
 - **`state`** は **フロントチャネル**（ブラウザのクエリ文字列）を流れる値です。RP はリダイレクト前にユーザのセッションに保存し、コールバック時に突き合わせます。守るのは *リダイレクト* 経路の CSRF — 攻撃者が `/callback` に偽コールバックを投げてアプリに受理させる、を阻止します。
 - **`nonce`** は **ID トークンの claim** に乗ります。RP はリダイレクト前にユーザセッションに保存し、トークン交換後に突き合わせます。守るのは *ID トークン* のリプレイ — 盗まれた ID トークンを別 RP で、あるいは同じ RP の別ログイン試行で再利用させない、を阻止します。
 
-両方使ってください。本ライブラリは confidential client で `state` 欠落のリクエストを拒否しますし、OIDC は `response_type=code id_token` や `id_token` を使うときには `nonce` 必須です。
+RP が ID トークンを検証するなら、両方使ってください。OIDC は ID トークンを含む response type で `nonce` を必須にします。本ライブラリが受け付けるのは `response_type=code` だけで、hybrid / implicit の response type は認可フロー開始前に拒否します。
 :::
 
 ::: details `code_verifier` / `code_challenge` / `S256` とは
@@ -191,7 +192,7 @@ description: 最も使われる OIDC フローを最初から最後まで、シ�
 :::
 
 ::: details `response_type=code` とは
-**`response_type=code`** は **認可コードフロー** を要求します — OP がリダイレクトで短寿命の `code` を返し、RP がそれを `/token` で実トークンに交換するパターンです。代替の `token`、`id_token token`、`code id_token` などは古い hybrid / implicit フローで、OAuth 2.0 BCP（RFC 9700）が非推奨としています。本ライブラリは `code` を正規経路として実装し、hybrid 形式は互換性のためのオプトイン表面にとどめています — 新規構築向けではありません。
+**`response_type=code`** は **認可コードフロー** を要求します — OP がリダイレクトで短寿命の `code` を返し、RP がそれを `/token` で実トークンに交換するパターンです。代替の `token`、`id_token token`、`code id_token` などは古い hybrid / implicit フローで、OAuth 2.0 BCP（RFC 9700）が非推奨としています。本ライブラリは `code` だけをサポートし、それ以外の response type はすべて拒否します。
 :::
 
 ::: details PAR とは何か、いつ必要になるか

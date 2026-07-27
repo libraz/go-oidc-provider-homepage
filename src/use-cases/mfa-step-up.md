@@ -1,6 +1,7 @@
 ---
 title: MFA / step-up
 description: Compose authenticators and rules — TOTP always, captcha after N failures, ACR step-up on demand.
+pageClass: pg-use-cases-mfa-step-up
 ---
 
 # Use case — MFA / step-up
@@ -31,20 +32,11 @@ Use this page when the login decision depends on more than "password accepted": 
 - **`amr` claim** — RFC 8176 enumerates standard reference values (`pwd`, `otp`, `mfa`, `hwk`, `face`, `fpt`, …) so RPs can audit which factors actually ran.
 :::
 
-> **Sources:** [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) — password + always-TOTP; [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — risk-driven step-up; [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — captcha after N failed attempts; [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up; [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — SQL-backed `store.TOTPStore` for production-style factor persistence.
+> **Sources:** [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) — password + always-TOTP; [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — risk-driven step-up; [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — captcha after N failed attempts; [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up; [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — the shipped SQL factor stores, shared with the core OP tables in one database.
 
 ## Composition
 
-<style scoped>
-text{stroke:none}
-.d-lbl{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1)}
-.d-cap{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2)}
-.d-mono{font-family:var(--vp-font-family-mono)}
-.d-accent{stroke:var(--vp-c-brand-2)}
-.d-accent-t{fill:var(--vp-c-brand-2)}
-</style>
-
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="mfa-loginflow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="mfa-loginflow-title">Login flow composition: a primary password step, a rules layer that decides which factor steps run, then token issuance.</title>
   <rect x="330" y="16" width="140" height="38" rx="6"/>
   <rect x="290" y="78" width="220" height="50" rx="6"/>
@@ -74,23 +66,23 @@ text{stroke:none}
   <path d="M494 345 L498 352 L502 345"/>
   <path d="M691 345 L695 352 L699 345"/>
   <path d="M396 423 L400 430 L404 423"/>
-  <text class="d-lbl" x="400" y="40" font-size="13" text-anchor="middle">Login start</text>
-  <text class="d-lbl d-mono" x="400" y="100" font-size="13" text-anchor="middle">PrimaryPassword</text>
-  <text class="d-cap" x="400" y="117" font-size="11" text-anchor="middle">primary step</text>
-  <text x="400" y="177" font-size="13" text-anchor="middle"><tspan class="d-accent-t d-mono">Rules</tspan><tspan class="d-accent-t"> eval</tspan></text>
-  <text class="d-accent-t d-mono" x="105" y="266" font-size="12.5" text-anchor="middle">RuleAlways</text>
-  <text class="d-cap" x="105" y="285" font-size="11" text-anchor="middle">every attempt</text>
-  <text class="d-accent-t d-mono" x="302" y="266" font-size="12" text-anchor="middle">RuleAfterFailedAttempts</text>
-  <text class="d-cap" x="302" y="285" font-size="11" text-anchor="middle">count ≥ 3</text>
-  <text class="d-accent-t d-mono" x="498" y="266" font-size="12.5" text-anchor="middle">RuleRisk</text>
-  <text class="d-cap" x="498" y="285" font-size="11" text-anchor="middle">score ≥ High</text>
-  <text class="d-accent-t d-mono" x="695" y="266" font-size="12.5" text-anchor="middle">RuleACR</text>
-  <text x="695" y="285" font-size="11" text-anchor="middle"><tspan class="d-cap d-mono">aal3</tspan><tspan class="d-cap"> in acr_values</tspan></text>
-  <text class="d-lbl d-mono" x="105" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
-  <text class="d-lbl d-mono" x="302" y="378" font-size="13" text-anchor="middle">StepCaptcha</text>
-  <text class="d-lbl d-mono" x="498" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
-  <text class="d-lbl d-mono" x="695" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
-  <text class="d-accent-t" x="400" y="455" font-size="13" text-anchor="middle">Issue tokens</text>
+  <text class="d-lbl" x="400" y="40" font-size="12.5" text-anchor="middle">Login start</text>
+  <text class="d-lbl d-mono" x="400" y="100" font-size="12.5" text-anchor="middle">PrimaryPassword</text>
+  <text class="d-cap" x="400" y="117" font-size="10.5" text-anchor="middle">primary step</text>
+  <text x="400" y="177" font-size="12.5" text-anchor="middle"><tspan class="d-accent-t d-mono">Rules</tspan><tspan class="d-accent-t"> eval</tspan></text>
+  <text class="d-accent-t d-mono" x="105" y="266" font-size="12" text-anchor="middle">RuleAlways</text>
+  <text class="d-cap" x="105" y="285" font-size="10.5" text-anchor="middle">every attempt</text>
+  <text class="d-accent-t d-mono" x="302" y="266" font-size="11.5" text-anchor="middle">RuleAfterFailedAttempts</text>
+  <text class="d-cap" x="302" y="285" font-size="10.5" text-anchor="middle">count ≥ 3</text>
+  <text class="d-accent-t d-mono" x="498" y="266" font-size="12" text-anchor="middle">RuleRisk</text>
+  <text class="d-cap" x="498" y="285" font-size="10.5" text-anchor="middle">score ≥ High</text>
+  <text class="d-accent-t d-mono" x="695" y="266" font-size="12" text-anchor="middle">RuleACR</text>
+  <text x="695" y="285" font-size="10.5" text-anchor="middle"><tspan class="d-cap d-mono">aal3</tspan><tspan class="d-cap"> in acr_values</tspan></text>
+  <text class="d-lbl d-mono" x="105" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
+  <text class="d-lbl d-mono" x="302" y="378" font-size="12.5" text-anchor="middle">StepCaptcha</text>
+  <text class="d-lbl d-mono" x="498" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
+  <text class="d-lbl d-mono" x="695" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
+  <text class="d-accent-t" x="400" y="455" font-size="12.5" text-anchor="middle">Issue tokens</text>
 </svg>
 
 `LoginFlow` is a struct with a `Primary` step and a list of `Rules`. Each rule is a `Rule` value built from a constructor like `op.RuleAlways(step)`, `op.RuleAfterFailedAttempts(n, step)`, `op.RuleRisk(threshold, step)`, or `op.RuleACR(acr, step)`.
@@ -227,6 +219,14 @@ The library ships ready-to-use steps for the common factors:
 The **storage** behind each step is yours — the library never owns user records or password hashes. The reference `inmem` adapter is fine for examples and tests; in production you implement the `op/store/*` substores against your existing user table.
 
 For a fully custom factor, implement `op.ExternalStep` (see `op/step.go` godoc) and add it to the rule list with a unique `KindLabel`. This is the pattern across every `examples/2x-*`.
+
+For account-management flows, use the companion packages rather than constructing credential records yourself. [`op/passkeykit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/passkeykit) runs the WebAuthn registration ceremony from the same `PrimaryPasskey` configuration used at login. [`op/recoverykit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/recoverykit) creates and replaces recovery-code batches; show `Result.Codes` once and never persist or log them. `op.NewEmailOTPAuthenticator(op.EmailOTPConfig{...})` builds the lower-level email-OTP authenticator when you use `WithAuthenticators` instead of `LoginFlow`. See [`28-email-otp-recovery`](https://github.com/libraz/go-oidc-provider/tree/main/examples/28-email-otp-recovery) and [`29-passkey`](https://github.com/libraz/go-oidc-provider/tree/main/examples/29-passkey).
+
+::: warning Passkeys need a domain, not an IP
+A WebAuthn Relying Party ID must be a domain name, and browsers reject an IP literal for it — so an OP developing against `http://127.0.0.1` has no valid RP ID to pair with. Bind the issuer to `localhost` and opt in with [`op.WithAllowLocalhostLoopback()`](/reference/options), which admits the textual host in the issuer as well as in redirect URIs. The carve-out is for a developer machine and nowhere else; production RPs belong behind https.
+
+Setting `AAGUIDAllowlist` on `op.PrimaryPasskey` also switches the registration ceremony to `direct` attestation conveyance, because an allowlist compared against an unattested AAGUID proves nothing — a software authenticator could register by naming an approved model. Expect a user-agent attestation prompt, and a registration that cannot identify the model is refused rather than matched. Leave the allowlist empty to keep the prompt-free ceremony.
+:::
 
 ## Enrolling a TOTP factor
 

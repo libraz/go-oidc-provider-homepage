@@ -1,6 +1,7 @@
 ---
 title: SPA / custom interaction
 description: Drive login, consent, and logout from any SPA — React, Vue, Svelte, Angular, or your own. SPA-safe error rendering ships out of the box.
+pageClass: pg-use-cases-spa-custom-interaction
 ---
 
 # Use case — SPA / custom interaction
@@ -29,7 +30,7 @@ This library models the UX as a pluggable `interaction.Driver`. The default driv
 - **CSP (Content Security Policy)** — A response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page is allowed to load. The OP's error page renders under a strict policy that blocks `<script>`, inline event handlers, and arbitrary URL schemes — so a hostile `error_description` cannot escalate into XSS.
 :::
 
-> **Sources:** - [`examples/16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction) — minimal swap to the JSON driver. - [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) — OP-mounted SPA wiring through `op.WithSPAUI`. The bundle in the example is hand-rolled vanilla HTML/CSS/JS so it runs without a build step, but the seam is framework-neutral; React / Vue / Svelte / Angular drop in identically.
+> **Sources:** - [`examples/16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction) — minimal swap to the JSON driver. - [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) — OP-mounted SPA wiring through `op.WithSPAUI`. - [`examples/17-spa-composite-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-spa-composite-store) — the production-shaped combination: SPA interaction, MySQL for durable state, and Redis for sessions, interactions, and consumed JTIs. The SPA bundle is hand-rolled vanilla HTML/CSS/JS so it runs without a build step, but the seam is framework-neutral; React / Vue / Svelte / Angular drop in identically.
 
 ## Architecture
 
@@ -47,20 +48,7 @@ For `op.WithSPAUI(op.SPAUI{LoginMount: "/login", StaticDir: "./web/static"})`, t
 
 In the lower-level JSON-driver shape, `/authorize` redirects to `/interaction/{uid}`. Everything between the redirect and the redirect-back-with-code stays on the SPA.
 
-<style scoped>
-.lbl{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);stroke:none}
-.mono{font-family:var(--vp-font-family-mono);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}
-.actor{font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}
-.sub{font-family:var(--vp-font-family-mono);font-size:9px;fill:var(--vp-c-text-3);stroke:none}
-.num{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}
-.op-accent{stroke:var(--vp-c-brand-2)}
-.op-text{fill:var(--vp-c-brand-2);stroke:none}
-.life{stroke-width:1.2;stroke-dasharray:3 4;opacity:0.45}
-.note{fill:var(--vp-c-bg);stroke:currentColor;stroke-width:1.4}
-.badge{stroke-width:1.4;opacity:0.55}
-</style>
-
-<svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="spa-interaction-seq-title">Sequence of the JSON-driver SPA interaction: the browser loads the SPA shell, fetches each prompt from the OP as JSON, posts answers back, and follows the terminal redirect envelope.</title>
 
   <line class="life" x1="120" y1="56" x2="120" y2="505"/>

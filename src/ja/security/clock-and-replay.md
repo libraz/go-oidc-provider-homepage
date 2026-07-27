@@ -1,6 +1,7 @@
 ---
 title: 時刻ずれとリプレイ猶予
 description: OIDC が扱う署名済みアーティファクトには発行時刻 (`iat`) と有効期限 (`exp`) が付きます。サーバの時刻がずれると期限切れの署名物を受理し、重複検出テーブルがなければリプレイを防げません。本ページは go-oidc-provider が用いる時刻関連の猶予を 1 か所にまとめます。
+pageClass: pg-security-clock-and-replay
 ---
 
 # 時刻ずれとリプレイ猶予
@@ -29,8 +30,8 @@ type Clock interface {
 |---|---|---|---|
 | 認可コード | one-time consumption + TTL | `DefaultAuthCodeTTL = 60 s` | [/ja/concepts/authorization-code-pkce](/ja/concepts/authorization-code-pkce) |
 | リフレッシュトークン (ローテーション猶予) | 直前のトークンを猶予期間内は受理 | `refresh.GraceTTLDefault = 60 s`(`op.WithRefreshGracePeriod` で変更可) | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
-| DPoP proof — `iat` 窓 | サーバ時刻に対する対称な許容幅 | `dpop.DefaultIatWindow = 60 s` | [/ja/concepts/dpop](/ja/concepts/dpop) |
-| DPoP proof — `jti` キャッシュ | リプレイ重複検出 | `iat + 2 * DefaultIatWindow`(`replayLeew`、約 120 秒) | [/ja/concepts/dpop](/ja/concepts/dpop) |
+| DPoP proof — `iat` 窓 | サーバ時刻に対する対称な許容幅 | 60 秒 | [/ja/concepts/dpop](/ja/concepts/dpop) |
+| DPoP proof — `jti` キャッシュ | リプレイ重複検出 | 約 120 秒 | [/ja/concepts/dpop](/ja/concepts/dpop) |
 | JAR (RFC 9101) request object — `jti` キャッシュ | リプレイ重複検出 | OP 側キャッシュ。request object 自身の `exp` を境に削除 | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
 | JAR — 未来側ずれ許容 | `nbf` / `iat` の許容幅 | `jar.DefaultMaxFutureSkew = 60 s` | [/ja/security/design-judgments#dj-6](/ja/security/design-judgments#dj-6) |
 | PAR (RFC 9126) `request_uri` 寿命 | 一回限り、短寿命 | `parendpoint.DefaultTTL = 60 s` | [/ja/concepts/fapi](/ja/concepts/fapi) |
@@ -44,7 +45,7 @@ type Clock interface {
 
 同じ猶予を対数時間軸で実スケールに並べると、形が一目で分かります。リプレイと時計に関する猶予はいずれも 60 秒前後の狭い帯に収まり、トークンの寿命は数分に上がり、リフレッシュトークンの絶対寿命だけが 30 日という遠い位置にあります。その間には何もありません。
 
-<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:720px;height:auto">
+<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="clock-replay-window-scale-title">go-oidc-provider が適用する時刻・リプレイ猶予を、60 秒のリプレイ帯から 30 日のリフレッシュトークン寿命まで対数軸で並べた比較図。</title>
 <line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
 <line class="d-grid" x1="374.9" y1="58" x2="374.9" y2="362"/>

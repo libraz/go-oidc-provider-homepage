@@ -1,6 +1,7 @@
 ---
 title: FAPI 2.0 Baseline
 description: 1 つのプロファイル指定で PAR、JAR、DPoP、ES256 署名、FAPI 用のクライアント認証制約を有効化。
+pageClass: pg-use-cases-fapi2-baseline
 ---
 
 # 使い方 — FAPI 2.0 Baseline
@@ -25,7 +26,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 - [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518) — JOSE algorithms
 :::
 
-> **ソース:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2)
+> **ソース:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) はプロファイルのフローを扱います。[`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) は、TLS 1.2 の FAPI 1.0 RW cipher allow-list 用 `op.FAPITLSConfig()` と、client 登録前に private JWK material を取り除く `op.LoadPublicJWKS` を示します。Go は TLS 1.3 の cipher suite allow-list を公開していないため、TLS 1.3 配備では独自の `tls.Config` が必要です。
 
 ## FAPI 2.0 Baseline が要求するもの
 
@@ -40,7 +41,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 
 ## アーキテクチャ
 
-<svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 720 456" width="720" style="width:100%;height:auto;max-width:720px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 720 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline のシーケンス: RP が認可要求を /par に送り、OP が request_uri を返し、/authorize と /token を経て OP が ES256 署名の DPoP 結びつき付きトークンを発行するまで。</title>
   <line class="life" x1="150" y1="68" x2="150" y2="448"/>
   <line class="life op-accent" x1="570" y1="68" x2="570" y2="448"/>

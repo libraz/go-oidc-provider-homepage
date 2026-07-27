@@ -12,7 +12,7 @@ grant が長命になると、継続的な支払いマンデートや常設の�
 これは、初回認可のあともクライアントが同意のような grant を管理する必要がある場合に使います。特に grant を後から拡張する、またはブラウザセッションとは独立して失効する必要がある場合に有効です。短命な一回限りのサインインフローでは有効にしない方がよいです。クライアントが grant に名前を付ける必要がないなら、通常の認可コード、リフレッシュトークンローテーション、通常のトークン失効の方が単純です。
 
 ::: warning Experimental — IETF draft を追跡
-Grant Management は公開済みの RFC ではなく IETF draft です。`op.GrantManagementAction` enum と `op.WithGrantManagement` は godoc で `Experimental:` と明記されており、v1.0 までに通信仕様に互換性のない draft 更新があれば変わり得ます。
+Grant Management は公開済みの RFC ではなく IETF draft です。`op.GrantManagementAction` enum と `op.WithGrantManagement` は godoc で `Experimental:` と明記されており、draft 更新によって通信仕様に互換性のない変更が入り得ます。
 :::
 
 ::: details 5 つのアクション

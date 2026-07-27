@@ -1,6 +1,7 @@
 ---
 title: Custom authenticator
 description: Plugging your own factor (hardware token, SMS, magic link, …) into LoginFlow without forking the library.
+pageClass: pg-use-cases-custom-authenticator
 ---
 
 # Custom authenticator
@@ -59,6 +60,47 @@ type Authenticator interface {
 
 Implementations MUST be safe for concurrent use; the orchestrator dispatches across goroutines.
 
+<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="authenticator-flow-title">The state machine of a custom authenticator. LoginFlow calls Begin, the user passes a phone-number prompt and then a code prompt, and returning a Result writes the subject and factor into the session.</title>
+  <defs>
+    <marker id="auth-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="40" y="34" width="160" height="58" rx="8"/>
+  <text class="h" x="120" y="58" text-anchor="middle">LoginFlow</text>
+  <text class="m sub" x="120" y="77" text-anchor="middle">Begin(ctx, input)</text>
+
+  <rect class="accent" x="300" y="24" width="180" height="78" rx="8"/>
+  <text class="h accent-text" x="390" y="50" text-anchor="middle">Authenticator</text>
+  <text class="m sub" x="390" y="70" text-anchor="middle">Type / AAL / AMR</text>
+  <text class="m sub" x="390" y="88" text-anchor="middle">Prompts()</text>
+
+  <rect x="560" y="34" width="160" height="58" rx="8"/>
+  <text class="h" x="640" y="58" text-anchor="middle">SPA / HTML</text>
+  <text class="t sub" x="640" y="77" text-anchor="middle">renders the screen</text>
+
+  <path d="M200 63 H296" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="248" y="52" text-anchor="middle">Begin</text>
+  <path d="M480 63 H556" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="518" y="52" text-anchor="middle">Prompt</text>
+
+  <rect class="soft" x="88" y="142" width="584" height="56" rx="8"/>
+  <text class="h" x="380" y="166" text-anchor="middle">1. myorg.sms.collect_phone</text>
+  <text class="t sub" x="380" y="185" text-anchor="middle">take the phone number, generate an OTP, and send it</text>
+  <path d="M640 92 C640 122 530 132 438 142" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="576" y="126" text-anchor="middle">POST phone</text>
+  <path d="M322 198 C245 214 245 244 322 260" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="246" y="234" text-anchor="middle">Continue</text>
+
+  <rect class="soft" x="88" y="260" width="584" height="56" rx="8"/>
+  <text class="h" x="380" y="284" text-anchor="middle">2. myorg.sms.collect_code</text>
+  <text class="t sub" x="380" y="303" text-anchor="middle">verify the submitted code and, on success, return Result{Subject: ...}</text>
+
+  <path d="M672 288 H720 V338 H40 V63" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="380" y="346" text-anchor="middle">the returned Result writes subject / AAL / AMR into the session</text>
+</svg>
+
 ## Worked example: SMS OTP
 
 The factor: collect a phone number, send a 6-digit code via SMS, verify the user's submitted code.
@@ -75,12 +117,13 @@ import (
 
     "github.com/libraz/go-oidc-provider/op"
     "github.com/libraz/go-oidc-provider/op/interaction"
+    "github.com/libraz/go-oidc-provider/op/store"
 )
 
 type SMSAuthenticator struct {
     Sender    SMSSender                 // your SMS provider adapter
     OTPStore  OTPStore                  // your per-attempt OTP record store
-    UserStore op.Store                  // for "phone -> subject" lookup
+    UserStore store.UserStore            // for "phone -> subject" lookup
     CodeTTL   time.Duration             // typically 5 minutes
 }
 

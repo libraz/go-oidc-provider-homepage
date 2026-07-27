@@ -1,11 +1,37 @@
 ---
 title: Design judgments
 description: Where the library's behaviour is the result of a deliberate read of conflicting RFCs — what was chosen, what was rejected, and why.
+pageClass: pg-security-design-judgments
 ---
 
 # Design judgments
 
 Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authorization server may". Several places need an explicit reading because the literature disagrees with itself, or because a literal reading collides with another spec. This page lists those calls.
+
+<svg role="img" aria-labelledby="design-judgment-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="design-judgment-title">How to read a design judgment: identify where the specs conflict, state the rule this library adopts, and enforce it in op.New or the internal implementation.</title>
+<rect class="djf-box" x="36" y="78" width="154" height="76" rx="8"/>
+  <text class="djf-text" x="113" y="108" text-anchor="middle">Spec text</text>
+  <text class="djf-sub" x="113" y="130" text-anchor="middle">MUST / SHOULD / MAY</text>
+
+  <rect class="djf-box" x="242" y="78" width="154" height="76" rx="8"/>
+  <text class="djf-text" x="319" y="108" text-anchor="middle">Conflict</text>
+  <text class="djf-sub" x="319" y="130" text-anchor="middle">specs disagree</text>
+
+  <rect class="djf-main" x="448" y="78" width="154" height="76" rx="8"/>
+  <text class="djf-text" x="525" y="108" text-anchor="middle">Adopted rule</text>
+  <text class="djf-sub" x="525" y="130" text-anchor="middle">fail-closed wins</text>
+
+  <rect class="djf-box" x="242" y="184" width="360" height="42" rx="8"/>
+  <text class="djf-text" x="422" y="210" text-anchor="middle">construction checks · store contract · internals</text>
+
+  <path class="djf-flow" d="M190 116 H238"/>
+  <path class="djf-flow" d="M230 112 L239 116 L230 120"/>
+  <path class="djf-flow" d="M396 116 H444"/>
+  <path class="djf-flow" d="M436 112 L445 116 L436 120"/>
+  <path class="djf-flow" d="M525 154 C516 178 492 190 606 204"/>
+  <path class="djf-flow" d="M598 199 L607 205 L597 207"/>
+</svg>
 
 <div class="dj-hero">
   <div>
@@ -28,7 +54,7 @@ Start with the cards for the surface you are changing. Each detailed entry then 
 <div class="dj-map">
   <section class="dj-group">
     <h3>Protocol profiles and discovery</h3>
-    <a href="#dj-7"><strong>#7</strong><span>Profile rules resolve through config helpers; handlers receive booleans.</span></a>
+    <a href="#dj-7"><strong>#7</strong><span>Profiles auto-enable features but reject grants that lack deployment wiring.</span></a>
     <a href="#dj-8"><strong>#8</strong><span>ACR on the wire is separated from the internal AAL ladder.</span></a>
     <a href="#dj-12"><strong>#12</strong><span>Discovery is built once from construction inputs and pinned by golden tests.</span></a>
     <a href="#dj-13"><strong>#13</strong><span><code>client_assertion</code> accepts both OIDC token-endpoint and FAPI issuer audiences.</span></a>
@@ -68,7 +94,7 @@ Start with the cards for the surface you are changing. Each detailed entry then 
     <h3>JOSE and request objects</h3>
     <a href="#dj-1"><strong>#1</strong><span>PAR <code>request_uri</code> is looked up at entry and consumed when a code is emitted.</span></a>
     <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> replay defence is default-on with an OP-side <code>jti</code> cache.</span></a>
-    <a href="#dj-11"><strong>#11</strong><span><code>alg=none</code> and <code>HS*</code> do not exist in the accepted algorithm type.</span></a>
+    <a href="#dj-11"><strong>#11</strong><span><code>none</code> and <code>HS*</code> are excluded; OP-issued artifacts are ES256 only.</span></a>
     <a href="#dj-14"><strong>#14</strong><span>PKCE is <code>S256</code> only across all profiles.</span></a>
     <a href="#dj-27"><strong>#27</strong><span>JWE algorithms are allow-listed and JOSE nesting is capped.</span></a>
   </section>
@@ -156,14 +182,16 @@ OP-side `jti` cache, scoped to the JAR window, evicted on `exp`. Active by defau
 
 <a class="faq-anchor" id="dj-7"></a>
 
-## 7. Profile constraint resolution — disjunction, not switch
+## 7. Profile declaration — auto-enable features, reject unwired grants
 
-**Spec:** No spec text. The challenge is internal: when an OP is configured with `WithProfile(FAPI2Baseline)` AND `WithProfile(FAPI2MessageSigning)`, the OR of the two profiles' rules must apply uniformly across handlers.
+**Spec:** FAPI profiles impose a mixture of requirements: some are routable features such as PAR, JAR, and JARM; others require deployment-owned collaborators. OAuth 2.1 / RFC 9700 makes PKCE mandatory for every authorization-code request, while OIDC Core compatibility must remain available for deployments that need it.
 
-**Conflict:** Open-coded `switch profile` blocks in every handler silently diverge. A future profile (CIBA, iGov) added without revisiting every handler fails open.
+**Conflict:** Open-coded `switch profile` blocks in handlers silently diverge. Auto-enabling every requirement is also wrong: a missing feature can be selected safely, but mounting a grant without its store and resolver collaborators creates a half-wired endpoint.
 
 ::: tip Decision
-**Profile-conditional security gates resolved through `*config` helpers.** Each gate (e.g. `requireSenderConstrainedTokens`, `requirePAR`, `requireSignedRequestObject`) loops over the active profile set and returns a single `bool`. Handlers see only the boolean. Build-time validators in `op/profile/constraints.go` ensure that whatever the helper says is true is actually wired (`RequiredFeatures`, `RequiredAnyOf`), so the runtime path skips defensive nil-checks.
+**Profiles accumulate their policy, but features and grants resolve differently.** `WithProfile` auto-enables required features. Thus FAPI 2.0 Baseline selects PAR and JAR, Message Signing also selects JARM, and a FAPI profile selects DPoP unless the embedder explicitly chose mTLS. `profile.Baseline` has no routable feature; it makes PKCE mandatory for every authorization-code request, including confidential clients.
+
+Required grants are never auto-enabled. `profile.FAPICIBA` without the CIBA grant fails `op.New` and names `WithCIBA(WithCIBAHintResolver(...))` as the wiring path. This preserves a useful construction error instead of mounting `/bc-authorize` without its collaborators. The resolved profiles, features, grants, and policy are emitted once as the `startup.profile` audit event, so operators can verify the actual posture before the first request. The constraint functions live in `op/profile/constraints.go`; `WithProfile` and construction validation apply them centrally.
 :::
 
 <a class="faq-anchor" id="dj-8"></a>
@@ -204,14 +232,16 @@ Sessions are routed through a separate substore (`store.SessionStore`) that the 
 
 <a class="faq-anchor" id="dj-11"></a>
 
-## 11. JOSE `alg=none` and the HMAC family
+## 11. JOSE allow-list and ES256-only issuance
 
 **Spec:** RFC 7518 enumerates `none` and `HS256/384/512`. RFC 8725 ("JWT BCP") §3.1 says implementations MUST NOT trust JWTs based on `none`, and §3.2 warns about HMAC-with-public-key alg confusion.
 
 **Conflict:** The underlying JOSE library accepts the full registry by default. Adding a runtime check is fragile — a future code path that imports the JOSE library directly bypasses it.
 
 ::: tip Decision
-`internal/jose.Algorithm` is a closed enum: `RS256`, `PS256`, `ES256`, `EdDSA`. `none` and `HS*` are **not in the type at all**. `depguard` (lint) forbids importing the underlying JOSE package outside `internal/jose/`, so no future code path can reach the broader registry. Algorithm-confusion is closed structurally.
+`internal/jose.Algorithm` is a closed enum: `RS256`, `PS256`, `ES256`, `EdDSA`. `none` and `HS*` are **not in the type at all**. `depguard` (lint) forbids importing the underlying JOSE package outside `internal/jose/`, so no future code path can reach the broader registry.
+
+The verification allow-list is deliberately wider than the issuing policy. Client assertions and request objects may use the accepted asymmetric algorithms, but every artifact the OP signs — ID Tokens, JWT access tokens, signed UserInfo, and JARM responses — uses ES256 with a P-256 key. This is a permanent v1.x policy: an RP that requires RS256 or PS256 for OP-issued tokens is unsupported. Keeping issuance to one vetted curve removes algorithm negotiation and its downgrade paths without making the OP reject standards-compliant client assertions.
 :::
 
 <a class="faq-anchor" id="dj-12"></a>

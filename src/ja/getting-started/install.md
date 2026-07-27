@@ -26,15 +26,16 @@ go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@latest
 | `github.com/libraz/go-oidc-provider/op/storeadapter/inmem` | 参考実装 / 開発 / テスト用 store。 |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/sql` | SQLite / MySQL / Postgres 用の永続 store。サブモジュールなので、利用するまで DB driver は `go.sum` に入りません。 |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/redis` | 揮発性サブストア（interaction、消費済み JTI）。サブモジュール。 |
+| `github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb` | DynamoDB store。Experimental なサブモジュールで、利用するまで AWS SDK は `go.sum` に入りません。 |
 | `github.com/libraz/go-oidc-provider/op/storeadapter/composite` | Hot/cold splitter。 |
 
 ::: tip サブモジュール
-SQL と Redis adapter は Go サブモジュールとして公開しています。実際にそれを使うモジュールでだけ driver 依存を持てば済みます。
+SQL、Redis、DynamoDB adapter は Go サブモジュールとして公開しています。実際に使うモジュールだけが driver や AWS SDK の依存を持ちます。
 :::
 
-## Pre-v1.0
+## 安定性
 
-ライブラリは **pre-v1.0** です。`v1.0.0` までは公開 API がマイナーリリースで変わる可能性があります。破壊的変更は [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) で追跡されます。godoc が `Experimental:` で始まる API は v1.0 以降もメジャー上げ無しで変わり得ます。
+ライブラリは **v1.0.0** です。公開 API は Semantic Versioning に従うため、破壊的変更にはメジャーリリースが必要です。godoc が `Experimental:` で始まる symbol は例外で、マイナーリリースでも変更される可能性があります。現在は login-flow と interaction UI の seam、Grant Management、DynamoDB adapter が該当します。完全な一覧は生成済みの [experimental API manifest](https://github.com/libraz/go-oidc-provider/blob/main/api/experimental.txt) です。そこにない API は stable です。リリースの詳細は [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を参照してください。
 
 ## 次へ
 

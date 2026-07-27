@@ -1,6 +1,7 @@
 ---
 title: 動的クライアント登録
 description: RP がランタイムに自身を登録できるようにする — RFC 7591 / RFC 7592。
+pageClass: pg-use-cases-dynamic-registration
 ---
 
 # 使い方 — 動的クライアント登録
@@ -28,7 +29,7 @@ description: RP がランタイムに自身を登録できるようにする —
 
 ## アーキテクチャ
 
-<svg class="dcr-flow" role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" style="display:block;width:100%;max-width:760px;height:auto;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="dcr-flow" role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="dcr-seq-title">動的クライアント登録のシーケンス: 運用者が Initial Access Token を発行し仕様外の経路で新規 RP に渡すと、RP は POST /register で登録し、RFC 7592 で登録内容を読み取り・更新・削除する。</title>
   <line x1="130" y1="64" x2="130" y2="581" class="d-life"/>
   <line x1="420" y1="64" x2="420" y2="581" class="d-life-op"/>

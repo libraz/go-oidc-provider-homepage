@@ -1,6 +1,7 @@
 ---
 title: Token Exchange (RFC 8693) — wiring
 description: Enable the RFC 8693 token-exchange grant — TokenExchangePolicy, act chain, audience normalisation, cnf rebinding.
+pageClass: pg-use-cases-token-exchange
 ---
 
 # Use case — Token Exchange (RFC 8693)
@@ -14,6 +15,59 @@ For the conceptual background — impersonation vs delegation, what `act` record
 ::: details `act` chain — what's that?
 RFC 8693 §4.1 defines the `act` claim as a record of "who acted on whose behalf". On the issued token, `act.sub` is the actor's subject; if the actor was itself the result of a previous exchange, its `act` is nested inside, producing a chain (`alice → service-a → service-b`). Resource servers walk `act` to check whole-chain authorisation: "transfers may be initiated by alice via service-a, but not by bob via service-a". The OP enforces a depth ceiling so a malicious chain cannot grow unboundedly.
 :::
+
+<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="token-exchange-flow-title">Token exchange end to end. service-a presents Alice's subject_token together with its own actor_token, and the OP validates both, intersects the scopes, canonicalises the audience, builds the act chain, rebinds cnf, and runs the policy before issuing a token for service-b.</title>
+  <defs>
+    <marker id="tx-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="30" y="44" width="190" height="76" rx="8"/>
+  <text class="h" x="125" y="72" text-anchor="middle">subject_token</text>
+  <text class="t sub" x="125" y="94" text-anchor="middle">Alice's access token</text>
+  <text class="m sub" x="125" y="112" text-anchor="middle">sub=alice · scope=profile write</text>
+
+  <rect x="30" y="164" width="190" height="76" rx="8"/>
+  <text class="h" x="125" y="192" text-anchor="middle">actor_token</text>
+  <text class="t sub" x="125" y="214" text-anchor="middle">service-a's own token</text>
+  <text class="m sub" x="125" y="232" text-anchor="middle">sub=service-a</text>
+
+  <rect class="accent" x="292" y="34" width="220" height="260" rx="8"/>
+  <text class="h accent-text" x="402" y="64" text-anchor="middle">OP /token</text>
+  <text class="m sub" x="402" y="84" text-anchor="middle">grant_type=token-exchange</text>
+  <rect class="soft" x="318" y="106" width="168" height="30" rx="6"/>
+  <text class="t" x="402" y="126" text-anchor="middle">1. validate input tokens</text>
+  <rect class="soft" x="318" y="146" width="168" height="30" rx="6"/>
+  <text class="t" x="402" y="166" text-anchor="middle">2. intersect scopes</text>
+  <rect class="soft" x="318" y="186" width="168" height="30" rx="6"/>
+  <text class="t" x="402" y="206" text-anchor="middle">3. canonicalise audience</text>
+  <rect class="soft" x="318" y="226" width="168" height="30" rx="6"/>
+  <text class="t" x="402" y="246" text-anchor="middle">4. rebuild act / cnf</text>
+  <rect class="soft" x="318" y="266" width="168" height="30" rx="6"/>
+  <text class="t" x="402" y="286" text-anchor="middle">5. Policy.Allow</text>
+
+  <rect x="580" y="82" width="150" height="88" rx="8"/>
+  <text class="h" x="655" y="112" text-anchor="middle">Issued token</text>
+  <text class="m sub" x="655" y="134" text-anchor="middle">aud=service-b</text>
+  <text class="m sub" x="655" y="152" text-anchor="middle">act.sub=service-a</text>
+
+  <rect x="580" y="218" width="150" height="72" rx="8"/>
+  <text class="h" x="655" y="248" text-anchor="middle">service-b</text>
+  <text class="t sub" x="655" y="270" text-anchor="middle">verifies act and cnf</text>
+
+  <path d="M220 82 H288" marker-end="url(#tx-arrow)"/>
+  <path d="M220 202 H288" marker-end="url(#tx-arrow)"/>
+  <path d="M512 126 H576" marker-end="url(#tx-arrow)"/>
+  <path d="M655 170 V214" marker-end="url(#tx-arrow)"/>
+  <text class="m sub" x="253" y="70" text-anchor="middle">POST</text>
+  <text class="m sub" x="253" y="190" text-anchor="middle">POST</text>
+  <text class="m sub" x="546" y="114" text-anchor="middle">200</text>
+
+  <rect class="soft" x="78" y="326" width="604" height="56" rx="8"/>
+  <text class="t" x="380" y="350" text-anchor="middle">Important: the issued token's `cnf` binds to service-a's key, not to Alice's</text>
+  <text class="m sub" x="380" y="370" text-anchor="middle">it uses the calling actor's verified DPoP / mTLS proof, not subject_token.cnf</text>
+</svg>
 
 ## Enabling the grant
 

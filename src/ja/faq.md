@@ -2,13 +2,14 @@
 title: FAQ
 description: ライブラリ作者が examples を書きながら / Conformance 検査を回しながら実際にハマった箇所を集めた FAQ。
 outline: 2
+pageClass: pg-faq
 ---
 
 # FAQ
 
 このページは「最初に見るべき場所」のひとつです。下に並んでいる質問は理屈ではなく、メンテナが examples を書いたり Conformance ハーネスを回したりする途中で実際にハマったものばかりです。
 
-<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="faq-route-title">FAQ の読み方: まずセットアップ、次に FAPI やトークンなど目的別の領域へ進み、最後にエラーや採用判断を確認する。</title>
 <rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
   <text class="faq-text" x="117" y="146" text-anchor="middle">まず起動</text>
@@ -48,7 +49,7 @@ outline: 2
   <li><a href="#logout"><div class="faq-index-title">ログアウト</div><div class="faq-index-desc">Front-Channel を持たない理由、Back-Channel fan-out のギャップ</div></a></li>
   <li><a href="#native-loopback"><div class="faq-index-title">ネイティブアプリとループバック</div><div class="faq-index-desc"><code>127.0.0.1</code> redirect_uri のオプトイン</div></a></li>
   <li><a href="#observability"><div class="faq-index-title">観測性</div><div class="faq-index-desc"><code>/metrics</code> を自動マウントしない理由、監査イベントカタログ</div></a></li>
-  <li><a href="#conformance"><div class="faq-index-title">適合性とバージョン</div><div class="faq-index-desc">REVIEW の意味、認証の称し方、pre-v1.0 のバージョン固定方針</div></a></li>
+  <li><a href="#conformance"><div class="faq-index-title">適合性とバージョン</div><div class="faq-index-desc">REVIEW の意味、認証の称し方、v1 の安定性</div></a></li>
   <li><a href="#errors"><div class="faq-index-title">よくあるエラー</div><div class="faq-index-desc"><code>redirect_uri</code> 不一致、<code>alg not allowed</code>、<code>jkt mismatch</code></div></a></li>
   <li><a href="#adoption"><div class="faq-index-title">採用判断</div><div class="faq-index-desc">本番投入の可否、セキュリティ報告の経路</div></a></li>
 </ul>
@@ -193,7 +194,7 @@ op.WithDPoPNonceSource(src)
 
 ### `dpop_signing_alg_values_supported` に RS256 が含まれていないのはなぜ？
 
-意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。`RS256` は ID トークン署名では使えますが、DPoP proof は FAPI が推奨する部分集合に絞っています。
+意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。この許可リストは OP が client assertion や JAR request object を**検証する**ときの集合で、DPoP proof はそこから FAPI が推奨する部分集合に絞っています。なお `RS256` は OP 側の署名アルゴリズムでもありません。OP が発行するトークンの署名は `ES256` のみで、これは 1.x 系の恒久的な方針であり、未実装の穴ではありません。
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -211,9 +212,9 @@ op.WithDPoPNonceSource(src)
 | `sql`（SQLite / MySQL / Postgres） | 単一の永続バックエンド。最短で本番に乗せられる選択 |
 | `redis`（揮発サブストア専用） | `composite` で `sql` と組み合わせ、hot / cold を分離 |
 | `composite` | hot / cold 分離。「永続バックエンドは 1 つ」を構築時に強制 |
-| `dynamodb` | 予定（v1.x） |
+| `dynamodb` | サブストアごとに 1 テーブルを使う永続バックエンド。`store.Transactional` によりブラウザ認可コードフローも動作する。API は Experimental。 |
 
-<a class="doc-ref" href="/ja/use-cases/sql-store">SQL ストア</a> と <a class="doc-ref" href="/ja/use-cases/hot-cold-redis">Hot / Cold 分離</a> を参照。
+<a class="doc-ref" href="/ja/use-cases/sql-store">SQL ストア</a>、<a class="doc-ref" href="/ja/use-cases/dynamodb-store">DynamoDB ストア</a>、<a class="doc-ref" href="/ja/use-cases/hot-cold-redis">Hot / Cold 分離</a> を参照。
 
 ### `composite.New` が起動時に設定を拒否する
 
@@ -335,23 +336,23 @@ HTTP ルートのマウントはルーター側の責務です — トレーシ�
 
 ### OFCS 適合状況に PASSED だけでなく REVIEW も出るのはなぜ？
 
-OFCS の判定は 3 値で、OP の不具合と言えるのは `FAILED` だけです:
+OFCS は複数の結果を記録します。raw の `FAILED` は通常、suite が期待結果を観測できなかったことを示します。strict verifier がレビュー済みかつ期限内の exclusion と照合した場合だけ、直ちに release blocker にはなりません:
 
 | 判定 | 意味 |
 |---|---|
 | `PASSED` | テスト実行 / OP は仕様どおりに振る舞った |
 | `REVIEW` | テスト実行 / OP は正しく振る舞った — 人間が UI 成果物（描画されたエラーページのスクリーンショット等）を目視確認する必要がある |
-| `FAILED` | OP が誤った挙動を返した |
+| `FAILED` | module が suite の期待結果に到達しなかった。レビュー済み・期限付き exclusion がなければ release を止める。 |
 
-本ハーネスは `REVIEW` を自動 pass にせず、そのまま記録します。現在の 4 plan baseline では `FAILED` はゼロです。完全な内訳は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
+本ハーネスは `REVIEW` を自動 pass にせず、そのまま記録します。v1.0.0 の 9 plan snapshot には raw failure が 6 件、終端結果なしが 2 件あり、いずれも release verifier が明示的にレビューしています。完全な内訳は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
 
 ### 「OIDF 認証取得済み」と称してよい？
 
 不可です。本プロジェクトは OpenID Foundation の会員費を支払っておらず、公式認証も取得していません。OFCS のベースラインは仕様適合性の再現可能なスナップショットであって、認証ではありません。詳細は <a class="doc-ref" href="/ja/security/posture">セキュリティ方針</a>を参照してください。
 
-### Pre-v1.0 — バージョンを固定すべき?
+### バージョンを固定すべき?
 
-すべきです。v1.0 までは公開 Go API が任意の minor リリースで破壊的変更を受ける可能性があります。`go.mod` でバージョンタグを固定し、バージョン更新のたびに [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。`BREAKING` エントリを必ず明示するのがプロジェクトの約束です。
+すべきです。本番依存は `go.mod` で固定し、更新前に [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。v1 の公開 Go API は Semantic Versioning に従うので、破壊的変更にはメジャーバージョンが必要です。`Experimental:` マーカー付き API は例外です。
 
 <div id="errors" class="faq-anchor"></div>
 

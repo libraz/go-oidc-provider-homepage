@@ -1,6 +1,7 @@
 ---
 title: JWE 暗号化 — id_token / userinfo / JARM / introspection
 description: JWE の組み込み — 暗号化鍵集合を登録、JWE request_object を受理、出力応答をクライアントの use=enc JWK 宛に暗号化。
+pageClass: pg-use-cases-jwe-encryption
 ---
 
 # 使い方 — JWE 暗号化（RFC 7516）
@@ -12,7 +13,7 @@ OP は以下を行えます:
 
 両方向とも閉じた許可リストに対して実装しています。
 
-<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="jwe-wrap-title">JWE は署名済み JWT を外側から暗号化する。RP はまず JWE を復号し、内側の JWS 署名を検証する。</title>
 <rect class="jwe-box" x="36" y="92" width="156" height="80" rx="8"/>
   <text class="jwe-text" x="114" y="124" text-anchor="middle">OP</text>
@@ -128,7 +129,7 @@ provider, err := op.New(
 | `KeyID` | JWKS で広告し、inbound JWE で照合する `kid`。keyset 内で unique |
 | `PrivateKey` | `*rsa.PrivateKey`（2048 bit 以上）または `*ecdsa.PrivateKey`（P-256 / P-384 / P-521）。それ以外は `op.New` で拒否 |
 | `Algorithm` | 任意の明示 `alg`（`ECDH-ES+A256KW` 等）。空のとき: RSA → `RSA-OAEP-256`、ECDSA → `ECDH-ES` |
-| `NotAfter` | 任意の retirement deadline。OP はこの kid 宛 JWE をこの時刻以降復号しない。public 半は cache warmth のため JWKS に残す |
+| `NotAfter` | 任意の退役期限。この時刻以降は厳格に適用され、OP はこの kid 宛の JWE を復号せず、**public 半も JWKS から落とす**。OP がもう受け付けない鍵へ RP を誘導しないため |
 
 keyset の最初の entry が **outbound 暗号化のアクティブ鍵**。後続 entry は JWKS に残り、ローテーション overlap 中に古い kid を持つ RP キャッシュが addressing できるようにします。Inbound 復号は `kid` を最初に matching、kid 不在時はスライス順に全鍵への trial 復号にフォールバック（RFC 7516 §4.1.6）。
 

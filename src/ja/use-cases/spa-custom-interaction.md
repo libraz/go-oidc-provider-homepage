@@ -1,6 +1,7 @@
 ---
 title: SPA / 対話画面のカスタマイズ
 description: 任意の SPA（React / Vue / Svelte / Angular など）からログイン / 同意 / ログアウトを扱う。SPA から読み取りやすいエラー描画も同梱。
+pageClass: pg-use-cases-spa-custom-interaction
 ---
 
 # 使い方 — SPA / 対話画面のカスタマイズ
@@ -32,6 +33,7 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 > **ソース:**
 > - [`examples/16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction) — JSON driver への最小差し替え。
 > - [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) — `op.WithSPAUI` で OP 側に SPA を公開する構成。同梱バンドルはビルド手順なしで動かすための素の HTML/CSS/JS ですが、接続点はフレームワーク非依存で、React / Vue / Svelte / Angular いずれも同じ形で使えます。
+> - [`examples/17-spa-composite-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-spa-composite-store) — 本番に近い組み合わせ。SPA interaction、永続状態用 MySQL、session / interaction / consumed JTI 用 Redis をまとめて動かします。
 
 ## アーキテクチャ
 
@@ -49,7 +51,7 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 
 低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。`/authorize` のリダイレクトから RP のコールバックに戻る `code` 付きリダイレクトまでの間は、すべて SPA 上で完結します。
 
-<svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="spa-interaction-seq-title">JSON ドライバ構成の SPA interaction のシーケンス: ブラウザが SPA の入口を読み込み、各画面状態を OP から JSON で取得して回答を送り返し、終端の redirect 応答に従う。</title>
 
   <line class="life" x1="120" y1="56" x2="120" y2="505"/>

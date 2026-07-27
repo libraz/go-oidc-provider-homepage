@@ -1,6 +1,7 @@
 ---
 title: 脆弱性報告 / CVE
 description: go-oidc-provider のセキュリティ問題の報告経路、対応の流れ、現在の advisory 状況。
+pageClass: pg-security-disclosure
 ---
 
 # 脆弱性報告 / CVE
@@ -33,7 +34,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 報告を受領してからのおおまかな流れです。
 
-<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:640px;height:auto;margin:1.5rem auto;">
+<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="disclosure-flow-title">脆弱性報告の処理フロー: 報告を受領し、受領確認と triage を経て、スコープ外ならクローズ、有効なら修正・協調開示・リリースを経て GHSA を公開する流れ。</title>
   <!-- boxes -->
   <rect x="20" y="20" width="230" height="54" rx="8"/>
@@ -78,11 +79,10 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 | バージョン | サポート |
 |---|---|
-| `v0.x`（pre-v1.0） | 最新 minor のみ |
-| `v1.x` | 最新 minor + 1 つ前の minor（v1.0 以降の予定） |
+| `v1.x` | 最新 minor + 1 つ前の minor |
 
-::: tip pre-v1.0 のリリースサイクル
-v1.0 までの間、公開 Go API は minor リリースのたびに変わる可能性があります。`go.mod` ではバージョンタグを固定し、更新のたびに [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。セキュリティ修正は最新 minor にのみ反映します。古い minor に留まっている場合、修正を取り込むには更新が必要です。pre-v1.0 期間中はメンテナが一人のため、バックポートは予定していません。
+::: tip 更新の方針
+`go.mod` ではバージョンタグを固定し、更新のたびに [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。v1 の公開 API は Semantic Versioning に従います。`Experimental:` マーカー付き API はこの約束の例外です。セキュリティ修正はサポート対象の v1 minor に入ります。
 :::
 
 ## 開示フロー
@@ -98,7 +98,7 @@ v1.0 までの間、公開 Go API は minor リリースのたびに変わる可
 ## 現在の Advisory 状況
 
 ::: details 本ページ更新時点
-**現時点で公開済みの CVE は 0 件です。** pre-v1.0 期間において、CVE 発番の条件を満たすセキュリティ報告はまだ届いていません。これは「公開すべきものが現状ない」という事実をそのまま示しているだけで、「監査済みで安全」を主張しているわけではありません。本プロジェクトが構造的に防いでいる範囲とその限界については [セキュリティ方針](/ja/security/posture) を参照してください。
+**現時点で公開済みの CVE は 0 件です。** CVE 発番の条件を満たすセキュリティ報告はまだ届いていません。これは「公開すべきものが現状ない」という事実をそのまま示しているだけで、「監査済みで安全」を主張しているわけではありません。本プロジェクトが構造的に防いでいる範囲とその限界については [セキュリティ方針](/ja/security/posture) を参照してください。
 
 正規の情報源は GitHub Security Advisories です。提出された advisory は [advisories ページ](https://github.com/libraz/go-oidc-provider/security/advisories) に直ちに反映されます。
 :::

@@ -1,6 +1,7 @@
 ---
 title: 使い方
 description: upstream リポジトリで動作確認済みの本番形シナリオ。
+pageClass: pg-use-cases-index
 ---
 
 # 使い方
@@ -19,7 +20,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 
 初めて読む場合は [最小 OP](/ja/use-cases/minimal-op)、次に [Comprehensive bundle](/ja/use-cases/bundle) を確認し、自分の構成にその必要が出てきた段階で下の各ページへ進むのがおすすめです。
 
-<svg role="img" aria-labelledby="use-cases-route-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="use-cases-route-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="use-cases-route-title">使い方ページの読み進め方: 最小 OP から始め、必要に応じてプロファイル、UI、ストレージ、認証、拡張 grant、運用へ進む。</title>
 <rect class="uc-main" x="36" y="106" width="146" height="74" rx="8"/>
   <text class="uc-text" x="109" y="136" text-anchor="middle">最小 OP</text>
@@ -46,6 +47,16 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
   <path class="uc-flow" d="M540 184 L549 188 L540 192"/>
 </svg>
 
+## リファレンスアプリケーション
+
+番号付きの example は 1 つのオプションを 200 〜 500 行で切り出したものです。[`sample/`](https://github.com/libraz/go-oidc-provider/tree/main/sample) はそれとは別で、example が飛ばしている「アカウントが生まれてから使われるまで」の一連の流れを扱います。アプリケーション側が持つサインアップ、Argon2id によるパスワード保管、アプリケーション自身が実装する [`interaction.Driver`](/ja/use-cases/spa-custom-interaction) を通したログインと同意、アカウント設定画面からの TOTP 登録、そして round-trip を完了する RP までを、`op/storeadapter/composite` で束ねた MySQL + Redis の上で、`docker compose up` 一発で動かせます。
+
+```sh
+docker compose -f sample/compose.yaml up -d --build
+```
+
+同意画面は scope 単位の granular consent の実装例になっています。これは[同梱の HTML driver](/ja/use-cases/custom-consent-ui) が意図的に提供していない部分です。ただしテンプレートではなくデモとして扱ってください。スキーマはあくまで一組み込み側のモデルで、署名鍵と cookie key は起動のたびに再生成され、公開ホスティングを想定した作りにもなっていません。
+
 ## 一覧
 
 各 example フォルダはいずれかのページに対応しています。
@@ -61,6 +72,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 
 | 使い方 | 例 | ページ |
 |---|---|---|
+| OAuth 2.1 または既存 OIDC の姿勢を宣言 | [`00-security-profile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/00-security-profile) | [セキュリティプロファイルの宣言](/ja/use-cases/security-profile) |
 | OIDC と並走する純粋 OAuth 2.0 | [`04-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-oauth2-only) | [OAuth 2.0（openid なし）](/ja/use-cases/oauth2-only) |
 | FAPI 2.0 Baseline (PAR + JAR + DPoP) | [`03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) | [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) |
 | Service-to-service token | [`05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) | [client_credentials](/ja/use-cases/client-credentials) |
@@ -70,7 +82,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 
 | 使い方 | 例 | ページ |
 |---|---|---|
-| SPA から UI を扱う | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction)、[`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) | [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) |
+| SPA から UI を扱う | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction)、[`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login)、[`17-spa-composite-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-spa-composite-store) | [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) |
 | カスタム HTML 同意画面 | [`11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) | [カスタム同意 UI](/ja/use-cases/custom-consent-ui) |
 | カスタム HTML アカウント選択 | [`12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) | [カスタムアカウント選択 UI](/ja/use-cases/custom-chooser-ui) |
 | マルチアカウント選択（`prompt=select_account`） | [`13-multi-account`](https://github.com/libraz/go-oidc-provider/tree/main/examples/13-multi-account) | [マルチアカウント選択](/ja/use-cases/multi-account) |
@@ -82,6 +94,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 | 使い方 | 例 | ページ |
 |---|---|---|
 | 実 DB に永続化 | [`06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store)、[`07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) | [SQL ストア](/ja/use-cases/sql-store) |
+| DynamoDB に永続化 | [`18-dynamodb-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/18-dynamodb-store) | [DynamoDB ストア](/ja/use-cases/dynamodb-store) |
 | SQL アダプタのテーブル名を差し替える | [`25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) | [SQL ストア § テーブル名を差し替える](/ja/use-cases/sql-store#テーブル名を差し替える) |
 | ストアをゼロから実装する | [`26-byo-store-from-scratch`](https://github.com/libraz/go-oidc-provider/tree/main/examples/26-byo-store-from-scratch) | [ストアバックエンドを自前実装する](/ja/use-cases/byo-store) |
 | Hot / Cold 分離（Redis 揮発） | [`08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold)、[`09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) | [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) |
@@ -98,6 +111,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 | 使い方 | 例 | ページ |
 |---|---|---|
 | MFA、captcha、ステップアップ | [`20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp)、[`21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa)、[`22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha)、[`23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / ステップアップ](/ja/use-cases/mfa-step-up) |
+| Email OTP、recovery code、passkey | [`28-email-otp-recovery`](https://github.com/libraz/go-oidc-provider/tree/main/examples/28-email-otp-recovery)、[`29-passkey`](https://github.com/libraz/go-oidc-provider/tree/main/examples/29-passkey) | [MFA / ステップアップ](/ja/use-cases/mfa-step-up) |
 | 既存ユーザストアの投影 | [`24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore) | [既存ユーザストアの投影](/ja/use-cases/byo-userstore) |
 
 ### Advanced grants
@@ -129,6 +143,7 @@ description: upstream リポジトリで動作確認済みの本番形シナリ�
 | 使い方 | 例 | ページ |
 |---|---|---|
 | Prometheus メトリクス | [`52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics) | [Prometheus メトリクス](/ja/use-cases/prometheus) |
+| FAPI TLS ポリシーと public JWKS の読み込み | [`50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) | [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) |
 
 ## 番号体系
 

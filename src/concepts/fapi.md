@@ -1,6 +1,7 @@
 ---
 title: FAPI 2.0 primer
 description: What FAPI is, why it exists, and what each of its mandates buys you. Aimed at engineers approaching FAPI for the first time.
+pageClass: pg-concepts-fapi
 ---
 
 # FAPI 2.0 — a primer
@@ -60,6 +61,41 @@ FAPI 1.0 had two bands. **Read-Only** was for use cases that only retrieved data
 ## Baseline vs Message Signing
 
 FAPI 2.0 has two bands:
+
+<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="fapi-layers-title">The FAPI 2.0 layers. Baseline pins a safe set of mandates on top of OAuth 2.0 and OIDC, and Message Signing adds signed requests, signed responses, and DPoP nonces so the exchange leaves evidence that cannot be repudiated later.</title>
+  <rect class="soft" x="70" y="306" width="620" height="64" rx="8"/>
+  <text class="h" x="380" y="332" text-anchor="middle">OAuth 2.0 + OpenID Connect</text>
+  <text class="t sub" x="380" y="354" text-anchor="middle">the base specs — many options, some of them dangerous in combination</text>
+
+  <rect class="accent" x="112" y="184" width="536" height="88" rx="8"/>
+  <text class="h accent-text" x="380" y="213" text-anchor="middle">FAPI 2.0 Baseline</text>
+  <text class="t" x="380" y="238" text-anchor="middle">PAR / PKCE / DPoP or mTLS / ES256 / exact-match redirect_uri</text>
+  <text class="m sub" x="380" y="258" text-anchor="middle">op.WithProfile(profile.FAPI2Baseline)</text>
+
+  <rect x="154" y="52" width="452" height="96" rx="8"/>
+  <text class="h" x="380" y="82" text-anchor="middle">FAPI 2.0 Message Signing</text>
+  <text class="t" x="380" y="107" text-anchor="middle">Baseline plus JAR / JARM / DPoP nonce</text>
+  <text class="t sub" x="380" y="128" text-anchor="middle">request and response stay verifiable after the fact</text>
+
+  <path d="M380 306 V276"/>
+  <path d="M376 276 L380 272 L384 276"/>
+  <path d="M380 184 V152"/>
+  <path d="M376 152 L380 148 L384 152"/>
+
+  <rect x="34" y="78" width="94" height="44" rx="6"/>
+  <text class="t" x="81" y="96" text-anchor="middle">transport</text>
+  <text class="t sub" x="81" y="113" text-anchor="middle">safety</text>
+  <path d="M128 100 H150"/>
+
+  <rect x="632" y="78" width="94" height="44" rx="6"/>
+  <text class="t" x="679" y="96" text-anchor="middle">audit trail</text>
+  <text class="t sub" x="679" y="113" text-anchor="middle">non-repudiation</text>
+  <path d="M632 100 H610"/>
+
+  <rect x="70" y="386" width="620" height="26" rx="6"/>
+  <text class="t sub" x="380" y="404" text-anchor="middle">FAPI is not a separate protocol — it is a profile that pins down how to use OAuth / OIDC safely</text>
+</svg>
 
 ::: tip Baseline — the floor
 Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS sender constraint, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, and `private_key_jwt` client authentication. This is the floor for any FAPI 2.0 deployment.

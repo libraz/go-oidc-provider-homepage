@@ -1,6 +1,7 @@
 ---
 title: OAuth 2.0 / OIDC primer
 description: A from-scratch explainer of OAuth 2.0 roles and what OpenID Connect adds. Written for engineers seeing this for the first time.
+pageClass: pg-concepts-oauth2-oidc-primer
 ---
 
 # OAuth 2.0 / OpenID Connect — a from-scratch primer
@@ -53,18 +54,7 @@ If you're new to authentication and authorization, the standards stack looks lik
 
 ## The three roles
 
-<style scoped>
-.diag-roles text{stroke:none;fill:var(--vp-c-text-1)}
-.diag-roles .p{font-family:var(--vp-font-family-base)}
-.diag-roles .m{font-family:var(--vp-font-family-mono)}
-.diag-roles .sub{fill:var(--vp-c-text-2)}
-.diag-roles .op{stroke:var(--vp-c-brand-2)}
-.diag-roles .opf{fill:var(--vp-c-brand-2)}
-.diag-roles .rs{stroke:var(--vp-c-text-3)}
-.diag-roles .rsf{fill:var(--vp-c-text-3)}
-</style>
-
-<svg class="diag diag-roles" role="img" aria-labelledby="roles-title" viewBox="0 0 760 202" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="diag diag-roles" role="img" aria-labelledby="roles-title" viewBox="0 0 760 202" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="roles-title">The three OAuth/OIDC roles: the RP delegates authentication to the OP and receives tokens, then calls the RS with a Bearer access token.</title>
   <defs>
     <marker id="roles-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -74,26 +64,26 @@ If you're new to authentication and authorization, the standards stack looks lik
   <rect x="14" y="16" width="186" height="128" rx="8"/>
   <rect class="op" x="287" y="16" width="186" height="128" rx="8"/>
   <rect class="rs" x="560" y="16" width="186" height="128" rx="8"/>
-  <text class="p" x="107" y="50" text-anchor="middle" font-size="18" font-weight="700">RP</text>
-  <text class="p sub" x="107" y="72" text-anchor="middle" font-size="11">Relying Party / Client</text>
-  <text class="p sub" x="107" y="90" text-anchor="middle" font-size="11">your app</text>
-  <text class="p sub" x="107" y="114" text-anchor="middle" font-size="10">initiates login, holds</text>
-  <text class="p sub" x="107" y="128" text-anchor="middle" font-size="10">tokens, calls APIs</text>
-  <text class="p opf" x="380" y="50" text-anchor="middle" font-size="18" font-weight="700">OP</text>
-  <text class="p sub" x="380" y="72" text-anchor="middle" font-size="11">OpenID Provider</text>
-  <text class="m opf" x="380" y="91" text-anchor="middle" font-size="11">go-oidc-provider</text>
-  <text class="p sub" x="380" y="114" text-anchor="middle" font-size="10">authenticates users,</text>
-  <text class="p sub" x="380" y="128" text-anchor="middle" font-size="10">mints tokens</text>
-  <text class="p rsf" x="653" y="50" text-anchor="middle" font-size="18" font-weight="700">RS</text>
-  <text class="p sub" x="653" y="72" text-anchor="middle" font-size="11">Resource Server</text>
-  <text class="p sub" x="653" y="90" text-anchor="middle" font-size="11">your API</text>
-  <text class="p sub" x="653" y="114" text-anchor="middle" font-size="10">validates the access</text>
-  <text class="p sub" x="653" y="128" text-anchor="middle" font-size="10">token, returns data</text>
-  <text class="p sub" x="243" y="60" text-anchor="middle" font-size="10">delegate auth /</text>
-  <text class="p sub" x="243" y="74" text-anchor="middle" font-size="10">receive tokens</text>
+  <text class="p" x="107" y="50" text-anchor="middle" font-size="17.5" font-weight="700">RP</text>
+  <text class="p sub" x="107" y="72" text-anchor="middle" font-size="10.5">Relying Party / Client</text>
+  <text class="p sub" x="107" y="90" text-anchor="middle" font-size="10.5">your app</text>
+  <text class="p sub" x="107" y="114" text-anchor="middle" font-size="9.5">initiates login, holds</text>
+  <text class="p sub" x="107" y="128" text-anchor="middle" font-size="9.5">tokens, calls APIs</text>
+  <text class="p opf" x="380" y="50" text-anchor="middle" font-size="17.5" font-weight="700">OP</text>
+  <text class="p sub" x="380" y="72" text-anchor="middle" font-size="10.5">OpenID Provider</text>
+  <text class="m opf" x="380" y="91" text-anchor="middle" font-size="10.5">go-oidc-provider</text>
+  <text class="p sub" x="380" y="114" text-anchor="middle" font-size="9.5">authenticates users,</text>
+  <text class="p sub" x="380" y="128" text-anchor="middle" font-size="9.5">mints tokens</text>
+  <text class="p rsf" x="653" y="50" text-anchor="middle" font-size="17.5" font-weight="700">RS</text>
+  <text class="p sub" x="653" y="72" text-anchor="middle" font-size="10.5">Resource Server</text>
+  <text class="p sub" x="653" y="90" text-anchor="middle" font-size="10.5">your API</text>
+  <text class="p sub" x="653" y="114" text-anchor="middle" font-size="9.5">validates the access</text>
+  <text class="p sub" x="653" y="128" text-anchor="middle" font-size="9.5">token, returns data</text>
+  <text class="p sub" x="243" y="60" text-anchor="middle" font-size="9.5">delegate auth /</text>
+  <text class="p sub" x="243" y="74" text-anchor="middle" font-size="9.5">receive tokens</text>
   <line x1="200" y1="88" x2="287" y2="88" marker-start="url(#roles-ah)" marker-end="url(#roles-ah)"/>
   <path d="M120 144 C 120 200, 640 200, 640 144" marker-end="url(#roles-ah)"/>
-  <text class="p sub" x="380" y="178" text-anchor="middle" font-size="10"><tspan class="m">Bearer</tspan> access token</text>
+  <text class="p sub" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> access token</text>
 </svg>
 
 The actual login steps (redirect to `/auth`, code exchange, token retrieval) are spelled out in the [authorization code + PKCE flow](#the-most-common-flow-authorization-code--pkce) below. The diagram above is the static "who's responsible for what" view.
@@ -143,19 +133,7 @@ A common beginner mistake: sending the ID Token to your API. Don't — ID Tokens
 
 ## The flow you'll see most often: Authorization Code + PKCE
 
-<style scoped>
-.diag-authcode text{stroke:none;fill:var(--vp-c-text-1)}
-.diag-authcode .p{font-family:var(--vp-font-family-base)}
-.diag-authcode .m{font-family:var(--vp-font-family-mono)}
-.diag-authcode .sub{fill:var(--vp-c-text-2)}
-.diag-authcode .life{stroke:var(--vp-c-divider);stroke-width:1.5}
-.diag-authcode .op{stroke:var(--vp-c-brand-2)}
-.diag-authcode .opf{fill:var(--vp-c-brand-2)}
-.diag-authcode .rs{stroke:var(--vp-c-text-3)}
-.diag-authcode .rsf{fill:var(--vp-c-text-3)}
-</style>
-
-<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" style="width:100%;height:auto;max-width:772px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authcode-title">Authorization Code + PKCE sequence: the browser carries the user between the RP and the OP for login and code exchange, then the RP calls the RS with the access token.</title>
   <defs>
     <marker id="authcode-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -167,65 +145,65 @@ A common beginner mistake: sending the ID Token to your API. Don't — ID Tokens
   <line class="life op" x1="500" y1="48" x2="500" y2="506"/>
   <line class="life rs" x1="700" y1="48" x2="700" y2="506"/>
   <rect x="20" y="12" width="100" height="36" rx="6"/>
-  <text class="p" x="70" y="30" text-anchor="middle" font-size="12" font-weight="700">User</text>
-  <text class="p sub" x="70" y="43" text-anchor="middle" font-size="9">(browser)</text>
+  <text class="p" x="70" y="30" text-anchor="middle" font-size="11.5" font-weight="700">User</text>
+  <text class="p sub" x="70" y="43" text-anchor="middle" font-size="8.5">(browser)</text>
   <rect x="230" y="12" width="100" height="36" rx="6"/>
-  <text class="p" x="280" y="30" text-anchor="middle" font-size="12" font-weight="700">RP</text>
-  <text class="p sub" x="280" y="43" text-anchor="middle" font-size="9">your app</text>
+  <text class="p" x="280" y="30" text-anchor="middle" font-size="11.5" font-weight="700">RP</text>
+  <text class="p sub" x="280" y="43" text-anchor="middle" font-size="8.5">your app</text>
   <rect class="op" x="440" y="12" width="120" height="36" rx="6"/>
-  <text class="p opf" x="500" y="29" text-anchor="middle" font-size="12" font-weight="700">OP</text>
-  <text class="m opf" x="500" y="43" text-anchor="middle" font-size="9">go-oidc-provider</text>
+  <text class="p opf" x="500" y="29" text-anchor="middle" font-size="11.5" font-weight="700">OP</text>
+  <text class="m opf" x="500" y="43" text-anchor="middle" font-size="8.5">go-oidc-provider</text>
   <rect class="rs" x="650" y="12" width="100" height="36" rx="6"/>
-  <text class="p rsf" x="700" y="30" text-anchor="middle" font-size="12" font-weight="700">RS</text>
-  <text class="p sub" x="700" y="43" text-anchor="middle" font-size="9">your API</text>
+  <text class="p rsf" x="700" y="30" text-anchor="middle" font-size="11.5" font-weight="700">RS</text>
+  <text class="p sub" x="700" y="43" text-anchor="middle" font-size="8.5">your API</text>
   <circle cx="24" cy="92" r="10"/>
-  <text class="p" x="24" y="96" text-anchor="middle" font-size="11">1</text>
+  <text class="p" x="24" y="96" text-anchor="middle" font-size="10.5">1</text>
   <line x1="70" y1="92" x2="280" y2="92" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="83" font-size="11">open app</text>
+  <text class="p" x="78" y="83" font-size="10.5">open app</text>
   <circle cx="24" cy="132" r="10"/>
-  <text class="p" x="24" y="136" text-anchor="middle" font-size="11">2</text>
+  <text class="p" x="24" y="136" text-anchor="middle" font-size="10.5">2</text>
   <line x1="280" y1="132" x2="70" y2="132" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="110" font-size="11">redirect to OP <tspan class="m">/auth</tspan></text>
-  <text class="m" x="78" y="122" font-size="9.5">client_id, redirect_uri, scope, state, code_challenge</text>
+  <text class="p" x="78" y="110" font-size="10.5">redirect to OP <tspan class="m">/auth</tspan></text>
+  <text class="m" x="78" y="122" font-size="9">client_id, redirect_uri, scope, state, code_challenge</text>
   <circle cx="24" cy="172" r="10"/>
-  <text class="p" x="24" y="176" text-anchor="middle" font-size="11">3</text>
+  <text class="p" x="24" y="176" text-anchor="middle" font-size="10.5">3</text>
   <line x1="70" y1="172" x2="500" y2="172" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="78" y="163" font-size="10">GET /auth …</text>
+  <text class="m" x="78" y="163" font-size="9.5">GET /auth …</text>
   <circle cx="24" cy="212" r="10"/>
-  <text class="p" x="24" y="216" text-anchor="middle" font-size="11">4</text>
+  <text class="p" x="24" y="216" text-anchor="middle" font-size="10.5">4</text>
   <line x1="500" y1="212" x2="70" y2="212" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="203" font-size="11">login + consent UI</text>
+  <text class="p" x="78" y="203" font-size="10.5">login + consent UI</text>
   <circle cx="24" cy="252" r="10"/>
-  <text class="p" x="24" y="256" text-anchor="middle" font-size="11">5</text>
+  <text class="p" x="24" y="256" text-anchor="middle" font-size="10.5">5</text>
   <line x1="70" y1="252" x2="500" y2="252" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="243" font-size="11">submit credentials</text>
+  <text class="p" x="78" y="243" font-size="10.5">submit credentials</text>
   <circle cx="24" cy="292" r="10"/>
-  <text class="p" x="24" y="296" text-anchor="middle" font-size="11">6</text>
+  <text class="p" x="24" y="296" text-anchor="middle" font-size="10.5">6</text>
   <line x1="500" y1="292" x2="70" y2="292" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="270" font-size="11">302 redirect to RP <tspan class="m">/callback</tspan></text>
-  <text class="m" x="78" y="282" font-size="10">?code=xyz&amp;state=…</text>
+  <text class="p" x="78" y="270" font-size="10.5">302 redirect to RP <tspan class="m">/callback</tspan></text>
+  <text class="m" x="78" y="282" font-size="9.5">?code=xyz&amp;state=…</text>
   <circle cx="24" cy="332" r="10"/>
-  <text class="p" x="24" y="336" text-anchor="middle" font-size="11">7</text>
+  <text class="p" x="24" y="336" text-anchor="middle" font-size="10.5">7</text>
   <line x1="70" y1="332" x2="280" y2="332" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="78" y="323" font-size="10">GET /callback?code=xyz</text>
+  <text class="m" x="78" y="323" font-size="9.5">GET /callback?code=xyz</text>
   <circle cx="24" cy="372" r="10"/>
-  <text class="p" x="24" y="376" text-anchor="middle" font-size="11">8</text>
+  <text class="p" x="24" y="376" text-anchor="middle" font-size="10.5">8</text>
   <line x1="280" y1="372" x2="500" y2="372" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="350" font-size="10">POST /token</text>
-  <text class="m" x="288" y="362" font-size="9.5">code=xyz, code_verifier=…, client auth</text>
+  <text class="m" x="288" y="350" font-size="9.5">POST /token</text>
+  <text class="m" x="288" y="362" font-size="9">code=xyz, code_verifier=…, client auth</text>
   <circle cx="24" cy="412" r="10"/>
-  <text class="p" x="24" y="416" text-anchor="middle" font-size="11">9</text>
+  <text class="p" x="24" y="416" text-anchor="middle" font-size="10.5">9</text>
   <line x1="500" y1="412" x2="280" y2="412" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="403" font-size="10">{ access_token, id_token, refresh_token }</text>
+  <text class="m" x="288" y="403" font-size="9.5">{ access_token, id_token, refresh_token }</text>
   <circle cx="24" cy="452" r="10"/>
-  <text class="p" x="24" y="456" text-anchor="middle" font-size="11">10</text>
+  <text class="p" x="24" y="456" text-anchor="middle" font-size="10.5">10</text>
   <line x1="280" y1="452" x2="700" y2="452" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="430" font-size="10">GET /api/…</text>
-  <text class="m" x="288" y="442" font-size="9.5">Authorization: Bearer &lt;access_token&gt;</text>
+  <text class="m" x="288" y="430" font-size="9.5">GET /api/…</text>
+  <text class="m" x="288" y="442" font-size="9">Authorization: Bearer &lt;access_token&gt;</text>
   <circle cx="24" cy="492" r="10"/>
-  <text class="p" x="24" y="496" text-anchor="middle" font-size="11">11</text>
+  <text class="p" x="24" y="496" text-anchor="middle" font-size="10.5">11</text>
   <line x1="700" y1="492" x2="280" y2="492" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="483" font-size="10">200 OK  { data }</text>
+  <text class="m" x="288" y="483" font-size="9.5">200 OK  { data }</text>
 </svg>
 
 The "+ PKCE" piece (steps highlighted via `code_challenge`/`code_verifier`) is what stops a malicious app from intercepting the authorization code. [Detailed walk-through](/concepts/authorization-code-pkce).

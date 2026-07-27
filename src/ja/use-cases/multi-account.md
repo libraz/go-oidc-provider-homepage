@@ -1,6 +1,7 @@
 ---
 title: マルチアカウント選択
 description: 1 ブラウザに複数ユーザがログイン中の状態を OP が chooser group として保持し、prompt=select_account を UI 差し込み口経由で扱う。
+pageClass: pg-use-cases-multi-account
 ---
 
 # 使い方 — マルチアカウント選択
@@ -34,7 +35,7 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 
 ## 動作
 
-<svg class="multi-account-flow" role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="multi-account-flow" role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="multi-account-chooser-flow-title">3 回の /authorize 往復のシーケンス。初回ログインで chooser group を発行し、prompt=login でアカウントを追加、prompt=select_account でアクティブセッションを切り替える。</title>
 
   <!-- actors -->

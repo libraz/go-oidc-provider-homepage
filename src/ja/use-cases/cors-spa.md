@@ -1,6 +1,7 @@
 ---
 title: SPA 向け CORS
 description: 異なる origin の SPA が OP のユーザ向けエンドポイントを呼べるようにする。
+pageClass: pg-use-cases-cors-spa
 ---
 
 # 使い方 — SPA 向け CORS
@@ -14,7 +15,7 @@ description: 異なる origin の SPA が OP のユーザ向けエンドポイ�
 
 本ページは CORS レイヤを扱います。PKCE 自体は [Authorization Code + PKCE](/ja/concepts/authorization-code-pkce) を参照。
 
-<svg role="img" aria-labelledby="cors-spa-flow-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="cors-spa-flow-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="cors-spa-flow-title">SPA の CORS フロー: ブラウザが Origin 付きで preflight を送り、OP が許可リストを確認し、許可された場合だけ本リクエストのレスポンスを SPA に読ませる。</title>
 <rect class="cors-box" x="32" y="92" width="156" height="82" rx="8"/>
   <text class="cors-text" x="110" y="124" text-anchor="middle">SPA</text>

@@ -1,6 +1,7 @@
 ---
 title: DPoP nonce フロー
 description: RFC 9449 §8 / §9 — サーバ供給の nonce を DPoP proof に組み込み、事前計算 proof 攻撃を阻止する。
+pageClass: pg-use-cases-dpop-nonce
 ---
 
 # 使い方 — DPoP nonce フロー
@@ -31,7 +32,7 @@ description: RFC 9449 §8 / §9 — サーバ供給の nonce を DPoP proof に�
 
 ## フロー
 
-<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-nonce-flow-title">DPoP nonce ハンドシェイクのシーケンス: OP は最初の proof を use_dpop_nonce と DPoP-Nonce ヘッダで拒否し、クライアントは nonce claim を入れて再試行し、以降の呼び出しは毎回ローテーションされる最新 nonce を運ぶ。</title>
   <line class="life" x1="130" y1="68" x2="130" y2="472"/>
   <line class="life op-accent" x1="630" y1="68" x2="630" y2="472"/>

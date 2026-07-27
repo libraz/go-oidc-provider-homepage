@@ -1,6 +1,7 @@
 ---
 title: ID トークン / アクセストークン / userinfo
 description: 似ているが別物の 3 つの要素 —「JWT vs opaque」が実装に効いてくる本当の理由。
+pageClass: pg-concepts-tokens
 ---
 
 # ID トークン / アクセストークン / userinfo
@@ -44,7 +45,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
 | **UserInfo 応答** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
-<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行し、RP はアクセストークンをリソースサーバと OP の /userinfo エンドポイントに提示し、/userinfo は claim の JSON を返す図。</title>
   <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
   <rect x="272" y="52" width="132" height="156" rx="10"/>

@@ -2,17 +2,14 @@
 title: Multi-instance deployment
 description: Running more than one OP replica — DPoP nonce sharing, session placement, and the trade-offs behind sticky vs round-robin.
 outline: 2
+pageClass: pg-operations-multi-instance
 ---
 
 # Multi-instance deployment
 
-The OP is stateless across HTTP requests; every replica reads and writes through the configured `op.Store`. Going from one replica to N shifts the conversation from "what's in process memory" to "what's shared, what's volatile, and what fan-out behaviour is acceptable".
+The OP is stateless across HTTP requests; every replica reads and writes through the configured `store.Store`. Going from one replica to N shifts the conversation from "what's in process memory" to "what's shared, what's volatile, and what fan-out behaviour is acceptable".
 
-<style scoped>
-.mi-topo text{stroke:none}.mi-topo .lbl{font-family:var(--vp-font-family-base);font-size:13px;fill:var(--vp-c-text-1);text-anchor:middle}.mi-topo .sub{font-family:var(--vp-font-family-base);font-size:11px;fill:var(--vp-c-text-2);text-anchor:middle}.mi-topo .op-text{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-brand-2);text-anchor:middle}.mi-topo .mono{font-family:var(--vp-font-family-mono);font-size:11px;fill:var(--vp-c-text-2)}.mi-topo .op-accent{stroke:var(--vp-c-brand-2)}.mi-topo .store{stroke-dasharray:6 5}
-</style>
-
-<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" width="720" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="mi-replica-topology-title">Replica topology: a load balancer round-robins one client's /token and /userinfo across N OP replicas, all sharing one durable store and one volatile Redis tier.</title>
 <defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <rect x="280" y="16" width="160" height="44" rx="6"/>
@@ -54,11 +51,17 @@ The OP is stateless across HTTP requests; every replica reads and writes through
 
 ## What's shared automatically
 
-Anything that lives in your `op.Store` is shared by construction. The durable substores (clients, codes, refresh tokens, access tokens, grants, IATs, PARs) hit a single backend (SQL or your own implementation) across every replica — `composite.PushedAuthRequests` is part of `composite.TxClusterKinds`, so the splitter refuses to route it off the durable anchor.
+Anything that lives in your `store.Store` is shared by construction. The durable substores (clients, codes, refresh tokens, access tokens, grants, IATs, PARs) hit a single backend (SQL or your own implementation) across every replica — `composite.PushedAuthRequests` is part of `composite.TxClusterKinds`, so the splitter refuses to route it off the durable anchor.
 
 Volatile substores eligible for a Redis tier are `Sessions`, `Interactions`, and `ConsumedJTIs` (the JAR / DPoP / private_key_jwt replay set) — see [Hot/cold split](/use-cases/hot-cold-redis). The DPoP server-nonce store is a separate seam wired through `op.WithDPoPNonceSource`, not a substore.
 
-The authn-factor lockout counter wired through `op.WithAuthnLockoutStore` is not part of the durable substore set either. The bundled SQL adapter does not implement `store.AuthnLockoutStore`, so on N replicas backed by SQL the counter still defaults to the process-local in-memory reference (`inmem.Store.AuthnLockouts`) — it resets on restart and is not shared across replicas. Deployments that need brute-force lockout to survive a restart or be enforced consistently across replicas must supply their own `store.AuthnLockoutStore` backed by durable, shared storage.
+The authn-factor lockout counter wired through `op.WithAuthnLockoutStore` is not part of the `store.Store` substore set either, so attach it explicitly. The bundled SQL and DynamoDB adapters provide durable, replica-shared implementations through `storage.AuthnLockouts()`:
+
+```go
+op.WithAuthnLockoutStore(storage.AuthnLockouts())
+```
+
+`inmem.Store.AuthnLockouts()` is process-local: it resets on restart and gives each replica its own guess budget. An embedder using another backend must provide a durable, shared `store.AuthnLockoutStore` when cross-factor brute-force lockout must survive restarts and be consistent across replicas.
 
 ## What needs explicit attention
 

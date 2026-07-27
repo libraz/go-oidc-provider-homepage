@@ -1,6 +1,7 @@
 ---
 title: クライアントオンボーディングのパターン
 description: RP を OP に登録・更新・削除する 5 つの方法 — 適用場面、コードの差し込み口、本ライブラリが意図的に提供しないもの。
+pageClass: pg-use-cases-client-onboarding
 ---
 
 # 使い方 — クライアントオンボーディングのパターン
@@ -16,72 +17,72 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 
 ## 全体像 — 5 つのパターン
 
-<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;max-width:716px;height:auto;margin:1.5rem auto">
+<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(仕様外の経路を使う CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
 <g>
 <rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="34" cy="30" r="11"/>
-<text class="lbl" x="34" y="34" text-anchor="middle" font-size="11" font-weight="700">1</text>
-<text class="lbl" x="24" y="58" font-size="11" font-weight="600">静的</text>
-<text class="lbl" x="24" y="72" font-size="11" font-weight="600">登録</text>
+<text class="lbl" x="34" y="34" text-anchor="middle" font-size="10.5" font-weight="700">1</text>
+<text class="lbl" x="24" y="58" font-size="10.5" font-weight="600">静的</text>
+<text class="lbl" x="24" y="72" font-size="10.5" font-weight="600">登録</text>
 <line class="divider" x1="24" y1="82" x2="132" y2="82"/>
-<text class="lbl muted" x="24" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
-<text class="lbl" x="24" y="110" font-size="9.5">運用者の</text>
-<text class="lbl" x="24" y="123" font-size="9.5">設定</text>
+<text class="lbl muted" x="24" y="96" font-size="7" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="24" y="110" font-size="9">運用者の</text>
+<text class="lbl" x="24" y="123" font-size="9">設定</text>
 <rect class="seam" x="24" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="78" y="145" text-anchor="middle" font-size="8">WithStaticClients</text>
+<text class="mono" x="78" y="145" text-anchor="middle" font-size="7.5">WithStaticClients</text>
 </g>
 <g>
 <rect class="card" x="154" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="174" cy="30" r="11"/>
-<text class="lbl" x="174" y="34" text-anchor="middle" font-size="11" font-weight="700">2</text>
-<text class="lbl" x="164" y="58" font-size="11" font-weight="600">IaC /</text>
-<text class="lbl" x="164" y="72" font-size="11" font-weight="600">GitOps</text>
+<text class="lbl" x="174" y="34" text-anchor="middle" font-size="10.5" font-weight="700">2</text>
+<text class="lbl" x="164" y="58" font-size="10.5" font-weight="600">IaC /</text>
+<text class="lbl" x="164" y="72" font-size="10.5" font-weight="600">GitOps</text>
 <line class="divider" x1="164" y1="82" x2="272" y2="82"/>
-<text class="lbl muted" x="164" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
-<text class="lbl" x="164" y="110" font-size="9.5">運用者の CI</text>
-<text class="lbl" x="164" y="123" font-size="9.5">パイプライン</text>
+<text class="lbl muted" x="164" y="96" font-size="7" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="164" y="110" font-size="9">運用者の CI</text>
+<text class="lbl" x="164" y="123" font-size="9">パイプライン</text>
 <rect class="seam store" x="164" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="218" y="145" text-anchor="middle" font-size="8">store.ClientRegistry</text>
+<text class="mono" x="218" y="145" text-anchor="middle" font-size="7.5">store.ClientRegistry</text>
 </g>
 <g>
 <rect class="card op-accent" x="294" y="10" width="128" height="162" rx="8"/>
 <circle class="badge op-accent" cx="314" cy="30" r="11"/>
-<text class="lbl op-fill" x="314" y="34" text-anchor="middle" font-size="11" font-weight="700">3</text>
-<text class="lbl op-fill" x="304" y="58" font-size="11" font-weight="600">標準化</text>
-<text class="lbl op-fill" x="304" y="72" font-size="11" font-weight="600">DCR</text>
+<text class="lbl op-fill" x="314" y="34" text-anchor="middle" font-size="10.5" font-weight="700">3</text>
+<text class="lbl op-fill" x="304" y="58" font-size="10.5" font-weight="600">標準化</text>
+<text class="lbl op-fill" x="304" y="72" font-size="10.5" font-weight="600">DCR</text>
 <line class="divider" x1="304" y1="82" x2="412" y2="82"/>
-<text class="lbl muted" x="304" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
-<text class="lbl" x="304" y="110" font-size="9.5">発行済み IAT</text>
-<text class="lbl" x="304" y="123" font-size="9.5">クライアント別 RAT</text>
+<text class="lbl muted" x="304" y="96" font-size="7" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="304" y="110" font-size="9">発行済み IAT</text>
+<text class="lbl" x="304" y="123" font-size="9">クライアント別 RAT</text>
 <rect class="seam op-accent" x="304" y="132" width="108" height="20" rx="4"/>
-<text class="mono op-fill" x="358" y="145" text-anchor="middle" font-size="8">/register</text>
+<text class="mono op-fill" x="358" y="145" text-anchor="middle" font-size="7.5">/register</text>
 </g>
 <g>
 <rect class="card" x="434" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="454" cy="30" r="11"/>
-<text class="lbl" x="454" y="34" text-anchor="middle" font-size="11" font-weight="700">4</text>
-<text class="lbl" x="444" y="58" font-size="11" font-weight="600">scope 保護の</text>
-<text class="lbl" x="444" y="72" font-size="11" font-weight="600">管理 API</text>
+<text class="lbl" x="454" y="34" text-anchor="middle" font-size="10.5" font-weight="700">4</text>
+<text class="lbl" x="444" y="58" font-size="10.5" font-weight="600">scope 保護の</text>
+<text class="lbl" x="444" y="72" font-size="10.5" font-weight="600">管理 API</text>
 <line class="divider" x1="444" y1="82" x2="552" y2="82"/>
-<text class="lbl muted" x="444" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
-<text class="lbl" x="444" y="110" font-size="9.5">管理用 AT</text>
-<text class="lbl" x="444" y="123" font-size="9.5">(scope + claim)</text>
+<text class="lbl muted" x="444" y="96" font-size="7" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="444" y="110" font-size="9">管理用 AT</text>
+<text class="lbl" x="444" y="123" font-size="9">(scope + claim)</text>
 <rect class="seam store" x="444" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="498" y="145" text-anchor="middle" font-size="8">store.ClientRegistry</text>
+<text class="mono" x="498" y="145" text-anchor="middle" font-size="7.5">store.ClientRegistry</text>
 </g>
 <g>
 <rect class="card" x="574" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="594" cy="30" r="11"/>
-<text class="lbl" x="594" y="34" text-anchor="middle" font-size="11" font-weight="700">5</text>
-<text class="lbl" x="584" y="58" font-size="11" font-weight="600">仕様外経路</text>
-<text class="lbl" x="584" y="72" font-size="11" font-weight="600">CLI</text>
+<text class="lbl" x="594" y="34" text-anchor="middle" font-size="10.5" font-weight="700">5</text>
+<text class="lbl" x="584" y="58" font-size="10.5" font-weight="600">仕様外経路</text>
+<text class="lbl" x="584" y="72" font-size="10.5" font-weight="600">CLI</text>
 <line class="divider" x1="584" y1="82" x2="692" y2="82"/>
-<text class="lbl muted" x="584" y="96" font-size="7.5" letter-spacing=".1em">信頼の起点</text>
-<text class="lbl" x="584" y="110" font-size="9.5">通信路上に</text>
-<text class="lbl" x="584" y="123" font-size="9.5">認証なし</text>
+<text class="lbl muted" x="584" y="96" font-size="7" letter-spacing=".1em">信頼の起点</text>
+<text class="lbl" x="584" y="110" font-size="9">通信路上に</text>
+<text class="lbl" x="584" y="123" font-size="9">認証なし</text>
 <rect class="seam store" x="584" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="638" y="145" text-anchor="middle" font-size="8">RegisterClient</text>
+<text class="mono" x="638" y="145" text-anchor="middle" font-size="7.5">RegisterClient</text>
 </g>
 <line class="hair" x1="78" y1="172" x2="78" y2="194"/>
 <line class="hair" x1="218" y1="172" x2="218" y2="194"/>
@@ -92,11 +93,11 @@ description: RP を OP に登録・更新・削除する 5 つの方法 — 適�
 <path class="axis" d="M32 189 L24 194 L32 199"/>
 <path class="axis" d="M684 189 L692 194 L684 199"/>
 <line class="band" x1="358" y1="194" x2="498" y2="194"/>
-<text class="lbl muted" x="24" y="212" font-size="9">運用者が</text>
-<text class="lbl muted" x="24" y="224" font-size="9">完全に統制</text>
-<text class="lbl muted" x="692" y="212" text-anchor="end" font-size="9">通信路上に</text>
-<text class="lbl muted" x="692" y="224" text-anchor="end" font-size="9">信頼なし</text>
-<text class="lbl muted" x="428" y="214" text-anchor="middle" font-size="9">信頼は通信路上の token</text>
+<text class="lbl muted" x="24" y="212" font-size="8.5">運用者が</text>
+<text class="lbl muted" x="24" y="224" font-size="8.5">完全に統制</text>
+<text class="lbl muted" x="692" y="212" text-anchor="end" font-size="8.5">通信路上に</text>
+<text class="lbl muted" x="692" y="224" text-anchor="end" font-size="8.5">信頼なし</text>
+<text class="lbl muted" x="428" y="214" text-anchor="middle" font-size="8.5">信頼は通信路上の token</text>
 </svg>
 
 | パターン | 信頼の起点 | メタデータ を書く主体 | 向いている場面 |
@@ -144,6 +145,8 @@ provider, err := op.New(
 ```
 
 シードの射影は、DCR が `POST /register` の段階で適用しているのと同じ redirect URI 形式のルールを `op.New` の時点で適用します。形式に違反するシードは構築時に失敗するので、ランタイムまで漏れ出すことはありません。`ConfidentialClient.Secret` は `op.HashClientSecret`（argon2id）でハッシュしてからストアに到達するため、平文がストアに永続化されることはありません。
+
+永続バックエンドが相手の場合、シードは `store.StaticClientReconciler` を通じて**ひとつの原子的かつ冪等なバッチ**として適用されます。存在しないレコードは挿入し、内容が同じレコードはそのままにし、保存済みレコードと食い違う場合や動的登録されたクライアントと衝突する場合は `ErrConflict` で失敗します。この突き合わせは他のすべての失敗しうる構築処理の後に走るため、無関係な理由で起動が失敗したときにロスタの一部だけが書き込まれることはありません。シードを変えずに OP を再起動するのは、書き直しではなく no-op になります。
 
 このパターンが向くのは、RP の数が少なく、OP と同じチームが運用していて、変更が他の 設定 と同じ配備パイプラインを通る構成です。
 

@@ -2,6 +2,7 @@
 title: Options 索引
 description: op.New に渡せる公開オプションを 1 ページに集約。何を設定し、どのページで深掘りされているか。
 outline: 2
+pageClass: pg-reference-options
 ---
 
 # Options 索引
@@ -83,7 +84,7 @@ outline: 2
 </svg>
 
 - **これから新規に OP を立ち上げる** → まず [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、そして通常は [`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys) を渡します。`WithCookieKeys` は `authorization_code` grant が有効な場合に必須で、既定 grant 集合では有効です。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
-- **FAPI 2.0 を 1 行で有効にしたい** → `WithProfile(profile.FAPI2Baseline)`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)。プロファイルは mTLS が明示されていなければ DPoP を既定選択します。`profile.IGovHigh` は予約値で、現時点では拒否されます。[使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
+- **FAPI を採用せず OAuth 2.1 の姿勢を明示したい** → `WithProfile(profile.Baseline)` はすべての authorization-code request に PKCE を要求し、それ以外は OIDC Core の既定を保ちます。FAPI 2.0 には `profile.FAPI2Baseline`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)を使います。これらのプロファイルは mTLS が明示されていなければ DPoP を既定選択します。プロファイルが必要とする grant が組み込まれていない場合、OP はエンドポイントを勝手に mount せず `op.New` が失敗します(`profile.FAPICIBA` は `grant.CIBA` を必要とします)。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile)、[使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
 - **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。public / native client は常に PKCE 必須で、FAPI プロファイル下ではすべての認可コードクライアントに PKCE が必須です。Dynamic Registration、RAR、Grant Management は追加設定が必要なので、それぞれ専用オプションから有効化します。
 - **`/token` で受け付ける grant の集合を絞りたい** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`。`WithDeviceCodeGrant()` / `WithCIBA(...)` / `WithCustomGrant(...)` / `RegisterTokenExchange(...)` は、それぞれ追加で必要なエンドポイントもまとめて公開します。
 - **送信者制約付きのアクセストークンにしたい** → DPoP 系: `WithFeature(feature.DPoP)` + 必要に応じて `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`。mTLS 系: `WithFeature(feature.MTLS)` + 必要に応じて `WithMTLSProxy(headerName, trustedCIDRs)`。詳しくは[ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint)、[DPoP](/ja/concepts/dpop)、[mTLS](/ja/concepts/mtls)、[使い方: DPoP nonce](/ja/use-cases/dpop-nonce)。
@@ -106,7 +107,8 @@ outline: 2
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
 | [`WithIssuer`](/ja/getting-started/required-options#withissuer) | `string` | discovery `issuer` / JWT `iss` / cookie scope | — |
-| [`WithStore`](/ja/getting-started/required-options#withstore) | `op.Store` | すべての永続サブストア | — |
+| [`WithStore`](/ja/getting-started/required-options#withstore) | `store.Store` | プロトコル状態のすべてのサブストア | — |
+| `WithUserStore` | `store.UserStore` | `WithStore` のバックエンドをラップせず、アプリケーション所有の user store から ID トークンと `/userinfo` の claim を読む | `WithStore(...).Users()` |
 | [`WithKeyset`](/ja/getting-started/required-options#withkeyset) | `op.Keyset`(P-256 / ES256) | JWKS / JWS 署名 | — |
 | [`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys) | 32 byte の鍵 | session / CSRF cookie の AES-256-GCM | `authorization_code` 有効時に必須 |
 
@@ -114,7 +116,7 @@ outline: 2
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithProfile` | `profile.Profile` | セキュリティプロファイルを 1 行で有効化(FAPI 2.0 Baseline / Message Signing / FAPI-CIBA)。プロファイルが DPoP-or-mTLS を要求し、mTLS が明示されていなければ DPoP を既定の送信者制約方式として選択。`profile.IGovHigh` は v2+ 向けの予約で、ランタイム制約が未実装のため `op.New` が拒否。 | なし |
+| `WithProfile` | `profile.Profile` | `profile.Baseline`（OAuth 2.1: すべての authorization-code request に PKCE）または FAPI プロファイルを宣言。FAPI プロファイルが DPoP-or-mTLS を要求し、mTLS が明示されていなければ DPoP を既定の送信者制約方式として選択。プロファイルが要求する feature は自動で有効化されるが、**grant** が足りない場合は `op.New` が失敗し、有効化に必要なオプション名をエラーが示す。 | なし |
 | `WithFeature` | `feature.Flag`(1 呼び出しで 1 つ、繰り返し可) | PAR / DPoP / mTLS / JAR / JARM / introspect / revoke を個別に有効化 | 控えめな既定 |
 | `WithGrants` | `...grant.Type`(可変長) | `/token` で受け付ける grant を限定。呼び出せるのは 1 回だけなので、複数の helper から option を合成する場合は渡す前に grant 集合をまとめてください | `authorization_code`、`refresh_token` |
 | `WithScope` | `op.Scope`(1 呼び出しで 1 つ。`op.PublicScope` / `op.InternalScope` コンストラクタを利用) | scope カタログを拡張 | `openid`、`profile`、`email`、`address`、`phone`、`offline_access` |
@@ -141,12 +143,12 @@ outline: 2
 | `WithRiskAssessor` | `op.RiskAssessor` | `RuleRisk` と `LoginContext.RiskScore` の供給元 | なし |
 | `WithLoginAttemptObserver` | `op.LoginAttemptObserver` | `RuleAfterFailedAttempts` 用の失敗回数集計 | なし |
 | `WithMFAEncryptionKeys` | 32 byte の鍵 | TOTP シークレットを AES-256-GCM で保存時暗号化 | なし |
-| `WithAuthnLockoutStore` | `op.AuthnLockoutStore` | `RuleAfterFailedAttempts` が参照する subject 単位の失敗回数を永続化 | in-memory |
+| `WithAuthnLockoutStore` | `store.AuthnLockoutStore` | `RuleAfterFailedAttempts` が参照する subject 単位の失敗回数を永続化 | なし |
 | `WithACRPolicy` | `op.ACRPolicy`(interface) | ステップアップの acr / aal マッピング | identity |
 
-同梱の SQL アダプタは `store.AuthnLockoutStore` を実装していません — スキーマに authn-factor 用のロックアウトテーブルが無いためです。オプションを未設定のままにすると cross-factor 追跡は無効になり、TOTP / email-OTP それぞれの標準カウンタだけが働きます。オプションを設定すると、組み込みの possession / recovery factor（`StepTOTP`、`StepEmailOTP`、`StepRecoveryCode`）で cross-factor 追跡が有効になります。primary password / passkey や `ExternalStep` の custom factor は自動では包まれず、組み込み側の user store または custom authenticator の責務です。永続化も組み込み側の責任になります。in-memory 参考実装(`inmem.Store.AuthnLockouts`)はプロセスローカルで、再起動時にリセットされるためです。カウンタを再起動後も維持したい、あるいはレプリカ間で共有したい配備では、耐久性のある共有ストレージに基づく独自の `store.AuthnLockoutStore` を用意する必要があります。
+`WithAuthnLockoutStore` を未設定のままにすると cross-factor 追跡は無効になり、TOTP / email-OTP それぞれの標準カウンタだけが働きます。設定すると、組み込みの possession / recovery factor（`StepTOTP`、`StepEmailOTP`、`StepRecoveryCode`）で cross-factor 追跡が有効になります。primary password / passkey や `ExternalStep` の custom factor は自動では包まれず、組み込み側の user store または custom authenticator の責務です。SQL と DynamoDB adapter はどちらも `AuthnLockouts()` から耐久 store を公開します。`inmem.Store.AuthnLockouts()` はプロセスローカルで、再起動時にリセットされます。
 
-認証 factor のレコードは意図的に `op.Store` の外にあります。`StepTOTP` / `StepPasskey` / `StepRecoveryCode` / `StepEmailOTP` はそれぞれ専用 store を受け取ります。登録スキーマ、暗号鍵、アカウント復旧ポリシーは組み込みアプリケーション側の設計だからです。in-memory アダプタは参考実装であり、本番では耐久 store を用意してください。[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) は、core adapter と同じ DB を共有する SQL-backed `store.TOTPStore` のテンプレートです。
+認証 factor のレコードは意図的に `store.Store` の外にあります。`StepTOTP` / `PrimaryPasskey` / `StepRecoveryCode` / `StepEmailOTP` はそれぞれ専用 store を受け取ります。登録スキーマ、暗号鍵、アカウント復旧ポリシーは組み込みアプリケーション側の設計だからです。in-memory、SQL、DynamoDB adapter は対応する accessor を公開します。[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) は、同梱 SQL adapter の factor store を OP のコアテーブルと同じ DB で使う例です。別のバックエンドでだけ factor-store 契約を自前実装してください。
 
 耐久 store 実装者向けに重要な factor-store 契約が 2 つあります。`store.EmailOTPStore.Get` は code の `ExpiresAt` だけでなく `EmailOTPRecord.RetainUntil` までは record を読める状態に保つ必要があります。これにより、code が失効しても resend cap と brute-force counter はリセットされません。`store.RecoveryStore.Consume` は、提示された code hash と現在保存されている slot の hash を比較し、古い hash を拒否する必要があります。recovery code を再生成した後に、漏洩済みの古い code が新しい batch の slot を消費するのを防ぐためです。
 
@@ -243,7 +245,7 @@ outline: 2
 | `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | エッジでヘッダ経由の mTLS を終端 | なし |
 | `WithTrustedProxies` | `...string`(CIDR) | `X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 | なし |
 | `WithTrustedProxyHosts` | `...string`(hostname) | trusted proxy CIDR が設定されている場合に、正規の issuer host 以外の `X-Forwarded-Host` 許可リストを追加 | issuer host のみ |
-| `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発 / ネイティブアプリデモ用に RFC 8252 の loopback 緩和へ文字列 `localhost` を追加。リテラル `127.0.0.1` / `[::1]` は厳格既定のまま | リテラル loopback のみ |
+| `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発 / ネイティブアプリデモ用に RFC 8252 の loopback 緩和へ文字列 `localhost` を追加し、**issuer 自体にも** `localhost` を許可。リテラル `127.0.0.1` / `[::1]` は厳格既定のまま | リテラル loopback のみ |
 | `WithAllowPrivateNetworkJWKS` | _(引数なし)_ | RFC 1918 上の client JWKS を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkJAR` | _(引数なし)_ | RFC 1918 上の `request_uri` を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkSector` | _(引数なし)_ | dynamic registration 時の `sector_identifier_uri` が RFC 1918 上にあることを許容(テスト / private RP network 専用) | 拒否 |

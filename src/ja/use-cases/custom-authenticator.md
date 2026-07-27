@@ -1,6 +1,7 @@
 ---
 title: カスタム認証器
 description: 自前の認証要素（ハードウェアトークン、SMS、magic link など）を、ライブラリを fork せずに LoginFlow へ差し込む。
+pageClass: pg-use-cases-custom-authenticator
 ---
 
 # カスタム認証器
@@ -63,7 +64,7 @@ type Authenticator interface {
 
 `Authenticator` は、毎回「次に表示する Prompt」または「認証完了を表す Result」のどちらかを返します。SMS OTP のような 2 段階の認証要素では、`Begin` が最初の Prompt を返し、SPA からの送信ごとに `Continue` が次の Prompt か Result を返します。
 
-<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 360" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authenticator-flow-title">カスタム Authenticator の状態遷移。LoginFlow が Begin を呼び、電話番号入力 Prompt、コード入力 Prompt、Result の順に進み、Result が返ると subject と factor がセッションに反映される。</title>
   <defs>
     <marker id="auth-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -120,12 +121,13 @@ import (
 
     "github.com/libraz/go-oidc-provider/op"
     "github.com/libraz/go-oidc-provider/op/interaction"
+    "github.com/libraz/go-oidc-provider/op/store"
 )
 
 type SMSAuthenticator struct {
     Sender    SMSSender                 // SMS プロバイダのアダプタ
     OTPStore  OTPStore                  // 試行ごとの OTP レコードを保管するストア
-    UserStore op.Store                  // 「電話番号 → subject」検索
+    UserStore store.UserStore            // 「電話番号 → subject」検索
     CodeTTL   time.Duration             // 通常は 5 分
 }
 

@@ -2,11 +2,41 @@
 title: FAQ
 description: Recurring questions — picked from the embedder pain points the maintainer hit while building the library and writing the example suite.
 outline: 2
+pageClass: pg-faq
 ---
 
 # FAQ
 
 This page is the bottom of every section's "where do I look first?" answer. The questions below are not theoretical — every entry maps to something the maintainer hit while building examples or running the conformance harness, so if you are stuck on the same thing, the answer here is the one we use.
+
+<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="faq-route-title">How to use this FAQ: start at setup, move into the area you are working in such as FAPI or tokens, then finish at errors and adoption.</title>
+<rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
+  <text class="faq-text" x="117" y="146" text-anchor="middle">Boot it first</text>
+  <text class="faq-sub" x="117" y="168" text-anchor="middle">required options / issuer</text>
+
+  <rect class="faq-box" x="292" y="36" width="176" height="56" rx="8"/>
+  <text class="faq-text" x="380" y="70" text-anchor="middle">FAPI / DPoP</text>
+  <rect class="faq-box" x="292" y="112" width="176" height="56" rx="8"/>
+  <text class="faq-text" x="380" y="146" text-anchor="middle">Tokens / storage</text>
+  <rect class="faq-box" x="292" y="188" width="176" height="56" rx="8"/>
+  <text class="faq-text" x="380" y="222" text-anchor="middle">UI / SPA / MFA</text>
+
+  <rect class="faq-box" x="566" y="76" width="154" height="62" rx="8"/>
+  <text class="faq-text" x="643" y="108" text-anchor="middle">Errors</text>
+  <text class="faq-sub" x="643" y="126" text-anchor="middle">common failures</text>
+  <rect class="faq-box" x="566" y="172" width="154" height="62" rx="8"/>
+  <text class="faq-text" x="643" y="204" text-anchor="middle">Adoption</text>
+  <text class="faq-sub" x="643" y="222" text-anchor="middle">production / disclosure</text>
+
+  <path class="faq-flow" d="M194 152 C234 106 252 66 288 64"/>
+  <path class="faq-flow" d="M194 152 H288"/>
+  <path class="faq-flow" d="M194 152 C236 190 252 216 288 216"/>
+  <path class="faq-flow" d="M468 112 C510 110 526 108 562 108"/>
+  <path class="faq-flow" d="M554 104 L563 108 L554 112"/>
+  <path class="faq-flow" d="M468 188 C510 198 526 204 562 204"/>
+  <path class="faq-flow" d="M554 200 L563 204 L554 208"/>
+</svg>
 
 <ul class="faq-index">
   <li><a href="#setup-basics"><div class="faq-index-title">Setup &amp; basics</div><div class="faq-index-desc">Required options, mount path, issuer normalization, minimal setup</div></a></li>
@@ -19,7 +49,7 @@ This page is the bottom of every section's "where do I look first?" answer. The 
   <li><a href="#logout"><div class="faq-index-title">Logout</div><div class="faq-index-desc">Why no Front-Channel, Back-Channel fan-out gaps</div></a></li>
   <li><a href="#native-loopback"><div class="faq-index-title">Native apps &amp; loopback</div><div class="faq-index-desc"><code>127.0.0.1</code> redirect_uri opt-in rules</div></a></li>
   <li><a href="#observability"><div class="faq-index-title">Observability</div><div class="faq-index-desc">Why no auto-mounted <code>/metrics</code>, audit event catalog</div></a></li>
-  <li><a href="#conformance"><div class="faq-index-title">Conformance &amp; versions</div><div class="faq-index-desc">REVIEW meaning, certification claims, pre-v1.0 pinning</div></a></li>
+  <li><a href="#conformance"><div class="faq-index-title">Conformance &amp; versions</div><div class="faq-index-desc">REVIEW meaning, certification claims, v1 stability</div></a></li>
   <li><a href="#errors"><div class="faq-index-title">Common errors</div><div class="faq-index-desc"><code>redirect_uri</code> mismatch, <code>alg not allowed</code>, <code>jkt mismatch</code></div></a></li>
   <li><a href="#adoption"><div class="faq-index-title">Adoption</div><div class="faq-index-desc">Production fit, security disclosure path</div></a></li>
 </ul>
@@ -164,7 +194,7 @@ A process-local nonce source breaks across replicas. For HA, plug a shared store
 
 ### `dpop_signing_alg_values_supported` — RS256 missing?
 
-Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the codebase JOSE allow-list. `RS256` works for ID-token signing where appropriate, but DPoP proofs are restricted to the FAPI-recommended subset.
+Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the codebase JOSE allow-list, which the OP applies when it *verifies* a client assertion or JAR request object. DPoP proofs are restricted to the FAPI-recommended subset. Note that `RS256` is not an OP signing algorithm either: tokens the OP issues are signed with `ES256` only, and that is a permanent policy for the 1.x line rather than a gap.
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -182,9 +212,9 @@ No. The library never reads or writes your `users` table directly. You implement
 | `sql` (SQLite / MySQL / Postgres) | Single durable backend; easiest production path |
 | `redis` (volatile substores only) | Pair with `sql` via `composite` for hot/cold split |
 | `composite` | Hot/cold; the store enforces "one durable backend" at construction time |
-| `dynamodb` | Planned (v1.x) |
+| `dynamodb` | One-table-per-substore durable backend; `store.Transactional` supports the browser authorization-code flow. Experimental API. |
 
-See [/use-cases/sql-store](/use-cases/sql-store) and [/use-cases/hot-cold-redis](/use-cases/hot-cold-redis).
+See [/use-cases/sql-store](/use-cases/sql-store), [/use-cases/dynamodb-store](/use-cases/dynamodb-store), and [/use-cases/hot-cold-redis](/use-cases/hot-cold-redis).
 
 ### Why does `composite.New` reject my config at boot?
 
@@ -302,23 +332,23 @@ Every event carries `request-id`, `subject`, `client-id`, plus an `extras` map f
 
 ### Why does the OFCS status show REVIEW as well as PASSED?
 
-OFCS uses three verdicts; only `FAILED` is an OP defect:
+OFCS records several outcomes. A raw `FAILED` normally means the suite did not observe the expected result; it is not automatically a release blocker only when the strict verifier matches it to a reviewed, unexpired exclusion:
 
 | Verdict | What it means |
 |---|---|
 | `PASSED` | Test ran, OP behaved correctly per spec. |
 | `REVIEW` | Test ran, OP behaved correctly — OFCS wants a human to verify a UI artefact (e.g. a screenshot of the rendered error page). |
-| `FAILED` | OP behaved wrongly. |
+| `FAILED` | The module did not reach the suite's expected result. It blocks a release unless it has a reviewed, expiry-bound exclusion. |
 
-The headless harness records `REVIEW` as-is rather than auto-passing it. The current four-plan baseline has zero `FAILED`. Full breakdown at <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
+The headless harness records `REVIEW` as-is rather than auto-passing it. The v1.0.0 nine-plan snapshot has six raw failures and two modules without a terminal verdict; all are explicitly reviewed by the release verifier. Full breakdown at <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
 
 ### Can I cite this library as "OIDF-certified"?
 
 No. The project pays no OpenID Foundation membership and holds no formal certification. The OFCS baseline is a reproducible snapshot of spec conformance, not a certification. See <a class="doc-ref" href="/security/posture">Security posture</a>.
 
-### Pre-v1.0 — should I pin a tag?
+### Should I pin a tag?
 
-Yes. The public Go API may carry breaking changes in any minor release until v1.0. Pin in `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) on every bump. The library guarantees that `BREAKING` entries are called out explicitly.
+Yes. Pin production dependencies in `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) before an upgrade. The v1 public Go API follows Semantic Versioning, so breaking changes require a major version; APIs marked `Experimental:` are the exception.
 
 <div id="errors" class="faq-anchor"></div>
 

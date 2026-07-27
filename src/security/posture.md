@@ -1,6 +1,7 @@
 ---
 title: Security posture
 description: How go-oidc-provider thinks about safety — five separate properties, what's structurally enforced, and the explicit limits of an individually-maintained OSS library.
+pageClass: pg-security-posture
 ---
 
 # Security posture
@@ -25,15 +26,7 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 > Conformance ≠ Security. An OFCS-passing OP can still be exploitable (alg confusion, PKCE downgrade, redirect_uri partial match, timing attacks on secret compare). The next sections describe how each class is closed structurally rather than by runtime checks alone.
 
-<style scoped>
-.op-fp-title{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-.op-fp-prose{font-family:var(--vp-font-family-base);font-size:10.5px;}
-.op-fp-mono{font-family:var(--vp-font-family-mono);font-size:10.5px;}
-.op-fp-num{font-family:var(--vp-font-family-mono);font-size:10px;font-weight:600;fill:var(--vp-c-brand-2);}
-.op-fp-flow{stroke:var(--vp-c-brand-2);}
-</style>
-
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="posture-five-properties-title">The five separate properties behind "is this safe?" — conformance, correctness, security, supply-chain, and operational assurance, read in order.</title>
   <rect x="0" y="16" width="124" height="84" rx="6"/>
   <rect x="149" y="16" width="124" height="84" rx="6"/>
@@ -160,10 +153,10 @@ Be loud about the limits. This is the part you should read twice.
 - ❌ **No formal OpenID Foundation certification.** (See <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.)
 - ❌ **No SLA on patch turnaround.** SECURITY.md commits to *aim* — 3 business days ack, 14 days for confirmed-issue mitigations — without a contractual guarantee.
 - ❌ **No 24/7 incident channel.** Disclosure is via GitHub Security Advisories or the maintainer profile.
-- ❌ **No CVE database entry yet** (see <a class="doc-ref" href="/security/disclosure">Disclosure policy</a>). The pre-v1.0 line has not had any reported security issue, so there is nothing to publish; that's the literal status, not "we don't bother".
+- ❌ **No CVE database entry yet** (see <a class="doc-ref" href="/security/disclosure">Disclosure policy</a>). No report meeting the CVE criteria has been received, so there is nothing to publish; that's the literal status, not "we don't bother".
 :::
 
-If you need any of those for compliance, this library is the wrong choice — at least until v1.0 and a formal audit. The honest framing costs nothing and prevents misuse.
+If you need any of those for compliance, this library is the wrong choice until it has a formal audit. The honest framing costs nothing and prevents misuse.
 
 ## How to think about adoption
 
@@ -171,7 +164,7 @@ If you need any of those for compliance, this library is the wrong choice — at
 |---|---|
 | Building an internal-only OP for a product you control | Reasonable fit; pin to a tag, run `govulncheck` in your own CI, follow GHSA |
 | Building a public-facing OP for high-value flows (banking-grade FAPI) | Treat the library as a starting point, run a third-party audit, contribute findings back |
-| Replacing a certified IdP for compliance reasons | Don't — until v1.0 and a paid audit you can cite |
+| Replacing a certified IdP for compliance reasons | Don't — until there is a paid audit you can cite |
 | Learning OIDC mechanics from a real OP codebase | Best use; the structural defenses are part of the lesson |
 
 ## Read next

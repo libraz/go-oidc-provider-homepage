@@ -1,6 +1,7 @@
 ---
 title: セッションとログアウト
 description: OP がブラウザセッションをどう表現し、RP-Initiated Logout と Back-Channel Logout がどう違うか、そして本ライブラリが Front-Channel Logout を実装しない理由。
+pageClass: pg-concepts-sessions-and-logout
 ---
 
 # セッションとログアウト
@@ -101,48 +102,48 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 
 `/end_session` は単に「cookie を消す」だけではありません。組み込み側が `Grants` と `AccessTokens` の substore を組み込んでいる場合、本ライブラリは subject が保持するすべての grant を歩き、grant ごとのアクセストークン shadow row を失効させます。JWT アクセストークンは OP が応答するエンドポイント（`/userinfo`、`/introspect`）で inactive になります。opaque アクセストークンは introspection を経由するすべての RS で inactive になります。
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 720 420" style="width:100%;height:auto;max-width:720px;margin:1.25rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 720 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="session-cascade-title">1 つのセッション行が cookie とどう結び付くか、そして /end_session が grant・アクセストークン・Back-Channel Logout 通知へどうカスケードするか。</title>
 <defs>
 <marker id="sc-arw" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></marker>
 <marker id="sc-arw-op" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" class="sc-op" stroke-width="1.3"/></marker>
 <marker id="sc-arw-rs" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" class="sc-rs" stroke-width="1.3"/></marker>
 </defs>
-<text x="24" y="26" class="sc-m" font-size="11" letter-spacing="1.6" opacity="0.55">セッションモデル</text>
-<text x="24" y="50" class="sc-b" font-size="11" opacity="0.6">ブラウザの cookie</text>
+<text x="24" y="26" class="sc-m" font-size="10.5" letter-spacing="1.6" opacity="0.55">セッションモデル</text>
+<text x="24" y="50" class="sc-b" font-size="10.5" opacity="0.6">ブラウザの cookie</text>
 <rect x="24" y="58" width="176" height="24" rx="5"/>
-<text x="34" y="74" class="sc-m" font-size="10.5">__Host-oidc_session</text>
+<text x="34" y="74" class="sc-m" font-size="10">__Host-oidc_session</text>
 <g opacity="0.45">
 <rect x="24" y="90" width="176" height="24" rx="5"/>
-<text x="34" y="106" class="sc-m" font-size="10.5">__Host-oidc_interaction</text>
+<text x="34" y="106" class="sc-m" font-size="10">__Host-oidc_interaction</text>
 <rect x="24" y="122" width="176" height="24" rx="5"/>
-<text x="34" y="138" class="sc-m" font-size="10.5">__Host-oidc_csrf</text>
+<text x="34" y="138" class="sc-m" font-size="10">__Host-oidc_csrf</text>
 <rect x="24" y="154" width="176" height="24" rx="5"/>
-<text x="34" y="170" class="sc-m" font-size="10.5">__Host-oidc_locale</text>
+<text x="34" y="170" class="sc-m" font-size="10">__Host-oidc_locale</text>
 </g>
 <path d="M200 70 C 224 70, 226 96, 250 96" fill="none" marker-end="url(#sc-arw)"/>
 <rect x="250" y="52" width="248" height="108" rx="8" class="sc-op" stroke-dasharray="5 4"/>
-<text x="266" y="76" class="sc-m sc-opf" font-size="13">SessionStore</text>
-<text x="266" y="94" class="sc-b" font-size="11" opacity="0.7">セッション行ひとつ · OP 側の状態</text>
-<text x="266" y="118" class="sc-m" font-size="10.5" opacity="0.85">ID · Subject · AuthTime · ACR</text>
-<text x="266" y="136" class="sc-m" font-size="10.5" opacity="0.85">AMR · ChooserGroupID · timestamps</text>
-<text x="520" y="86" class="sc-b" font-size="11">cookie は単なる</text>
-<text x="520" y="104" class="sc-b" font-size="11">ポインタで、行こそが</text>
-<text x="520" y="122" class="sc-b" font-size="11">セッションです。cookie</text>
-<text x="520" y="140" class="sc-b" font-size="11">でなく行を消します。</text>
+<text x="266" y="76" class="sc-m sc-opf" font-size="12.5">SessionStore</text>
+<text x="266" y="94" class="sc-b" font-size="10.5" opacity="0.7">セッション行ひとつ · OP 側の状態</text>
+<text x="266" y="118" class="sc-m" font-size="10" opacity="0.85">ID · Subject · AuthTime · ACR</text>
+<text x="266" y="136" class="sc-m" font-size="10" opacity="0.85">AMR · ChooserGroupID · timestamps</text>
+<text x="520" y="86" class="sc-b" font-size="10.5">cookie は単なる</text>
+<text x="520" y="104" class="sc-b" font-size="10.5">ポインタで、行こそが</text>
+<text x="520" y="122" class="sc-b" font-size="10.5">セッションです。cookie</text>
+<text x="520" y="140" class="sc-b" font-size="10.5">でなく行を消します。</text>
 <line x1="24" y1="184" x2="696" y2="184" opacity="0.12" stroke-width="1"/>
-<text x="24" y="210" class="sc-m" font-size="11" letter-spacing="1.6" opacity="0.55">END-SESSION カスケード</text>
+<text x="24" y="210" class="sc-m" font-size="10.5" letter-spacing="1.6" opacity="0.55">END-SESSION カスケード</text>
 <rect x="24" y="228" width="132" height="34" rx="17" class="sc-op"/>
-<text x="90" y="250" class="sc-m sc-opf" font-size="12.5" text-anchor="middle">/end_session</text>
+<text x="90" y="250" class="sc-m sc-opf" font-size="12" text-anchor="middle">/end_session</text>
 <rect x="186" y="224" width="120" height="42" rx="8" class="sc-op" stroke-dasharray="5 4"/>
-<text x="246" y="242" class="sc-m sc-opf" font-size="11.5" text-anchor="middle">SessionStore</text>
-<text x="246" y="258" class="sc-b" font-size="10.5" text-anchor="middle" opacity="0.7">行を削除</text>
+<text x="246" y="242" class="sc-m sc-opf" font-size="11" text-anchor="middle">SessionStore</text>
+<text x="246" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">行を削除</text>
 <rect x="336" y="224" width="118" height="42" rx="8" stroke-dasharray="5 4"/>
-<text x="395" y="242" class="sc-m" font-size="11.5" text-anchor="middle">Grants</text>
-<text x="395" y="258" class="sc-b" font-size="10.5" text-anchor="middle" opacity="0.7">grant を走査</text>
+<text x="395" y="242" class="sc-m" font-size="11" text-anchor="middle">Grants</text>
+<text x="395" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">grant を走査</text>
 <rect x="484" y="224" width="134" height="42" rx="8" stroke-dasharray="5 4"/>
-<text x="551" y="242" class="sc-m" font-size="11.5" text-anchor="middle">AccessTokens</text>
-<text x="551" y="258" class="sc-b" font-size="10.5" text-anchor="middle" opacity="0.7">revoked に切替</text>
+<text x="551" y="242" class="sc-m" font-size="11" text-anchor="middle">AccessTokens</text>
+<text x="551" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">revoked に切替</text>
 <line x1="156" y1="245" x2="182" y2="245" marker-end="url(#sc-arw)"/>
 <line x1="306" y1="245" x2="332" y2="245" marker-end="url(#sc-arw)"/>
 <line x1="454" y1="245" x2="480" y2="245" marker-end="url(#sc-arw)"/>
@@ -150,20 +151,20 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 <path d="M551 266 C 500 300, 440 302, 386 320" fill="none" class="sc-op" marker-end="url(#sc-arw-op)"/>
 <path d="M551 266 C 560 292, 585 302, 594 320" fill="none" class="sc-rs" marker-end="url(#sc-arw-rs)"/>
 <rect x="24" y="324" width="250" height="66" rx="8"/>
-<text x="38" y="346" class="sc-b" font-size="12">Back-Channel Logout</text>
-<text x="38" y="365" class="sc-m" font-size="10.5">POST logout_token →</text>
-<text x="38" y="382" class="sc-m" font-size="10.5">each backchannel_logout_uri</text>
+<text x="38" y="346" class="sc-b" font-size="11.5">Back-Channel Logout</text>
+<text x="38" y="365" class="sc-m" font-size="10">POST logout_token →</text>
+<text x="38" y="382" class="sc-m" font-size="10">each backchannel_logout_uri</text>
 <rect x="296" y="324" width="176" height="66" rx="8" class="sc-op"/>
-<text x="310" y="346" class="sc-b sc-opf" font-size="11.5">JWT アクセストークン</text>
-<text x="310" y="365" class="sc-b" font-size="10.5" opacity="0.75">OP が直接拒否</text>
-<text x="310" y="382" class="sc-m sc-opf" font-size="10.5">/userinfo · /introspect</text>
+<text x="310" y="346" class="sc-b sc-opf" font-size="11">JWT アクセストークン</text>
+<text x="310" y="365" class="sc-b" font-size="10" opacity="0.75">OP が直接拒否</text>
+<text x="310" y="382" class="sc-m sc-opf" font-size="10">/userinfo · /introspect</text>
 <rect x="494" y="324" width="204" height="66" rx="8" class="sc-rs"/>
-<text x="508" y="346" class="sc-b sc-rsf" font-size="11.5">opaque アクセストークン</text>
-<text x="508" y="365" class="sc-b sc-rsf" font-size="10.5">各 RS が introspect して</text>
-<text x="508" y="382" class="sc-b sc-rsf" font-size="10.5">はじめて inactive</text>
-<text x="149" y="408" class="sc-b" font-size="10" text-anchor="middle" opacity="0.65">OP が各 RP に通知（server-to-server）</text>
-<text x="384" y="408" class="sc-b sc-opf" font-size="10" text-anchor="middle">OP が直接失効させる</text>
-<text x="596" y="408" class="sc-b sc-rsf" font-size="10" text-anchor="middle">到達範囲は各 RS 次第</text>
+<text x="508" y="346" class="sc-b sc-rsf" font-size="11">opaque アクセストークン</text>
+<text x="508" y="365" class="sc-b sc-rsf" font-size="10">各 RS が introspect して</text>
+<text x="508" y="382" class="sc-b sc-rsf" font-size="10">はじめて inactive</text>
+<text x="149" y="408" class="sc-b" font-size="9.5" text-anchor="middle" opacity="0.65">OP が各 RP に通知（server-to-server）</text>
+<text x="384" y="408" class="sc-b sc-opf" font-size="9.5" text-anchor="middle">OP が直接失効させる</text>
+<text x="596" y="408" class="sc-b sc-rsf" font-size="9.5" text-anchor="middle">到達範囲は各 RS 次第</text>
 </svg>
 
 | 組み込まれた store | カスケード挙動 |

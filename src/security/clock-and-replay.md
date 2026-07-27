@@ -1,6 +1,7 @@
 ---
 title: Clock skew and replay windows
 description: Every signed artifact in OIDC has an issuance timestamp and an expiration. Servers without a sane clock accept stale things; servers without dedup tables accept replays. This page lists every time-related window go-oidc-provider uses, in one place.
+pageClass: pg-security-clock-and-replay
 ---
 
 # Clock skew and replay windows
@@ -29,8 +30,8 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 |---|---|---|---|
 | Authorization code | one-time consumption + TTL | `DefaultAuthCodeTTL = 60 s` | [/concepts/authorization-code-pkce](/concepts/authorization-code-pkce) |
 | Refresh token (rotation grace) | acceptance of the just-rotated previous token | `refresh.GraceTTLDefault = 60 s` (configurable via `op.WithRefreshGracePeriod`) | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
-| DPoP proof — `iat` window | symmetric tolerance around server time | `dpop.DefaultIatWindow = 60 s` | [/concepts/dpop](/concepts/dpop) |
-| DPoP proof — `jti` cache | dedup against replay | `iat + 2 * DefaultIatWindow` (`replayLeew`, ~120 s) | [/concepts/dpop](/concepts/dpop) |
+| DPoP proof — `iat` window | symmetric tolerance around server time | 60 s | [/concepts/dpop](/concepts/dpop) |
+| DPoP proof — `jti` cache | dedup against replay | approximately 120 s | [/concepts/dpop](/concepts/dpop) |
 | JAR (RFC 9101) request object — `jti` cache | dedup against replay | OP-side cache evicted at the request object's own `exp` | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
 | JAR — future skew | `nbf` / `iat` tolerance | `jar.DefaultMaxFutureSkew = 60 s` | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
 | PAR (RFC 9126) `request_uri` lifetime | one-time, short-lived | `parendpoint.DefaultTTL = 60 s` | [/concepts/fapi](/concepts/fapi) |
@@ -44,11 +45,7 @@ The constants in the "Default window" column are the source of truth — every e
 
 The same windows, drawn to scale on a logarithmic time axis, make the shape obvious at a glance: every replay-and-clock window collapses into a tight band at or just past 60 seconds, token lifetimes step up to a few minutes, and only the refresh token's absolute lifetime lives out at 30 days — with nothing in between.
 
-<style scoped>
-#crws .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#crws .d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-1);stroke:none}#crws .d-val{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-tick{font-family:var(--vp-font-family-mono);font-size:9.5px;fill:var(--vp-c-text-3);stroke:none}#crws .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#crws .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-leg{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#crws .d-grid{stroke:currentColor;stroke-width:1;opacity:.16;stroke-dasharray:2 3}#crws .d-lane{stroke:currentColor;stroke-width:1;opacity:.08}#crws .d-axis{stroke:currentColor;stroke-width:1;opacity:.28}#crws .d-op-fill{fill:var(--vp-c-brand-2);stroke:none}#crws .d-op-store{fill:none;stroke:var(--vp-c-brand-2);stroke-width:1.6;stroke-dasharray:3 2}
-</style>
-
-<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:720px;height:auto">
+<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="clock-replay-window-scale-title">Logarithmic comparison of every clock and replay window go-oidc-provider enforces, from the 60-second replay band to the 30-day refresh-token lifetime.</title>
 <line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
 <line class="d-grid" x1="374.9" y1="58" x2="374.9" y2="362"/>

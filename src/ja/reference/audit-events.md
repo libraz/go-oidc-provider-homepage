@@ -2,13 +2,14 @@
 title: 監査イベントカタログ
 description: OP が発火する op.Audit* の全イベント、発火タイミング、extras に載るフィールド。
 outline: 2
+pageClass: pg-reference-audit-events
 ---
 
 # 監査イベントカタログ
 
 OP は `op/audit.go` で閉じたカタログとして定義された、構造化された監査イベントを発火します。各イベントは `<area>.<verb>`（または `<area>.<verb>.<qualifier>`）形の安定した文字列です。SOC ダッシュボードは自由形式のメッセージを解析しなくても、area 単位で集計できます。
 
-<svg role="img" aria-labelledby="audit-flow-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="audit-flow-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="audit-flow-title">監査イベントの流れ: OP の各処理パスが閉じたイベントカタログからイベントを発火し、slog、SOC、Prometheus のカウンタへ流れる。</title>
 <rect class="aud-box" x="28" y="46" width="156" height="54" rx="8"/>
   <text class="aud-text" x="106" y="80" text-anchor="middle">login / MFA</text>
@@ -57,6 +58,20 @@ op.New(
 [`WithPrometheus`](/ja/use-cases/prometheus) を併用すると、これらのイベントの厳選サブセットが Prometheus カウンタにも反映されます。1 回の発火で slog のストリームと該当カウンタの両方が更新されるので、metrics 用の追加発火はありません。
 :::
 
+## コードからカタログを列挙する
+
+以下のカタログは OP 自身が使うレジストリから起こしたもので、そのレジストリは公開されています。`op.AuditEventCatalog()` は安定イベント全件のコピーを `[]op.AuditEventDefinition` として返します:
+
+```go
+for _, def := range op.AuditEventCatalog() {
+    // def.Event       — 監査イベント識別子。例: "token.issued"
+    // def.MetricName  — 対応する Prometheus カウンタ。監査のみのイベントでは空
+    // def.MetricLabel — カテゴリカウンタで使う値域限定のラベル。空のことも多い
+}
+```
+
+イベント集合を散文ではなくデータとして扱いたいとき、たとえば SIEM のルールを生成する、ダッシュボードが全イベントを網羅していることをテストで検証する、metrics 投影を持つイベントを洗い出す、といった場面で使います。ライブラリ内の発火箇所と Prometheus ブリッジが同じレジストリを参照しているため、イベントの一覧と metrics のルーティングが食い違うことはありません。
+
 ## 共通の属性
 
 すべてのイベントが持つ:
@@ -71,6 +86,14 @@ op.New(
 ## イベントカタログ
 
 カタログを機能領域ごとに再編成しました。各グループは、SOC や運用にとってこの一群のイベントが何を意味するかを短く述べたあと、`event 定数`（`op/audit.go` の Go 識別子）、`発火タイミング`、`想定シビアリティ`（`info` は通常運転、`warn` は怪しい / 失敗系、`alert` は replay やストア障害といった即応すべきシグナル、という大まかな目安）、`関連ページ` の表に落としています。シビアリティはあくまで起点であり、実運用では発生レートに対するしきい値を調整してください。
+
+### Provider ライフサイクル
+
+`startup.profile` は OP instance の監査ストリームの起点です。`op.New` が設定を検証し、provider を返す前に 1 回だけ発火します。extras には、宣言された `profiles` / `features` / `grants` と、解決後の PKCE、PAR、nonce、送信者制約、client authentication、token TTL、token format、JAR、JARM、introspection のポリシーが入ります。
+
+| event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
+|---|---|---|---|
+| `AuditStartupProfile` | 検証済み provider の起動時 | info | [Options 索引](/ja/reference/options) |
 
 ### アカウント管理
 

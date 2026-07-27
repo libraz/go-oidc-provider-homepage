@@ -1,6 +1,7 @@
 ---
 title: go-oidc-provider とは
 description: OIDC OP を自作するか、既製の IdP を Go サービスに組み合わせるか。それぞれの難しさと、このライブラリの立ち位置。
+pageClass: pg-why
 ---
 
 # go-oidc-provider とは
@@ -25,7 +26,7 @@ Go でサービスを書いていると、自前で OpenID Connect Provider を�
 
 このページでは選択肢 3 を、選択肢 1 や 2 でつまずきやすい点と比べながら説明します。
 
-<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 336" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 336" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="why-responsibility-title">go-oidc-provider の責務分担。ライブラリは OIDC と OAuth のプロトコル処理を担当し、組み込み側はユーザ、画面、保存先、HTTP ルーティングを担当する。</title>
   <defs>
     <marker id="why-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -33,27 +34,27 @@ Go でサービスを書いていると、自前で OpenID Connect Provider を�
     </marker>
   </defs>
   <rect x="24" y="28" width="246" height="88" rx="8"/>
-  <text class="p" x="147" y="58" text-anchor="middle" font-size="16" font-weight="700">組み込み側</text>
-  <text class="p sub" x="147" y="82" text-anchor="middle" font-size="12">ユーザ / UI / 保存先</text>
-  <text class="m sub" x="147" y="100" text-anchor="middle" font-size="11">Authenticator · Store · Templates</text>
+  <text class="p" x="147" y="58" text-anchor="middle" font-size="15.5" font-weight="700">組み込み側</text>
+  <text class="p sub" x="147" y="82" text-anchor="middle" font-size="11.5">ユーザ / UI / 保存先</text>
+  <text class="m sub" x="147" y="100" text-anchor="middle" font-size="10.5">Authenticator · Store · Templates</text>
   <rect class="op" x="310" y="28" width="246" height="88" rx="8"/>
-  <text class="p opf" x="433" y="58" text-anchor="middle" font-size="16" font-weight="700">go-oidc-provider</text>
-  <text class="p sub" x="433" y="82" text-anchor="middle" font-size="12">OIDC / OAuth の手続き</text>
-  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="11">/authorize · /token · JWKS</text>
+  <text class="p opf" x="433" y="58" text-anchor="middle" font-size="15.5" font-weight="700">go-oidc-provider</text>
+  <text class="p sub" x="433" y="82" text-anchor="middle" font-size="11.5">OIDC / OAuth の手続き</text>
+  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/authorize · /token · JWKS</text>
   <rect x="596" y="28" width="140" height="88" rx="8"/>
-  <text class="p" x="666" y="58" text-anchor="middle" font-size="16" font-weight="700">RP / API</text>
-  <text class="p sub" x="666" y="82" text-anchor="middle" font-size="12">利用アプリ</text>
-  <text class="p sub" x="666" y="100" text-anchor="middle" font-size="11">トークンを検証</text>
+  <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
+  <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">利用アプリ</text>
+  <text class="p sub" x="666" y="100" text-anchor="middle" font-size="10.5">トークンを検証</text>
   <path d="M270 72 H306" marker-end="url(#why-arrow)"/>
   <path d="M556 72 H592" marker-end="url(#why-arrow)"/>
   <rect class="soft" x="54" y="168" width="650" height="126" rx="8"/>
-  <text class="p" x="92" y="196" font-size="14" font-weight="700">境界の考え方</text>
+  <text class="p" x="92" y="196" font-size="13.5" font-weight="700">境界の考え方</text>
   <circle cx="98" cy="225" r="4" fill="currentColor"/>
-  <text class="p" x="116" y="230" font-size="12">ライブラリ: トークン発行、署名、PKCE、CSRF、同意・ログアウトのプロトコル処理</text>
+  <text class="p" x="116" y="230" font-size="11.5">ライブラリ: トークン発行、署名、PKCE、CSRF、同意・ログアウトのプロトコル処理</text>
   <circle cx="98" cy="252" r="4" fill="currentColor"/>
-  <text class="p" x="116" y="257" font-size="12">組み込み側: ユーザ検索、パスワード検証、画面、保存先、ルーターへのマウント</text>
+  <text class="p" x="116" y="257" font-size="11.5">組み込み側: ユーザ検索、パスワード検証、画面、保存先、ルーターへのマウント</text>
   <circle cx="98" cy="279" r="4" fill="currentColor"/>
-  <text class="p" x="116" y="284" font-size="12">危険な古い方式は公開せず、FAPI などのまとまった設定はプロファイルで固定</text>
+  <text class="p" x="116" y="284" font-size="11.5">危険な古い方式は公開せず、FAPI などのまとまった設定はプロファイルで固定</text>
 </svg>
 
 ## つまずきやすい点への答え
@@ -84,17 +85,18 @@ op.New(
 
 既製の IdP では、ユーザの保存までプロダクト境界に含まれがちです。ユーザを取り込む、同期する、相手のプロフィール定義に合わせる、ログイン画面も相手の流儀に寄せる。既に Go サービス側にアカウントモデルがある場合、この形は扱いづらくなります。
 
-`op.WithStore(s store.Store)` は `store.AuthorizationCodeStore` / `store.SessionStore` / `store.UserStore` などの小さな保存先インターフェースに接続するだけです。ライブラリは `users` テーブルを直接読み書きせず、すべて呼び出し側の Store 実装が担います。
+`op.WithStore(s store.Store)` は `store.AuthorizationCodeStore` / `store.SessionStore` / `store.UserStore` などの小さな保存先インターフェースに接続するだけです。ライブラリは `users` テーブルを直接読み書きしません。プロトコル状態は adapter に置いたまま、既存テーブルから claim を読むにはアプリケーション側の `store.UserStore` を `op.WithUserStore(...)` に渡します。
 
 ```go
 op.New(
   /* 必須オプション */
-  op.WithStore(myStore),                // プロトコル状態
-  op.WithAuthenticators(passwordAuth),  // ユーザ検索は自前
+  op.WithStore(myStore),                 // プロトコル状態
+  op.WithUserStore(applicationUsers),    // 既存 users テーブルから claim を読む
+  op.WithLoginFlow(passwordLoginFlow),   // 同じレコードで認証
 )
 ```
 
-参照アダプタは `inmem`、`sql`（SQLite / MySQL / Postgres）、`redis`（揮発サブストア）、`composite`（hot / cold スプリッタ）。DynamoDB は予定。
+参照アダプタは `inmem`、`sql`（SQLite / MySQL / Postgres）、`redis`（揮発サブストア）、`dynamodb`（サブストアごとに 1 テーブル、Experimental）、`composite`（hot / cold スプリッタ）です。DynamoDB のプロビジョニング方式は [DynamoDB ストア](/ja/use-cases/dynamodb-store) を参照してください。
 
 ### 「同意 POST の Cookie / CSRF が地雷原」
 
@@ -154,18 +156,10 @@ op.New(
 
 セキュリティレビューで問題になるのは、RFC 名を挙げられないことよりも、任意仕様のどの分岐を実装し、どれを拒否し、適合性テストが実際にどの経路を検証したのかを示せないことです。
 
-各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。最新公開ベースラインのメタデータ（sha `8db1b80`）:
-
-| Plan | PASSED | REVIEW | SKIPPED | WARNING | FAILED |
-|---|---:|---:|---:|---:|---:|
-| oidcc-basic-certification-test-plan | 30 | 3 | 2 | 0 | **0** |
-| fapi2-security-profile-id2-test-plan | 48 | 9 | 1 | 0 | **0** |
-| fapi2-message-signing-id1-test-plan | 60 | 9 | 2 | 0 | **0** |
-| fapi-ciba-id1-test-plan | 32 | 0 | 3 | 0 | **0** |
-| **合計（4 plan、199 module）** | **170** | **21** | **8** | **0** | **0** |
+各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。v1.0.0 のリリース snapshot（SHA `3ccc6bc`）は 9 plan 全体を対象にし、**209 PASSED**、**39 REVIEW**、**15 SKIPPED**、**6 FAILED**、**終端結果なし 2** でした。strict release verifier は blocker 0 と判定しています。failure と未判定はすべてレビュー済み・期限付き exclusion と照合されており、raw の全内訳と理由は [OFCS 適合状況](/ja/compliance/ofcs) で公開しています。
 
 ::: tip REVIEW / SKIPPED の読み方
-`REVIEW` は OFCS の「人間レビューが必要」判定で、エラーページで止まる挙動はそれが正しい姿です（[詳細](/ja/compliance/ofcs)）。`SKIPPED` は OP が設計上拒否しているケースです（例: `alg=none` の request object）。`WARNING` は注意情報であり、失敗した module ではありません。
+`REVIEW` は OFCS の「人間レビューが必要」判定で、エラーページで止まる挙動はそれが正しい姿です（[詳細](/ja/compliance/ofcs)）。`SKIPPED` は OP が設計上拒否しているケースです（例: `alg=none` の request object）。raw の `FAILED` と未判定を黙って受け入れることはなく、release verifier を通すにはレビュー済みかつ期限内の exclusion と一致しなければなりません。
 :::
 
 ### 「リフレッシュトークンのローテーションを観測可能にしたい」

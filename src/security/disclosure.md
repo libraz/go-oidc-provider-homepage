@@ -1,6 +1,7 @@
 ---
 title: Vulnerability disclosure & CVE
 description: How to report a security issue in go-oidc-provider, what to expect, and the current advisory state.
+pageClass: pg-security-disclosure
 ---
 
 # Vulnerability disclosure & CVE
@@ -33,14 +34,7 @@ The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/g
 
 The rough flow once a report lands:
 
-<style scoped>
-.d-title{font-family:var(--vp-font-family-base);font-weight:600;font-size:14px;fill:var(--vp-c-text-1);stroke:none}
-.d-sub{font-family:var(--vp-font-family-base);font-weight:400;font-size:11.5px;fill:var(--vp-c-text-2);stroke:none}
-.d-edge{font-family:var(--vp-font-family-base);font-weight:500;font-size:11px;fill:var(--vp-c-text-2);stroke:none}
-.op-accent{stroke:var(--vp-c-brand-2)}
-</style>
-
-<svg role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:640px;height:auto;margin:1.5rem auto;">
+<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="disclosure-flow-title">The vulnerability-report pipeline: a report is received, acknowledged, triaged, and either closed as out of scope or fixed, disclosed, released, and published as a GHSA.</title>
   <!-- boxes -->
   <rect x="20" y="20" width="230" height="54" rx="8"/>
@@ -86,11 +80,10 @@ Realistic timing: acknowledgement usually takes a few days; severe issues get wo
 
 | Version | Supported |
 |---------|-----------|
-| `v0.x` (pre-v1.0) | latest minor only |
-| `v1.x` | latest minor + previous minor (planned, post-v1.0) |
+| `v1.x` | latest minor + previous minor |
 
-::: tip Pre-v1.0 cadence
-While the project is pre-v1.0, the public Go API may change in any minor release. Pin to a tag in your `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) on each bump. Security fixes go to the latest minor only; if you stay on an older one you'll need to upgrade to pick the fix up. Backports are not planned during the pre-v1.0 window — there's just one of me.
+::: tip Upgrade cadence
+Pin to a tag in `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) on each bump. The v1 public API follows Semantic Versioning; APIs marked `Experimental:` remain outside that promise. Security fixes land in supported v1 minors.
 :::
 
 ## Disclosure flow
@@ -106,7 +99,7 @@ The project follows **coordinated disclosure** — nothing about that is adversa
 ## Current advisory state
 
 ::: details Status as of this page revision
-**No public CVE has been assigned to date.** No security report meeting the criteria for a CVE has been received against the pre-v1.0 line. This is a literal status — there is nothing to publish — not a claim of audited safety. See the [Security posture](/security/posture) page for the honest framing around what the project's defences cover and don't cover.
+**No public CVE has been assigned to date.** No security report meeting the criteria for a CVE has been received against this library. This is a literal status — there is nothing to publish — not a claim of audited safety. See the [Security posture](/security/posture) page for the honest framing around what the project's defences cover and don't cover.
 
 GitHub Security Advisories are the canonical source of truth and will appear on the [advisories page](https://github.com/libraz/go-oidc-provider/security/advisories) as soon as one is filed.
 :::

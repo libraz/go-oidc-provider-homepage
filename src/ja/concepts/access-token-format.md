@@ -1,6 +1,7 @@
 ---
 title: アクセストークンの形式 — JWT と opaque
 description: 設計判断のためのページ。JWT が既定で opaque は明示時のみ。検証負荷の置き場所が違うだけで、信頼境界と運用形態に合うほうを選びます。
+pageClass: pg-concepts-access-token-format
 ---
 
 # アクセストークンの形式 — JWT と opaque
@@ -326,7 +327,7 @@ provider, err := op.New(
   <text class="atf-s atf-t2" x="440" y="272" text-anchor="middle">はい</text>
   <line x1="194" y1="312" x2="194" y2="336"/>
   <path d="M190 329 L194 336 L198 329"/>
-  <text class="atf-s atf-t2" x="212" y="326" text-anchor="middle">いいえ</text>
+  <text class="atf-s atf-t2" x="212" y="323" text-anchor="middle">いいえ</text>
   <rect x="119" y="338" width="150" height="48" rx="24"/>
   <text class="atf-b atf-t1" x="194" y="366" text-anchor="middle">Opaque</text>
 </svg>

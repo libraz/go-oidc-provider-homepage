@@ -2,11 +2,49 @@
 title: JWKS endpoint
 description: What /jwks advertises, the cache headers it emits, and how RPs interact with it through rotation.
 outline: 2
+pageClass: pg-operations-jwks
 ---
 
 # JWKS endpoint
 
 The `/jwks` endpoint exposes the public half of the OP's signing keys. RPs fetch it to verify ID tokens, JWT access tokens, JARM responses, and any userinfo JWTs. This page is the operational contract between the OP and those RP caches.
+
+<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jwks-cache-title">An RP learns jwks_uri from discovery, fetches /jwks and caches it, then refetches when it meets an unknown kid so it can verify with the rotated key.</title>
+<rect class="jwks-box" x="36" y="82" width="168" height="78" rx="8"/>
+  <text class="jwks-text" x="120" y="114" text-anchor="middle">RP</text>
+  <text class="jwks-sub" x="120" y="136" text-anchor="middle">verifies tokens</text>
+
+  <rect class="jwks-main" x="296" y="54" width="168" height="78" rx="8"/>
+  <text class="jwks-text" x="380" y="86" text-anchor="middle">Discovery</text>
+  <text class="jwks-sub" x="380" y="108" text-anchor="middle">advertises jwks_uri</text>
+
+  <rect class="jwks-main" x="296" y="180" width="168" height="78" rx="8"/>
+  <text class="jwks-text" x="380" y="212" text-anchor="middle">/jwks</text>
+  <text class="jwks-sub" x="380" y="234" text-anchor="middle">JWK set + ETag</text>
+
+  <rect class="jwks-box" x="556" y="82" width="168" height="78" rx="8"/>
+  <text class="jwks-text" x="640" y="114" text-anchor="middle">RP cache</text>
+  <text class="jwks-sub" x="640" y="136" text-anchor="middle">picks the key by kid</text>
+
+  <rect class="jwks-box" x="556" y="220" width="168" height="58" rx="8"/>
+  <text class="jwks-text" x="640" y="254" text-anchor="middle">Unknown kid</text>
+
+  <path class="jwks-flow" d="M204 104 H292"/>
+  <text class="jwks-sub" x="248" y="91" text-anchor="middle">1. read config</text>
+  <path class="jwks-flow" d="M284 100 L293 104 L284 108"/>
+  <path class="jwks-flow" d="M380 132 V176"/>
+  <text class="jwks-sub" x="430" y="158" text-anchor="middle">2. fetch keys</text>
+  <path class="jwks-flow" d="M376 168 L380 177 L384 168"/>
+  <path class="jwks-flow" d="M464 218 C520 208 558 174 612 160"/>
+  <text class="jwks-sub" x="548" y="199" text-anchor="middle">3. cache</text>
+  <path class="jwks-flow" d="M604 158 L613 158 L607 165"/>
+  <path class="jwks-flow" d="M640 160 V216"/>
+  <text class="jwks-sub" x="690" y="194" text-anchor="middle">4. refetch</text>
+  <path class="jwks-flow" d="M636 208 L640 217 L644 208"/>
+  <path class="jwks-flow" d="M556 249 C476 274 426 260 382 260"/>
+  <path class="jwks-flow" d="M390 256 L381 260 L390 264"/>
+</svg>
 
 ## What's served
 

@@ -1,6 +1,7 @@
 ---
 title: Client Credentials
 description: エンドユーザ無しのサービス間トークン。RFC 6749 §4.4。
+pageClass: pg-concepts-client-credentials
 ---
 
 # Client Credentials
@@ -22,52 +23,52 @@ description: エンドユーザ無しのサービス間トークン。RFC 6749 �
 - **`private_key_jwt`** — クライアント認証方式のひとつ。クライアントが秘密鍵で短寿命の JWT に署名し、OP は登録済みの公開鍵で検証します。共有秘密と違い、秘密がクライアントの外に出ないので強度が高い。
 :::
 
-<svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;display:block;margin:1.5rem auto;">
+<svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="cc-flow-title">client_credentials フロー: Service A が OP に認証してアクセストークンを受け取り、それを bearer token として Service B に提示する。</title>
   <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
-  <text x="90" y="26" text-anchor="middle" font-size="13" font-weight="600">Service A</text>
-  <text x="90" y="40" text-anchor="middle" font-size="9.5" opacity=".7">(あなたのバックエンド)</text>
+  <text x="90" y="26" text-anchor="middle" font-size="12.5" font-weight="600">Service A</text>
+  <text x="90" y="40" text-anchor="middle" font-size="9" opacity=".7">(あなたのバックエンド)</text>
   <rect class="box c-op" x="285" y="8" width="150" height="40" rx="6"/>
-  <text class="tf-op" x="360" y="26" text-anchor="middle" font-size="13" font-weight="600">OP</text>
-  <text class="tf-op mono" x="360" y="40" text-anchor="middle" font-size="9.5">go-oidc-provider</text>
+  <text class="tf-op" x="360" y="26" text-anchor="middle" font-size="12.5" font-weight="600">OP</text>
+  <text class="tf-op mono" x="360" y="40" text-anchor="middle" font-size="9">go-oidc-provider</text>
   <rect class="box c-rs" x="555" y="8" width="150" height="40" rx="6"/>
-  <text class="tf-rs" x="630" y="26" text-anchor="middle" font-size="13" font-weight="600">Service B</text>
-  <text class="tf-rs" x="630" y="40" text-anchor="middle" font-size="9.5">(別のバックエンド)</text>
+  <text class="tf-rs" x="630" y="26" text-anchor="middle" font-size="12.5" font-weight="600">Service B</text>
+  <text class="tf-rs" x="630" y="40" text-anchor="middle" font-size="9">(別のバックエンド)</text>
   <line class="life" x1="90" y1="48" x2="90" y2="344"/>
   <line class="life c-op" x1="360" y1="48" x2="360" y2="344"/>
   <line class="life c-rs" x1="630" y1="48" x2="630" y2="344"/>
-  <text class="mono" x="225" y="62" text-anchor="middle" font-size="11">POST /token</text>
-  <text class="mono" x="225" y="76" text-anchor="middle" font-size="11">grant_type=client_credentials</text>
-  <text x="225" y="90" text-anchor="middle" font-size="11"><tspan class="mono">scope</tspan> + クライアント認証</text>
+  <text class="mono" x="225" y="62" text-anchor="middle" font-size="10.5">POST /token</text>
+  <text class="mono" x="225" y="76" text-anchor="middle" font-size="10.5">grant_type=client_credentials</text>
+  <text x="225" y="90" text-anchor="middle" font-size="10.5"><tspan class="mono">scope</tspan> + クライアント認証</text>
   <path class="arw" d="M99 104 H360"/>
   <path class="arw" d="M353 99 L360 104 L353 109"/>
   <circle class="num" cx="90" cy="104" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono" x="90" y="108" text-anchor="middle" font-size="11">1</text>
+  <text class="mono" x="90" y="108" text-anchor="middle" font-size="10.5">1</text>
   <path class="arw c-op" d="M369 148 h20 v10 h-20"/>
   <path class="arw c-op" d="M376 153 L369 158 L376 163"/>
-  <text x="398" y="151" font-size="11"><tspan class="mono">scope</tspan> をクライアントの</text>
-  <text x="398" y="165" font-size="11"><tspan class="mono">許可リスト</tspan> と照合</text>
+  <text x="398" y="151" font-size="10.5"><tspan class="mono">scope</tspan> をクライアントの</text>
+  <text x="398" y="165" font-size="10.5"><tspan class="mono">許可リスト</tspan> と照合</text>
   <circle class="num c-op" cx="360" cy="150" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono tf-op" x="360" y="154" text-anchor="middle" font-size="11">2</text>
-  <text x="225" y="194" text-anchor="middle" font-size="11">200 OK</text>
-  <text class="mono" x="225" y="208" text-anchor="middle" font-size="11">{ access_token, expires_in }</text>
+  <text class="mono tf-op" x="360" y="154" text-anchor="middle" font-size="10.5">2</text>
+  <text x="225" y="194" text-anchor="middle" font-size="10.5">200 OK</text>
+  <text class="mono" x="225" y="208" text-anchor="middle" font-size="10.5">{ access_token, expires_in }</text>
   <path class="arw c-op" d="M351 220 H90"/>
   <path class="arw c-op" d="M97 215 L90 220 L97 225"/>
   <circle class="num c-op" cx="360" cy="220" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono tf-op" x="360" y="224" text-anchor="middle" font-size="11">3</text>
+  <text class="mono tf-op" x="360" y="224" text-anchor="middle" font-size="10.5">3</text>
   <rect x="262" y="242" width="196" height="28" fill="var(--vp-c-bg)" stroke="none"/>
-  <text class="mono" x="360" y="253" text-anchor="middle" font-size="11">GET /things</text>
-  <text class="mono" x="360" y="267" text-anchor="middle" font-size="11">Authorization: Bearer &lt;token&gt;</text>
+  <text class="mono" x="360" y="253" text-anchor="middle" font-size="10.5">GET /things</text>
+  <text class="mono" x="360" y="267" text-anchor="middle" font-size="10.5">Authorization: Bearer &lt;token&gt;</text>
   <path class="arw" d="M99 278 H630"/>
   <path class="arw" d="M623 273 L630 278 L623 283"/>
   <circle class="num" cx="90" cy="278" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono" x="90" y="282" text-anchor="middle" font-size="11">4</text>
+  <text class="mono" x="90" y="282" text-anchor="middle" font-size="10.5">4</text>
   <rect x="305" y="303" width="110" height="16" fill="var(--vp-c-bg)" stroke="none"/>
-  <text class="mono" x="360" y="314" text-anchor="middle" font-size="11">200 [ ... ]</text>
+  <text class="mono" x="360" y="314" text-anchor="middle" font-size="10.5">200 [ ... ]</text>
   <path class="arw c-rs" d="M621 326 H90"/>
   <path class="arw c-rs" d="M97 321 L90 326 L97 331"/>
   <circle class="num c-rs" cx="630" cy="326" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono tf-rs" x="630" y="330" text-anchor="middle" font-size="11">5</text>
+  <text class="mono tf-rs" x="630" y="330" text-anchor="middle" font-size="10.5">5</text>
 </svg>
 
 ::: warning Confidential クライアントのみ

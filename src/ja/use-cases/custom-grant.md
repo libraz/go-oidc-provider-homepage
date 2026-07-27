@@ -1,6 +1,7 @@
 ---
 title: カスタム grant — 組み込み
 description: 独自 grant_type URN を定義して OP にルーティングさせる — ハンドラ契約、BoundAccessToken、ParamPolicy。
+pageClass: pg-use-cases-custom-grant
 ---
 
 # 使い方 — カスタム grant
@@ -88,7 +89,7 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 
 ハンドラは **OP 署名**（`BoundAccessToken`）と **ハンドラ署名**（`AccessToken`）を選択します — 排他です。
 
-<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 350" style="width:100%;height:auto;max-width:760px;display:block;margin:1.5rem auto" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="custom-grant-signing-title">カスタム grant の 2 つの発行形態。BoundAccessToken は OP が署名、標準 claim、cnf、id_token、リフレッシュトークンを管理する。AccessToken はハンドラが署名済み値を返し、cnf や introspection 連携もハンドラ側の責任になる。</title>
   <defs>
     <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">

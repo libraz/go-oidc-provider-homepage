@@ -2,13 +2,14 @@
 title: JWKS エンドポイント
 description: /jwks が告知する内容、返すキャッシュヘッダ、ローテーション時の RP キャッシュ挙動。
 outline: 2
+pageClass: pg-operations-jwks
 ---
 
 # JWKS エンドポイント
 
 `/jwks` は OP の署名鍵の公開側を公開します。RP はこれを取得して、ID トークン、JWT アクセストークン、JARM、userinfo JWT を検証します。本ページは OP と RP キャッシュの間の運用契約です。
 
-<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="jwks-cache-title">RP は discovery で jwks_uri を知り、/jwks を取得してキャッシュする。未知の kid を見たら再取得し、ローテーション後の新しい鍵で検証する。</title>
 <rect class="jwks-box" x="36" y="82" width="168" height="78" rx="8"/>
   <text class="jwks-text" x="120" y="114" text-anchor="middle">RP</text>

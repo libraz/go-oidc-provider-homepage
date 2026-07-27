@@ -1,13 +1,14 @@
 ---
 title: Device Code（RFC 8628） — 組み込み
 description: device-authorization grant を有効化 — /device_authorization、ポーリング、slow_down、組み込み側が所有する verification ページ。
+pageClass: pg-use-cases-device-code
 ---
 
 # 使い方 — Device Code（RFC 8628）
 
 device flow の概念的背景（何で、いつ選び、なぜ `slow_down` / `expired_token` が要るか）は [Device Code 入門](/ja/concepts/device-code) を先に読んでください。このページは組み込み手順を扱います。
 
-<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="device-code-flow-title">Device Code の流れ: 入力しづらいデバイスがコードを表示し、ユーザが別端末で承認し、デバイスが token をポーリングする。</title>
 <rect class="dc-box" x="32" y="76" width="168" height="86" rx="8"/>
   <text class="dc-text" x="116" y="110" text-anchor="middle">入力しづらいデバイス</text>

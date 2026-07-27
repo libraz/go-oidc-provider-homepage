@@ -2,6 +2,7 @@
 title: Error catalog
 description: The OAuth/OIDC error codes the OP returns, what triggers each, and the typical fix.
 outline: 2
+pageClass: pg-reference-errors
 ---
 
 # Error catalog
@@ -9,6 +10,37 @@ outline: 2
 The OP returns errors from a closed catalog. There is no free-form `fmt.Errorf` reaching the wire — every emitted `error` either comes from `op.Error` (configuration / construction) or from one of the endpoint-internal code constants (request handling).
 
 This page enumerates both.
+
+<svg role="img" aria-labelledby="error-routing-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="error-routing-title">How OP errors are classified: op.New configuration errors surface at boot, while endpoint errors come back as JSON, a redirect, or an HTML error page.</title>
+<rect class="err-box" x="32" y="58" width="170" height="70" rx="8"/>
+  <text class="err-text" x="117" y="88" text-anchor="middle">Construction error</text>
+  <text class="err-sub" x="117" y="110" text-anchor="middle">returned by op.New</text>
+
+  <rect class="err-box" x="32" y="174" width="170" height="70" rx="8"/>
+  <text class="err-text" x="117" y="204" text-anchor="middle">Request error</text>
+  <text class="err-sub" x="117" y="226" text-anchor="middle">from an endpoint</text>
+
+  <rect class="err-main" x="300" y="76" width="160" height="90" rx="8"/>
+  <text class="err-text" x="380" y="112" text-anchor="middle">Closed catalog</text>
+  <text class="err-sub" x="380" y="134" text-anchor="middle">error + description</text>
+
+  <rect class="err-box" x="558" y="34" width="170" height="54" rx="8"/>
+  <text class="err-text" x="643" y="68" text-anchor="middle">JSON response</text>
+  <rect class="err-box" x="558" y="116" width="170" height="54" rx="8"/>
+  <text class="err-text" x="643" y="150" text-anchor="middle">redirect</text>
+  <rect class="err-box" x="558" y="198" width="170" height="54" rx="8"/>
+  <text class="err-text" x="643" y="232" text-anchor="middle">HTML error page</text>
+
+  <path class="err-flow" d="M202 94 C242 94 258 108 296 116"/>
+  <path class="err-flow" d="M202 210 C252 200 268 158 296 138"/>
+  <path class="err-flow" d="M460 112 C500 84 516 62 554 62"/>
+  <path class="err-flow" d="M546 58 L555 62 L546 66"/>
+  <path class="err-flow" d="M460 124 H554"/>
+  <path class="err-flow" d="M546 120 L555 124 L546 128"/>
+  <path class="err-flow" d="M460 138 C504 160 516 226 554 226"/>
+  <path class="err-flow" d="M546 222 L555 226 L546 230"/>
+</svg>
 
 ## Error shape
 
@@ -51,6 +83,7 @@ Returned by the constructor; the OP never starts.
 | `op.ErrIssuerRequired` | `configuration_error` | `WithIssuer` not supplied |
 | `op.ErrIssuerInvalid` | `configuration_error` | issuer is not absolute https, or has query / fragment |
 | `op.ErrStoreRequired` | `configuration_error` | `WithStore` not supplied |
+| `op.ErrUserStoreRequired` | `configuration_error` | `WithUserStore` received nil |
 | `op.ErrKeysetRequired` | `configuration_error` | `WithKeyset` not supplied or empty |
 | `op.ErrCookieKeysRequired` | `configuration_error` | `WithCookieKeys` missing while `authorization_code` grant is enabled |
 | `op.ErrDynamicRegistrationDisabled` | `configuration_error` | `Provider.IssueInitialAccessToken` called without `WithDynamicRegistration` |

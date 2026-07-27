@@ -1,6 +1,7 @@
 ---
 title: mTLS (RFC 8705)
 description: Mutual-TLS Client Authentication and Certificate-Bound Access Tokens — bind a token to the TLS certificate the legitimate client presents.
+pageClass: pg-concepts-mtls
 ---
 
 # mTLS — certificate-bound access tokens
@@ -56,55 +57,45 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
 
 ## Reverse-proxy deployments
 
-<style scoped>
-.d-label{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none}
-.d-sub{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-2);stroke:none}
-.d-mono{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-2);stroke:none}
-.d-layer{font-family:var(--vp-font-family-mono);fill:var(--vp-c-text-3);stroke:none;letter-spacing:.16em}
-.d-op{font-family:var(--vp-font-family-base);fill:var(--vp-c-brand-2);stroke:none}
-.op-accent{stroke:var(--vp-c-brand-2)}
-.d-faint{stroke:var(--vp-c-divider);stroke-width:1}
-</style>
-
-<svg role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" width="760" style="max-width:100%;height:auto;margin:1.5rem 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="mtls-proxy-trust-title">Reverse-proxy trust boundary: a TLS-terminating proxy injects the client certificate into a header; the OP consults it only when the request arrives from a trusted CIDR, treats the forwarded certificate as authoritative, and rejects a mismatch with a live handshake certificate as invalid_request.</title>
-  <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="10">PUBLIC</text>
-  <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="10">EDGE</text>
-  <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="10">OP TRUST ZONE</text>
+  <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="9.5">PUBLIC</text>
+  <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="9.5">EDGE</text>
+  <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="9.5">OP TRUST ZONE</text>
   <line x1="80" y1="120" x2="740" y2="120" class="d-faint"/>
   <rect x="260" y="28" width="300" height="64" rx="10"/>
-  <text x="410" y="53" text-anchor="middle" class="d-label" font-size="16" font-weight="600">Client</text>
-  <text x="410" y="77" text-anchor="middle" class="d-sub" font-size="12">X.509 client cert</text>
+  <text x="410" y="53" text-anchor="middle" class="d-label" font-size="15.5" font-weight="600">Client</text>
+  <text x="410" y="77" text-anchor="middle" class="d-sub" font-size="11.5">X.509 client cert</text>
   <path d="M410 92 L410 138"/>
   <path d="M405 131 L410 138 L415 131"/>
-  <text x="428" y="110" class="d-sub" font-size="11">TLS handshake</text>
-  <text x="428" y="125" class="d-sub" font-size="10.5">presents client cert</text>
+  <text x="428" y="110" class="d-sub" font-size="10.5">TLS handshake</text>
+  <text x="428" y="125" class="d-sub" font-size="10">presents client cert</text>
   <rect x="210" y="138" width="400" height="92" rx="10"/>
-  <text x="410" y="164" text-anchor="middle" class="d-label" font-size="15" font-weight="600">TLS-terminating proxy</text>
-  <text x="410" y="188" text-anchor="middle" class="d-sub" font-size="11">injects client cert into a header</text>
-  <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11.5">X-SSL-Cert: &lt;PEM&gt;</text>
+  <text x="410" y="164" text-anchor="middle" class="d-label" font-size="14.5" font-weight="600">TLS-terminating proxy</text>
+  <text x="410" y="188" text-anchor="middle" class="d-sub" font-size="10.5">injects client cert into a header</text>
+  <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11">X-SSL-Cert: &lt;PEM&gt;</text>
   <line x1="80" y1="262" x2="740" y2="262" stroke-width="1.5" stroke-dasharray="6 6"/>
-  <text x="88" y="256" class="d-sub" font-size="11">trust boundary</text>
+  <text x="88" y="256" class="d-sub" font-size="10.5">trust boundary</text>
   <path d="M410 230 L410 298"/>
   <path d="M405 291 L410 298 L415 291"/>
   <rect x="260" y="298" width="300" height="64" rx="10"/>
-  <text x="410" y="323" text-anchor="middle" class="d-label" font-size="13" font-weight="600">trusted-CIDR gate</text>
-  <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11.5">RemoteAddr ∈ trustedCIDRs?</text>
+  <text x="410" y="323" text-anchor="middle" class="d-label" font-size="12.5" font-weight="600">trusted-CIDR gate</text>
+  <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11">RemoteAddr ∈ trustedCIDRs?</text>
   <path d="M560 330 L634 330"/>
   <path d="M627 325 L634 330 L627 335"/>
-  <text x="598" y="322" text-anchor="middle" class="d-sub" font-size="10.5">out of range</text>
+  <text x="598" y="322" text-anchor="middle" class="d-sub" font-size="10">out of range</text>
   <rect x="636" y="304" width="112" height="52" rx="8"/>
-  <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10.5">header ignored</text>
-  <text x="692" y="344" text-anchor="middle" class="d-sub" font-size="10.5">fail closed</text>
+  <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10">header ignored</text>
+  <text x="692" y="344" text-anchor="middle" class="d-sub" font-size="10">fail closed</text>
   <path d="M410 362 L410 408"/>
   <path d="M405 401 L410 408 L415 401"/>
-  <text x="396" y="380" text-anchor="end" class="d-sub" font-size="10.5">in range</text>
-  <text x="396" y="395" text-anchor="end" class="d-sub" font-size="10.5">header authoritative</text>
+  <text x="396" y="380" text-anchor="end" class="d-sub" font-size="10">in range</text>
+  <text x="396" y="395" text-anchor="end" class="d-sub" font-size="10">header authoritative</text>
   <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
-  <text x="410" y="436" text-anchor="middle" class="d-op" font-size="15" font-weight="600">OP — this library</text>
-  <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="11">handshake cert used on direct TLS</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="11">header / handshake mismatch →</text>
-  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11.5">invalid_request</text>
+  <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — this library</text>
+  <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="10.5">handshake cert used on direct TLS</text>
+  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">header / handshake mismatch →</text>
+  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">invalid_request</text>
 </svg>
 
 The OP almost never terminates TLS itself in production. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header (`X-SSL-Cert`, `X-Forwarded-Client-Cert`, …).

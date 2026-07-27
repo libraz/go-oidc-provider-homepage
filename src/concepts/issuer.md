@@ -24,7 +24,7 @@ An **issuer** is the OP's identity URL. It appears in the `iss` claim of every t
 
 ## Why canonical form matters
 
-OIDC Discovery 1.0 §3 says the issuer identifier is concatenated verbatim with `/.well-known/openid-configuration` to derive the configuration URL. RFC 9207 then requires the OP to echo the same `iss` on authorization responses so a misrouted code cannot be silently used against the wrong AS — the so-called "mix-up" defence. Both checks rely on the OP and every RP agreeing on **one** canonical spelling.
+OIDC Discovery 1.0 §4 derives the configuration URL from the issuer identifier by inserting `/.well-known/openid-configuration` between the host and the issuer's path — which for the common pathless issuer is plain concatenation. RFC 9207 then requires the OP to echo the same `iss` on authorization responses so a misrouted code cannot be silently used against the wrong AS — the so-called "mix-up" defence. Both checks rely on the OP and every RP agreeing on **one** canonical spelling.
 
 Real deployments commonly produce two URIs that look equivalent but are not:
 
@@ -42,18 +42,18 @@ A single drift breaks every signature check and every RFC 9207 mix-up validation
 
 ## What this library refuses at boot
 
-`op.WithIssuer` validates the value at the option site and `op.New` returns a build-time error rather than starting on a malformed issuer. The rules enforced today:
+`op.New` validates the issuer during its construction pass and returns an error rather than starting on a malformed value. The rules enforced today:
 
 - **Must be a non-empty, parseable URL.** An empty string or a string that fails `url.Parse` is rejected.
 - **Must be absolute and carry an authority.** `oidc.example.com` (no scheme) and `https:///path` (no host) both fail.
 - **Must not carry a query.** A `?` in the URL is rejected — the discovery URL would fold into a malformed concatenation.
 - **Must not carry a fragment.** A `#` in the URL is rejected for the same reason.
-- **Must not end with a trailing slash on the path.** Both `https://idp.example.com/` and `https://idp.example.com/oidc/` are rejected because the issuer is concatenated verbatim with `/.well-known/openid-configuration` to derive the configuration URL.
+- **Must not end with a trailing slash on the path.** Both `https://idp.example.com/` and `https://idp.example.com/oidc/` are rejected: the issuer's path is spliced into the discovery URL, and a trailing slash yields a second, non-canonical spelling of the same document.
 - **Scheme must be all-lowercase.** `HTTPS://idp.example.com` and `HtTpS://idp.example.com` are rejected. The validator inspects the raw input (not just the parsed form) so a parser that downcases the scheme during normalisation cannot mask the drift.
 - **Host must be all-lowercase.** `https://IDP.example.com` and `https://IDP.EXAMPLE.COM/oidc` are rejected. `u.Host` preserves raw casing, so any uppercase letter in the authority fails the check.
 - **Must omit the default port.** `https://idp.example.com:443`, `https://idp.example.com:443/oidc`, and `http://127.0.0.1:80` are rejected. A redundant default port flips byte-equality the moment a load balancer canonicalises one side and not the other.
 - **Path must be canonical.** `..` segments, `.` segments, and duplicate slashes (`https://idp.example.com/a/../b`, `https://idp.example.com/a/./b`, `https://idp.example.com//oidc`) are rejected. The validator runs `path.Clean` and refuses anything that does not round-trip.
-- **Must use `https`.** The only carve-out is loopback IP literals (`127.0.0.0/8` and `[::1]`), which may use plain `http` so a development boot does not need TLS. The textual host `localhost` is **not** in the carve-out — it can be DNS-hijacked (RFC 8252 §7.3 reasoning), so production deployments and DNS-rebinding-sensitive setups are forced onto the IP literal.
+- **Must use `https`.** The only carve-out is loopback IP literals (`127.0.0.0/8` and `[::1]`), which may use plain `http` so a development boot does not need TLS. The textual host `localhost` is **not** in the default carve-out — it can be DNS-hijacked (RFC 8252 §7.3 reasoning), so production deployments and DNS-rebinding-sensitive setups are forced onto the IP literal. `op.WithAllowLocalhostLoopback()` admits it explicitly, which a local passkey deployment needs: a WebAuthn Relying Party ID must be a domain, so an issuer on `127.0.0.1` has no valid RP ID to pair with. The rebinding reasoning does not stop applying — the opt-in is for a developer machine and nowhere else. Because of it the issuer is validated during `op.New`'s validation pass rather than inside `WithIssuer`, so the carve-out is seen whichever order the options are given in.
 
 These rules together guarantee `iss` is byte-exact across the discovery document, every issued token, and the authorization-response `iss` parameter — the form RPs compare under RFC 9207 mix-up defence.
 
@@ -68,7 +68,17 @@ provider, err := op.New(
 )
 ```
 
-A subpath issuer is fine for multi-tenant deployments — `op.New` mounts every endpoint relative to the issuer's path, so the discovery document for `https://login.example.com/tenant-a` lives at `https://login.example.com/tenant-a/.well-known/openid-configuration`. The trailing slash rule still applies: `https://login.example.com/tenant-a` is canonical; `https://login.example.com/tenant-a/` is not.
+A subpath issuer is fine for multi-tenant deployments. The issuer's path is part of the public endpoint namespace, not just metadata, so `op.New` mounts every protocol handler beneath it: an issuer of `https://login.example.com/tenant-a` serves the token endpoint at `/tenant-a/oidc/token` and the rest to match.
+
+The discovery document is the one exception, and it is easy to get backwards. OpenID Connect Discovery 1.0 §4 inserts the well-known suffix **between the host and the issuer path**, not after it:
+
+| | URL |
+|---|---|
+| Issuer | `https://login.example.com/tenant-a` |
+| Discovery document | `https://login.example.com/.well-known/openid-configuration/tenant-a` |
+| Token endpoint | `https://login.example.com/tenant-a/oidc/token` |
+
+The library mounts and advertises the same URLs, so an RP that follows discovery never sees the difference — but an operator writing proxy rules by hand does. The trailing-slash rule still applies: `https://login.example.com/tenant-a` is canonical; `https://login.example.com/tenant-a/` is not.
 
 ::: warning One value across the lifetime of the deployment
 Once RPs have stored your issuer string, every change is a breaking change for them. Plan the canonical form before the first RP integrates: pick a hostname you will not need to retire, decide the subpath shape, and never let a load balancer rewrite the host or scheme on its way through. The library catches most boot-time mistakes; it cannot catch a TLS-terminating proxy that strips the path or downcases the host downstream.

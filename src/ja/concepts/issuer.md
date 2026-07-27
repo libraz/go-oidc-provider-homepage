@@ -24,7 +24,7 @@ description: issuer URL とは何か、なぜひとつの正規形であるこ�
 
 ## なぜ正規形が重要か
 
-OIDC Discovery 1.0 §3 は、issuer 識別子を `/.well-known/openid-configuration` と **そのまま連結** して configuration URL を導出すると規定しています。RFC 9207 はさらに、認可応答に同じ `iss` をエコーすることで「混同（mix-up）攻撃」を防ぐよう要求します — 誤って配送された code が別の AS に対して使われないようにするためです。どちらのチェックも、OP と全 RP が **ひとつの** 正規表記で合意していることに依存しています。
+OIDC Discovery 1.0 §4 は、issuer 識別子の host と path の**あいだ**に `/.well-known/openid-configuration` を挿入して configuration URL を導出すると規定しています(path を持たない一般的な issuer では、単純な連結と同じ結果になります)。RFC 9207 はさらに、認可応答に同じ `iss` をエコーすることで「混同（mix-up）攻撃」を防ぐよう要求します — 誤って配送された code が別の AS に対して使われないようにするためです。どちらのチェックも、OP と全 RP が **ひとつの** 正規表記で合意していることに依存しています。
 
 実際のデプロイでは、よく似ているが等価でない URI が並ぶことが多いです。
 
@@ -42,18 +42,18 @@ OIDC Discovery 1.0 §3 は、issuer 識別子を `/.well-known/openid-configurat
 
 ## 本ライブラリが起動時に拒否する形
 
-`op.WithIssuer` はオプション設定の段階で値を検証し、`op.New` は不正な issuer のまま起動するのではなく構成エラーを返します。現時点で施行されているルール:
+`op.New` は構築時の検証パスで issuer を検査し、不正な値のまま起動するのではなくエラーを返します。現時点で施行されているルール:
 
 - **空でない、parse 可能な URL であること**。空文字列、`url.Parse` が失敗する文字列は拒否されます。
 - **絶対 URL で、authority を持つこと**。`oidc.example.com`（scheme なし）も `https:///path`（host なし）も失敗します。
 - **query を持たないこと**。`?` を含む URL は拒否されます — discovery URL の連結が壊れるためです。
 - **fragment を持たないこと**。`#` を含む URL は同じ理由で拒否されます。
-- **path に末尾スラッシュを持たないこと**。`https://idp.example.com/` も `https://idp.example.com/oidc/` も拒否されます — issuer は configuration URL を作るためにそのまま `/.well-known/openid-configuration` と連結されるためです。
+- **path に末尾スラッシュを持たないこと**。`https://idp.example.com/` も `https://idp.example.com/oidc/` も拒否されます。issuer の path は discovery URL に埋め込まれるため、末尾スラッシュがあると同じ文書に対して非正規のもうひとつの綴りが生まれてしまいます。
 - **scheme は全て小文字であること**。`HTTPS://idp.example.com` も `HtTpS://idp.example.com` も拒否されます。検証は parse 後ではなく生入力に対しても行うので、parse 中に scheme を小文字化するパーサで揺れが見えなくなることはありません。
 - **host は全て小文字であること**。`https://IDP.example.com` も `https://IDP.EXAMPLE.COM/oidc` も拒否されます。`u.Host` は生の case を保持するので、authority の中に大文字があれば検査で落ちます。
 - **デフォルトポートを省略すること**。`https://idp.example.com:443`、`https://idp.example.com:443/oidc`、`http://127.0.0.1:80` は拒否されます。冗長なデフォルトポートは、ロードバランサが片側だけ正規化した瞬間に byte 一致を壊します。
 - **path が正規形であること**。`..` セグメント、`.` セグメント、重複スラッシュ（`https://idp.example.com/a/../b`、`https://idp.example.com/a/./b`、`https://idp.example.com//oidc`）は拒否されます。検証は `path.Clean` を通し、round-trip しないものは弾きます。
-- **`https` であること**。唯一の例外は loopback の IP リテラル（`127.0.0.0/8` と `[::1]`）で、開発時の起動が TLS なしで済むよう plain `http` を許容します。テキストの `localhost` は **例外には含まれません** — DNS hijack の対象になるため（RFC 8252 §7.3 の理由）、本番デプロイや DNS rebinding を警戒する環境では IP リテラルでの記述に矯正されます。
+- **`https` であること**。唯一の例外は loopback の IP リテラル（`127.0.0.0/8` と `[::1]`）で、開発時の起動が TLS なしで済むよう plain `http` を許容します。テキストの `localhost` は **既定の例外には含まれません** — DNS hijack の対象になるため（RFC 8252 §7.3 の理由）、本番デプロイや DNS rebinding を警戒する環境では IP リテラルでの記述に矯正されます。明示的に許可するには `op.WithAllowLocalhostLoopback()` を使います。ローカルで passkey を扱う場合はこれが必要です。WebAuthn の Relying Party ID はドメインでなければならず、`127.0.0.1` の issuer には対にできる RP ID が存在しないからです。rebinding の懸念が消えるわけではないので、この opt-in は開発マシンの中だけのものです。この例外があるため、issuer の検証は `WithIssuer` の中ではなく `op.New` の検証パスで走ります。オプションをどの順で渡しても例外が効くようにするためです。
 
 ```go
 // NG: host の大文字、default port、末尾スラッシュが byte 一致を壊す
@@ -76,7 +76,17 @@ provider, err := op.New(
 )
 ```
 
-マルチテナントのデプロイで subpath を使うのも問題ありません — `op.New` は issuer の path に対してすべてのエンドポイントを相対マウントします。`https://login.example.com/tenant-a` の discovery 文書は `https://login.example.com/tenant-a/.well-known/openid-configuration` から配信されます。末尾スラッシュのルールは subpath にも適用されます: `https://login.example.com/tenant-a` は正規形、`https://login.example.com/tenant-a/` は正規形ではありません。
+マルチテナントのデプロイで subpath を使うのも問題ありません。issuer の path は単なるメタデータではなく公開エンドポイントの名前空間の一部なので、`op.New` はすべてのプロトコルハンドラをその下に mount します。issuer が `https://login.example.com/tenant-a` なら、トークンエンドポイントは `/tenant-a/oidc/token` になり、他のエンドポイントもこれに揃います。
+
+例外は discovery 文書だけで、ここは逆に取り違えやすい箇所です。OpenID Connect Discovery 1.0 §4 は、well-known の suffix を issuer の path の後ろではなく、**host と path のあいだ**に挿入すると規定しています:
+
+| | URL |
+|---|---|
+| issuer | `https://login.example.com/tenant-a` |
+| discovery 文書 | `https://login.example.com/.well-known/openid-configuration/tenant-a` |
+| トークンエンドポイント | `https://login.example.com/tenant-a/oidc/token` |
+
+本ライブラリは mount する URL と advertise する URL を一致させるので、discovery をたどる RP がこの違いに気付くことはありません。気付く必要があるのは、proxy のルールを手で書く運用者です。末尾スラッシュのルールは subpath にも適用されます: `https://login.example.com/tenant-a` は正規形、`https://login.example.com/tenant-a/` は正規形ではありません。
 
 ::: warning デプロイの一生に渡って 1 つの値
 RP がいったん issuer 文字列を保存したら、それを変えるのは破壊的変更です。最初の RP が連携する前に正規形を決めてください — 引退させずに済むホスト名を選ぶ、subpath の形を決める、ロードバランサに途中で host や scheme を書き換えさせない。本ライブラリは起動時の典型的なミスのほとんどを捕まえますが、TLS 終端しているプロキシが下流で path を削ったり host を小文字化していたりするのまでは捕まえられません。

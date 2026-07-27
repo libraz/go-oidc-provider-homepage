@@ -1,6 +1,7 @@
 ---
 title: 送信者制約 — 選定ガイド
 description: Bearer トークンと送信者制約付きトークン。DPoP と mTLS のどちらを選ぶかの判断軸。
+pageClass: pg-concepts-sender-constraint
 ---
 
 # 送信者制約 — DPoP と mTLS の選び方
@@ -57,7 +58,7 @@ FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトー�
 
 ## 使い分けの指針
 
-<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 710 490" style="width:100%;height:auto;max-width:710px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 710 490" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="sc-choose-tree-title">送信者制約を選ぶための決定木。ブラウザ中心のクライアントは DPoP、PKI 証明書を持つバックエンドは mTLS、B2B や規制環境は mTLS または両方、異種混在環境は両方を有効化し、迷ったら既定は DPoP。</title>
   <rect x="60" y="8" width="230" height="36" rx="8"/>
   <text class="t-start" x="175" y="30" text-anchor="middle">送信者制約の選び方</text>

@@ -2,6 +2,7 @@
 title: 可観測性
 description: OP に対するログ、監査ログ、Prometheus、トレースの組み込み。
 outline: 2
+pageClass: pg-operations-observability
 ---
 
 # 可観測性
@@ -17,7 +18,7 @@ outline: 2
 
 ライブラリはこれらを意図的に分離しています。任意のサブセットだけを組み込むことができます。
 
-<svg role="img" aria-labelledby="observability-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="observability-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="observability-split-title">OP は業務イベントを出し、HTTP 層と運用基盤がログ、監査ログ、メトリクス、トレースに振り分ける構造。</title>
 <rect class="obs-box" x="24" y="104" width="138" height="72" rx="8"/>
   <text class="obs-text" x="93" y="134" text-anchor="middle">HTTP 層</text>
@@ -191,7 +192,7 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 
 ## レート制限と濫用シグナル
 
-本ライブラリは `/authorize`・`/par`・`/token`・`/userinfo` その他の公開エンドポイントに対して、組み込みのレート制限を **同梱していません**。`WithRateLimit` のようなオプションも存在しません。レート制限は運用側の役割です — リバースプロキシ（NGINX、Envoy、Traefik）、エッジサービス（Cloudflare、Fastly）、あるいは `op.Handler()` の前段ミドルウェアが、IP 単位・クライアント単位のリクエスト枠を持つべき場所です。ライブラリ側にあるかのように書くのは誤った期待を生むだけです。
+本ライブラリは `/authorize`・`/par`・`/token`・`/userinfo` その他の公開エンドポイントに対して、組み込みのレート制限を **同梱していません**。`WithRateLimit` のようなオプションも存在しません。レート制限は運用側の役割です — リバースプロキシ（NGINX、Envoy、Traefik）、エッジサービス（Cloudflare、Fastly）、あるいは `*op.Provider`（`http.Handler` を実装）の前段ミドルウェアが、IP 単位・クライアント単位のリクエスト枠を持つべき場所です。ライブラリ側にあるかのように書くのは誤った期待を生むだけです。
 
 ライブラリが代わりに発行しているのは、実際の制限がどこに置かれていても濫用パイプラインが消費して攻撃者をスコアリングできる、構造化された監査イベント群です:
 

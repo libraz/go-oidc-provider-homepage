@@ -3,9 +3,10 @@ layout: home
 title: go-oidc-provider — Go 用 OpenID Connect Provider ライブラリ
 titleTemplate: false
 description: 既存の Go アプリに http.Handler として OIDC Provider（Authorization Server）を組み込むライブラリ。FAPI 2.0 Baseline / Message Signing に対応します。
+pageClass: pg-index
 ---
 
-<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="home-embed-title">go-oidc-provider は既存の Go アプリに http.Handler として組み込み、OP エンドポイント、ストア、ログ、鍵をアプリ側の運用基盤に接続する。</title>
 <rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
   <text class="home-text" x="112" y="124" text-anchor="middle">既存 Go アプリ</text>
@@ -154,8 +155,8 @@ handler, _ := op.New(
 go get github.com/libraz/go-oidc-provider/op@latest
 ```
 
-::: warning Pre-v1.0
-本ライブラリは **pre-v1.0** です。v1.0.0 までは minor リリースに破壊的変更が入る可能性があります。v1.0 以降は SemVer の厳格運用に切り替わります。詳細は [README の status 注記](https://github.com/libraz/go-oidc-provider#status) を参照してください。
+::: info 安定 API
+ライブラリは v1.0.0 に到達し、公開 API は Semantic Versioning に従います。破壊的変更はメジャーリリースでのみ行われます。godoc が `Experimental:` で始まる API は例外で、マイナーリリースでも変更される可能性があります。
 :::
 
 ## ライセンス

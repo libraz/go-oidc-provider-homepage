@@ -12,7 +12,7 @@ When a grant is long-lived — a recurring payment mandate, a standing data-acce
 Use it when clients must manage a consent-like grant after the first authorization, especially when the grant can grow or be revoked independently of one browser session. Do not enable it for short-lived, one-shot sign-in flows: regular authorization codes, refresh-token rotation, and normal token revocation are simpler when the client never needs to name a grant.
 
 ::: warning Experimental — tracks an IETF draft
-Grant Management is an IETF draft, not a published RFC. The `op.GrantManagementAction` enum and `op.WithGrantManagement` are marked `Experimental:` in godoc: they may change on a wire-incompatible draft bump before v1.0.
+Grant Management is an IETF draft, not a published RFC. The `op.GrantManagementAction` enum and `op.WithGrantManagement` are marked `Experimental:` in godoc: a draft update may make a wire-incompatible change.
 :::
 
 ::: details The five actions

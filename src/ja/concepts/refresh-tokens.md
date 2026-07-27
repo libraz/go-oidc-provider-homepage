@@ -1,6 +1,7 @@
 ---
 title: リフレッシュトークン
 description: ローテーション、再利用検知、猶予期間、`offline_access` の TTL バケット分離。
+pageClass: pg-concepts-refresh-tokens
 ---
 
 # リフレッシュトークン
@@ -24,7 +25,7 @@ description: ローテーション、再利用検知、猶予期間、`offline_a
 
 `grant_type=refresh_token` が成功するたびに、リフレッシュトークンは **ローテーション** します — 古いトークンは無効化され、新しいトークンが返されます。
 
-<svg class="rr-flow-dg" role="img" aria-labelledby="refresh-rotation-flow-title" viewBox="0 0 760 452" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="rr-flow-dg" role="img" aria-labelledby="refresh-rotation-flow-title" viewBox="0 0 760 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="refresh-rotation-flow-title">リフレッシュトークンのローテーション: 交換のたびに提示されたトークンを無効化して同じ連鎖内で新しいトークンを発行し、ローテーション済みトークンの再提示は再利用として検知され連鎖全体を失効させる。</title>
   <line class="life" x1="110" y1="68" x2="110" y2="438"/>
   <line class="life op-accent" x1="380" y1="68" x2="380" y2="438"/>

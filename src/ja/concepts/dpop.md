@@ -1,6 +1,7 @@
 ---
 title: DPoP (RFC 9449)
 description: Demonstrating Proof of Possession — クライアントが保有する鍵にアクセストークン（任意でリフレッシュトークンも）を結び付け、漏洩したトークン単体では使えなくする方式。
+pageClass: pg-concepts-dpop
 ---
 
 # DPoP — Demonstrating Proof of Possession
@@ -35,12 +36,12 @@ DPoP proof はクライアントが保有する秘密鍵で署名した JWT（RF
 |---|---|
 | `htm` | リクエストの HTTP メソッド（`POST`、`GET` など）。この 1 リクエストに固定。 |
 | `htu` | クエリと fragment を取り除いたリクエスト URL。`/orders` 用 proof を `/admin/payouts` で再利用することを防ぎます。 |
-| `iat` | proof 署名時刻。OP の鮮度判定窓（既定 60 秒、`dpop.DefaultIatWindow` 参照）外は拒否。 |
+| `iat` | proof 署名時刻。OP の鮮度判定窓（既定 60 秒）外は拒否。 |
 | `jti` | proof ごとの一意な乱数値。OP は鮮度判定窓の間 `jti` をキャッシュし、同じ proof の再利用を防ぎます。 |
 | `ath` | 任意。アクセストークンの SHA-256。proof がアクセストークンと組で提示される場合は必須（RFC 9449 §4.2）。 |
 | `nonce` | 任意。OP が §8 / §9 の nonce フローを運用しているときにサーバから供給される値。 |
 
-<svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-proof-flow-title">DPoP proof のシーケンス: クライアントがリクエストごとに proof を署名し、OP がアクセストークンに cnf.jkt を書き込み、リソースサーバがその値と proof を照合する。</title>
   <line class="life" x1="110" y1="68" x2="110" y2="540"/>
   <line class="life op-accent" x1="380" y1="68" x2="380" y2="540"/>
@@ -108,7 +109,7 @@ thumbprint は JSON 再エンコードを跨いでも安定する、短い識別
 DPoP は独立した 4 つの検査を重ね、proof 1 通を盗み出した攻撃者に何の利益もないようにします:
 
 - **`jti` 重複排除。** OP は受理した proof の `jti` を `store.ConsumedJTIStore.Mark` に通します（`internal/dpop/verify.go`）。鮮度判定窓の中で同じ `jti` が再提示されると `ErrProofReplayed` を返してリクエストは失敗します。この store は PAR / JAR のリプレイ防御で使う store と共通なので、Redis サブストア 1 つで全部をカバーできます。
-- **`iat` 窓。** `DefaultIatWindow`（60 秒、対称）より古いか未来すぎる proof は `ErrProofIatWindow` で拒否されます。短く取ることに意味があり、`jti` キャッシュが消えても盗まれた proof が使える時間を限定します。
+- **`iat` 窓。** 対称 60 秒の鮮度判定窓より古いか未来すぎる proof は `ErrProofIatWindow` で拒否されます。短く取ることに意味があり、`jti` キャッシュが消えても盗まれた proof が使える時間を限定します。
 - **`htm` + `htu` 一致。** あるメソッド・URL 用の proof は別エンドポイントで提示できません。OP は両側を RFC 9449 §4.3 の正準形（scheme / host を小文字化、デフォルトポートを除去、クエリ・fragment を除去）に揃えてから比較します。
 - **`ath` による結び付き。** proof がアクセストークンと組で提示される場合、proof は `ath = SHA-256(access_token)` を持つ必要があります。別のアクセストークン用の proof は `ErrProofATHMismatch` で失敗します。
 

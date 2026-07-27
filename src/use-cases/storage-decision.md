@@ -1,6 +1,7 @@
 ---
 title: Choosing a storage layout
 description: A decision map — greenfield, existing database, or hot/cold split — for where each OIDC substore lives and what may go to Redis.
+pageClass: pg-use-cases-storage-decision
 ---
 
 # Use case — Choosing a storage layout
@@ -16,8 +17,57 @@ Two questions settle almost everything: **where do the OIDC tables live** (one b
 | Your situation | Layout | Guide |
 |---|---|---|
 | **Greenfield** — no schema yet | One SQL backend, adapter-owned tables | [Persistent storage (SQL)](/use-cases/sql-store) |
+| **AWS / DynamoDB** — you want an AWS-native durable backend | One DynamoDB table per substore | [DynamoDB storage](/use-cases/dynamodb-store) |
 | **Existing database** — you already run a `users` table and migrations | Adapter-owned `oidc_*` tables (renamed to fit), your identity data projected in | [BYO store backend](/use-cases/byo-store) · [BYO user store](/use-cases/byo-userstore) |
 | **Scale / high churn** — you want volatile state off the durable tier | `composite` split: durable SQL + volatile Redis | [Hot/cold split](/use-cases/hot-cold-redis) |
+
+<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 430" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="storage-choice-title">Choosing a storage layout. Greenfield takes one SQL adapter; an existing users table keeps the OIDC tables on the SQL adapter and supplies its own UserStore; splitting off high-churn volatile state routes SQL and Redis through composite.</title>
+  <defs>
+    <marker id="storage-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="250" y="18" width="260" height="52" rx="8"/>
+  <text class="h" x="380" y="40" text-anchor="middle">Where does the state live?</text>
+  <text class="t sub" x="380" y="58" text-anchor="middle">start from one of three entry points</text>
+
+  <path d="M380 70 V100" marker-end="url(#storage-arrow)"/>
+  <rect x="40" y="102" width="210" height="74" rx="8"/>
+  <text class="h" x="145" y="130" text-anchor="middle">Greenfield</text>
+  <text class="t sub" x="145" y="151" text-anchor="middle">no schema yet</text>
+
+  <rect x="274" y="102" width="212" height="74" rx="8"/>
+  <text class="h" x="380" y="130" text-anchor="middle">Existing database</text>
+  <text class="t sub" x="380" y="151" text-anchor="middle">a users table already runs</text>
+
+  <rect x="510" y="102" width="210" height="74" rx="8"/>
+  <text class="h" x="615" y="130" text-anchor="middle">Split off churn</text>
+  <text class="t sub" x="615" y="151" text-anchor="middle">you want Redis</text>
+
+  <path d="M145 176 V218" marker-end="url(#storage-arrow)"/>
+  <path d="M380 176 V218" marker-end="url(#storage-arrow)"/>
+  <path d="M615 176 V218" marker-end="url(#storage-arrow)"/>
+
+  <rect class="accent" x="40" y="220" width="210" height="92" rx="8"/>
+  <text class="h accent-text" x="145" y="248" text-anchor="middle">One SQL adapter</text>
+  <text class="t sub" x="145" y="272" text-anchor="middle">let the adapter own</text>
+  <text class="t sub" x="145" y="291" text-anchor="middle">the OIDC tables</text>
+
+  <rect class="accent" x="274" y="220" width="212" height="92" rx="8"/>
+  <text class="h accent-text" x="380" y="248" text-anchor="middle">SQL + UserStore</text>
+  <text class="t sub" x="380" y="272" text-anchor="middle">protocol state on SQL</text>
+  <text class="t sub" x="380" y="291" text-anchor="middle">identity in your database</text>
+
+  <rect class="accent" x="510" y="220" width="210" height="92" rx="8"/>
+  <text class="h accent-text" x="615" y="248" text-anchor="middle">composite</text>
+  <text class="t sub" x="615" y="272" text-anchor="middle">durable on SQL</text>
+  <text class="t sub" x="615" y="291" text-anchor="middle">volatile on Redis</text>
+
+  <rect class="soft" x="66" y="350" width="628" height="56" rx="8"/>
+  <text class="t" x="380" y="373" text-anchor="middle">Careful: authorization codes and PAR are short-lived but still belong on the durable side</text>
+  <text class="m sub" x="380" y="392" text-anchor="middle">composite.TxClusterKinds must resolve to one backend</text>
+</svg>
 
 ## Greenfield
 

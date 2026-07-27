@@ -1,11 +1,47 @@
 ---
 title: CIBA poll mode — wiring
 description: Enable Client-Initiated Backchannel Authentication — /bc-authorize, HintResolver, FAPI-CIBA profile, embedder-owned authentication device.
+pageClass: pg-use-cases-ciba
 ---
 
 # Use case — CIBA (Client-Initiated Backchannel Authentication)
 
 For the conceptual background — what CIBA is, how it differs from device flow, why `binding_message` matters — read the [CIBA primer](/concepts/ciba) first. This page covers the wiring.
+
+<svg role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="ciba-poll-title">The CIBA poll flow: the consumption device calls bc-authorize, the OP pushes an approval request to the authentication device, and the consumption device polls the token endpoint.</title>
+<rect class="ciba-box" x="28" y="94" width="160" height="82" rx="8"/>
+  <text class="ciba-text" x="108" y="126" text-anchor="middle">Consumption device</text>
+  <text class="ciba-sub" x="108" y="148" text-anchor="middle">POS / shared terminal</text>
+
+  <rect class="ciba-op" x="290" y="74" width="180" height="122" rx="8"/>
+  <text class="ciba-text" x="380" y="112" text-anchor="middle">OP</text>
+  <text class="ciba-sub" x="380" y="134" text-anchor="middle">/bc-authorize</text>
+  <text class="ciba-sub" x="380" y="154" text-anchor="middle">CIBARequestStore</text>
+  <text class="ciba-sub" x="380" y="174" text-anchor="middle">/token</text>
+
+  <rect class="ciba-box" x="572" y="94" width="160" height="82" rx="8"/>
+  <text class="ciba-text" x="652" y="126" text-anchor="middle">Authentication device</text>
+  <text class="ciba-sub" x="652" y="148" text-anchor="middle">phone app</text>
+
+  <rect class="ciba-box" x="300" y="248" width="160" height="52" rx="8"/>
+  <text class="ciba-text" x="380" y="280" text-anchor="middle">Tokens issued</text>
+
+  <path class="ciba-flow" d="M188 118 H286"/>
+  <text class="ciba-sub" x="237" y="105" text-anchor="middle">1. request</text>
+  <path class="ciba-flow" d="M278 114 L287 118 L278 122"/>
+  <path class="ciba-flow" d="M470 118 H568"/>
+  <text class="ciba-sub" x="519" y="105" text-anchor="middle">2. notify</text>
+  <path class="ciba-flow" d="M560 114 L569 118 L560 122"/>
+  <path class="ciba-flow" d="M572 156 H474"/>
+  <text class="ciba-sub" x="523" y="180" text-anchor="middle">3. approve / deny</text>
+  <path class="ciba-flow" d="M482 152 L473 156 L482 160"/>
+  <path class="ciba-flow" d="M108 176 C118 260 220 274 296 274"/>
+  <text class="ciba-sub" x="168" y="260" text-anchor="middle">4. poll /token</text>
+  <path class="ciba-flow" d="M288 270 L297 274 L288 278"/>
+  <path class="ciba-flow" d="M380 248 V200"/>
+  <path class="ciba-flow" d="M376 208 L380 199 L384 208"/>
+</svg>
 
 ::: details Poll / ping / push delivery — what's the difference?
 CIBA defines three ways for the OP to tell the consumption device "the user approved". **Poll** = the consumption device hits `/token` repeatedly until the answer arrives (same shape as device-code). **Ping** = the OP sends a notification webhook to a client-registered endpoint and the client then polls `/token`. **Push** = the OP sends the issued token directly to the client's webhook. This library implements poll only — discovery advertises the supported list so a client cannot negotiate the others.

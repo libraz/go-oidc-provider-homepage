@@ -1,6 +1,7 @@
 ---
 title: JWE encryption — id_token, userinfo, JARM, introspection
 description: Wire JWE — register an encryption keyset, accept JWE request_objects, encrypt outbound responses to the client's use=enc JWK.
+pageClass: pg-use-cases-jwe-encryption
 ---
 
 # Use case — JWE encryption (RFC 7516)
@@ -11,6 +12,36 @@ The OP can:
 - **Encrypt** outbound `id_token`, JWT-shape `userinfo`, JARM authorization responses, and RFC 9701 JWT introspection responses to the client's registered `use=enc` JWK.
 
 Both directions use a closed algorithm allow-list.
+
+<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jwe-wrap-title">JWE encrypts a signed JWT from the outside. The RP decrypts the JWE first, then verifies the JWS signature inside it.</title>
+<rect class="jwe-box" x="36" y="92" width="156" height="80" rx="8"/>
+  <text class="jwe-text" x="114" y="124" text-anchor="middle">OP</text>
+  <text class="jwe-sub" x="114" y="146" text-anchor="middle">assembles the claims</text>
+
+  <rect class="jwe-main" x="256" y="64" width="176" height="54" rx="8"/>
+  <text class="jwe-text" x="344" y="96" text-anchor="middle">Inner: JWS</text>
+  <rect class="jwe-box" x="238" y="140" width="212" height="76" rx="8"/>
+  <text class="jwe-text" x="344" y="170" text-anchor="middle">Outer: JWE</text>
+  <text class="jwe-sub" x="344" y="192" text-anchor="middle">encrypted to the RP's key</text>
+
+  <rect class="jwe-box" x="568" y="92" width="156" height="80" rx="8"/>
+  <text class="jwe-text" x="646" y="124" text-anchor="middle">RP</text>
+  <text class="jwe-sub" x="646" y="146" text-anchor="middle">decrypt, then verify</text>
+
+  <rect class="jwe-box" x="256" y="250" width="176" height="46" rx="8"/>
+  <text class="jwe-text" x="344" y="279" text-anchor="middle">use=enc JWK</text>
+
+  <path class="jwe-flow" d="M192 132 H234"/>
+  <path class="jwe-flow" d="M226 128 L235 132 L226 136"/>
+  <path class="jwe-flow" d="M432 180 H564"/>
+  <text class="jwe-sub" x="498" y="166" text-anchor="middle">encrypted response</text>
+  <path class="jwe-flow" d="M556 176 L565 180 L556 184"/>
+  <path class="jwe-flow" d="M344 250 V220"/>
+  <path class="jwe-flow" d="M340 228 L344 219 L348 228"/>
+  <path class="jwe-flow" d="M344 118 V136"/>
+  <path class="jwe-flow" d="M340 128 L344 137 L348 128"/>
+</svg>
 
 ::: details JWS vs JWE — what's the difference?
 **JWS** (RFC 7515 — JSON Web Signature) is the JOSE format you already know: a header + payload + signature. Anyone with the key can read the payload; the signature only proves it wasn't tampered with. **JWE** (RFC 7516 — JSON Web Encryption) wraps the payload in a ciphertext so that only the holder of the matching private key can read it. id_tokens are signed (JWS) by default; encrypting them on top means the payload becomes opaque to anything that's not the intended RP — useful when something other than the RP terminates TLS.
@@ -98,7 +129,7 @@ A key registered in `WithKeyset` (signing, `use=sig`) MUST NOT also appear in `W
 | `KeyID` | The `kid` advertised on JWKS and inspected on inbound JWE. Unique within the keyset. |
 | `PrivateKey` | `*rsa.PrivateKey` (≥ 2048 bit) or `*ecdsa.PrivateKey` (P-256 / P-384 / P-521). Other shapes rejected at `op.New`. |
 | `Algorithm` | Optional explicit `alg` (e.g. `ECDH-ES+A256KW`). When empty: RSA → `RSA-OAEP-256`, ECDSA → `ECDH-ES`. |
-| `NotAfter` | Optional retirement deadline. The OP refuses to decrypt JWE addressed to this kid on or after the deadline; public half stays in JWKS for cache warmth. |
+| `NotAfter` | Optional retirement deadline, enforced as a hard cutoff. On or after it the OP refuses to decrypt JWE addressed to this kid **and drops the public half from JWKS**, so an RP is never pointed at a recipient key the OP will no longer accept. |
 
 The first keyset entry is the **active key for outbound encryption**. Subsequent entries stay in JWKS so RPs whose caches hold the old kid can still address it during a rotation overlap. Inbound decryption matches `kid` first; absent kid falls back to trial decryption against every key in slice order (RFC 7516 §4.1.6).
 

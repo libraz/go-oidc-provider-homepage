@@ -1,11 +1,43 @@
 ---
 title: JARM — JWT Authorization Response Mode
 description: Wrap the authorization response in a signed (and optionally encrypted) JWT so the response itself is cryptographically attributable to the OP.
+pageClass: pg-concepts-jarm
 ---
 
 # JARM — JWT Authorization Response Mode
 
-By default the OP returns the authorization response (`code`, `state`, `iss`, …) as plain URL query parameters or a fragment. Anyone who can rewrite the redirect — a malicious browser extension, a compromised intermediary, a mix-up between two OPs — can substitute fields before the RP sees them. **JARM** (the OpenID Foundation FAPI WG specification "JWT Secured Authorization Response Mode for OAuth 2.0", referenced informationally by RFC 9101 §10.2) wraps that response into a single signed JWT delivered through one `response` parameter, so the response itself becomes tamper-evident and cryptographically attributable to the OP.
+By default the OP returns the authorization response (`code`, `state`, `iss`, …) as plain URL query parameters; `form_post` is the alternative non-JARM delivery. Anyone who can rewrite the redirect — a malicious browser extension, a compromised intermediary, a mix-up between two OPs — can substitute fields before the RP sees them. **JARM** (the OpenID Foundation FAPI WG specification "JWT Secured Authorization Response Mode for OAuth 2.0", referenced informationally by RFC 9101 §10.2) wraps that response into a single signed JWT delivered through one `response` parameter, so the response itself becomes tamper-evident and cryptographically attributable to the OP.
+
+<svg role="img" aria-labelledby="jarm-wrap-title" viewBox="0 0 760 340" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jarm-wrap-title">A plain authorization response returns code and state as separate parameters. JARM wraps them in a signed JWT returned as a single response parameter.</title>
+<text class="jarm-text" x="128" y="40" text-anchor="middle">Plain response</text>
+  <rect class="jarm-box" x="40" y="62" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="128" y="94" text-anchor="middle">OP</text>
+  <text class="jarm-sub" x="128" y="116" text-anchor="middle">code / state / iss</text>
+  <rect class="jarm-box" x="544" y="62" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="632" y="96" text-anchor="middle">RP</text>
+  <text class="jarm-sub" x="632" y="118" text-anchor="middle">checks each field</text>
+  <path class="jarm-flow" d="M216 102 H540"/>
+  <text class="jarm-sub" x="378" y="88" text-anchor="middle">?code=...&amp;state=...&amp;iss=...</text>
+  <path class="jarm-flow" d="M532 98 L541 102 L532 106"/>
+
+  <text class="jarm-text" x="128" y="198" text-anchor="middle">JARM response</text>
+  <rect class="jarm-box" x="40" y="220" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="128" y="252" text-anchor="middle">OP</text>
+  <text class="jarm-sub" x="128" y="274" text-anchor="middle">signs the whole response</text>
+  <rect class="jarm-main" x="294" y="212" width="172" height="94" rx="8"/>
+  <text class="jarm-text" x="380" y="244" text-anchor="middle">JWT response</text>
+  <text class="jarm-sub" x="380" y="266" text-anchor="middle">iss / aud / exp</text>
+  <text class="jarm-sub" x="380" y="284" text-anchor="middle">code or error</text>
+  <rect class="jarm-box" x="544" y="220" width="176" height="78" rx="8"/>
+  <text class="jarm-text" x="632" y="252" text-anchor="middle">RP</text>
+  <text class="jarm-sub" x="632" y="274" text-anchor="middle">verifies the signature</text>
+  <path class="jarm-flow" d="M216 260 H290"/>
+  <path class="jarm-flow" d="M282 256 L291 260 L282 264"/>
+  <path class="jarm-flow" d="M466 260 H540"/>
+  <text class="jarm-sub" x="503" y="246" text-anchor="middle">?response=&lt;JWT&gt;</text>
+  <path class="jarm-flow" d="M532 256 L541 260 L532 264"/>
+</svg>
 
 JARM is one of the two protections FAPI 2.0 Message Signing layers on top of FAPI 2.0 Baseline. The other is response-side signing at the resource server. Together they give full non-repudiation: every authorization request and every authorization response is signed by an identifiable party.
 
@@ -34,10 +66,10 @@ The client opts in by setting `response_mode` on the authorize (or PAR) request 
 
 | `response_mode` | Delivery | Used for |
 |---|---|---|
-| `query.jwt` | `?response=<JWT>` on the redirect URL | Code flow (the only flow v0.x ships, so the bare `jwt` alias resolves here) |
-| `fragment.jwt` | `#response=<JWT>` on the redirect URL | Hybrid / implicit flows (wired but not exercised in v0.x) |
+| `query.jwt` | `?response=<JWT>` on the redirect URL | Code flow; the bare `jwt` alias resolves here |
+| `fragment.jwt` | `#response=<JWT>` on the redirect URL | Code or error envelope delivered in the URL fragment |
 | `form_post.jwt` | hidden `response` field in an auto-submitted HTML form | Browsers that need to avoid the URL bar |
-| `jwt` | bare alias — resolved to `query.jwt` for `response_type=code`, `fragment.jwt` for response types that include `token` / `id_token` | Default-aware clients |
+| `jwt` | bare alias — always resolved to `query.jwt` | Default-aware clients |
 
 The OP returns one parameter — `response` — whose value is the JWT. Nothing else lives on the redirect. The JWT carries the original response fields as claims (see `internal/jarm/encode.go`):
 
@@ -55,11 +87,11 @@ The OP returns one parameter — `response` — whose value is the JWT. Nothing 
 
 ## Signing
 
-The OP signs JARM with the same key it uses for ID Tokens and JWT access tokens. v0.x ships a closed alg list:
+The OP signs JARM with the same key it uses for ID Tokens and JWT access tokens. The supported signing algorithm is a closed list:
 
 > **Source:** `internal/jarm/encode.go` — `deriveJWSAlgorithm` rejects every key shape other than ECDSA P-256 with `jose.ErrUnsupportedKeyShape`. The signature algorithm is therefore always `ES256`.
 
-There is no `authorization_signed_response_alg` per-client override in v0.x. Discovery advertises a single value:
+There is no `authorization_signed_response_alg` per-client override. Discovery advertises a single value:
 
 ```json
 "authorization_signing_alg_values_supported": ["ES256"]
@@ -68,7 +100,7 @@ There is no `authorization_signed_response_alg` per-client override in v0.x. Dis
 `alg=none`, `RS256`, and the `HS*` family are structurally absent from the type — see [Design judgments #11](/security/design-judgments#dj-11) for the closed-enum rationale that applies uniformly to every JOSE surface in the library.
 
 ::: details Why a single alg and not a negotiable list?
-JOSE alg negotiation is the historical source of `alg=none` and the HMAC-with-public-key ("alg confusion") class of bugs. The library refuses to negotiate: the wire-side allow-list and the type-level enum agree, and any input naming an alg outside the list is rejected before the bytes reach a verifier. v0.x ships ES256 to keep the wire compatible with FAPI 2.0 Message Signing's required set without expanding the surface.
+JOSE alg negotiation is the historical source of `alg=none` and the HMAC-with-public-key ("alg confusion") class of bugs. The library refuses to negotiate: the wire-side allow-list and the type-level enum agree, and any input naming an alg outside the list is rejected before the bytes reach a verifier. It uses ES256 to stay compatible with FAPI 2.0 Message Signing's required set without expanding the surface.
 :::
 
 ## Encryption
@@ -148,7 +180,7 @@ The signer is constructed once at `op.New` (see `op/op_builders.go` — `buildJA
 | `authorization_encrypted_response_alg` | Request a JWE-wrapped JARM response with the named JWE `alg`. Must be on `op.SupportedEncryptionAlgs`. |
 | `authorization_encrypted_response_enc` | Pair with `authorization_encrypted_response_alg`. Must be on `op.SupportedEncryptionEncs`. |
 
-Both fields can be supplied at static seed time (the `op.ClientSeed` / `store.Client` shape) or through Dynamic Client Registration (`POST /register`). v0.x does not implement `authorization_signed_response_alg` per-client override; the OP-wide ES256 setting applies to every JARM-using client.
+Both fields can be supplied at static seed time (the `op.ClientSeed` / `store.Client` shape) or through Dynamic Client Registration (`POST /register`). The library does not implement an `authorization_signed_response_alg` per-client override; the OP-wide ES256 setting applies to every JARM-using client.
 
 ## JARM and DPoP / mTLS
 

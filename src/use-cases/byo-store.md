@@ -23,13 +23,44 @@ Choose this path only when the SQL adapter cannot represent your persistence bou
 | Grants | `store.GrantStore` | `Save` / `Find` / `FindBySubjectClient` / `ListBySubject` / `Delete` / `HasAny` |
 | Sessions | `store.SessionStore` | `Save` / `Find` / `Touch` / `Delete` / `ListByChooserGroup` |
 | PAR | `store.PushedAuthRequestStore` | `Save` / `Find` / `Consume` |
-| Interactions | `store.InteractionStore` | `Save` / `Find` / `Delete` |
+| Interactions | `store.InteractionStoreCAS` | `Save` / `Find` / `Delete` / `CompareAndSwap` / `DeleteIfUnchanged` |
 | Consumed JTIs | `store.ConsumedJTIStore` | `Mark` / `Has` |
 | Users | `store.UserPasswordStore` | `FindBySubject` / `FindByUsername` / `ReadPasswordHash` |
 | Access tokens | `store.AccessTokenRegistry` | `Register` / `Find` / `RevokeByJTI` / `RevokeByGrant` / `GC` |
 | Metadata | `store.MetadataStore` | `Get` / `Set` |
 
 The remaining substore accessors may return `nil` when you do not enable the matching feature — `OpaqueAccessTokens`, `InitialAccessTokens`, `RegistrationAccessTokens`, `DeviceCodes`, `CIBARequests`, and `GrantRevocations`. The library detects `nil` at `op.New` and rejects the option that would have needed it, rather than panicking later. To skip `GrantRevocations` you must also pin `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI deployments only); the default grant-tombstone strategy requires that substore at construction time.
+
+## Capabilities the constructor requires
+
+Beyond the substores themselves, the OP detects a handful of **extension interfaces** by runtime type assertion. A capability lives on an extension rather than on a core substore whenever some constructible OP does not need it — a machine-to-machine backend that never mounts `/authorize` should not have to implement browser-flow machinery. What matters for a backend author is that an extension whose absence would break a configured flow is verified at `op.New`, not discovered on a live request. The error names both the interface and the condition that made it mandatory.
+
+| Extension | Asserted on | Required when |
+|---|---|---|
+| `store.Transactional` | the aggregate `Store` | a grant mounts `/authorize` |
+| `store.InteractionStoreCAS` | `Store.Interactions()` | a grant mounts `/authorize` |
+| `store.GrantClientLister` | `Store.Grants()` | a grant mounts `/authorize` |
+| `store.RefreshRetryResponseStore` | `Store.RefreshTokens()` | `refresh_token` is enabled and cookie keys are configured |
+| `store.ClientRegistry` | the aggregate `Store` | `op.WithDynamicRegistration` |
+
+Only `grant.AuthorizationCode` currently mounts `/authorize`, so a store backing only `client_credentials`, `device_code`, or CIBA needs none of the first three.
+
+- **`Transactional`** hands out a `store.Tx` whose `AuthorizationCodes()`, `Grants()`, `RefreshTokens()`, `PushedAuthRequests()`, `AccessTokens()`, `OpaqueAccessTokens()`, and `GrantRevocations()` are bound to one underlying transaction. Authorization completion commits the grant, PAR consumption, and code persistence together, so a signing or persistence fault cannot consume a `request_uri` without emitting a code. Grant reads inside a transaction must lock rows, run serializable, or surface an equivalent conflict before `Save` — grouping an unlocked `SELECT` with an unconditional `Save` still loses concurrent consent updates. `Sessions`, `Interactions`, and `ConsumedJTIs` are deliberately absent from `Tx`.
+- **`InteractionStoreCAS`** makes a terminal interaction immutable before those durable writes start. `CompareAndSwap` replaces a record only while its `RawState` is unchanged (`ErrConflict` otherwise, `ErrNotFound` when absent or expired), and `DeleteIfUnchanged` removes it only if nothing raced.
+- **`GrantClientLister`** is the bounded audience view Back-Channel Logout fans out from: `ListClientIDsBySubject(ctx, subject, cursor, limit)` returns at most `limit` distinct client IDs in a stable ascending order, plus a `NextCursor` when another page exists. Bound the query itself to `limit+1` rows — implementing it by calling `ListBySubject` and slicing the result defeats the point, which is capping database and client-registry work per logout notice.
+- **`RefreshRetryResponseStore`** persists an already-sealed token response against its consumed predecessor so the RFC 9700 delivery grace window can re-emit the exact same successor instead of branching the chain. `SaveRotationWithRetry` must write the successor and the sealed blob in one operation; a backend that cannot make that atomic must not expose the interface at all. Treat the blob as opaque, key it by a one-way digest of the predecessor, and retain it no longer than the predecessor's own lifetime.
+
+These stay optional, and the OP degrades rather than refusing to start:
+
+| Extension | Asserted on | What you lose |
+|---|---|---|
+| `store.StaticClientReconciler` | the aggregate `Store` | `WithStaticClients` records are not reconciled against the backend |
+| `store.RevokeByClient` | `Store.RefreshTokens()` and the access-token substores | deleting a dynamically registered client skips that substore's bulk credential cascade |
+| `store.RefreshChainResolver` | `Store.RefreshTokens()` | chain walks resolve through `Find` instead of the stored-handle lookup |
+
+::: tip Verify the placement, don't infer it
+[`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) runs the core contract against your backend and skips each extension you do not implement, so the suite tells you which capabilities you actually landed.
+:::
 
 ## Column names are yours
 
@@ -54,7 +85,7 @@ The substore godoc is normative. A backend that compiles but ignores these does 
 
 1. **Hash-on-store.** `AuthorizationCode.ID`, `RefreshToken.ID`, and `PushedAuthRequest.URI` are opaque bearer secrets: possession alone redeems them. Hash the presented value (SHA-256, ideally HMAC'd with a server-side pepper) before persisting, store only the digest, and on `Find` / `Consume` hash the presented value to look the digest up, comparing in constant time. The example uses SHA-256 without a pepper to stay self-contained, matching the in-memory reference; production backends SHOULD add the pepper.
 2. **Sentinel errors.** Return `store.ErrNotFound`, `store.ErrAlreadyExists`, `store.ErrAlreadyConsumed`, `store.ErrConflict`, and `store.ErrTxRequired` exactly where the method godoc says (map `sql.ErrNoRows` → `ErrNotFound`; a second `Consume` → `ErrAlreadyConsumed`). Callers switch on these with `errors.Is`; returning a different error for a listed failure mode breaks the contract even though it compiles.
-3. **Atomicity.** Exchanging a code, rotating a refresh token, and consuming a PAR each cross several record kinds. The library relies on each substore's `Save` / `Consume` being individually atomic, and a backend that hosts the transactional cluster SHOULD also implement `store.Transactional` so multi-substore writes share one underlying transaction. The example implements it the same way the bundled adapter does: substores take a small `querier` interface that both `*sql.DB` and `*sql.Tx` satisfy, and `BeginTx` hands out cluster substores bound to one `*sql.Tx`.
+3. **Atomicity.** Exchanging a code, rotating a refresh token, and consuming a PAR each cross several record kinds. The library relies on each substore's `Save` / `Consume` being individually atomic, and a backend serving the browser authorization-code flow MUST implement `store.Transactional` so multi-substore writes share one underlying transaction (see [Capabilities the constructor requires](#capabilities-the-constructor-requires)). The example implements it the same way the bundled adapter does: substores take a small `querier` interface that both `*sql.DB` and `*sql.Tx` satisfy, and `BeginTx` hands out cluster substores bound to one `*sql.Tx`.
 4. **PAR expiry belongs to `Find`, not `Consume`.** `PushedAuthRequestStore.Find` is the presentation-time expiry gate when the browser brings `request_uri` to `/authorize`. `Consume` enforces single-use only and must not reject solely because `ExpiresAt` passed after presentation; otherwise a long login / MFA / consent interaction could fail at code emission after the OP had already accepted the request.
 
 ## Which approach fits

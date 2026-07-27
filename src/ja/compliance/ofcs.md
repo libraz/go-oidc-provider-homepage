@@ -1,11 +1,12 @@
 ---
 title: OFCS 適合状況
-description: go-oidc-provider が OpenID Foundation Conformance Suite に対してどう走るか — 4 プラン、最新スコア、設計上失敗させる module、REVIEW の意味。
+description: go-oidc-provider が OpenID Foundation Conformance Suite に対してどう走るか — 9 プラン、最新スコア、失敗が設計判断である理由、REVIEW の意味。
+pageClass: pg-compliance-ofcs
 ---
 
 # OFCS 適合状況
 
-`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、そのうち現在の 4 プラン security snapshot を `cmd/op-demo` インスタンスに対して end-to-end で実行した結果です。
+`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、v1.0.0 リリース時点のスナップショットを `cmd/op-demo` インスタンスへ end-to-end で実行した結果です。
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
@@ -14,37 +15,59 @@ description: go-oidc-provider が OpenID Foundation Conformance Suite に対し�
 これは個人開発者が維持するプロジェクトです。OpenID Foundation 会員費は支払っておらず、**形式的な OIDC 認証は取得していません**。本ページの数値は、下に示すプラン集合の再現可能なスナップショットです。これは有償の OpenID Foundation 認証の代替ではなく、そのように引用しないでください。
 :::
 
-<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
-  <title id="ofcs-snapshot-title">OFCS スナップショットの読み方: 4 つのプランを op-demo に対して実行し、PASSED、REVIEW、SKIPPED、FAILED を集計する。</title>
-  <rect class="ofcs-box" x="28" y="42" width="170" height="54" rx="8"/>
-  <text class="ofcs-text" x="113" y="75" text-anchor="middle">OIDC Core</text>
-  <rect class="ofcs-box" x="28" y="112" width="170" height="54" rx="8"/>
-  <text class="ofcs-text" x="113" y="145" text-anchor="middle">FAPI Baseline</text>
-  <rect class="ofcs-box" x="28" y="182" width="170" height="54" rx="8"/>
-  <text class="ofcs-text" x="113" y="215" text-anchor="middle">Message Signing</text>
-  <rect class="ofcs-box" x="28" y="252" width="170" height="38" rx="8"/>
-  <text class="ofcs-text" x="113" y="277" text-anchor="middle">FAPI-CIBA</text>
+<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 780 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="ofcs-snapshot-title">OFCS スナップショットの読み方: 4 つの仕様ファミリにまたがる 9 プランを op-demo に対して実行し、各 module は PASSED / REVIEW / SKIPPED / 未判定 / FAILED のいずれか 1 つに分類される。</title>
+  <text class="ofcs-cap" x="126" y="22" text-anchor="middle">テストプラン (9)</text>
+  <text class="ofcs-cap" x="656" y="22" text-anchor="middle">module ごとの結果</text>
 
-  <rect class="ofcs-main" x="294" y="108" width="172" height="84" rx="8"/>
-  <text class="ofcs-text" x="380" y="142" text-anchor="middle">cmd/op-demo</text>
-  <text class="ofcs-sub" x="380" y="164" text-anchor="middle">対象 OP インスタンス</text>
+  <rect class="ofcs-box" x="28" y="36" width="196" height="60" rx="10"/>
+  <text class="ofcs-text" x="126" y="62" text-anchor="middle">OIDC Core 1.0</text>
+  <text class="ofcs-sub" x="126" y="80" text-anchor="middle">6 プラン</text>
+  <rect class="ofcs-box" x="28" y="112" width="196" height="60" rx="10"/>
+  <text class="ofcs-text" x="126" y="138" text-anchor="middle">FAPI 2.0 Baseline</text>
+  <text class="ofcs-sub" x="126" y="156" text-anchor="middle">1 プラン</text>
+  <rect class="ofcs-box" x="28" y="188" width="196" height="60" rx="10"/>
+  <text class="ofcs-text" x="126" y="214" text-anchor="middle">FAPI 2.0 Message Signing</text>
+  <text class="ofcs-sub" x="126" y="232" text-anchor="middle">1 プラン</text>
+  <rect class="ofcs-box" x="28" y="264" width="196" height="60" rx="10"/>
+  <text class="ofcs-text" x="126" y="290" text-anchor="middle">FAPI-CIBA</text>
+  <text class="ofcs-sub" x="126" y="308" text-anchor="middle">1 プラン</text>
 
-  <rect class="ofcs-box" x="562" y="42" width="170" height="54" rx="8"/>
-  <text class="ofcs-text" x="647" y="75" text-anchor="middle">PASSED</text>
-  <rect class="ofcs-box" x="562" y="112" width="170" height="54" rx="8"/>
-  <text class="ofcs-text" x="647" y="145" text-anchor="middle">REVIEW</text>
-  <rect class="ofcs-box" x="562" y="182" width="170" height="54" rx="8"/>
-  <text class="ofcs-text" x="647" y="215" text-anchor="middle">SKIPPED</text>
-  <rect class="ofcs-box" x="562" y="252" width="170" height="38" rx="8"/>
-  <text class="ofcs-text" x="647" y="277" text-anchor="middle">FAILED</text>
+  <rect class="ofcs-main" x="310" y="136" width="170" height="88" rx="10"/>
+  <text class="ofcs-text" x="395" y="172" text-anchor="middle">cmd/op-demo</text>
+  <text class="ofcs-sub" x="395" y="194" text-anchor="middle">対象 OP インスタンス</text>
 
-  <path class="ofcs-flow" d="M198 69 C246 74 258 120 290 134"/>
-  <path class="ofcs-flow" d="M198 139 H290"/>
-  <path class="ofcs-flow" d="M198 209 C246 204 258 176 290 162"/>
-  <path class="ofcs-flow" d="M198 271 C256 252 270 190 292 170"/>
-  <path class="ofcs-flow" d="M466 150 H558"/>
-  <path class="ofcs-flow" d="M550 146 L559 150 L550 154"/>
-  <text class="ofcs-sub" x="512" y="136" text-anchor="middle">実行結果を集計</text>
+  <rect class="ofcs-box" x="560" y="42" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-pass" x="578" y="58" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="602" y="69">PASSED</text>
+  <rect class="ofcs-box" x="560" y="100" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-review" x="578" y="116" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="602" y="127">REVIEW</text>
+  <rect class="ofcs-box" x="560" y="158" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-skip" x="578" y="174" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="602" y="185">SKIPPED</text>
+  <rect class="ofcs-box" x="560" y="216" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-noverdict" x="578" y="232" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="602" y="243">未判定</text>
+  <rect class="ofcs-box" x="560" y="274" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-fail" x="578" y="290" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="602" y="301">FAILED</text>
+
+  <path class="ofcs-flow" d="M224 66 C264 66 272 152 306 152"/>
+  <path class="ofcs-flow" d="M224 142 C264 142 272 168 306 168"/>
+  <path class="ofcs-flow" d="M224 218 C264 218 272 192 306 192"/>
+  <path class="ofcs-flow" d="M224 294 C264 294 272 208 306 208"/>
+
+  <path class="ofcs-flow" d="M480 180 C514 180 522 64 556 64"/>
+  <path class="ofcs-flow" d="M480 180 C514 180 522 122 556 122"/>
+  <path class="ofcs-flow" d="M480 180 H556"/>
+  <path class="ofcs-flow" d="M480 180 C514 180 522 238 556 238"/>
+  <path class="ofcs-flow" d="M480 180 C514 180 522 296 556 296"/>
+  <path class="ofcs-flow" d="M548 60 L557 64 L548 68"/>
+  <path class="ofcs-flow" d="M548 118 L557 122 L548 126"/>
+  <path class="ofcs-flow" d="M548 176 L557 180 L548 184"/>
+  <path class="ofcs-flow" d="M548 234 L557 238 L548 242"/>
+  <path class="ofcs-flow" d="M548 292 L557 296 L548 300"/>
 </svg>
 
 ## この snapshot が検査する範囲
@@ -52,45 +75,252 @@ description: go-oidc-provider が OpenID Foundation Conformance Suite に対し�
 | Plan | カバー範囲 | プロファイル |
 |---|---|---|
 | `oidcc-basic-certification-test-plan` | 認可コード + PKCE、ID トークン、UserInfo、refresh、discovery | OIDC Core 1.0 |
+| `oidcc-config-certification-test-plan` | discovery ドキュメントと公開 JWKS の形 | OIDC Core 1.0 — Discovery |
+| `oidcc-dynamic-certification-test-plan` | 動的クライアント登録と、そこで登録したクライアントによる認可コードフロー | OIDC Core 1.0 — Dynamic Registration |
+| `oidcc-formpost-basic-certification-test-plan` | basic プランを `response_mode=form_post` で再実行 | OIDC Core 1.0 — `form_post` |
+| `oidcc-rp-initiated-logout-certification-test-plan` | `/end_session`、`id_token_hint`、`post_logout_redirect_uri` | RP-Initiated Logout 1.0 |
+| `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | RP 起点のログアウトと、登録済みバックチャネル URI への `logout_token` 送達 | Back-Channel Logout 1.0 |
 | `fapi2-security-profile-id2-test-plan` | + PAR、送信者制約付きアクセストークン (DPoP)、厳格 alg list、`redirect_uri` 完全一致 | FAPI 2.0 Baseline |
 | `fapi2-message-signing-id1-test-plan` | + JAR（署名 authorization request）、JARM（署名 authorization response） | FAPI 2.0 Message Signing |
 | `fapi-ciba-id1-test-plan` | Client-Initiated Backchannel Authentication（poll mode）、mTLS バインドトークン | FAPI-CIBA |
 
 ## 最新 baseline
 
-取得日時: 2026-07-12T16:56:58Z<br/>
-リポジトリ SHA: [`8db1b80`](https://github.com/libraz/go-oidc-provider/commit/8db1b80e0164414c3079b60f2d4de41d79c0facd)<br/>
-OFCS イメージ: `release-v5.1.45`
-
-::: info スナップショットの状態
-下の pass / review / skip 件数は、現在公開している 4 plan security snapshot です。ローカルの実行成果物は `conformance/baselines/` 配下の対応する timestamp 付き JSON です。新しい認証 baseline として引用する前に、再現ワークフローを実行してください。
-:::
-
-| Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | 合計 |
-|--------------------------------------------|-------:|-------:|--------:|--------:|-------:|------:|
-| `oidcc-basic-certification-test-plan`      |     30 |      3 |       2 |       0 |  **0** |    35 |
-| `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |  **0** |    58 |
-| `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |       0 |  **0** |    71 |
-| `fapi-ciba-id1-test-plan`                  |     32 |      0 |       3 |       0 |  **0** |    35 |
-| **合計**                                  | **170**| **21** |   **8** |   **0** |  **0** | **199** |
-
-<div class="status-bars" aria-label="4 plans 計 199 modules">
-  <div class="status-bar-row">
-    <span>PASSED</span>
-    <div class="status-bar"><i style="width:85.4%"></i></div>
-    <strong>170</strong>
+<div class="ofcs-summary">
+  <div class="ofcs-headline">
+    <b>271 件中 209 件</b>
+    <span>の module が PASSED — 9 plan 合計の 77.1%</span>
   </div>
-  <div class="status-bar-row">
-    <span>REVIEW</span>
-    <div class="status-bar review"><i style="width:10.6%"></i></div>
-    <strong>21</strong>
+  <div class="ofcs-track">
+    <div class="ofcs-stack" role="img" aria-label="271 module のうち PASSED 209、REVIEW 39、SKIPPED 15、未判定 2、FAILED 6">
+      <i class="pass" style="flex:209"></i>
+      <i class="review" style="flex:39"></i>
+      <i class="skip" style="flex:15"></i>
+      <i class="noverdict" style="flex:2"></i>
+      <i class="fail" style="flex:6"></i>
+    </div>
   </div>
-  <div class="status-bar-row">
-    <span>SKIPPED</span>
-    <div class="status-bar skipped"><i style="width:4.0%"></i></div>
-    <strong>8</strong>
+  <ul class="ofcs-legend">
+    <li><span class="ofcs-dot pass"></span>PASSED<b>209</b><em>77.1%</em></li>
+    <li><span class="ofcs-dot review"></span>REVIEW<b>39</b><em>14.4%</em></li>
+    <li><span class="ofcs-dot skip"></span>SKIPPED<b>15</b><em>5.5%</em></li>
+    <li><span class="ofcs-dot noverdict"></span>未判定<b>2</b><em>0.7%</em></li>
+    <li><span class="ofcs-dot fail"></span>FAILED<b>6</b><em>2.2%</em></li>
+    <li><span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>WARNING<b>0</b><em>0.0%</em></li>
+  </ul>
+  <p class="ofcs-note">FAILED と未判定の module はすべてレビュー済みの release exclusion です — <a href="#failed-6-件の理由">原因は 3 つだけで、未解決の欠陥はありません</a>。</p>
+  <div class="ofcs-meta">
+    <span><i>取得日時</i>2026-07-26T23:22:11Z</span>
+    <span><i>リポジトリ SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/3ccc6bc7777a070ebd6485016e4574831dc983b7">3ccc6bc</a></span>
+    <span><i>OFCS イメージ</i>release-v5.2.1</span>
   </div>
 </div>
+
+::: info スナップショットの状態
+上のバーは 9 plan 全体の raw 結果です。対応する timestamp 付き JSON は `conformance/baselines/` 配下にあります。`make conformance-release-verify` は、このリリース snapshot を blocker 0 と判定しました。raw failure と未判定 module はすべて `conformance/release-exclusions.json` のレビュー済み・期限付きエントリと照合されています。この判定は OIDC 認証ではありません。
+:::
+
+### FAILED 6 件の理由
+
+FAILED と未判定の module は、すべて 3 つの原因のいずれかに帰着します。うち 2 つは 1.x 系で変えない設計判断で、残る 1 つはヘッドレス実行の限界です。未解決の欠陥はひとつもなく、いずれも `conformance/release-exclusions.json` に担当者と期限付きで記録されています。
+
+<div class="ofcs-causes">
+  <div class="ofcs-cause">
+    <div class="ofcs-cause-main">
+      <strong>署名は ES256 のみ — 段階的移行ではなく恒久的な方針</strong>
+      <p>discovery が広告する署名 alg は <code>ES256</code> だけです。そのため OIDC Core 1.0 §15.1 の <code>RS256</code> 必須要件を検証する module は失敗し、<code>RS256</code> 署名の ID トークンや UserInfo 応答を求める動的登録は assertion に到達する前に拒否されます。alg を 1 つに絞ることで alg ネゴシエーションと、それに伴うダウングレード対策そのものが不要になります。FAPI 2.0 も <code>RS256</code> を明確に禁じています。<a href="/ja/security/design-judgments">alg list を閉じている理由</a></p>
+    </div>
+    <div class="ofcs-plan-counts">
+      <span><span class="ofcs-dot fail"></span><b>4</b> FAILED</span>
+      <span><span class="ofcs-dot noverdict"></span><b>1</b> 未判定</span>
+    </div>
+  </div>
+  <div class="ofcs-cause">
+    <div class="ofcs-cause-main">
+      <strong>back-channel logout は sid 単位ではなく subject 単位</strong>
+      <p>本 OP は <code>backchannel_logout_session_supported: false</code> を広告し、<code>sid</code> ではなく subject 単位でログアウトします。このメタデータは仕様上 optional ですが、この certification module は無条件に <code>true</code> を要求し、プラン残りも同じ assertion で中断します。<code>sid</code> 単位のセッションスコープログアウトは将来の minor で追加予定のオプトインプロファイルで、subject 単位は fail-secure 側の既定です。<a href="/ja/use-cases/back-channel-logout">バックチャネルログアウト</a></p>
+    </div>
+    <div class="ofcs-plan-counts">
+      <span><span class="ofcs-dot fail"></span><b>2</b> FAILED</span>
+    </div>
+  </div>
+  <div class="ofcs-cause">
+    <div class="ofcs-cause-main">
+      <strong>ハーネスが実行できない鍵ローテーション</strong>
+      <p><code>oidcc-server-rotate-keys</code> は「署名鍵をローテーションしてから Start を押す」ことを人間に要求します。本ライブラリは鍵束を <code>op.New</code> の時点で確定するため、実運用でのローテーションは provider の作り直しになり、プランで登録済みのクライアントを保持している in-memory store が失われます。OP が提供する内容自体には影響がなく、JWKS は設定済みの鍵をすべて公開しています。<a href="/ja/operations/key-rotation">鍵ローテーション</a></p>
+    </div>
+    <div class="ofcs-plan-counts">
+      <span><span class="ofcs-dot noverdict"></span><b>1</b> 未判定</span>
+    </div>
+  </div>
+</div>
+
+### plan 別の内訳
+
+バーの長さは全 plan 共通の尺度で、その plan の module 数を表します。1 module の plan が 71 module の plan と同じ重さに見えることはありません。件数 0 の結果は行に出しません。
+
+<div class="ofcs-plans">
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">oidcc-basic-certification-test-plan <span class="ofcs-plan-total">· 35 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>29</b> PASSED</span>
+        <span><span class="ofcs-dot review"></span><b>4</b> REVIEW</span>
+        <span><span class="ofcs-dot skip"></span><b>2</b> SKIPPED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:49.3%">
+        <i class="pass" style="flex:29"></i>
+        <i class="review" style="flex:4"></i>
+        <i class="skip" style="flex:2"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">oidcc-config-certification-test-plan <span class="ofcs-plan-total">· 1 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot fail"></span><b>1</b> FAILED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:1.4%">
+        <i class="fail" style="flex:1"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">oidcc-dynamic-certification-test-plan <span class="ofcs-plan-total">· 23 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>7</b> PASSED</span>
+        <span><span class="ofcs-dot review"></span><b>6</b> REVIEW</span>
+        <span><span class="ofcs-dot skip"></span><b>5</b> SKIPPED</span>
+        <span><span class="ofcs-dot noverdict"></span><b>2</b> 未判定</span>
+        <span><span class="ofcs-dot fail"></span><b>3</b> FAILED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:32.4%">
+        <i class="pass" style="flex:7"></i>
+        <i class="review" style="flex:6"></i>
+        <i class="skip" style="flex:5"></i>
+        <i class="noverdict" style="flex:2"></i>
+        <i class="fail" style="flex:3"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">oidcc-formpost-basic-certification-test-plan <span class="ofcs-plan-total">· 35 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>30</b> PASSED</span>
+        <span><span class="ofcs-dot review"></span><b>3</b> REVIEW</span>
+        <span><span class="ofcs-dot skip"></span><b>2</b> SKIPPED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:49.3%">
+        <i class="pass" style="flex:30"></i>
+        <i class="review" style="flex:3"></i>
+        <i class="skip" style="flex:2"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">oidcc-rp-initiated-logout-certification-test-plan <span class="ofcs-plan-total">· 11 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>3</b> PASSED</span>
+        <span><span class="ofcs-dot review"></span><b>8</b> REVIEW</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:15.5%">
+        <i class="pass" style="flex:3"></i>
+        <i class="review" style="flex:8"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">oidcc-backchannel-rp-initiated-logout-certification-test-plan <span class="ofcs-plan-total">· 2 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot fail"></span><b>2</b> FAILED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:2.8%">
+        <i class="fail" style="flex:2"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">fapi2-security-profile-id2-test-plan <span class="ofcs-plan-total">· 58 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>48</b> PASSED</span>
+        <span><span class="ofcs-dot review"></span><b>9</b> REVIEW</span>
+        <span><span class="ofcs-dot skip"></span><b>1</b> SKIPPED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:81.7%">
+        <i class="pass" style="flex:48"></i>
+        <i class="review" style="flex:9"></i>
+        <i class="skip" style="flex:1"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">fapi2-message-signing-id1-test-plan <span class="ofcs-plan-total">· 71 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>60</b> PASSED</span>
+        <span><span class="ofcs-dot review"></span><b>9</b> REVIEW</span>
+        <span><span class="ofcs-dot skip"></span><b>2</b> SKIPPED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:100%">
+        <i class="pass" style="flex:60"></i>
+        <i class="review" style="flex:9"></i>
+        <i class="skip" style="flex:2"></i>
+      </div>
+    </div>
+  </div>
+  <div class="ofcs-plan">
+    <div class="ofcs-plan-head">
+      <span class="ofcs-plan-name">fapi-ciba-id1-test-plan <span class="ofcs-plan-total">· 35 module</span></span>
+      <span class="ofcs-plan-counts">
+        <span><span class="ofcs-dot pass"></span><b>32</b> PASSED</span>
+        <span><span class="ofcs-dot skip"></span><b>3</b> SKIPPED</span>
+      </span>
+    </div>
+    <div class="ofcs-track">
+      <div class="ofcs-stack" style="width:49.3%">
+        <i class="pass" style="flex:32"></i>
+        <i class="skip" style="flex:3"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+::: details 同じ snapshot を表で見る
+| Plan                                       | PASSED | REVIEW | SKIPPED | WARNING | FAILED | 未判定 | 合計 |
+|--------------------------------------------|-------:|-------:|--------:|--------:|-------:|-------:|------:|
+| `oidcc-basic-certification-test-plan`      |     29 |      4 |       2 |       0 |       0 |      0 |    35 |
+| `oidcc-config-certification-test-plan`     |      0 |      0 |       0 |       0 |  **1** |      0 |     1 |
+| `oidcc-dynamic-certification-test-plan`    |      7 |      6 |       5 |       0 |  **3** |      2 |    23 |
+| `oidcc-formpost-basic-certification-test-plan` | 30 |      3 |       2 |       0 |       0 |      0 |    35 |
+| `oidcc-rp-initiated-logout-certification-test-plan` | 3 | 8 | 0 | 0 | 0 | 0 | 11 |
+| `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | 0 | 0 | 0 | 0 | **2** | 0 | 2 |
+| `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |       0 |      0 |    58 |
+| `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |       0 |       0 |      0 |    71 |
+| `fapi-ciba-id1-test-plan`                  |     32 |      0 |       3 |       0 |       0 |      0 |    35 |
+| **合計**                                  | **209**| **39** |  **15** |   **0** |  **6** |  **2** | **271** |
+:::
 
 ## 各テストプランが検証する範囲
 
@@ -151,10 +381,11 @@ CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication gra
 
 ### REVIEW / SKIPPED / WARNING / FAILED の意味
 
-- **REVIEW** — テストは実行されたが、ハーネスでは正直に検証できない視覚的 / out-of-band の挙動（同意 UI の文言、エラー画面のスクリーンショット、証明書チェーンの確認）を人間のレビュアーが裏取りする必要がある状態。失敗ではない。
-- **SKIPPED** — テストが依存する機能を、この OP が discovery やクライアントメタデータで宣言していないために OFCS が実行を見送った状態。例えば `RS256` 負例テストは、FAPI クライアントが `PS256` を署名 alg として宣言しているため適用外になる。失敗ではない。
-- **WARNING** — OFCS が非 failure の result value として記録する状態。主たる assertion は終端 PASS まで到達したが、運用者が対処すべき advisory がログに残っている場合に使われます。現在の 4 plan snapshot では **0 件** です。
-- **FAILED** — 仕様から挙動が逸脱した状態。現スナップショットでは 4 plan 全体で **0 failure**。
+- <span class="ofcs-dot review"></span>**REVIEW** — テストは実行されたが、ハーネスでは正直に検証できない視覚的 / out-of-band の挙動（同意 UI の文言、エラー画面のスクリーンショット、証明書チェーンの確認）を人間のレビュアーが裏取りする必要がある状態。失敗ではない。
+- <span class="ofcs-dot skip"></span>**SKIPPED** — テストが依存する機能を、この OP が discovery やクライアントメタデータで宣言していないために OFCS が実行を見送った状態。例えば `RS256` 負例テストは、FAPI クライアントが `PS256` を署名 alg として宣言しているため適用外になる。失敗ではない。
+- <span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>**WARNING** — OFCS が非 failure の result value として記録する状態。主たる assertion は終端 PASS まで到達したが、運用者が対処すべき advisory がログに残っている場合に使われます。現在の snapshot では **0 件** です。
+- <span class="ofcs-dot fail"></span>**FAILED** — module が suite の期待結果に到達しませんでした。v1.0.0 snapshot の 6 件は、恒久的な ES256-only 署名方針による 4 件と、back-channel logout を意図的に subject 単位に留めていることによる 2 件です。いずれもレビュー済みの release exclusion で、明示的かつ期限内の記録がなければ release verifier は失敗します。
+- <span class="ofcs-dot noverdict"></span>**未判定** — ハーネスが終端結果を得られませんでした。現在の 2 module はプロセス内の署名鍵ローテーションを必要とするものと、ES256-only OP が正しく拒否する RS256 request object を待ち続けるものです。いずれもレビュー済みの release exclusion です。
 
 ### 自分で conformance を回すには
 
@@ -172,15 +403,38 @@ OFCS は主に `PASSED`、`FAILED`、`REVIEW`、`SKIPPED` を返します。本�
 conformance suite は意図的にこれらの module を人間の判断にゲートしています。ヘッドレスで動く `cmd/op-demo` は「これがユーザに見えた画面です」というスクリーンショットを誠実にアップロードできません。ゲートを外して通してしまうのは、実際にチェックされた内容を偽ることになります。ハーネスは `REVIEW` のまま記録し、有償認証取得時は UI を見ながら通すことを前提にしています。
 :::
 
+## 現在 FAILED の module — 理由
+
+3 plan にまたがる 6 module です。各行は `conformance/release-exclusions.json` のレビュー済み・期限付きエントリと対応しており、記録が欠けている・担当者が無い・期限切れのいずれかであれば `make conformance-release-verify` がリリースを止めます。
+
+| Module | Plan | 失敗する理由 |
+|---|---|---|
+| `oidcc-discovery-endpoint-verification` | `oidcc-config` | `id_token_signing_alg_values_supported` が `ES256` しか列挙しておらず、この module は OIDC Core 1.0 §15.1 の `RS256` 必須要件を検証するため。 |
+| `oidcc-discovery-endpoint-verification` | `oidcc-dynamic` | 同じ assertion、同じ原因が dynamic プランでも発生。 |
+| `oidcc-idtoken-rs256` | `oidcc-dynamic` | `id_token_signed_response_alg=RS256` で登録を要求するが、動的クライアント登録が `invalid_client_metadata` を返すため assertion まで到達しない。 |
+| `oidcc-userinfo-rs256` | `oidcc-dynamic` | `userinfo_signed_response_alg=RS256` について同様。 |
+| `oidcc-backchannel-logout-discovery-endpoint-verification` | `oidcc-backchannel-rp-initiated-logout` | 本 OP は仕様上許容される `backchannel_logout_session_supported: false` を広告するが、この module がそれを認めないため。 |
+| `oidcc-backchannel-rp-initiated-logout` | `oidcc-backchannel-rp-initiated-logout` | 上の module から連鎖。プランがその assertion で中断するため、この module は実行に到達しない。 |
+
+## 現在 未判定 の module — 理由
+
+ハーネスが終端結果まで駆動できなかった 2 module です。いずれも実稼働中の suite に対する単体実行で得た証跡付きで記録しています。
+
+| Module | Plan | 判定が出ない理由 |
+|---|---|---|
+| `oidcc-server-rotate-keys` | `oidcc-dynamic` | 運用者が署名鍵をローテーションして Start を押すのを待つ module です。鍵束は `op.New` で確定し、プラン実行中に provider を作り直すと登録済みクライアントを保持する in-memory store が失われます。module は runner の idle 上限まで `CONFIGURED` のまま留まります。 |
+| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | `RS256` 署名の request object を push し、認可レスポンスの成功を待つ module です。ES256-only の OP はリダイレクト前に拒否します — これが正しい挙動であり、コールバックが届かないため suite はどちらの結果も記録できません。 |
+
 ## 現在 REVIEW の module
 
-### `oidcc-basic` plan (3)
+### `oidcc-basic` plan (4)
 
 | Module | ゲート対象 |
 |---|---|
 | `oidcc-ensure-registered-redirect-uri` | OP が未登録 `redirect_uri` を拒否したことの手動確認 |
 | `oidcc-max-age-1` | `max_age=1` でユーザを再プロンプトしたことの手動確認 |
 | `oidcc-prompt-login` | `prompt=login` で再プロンプトしたことの手動確認 |
+| `oidcc-response-type-missing` | `response_type` が無いリクエストに対する first-party error page の手動確認 |
 
 ### FAPI 2.0 plans (各 9、同集合)
 
@@ -200,7 +454,7 @@ OP は各ケースで正しい HTTP エラーを返します（負例テスト�
 
 ## 現在 WARNING の module
 
-現在の 4 plan snapshot ではありません。以前 `WARNING` だった `fapi-ciba-id1-refresh-token` は、通常の `PASSED` module になっています。
+現在の snapshot ではありません。以前 `WARNING` だった `fapi-ciba-id1-refresh-token` は、通常の `PASSED` module になっています。
 
 ## 現在 SKIPPED の module — 理由
 
@@ -233,7 +487,7 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 1. 自己署名 RSA-2048 証明書を生成（`scripts/conformance.sh certs`）。
 2. `https://localhost:8443` で OFCS Docker スタックを立ち上げ。
 3. `https://127.0.0.1:9443` で `cmd/op-demo` をビルド・起動。
-4. OFCS REST API 経由で plan を seed。ハーネスは 9 plan を scaffold し、上の最新 status table は 4 plan security snapshot を記録しています。
+4. OFCS REST API 経由で plan を seed。ハーネスは 9 plan を scaffold し、上の最新 status table は 9 plan 全体を記録しています。
 5. module 毎の pass/fail を決定論的 JSON に記録。
 
 `make conformance-baseline-diff` は 2 スナップショット間で `PASSED` を **失った** module があれば非ゼロ終了 — セキュリティ関連変更に対するプロジェクトのプリマージゲートです。
@@ -259,15 +513,15 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 |---|---|
 | `conformance/README.md` | 運用 runbook |
 | `conformance/plans/*.json` | プランテンプレート（server / client / resource ブロック） |
-| `conformance/docker-compose.yml` | OFCS イメージのタグ固定(`release-v5.1.45`)+ JKS truststore 実装 |
+| `conformance/docker-compose.yml` | OFCS イメージのタグ固定（`release-v5.2.1`）+ JKS truststore 実装 |
 | `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
 | `tools/conformance/ofcs.py` | REST クライアント + ヘッドレス drive スクリプト |
 | `conformance/baselines/*.json` | 取得済スナップショット（gitignored — 環境依存） |
 
 ## 明示しておく制限事項
 
-- **プランスイートのバージョン。** OFCS は `release-v5.1.45` で固定しています。新しい OFCS リリースで追加・改名されたテストは、固定バージョンを引き上げるまで対象外です。
-- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。挙動確認は v5.1.45 でしか取れていません。
+- **プランスイートのバージョン。** OFCS は `release-v5.2.1` で固定しています。新しい OFCS リリースで追加・改名されたテストは、固定バージョンを引き上げるまで対象外です。
+- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。挙動確認は v5.2.1 でしか取れていません。
 - **本物の RP 証明書なし。** mTLS プラン枠は `conformance/certs/` の生成済み自己署名証明書を使っており、プランをインスタンス化できる程度に整えてあるだけです。本物の CA チェーン検証はしていません。
 - **OP インスタンス 1 個。** インスタンス間挙動（例: ストア共有の OP 2 個でのトークン introspection）は OFCS ではなく `test/scenarios` で検査します。
 

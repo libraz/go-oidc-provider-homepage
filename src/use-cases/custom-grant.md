@@ -1,6 +1,7 @@
 ---
 title: Custom Grant — wiring
 description: Define your own grant_type URN and route it through the OP — handler contract, BoundAccessToken, ParamPolicy.
+pageClass: pg-use-cases-custom-grant
 ---
 
 # Use case — Custom Grant
@@ -87,6 +88,38 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 ## Two issuance shapes
 
 The handler chooses between **OP-signed** (`BoundAccessToken`) and **handler-signed** (`AccessToken`) — they are mutually exclusive.
+
+<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="custom-grant-signing-title">The two issuance shapes a custom grant can return. With BoundAccessToken the OP owns signing, standard claims, cnf, the ID token, and the refresh token. With AccessToken the handler returns an already-signed value and takes on cnf and introspection wiring itself.</title>
+  <defs>
+    <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+    </marker>
+  </defs>
+  <rect x="280" y="20" width="200" height="52" rx="8"/>
+  <text class="h" x="380" y="43" text-anchor="middle">CustomGrantHandler</text>
+  <text class="m sub" x="380" y="61" text-anchor="middle">Handle(ctx, req)</text>
+
+  <rect class="accent" x="48" y="134" width="286" height="136" rx="8"/>
+  <text class="h accent-text" x="191" y="162" text-anchor="middle">return BoundAccessToken</text>
+  <text class="t" x="191" y="190" text-anchor="middle">the OP picks the key and mints the JWT</text>
+  <text class="t sub" x="191" y="214" text-anchor="middle">standard claims / `cnf` / TTL ceiling</text>
+  <text class="t sub" x="191" y="236" text-anchor="middle">id_token and refresh stay OP-managed</text>
+  <text class="m accent-text" x="191" y="258" text-anchor="middle">the default choice</text>
+
+  <rect x="426" y="134" width="286" height="136" rx="8"/>
+  <text class="h" x="569" y="162" text-anchor="middle">return AccessToken</text>
+  <text class="t" x="569" y="190" text-anchor="middle">the handler returns a signed value</text>
+  <text class="t sub" x="569" y="214" text-anchor="middle">for an external KMS or opaque backend</text>
+  <text class="t sub" x="569" y="236" text-anchor="middle">`cnf` and revocation are yours</text>
+  <text class="m sub" x="569" y="258" text-anchor="middle">only with a concrete reason</text>
+
+  <path d="M350 72 C330 104 250 112 191 130" marker-end="url(#cg-arrow)"/>
+  <path d="M410 72 C430 104 510 112 569 130" marker-end="url(#cg-arrow)"/>
+
+  <rect class="soft" x="102" y="302" width="556" height="34" rx="8"/>
+  <text class="t" x="380" y="324" text-anchor="middle">returning both is a `server_error`: exactly one party owns issuance</text>
+</svg>
 
 ::: details OP-signed vs handler-signed — what's the trade-off?
 **OP-signed** (`BoundAccessToken`) means the OP picks a key from its registered keyset and signs the JWT for you, stamps `cnf` from the verified DPoP / mTLS proof on the request, and merges your extra claims under the reserved-claim filter. **Handler-signed** (`AccessToken`) means you bring an already-formed token (typically from an external KMS / HSM, or an opaque token your introspection backend understands) and the OP echoes it verbatim; you own everything, including `cnf` if the token needs to be sender-bound. Pick OP-signed unless you have a hard reason not to.

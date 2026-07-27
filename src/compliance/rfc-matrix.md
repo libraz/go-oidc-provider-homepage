@@ -1,12 +1,44 @@
 ---
 title: RFC compliance matrix
 description: Every standard the library cites, mapped to the package that implements it and the gating option / feature.
-pageClass: rfc-matrix-page
+pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 ---
 
 # RFC compliance matrix
 
 Every standard the library actively cites in its code, mapped to the package that implements it and the option / feature that gates it.
+
+<svg role="img" aria-labelledby="rfc-matrix-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="rfc-matrix-title">How to read the RFC matrix: each spec is first sorted by whether it is the OP's concern, then classified as full, partial, planned, out of scope, or refused.</title>
+<rect class="rfc-main" x="36" y="102" width="154" height="76" rx="8"/>
+  <text class="rfc-text" x="113" y="132" text-anchor="middle">Specification</text>
+  <text class="rfc-sub" x="113" y="154" text-anchor="middle">RFC / OIDC / FAPI</text>
+
+  <rect class="rfc-box" x="284" y="54" width="174" height="56" rx="8"/>
+  <text class="rfc-text" x="371" y="88" text-anchor="middle">OP's concern</text>
+  <rect class="rfc-box" x="284" y="170" width="174" height="56" rx="8"/>
+  <text class="rfc-text" x="371" y="204" text-anchor="middle">Not the OP's concern</text>
+
+  <rect class="rfc-box" x="560" y="28" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="56" text-anchor="middle">full / partial</text>
+  <rect class="rfc-box" x="560" y="88" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="116" text-anchor="middle">planned</text>
+  <rect class="rfc-box" x="560" y="160" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="188" text-anchor="middle">out</text>
+  <rect class="rfc-box" x="560" y="220" width="152" height="44" rx="8"/>
+  <text class="rfc-text" x="636" y="248" text-anchor="middle">refused</text>
+
+  <path class="rfc-flow" d="M190 140 C234 118 250 84 280 84"/>
+  <path class="rfc-flow" d="M190 140 C234 162 250 200 280 200"/>
+  <path class="rfc-flow" d="M458 82 C500 66 516 50 556 50"/>
+  <path class="rfc-flow" d="M548 46 L557 50 L548 54"/>
+  <path class="rfc-flow" d="M458 94 C500 100 516 110 556 110"/>
+  <path class="rfc-flow" d="M548 106 L557 110 L548 114"/>
+  <path class="rfc-flow" d="M458 198 H556"/>
+  <path class="rfc-flow" d="M548 194 L557 198 L548 202"/>
+  <path class="rfc-flow" d="M458 208 C500 232 516 242 556 242"/>
+  <path class="rfc-flow" d="M548 238 L557 242 L548 246"/>
+</svg>
 
 ## Status legend
 
@@ -67,7 +99,7 @@ Every standard the library actively cites in its code, mapped to the package tha
 
 | Draft | Status | Where |
 |---|---|---|
-| **OAuth 2.0 Grant Management** (`draft-ietf-oauth-grant-management`) | <span class="status-pill partial">partial</span> (gated by `op.WithGrantManagement`; `grant_management_action` / `grant_id` honoured, query / revoke endpoint mounted, `grant_id` on the token response, discovery advertisement. Tracks an IETF draft — surface may change before v1.0) | `internal/grantmgmtendpoint`, `op/grant_management.go` |
+| **OAuth 2.0 Grant Management** (`draft-ietf-oauth-grant-management`) | <span class="status-pill partial">partial</span> (gated by `op.WithGrantManagement`; `grant_management_action` / `grant_id` honoured, query / revoke endpoint mounted, `grant_id` on the token response, discovery advertisement. Tracks an IETF draft — surface may change on a draft update) | `internal/grantmgmtendpoint`, `op/grant_management.go` |
 
 ## JOSE family
 
@@ -89,7 +121,9 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span> (continuously regressed) | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | — (use FAPI 2.0) |
 | **FAPI-CIBA** | <span class="status-pill full">full</span> (poll mode; enforces `JAR` + `DPoP\|MTLS`, 10-min access TTL, FAPI 2.0 client-auth set, `requested_expiry` ≤ 600 s, JAR `iss` / `aud` / `exp` / `nbf` required, request-object lifetime ≤ 60 min per FAPI 2.0 Message Signing §5.6, access-token revocation required) | `op.WithProfile(profile.FAPICIBA)` |
-| **OpenID iGov High** | <span class="status-pill planned">planned</span> for v2 | `profile.IGovHigh` (constant exists; `op.New` rejects it today because the runtime constraints have not landed) |
+| **OpenID iGov High** | <span class="status-pill out">out</span> | — |
+
+The profile enumeration also carries `profile.Baseline`, which is not a FAPI profile: it declares the OAuth 2.1 / RFC 9700 posture and adds PKCE on every authorization-code request, including confidential clients. See [Declaring a security profile](/use-cases/security-profile).
 
 ## Other RFCs the library cites
 

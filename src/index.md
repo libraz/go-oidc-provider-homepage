@@ -3,7 +3,37 @@ layout: home
 title: go-oidc-provider — OpenID Connect Provider library for Go
 titleTemplate: false
 description: Mount an OIDC Provider (Authorization Server) on any Go http.Handler. Targets FAPI 2.0 Baseline / Message Signing.
+pageClass: pg-index
 ---
+
+<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="home-embed-title">go-oidc-provider mounts into an existing Go application as an http.Handler, wiring the OP endpoints to the application's own store, keyset, and logging.</title>
+<rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
+  <text class="home-text" x="112" y="124" text-anchor="middle">Your Go app</text>
+  <text class="home-sub" x="112" y="146" text-anchor="middle">router / middleware</text>
+
+  <rect class="home-main" x="302" y="78" width="156" height="110" rx="8"/>
+  <text class="home-text" x="380" y="116" text-anchor="middle">OIDC Provider</text>
+  <text class="home-sub" x="380" y="138" text-anchor="middle">http.Handler</text>
+  <text class="home-sub" x="380" y="156" text-anchor="middle">/authorize /token /jwks</text>
+
+  <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
+  <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
+  <rect class="home-box" x="570" y="112" width="154" height="56" rx="8"/>
+  <text class="home-text" x="647" y="146" text-anchor="middle">Keyset</text>
+  <rect class="home-box" x="570" y="190" width="154" height="56" rx="8"/>
+  <text class="home-text" x="647" y="224" text-anchor="middle">Logs / audit</text>
+
+  <path class="home-flow" d="M190 134 H298"/>
+  <text class="home-sub" x="244" y="120" text-anchor="middle">Mount</text>
+  <path class="home-flow" d="M290 130 L299 134 L290 138"/>
+  <path class="home-flow" d="M458 116 C504 86 520 62 566 62"/>
+  <path class="home-flow" d="M558 58 L567 62 L558 66"/>
+  <path class="home-flow" d="M458 134 H566"/>
+  <path class="home-flow" d="M558 130 L567 134 L558 138"/>
+  <path class="home-flow" d="M458 152 C504 178 520 218 566 218"/>
+  <path class="home-flow" d="M558 214 L567 218 L558 222"/>
+</svg>
 
 ## Standard use cases
 
@@ -125,8 +155,8 @@ handler, _ := op.New(
 go get github.com/libraz/go-oidc-provider/op@latest
 ```
 
-::: warning Pre-v1.0
-The library is pre-v1.0; minor releases may carry breaking changes. The public API stabilises at v1.0.0. See the [pre-v1.0 note in the README](https://github.com/libraz/go-oidc-provider#status).
+::: info Stable API
+The library is at v1.0.0 and follows Semantic Versioning: the public API changes only in a major release. APIs marked `Experimental:` in godoc remain the stated exception and may change in a minor release.
 :::
 
 ## License & related

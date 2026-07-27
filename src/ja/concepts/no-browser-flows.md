@@ -1,6 +1,7 @@
 ---
 title: ブラウザを使わないフロー — CIBA と Device Code
 description: いずれも「アクセストークンを欲しがるデバイスにまともなブラウザがない」状況に対応するフロー。一見似ているが、誰が起点となるか・どのようにユーザを OP に識別させるかで分かれる。
+pageClass: pg-concepts-no-browser-flows
 ---
 
 # ブラウザを使わないフロー: CIBA と Device Code
@@ -42,7 +43,7 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 順番に 4 つの問いを通ってください。最初の問いでだいたい片付きます。
 
-<svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 660 480" width="660" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 660 480" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="nobrowser-choice-title">4 つの問いを順にたどって CIBA と Device Code のどちらを選ぶかを示す判定木。</title>
   <rect class="dtx-q" x="20" y="20" width="320" height="58" rx="6"/>
   <rect class="dtx-q" x="20" y="118" width="320" height="58" rx="6"/>
@@ -111,7 +112,7 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 ### Device Code（RFC 8628）
 
-<svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 720 452" width="720" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 720 452" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="dc-seq-title">Device Code（RFC 8628）のシーケンス。ブラウザを持たないデバイスが OP を poll する一方、ユーザは別のブラウザで user_code を入力して承認する。</title>
   <line class="dcx-rp dcx-life" x1="115" y1="50" x2="115" y2="446"/>
   <line class="dcx-op dcx-life" x1="360" y1="50" x2="360" y2="446"/>
@@ -151,7 +152,7 @@ description: いずれも「アクセストークンを欲しがるデバイス�
 
 ### CIBA（Core 1.0、poll モード）
 
-<svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" width="720" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ciba-seq-title">CIBA（OIDC Core 1.0、poll モード）のシーケンス。RP が /bc-authorize で login_hint を渡し、OP がそれを解決してユーザの事前登録デバイスに push し、RP は承認まで poll する。</title>
   <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
   <line class="cbx-op cbx-life" x1="360" y1="50" x2="360" y2="554"/>

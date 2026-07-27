@@ -1,6 +1,7 @@
 ---
 title: Pairwise subject (OIDC Core §8.1)
 description: Per-sector pseudonymous sub claims — privacy-preserving multi-tenant SaaS, deterministic across processes, mid-life switching forbidden.
+pageClass: pg-use-cases-pairwise-subject
 ---
 
 # Use case — Pairwise subject (OIDC Core §8.1)
@@ -89,11 +90,7 @@ Where `sector_identifier` is:
 
 A client with multiple redirect-URI hosts and no `sector_identifier_uri` produces an unresolvable sector — the issuance fails with `server_error`. Operators MUST require `sector_identifier_uri` for clients that fan out across hosts.
 
-<style scoped>
-#psfd .d-lbl{font-family:var(--vp-font-family-base);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-cap{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;fill:var(--vp-c-text-1);stroke:none}#psfd .d-sub{font-family:var(--vp-font-family-base);font-size:10.5px;fill:var(--vp-c-text-2);stroke:none}#psfd .d-mono{font-family:var(--vp-font-family-mono);font-size:12px;fill:var(--vp-c-text-1);stroke:none}#psfd .d-muted{fill:var(--vp-c-text-3)}#psfd .d-op{stroke:var(--vp-c-brand-2)}#psfd .d-op-t{fill:var(--vp-c-brand-2);stroke:none}#psfd .d-store{stroke-dasharray:5 4}#psfd .d-flow{opacity:.5}
-</style>
-
-<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:1.5rem auto;width:100%;max-width:700px;height:auto">
+<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="pairwise-sub-fanout-title">One internal_user_id deriving a distinct pairwise sub for each of two RP sectors, where the sector is resolved from each client's sector_identifier_uri.</title>
 <text class="d-cap" x="8" y="18">Pairwise sub fan-out</text>
 <text class="d-sub" x="8" y="34">one internal_user_id → a distinct sub per sector</text>

@@ -1,11 +1,52 @@
 ---
 title: "JOSE basics: JWS, JWE, JWK, JWKS, kid"
 description: A minimal JOSE primer for OIDC readers — what each acronym means, where it appears in OIDC, and why this library closes the algorithm allow-list.
+pageClass: pg-concepts-jose-basics
 ---
 
 # JOSE basics: JWS, JWE, JWK, JWKS, kid
 
 **JOSE** (JavaScript Object Signing and Encryption) is the umbrella term for a family of IETF specs that define how to sign, encrypt, and represent keys for JSON-shaped tokens. Any OIDC implementation deals with all four pieces — JWS, JWE, JWK, JWKS — usually under the surface, occasionally directly. This page is the minimum a reader needs to understand `id_token`, `jwks_uri`, the JAR `request=` parameter, and `kid`.
+
+<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jose-map-title">How the JOSE pieces relate: JWS signs, JWE encrypts, a JWK is one key, a JWKS is a set of them, and kid is the label that picks one out of the set.</title>
+<rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
+  <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>
+  <text class="jose-sub" x="133" y="110" text-anchor="middle">signs a JWT</text>
+  <text class="jose-sub" x="133" y="128" text-anchor="middle">header.payload.signature</text>
+
+  <rect class="jose-box" x="292" y="54" width="178" height="88" rx="8"/>
+  <text class="jose-text" x="381" y="88" text-anchor="middle">JWE</text>
+  <text class="jose-sub" x="381" y="110" text-anchor="middle">wraps a signed JWT</text>
+  <text class="jose-sub" x="381" y="128" text-anchor="middle">an encrypted outer shell</text>
+
+  <rect class="jose-box" x="540" y="54" width="178" height="88" rx="8"/>
+  <text class="jose-text" x="629" y="88" text-anchor="middle">Recipient</text>
+  <text class="jose-sub" x="629" y="110" text-anchor="middle">decrypts, then verifies</text>
+
+  <rect class="jose-box" x="170" y="224" width="178" height="72" rx="8"/>
+  <text class="jose-text" x="259" y="254" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="259" y="274" text-anchor="middle">one public key</text>
+
+  <rect class="jose-box" x="412" y="214" width="178" height="92" rx="8"/>
+  <text class="jose-text" x="501" y="244" text-anchor="middle">JWKS</text>
+  <text class="jose-sub" x="501" y="264" text-anchor="middle">a set of JWKs</text>
+  <text class="jose-sub" x="501" y="282" text-anchor="middle">published at /jwks</text>
+
+  <rect class="jose-main" x="292" y="164" width="178" height="42" rx="8"/>
+  <text class="jose-text" x="381" y="190" text-anchor="middle">kid = key label</text>
+
+  <path class="jose-flow" d="M222 98 H288"/>
+  <path class="jose-flow" d="M280 94 L289 98 L280 102"/>
+  <path class="jose-flow" d="M470 98 H536"/>
+  <path class="jose-flow" d="M528 94 L537 98 L528 102"/>
+  <path class="jose-flow" d="M381 206 C372 230 360 250 352 258"/>
+  <path class="jose-flow" d="M360 255 L351 259 L355 250"/>
+  <path class="jose-flow" d="M381 206 C400 234 418 252 408 258"/>
+  <path class="jose-flow" d="M408 249 L409 259 L400 254"/>
+  <path class="jose-flow" d="M348 260 H408"/>
+  <path class="jose-flow" d="M400 256 L409 260 L400 264"/>
+</svg>
 
 ::: details Specs referenced on this page
 - [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515) — JSON Web Signature (JWS)

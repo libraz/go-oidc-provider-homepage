@@ -34,7 +34,7 @@ op.WithStore(inmem.New())
 op.WithStore(myCompositeStore)
 ```
 
-`op.Store` interface は小さなサブストア interface の和集合です（`AuthorizationCodeStore`、`RefreshTokenStore`、`SessionStore`、`ClientStore` …）。通常は同梱アダプタから `Store` を組み立てます。
+`store.Store` interface は小さなサブストア interface の和集合です（`AuthorizationCodeStore`、`RefreshTokenStore`、`SessionStore`、`ClientStore` …）。通常は同梱アダプタから store を組み立てます。
 
 - [`op/storeadapter/inmem`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/inmem) — 全サブストアをメモリに保持。参考・開発・テスト用。
 - [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) — `database/sql` 上の永続サブストア。

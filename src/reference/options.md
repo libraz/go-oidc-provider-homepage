@@ -2,6 +2,7 @@
 title: Options reference
 description: Every public op.New option in one table — what it sets, when you need it, and where the in-depth page lives.
 outline: 2
+pageClass: pg-reference-options
 ---
 
 # Options reference
@@ -15,11 +16,6 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 ## What option do I need?
 
 This page is a flat reference of the public `op.New` options. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
-
-<style scoped>
-text{stroke:none}
-.od-t1{fill:var(--vp-c-text-1)}.od-t2{fill:var(--vp-c-text-2)}.od-op{fill:var(--vp-c-brand-2)}.od-b{font-family:var(--vp-font-family-base);font-size:13px}.od-s{font-family:var(--vp-font-family-base);font-size:11px}.od-m{font-family:var(--vp-font-family-mono);font-size:12px}.od-sop{stroke:var(--vp-c-brand-2)}
-</style>
 
 <svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="opt-decision-title">Decision tree routing a configuration goal — fresh OP, FAPI switch, single feature, grant restriction, sender-constraint, or token format — to the op.New option that handles it, falling through to the full table.</title>
@@ -88,7 +84,7 @@ text{stroke:none}
 </svg>
 
 - **You're booting a fresh OP for the first time** → start with [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), and usually [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). `WithCookieKeys` is required when `authorization_code` is enabled, which is the default grant set. See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
-- **You want to enable FAPI 2.0 in one switch** → `WithProfile(profile.FAPI2Baseline)` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`). The profile auto-selects DPoP unless you explicitly enable mTLS. `profile.IGovHigh` is reserved and rejected today. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
+- **You want to declare OAuth 2.1 posture without adopting FAPI** → `WithProfile(profile.Baseline)` requires PKCE on every authorization-code request and otherwise keeps the OIDC Core defaults. For FAPI 2.0, use `profile.FAPI2Baseline` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`); these profiles auto-select DPoP unless you explicitly enable mTLS. A profile that needs a grant you did not wire fails `op.New` rather than mounting the endpoint for you — `profile.FAPICIBA` requires `grant.CIBA`. See [Declaring a security profile](/use-cases/security-profile), [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
 - **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. Public and native clients always require PKCE; FAPI profiles require it for every authorization-code client. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
 - **You want to restrict the grant types accepted at `/token`** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`. The convenience options `WithDeviceCodeGrant()`, `WithCIBA(...)`, `WithCustomGrant(...)`, and `RegisterTokenExchange(...)` mount the additional endpoints those grants need.
 - **You want sender-constrained access tokens** → DPoP path: `WithFeature(feature.DPoP)` plus optional `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`. mTLS path: `WithFeature(feature.MTLS)` plus optional `WithMTLSProxy(headerName, trustedCIDRs)`. See [Concepts: sender-constrained tokens](/concepts/sender-constraint), [DPoP](/concepts/dpop), [mTLS](/concepts/mtls), and [Use case: DPoP nonce](/use-cases/dpop-nonce).
@@ -111,7 +107,8 @@ text{stroke:none}
 | Option | Value | Section | Default |
 |---|---|---|---|
 | [`WithIssuer`](/getting-started/required-options#withissuer) | `string` | discovery `issuer`, JWT `iss`, cookie scope | — |
-| [`WithStore`](/getting-started/required-options#withstore) | `op.Store` | every persistent substore | — |
+| [`WithStore`](/getting-started/required-options#withstore) | `store.Store` | every protocol-state substore | — |
+| `WithUserStore` | `store.UserStore` | reads ID Token and `/userinfo` claims from an application-owned user store without wrapping the `WithStore` backend | `WithStore(...).Users()` |
 | [`WithKeyset`](/getting-started/required-options#withkeyset) | `op.Keyset` (P-256 / ES256) | JWKS, JWS signing | — |
 | [`WithCookieKeys`](/getting-started/required-options#withcookiekeys) | 32-byte key(s) | session / CSRF cookie AES-256-GCM | required when `authorization_code` is enabled |
 
@@ -119,7 +116,7 @@ text{stroke:none}
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithProfile` | `profile.Profile` | activates a security profile in one switch (FAPI 2.0 Baseline / Message Signing / FAPI-CIBA), including DPoP as the default sender-constrained token method when the profile requires DPoP-or-mTLS and mTLS was not explicitly enabled. `profile.IGovHigh` is reserved for v2+ and currently rejected at `op.New` because its runtime constraints have not landed. | none |
+| `WithProfile` | `profile.Profile` | declares `profile.Baseline` (OAuth 2.1: PKCE on every authorization-code request) or a FAPI profile. FAPI profiles select DPoP when they require DPoP-or-mTLS and mTLS was not explicitly enabled. Missing features a profile requires are switched on for you; a missing **grant** fails `op.New` instead, with the error naming the option that activates it. | none |
 | `WithFeature` | `feature.Flag` (one per call; repeatable) | enables PAR / DPoP / mTLS / JAR / JARM / introspect / revoke individually | conservative defaults |
 | `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token`; may be called at most once, so compose the full set before passing options to `op.New` | `authorization_code`, `refresh_token` |
 | `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `address`, `phone`, `offline_access` |
@@ -146,12 +143,12 @@ text{stroke:none}
 | `WithRiskAssessor` | `op.RiskAssessor` | feeds `RuleRisk` and `LoginContext.RiskScore` | none |
 | `WithLoginAttemptObserver` | `op.LoginAttemptObserver` | counts failed attempts for `RuleAfterFailedAttempts` | none |
 | `WithMFAEncryptionKeys` | 32-byte key(s) | AES-256-GCM seal of TOTP secrets at rest | none |
-| `WithAuthnLockoutStore` | `op.AuthnLockoutStore` | persists per-subject failed-attempt counters consulted by `RuleAfterFailedAttempts` | in-memory |
+| `WithAuthnLockoutStore` | `store.AuthnLockoutStore` | persists per-subject failed-attempt counters consulted by `RuleAfterFailedAttempts` | none |
 | `WithACRPolicy` | `op.ACRPolicy` (interface) | step-up acr/aal mapping | identity |
 
-The bundled SQL adapter does not implement `store.AuthnLockoutStore` — its schema has no authn-factor lockout table. Leaving the option unset disables cross-factor tracking, so only the built-in per-factor TOTP / email-OTP counters apply; setting the option activates cross-factor tracking for the built-in possession / recovery factors (`StepTOTP`, `StepEmailOTP`, `StepRecoveryCode`). It does not automatically wrap primary password / passkey authentication or `ExternalStep` custom factors; those remain owned by the embedder's user store or custom authenticator. Persistence then becomes the embedder's responsibility, since the in-memory reference (`inmem.Store.AuthnLockouts`) is process-local and resets on restart. Deployments that need the counter to survive a restart or to be shared across replicas must supply their own `store.AuthnLockoutStore` backed by durable, shared storage.
+Leaving `WithAuthnLockoutStore` unset disables cross-factor tracking, so only the built-in per-factor TOTP / email-OTP counters apply. Set it to activate cross-factor tracking for the built-in possession / recovery factors (`StepTOTP`, `StepEmailOTP`, `StepRecoveryCode`). It does not automatically wrap primary password / passkey authentication or `ExternalStep` custom factors; those remain owned by the embedder's user store or custom authenticator. The SQL and DynamoDB adapters both expose durable stores through `AuthnLockouts()`; `inmem.Store.AuthnLockouts()` is process-local and resets on restart.
 
-Authentication-factor records are intentionally outside `op.Store`. `StepTOTP`, `StepPasskey`, `StepRecoveryCode`, and `StepEmailOTP` receive their own stores because enrollment schema, encryption keys, and account-recovery policy belong to the embedding application. The in-memory adapter is a reference only; production deployments should supply durable stores. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) shows a SQL-backed `store.TOTPStore` that shares one database with the core adapter.
+Authentication-factor records are intentionally outside `store.Store`. `StepTOTP`, `PrimaryPasskey`, `StepRecoveryCode`, and `StepEmailOTP` receive their own stores because enrollment schema, encryption keys, and account-recovery policy belong to the embedding application. In-memory, SQL, and DynamoDB adapters expose the matching accessors. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) uses the shipped SQL adapter's factor stores alongside the core OP tables; implement the factor-store contracts yourself only for another backend.
 
 Two factor-store contracts matter for durability-sensitive deployments. `store.EmailOTPStore.Get` must keep records readable until `EmailOTPRecord.RetainUntil`, not merely until the code's `ExpiresAt`, so resend caps and brute-force counters survive an expired code. `store.RecoveryStore.Consume` must compare the presented code hash with the currently stored slot and reject stale hashes, so regenerated recovery batches revoke old leaked codes instead of burning a slot in the new batch.
 
@@ -248,7 +245,7 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 | `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | header-based mTLS termination at edge | none |
 | `WithTrustedProxies` | `...string` (CIDRs) | resolves `X-Forwarded-*` / `Forwarded` to real client IP | none |
 | `WithTrustedProxyHosts` | `...string` (hostnames) | extends the `X-Forwarded-Host` allowlist beyond the canonical issuer host when trusted proxy CIDRs are configured | issuer host only |
-| `WithAllowLocalhostLoopback` | _(no args)_ | admits textual `localhost` in the RFC 8252 loopback carve-out for dev / native-app demos; literal `127.0.0.1` / `[::1]` remain the strict defaults | strict literal loopback only |
+| `WithAllowLocalhostLoopback` | _(no args)_ | admits textual `localhost` in the RFC 8252 loopback carve-out for dev / native-app demos, **and in the issuer itself**; literal `127.0.0.1` / `[::1]` remain the strict defaults | strict literal loopback only |
 | `WithAllowPrivateNetworkJWKS` | _(no args)_ | permits client JWKS hosted on RFC 1918 (test only) | denied |
 | `WithAllowPrivateNetworkJAR` | _(no args)_ | permits `request_uri` hosted on RFC 1918 (test only) | denied |
 | `WithAllowPrivateNetworkSector` | _(no args)_ | permits `sector_identifier_uri` hosted on RFC 1918 during dynamic registration (test / private RP networks only) | denied |

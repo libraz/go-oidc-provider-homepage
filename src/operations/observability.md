@@ -2,6 +2,7 @@
 title: Observability
 description: Wiring logging, tracing, and Prometheus metrics around the OP.
 outline: 2
+pageClass: pg-operations-observability
 ---
 
 # Observability
@@ -16,6 +17,38 @@ Three streams cover what you need to see in production:
 | Tracing | request spans | none built-in | `otelhttp.NewMiddleware` around the `http.Handler` |
 
 The library deliberately keeps these decoupled — you can wire any subset.
+
+<svg role="img" aria-labelledby="observability-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="observability-split-title">The OP emits protocol events; the HTTP layer and your platform route them into operational logs, audit logs, metrics, and traces.</title>
+<rect class="obs-box" x="24" y="104" width="138" height="72" rx="8"/>
+  <text class="obs-text" x="93" y="134" text-anchor="middle">HTTP layer</text>
+  <text class="obs-sub" x="93" y="154" text-anchor="middle">request ID / trace</text>
+
+  <rect class="obs-main" x="242" y="92" width="170" height="96" rx="8"/>
+  <text class="obs-text" x="327" y="126" text-anchor="middle">OP handler</text>
+  <text class="obs-sub" x="327" y="148" text-anchor="middle">protocol work</text>
+  <text class="obs-sub" x="327" y="166" text-anchor="middle">audit events</text>
+
+  <rect class="obs-box" x="508" y="24" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="54" text-anchor="middle">Operational logs</text>
+  <rect class="obs-box" x="508" y="92" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="122" text-anchor="middle">Audit logs</text>
+  <rect class="obs-box" x="508" y="160" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="190" text-anchor="middle">Prometheus</text>
+  <rect class="obs-box" x="508" y="228" width="196" height="48" rx="8"/>
+  <text class="obs-text" x="606" y="258" text-anchor="middle">OpenTelemetry</text>
+
+  <path class="obs-flow" d="M162 140 H238"/>
+  <path class="obs-flow" d="M232 136 L240 140 L232 144"/>
+  <path class="obs-flow" d="M412 120 C450 78 466 48 504 48"/>
+  <path class="obs-flow" d="M496 44 L505 48 L496 52"/>
+  <path class="obs-flow" d="M412 132 H504"/>
+  <path class="obs-flow" d="M496 128 L505 132 L496 136"/>
+  <path class="obs-flow" d="M412 152 C452 164 466 184 504 184"/>
+  <path class="obs-flow" d="M496 180 L505 184 L496 188"/>
+  <path class="obs-flow" d="M162 170 C300 260 390 252 504 252"/>
+  <path class="obs-flow" d="M496 248 L505 252 L496 256"/>
+</svg>
 
 ## Structured logging
 
@@ -159,7 +192,7 @@ The first three are the highest-signal indicators of production trouble. The fou
 
 ## Rate limiting and abuse signals
 
-The library does **not** ship a built-in rate limiter on `/authorize`, `/par`, `/token`, `/userinfo`, or any other public endpoint. There is no `WithRateLimit` knob to tune. Rate limiting is the operator's job — a reverse proxy (NGINX, Envoy, Traefik), an edge service (Cloudflare, Fastly), or middleware in front of `op.Handler()` is where per-IP / per-client request budgets belong. Pretending otherwise would set false expectations.
+The library does **not** ship a built-in rate limiter on `/authorize`, `/par`, `/token`, `/userinfo`, or any other public endpoint. There is no `WithRateLimit` knob to tune. Rate limiting is the operator's job — a reverse proxy (NGINX, Envoy, Traefik), an edge service (Cloudflare, Fastly), or middleware in front of the `*op.Provider` (it implements `http.Handler`) is where per-IP / per-client request budgets belong. Pretending otherwise would set false expectations.
 
 What the library does emit is a set of audit events that an abuse pipeline can consume to score offenders, regardless of where the actual rate enforcement lives:
 

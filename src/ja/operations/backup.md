@@ -2,13 +2,14 @@
 title: バックアップ / DR
 description: 何をバックアップし、何を捨てるか。サブストアごとの RPO 目標。
 outline: 2
+pageClass: pg-operations-backup
 ---
 
 # バックアップ / DR
 
-OP 自体はステートレスです。復旧方針は完全に `op.Store` の性質に依存します。「何が永続で、何が揮発で、サブストアごとの RPO（recovery point objective）はどこか」を整理する作業です。
+OP 自体はステートレスです。復旧方針は完全に `store.Store` の性質に依存します。「何が永続で、何が揮発で、サブストアごとの RPO（recovery point objective）はどこか」を整理する作業です。
 
-<svg role="img" aria-labelledby="backup-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="backup-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="backup-split-title">バックアップ方針: OP 本体はステートレスで、永続サブストアは復元対象、短命状態は捨てて再作成、replay 防御用集合は復元しない。</title>
 <rect class="bkp-main" x="38" y="112" width="152" height="74" rx="8"/>
   <text class="bkp-text" x="114" y="142" text-anchor="middle">OP プロセス</text>
@@ -108,7 +109,7 @@ DB 標準のバックアップツールがそのまま使えます。選択肢�
 
 ### 自前ストアを書いている場合
 
-自前 `op.Store` を書いた場合、[`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) の contract test suite が、同梱アダプタと同じ期待値に対して実装を検証します。contract はバックアップ形式までは規定しません。そこは組み込み側の選択です。
+自前 `store.Store` を書いた場合、[`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) の contract test suite が、同梱アダプタと同じ期待値に対して実装を検証します。contract はバックアップ形式までは規定しません。そこは組み込み側の選択です。
 
 ## 復旧手順
 

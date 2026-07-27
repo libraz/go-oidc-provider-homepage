@@ -1,13 +1,14 @@
 ---
 title: JARM — JWT Authorization Response Mode
 description: 認可応答を署名付き(任意で暗号化)JWT に包み、応答そのものを OP が発行したことを暗号学的に立証可能にする方式。
+pageClass: pg-concepts-jarm
 ---
 
 # JARM — JWT Authorization Response Mode
 
-OP は既定では認可応答(`code`、`state`、`iss` など)を URL クエリや fragment にそのまま載せて返します。リダイレクトを書き換えられる立場の攻撃者 — 悪意のあるブラウザ拡張、改ざんされた中継、別の OP との mix-up — は、RP が応答を受け取る前にフィールドを差し替えることができます。**JARM**(OpenID Foundation FAPI WG 仕様 "JWT Secured Authorization Response Mode for OAuth 2.0"、RFC 9101 §10.2 が情報参照しています)は、この応答全体をひとつの署名付き JWT にまとめ、`response` 1 個のパラメータとして配送する方式です。応答そのものに改ざん検知性が乗り、OP が発行したことが暗号学的に立証できるようになります。
+OP は既定では認可応答(`code`、`state`、`iss` など)を URL クエリにそのまま載せて返します。JARM ではない配送方式として `form_post` も選べます。リダイレクトを書き換えられる立場の攻撃者 — 悪意のあるブラウザ拡張、改ざんされた中継、別の OP との mix-up — は、RP が応答を受け取る前にフィールドを差し替えることができます。**JARM**(OpenID Foundation FAPI WG 仕様 "JWT Secured Authorization Response Mode for OAuth 2.0"、RFC 9101 §10.2 が情報参照しています)は、この応答全体をひとつの署名付き JWT にまとめ、`response` 1 個のパラメータとして配送する方式です。応答そのものに改ざん検知性が乗り、OP が発行したことが暗号学的に立証できるようになります。
 
-<svg role="img" aria-labelledby="jarm-wrap-title" viewBox="0 0 760 340" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;width:100%;max-width:780px;height:auto;margin:1.5rem auto;">
+<svg role="img" aria-labelledby="jarm-wrap-title" viewBox="0 0 760 340" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="jarm-wrap-title">通常の認可応答は code や state を個別のパラメータで返す。JARM はそれらを署名付き JWT に包み、response パラメータ 1 個で返す。</title>
 <text class="jarm-text" x="128" y="40" text-anchor="middle">通常の応答</text>
   <rect class="jarm-box" x="40" y="62" width="176" height="78" rx="8"/>
@@ -65,10 +66,10 @@ JARM は FAPI 2.0 Message Signing が FAPI 2.0 Baseline の上に重ねる 2 つ
 
 | `response_mode` | 配送方法 | 用途 |
 |---|---|---|
-| `query.jwt` | リダイレクト URL の `?response=<JWT>` | Code フロー(v0.x が出荷する唯一のフローなので、裸の `jwt` エイリアスもここに解決) |
-| `fragment.jwt` | リダイレクト URL の `#response=<JWT>` | Hybrid / Implicit フロー(実装済みだが v0.x では実行されない) |
+| `query.jwt` | リダイレクト URL の `?response=<JWT>` | Code フロー。裸の `jwt` エイリアスもここへ解決 |
+| `fragment.jwt` | リダイレクト URL の `#response=<JWT>` | Code または error の envelope を URL fragment で配送 |
 | `form_post.jwt` | 自動 submit する HTML フォームの hidden `response` フィールド | URL バーに値を載せたくないブラウザ向け |
-| `jwt` | 裸の別名。`response_type=code` なら `query.jwt`、`token` / `id_token` を含めば `fragment.jwt` に解決 | 既定挙動に任せたいクライアント |
+| `jwt` | 裸の別名。常に `query.jwt` に解決 | 既定挙動に任せたいクライアント |
 
 OP が返すパラメータは `response` 1 個だけで、その値が JWT です。リダイレクトには他に何も載りません。JWT の claim には元の応答フィールドが入ります(`internal/jarm/encode.go`):
 
@@ -86,11 +87,11 @@ OP が返すパラメータは `response` 1 個だけで、その値が JWT で�
 
 ## 署名
 
-OP は JARM の署名に、ID トークンと JWT 形式アクセストークンで使うものと同じ鍵を使います。v0.x は alg を閉じたリストで運用します:
+OP は JARM の署名に、ID トークンと JWT 形式アクセストークンで使うものと同じ鍵を使います。利用可能な署名アルゴリズムは閉じたリストです:
 
 > **ソース:** `internal/jarm/encode.go` — `deriveJWSAlgorithm` は ECDSA P-256 以外の鍵形状をすべて `jose.ErrUnsupportedKeyShape` で拒否します。したがって署名アルゴリズムは常に `ES256` です。
 
-v0.x にクライアント単位の `authorization_signed_response_alg` 上書きはありません。Discovery が広告する値はひとつだけです:
+クライアント単位の `authorization_signed_response_alg` 上書きはありません。Discovery が広告する値はひとつだけです:
 
 ```json
 "authorization_signing_alg_values_supported": ["ES256"]
@@ -99,7 +100,7 @@ v0.x にクライアント単位の `authorization_signed_response_alg` 上書�
 `alg=none` / `RS256` / `HS*` ファミリは型レベルで存在しません — 本ライブラリのあらゆる JOSE 接面に共通する閉じた enum 方針については [設計判断 #11](/ja/security/design-judgments#dj-11) を参照してください。
 
 ::: details なぜ alg を 1 つに絞り、交渉可能なリストにしないのか
-JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り違える("alg confusion")バグを生んできた経路です。本ライブラリは交渉を行わず、通信路上の許可リストと型レベルの enum を一致させ、リスト外の alg を名乗る入力は検証器に到達する前に拒否します。v0.x は ES256 だけを出荷していますが、これは FAPI 2.0 Message Signing が要求する集合と通信路を互換に保ちつつ、攻撃面を広げないための選択です。
+JOSE alg 交渉は、歴史的に `alg=none` と HMAC 鍵を公開鍵と取り違える("alg confusion")バグを生んできた経路です。本ライブラリは交渉を行わず、通信路上の許可リストと型レベルの enum を一致させ、リスト外の alg を名乗る入力は検証器に到達する前に拒否します。ES256 だけを使うのは、FAPI 2.0 Message Signing が要求する集合と互換に保ちつつ、攻撃面を広げないためです。
 :::
 
 ## 暗号化
@@ -179,7 +180,7 @@ JARM signer は `op.New` の段階で OP の現用署名鍵を使って 1 度だ
 | `authorization_encrypted_response_alg` | 指定した JWE `alg` で JWE 包装された JARM 応答を要求する。`op.SupportedEncryptionAlgs` の中の値であること。 |
 | `authorization_encrypted_response_enc` | `authorization_encrypted_response_alg` と対で指定する。`op.SupportedEncryptionEncs` の中の値であること。 |
 
-両フィールドは静的シード時点(`op.ClientSeed` / `store.Client` の形)でも、Dynamic Client Registration(`POST /register`)経由でも与えられます。v0.x はクライアント単位の `authorization_signed_response_alg` 上書きを実装しておらず、OP 全体の ES256 設定がすべての JARM 利用クライアントに適用されます。
+両フィールドは静的シード時点(`op.ClientSeed` / `store.Client` の形)でも、Dynamic Client Registration(`POST /register`)経由でも与えられます。クライアント単位の `authorization_signed_response_alg` 上書きは実装しておらず、OP 全体の ES256 設定がすべての JARM 利用クライアントに適用されます。
 
 ## JARM と DPoP / mTLS の関係
 

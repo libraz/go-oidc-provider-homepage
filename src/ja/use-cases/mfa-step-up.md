@@ -1,6 +1,7 @@
 ---
 title: MFA / step-up
 description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up。
+pageClass: pg-use-cases-mfa-step-up
 ---
 
 # 使い方 — MFA / step-up
@@ -36,11 +37,11 @@ description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 c
 > - [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — リスクベースの step-up。
 > - [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — N 失敗後 captcha。
 > - [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up。
-> - [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — 本番寄りの factor 永続化向け SQL-backed `store.TOTPStore`。
+> - [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — 同梱 SQL factor store と OP のコアテーブルを 1 つの DB で使う構成。
 
 ## 構成
 
-<svg class="mfa-loginflow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" width="760" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="mfa-loginflow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="mfa-loginflow-title">ログインフローの構成: primary パスワード step、どの factor step を走らせるか判定する rule 層、その後のトークン発行。</title>
   <rect x="330" y="16" width="140" height="38" rx="6"/>
   <rect x="290" y="78" width="220" height="50" rx="6"/>
@@ -70,23 +71,23 @@ description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 c
   <path d="M494 345 L498 352 L502 345"/>
   <path d="M691 345 L695 352 L699 345"/>
   <path d="M396 423 L400 430 L404 423"/>
-  <text class="d-lbl" x="400" y="40" font-size="13" text-anchor="middle">ログイン開始</text>
-  <text class="d-lbl d-mono" x="400" y="100" font-size="13" text-anchor="middle">PrimaryPassword</text>
-  <text class="d-cap" x="400" y="117" font-size="11" text-anchor="middle">primary step</text>
-  <text x="400" y="177" font-size="13" text-anchor="middle"><tspan class="d-accent-t d-mono">Rules</tspan><tspan class="d-accent-t"> を評価</tspan></text>
-  <text class="d-accent-t d-mono" x="105" y="266" font-size="12.5" text-anchor="middle">RuleAlways</text>
-  <text class="d-cap" x="105" y="285" font-size="11" text-anchor="middle">毎回</text>
-  <text class="d-accent-t d-mono" x="302" y="266" font-size="12" text-anchor="middle">RuleAfterFailedAttempts</text>
-  <text class="d-cap" x="302" y="285" font-size="11" text-anchor="middle">失敗回数 ≥ 3</text>
-  <text class="d-accent-t d-mono" x="498" y="266" font-size="12.5" text-anchor="middle">RuleRisk</text>
-  <text class="d-cap" x="498" y="285" font-size="11" text-anchor="middle">リスク ≥ High</text>
-  <text class="d-accent-t d-mono" x="695" y="266" font-size="12.5" text-anchor="middle">RuleACR</text>
-  <text x="695" y="285" font-size="11" text-anchor="middle"><tspan class="d-cap d-mono">aal3</tspan><tspan class="d-cap"> を要求</tspan></text>
-  <text class="d-lbl d-mono" x="105" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
-  <text class="d-lbl d-mono" x="302" y="378" font-size="13" text-anchor="middle">StepCaptcha</text>
-  <text class="d-lbl d-mono" x="498" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
-  <text class="d-lbl d-mono" x="695" y="378" font-size="13" text-anchor="middle">StepTOTP</text>
-  <text class="d-accent-t" x="400" y="455" font-size="13" text-anchor="middle">トークン発行</text>
+  <text class="d-lbl" x="400" y="40" font-size="12.5" text-anchor="middle">ログイン開始</text>
+  <text class="d-lbl d-mono" x="400" y="100" font-size="12.5" text-anchor="middle">PrimaryPassword</text>
+  <text class="d-cap" x="400" y="117" font-size="10.5" text-anchor="middle">primary step</text>
+  <text x="400" y="177" font-size="12.5" text-anchor="middle"><tspan class="d-accent-t d-mono">Rules</tspan><tspan class="d-accent-t"> を評価</tspan></text>
+  <text class="d-accent-t d-mono" x="105" y="266" font-size="12" text-anchor="middle">RuleAlways</text>
+  <text class="d-cap" x="105" y="285" font-size="10.5" text-anchor="middle">毎回</text>
+  <text class="d-accent-t d-mono" x="302" y="266" font-size="11.5" text-anchor="middle">RuleAfterFailedAttempts</text>
+  <text class="d-cap" x="302" y="285" font-size="10.5" text-anchor="middle">失敗回数 ≥ 3</text>
+  <text class="d-accent-t d-mono" x="498" y="266" font-size="12" text-anchor="middle">RuleRisk</text>
+  <text class="d-cap" x="498" y="285" font-size="10.5" text-anchor="middle">リスク ≥ High</text>
+  <text class="d-accent-t d-mono" x="695" y="266" font-size="12" text-anchor="middle">RuleACR</text>
+  <text x="695" y="285" font-size="10.5" text-anchor="middle"><tspan class="d-cap d-mono">aal3</tspan><tspan class="d-cap"> を要求</tspan></text>
+  <text class="d-lbl d-mono" x="105" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
+  <text class="d-lbl d-mono" x="302" y="378" font-size="12.5" text-anchor="middle">StepCaptcha</text>
+  <text class="d-lbl d-mono" x="498" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
+  <text class="d-lbl d-mono" x="695" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
+  <text class="d-accent-t" x="400" y="455" font-size="12.5" text-anchor="middle">トークン発行</text>
 </svg>
 
 `LoginFlow` は `Primary` step と `Rules` リストを持つ struct。各 rule は `op.RuleAlways(step)`、`op.RuleAfterFailedAttempts(n, step)`、`op.RuleRisk(threshold, step)`、`op.RuleACR(acr, step)` 等のコンストラクタで作る `Rule` 値です。
@@ -221,6 +222,14 @@ terminal な factor 失敗 — 期限切れまたは消費済みのワンタイ�
 各 step の **ストレージ** は組み込み側の責任です。ライブラリはユーザレコードもパスワードハッシュも所有しません。リファレンスの `inmem` アダプタは、例とテストには十分です。本番では、既存のユーザテーブルに合わせて `op/store/*` のサブストアを実装してください。
 
 完全カスタムな factor は `op.ExternalStep` を実装し、一意な `KindLabel` で rule リストに追加します。これは `examples/2x-*` 全体で踏襲しているパターンです。
+
+アカウント管理の画面では、credential record を自作せず companion package を使います。[`op/passkeykit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/passkeykit) はログイン時の `PrimaryPasskey` と同じ設定から WebAuthn の登録 ceremony を実行します。[`op/recoverykit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/recoverykit) は recovery code batch を作成・置換します。`Result.Codes` は 1 回だけ表示し、保存もログ出力もしません。`LoginFlow` ではなく `WithAuthenticators` を使う場合は、`op.NewEmailOTPAuthenticator(op.EmailOTPConfig{...})` で低レイヤの email-OTP authenticator を組み立てます。[`28-email-otp-recovery`](https://github.com/libraz/go-oidc-provider/tree/main/examples/28-email-otp-recovery) と [`29-passkey`](https://github.com/libraz/go-oidc-provider/tree/main/examples/29-passkey) を参照してください。
+
+::: warning passkey には IP ではなくドメインが要る
+WebAuthn の Relying Party ID はドメイン名でなければならず、ブラウザは IP リテラルを RP ID として受け付けません。そのため `http://127.0.0.1` で開発している OP には、対にできる RP ID が存在しません。issuer を `localhost` にした上で [`op.WithAllowLocalhostLoopback()`](/ja/reference/options) を指定してください。このオプションは redirect URI だけでなく issuer にも文字列の `localhost` を許可します。緩和が許されるのは開発マシンの中だけで、本番の RP は https の後ろに置きます。
+
+`op.PrimaryPasskey` に `AAGUIDAllowlist` を設定すると、登録 ceremony は `direct` の attestation conveyance に切り替わります。attestation で裏付けられていない AAGUID と allowlist を突き合わせても何も証明できず、ソフトウェア authenticator が承認済みモデルを名乗るだけで登録できてしまうからです。ユーザエージェントの attestation プロンプトが出るようになり、モデルを特定できない登録は allowlist と照合せずに拒否されます。プロンプトの出ない従来の ceremony を保つには allowlist を空のままにします。
+:::
 
 ## TOTP factor の登録 (enrolment)
 

@@ -1,6 +1,7 @@
 ---
 title: セキュリティ方針
 description: go-oidc-provider が「安全」をどう考えているか — 5 つの独立した性質、構造的に強制している防御、個人開発の OSS としての明確な限界。
+pageClass: pg-security-posture
 ---
 
 # セキュリティ方針
@@ -25,7 +26,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 > 適合性 ≠ セキュリティ です。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="posture-five-properties-title">「これは安全か？」を支える 5 つの独立した性質 — 適合性・正しさ・セキュリティ・サプライチェーン・運用の保証を順に並べた図。</title>
   <rect x="0" y="16" width="124" height="84" rx="6"/>
   <rect x="149" y="16" width="124" height="84" rx="6"/>
@@ -151,10 +152,10 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 - ❌ **OpenID Foundation の公式認証は取得していません。**（<a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> 参照）
 - ❌ **パッチ適用 SLA は提供していません。** SECURITY.md には *目安* として「3 営業日以内に受領、確認済み問題は 14 日以内に緩和方針」を書いていますが、契約上の保証ではありません。
 - ❌ **24/7 のインシデント対応窓口はありません。** 報告経路は GitHub Security Advisories または Maintainer プロフィールです。
-- ❌ **CVE データベース上のエントリは現時点でゼロです**（<a class="doc-ref" href="/ja/security/disclosure">脆弱性報告ガイド</a>）。pre-v1.0 期間中、適格な脆弱性報告がまだ届いていないので公開すべきものがない、というのが文字通りの状況です。「真面目にやっていない」わけではありません。
+- ❌ **CVE データベース上のエントリは現時点でゼロです**（<a class="doc-ref" href="/ja/security/disclosure">脆弱性報告ガイド</a>）。CVE の条件を満たす報告がまだ届いていないので公開すべきものがない、というのが文字通りの状況です。「真面目にやっていない」わけではありません。
 :::
 
-これらのいずれかが採用要件に含まれているなら、本ライブラリは選ばないでください。少なくとも v1.0 と公式監査が出るまでは控えるべきです。限界を明示しておくことは、誤用を防ぐために必要です。
+これらのいずれかが採用要件に含まれているなら、本ライブラリは選ばないでください。公式監査が出るまでは控えるべきです。限界を明示しておくことは、誤用を防ぐために必要です。
 
 ## 採用判断のヒント
 
@@ -162,7 +163,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 |---|---|
 | 自社プロダクトの内部 OP を作る | 適合します。`go.mod` でバージョンタグを固定し、自社 CI で `govulncheck` を回し、GHSA を購読してください |
 | 公衆向け、価値の高いフロー（銀行グレード FAPI） | このライブラリは出発点として使い、第三者監査を入れて findings を還元する形を推奨 |
-| コンプライアンス上の都合で認証取得済み IdP を置換する | 推奨しません — v1.0 と引用可能な監査結果が揃うまでは控えてください |
+| コンプライアンス上の都合で認証取得済み IdP を置換する | 推奨しません — 引用可能な第三者監査結果が揃うまでは控えてください |
 | 実 OP のコードベースで OIDC の仕組みを学ぶ | 最適。構造的防御自体が学習コンテンツになります |
 
 ## 続きはこちら

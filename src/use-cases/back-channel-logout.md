@@ -1,6 +1,7 @@
 ---
 title: Back-Channel Logout
 description: Notify every RP server-to-server when a session ends — OIDC Back-Channel Logout 1.0.
+pageClass: pg-use-cases-back-channel-logout
 ---
 
 # Use case — Back-Channel Logout
@@ -21,7 +22,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
 :::
 
 ::: details Quick refresher
-- **`logout_token`** — a short-lived JWT the OP signs and POSTs to each RP, naming the subject (`sub`) or session (`sid`) that ended. It is *not* an access token; the RP only verifies it and drops local state.
+- **`logout_token`** — a short-lived JWT the OP signs and POSTs to each RP, naming the subject (`sub`) whose session ended. It is *not* an access token; the RP only verifies it and drops local state.
 - **SET (Security Event Token, RFC 8417)** — a JWT shape designed for security event delivery. The `events` claim slots an event-type key (here `http://schemas.openid.net/event/backchannel-logout`) so a generic SET receiver can dispatch to the right handler.
 :::
 
@@ -29,24 +30,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
 
 ## Architecture
 
-<style scoped>
-.bcl-svg text{font-family:var(--vp-font-family-base);fill:var(--vp-c-text-1);stroke:none;}
-.bcl-svg .m{font-family:var(--vp-font-family-mono);}
-.bcl-svg .nm{font-weight:600;font-size:13px;}
-.bcl-svg .rl{font-size:9px;fill:var(--vp-c-text-2);}
-.bcl-svg .lb{font-size:12px;}
-.bcl-svg .lbm{font-size:10.5px;fill:var(--vp-c-text-2);}
-.bcl-svg .fr{font-size:11px;fill:var(--vp-c-text-2);}
-.bcl-svg .bn{font-size:10px;font-weight:600;fill:var(--vp-c-text-2);}
-.bcl-svg .accent{stroke:var(--vp-c-brand-2);}
-.bcl-svg .accentt{fill:var(--vp-c-brand-2);}
-.bcl-svg .life{stroke-width:1.4;opacity:.28;}
-.bcl-svg .frame{stroke-width:1.4;opacity:.5;}
-.bcl-svg .ret{opacity:.55;}
-.bcl-svg .bg{fill:var(--vp-c-bg);}
-</style>
-
-<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" style="width:100%;height:auto;max-width:760px" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="bcl-arch-title">Back-channel logout sequence: RP A drives /end_session, the OP terminates the session and fans out signed logout tokens to RP B and RP C, then redirects RP A.</title>
 
   <path class="life" d="M70 48V372"/>
@@ -109,7 +93,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
   <circle class="bg" cx="700" cy="320" r="8" stroke-width="1.5"/>
   <text class="bn" x="700" y="323.5" text-anchor="middle">7</text>
 
-  <text class="lb" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10.5">post_logout_redirect_uri</tspan></text>
+  <text class="lb" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
   <path class="accent" d="M380 356L220 356M227 352L220 356L227 360"/>
   <circle class="bg" cx="380" cy="356" r="8" stroke-width="1.5"/>
   <text class="bn" x="380" y="359.5" text-anchor="middle">8</text>
@@ -122,7 +106,7 @@ The OP signs a `logout_token` per RP and POSTs it to that RP's `backchannel_logo
 | `iss` | OP issuer |
 | `aud` | The RP's `client_id` |
 | `iat`, `jti` | Issuance time + replay nonce |
-| `sub` or `sid` | Whose session ended |
+| `sub` | Whose session ended. `sid` is never emitted — see [below](#how-the-audience-is-resolved-and-why-it-is-bounded) |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
 The RP verifies the signature and `aud`, drops the local session, and returns 200.
@@ -177,17 +161,30 @@ op.WithBackchannelAllowPrivateNetwork(true)
 This must be a deliberate choice — the option is the visible site for the security trade-off.
 :::
 
-## Volatile-store gap (and the audit event for it)
+## How the audience is resolved (and why it is bounded)
 
-Back-channel fan-out walks the OP's `SessionStore` to find every RP attached to the ending session. Under a **volatile** session store (Redis without persistence, Memcached, in-memory under maxmemory eviction), a session evicted between establishment and `/end_session` silently removes the rows the back-channel coordinator would walk — nothing fires for those RPs.
+Fan-out resolves its audience from **grants**, not from session rows. The coordinator takes the ending session's subject and asks the grant store for the distinct clients that subject has consented to, through `store.GrantClientLister.ListClientIDsBySubject` — a keyset-paginated view separate from `ListBySubject`, because one subject can hold many historical grant rows per client. Every stage of the fan-out is bounded on purpose:
 
-The library surfaces the gap as an audit event:
+| Bound | Default | What it caps |
+|---|---|---|
+| Deduplicated audience | `DefaultMaxTargets` (256) | clients notified for one logout; the grant query itself is capped, not filtered afterwards |
+| Concurrent deliveries | `DefaultMaxConcurrentDeliveries` (8) | simultaneous outbound POSTs |
+
+When the audience page comes back with a `NextCursor`, more clients matched than the cap allows and the coordinator emits an overflow audit event carrying that cursor rather than silently truncating. A single unreachable RP surfaces as a per-target audit event instead of failing the whole fan-out.
+
+::: tip `backchannel_logout_session_supported` is `false`
+Discovery advertises it as `false`, and that follows directly from grant-based resolution: the OP cannot prove that an OP-side session identifier belongs to a particular RP, so a `sid` is never copied into a Logout Token. RPs must key their local session teardown on `sub`. A client registering `backchannel_logout_session_required=true` is asking for something the OP does not emit.
+:::
+
+## When the fan-out resolves nothing
+
+If the subject holds no live grants — every one revoked, or a stale record whose client no longer exists — the fan-out has nothing to notify. The library surfaces that as an audit event:
 
 | Event | Meaning |
 |---|---|
 | `op.AuditBCLNoSessionsForSubject` | The caller named a session (`/end_session` with `id_token_hint`, or `Provider.Logout` against a session-bearing subject) but the fan-out resolved zero RPs. |
 
-Under volatile placement this is the OIDC Back-Channel Logout 1.0 §2.7 "best effort" floor; under durable placement it's an unexpected gap. The event extras carry the configured `op.SessionDurabilityPosture` (`SessionDurabilityVolatile` or `SessionDurabilityDurable`) so SOC dashboards distinguish the two without keying on the store-adapter type.
+The event fires only when the caller actually named a session, so a `Provider.Logout` against a subject with no browser session does not generate noise. Under volatile session placement a miss is the OIDC Back-Channel Logout 1.0 §2.7 "best effort" floor; under durable placement it is an unexpected gap worth alerting on. The extras carry the configured `op.SessionDurabilityPosture` (`SessionDurabilityVolatile` or `SessionDurabilityDurable`) so SOC dashboards distinguish the two without keying on the store-adapter type.
 
 ## Front-channel logout (a different mechanism)
 

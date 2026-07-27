@@ -18,29 +18,18 @@ The example uses two storage halves:
 | OAuth / OIDC records: clients, authorization codes, refresh tokens, grants, sessions, PAR, IATs, RATs, access tokens | bundled `op/storeadapter/sql` schema |
 | End-user records: subject, email, name, locale, password hash, tenant metadata | embedder-owned `members` table |
 
-`hybridStore` embeds `*oidcsql.Store` and overrides only `Users()`. Go method promotion leaves every other substore on the SQL adapter, while `/userinfo`, ID Token assembly, and password login read from the application-owned member projection.
-
-```go
-type hybridStore struct {
-  *oidcsql.Store
-  users store.UserPasswordStore
-}
-
-func (h *hybridStore) Users() store.UserStore { return h.users }
-```
-
-The login flow then uses the same projection for password verification:
+`op.WithUserStore` directs `/userinfo` and ID Token claim reads to the application-owned projection without wrapping the SQL store. The login flow uses the same projection for password verification:
 
 ```go
 members := &MemberUserStore{db: db}
-storage := &hybridStore{Store: durable, users: members}
 
 flow := op.LoginFlow{
   Primary: op.PrimaryPassword{Store: members},
 }
 
 provider, err := op.New(
-  op.WithStore(storage),
+  op.WithStore(durable),
+  op.WithUserStore(members),
   op.WithLoginFlow(flow),
   // required options...
 )
@@ -66,7 +55,7 @@ Use [Public / internal scopes](/use-cases/scopes) when you want to release appli
 
 ## When to use composite instead
 
-This pattern replaces only the `Users()` substore. It does not require `storeadapter/composite` because the transactional OAuth cluster stays on one SQL adapter.
+This pattern replaces only the source of end-user claims. It does not require `storeadapter/composite` because the transactional OAuth cluster stays on one SQL adapter. `WithUserStore` avoids a wrapper that might hide optional capabilities of that adapter.
 
 Use [Hot/cold + Redis](/use-cases/hot-cold-redis) when you want to route multiple substores to different backends, for example durable grants and refresh tokens on SQL, but interactions and consumed JTIs on Redis.
 

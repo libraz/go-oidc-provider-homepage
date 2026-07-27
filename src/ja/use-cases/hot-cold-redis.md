@@ -1,6 +1,7 @@
 ---
 title: Hot/Cold 分離（Redis 揮発）
 description: 揮発サブストアを Redis に、永続サブストアを SQL にルートする — 標準的な本番構成。
+pageClass: pg-use-cases-hot-cold-redis
 ---
 
 # 使い方 — Hot/Cold 分離（Redis 揮発）
@@ -38,7 +39,7 @@ OP が抱える状態は、性質が大きく異なる 2 種類に分かれま�
 
 ## アーキテクチャ
 
-<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" width="728" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="max-width:100%;height:auto;">
+<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="hcr-arch-title">composite ストアアダプタが永続サブストアを SQL/MySQL バックエンドに、揮発サブストアを Redis バックエンドにルーティングする図。</title>
   <marker id="hcr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
     <path d="M1 1 L9 5 L1 9" stroke-width="1.6"/>

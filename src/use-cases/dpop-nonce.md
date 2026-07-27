@@ -1,6 +1,7 @@
 ---
 title: DPoP nonce flow
 description: RFC 9449 §8 / §9 — server-supplied nonce in DPoP proofs to defeat pre-computed proof attacks.
+pageClass: pg-use-cases-dpop-nonce
 ---
 
 # Use case — DPoP nonce flow
@@ -31,19 +32,7 @@ In short, the nonce flow blocks two classes of attack:
 
 ## The flow
 
-<style scoped>
-.dpop-nonce-dg text{stroke:none;fill:currentColor;}
-.dpop-nonce-dg .d-actor{font-family:var(--vp-font-family-base);font-size:13px;font-weight:600;}
-.dpop-nonce-dg .d-cap{font-family:var(--vp-font-family-mono);font-size:10px;}
-.dpop-nonce-dg .d-prose{font-family:var(--vp-font-family-base);font-size:12px;font-weight:600;}
-.dpop-nonce-dg .d-mono{font-family:var(--vp-font-family-mono);font-size:11px;}
-.dpop-nonce-dg .op-accent{stroke:var(--vp-c-brand-2);}
-.dpop-nonce-dg .op-fill{fill:var(--vp-c-brand-2);}
-.dpop-nonce-dg .life{opacity:0.3;stroke-width:1;}
-.dpop-nonce-dg .note{opacity:0.4;stroke-width:1;}
-</style>
-
-<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" style="width:100%;height:auto;max-width:760px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-nonce-flow-title">Sequence of the DPoP nonce handshake: the OP rejects the first proof with use_dpop_nonce and a DPoP-Nonce header, the client retries with the nonce claim, and every later call carries the newest rotating nonce.</title>
   <line class="life" x1="130" y1="68" x2="130" y2="472"/>
   <line class="life op-accent" x1="630" y1="68" x2="630" y2="472"/>

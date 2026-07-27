@@ -1,6 +1,7 @@
 ---
 title: 最小構成 OP
 description: 動く最小の OP+RP のペア — OP の必須オプション、デモユーザ 1 件、静的登録クライアント 1 件。
+pageClass: pg-use-cases-minimal-op
 ---
 
 # 使い方 — 最小構成 OP
@@ -11,7 +12,7 @@ description: 動く最小の OP+RP のペア — OP の必須オプション、�
 
 ## アーキテクチャ
 
-<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;height:auto;margin:1.5rem auto;display:block;">
+<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="minimal-op-arch-title">単一の Go プロセス: ブラウザが rpkit RP を操作し、RP が op.New に OIDC で接続、OP は in-memory ストアを読み書きし、揮発鍵で署名します。</title>
   <rect x="150" y="28" width="560" height="246" rx="10" stroke-opacity="0.4"/>
   <text class="d-sub" x="166" y="49">単一プロセス</text>
