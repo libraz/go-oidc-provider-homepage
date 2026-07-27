@@ -3,10 +3,10 @@ import { defineConfig } from 'vitepress'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
-const docsVersion = '0.9.5'
+const docsVersion = '1.0.0'
 const docsVersionTag = `v${docsVersion}`
 const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
-const releaseNotesUrl = `${changelogUrl}#v095--2026-07-13`
+const releaseNotesUrl = `${changelogUrl}#v100--2026-07-27`
 
 const softwareApplicationJsonLd = {
   '@context': 'https://schema.org',
@@ -223,6 +223,7 @@ export default defineConfig({
               {
                 text: 'Profile & flow',
                 items: [
+                  { text: 'Declaring a security profile', link: '/use-cases/security-profile' },
                   { text: 'FAPI 2.0 Baseline', link: '/use-cases/fapi2-baseline' },
                   {
                     text: 'Service-to-service (client_credentials)',
@@ -271,6 +272,7 @@ export default defineConfig({
                 items: [
                   { text: 'Choosing a storage layout', link: '/use-cases/storage-decision' },
                   { text: 'Persistent storage (SQL)', link: '/use-cases/sql-store' },
+                  { text: 'DynamoDB storage', link: '/use-cases/dynamodb-store' },
                   {
                     text: 'Hot/cold split (Redis volatile)',
                     link: '/use-cases/hot-cold-redis'
@@ -607,6 +609,7 @@ export default defineConfig({
             {
               text: 'Profile & flow',
               items: [
+                { text: 'Declaring a security profile', link: '/use-cases/security-profile' },
                 { text: 'FAPI 2.0 Baseline', link: '/use-cases/fapi2-baseline' },
                 {
                   text: 'Service-to-service (client_credentials)',
@@ -652,6 +655,7 @@ export default defineConfig({
               items: [
                 { text: 'Choosing a storage layout', link: '/use-cases/storage-decision' },
                 { text: 'Persistent storage (SQL)', link: '/use-cases/sql-store' },
+                { text: 'DynamoDB storage', link: '/use-cases/dynamodb-store' },
                 { text: 'Hot/cold split (Redis volatile)', link: '/use-cases/hot-cold-redis' },
                 { text: 'Bring your own store backend', link: '/use-cases/byo-store' }
               ]
@@ -898,6 +902,10 @@ export default defineConfig({
               {
                 text: 'プロファイル / フロー',
                 items: [
+                  {
+                    text: 'セキュリティプロファイルの宣言',
+                    link: '/ja/use-cases/security-profile'
+                  },
                   { text: 'FAPI 2.0 Baseline', link: '/ja/use-cases/fapi2-baseline' },
                   {
                     text: 'サービス間通信（client_credentials）',
@@ -952,6 +960,7 @@ export default defineConfig({
                 items: [
                   { text: 'ストレージ構成の選び方', link: '/ja/use-cases/storage-decision' },
                   { text: 'SQL ストア', link: '/ja/use-cases/sql-store' },
+                  { text: 'DynamoDB ストア', link: '/ja/use-cases/dynamodb-store' },
                   {
                     text: 'Hot / Cold 分離（Redis 揮発）',
                     link: '/ja/use-cases/hot-cold-redis'
@@ -1333,6 +1342,7 @@ export default defineConfig({
             {
               text: 'プロファイル / フロー',
               items: [
+                { text: 'セキュリティプロファイルの宣言', link: '/ja/use-cases/security-profile' },
                 { text: 'FAPI 2.0 Baseline', link: '/ja/use-cases/fapi2-baseline' },
                 {
                   text: 'サービス間通信（client_credentials）',
@@ -1384,6 +1394,7 @@ export default defineConfig({
               items: [
                 { text: 'ストレージ構成の選び方', link: '/ja/use-cases/storage-decision' },
                 { text: 'SQL ストア', link: '/ja/use-cases/sql-store' },
+                { text: 'DynamoDB ストア', link: '/ja/use-cases/dynamodb-store' },
                 { text: 'Hot / Cold 分離（Redis 揮発）', link: '/ja/use-cases/hot-cold-redis' },
                 { text: 'ストアを自前実装', link: '/ja/use-cases/byo-store' }
               ]
