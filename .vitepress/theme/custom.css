@@ -1078,16 +1078,50 @@ div[class*="language-"] code {
   opacity: 1;
 }
 
+/* SVG diagram defaults.  Every diagram spans the full document column instead of
+   carrying its own width cap, so a label's rendered size follows the column rather
+   than whatever max-width the figure happened to be authored with. */
+.vp-doc svg[viewBox] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 1.75rem auto;
+}
+.vp-doc figure {
+  margin: 1.75rem 0;
+}
+.vp-doc figure svg[viewBox] {
+  margin: 0 auto;
+}
+
+/* Diagram text is never stroked by default.  Labels that cross an arrow or a
+   lifeline opt into a halo painted behind the glyph (`paint-order: stroke fill`),
+   which keeps them legible without a knockout rectangle. */
+.vp-doc svg text,
+.vp-doc svg tspan {
+  paint-order: stroke fill;
+  stroke: var(--dg-halo, none);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
 /* ---- Markdown extracted styles ---- */
 
-/* Source: src/ja/compliance/ofcs-reproduce.md */
-.repro-box {
+/* Diagram and page-local CSS lives here rather than in per-page <style> blocks so
+   the English and Japanese versions of a page share one definition.  Every rule is
+   scoped to the page class declared in both files' frontmatter (`pageClass: pg-…`),
+   which keeps generic diagram class names (.lbl, .mono, .note, .actor) from
+   colliding across pages in the global stylesheet. */
+
+/* pg-compliance-ofcs-reproduce — src/compliance/ofcs-reproduce.md + src/ja/compliance/ofcs-reproduce.md */
+.pg-compliance-ofcs-reproduce .repro-box {
   fill: var(--vp-c-bg-soft);
 }
-.repro-main {
+.pg-compliance-ofcs-reproduce .repro-main {
   fill: var(--vp-c-brand-soft);
 }
-.repro-text {
+.pg-compliance-ofcs-reproduce .repro-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -1097,7 +1131,7 @@ div[class*="language-"] code {
     "Segoe UI",
     sans-serif;
 }
-.repro-sub {
+.pg-compliance-ofcs-reproduce .repro-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -1107,18 +1141,320 @@ div[class*="language-"] code {
     "Segoe UI",
     sans-serif;
 }
-.repro-flow {
+.pg-compliance-ofcs-reproduce .repro-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/compliance/rfc-matrix.md */
-.rfc-box {
+/* pg-compliance-ofcs — src/compliance/ofcs.md + src/ja/compliance/ofcs.md */
+/* Outcome scale: light and dark are stepped separately so every slot clears 3:1 against its own surface and adjacent hues stay apart under simulated colour-vision deficiency. SKIPPED is the one neutral slot — it means "not applicable", not a result. Every segment is labelled in text too, so the hue never carries the meaning alone. */
+.pg-compliance-ofcs {
+  --ofcs-pass: #047857;
+  --ofcs-review: #d97706;
+  --ofcs-skip: #64748b;
+  --ofcs-noverdict: #9333ea;
+  --ofcs-fail: #dc2626;
+}
+.dark .pg-compliance-ofcs {
+  --ofcs-pass: #10b981;
+  --ofcs-review: #f59e0b;
+  --ofcs-skip: #6b7280;
+  --ofcs-noverdict: #a855f7;
+  --ofcs-fail: #ef4444;
+}
+
+.pg-compliance-ofcs .ofcs-box {
   fill: var(--vp-c-bg-soft);
 }
-.rfc-main {
+.pg-compliance-ofcs .ofcs-main {
   fill: var(--vp-c-brand-soft);
 }
-.rfc-text {
+.pg-compliance-ofcs .ofcs-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 13px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-compliance-ofcs .ofcs-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    11.5px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-compliance-ofcs .ofcs-cap {
+  fill: var(--vp-c-text-3);
+  stroke: none;
+  letter-spacing: 0.06em;
+  font:
+    600 10.5px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-compliance-ofcs .ofcs-flow {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-compliance-ofcs .ofcs-sw {
+  stroke: none;
+}
+.pg-compliance-ofcs .ofcs-sw-pass {
+  fill: var(--ofcs-pass);
+}
+.pg-compliance-ofcs .ofcs-sw-review {
+  fill: var(--ofcs-review);
+}
+.pg-compliance-ofcs .ofcs-sw-skip {
+  fill: var(--ofcs-skip);
+}
+.pg-compliance-ofcs .ofcs-sw-noverdict {
+  fill: var(--ofcs-noverdict);
+}
+.pg-compliance-ofcs .ofcs-sw-fail {
+  fill: var(--ofcs-fail);
+}
+
+/* Snapshot headline: one stacked bar for the whole run, plus a legend carrying the exact count and share per outcome. */
+.pg-compliance-ofcs .vp-doc .ofcs-summary {
+  margin: 24px 0 28px;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  background: var(--vp-c-bg-soft);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-headline b {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-headline span {
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+}
+
+.pg-compliance-ofcs .ofcs-track {
+  height: 12px;
+  border-radius: 5px;
+  background: var(--vp-c-divider);
+}
+.pg-compliance-ofcs .ofcs-summary .ofcs-track {
+  margin: 16px 0 0;
+}
+.pg-compliance-ofcs .ofcs-stack {
+  display: flex;
+  gap: 2px;
+  height: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.pg-compliance-ofcs .ofcs-stack i {
+  display: block;
+  min-width: 2px;
+}
+.pg-compliance-ofcs .ofcs-stack .pass {
+  background: var(--ofcs-pass);
+}
+.pg-compliance-ofcs .ofcs-stack .review {
+  background: var(--ofcs-review);
+}
+.pg-compliance-ofcs .ofcs-stack .skip {
+  background: var(--ofcs-skip);
+}
+.pg-compliance-ofcs .ofcs-stack .noverdict {
+  background: var(--ofcs-noverdict);
+}
+.pg-compliance-ofcs .ofcs-stack .fail {
+  background: var(--ofcs-fail);
+}
+
+.pg-compliance-ofcs .vp-doc .ofcs-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 6px 22px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend > li::before {
+  content: none;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend b {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend em {
+  min-width: 46px;
+  font-style: normal;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-3);
+}
+
+.pg-compliance-ofcs .ofcs-dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.pg-compliance-ofcs .ofcs-dot.pass {
+  background: var(--ofcs-pass);
+}
+.pg-compliance-ofcs .ofcs-dot.review {
+  background: var(--ofcs-review);
+}
+.pg-compliance-ofcs .ofcs-dot.skip {
+  background: var(--ofcs-skip);
+}
+.pg-compliance-ofcs .ofcs-dot.noverdict {
+  background: var(--ofcs-noverdict);
+}
+.pg-compliance-ofcs .ofcs-dot.fail {
+  background: var(--ofcs-fail);
+}
+/* A list item opening with an outcome swatch uses that swatch as its bullet — the site's generic dot on top of it would read as noise. */
+.pg-compliance-ofcs .vp-doc ul > li:has(> .ofcs-dot:first-child)::before {
+  content: none;
+}
+.pg-compliance-ofcs .vp-doc ul:not(.ofcs-legend) > li > .ofcs-dot:first-child {
+  margin-right: 7px;
+  margin-left: -1.25em;
+}
+
+.pg-compliance-ofcs .vp-doc .ofcs-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+
+.pg-compliance-ofcs .vp-doc .ofcs-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--vp-c-divider);
+  font-size: 12.5px;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-meta span {
+  display: inline-flex;
+  gap: 7px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-meta i {
+  font-style: normal;
+  color: var(--vp-c-text-3);
+}
+
+/* Root causes behind the non-passing modules, directly under the headline so the red segment never has to be chased down the page. */
+.pg-compliance-ofcs .vp-doc .ofcs-causes {
+  margin: 20px 0 28px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 20px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause-main {
+  flex: 1 1 340px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause-main strong {
+  display: block;
+  font-size: 15px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause-main p {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause .ofcs-plan-counts {
+  flex: none;
+  padding-top: 2px;
+}
+
+/* Per-plan bars share one scale — bar length is the plan's module count against the largest plan — so a one-module plan cannot look as heavy as a seventy-one-module one. */
+.pg-compliance-ofcs .vp-doc .ofcs-plans {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+  margin: 0 0 7px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-name {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: 12px;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-counts b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-total {
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* pg-compliance-rfc-matrix — src/compliance/rfc-matrix.md + src/ja/compliance/rfc-matrix.md */
+.pg-compliance-rfc-matrix .rfc-box {
+  fill: var(--vp-c-bg-soft);
+}
+.pg-compliance-rfc-matrix .rfc-main {
+  fill: var(--vp-c-brand-soft);
+}
+.pg-compliance-rfc-matrix .rfc-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -1128,7 +1464,7 @@ div[class*="language-"] code {
     "Segoe UI",
     sans-serif;
 }
-.rfc-sub {
+.pg-compliance-rfc-matrix .rfc-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -1138,566 +1474,481 @@ div[class*="language-"] code {
     "Segoe UI",
     sans-serif;
 }
-.rfc-flow {
+.pg-compliance-rfc-matrix .rfc-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/concepts/access-token-format.md */
-text {
+/* pg-concepts-access-token-format — src/concepts/access-token-format.md + src/ja/concepts/access-token-format.md */
+.pg-concepts-access-token-format text {
   stroke: none;
 }
-.atf-t1 {
+.pg-concepts-access-token-format .atf-t1 {
   fill: var(--vp-c-text-1);
 }
-.atf-t2 {
+.pg-concepts-access-token-format .atf-t2 {
   fill: var(--vp-c-text-2);
 }
-.atf-op {
+.pg-concepts-access-token-format .atf-op {
   fill: var(--vp-c-brand-2);
 }
-.atf-rs {
+.pg-concepts-access-token-format .atf-rs {
   fill: var(--vp-c-text-3);
 }
-.atf-b {
+.pg-concepts-access-token-format .atf-b {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
 }
-.atf-c {
+.pg-concepts-access-token-format .atf-c {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.atf-s {
+.pg-concepts-access-token-format .atf-s {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.atf-m {
+.pg-concepts-access-token-format .atf-m {
   font-family: var(--vp-font-family-mono);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.atf-sop {
+.pg-concepts-access-token-format .atf-sop {
   stroke: var(--vp-c-brand-2);
 }
-.atf-srs {
+.pg-concepts-access-token-format .atf-srs {
   stroke: var(--vp-c-text-3);
 }
 
-/* Source: src/ja/concepts/access-token-format.md */
-text {
-  stroke: none;
-}
-.atf-t1 {
-  fill: var(--vp-c-text-1);
-}
-.atf-t2 {
-  fill: var(--vp-c-text-2);
-}
-.atf-op {
-  fill: var(--vp-c-brand-2);
-}
-.atf-rs {
-  fill: var(--vp-c-text-3);
-}
-.atf-b {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-}
-.atf-c {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-}
-.atf-s {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-}
-.atf-m {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-}
-.atf-sop {
-  stroke: var(--vp-c-brand-2);
-}
-.atf-srs {
-  stroke: var(--vp-c-text-3);
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-access-token-format .atf text.atf-s.atf-t2,
+.pg-concepts-access-token-format .atf text.atf-s.atf-t2 tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
 }
 
-/* Source: src/ja/concepts/access-token-format.md */
-text {
+/* pg-concepts-authorization-code-pkce — src/concepts/authorization-code-pkce.md + src/ja/concepts/authorization-code-pkce.md */
+.pg-concepts-authorization-code-pkce text {
   stroke: none;
 }
-.atf-t1 {
-  fill: var(--vp-c-text-1);
-}
-.atf-t2 {
-  fill: var(--vp-c-text-2);
-}
-.atf-op {
-  fill: var(--vp-c-brand-2);
-}
-.atf-rs {
-  fill: var(--vp-c-text-3);
-}
-.atf-b {
+.pg-concepts-authorization-code-pkce .actor {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
-}
-.atf-c {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-}
-.atf-s {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-}
-.atf-m {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-}
-.atf-sop {
-  stroke: var(--vp-c-brand-2);
-}
-.atf-srs {
-  stroke: var(--vp-c-text-3);
-}
-
-/* Source: src/ja/concepts/access-token-format.md */
-text {
-  stroke: none;
-}
-.atf-t1 {
-  fill: var(--vp-c-text-1);
-}
-.atf-t2 {
-  fill: var(--vp-c-text-2);
-}
-.atf-op {
-  fill: var(--vp-c-brand-2);
-}
-.atf-rs {
-  fill: var(--vp-c-text-3);
-}
-.atf-b {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-}
-.atf-c {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-}
-.atf-s {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-}
-.atf-m {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-}
-.atf-sop {
-  stroke: var(--vp-c-brand-2);
-}
-.atf-srs {
-  stroke: var(--vp-c-text-3);
-}
-
-/* Source: src/ja/concepts/access-token-format.md */
-text {
-  stroke: none;
-}
-.atf-t1 {
-  fill: var(--vp-c-text-1);
-}
-.atf-t2 {
-  fill: var(--vp-c-text-2);
-}
-.atf-op {
-  fill: var(--vp-c-brand-2);
-}
-.atf-rs {
-  fill: var(--vp-c-text-3);
-}
-.atf-b {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-}
-.atf-c {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-}
-.atf-s {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-}
-.atf-m {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-}
-.atf-sop {
-  stroke: var(--vp-c-brand-2);
-}
-.atf-srs {
-  stroke: var(--vp-c-text-3);
-}
-
-/* Source: src/ja/concepts/authorization-code-pkce.md */
-text {
-  stroke: none;
-}
-.actor {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   fill: var(--vp-c-text-1);
 }
-.actor-op {
+.pg-concepts-authorization-code-pkce .actor-op {
   fill: var(--vp-c-brand-2);
 }
-.actor-rs {
+.pg-concepts-authorization-code-pkce .actor-rs {
   fill: var(--vp-c-text-3);
 }
-.asub {
+.pg-concepts-authorization-code-pkce .asub {
   font-family: var(--vp-font-family-base);
-  font-size: 9px;
+  font-size: 8.5px;
   fill: var(--vp-c-text-3);
 }
-.lbl {
+.pg-concepts-authorization-code-pkce .lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
   fill: var(--vp-c-text-1);
 }
-.sub {
+.pg-concepts-authorization-code-pkce .sub {
   font-family: var(--vp-font-family-base);
-  font-size: 9.5px;
-  fill: var(--vp-c-text-2);
-}
-.mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 10px;
-  fill: var(--vp-c-text-2);
-}
-.num {
-  font-family: var(--vp-font-family-mono);
   font-size: 9px;
-  fill: var(--vp-c-text-3);
+  fill: var(--vp-c-text-2);
 }
-.note {
-  font-family: var(--vp-font-family-base);
-  font-size: 10px;
-  fill: var(--vp-c-text-1);
-}
-.notemono {
+.pg-concepts-authorization-code-pkce .mono {
   font-family: var(--vp-font-family-mono);
   font-size: 9.5px;
   fill: var(--vp-c-text-2);
 }
-.box {
+.pg-concepts-authorization-code-pkce .num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 8.5px;
+  fill: var(--vp-c-text-3);
+}
+.pg-concepts-authorization-code-pkce .note {
+  font-family: var(--vp-font-family-base);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-1);
+}
+.pg-concepts-authorization-code-pkce .notemono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  fill: var(--vp-c-text-2);
+}
+.pg-concepts-authorization-code-pkce .box {
   fill: var(--vp-c-bg);
   stroke: currentColor;
 }
-.box-op {
+.pg-concepts-authorization-code-pkce .box-op {
   stroke: var(--vp-c-brand-2);
 }
-.box-rs {
+.pg-concepts-authorization-code-pkce .box-rs {
   stroke: var(--vp-c-text-3);
 }
-.lane {
+.pg-concepts-authorization-code-pkce .lane {
   fill: none;
   stroke: var(--vp-c-divider);
   stroke-width: 1.3;
   stroke-dasharray: 2 5;
 }
-.lane-op {
+.pg-concepts-authorization-code-pkce .lane-op {
   stroke: var(--vp-c-brand-2);
 }
-.lane-rs {
+.pg-concepts-authorization-code-pkce .lane-rs {
   stroke: var(--vp-c-text-3);
 }
-.msg {
+.pg-concepts-authorization-code-pkce .msg {
   fill: none;
   stroke: currentColor;
 }
-.self {
+.pg-concepts-authorization-code-pkce .self {
   fill: none;
   stroke: currentColor;
 }
-.op-accent {
+.pg-concepts-authorization-code-pkce .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.notebox {
+.pg-concepts-authorization-code-pkce .notebox {
   fill: var(--vp-c-bg-soft);
   stroke: var(--vp-c-divider);
   stroke-width: 1.3;
 }
 
-/* Source: src/ja/concepts/ciba.md */
-.ciba-tx {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-authorization-code-pkce text.mono,
+.pg-concepts-authorization-code-pkce text.mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-authorization-code-pkce text.note,
+.pg-concepts-authorization-code-pkce text.note tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-authorization-code-pkce text.notemono,
+.pg-concepts-authorization-code-pkce text.notemono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-ciba — src/concepts/ciba.md + src/ja/concepts/ciba.md */
+.pg-concepts-ciba .ciba-tx {
   fill: currentColor;
   stroke: none;
 }
-.ciba-fb {
+.pg-concepts-ciba .ciba-fb {
   font-family: var(--vp-font-family-base);
 }
-.ciba-fm {
+.pg-concepts-ciba .ciba-fm {
   font-family: var(--vp-font-family-mono);
 }
-.ciba-accent {
+.pg-concepts-ciba .ciba-accent {
   stroke: var(--vp-c-brand-2);
 }
-.ciba-sec {
+.pg-concepts-ciba .ciba-sec {
   stroke: #7c6fb0;
 }
-.dark .ciba-sec {
+.dark .pg-concepts-ciba .ciba-sec {
   stroke: #b3a7e0;
 }
-.ciba-accent-f {
+.pg-concepts-ciba .ciba-accent-f {
   fill: var(--vp-c-brand-2);
 }
-.ciba-sec-f {
+.pg-concepts-ciba .ciba-sec-f {
   fill: #7c6fb0;
 }
-.dark .ciba-sec-f {
+.dark .pg-concepts-ciba .ciba-sec-f {
   fill: #b3a7e0;
 }
-.ciba-muted {
+.pg-concepts-ciba .ciba-muted {
   opacity: 0.62;
 }
-.ciba-life {
+.pg-concepts-ciba .ciba-life {
   stroke-width: 1.5;
   stroke-dasharray: 3 4;
   opacity: 0.5;
 }
-.ciba-frag {
+.pg-concepts-ciba .ciba-frag {
   stroke-width: 1.4;
   stroke-dasharray: 5 4;
   opacity: 0.55;
 }
 
-/* Source: src/ja/concepts/client-credentials.md */
-#cc-flow text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-ciba text.ciba-tx.ciba-fb.ciba-muted,
+.pg-concepts-ciba text.ciba-tx.ciba-fb.ciba-muted tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-client-credentials — src/concepts/client-credentials.md + src/ja/concepts/client-credentials.md */
+.pg-concepts-client-credentials #cc-flow text {
   font-family: var(--vp-font-family-base);
   fill: currentColor;
   stroke: none;
 }
-#cc-flow .mono {
+.pg-concepts-client-credentials #cc-flow .mono {
   font-family: var(--vp-font-family-mono);
 }
-#cc-flow .c-op {
+.pg-concepts-client-credentials #cc-flow .c-op {
   stroke: var(--vp-c-brand-2);
 }
-#cc-flow .c-rs {
+.pg-concepts-client-credentials #cc-flow .c-rs {
   stroke: var(--vp-c-text-3);
 }
-#cc-flow .tf-op {
+.pg-concepts-client-credentials #cc-flow .tf-op {
   fill: var(--vp-c-brand-2);
 }
-#cc-flow .tf-rs {
+.pg-concepts-client-credentials #cc-flow .tf-rs {
   fill: var(--vp-c-text-3);
 }
-#cc-flow .life {
+.pg-concepts-client-credentials #cc-flow .life {
   stroke-width: 1;
   opacity: 0.4;
 }
-#cc-flow .box {
+.pg-concepts-client-credentials #cc-flow .box {
   stroke-width: 2;
 }
-#cc-flow .arw {
+.pg-concepts-client-credentials #cc-flow .arw {
   stroke-width: 2;
 }
-#cc-flow .num {
+.pg-concepts-client-credentials #cc-flow .num {
   stroke-width: 1.5;
 }
+.pg-concepts-client-credentials #cc-flow .box {
+  fill: var(--vp-c-bg);
+}
+.pg-concepts-client-credentials #cc-flow .life {
+  stroke-dasharray: 3 4;
+}
 
-/* Source: src/ja/concepts/client-types.md */
-text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-client-credentials #cc-flow text.mono,
+.pg-concepts-client-credentials #cc-flow text.mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-client-types — src/concepts/client-types.md + src/ja/concepts/client-types.md */
+.pg-concepts-client-types text {
   stroke: none;
 }
-.dt-leaf {
+.pg-concepts-client-types .dt-leaf {
   stroke: var(--vp-c-brand-2);
 }
-.dt-title {
+.pg-concepts-client-types .dt-title {
   font-family: var(--vp-font-family-base);
   fill: currentColor;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12.5px;
 }
-.dt-sub {
+.pg-concepts-client-types .dt-sub {
   font-family: var(--vp-font-family-base);
   fill: currentColor;
   opacity: 0.55;
-  font-size: 10.5px;
-}
-.dt-edge {
-  font-family: var(--vp-font-family-base);
-  fill: currentColor;
-  opacity: 0.6;
-  font-size: 10.5px;
-}
-.dt-code {
-  font-family: var(--vp-font-family-mono);
-  fill: var(--vp-c-brand-2);
-  font-size: 11px;
-}
-.dt-root-code {
-  font-family: var(--vp-font-family-mono);
-  fill: currentColor;
-  opacity: 0.6;
-  font-size: 10.5px;
-}
-.dt-note {
-  font-family: var(--vp-font-family-mono);
-  fill: currentColor;
-  opacity: 0.5;
   font-size: 10px;
 }
+.pg-concepts-client-types .dt-edge {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  opacity: 0.6;
+  font-size: 10px;
+}
+.pg-concepts-client-types .dt-code {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-brand-2);
+  font-size: 10.5px;
+}
+.pg-concepts-client-types .dt-root-code {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  opacity: 0.6;
+  font-size: 10px;
+}
+.pg-concepts-client-types .dt-note {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  opacity: 0.7;
+  font-size: 9.5px;
+}
 
-/* Source: src/ja/concepts/consent.md */
-#consent-shown-decision text {
+/* pg-concepts-consent — src/concepts/consent.md + src/ja/concepts/consent.md */
+.pg-concepts-consent #consent-shown-decision text {
   stroke: none;
 }
-#consent-shown-decision .lbl {
+.pg-concepts-consent #consent-shown-decision .lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   fill: var(--vp-c-text-1);
 }
-#consent-shown-decision .mono {
+.pg-concepts-consent #consent-shown-decision .mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 12px;
+  font-size: 11.5px;
   fill: var(--vp-c-text-1);
 }
-#consent-shown-decision .sub {
-  font-family: var(--vp-font-family-base);
-  font-size: 11.5px;
-  fill: var(--vp-c-text-2);
-}
-#consent-shown-decision .edge {
+.pg-concepts-consent #consent-shown-decision .sub {
   font-family: var(--vp-font-family-base);
   font-size: 11px;
   fill: var(--vp-c-text-2);
 }
-#consent-shown-decision .accent {
+.pg-concepts-consent #consent-shown-decision .edge {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+}
+.pg-concepts-consent #consent-shown-decision .accent {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/concepts/device-code.md */
-.dcf-fp {
+/* pg-concepts-device-code — src/concepts/device-code.md + src/ja/concepts/device-code.md */
+.pg-concepts-device-code .dcf-fp {
   font-family: var(--vp-font-family-base);
 }
-.dcf-fm {
+.pg-concepts-device-code .dcf-fm {
   font-family: var(--vp-font-family-mono);
 }
-.dcf-neu {
+.pg-concepts-device-code .dcf-neu {
   fill: currentColor;
 }
-.dcf-acc {
+.pg-concepts-device-code .dcf-acc {
   fill: var(--vp-c-brand-2);
 }
-.dcf-mut {
+.pg-concepts-device-code .dcf-mut {
   fill: var(--vp-c-text-3);
 }
-.dcf-sacc {
+.pg-concepts-device-code .dcf-sacc {
   stroke: var(--vp-c-brand-2);
 }
-.dcf-smut {
+.pg-concepts-device-code .dcf-smut {
   stroke: var(--vp-c-text-3);
 }
-.dcf-frame {
+.pg-concepts-device-code .dcf-frame {
   fill: none;
   stroke: var(--vp-c-text-3);
   stroke-width: 1.5;
 }
-.dcf-life {
+.pg-concepts-device-code .dcf-life {
   stroke-width: 1.5;
   opacity: 0.32;
 }
-.dcf-ret {
+.pg-concepts-device-code .dcf-ret {
   stroke-dasharray: 5 4;
 }
-.dcf-tabbg {
+.pg-concepts-device-code .dcf-tabbg {
   fill: var(--vp-c-bg);
   stroke: var(--vp-c-text-3);
   stroke-width: 1.5;
 }
-svg text {
+.pg-concepts-device-code svg text {
   stroke: none;
 }
 
-/* Source: src/ja/concepts/dpop.md */
-.dpop-flow-dg text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-device-code text.dcf-fm.dcf-neu,
+.pg-concepts-device-code text.dcf-fm.dcf-neu tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-device-code text.dcf-fp.dcf-mut,
+.pg-concepts-device-code text.dcf-fp.dcf-mut tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-device-code text.dcf-fp.dcf-neu,
+.pg-concepts-device-code text.dcf-fp.dcf-neu tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-dpop — src/concepts/dpop.md + src/ja/concepts/dpop.md */
+.pg-concepts-dpop .dpop-flow-dg text {
   stroke: none;
   fill: currentColor;
 }
-.dpop-flow-dg .d-actor {
+.pg-concepts-dpop .dpop-flow-dg .d-actor {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
 }
-.dpop-flow-dg .d-cap {
+.pg-concepts-dpop .dpop-flow-dg .d-cap {
   font-family: var(--vp-font-family-mono);
-  font-size: 10px;
+  font-size: 9.5px;
 }
-.dpop-flow-dg .d-prose {
+.pg-concepts-dpop .dpop-flow-dg .d-prose {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
 }
-.dpop-flow-dg .d-mono {
+.pg-concepts-dpop .dpop-flow-dg .d-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.dpop-flow-dg .op-accent {
+.pg-concepts-dpop .dpop-flow-dg .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.dpop-flow-dg .rs-stroke {
+.pg-concepts-dpop .dpop-flow-dg .rs-stroke {
   stroke: var(--vp-c-text-3);
 }
-.dpop-flow-dg .op-fill {
+.pg-concepts-dpop .dpop-flow-dg .op-fill {
   fill: var(--vp-c-brand-2);
 }
-.dpop-flow-dg .rs-fill {
+.pg-concepts-dpop .dpop-flow-dg .rs-fill {
   fill: var(--vp-c-text-3);
 }
-.dpop-flow-dg .life {
+.pg-concepts-dpop .dpop-flow-dg .life {
   opacity: 0.3;
   stroke-width: 1;
 }
+.pg-concepts-dpop .dpop-flow-dg .life {
+  stroke-dasharray: 3 4;
+}
 
-/* Source: src/ja/concepts/fapi.md */
-.fapi-layers text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-dpop .dpop-flow-dg text.d-mono,
+.pg-concepts-dpop .dpop-flow-dg text.d-mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-fapi — src/concepts/fapi.md + src/ja/concepts/fapi.md */
+.pg-concepts-fapi .fapi-layers text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.fapi-layers .h {
+.pg-concepts-fapi .fapi-layers .h {
   font-family: var(--vp-font-family-base);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
 }
-.fapi-layers .t {
+.pg-concepts-fapi .fapi-layers .t {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.fapi-layers .m {
+.pg-concepts-fapi .fapi-layers .m {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.fapi-layers .sub {
+.pg-concepts-fapi .fapi-layers .sub {
   fill: var(--vp-c-text-2);
 }
-.fapi-layers .accent {
+.pg-concepts-fapi .fapi-layers .accent {
   stroke: var(--vp-c-brand-2);
 }
-.fapi-layers .accent-text {
+.pg-concepts-fapi .fapi-layers .accent-text {
   fill: var(--vp-c-brand-2);
 }
-.fapi-layers .soft {
+.pg-concepts-fapi .fapi-layers .soft {
   fill: var(--vp-c-bg-soft);
 }
 
-/* Source: src/ja/concepts/jarm.md */
-.jarm-box {
+/* pg-concepts-jarm — src/concepts/jarm.md + src/ja/concepts/jarm.md */
+.pg-concepts-jarm .jarm-box {
   fill: var(--vp-c-bg-soft);
 }
-.jarm-main {
+.pg-concepts-jarm .jarm-main {
   fill: var(--vp-c-brand-soft);
 }
-.jarm-text {
+.pg-concepts-jarm .jarm-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -1707,7 +1958,7 @@ svg text {
     "Segoe UI",
     sans-serif;
 }
-.jarm-sub {
+.pg-concepts-jarm .jarm-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -1717,18 +1968,18 @@ svg text {
     "Segoe UI",
     sans-serif;
 }
-.jarm-flow {
+.pg-concepts-jarm .jarm-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/concepts/jose-basics.md */
-.jose-box {
+/* pg-concepts-jose-basics — src/concepts/jose-basics.md + src/ja/concepts/jose-basics.md */
+.pg-concepts-jose-basics .jose-box {
   fill: var(--vp-c-bg-soft);
 }
-.jose-main {
+.pg-concepts-jose-basics .jose-main {
   fill: var(--vp-c-brand-soft);
 }
-.jose-text {
+.pg-concepts-jose-basics .jose-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -1738,7 +1989,7 @@ svg text {
     "Segoe UI",
     sans-serif;
 }
-.jose-sub {
+.pg-concepts-jose-basics .jose-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -1748,517 +1999,589 @@ svg text {
     "Segoe UI",
     sans-serif;
 }
-.jose-flow {
+.pg-concepts-jose-basics .jose-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/concepts/mtls.md */
-.mtls-proxy-flow .d-label {
+/* pg-concepts-mtls — src/concepts/mtls.md + src/ja/concepts/mtls.md */
+.pg-concepts-mtls .mtls-proxy-flow .d-label {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.mtls-proxy-flow .d-sub {
+.pg-concepts-mtls .mtls-proxy-flow .d-sub {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-.mtls-proxy-flow .d-mono {
+.pg-concepts-mtls .mtls-proxy-flow .d-mono {
   font-family: var(--vp-font-family-mono);
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-.mtls-proxy-flow .d-layer {
+.pg-concepts-mtls .mtls-proxy-flow .d-layer {
   font-family: var(--vp-font-family-mono);
   fill: var(--vp-c-text-3);
   stroke: none;
   letter-spacing: 0.16em;
 }
-.mtls-proxy-flow .d-op {
+.pg-concepts-mtls .mtls-proxy-flow .d-op {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-brand-2);
   stroke: none;
 }
-.mtls-proxy-flow .op-accent {
+.pg-concepts-mtls .mtls-proxy-flow .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.mtls-proxy-flow .d-faint {
+.pg-concepts-mtls .mtls-proxy-flow .d-faint {
   stroke: var(--vp-c-divider);
   stroke-width: 1;
 }
 
-/* Source: src/ja/concepts/no-browser-flows.md */
-.dtx-q {
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-.dtx-op {
-  stroke: var(--vp-c-brand-2);
-  stroke-width: 1.8;
-}
-.dtx-rp {
-  stroke: currentColor;
-  stroke-width: 1.8;
-}
-.dtx-edge {
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-.dtx-qt {
-  font-family: var(--vp-font-family-base);
-  font-size: 12.5px;
-  fill: var(--vp-c-text-1);
-  stroke: none;
-}
-.dtx-leaf {
-  font-family: var(--vp-font-family-base);
-  font-size: 13.5px;
-  font-weight: 700;
-  fill: var(--vp-c-text-1);
-  stroke: none;
-}
-.dtx-leaf-op {
-  font-family: var(--vp-font-family-base);
-  font-size: 13.5px;
-  font-weight: 700;
-  fill: var(--vp-c-brand-2);
-  stroke: none;
-}
-.dtx-lbl {
-  font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
-  font-weight: 600;
-  fill: var(--vp-c-text-3);
-  stroke: none;
-}
-.dtx-sub {
-  font-family: var(--vp-font-family-base);
-  font-size: 10px;
-  fill: var(--vp-c-text-3);
-  stroke: none;
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-mtls .mtls-proxy-flow text.d-sub,
+.pg-concepts-mtls .mtls-proxy-flow text.d-sub tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
 }
 
-/* Source: src/ja/concepts/no-browser-flows.md */
-.dcx-op {
+/* pg-concepts-no-browser-flows — src/concepts/no-browser-flows.md + src/ja/concepts/no-browser-flows.md */
+.pg-concepts-no-browser-flows .dtx-q {
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+.pg-concepts-no-browser-flows .dtx-op {
   stroke: var(--vp-c-brand-2);
+  stroke-width: 1.8;
 }
-.dcx-rp {
+.pg-concepts-no-browser-flows .dtx-rp {
   stroke: currentColor;
+  stroke-width: 1.8;
 }
-.dcx-user {
-  stroke: var(--vp-c-text-3);
-}
-.dcx-frame {
+.pg-concepts-no-browser-flows .dtx-edge {
   stroke: currentColor;
-  stroke-width: 1.4;
-  opacity: 0.42;
+  stroke-width: 1.6;
 }
-.dcx-life {
-  stroke-width: 1.4;
-  opacity: 0.32;
-}
-.dcx-actor {
+.pg-concepts-no-browser-flows .dtx-qt {
   font-family: var(--vp-font-family-base);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 12px;
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.dcx-actor-op {
+.pg-concepts-no-browser-flows .dtx-leaf {
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .dtx-leaf-op {
   font-family: var(--vp-font-family-base);
   font-size: 13px;
   font-weight: 700;
   fill: var(--vp-c-brand-2);
   stroke: none;
 }
-.dcx-sub {
+.pg-concepts-no-browser-flows .dtx-lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
-  fill: var(--vp-c-text-3);
-  stroke: none;
-}
-.dcx-hdr {
-  font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  fill: var(--vp-c-text-3);
-  stroke: none;
-}
-.dcx-note {
-  font-family: var(--vp-font-family-base);
-  font-size: 11.5px;
-  fill: var(--vp-c-text-2);
-  stroke: none;
-}
-.dcx-mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 11.5px;
-  fill: var(--vp-c-text-1);
-  stroke: none;
-}
-.dcx-step {
-  font-family: var(--vp-font-family-mono);
   font-size: 10px;
+  font-weight: 600;
   fill: var(--vp-c-text-3);
   stroke: none;
 }
-
-/* Source: src/ja/concepts/no-browser-flows.md */
-.cbx-op {
+.pg-concepts-no-browser-flows .dtx-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .dcx-op {
   stroke: var(--vp-c-brand-2);
 }
-.cbx-rp {
+.pg-concepts-no-browser-flows .dcx-rp {
   stroke: currentColor;
 }
-.cbx-user {
+.pg-concepts-no-browser-flows .dcx-user {
   stroke: var(--vp-c-text-3);
 }
-.cbx-frame {
+.pg-concepts-no-browser-flows .dcx-frame {
   stroke: currentColor;
   stroke-width: 1.4;
   opacity: 0.42;
 }
-.cbx-life {
+.pg-concepts-no-browser-flows .dcx-life {
   stroke-width: 1.4;
   opacity: 0.32;
 }
-.cbx-actor {
+.pg-concepts-no-browser-flows .dcx-actor {
   font-family: var(--vp-font-family-base);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.cbx-actor-op {
+.pg-concepts-no-browser-flows .dcx-actor-op {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   fill: var(--vp-c-brand-2);
   stroke: none;
 }
-.cbx-sub {
+.pg-concepts-no-browser-flows .dcx-sub {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
+  font-size: 10px;
   fill: var(--vp-c-text-3);
   stroke: none;
 }
-.cbx-hdr {
+.pg-concepts-no-browser-flows .dcx-hdr {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   fill: var(--vp-c-text-3);
   stroke: none;
 }
-.cbx-note {
+.pg-concepts-no-browser-flows .dcx-note {
   font-family: var(--vp-font-family-base);
-  font-size: 11.5px;
+  font-size: 11px;
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-.cbx-mono {
+.pg-concepts-no-browser-flows .dcx-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11.5px;
+  font-size: 11px;
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.cbx-step {
+.pg-concepts-no-browser-flows .dcx-step {
   font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .cbx-op {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-no-browser-flows .cbx-rp {
+  stroke: currentColor;
+}
+.pg-concepts-no-browser-flows .cbx-user {
+  stroke: var(--vp-c-text-3);
+}
+.pg-concepts-no-browser-flows .cbx-frame {
+  stroke: currentColor;
+  stroke-width: 1.4;
+  opacity: 0.42;
+}
+.pg-concepts-no-browser-flows .cbx-life {
+  stroke-width: 1.4;
+  opacity: 0.32;
+}
+.pg-concepts-no-browser-flows .cbx-actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .cbx-actor-op {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 700;
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .cbx-sub {
+  font-family: var(--vp-font-family-base);
   font-size: 10px;
   fill: var(--vp-c-text-3);
   stroke: none;
 }
+.pg-concepts-no-browser-flows .cbx-hdr {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .cbx-note {
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .cbx-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-concepts-no-browser-flows .cbx-step {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
 
-/* Source: src/ja/concepts/oauth2-oidc-primer.md */
-.diag-roles text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-no-browser-flows text.cbx-mono,
+.pg-concepts-no-browser-flows text.cbx-mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-no-browser-flows text.cbx-note,
+.pg-concepts-no-browser-flows text.cbx-note tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-no-browser-flows text.dcx-mono,
+.pg-concepts-no-browser-flows text.dcx-mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-no-browser-flows text.dcx-note,
+.pg-concepts-no-browser-flows text.dcx-note tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-oauth2-oidc-primer — src/concepts/oauth2-oidc-primer.md + src/ja/concepts/oauth2-oidc-primer.md */
+.pg-concepts-oauth2-oidc-primer .diag-roles text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.diag-roles .p {
+.pg-concepts-oauth2-oidc-primer .diag-roles .p {
   font-family: var(--vp-font-family-base);
 }
-.diag-roles .m {
+.pg-concepts-oauth2-oidc-primer .diag-roles .m {
   font-family: var(--vp-font-family-mono);
 }
-.diag-roles .sub {
+.pg-concepts-oauth2-oidc-primer .diag-roles .sub {
   fill: var(--vp-c-text-2);
 }
-.diag-roles .op {
+.pg-concepts-oauth2-oidc-primer .diag-roles .op {
   stroke: var(--vp-c-brand-2);
 }
-.diag-roles .opf {
+.pg-concepts-oauth2-oidc-primer .diag-roles .opf {
   fill: var(--vp-c-brand-2);
 }
-.diag-roles .rs {
+.pg-concepts-oauth2-oidc-primer .diag-roles .rs {
   stroke: var(--vp-c-text-3);
 }
-.diag-roles .rsf {
+.pg-concepts-oauth2-oidc-primer .diag-roles .rsf {
   fill: var(--vp-c-text-3);
 }
-
-/* Source: src/ja/concepts/oauth2-oidc-primer.md */
-.diag-authcode text {
+.pg-concepts-oauth2-oidc-primer .diag-authcode text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.diag-authcode .p {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .p {
   font-family: var(--vp-font-family-base);
 }
-.diag-authcode .m {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .m {
   font-family: var(--vp-font-family-mono);
 }
-.diag-authcode .sub {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .sub {
   fill: var(--vp-c-text-2);
 }
-.diag-authcode .life {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .life {
   stroke: var(--vp-c-divider);
   stroke-width: 1.5;
 }
-.diag-authcode .op {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .op {
   stroke: var(--vp-c-brand-2);
 }
-.diag-authcode .opf {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .opf {
   fill: var(--vp-c-brand-2);
 }
-.diag-authcode .rs {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .rs {
   stroke: var(--vp-c-text-3);
 }
-.diag-authcode .rsf {
+.pg-concepts-oauth2-oidc-primer .diag-authcode .rsf {
   fill: var(--vp-c-text-3);
 }
+.pg-concepts-oauth2-oidc-primer .diag .life {
+  stroke-dasharray: 3 4;
+  opacity: 0.45;
+}
 
-/* Source: src/ja/concepts/refresh-tokens.md */
-.rr-flow-dg text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-oauth2-oidc-primer .diag.diag-authcode text.m,
+.pg-concepts-oauth2-oidc-primer .diag.diag-authcode text.m tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-refresh-tokens — src/concepts/refresh-tokens.md + src/ja/concepts/refresh-tokens.md */
+.pg-concepts-refresh-tokens .rr-flow-dg text {
   stroke: none;
   fill: currentColor;
 }
-.rr-flow-dg .d-actor {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-  font-weight: 600;
-}
-.rr-flow-dg .d-cap {
-  font-family: var(--vp-font-family-mono);
-  font-size: 10px;
-}
-.rr-flow-dg .d-prose {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-  font-weight: 600;
-}
-.rr-flow-dg .d-mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 11px;
-}
-.rr-flow-dg .op-accent {
-  stroke: var(--vp-c-brand-2);
-}
-.rr-flow-dg .rs-stroke {
-  stroke: var(--vp-c-text-3);
-}
-.rr-flow-dg .op-fill {
-  fill: var(--vp-c-brand-2);
-}
-.rr-flow-dg .rs-fill {
-  fill: var(--vp-c-text-3);
-}
-.rr-flow-dg .life {
-  opacity: 0.3;
-  stroke-width: 1;
-}
-
-/* Source: src/ja/concepts/sender-constraint.md */
-.sc-tree text {
-  stroke: none;
-  fill: currentColor;
-}
-.sc-tree .t-start {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-  font-weight: 600;
-}
-.sc-tree .t-q {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-  font-weight: 600;
-}
-.sc-tree .t-sub {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-  fill: var(--vp-c-text-2);
-}
-.sc-tree .t-out {
-  font-family: var(--vp-font-family-base);
-  font-size: 14px;
-  font-weight: 700;
-}
-.sc-tree .t-mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 11px;
-}
-.sc-tree .t-edge {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-  font-weight: 600;
-  fill: var(--vp-c-text-3);
-}
-.sc-tree .op-accent {
-  stroke: var(--vp-c-brand-2);
-}
-.sc-tree .op-fill {
-  fill: var(--vp-c-brand-2);
-}
-.sc-tree .rs-stroke {
-  stroke: var(--vp-c-text-3);
-}
-.sc-tree .rs-fill {
-  fill: var(--vp-c-text-3);
-}
-
-/* Source: src/ja/concepts/sessions-and-logout.md */
-.sc-b {
-  font-family: var(--vp-font-family-base);
-  fill: currentColor;
-  stroke: none;
-}
-.sc-m {
-  font-family: var(--vp-font-family-mono);
-  fill: currentColor;
-  stroke: none;
-}
-.sc-op {
-  stroke: var(--vp-c-brand-2);
-}
-.sc-rs {
-  stroke: var(--vp-c-text-2);
-}
-.sc-opf {
-  fill: var(--vp-c-brand-2);
-}
-.sc-rsf {
-  fill: var(--vp-c-text-2);
-}
-
-/* Source: src/ja/concepts/token-exchange.md */
-text {
-  stroke: none;
-}
-.tx-lbl {
+.pg-concepts-refresh-tokens .rr-flow-dg .d-actor {
   font-family: var(--vp-font-family-base);
   font-size: 12.5px;
   font-weight: 600;
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .d-cap {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .d-prose {
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .rs-stroke {
+  stroke: var(--vp-c-text-3);
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .rs-fill {
+  fill: var(--vp-c-text-3);
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .life {
+  opacity: 0.3;
+  stroke-width: 1;
+}
+.pg-concepts-refresh-tokens .rr-flow-dg .life {
+  stroke-dasharray: 3 4;
+}
+
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-refresh-tokens .rr-flow-dg text.d-mono,
+.pg-concepts-refresh-tokens .rr-flow-dg text.d-mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-refresh-tokens .rr-flow-dg text.d-mono.rs-fill,
+.pg-concepts-refresh-tokens .rr-flow-dg text.d-mono.rs-fill tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-sender-constraint — src/concepts/sender-constraint.md + src/ja/concepts/sender-constraint.md */
+.pg-concepts-sender-constraint .sc-tree text {
+  stroke: none;
   fill: currentColor;
 }
-.tx-sub {
+.pg-concepts-sender-constraint .sc-tree .t-start {
   font-family: var(--vp-font-family-base);
-  font-size: 8.5px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.pg-concepts-sender-constraint .sc-tree .t-q {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pg-concepts-sender-constraint .sc-tree .t-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+}
+.pg-concepts-sender-constraint .sc-tree .t-out {
+  font-family: var(--vp-font-family-base);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.pg-concepts-sender-constraint .sc-tree .t-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+}
+.pg-concepts-sender-constraint .sc-tree .t-edge {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  font-weight: 600;
+  fill: var(--vp-c-text-3);
+}
+.pg-concepts-sender-constraint .sc-tree .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-sender-constraint .sc-tree .op-fill {
+  fill: var(--vp-c-brand-2);
+}
+.pg-concepts-sender-constraint .sc-tree .rs-stroke {
+  stroke: var(--vp-c-text-3);
+}
+.pg-concepts-sender-constraint .sc-tree .rs-fill {
+  fill: var(--vp-c-text-3);
+}
+
+/* pg-concepts-sessions-and-logout — src/concepts/sessions-and-logout.md + src/ja/concepts/sessions-and-logout.md */
+.pg-concepts-sessions-and-logout .sc-b {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
+  stroke: none;
+}
+.pg-concepts-sessions-and-logout .sc-m {
+  font-family: var(--vp-font-family-mono);
+  fill: currentColor;
+  stroke: none;
+}
+.pg-concepts-sessions-and-logout .sc-op {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-sessions-and-logout .sc-rs {
+  stroke: var(--vp-c-text-2);
+}
+.pg-concepts-sessions-and-logout .sc-opf {
+  fill: var(--vp-c-brand-2);
+}
+.pg-concepts-sessions-and-logout .sc-rsf {
+  fill: var(--vp-c-text-2);
+}
+
+/* pg-concepts-token-exchange — src/concepts/token-exchange.md + src/ja/concepts/token-exchange.md */
+.pg-concepts-token-exchange text {
+  stroke: none;
+}
+.pg-concepts-token-exchange .tx-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+  fill: currentColor;
+}
+.pg-concepts-token-exchange .tx-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
   fill: currentColor;
   opacity: 0.55;
 }
-.tx-band {
+.pg-concepts-token-exchange .tx-band {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.03em;
   fill: currentColor;
 }
-.tx-mono {
+.pg-concepts-token-exchange .tx-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   fill: currentColor;
 }
-.tx-note {
+.pg-concepts-token-exchange .tx-note {
   font-family: var(--vp-font-family-base);
-  font-size: 10px;
+  font-size: 9.5px;
   fill: currentColor;
   opacity: 0.85;
 }
-.tx-acc {
+.pg-concepts-token-exchange .tx-acc {
   stroke: var(--vp-c-brand-2);
 }
-.tx-acc-f {
+.pg-concepts-token-exchange .tx-acc-f {
   fill: var(--vp-c-brand-2);
 }
-.tx-rs {
+.pg-concepts-token-exchange .tx-rs {
   stroke: #7c6ba6;
 }
-.tx-rs-f {
+.pg-concepts-token-exchange .tx-rs-f {
   fill: #7c6ba6;
 }
-.dark .tx-rs {
+.dark .pg-concepts-token-exchange .tx-rs {
   stroke: #b3a4d6;
 }
-.dark .tx-rs-f {
+.dark .pg-concepts-token-exchange .tx-rs-f {
   fill: #b3a4d6;
 }
 
-/* Source: src/ja/concepts/tokens.md */
-.tokens-flow .d-h {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-concepts-token-exchange text.tx-band,
+.pg-concepts-token-exchange text.tx-band tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-token-exchange text.tx-mono,
+.pg-concepts-token-exchange text.tx-mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-concepts-token-exchange text.tx-note,
+.pg-concepts-token-exchange text.tx-note tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-concepts-tokens — src/concepts/tokens.md + src/ja/concepts/tokens.md */
+.pg-concepts-tokens .tokens-flow .d-h {
   font-family: var(--vp-font-family-base);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
   stroke: none;
 }
-.tokens-flow .d-txt {
+.pg-concepts-tokens .tokens-flow .d-txt {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.tokens-flow .d-sub {
+.pg-concepts-tokens .tokens-flow .d-sub {
   font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  stroke: none;
+  fill: var(--vp-c-text-2);
+}
+.pg-concepts-tokens .tokens-flow .d-mono {
+  font-family: var(--vp-font-family-mono);
   font-size: 11px;
   stroke: none;
   fill: var(--vp-c-text-2);
 }
-.tokens-flow .d-mono {
+.pg-concepts-tokens .tokens-flow .d-mono-op {
   font-family: var(--vp-font-family-mono);
-  font-size: 11.5px;
-  stroke: none;
-  fill: var(--vp-c-text-2);
-}
-.tokens-flow .d-mono-op {
-  font-family: var(--vp-font-family-mono);
-  font-size: 11.5px;
+  font-size: 11px;
   stroke: none;
   fill: var(--vp-c-brand-2);
 }
-.tokens-flow .d-op {
+.pg-concepts-tokens .tokens-flow .d-op {
   fill: var(--vp-c-brand-2);
   stroke: var(--vp-c-brand-2);
 }
-.tokens-flow line.d-op,
-.tokens-flow path.d-op {
+.pg-concepts-tokens .tokens-flow line.d-op,
+.pg-concepts-tokens .tokens-flow path.d-op {
   fill: none;
   stroke: var(--vp-c-brand-2);
 }
-.tokens-flow .d-op-text {
+.pg-concepts-tokens .tokens-flow .d-op-text {
   fill: #fff;
   stroke: none;
 }
-.tokens-flow .d-op-sub {
+.pg-concepts-tokens .tokens-flow .d-op-sub {
   fill: rgba(255, 255, 255, 0.82);
   stroke: none;
 }
-.tokens-flow .d-fill1 {
+.pg-concepts-tokens .tokens-flow .d-fill1 {
   fill: var(--vp-c-text-1);
 }
-.tokens-flow .d-rs {
+.pg-concepts-tokens .tokens-flow .d-rs {
   stroke: var(--vp-c-text-3);
 }
-.tokens-flow .d-rs-t {
+.pg-concepts-tokens .tokens-flow .d-rs-t {
   fill: var(--vp-c-text-3);
 }
+.dark .pg-concepts-tokens .tokens-flow .d-op-text {
+  fill: var(--vp-c-bg);
+}
+.dark .pg-concepts-tokens .tokens-flow .d-op-sub {
+  fill: rgba(0, 0, 0, 0.72);
+}
 
-/* Source: src/ja/faq.md */
-.faq-box {
+/* pg-faq — src/faq.md + src/ja/faq.md */
+.pg-faq .faq-box {
   fill: var(--vp-c-bg-soft);
 }
-.faq-main {
+.pg-faq .faq-main {
   fill: var(--vp-c-brand-soft);
 }
-.faq-text {
+.pg-faq .faq-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2268,7 +2591,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.faq-sub {
+.pg-faq .faq-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2278,18 +2601,18 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.faq-flow {
+.pg-faq .faq-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/getting-started/minimal.md */
-.min-box {
+/* pg-getting-started-minimal — src/getting-started/minimal.md + src/ja/getting-started/minimal.md */
+.pg-getting-started-minimal .min-box {
   fill: var(--vp-c-bg-soft);
 }
-.min-main {
+.pg-getting-started-minimal .min-main {
   fill: var(--vp-c-brand-soft);
 }
-.min-text {
+.pg-getting-started-minimal .min-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2299,7 +2622,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.min-sub {
+.pg-getting-started-minimal .min-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2309,18 +2632,18 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.min-flow {
+.pg-getting-started-minimal .min-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/index.md */
-.home-box {
+/* pg-index — src/index.md + src/ja/index.md */
+.pg-index .home-box {
   fill: var(--vp-c-bg-soft);
 }
-.home-main {
+.pg-index .home-main {
   fill: var(--vp-c-brand-soft);
 }
-.home-text {
+.pg-index .home-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2330,7 +2653,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.home-sub {
+.pg-index .home-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2340,18 +2663,18 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.home-flow {
+.pg-index .home-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/operations/backup.md */
-.bkp-box {
+/* pg-operations-backup — src/operations/backup.md + src/ja/operations/backup.md */
+.pg-operations-backup .bkp-box {
   fill: var(--vp-c-bg-soft);
 }
-.bkp-main {
+.pg-operations-backup .bkp-main {
   fill: var(--vp-c-brand-soft);
 }
-.bkp-text {
+.pg-operations-backup .bkp-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2361,7 +2684,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.bkp-sub {
+.pg-operations-backup .bkp-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2371,18 +2694,18 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.bkp-flow {
+.pg-operations-backup .bkp-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/operations/jwks.md */
-.jwks-box {
+/* pg-operations-jwks — src/operations/jwks.md + src/ja/operations/jwks.md */
+.pg-operations-jwks .jwks-box {
   fill: var(--vp-c-bg-soft);
 }
-.jwks-main {
+.pg-operations-jwks .jwks-main {
   fill: var(--vp-c-brand-soft);
 }
-.jwks-text {
+.pg-operations-jwks .jwks-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2392,7 +2715,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.jwks-sub {
+.pg-operations-jwks .jwks-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2402,18 +2725,25 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.jwks-flow {
+.pg-operations-jwks .jwks-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/operations/key-rotation.md */
-.rot-box {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-operations-jwks text.jwks-sub,
+.pg-operations-jwks text.jwks-sub tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-operations-key-rotation — src/operations/key-rotation.md + src/ja/operations/key-rotation.md */
+.pg-operations-key-rotation .rot-box {
   fill: var(--vp-c-bg-soft);
 }
-.rot-main {
+.pg-operations-key-rotation .rot-main {
   fill: var(--vp-c-brand-soft);
 }
-.rot-text {
+.pg-operations-key-rotation .rot-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2423,7 +2753,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.rot-sub {
+.pg-operations-key-rotation .rot-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2433,53 +2763,60 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.rot-flow {
+.pg-operations-key-rotation .rot-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/operations/multi-instance.md */
-.mi-topo text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-operations-key-rotation text.rot-sub,
+.pg-operations-key-rotation text.rot-sub tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-operations-multi-instance — src/operations/multi-instance.md + src/ja/operations/multi-instance.md */
+.pg-operations-multi-instance .mi-topo text {
   stroke: none;
 }
-.mi-topo .lbl {
+.pg-operations-multi-instance .mi-topo .lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   fill: var(--vp-c-text-1);
   text-anchor: middle;
 }
-.mi-topo .sub {
+.pg-operations-multi-instance .mi-topo .sub {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
   fill: var(--vp-c-text-2);
   text-anchor: middle;
 }
-.mi-topo .op-text {
+.pg-operations-multi-instance .mi-topo .op-text {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   fill: var(--vp-c-brand-2);
   text-anchor: middle;
 }
-.mi-topo .mono {
+.pg-operations-multi-instance .mi-topo .mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   fill: var(--vp-c-text-2);
 }
-.mi-topo .op-accent {
+.pg-operations-multi-instance .mi-topo .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.mi-topo .store {
+.pg-operations-multi-instance .mi-topo .store {
   stroke-dasharray: 6 5;
 }
 
-/* Source: src/ja/operations/observability.md */
-.obs-box {
+/* pg-operations-observability — src/operations/observability.md + src/ja/operations/observability.md */
+.pg-operations-observability .obs-box {
   fill: var(--vp-c-bg-soft);
 }
-.obs-main {
+.pg-operations-observability .obs-main {
   fill: var(--vp-c-brand-soft);
 }
-.obs-text {
+.pg-operations-observability .obs-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2489,7 +2826,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.obs-sub {
+.pg-operations-observability .obs-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2499,382 +2836,385 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.obs-flow {
+.pg-operations-observability .obs-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/reference/architecture.md */
-.hg-box {
+/* pg-reference-architecture — src/reference/architecture.md + src/ja/reference/architecture.md */
+.pg-reference-architecture .hg-box {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.hg-op {
+.pg-reference-architecture .hg-op {
   fill: none;
   stroke: var(--vp-c-brand-2);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.hg-line {
+.pg-reference-architecture .hg-line {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.hg-t1 {
+.pg-reference-architecture .hg-t1 {
   font-family: var(--vp-font-family-mono);
   fill: var(--vp-c-brand-2);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
 }
-.hg-t2 {
+.pg-reference-architecture .hg-t2 {
   font-family: var(--vp-font-family-mono);
   fill: currentColor;
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.hg-t3 {
+.pg-reference-architecture .hg-t3 {
   font-family: var(--vp-font-family-mono);
   fill: var(--vp-c-text-3);
-  font-size: 10px;
+  font-size: 9.5px;
 }
-.hg-path {
+.pg-reference-architecture .hg-path {
   font-family: var(--vp-font-family-mono);
   fill: currentColor;
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.hg-pkg {
+.pg-reference-architecture .hg-pkg {
   font-family: var(--vp-font-family-mono);
   fill: var(--vp-c-text-3);
-  font-size: 10px;
+  font-size: 9.5px;
 }
-.hg-drv {
+.pg-reference-architecture .hg-drv {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-text-3);
-  font-size: 10px;
+  font-size: 9.5px;
 }
-
-/* Source: src/ja/reference/architecture.md */
-.seq-ll {
+.pg-reference-architecture .seq-ll {
   stroke: currentColor;
   stroke-width: 2;
 }
-.seq-llop {
+.pg-reference-architecture .seq-llop {
   stroke: var(--vp-c-brand-2);
   stroke-width: 2;
 }
-.seq-llst {
+.pg-reference-architecture .seq-llst {
   stroke: currentColor;
   stroke-width: 2;
   stroke-dasharray: 5 5;
 }
-.seq-lllf {
+.pg-reference-architecture .seq-lllf {
   stroke: var(--vp-c-text-3);
   stroke-width: 2;
 }
-.seq-box {
+.pg-reference-architecture .seq-box {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
 }
-.seq-boxop {
+.pg-reference-architecture .seq-boxop {
   fill: none;
   stroke: var(--vp-c-brand-2);
   stroke-width: 2;
 }
-.seq-boxst {
+.pg-reference-architecture .seq-boxst {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
   stroke-dasharray: 5 5;
 }
-.seq-boxlf {
+.pg-reference-architecture .seq-boxlf {
   fill: none;
   stroke: var(--vp-c-text-3);
   stroke-width: 2;
 }
-.seq-msg {
+.pg-reference-architecture .seq-msg {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.seq-ret {
+.pg-reference-architecture .seq-ret {
   fill: none;
   stroke: var(--vp-c-text-3);
   stroke-width: 1.5;
   stroke-dasharray: 5 4;
   stroke-linecap: round;
 }
-.seq-hd {
+.pg-reference-architecture .seq-hd {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   fill: currentColor;
 }
-.seq-hdop {
+.pg-reference-architecture .seq-hdop {
   fill: var(--vp-c-brand-2);
 }
-.seq-hdlf {
+.pg-reference-architecture .seq-hdlf {
   fill: var(--vp-c-text-3);
 }
-.seq-lbl {
-  font-family: var(--vp-font-family-base);
-  font-size: 11.5px;
-  fill: currentColor;
-}
-.seq-mono {
-  font-family: var(--vp-font-family-mono);
-}
-.seq-num {
-  font-family: var(--vp-font-family-mono);
-  font-size: 10px;
-  fill: var(--vp-c-text-3);
-}
-
-/* Source: src/ja/reference/architecture.md */
-.lfp-box {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.lfp-op {
-  fill: none;
-  stroke: var(--vp-c-brand-2);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.lfp-line {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.lfp-oln {
-  fill: none;
-  stroke: var(--vp-c-brand-2);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.lfp-t1 {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-  font-weight: 600;
-  fill: currentColor;
-}
-.lfp-t1a {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-  font-weight: 600;
-  fill: var(--vp-c-brand-2);
-}
-.lfp-fld {
-  font-family: var(--vp-font-family-mono);
-  font-size: 11px;
-  fill: var(--vp-c-text-3);
-}
-.lfp-sub {
-  font-family: var(--vp-font-family-mono);
-  font-size: 10px;
-  fill: var(--vp-c-text-3);
-}
-.lfp-lba {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-  fill: var(--vp-c-brand-2);
-}
-.lfp-cap {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-  fill: var(--vp-c-text-3);
-}
-.lfp-mono {
-  font-family: var(--vp-font-family-mono);
-}
-.lfp-nd {
+.pg-reference-architecture .seq-lbl {
   font-family: var(--vp-font-family-base);
   font-size: 11px;
   fill: currentColor;
 }
-
-/* Source: src/ja/reference/audit-events.md */
-.aud-box {
-  fill: var(--vp-c-bg-soft);
-}
-.aud-main {
-  fill: var(--vp-c-brand-soft);
-}
-.aud-text {
-  fill: var(--vp-c-text-1);
-  stroke: none;
-  font:
-    600 14px system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.aud-sub {
-  fill: var(--vp-c-text-2);
-  stroke: none;
-  font:
-    12px system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.aud-flow {
-  stroke: var(--vp-c-brand-2);
-}
-
-/* Source: src/ja/reference/errors.md */
-.err-box {
-  fill: var(--vp-c-bg-soft);
-}
-.err-main {
-  fill: var(--vp-c-brand-soft);
-}
-.err-text {
-  fill: var(--vp-c-text-1);
-  stroke: none;
-  font:
-    600 14px system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.err-sub {
-  fill: var(--vp-c-text-2);
-  stroke: none;
-  font:
-    12px system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.err-flow {
-  stroke: var(--vp-c-brand-2);
-}
-
-/* Source: src/ja/reference/options.md */
-text {
-  stroke: none;
-}
-.od-t1 {
-  fill: var(--vp-c-text-1);
-}
-.od-t2 {
-  fill: var(--vp-c-text-2);
-}
-.od-op {
-  fill: var(--vp-c-brand-2);
-}
-.od-b {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-}
-.od-s {
-  font-family: var(--vp-font-family-base);
-  font-size: 11px;
-}
-.od-m {
+.pg-reference-architecture .seq-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 12px;
 }
-.od-sop {
-  stroke: var(--vp-c-brand-2);
-}
-
-/* Source: src/ja/security/clock-and-replay.md */
-#crws .d-lbl {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-  fill: var(--vp-c-text-1);
-  stroke: none;
-}
-#crws .d-mono {
+.pg-reference-architecture .seq-num {
   font-family: var(--vp-font-family-mono);
-  fill: var(--vp-c-text-1);
-  stroke: none;
-}
-#crws .d-val {
-  font-family: var(--vp-font-family-base);
   font-size: 10.5px;
-  fill: var(--vp-c-text-2);
-  stroke: none;
+  fill: var(--vp-c-text-3);
 }
-#crws .d-tick {
+.pg-reference-architecture .lfp-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pg-reference-architecture .lfp-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pg-reference-architecture .lfp-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pg-reference-architecture .lfp-oln {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pg-reference-architecture .lfp-t1 {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: currentColor;
+}
+.pg-reference-architecture .lfp-t1a {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--vp-c-brand-2);
+}
+.pg-reference-architecture .lfp-fld {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-3);
+}
+.pg-reference-architecture .lfp-sub {
   font-family: var(--vp-font-family-mono);
   font-size: 9.5px;
   fill: var(--vp-c-text-3);
+}
+.pg-reference-architecture .lfp-lba {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-brand-2);
+}
+.pg-reference-architecture .lfp-cap {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-3);
+}
+.pg-reference-architecture .lfp-mono {
+  font-family: var(--vp-font-family-mono);
+}
+.pg-reference-architecture .lfp-nd {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: currentColor;
+}
+
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-reference-architecture text.seq-lbl,
+.pg-reference-architecture text.seq-lbl tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-reference-audit-events — src/reference/audit-events.md + src/ja/reference/audit-events.md */
+.pg-reference-audit-events .aud-box {
+  fill: var(--vp-c-bg-soft);
+}
+.pg-reference-audit-events .aud-main {
+  fill: var(--vp-c-brand-soft);
+}
+.pg-reference-audit-events .aud-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-reference-audit-events .aud-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-reference-audit-events .aud-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* pg-reference-errors — src/reference/errors.md + src/ja/reference/errors.md */
+.pg-reference-errors .err-box {
+  fill: var(--vp-c-bg-soft);
+}
+.pg-reference-errors .err-main {
+  fill: var(--vp-c-brand-soft);
+}
+.pg-reference-errors .err-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-reference-errors .err-sub {
+  fill: var(--vp-c-text-2);
+  stroke: none;
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-reference-errors .err-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* pg-reference-options — src/reference/options.md + src/ja/reference/options.md */
+.pg-reference-options text {
   stroke: none;
 }
-#crws .d-cap {
+.pg-reference-options .od-t1 {
+  fill: var(--vp-c-text-1);
+}
+.pg-reference-options .od-t2 {
+  fill: var(--vp-c-text-2);
+}
+.pg-reference-options .od-op {
+  fill: var(--vp-c-brand-2);
+}
+.pg-reference-options .od-b {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
+}
+.pg-reference-options .od-s {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+}
+.pg-reference-options .od-m {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+}
+.pg-reference-options .od-sop {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* pg-security-clock-and-replay — src/security/clock-and-replay.md + src/ja/security/clock-and-replay.md */
+.pg-security-clock-and-replay #crws .d-lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-security-clock-and-replay #crws .d-mono {
+  font-family: var(--vp-font-family-mono);
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-security-clock-and-replay #crws .d-val {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.pg-security-clock-and-replay #crws .d-tick {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.pg-security-clock-and-replay #crws .d-cap {
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
   font-weight: 600;
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-#crws .d-sub {
+.pg-security-clock-and-replay #crws .d-sub {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
+  font-size: 10px;
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-#crws .d-leg {
+.pg-security-clock-and-replay #crws .d-leg {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
+  font-size: 10px;
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-#crws .d-grid {
+.pg-security-clock-and-replay #crws .d-grid {
   stroke: currentColor;
   stroke-width: 1;
   opacity: 0.16;
   stroke-dasharray: 2 3;
 }
-#crws .d-lane {
+.pg-security-clock-and-replay #crws .d-lane {
   stroke: currentColor;
   stroke-width: 1;
   opacity: 0.08;
 }
-#crws .d-axis {
+.pg-security-clock-and-replay #crws .d-axis {
   stroke: currentColor;
   stroke-width: 1;
   opacity: 0.28;
 }
-#crws .d-op-fill {
+.pg-security-clock-and-replay #crws .d-op-fill {
   fill: var(--vp-c-brand-2);
   stroke: none;
 }
-#crws .d-op-store {
+.pg-security-clock-and-replay #crws .d-op-store {
   fill: none;
   stroke: var(--vp-c-brand-2);
   stroke-width: 1.6;
   stroke-dasharray: 3 2;
 }
 
-/* Source: src/ja/security/cve-matrix.md */
-.cve-box {
+/* pg-security-cve-matrix — src/security/cve-matrix.md + src/ja/security/cve-matrix.md */
+.pg-security-cve-matrix .cve-box {
   fill: var(--vp-c-bg-soft);
 }
-.cve-main {
+.pg-security-cve-matrix .cve-main {
   fill: var(--vp-c-brand-soft);
 }
-.cve-text {
+.pg-security-cve-matrix .cve-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2884,7 +3224,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.cve-sub {
+.pg-security-cve-matrix .cve-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2894,18 +3234,18 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.cve-flow {
+.pg-security-cve-matrix .cve-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/security/design-judgments.md */
-.djf-box {
+/* pg-security-design-judgments — src/security/design-judgments.md + src/ja/security/design-judgments.md */
+.pg-security-design-judgments .djf-box {
   fill: var(--vp-c-bg-soft);
 }
-.djf-main {
+.pg-security-design-judgments .djf-main {
   fill: var(--vp-c-brand-soft);
 }
-.djf-text {
+.pg-security-design-judgments .djf-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -2915,7 +3255,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.djf-sub {
+.pg-security-design-judgments .djf-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -2925,122 +3265,154 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.djf-flow {
+.pg-security-design-judgments .djf-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/security/disclosure.md */
-.disclosure-flow .d-title {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-security-design-judgments text.djf-text,
+.pg-security-design-judgments text.djf-text tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-security-disclosure — src/security/disclosure.md + src/ja/security/disclosure.md */
+.pg-security-disclosure .disclosure-flow .d-title {
   font-family: var(--vp-font-family-base);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13.5px;
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.disclosure-flow .d-sub {
+.pg-security-disclosure .disclosure-flow .d-sub {
   font-family: var(--vp-font-family-base);
   font-weight: 400;
-  font-size: 11.5px;
-  fill: var(--vp-c-text-2);
-  stroke: none;
-}
-.disclosure-flow .d-edge {
-  font-family: var(--vp-font-family-base);
-  font-weight: 500;
   font-size: 11px;
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-.disclosure-flow .op-accent {
+.pg-security-disclosure .disclosure-flow .d-edge {
+  font-family: var(--vp-font-family-base);
+  font-weight: 500;
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.pg-security-disclosure .disclosure-flow .op-accent {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/security/posture.md */
-.op-fp-title {
+/* pg-security-posture — src/security/posture.md + src/ja/security/posture.md */
+.pg-security-posture .op-fp-title {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
 }
-.op-fp-prose {
+.pg-security-posture .op-fp-prose {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
+  font-size: 10px;
 }
-.op-fp-mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 10.5px;
-}
-.op-fp-num {
+.pg-security-posture .op-fp-mono {
   font-family: var(--vp-font-family-mono);
   font-size: 10px;
+}
+.pg-security-posture .op-fp-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
   font-weight: 600;
   fill: var(--vp-c-brand-2);
 }
-.op-fp-flow {
+.pg-security-posture .op-fp-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/back-channel-logout.md */
-.bcl-svg text {
+/* pg-use-cases-back-channel-logout — src/use-cases/back-channel-logout.md + src/ja/use-cases/back-channel-logout.md */
+.pg-use-cases-back-channel-logout .bcl-svg text {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.bcl-svg .m {
+.pg-use-cases-back-channel-logout .bcl-svg .m {
   font-family: var(--vp-font-family-mono);
 }
-.bcl-svg .nm {
+.pg-use-cases-back-channel-logout .bcl-svg .nm {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12.5px;
 }
-.bcl-svg .rl {
-  font-size: 9px;
+.pg-use-cases-back-channel-logout .bcl-svg .rl {
+  font-size: 8.5px;
   fill: var(--vp-c-text-2);
 }
-.bcl-svg .lb {
-  font-size: 12px;
+.pg-use-cases-back-channel-logout .bcl-svg .lb {
+  font-size: 11.5px;
 }
-.bcl-svg .lbm {
+.pg-use-cases-back-channel-logout .bcl-svg .lbm {
+  font-size: 10px;
+  fill: var(--vp-c-text-2);
+}
+.pg-use-cases-back-channel-logout .bcl-svg .fr {
   font-size: 10.5px;
   fill: var(--vp-c-text-2);
 }
-.bcl-svg .fr {
-  font-size: 11px;
-  fill: var(--vp-c-text-2);
-}
-.bcl-svg .bn {
-  font-size: 10px;
+.pg-use-cases-back-channel-logout .bcl-svg .bn {
+  font-size: 9.5px;
   font-weight: 600;
   fill: var(--vp-c-text-2);
 }
-.bcl-svg .accent {
+.pg-use-cases-back-channel-logout .bcl-svg .accent {
   stroke: var(--vp-c-brand-2);
 }
-.bcl-svg .accentt {
+.pg-use-cases-back-channel-logout .bcl-svg .accentt {
   fill: var(--vp-c-brand-2);
 }
-.bcl-svg .life {
+.pg-use-cases-back-channel-logout .bcl-svg .life {
   stroke-width: 1.4;
   opacity: 0.28;
 }
-.bcl-svg .frame {
+.pg-use-cases-back-channel-logout .bcl-svg .frame {
   stroke-width: 1.4;
   opacity: 0.5;
 }
-.bcl-svg .ret {
+.pg-use-cases-back-channel-logout .bcl-svg .ret {
   opacity: 0.55;
 }
-.bcl-svg .bg {
+.pg-use-cases-back-channel-logout .bcl-svg .bg {
   fill: var(--vp-c-bg);
 }
+.pg-use-cases-back-channel-logout .bcl-svg .life {
+  stroke-dasharray: 3 4;
+}
 
-/* Source: src/ja/use-cases/ciba.md */
-.ciba-box {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-back-channel-logout .bcl-svg text.bn,
+.pg-use-cases-back-channel-logout .bcl-svg text.bn tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-back-channel-logout .bcl-svg text.fr,
+.pg-use-cases-back-channel-logout .bcl-svg text.fr tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-back-channel-logout .bcl-svg text.lb,
+.pg-use-cases-back-channel-logout .bcl-svg text.lb tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-back-channel-logout .bcl-svg text.lbm.m,
+.pg-use-cases-back-channel-logout .bcl-svg text.lbm.m tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-ciba — src/use-cases/ciba.md + src/ja/use-cases/ciba.md */
+.pg-use-cases-ciba .ciba-box {
   fill: var(--vp-c-bg-soft);
 }
-.ciba-op {
+.pg-use-cases-ciba .ciba-op {
   fill: var(--vp-c-brand-soft);
 }
-.ciba-text {
+.pg-use-cases-ciba .ciba-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -3050,7 +3422,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.ciba-sub {
+.pg-use-cases-ciba .ciba-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -3060,119 +3432,141 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.ciba-flow {
+.pg-use-cases-ciba .ciba-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/client-credentials.md */
-.cc-svc-flow .d-lbl {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-ciba text.ciba-sub,
+.pg-use-cases-ciba text.ciba-sub tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-client-credentials — src/use-cases/client-credentials.md + src/ja/use-cases/client-credentials.md */
+.pg-use-cases-client-credentials .cc-svc-flow .d-lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
   fill: currentColor;
   stroke: none;
 }
-.cc-svc-flow .d-tok {
+.pg-use-cases-client-credentials .cc-svc-flow .d-tok {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   fill: currentColor;
   stroke: none;
 }
-.cc-svc-flow .d-bt {
+.pg-use-cases-client-credentials .cc-svc-flow .d-bt {
   font-family: var(--vp-font-family-base);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   fill: currentColor;
   stroke: none;
 }
-.cc-svc-flow .d-bs {
+.pg-use-cases-client-credentials .cc-svc-flow .d-bs {
   font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
+  font-size: 10px;
   fill: var(--vp-c-text-2);
   stroke: none;
 }
-.cc-svc-flow .d-op {
+.pg-use-cases-client-credentials .cc-svc-flow .d-op {
   fill: var(--vp-c-brand-2);
   stroke: var(--vp-c-brand-2);
 }
-.cc-svc-flow .d-op-text {
+.pg-use-cases-client-credentials .cc-svc-flow .d-op-text {
   fill: #fff;
   stroke: none;
 }
-.cc-svc-flow .d-op-sub {
+.pg-use-cases-client-credentials .cc-svc-flow .d-op-sub {
   fill: rgba(255, 255, 255, 0.82);
   stroke: none;
 }
-.cc-svc-flow .d-rs {
+.pg-use-cases-client-credentials .cc-svc-flow .d-rs {
   stroke: var(--vp-c-text-3);
 }
+.dark .pg-use-cases-client-credentials .cc-svc-flow .d-op-text {
+  fill: var(--vp-c-bg);
+}
+.dark .pg-use-cases-client-credentials .cc-svc-flow .d-op-sub {
+  fill: rgba(0, 0, 0, 0.72);
+}
 
-/* Source: src/ja/use-cases/client-onboarding.md */
-#onbo-spectrum text {
+/* pg-use-cases-client-onboarding — src/use-cases/client-onboarding.md + src/ja/use-cases/client-onboarding.md */
+.pg-use-cases-client-onboarding #onbo-spectrum text {
   fill: currentColor;
   stroke: none;
 }
-#onbo-spectrum .lbl {
+.pg-use-cases-client-onboarding #onbo-spectrum .lbl {
   font-family: var(--vp-font-family-base);
 }
-#onbo-spectrum .mono {
+.pg-use-cases-client-onboarding #onbo-spectrum .mono {
   font-family: var(--vp-font-family-mono);
 }
-#onbo-spectrum .card {
+.pg-use-cases-client-onboarding #onbo-spectrum .card {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
 }
-#onbo-spectrum .badge {
+.pg-use-cases-client-onboarding #onbo-spectrum .badge {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.5;
 }
-#onbo-spectrum .seam {
+.pg-use-cases-client-onboarding #onbo-spectrum .seam {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.2;
 }
-#onbo-spectrum .store {
+.pg-use-cases-client-onboarding #onbo-spectrum .store {
   stroke-dasharray: 4 3;
 }
-#onbo-spectrum .divider {
+.pg-use-cases-client-onboarding #onbo-spectrum .divider {
   stroke: currentColor;
   stroke-width: 1;
   opacity: 0.25;
 }
-#onbo-spectrum .hair {
+.pg-use-cases-client-onboarding #onbo-spectrum .hair {
   stroke: currentColor;
   stroke-width: 1;
   opacity: 0.3;
 }
-#onbo-spectrum .axis {
+.pg-use-cases-client-onboarding #onbo-spectrum .axis {
   stroke: currentColor;
   stroke-width: 2;
   opacity: 0.45;
 }
-#onbo-spectrum .band {
+.pg-use-cases-client-onboarding #onbo-spectrum .band {
   stroke: currentColor;
   stroke-width: 3;
   opacity: 0.7;
 }
-#onbo-spectrum .muted {
+.pg-use-cases-client-onboarding #onbo-spectrum .muted {
   opacity: 0.6;
 }
-#onbo-spectrum .op-accent {
+.pg-use-cases-client-onboarding #onbo-spectrum .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-#onbo-spectrum .op-fill {
+.pg-use-cases-client-onboarding #onbo-spectrum .op-fill {
   fill: var(--vp-c-brand-2);
 }
+.pg-use-cases-client-onboarding #onbo-spectrum .badge {
+  opacity: 0.55;
+}
+.pg-use-cases-client-onboarding #onbo-spectrum .lbl {
+  font-size: 10.5px;
+}
+.pg-use-cases-client-onboarding #onbo-spectrum .mono {
+  font-size: 10px;
+}
 
-/* Source: src/ja/use-cases/cors-spa.md */
-.cors-box {
+/* pg-use-cases-cors-spa — src/use-cases/cors-spa.md + src/ja/use-cases/cors-spa.md */
+.pg-use-cases-cors-spa .cors-box {
   fill: var(--vp-c-bg-soft);
 }
-.cors-main {
+.pg-use-cases-cors-spa .cors-main {
   fill: var(--vp-c-brand-soft);
 }
-.cors-text {
+.pg-use-cases-cors-spa .cors-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -3182,7 +3576,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.cors-sub {
+.pg-use-cases-cors-spa .cors-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -3192,119 +3586,138 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.cors-flow {
+.pg-use-cases-cors-spa .cors-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/custom-authenticator.md */
-.auth-flow text {
+/* pg-use-cases-custom-authenticator — src/use-cases/custom-authenticator.md + src/ja/use-cases/custom-authenticator.md */
+.pg-use-cases-custom-authenticator .auth-flow text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.auth-flow .h {
+.pg-use-cases-custom-authenticator .auth-flow .h {
   font-family: var(--vp-font-family-base);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
 }
-.auth-flow .t {
+.pg-use-cases-custom-authenticator .auth-flow .t {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.auth-flow .m {
+.pg-use-cases-custom-authenticator .auth-flow .m {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.auth-flow .sub {
+.pg-use-cases-custom-authenticator .auth-flow .sub {
   fill: var(--vp-c-text-2);
 }
-.auth-flow .accent {
+.pg-use-cases-custom-authenticator .auth-flow .accent {
   stroke: var(--vp-c-brand-2);
 }
-.auth-flow .accent-text {
+.pg-use-cases-custom-authenticator .auth-flow .accent-text {
   fill: var(--vp-c-brand-2);
 }
-.auth-flow .soft {
+.pg-use-cases-custom-authenticator .auth-flow .soft {
   fill: var(--vp-c-bg-soft);
 }
 
-/* Source: src/ja/use-cases/custom-chooser-ui.md */
-.ccui-actor {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-custom-authenticator .auth-flow text.m.sub,
+.pg-use-cases-custom-authenticator .auth-flow text.m.sub tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-custom-chooser-ui — src/use-cases/custom-chooser-ui.md + src/ja/use-cases/custom-chooser-ui.md */
+.pg-use-cases-custom-chooser-ui .ccui-actor {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   stroke: none;
   fill: currentColor;
 }
-.ccui-lbl {
+.pg-use-cases-custom-chooser-ui .ccui-lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 12.5px;
-  stroke: none;
-  fill: currentColor;
-}
-.ccui-mono {
-  font-family: var(--vp-font-family-mono);
   font-size: 12px;
   stroke: none;
   fill: currentColor;
 }
-.ccui-num {
+.pg-use-cases-custom-chooser-ui .ccui-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 11.5px;
+  stroke: none;
+  fill: currentColor;
+}
+.pg-use-cases-custom-chooser-ui .ccui-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
   font-weight: 600;
   stroke: none;
 }
-.ccui-op {
+.pg-use-cases-custom-chooser-ui .ccui-op {
   stroke: var(--vp-c-brand-2);
 }
-.ccui-sec {
+.pg-use-cases-custom-chooser-ui .ccui-sec {
   stroke: var(--vp-c-text-3);
 }
-.ccui-opf {
+.pg-use-cases-custom-chooser-ui .ccui-opf {
   fill: var(--vp-c-brand-2);
 }
-.ccui-secf {
+.pg-use-cases-custom-chooser-ui .ccui-secf {
   fill: var(--vp-c-text-3);
 }
 
-/* Source: src/ja/use-cases/custom-grant.md */
-.cg-sign text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-custom-chooser-ui text.ccui-lbl,
+.pg-use-cases-custom-chooser-ui text.ccui-lbl tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-custom-chooser-ui text.ccui-mono,
+.pg-use-cases-custom-chooser-ui text.ccui-mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-custom-grant — src/use-cases/custom-grant.md + src/ja/use-cases/custom-grant.md */
+.pg-use-cases-custom-grant .cg-sign text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.cg-sign .h {
+.pg-use-cases-custom-grant .cg-sign .h {
   font-family: var(--vp-font-family-base);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
 }
-.cg-sign .t {
+.pg-use-cases-custom-grant .cg-sign .t {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.cg-sign .m {
+.pg-use-cases-custom-grant .cg-sign .m {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.cg-sign .sub {
+.pg-use-cases-custom-grant .cg-sign .sub {
   fill: var(--vp-c-text-2);
 }
-.cg-sign .accent {
+.pg-use-cases-custom-grant .cg-sign .accent {
   stroke: var(--vp-c-brand-2);
 }
-.cg-sign .accent-text {
+.pg-use-cases-custom-grant .cg-sign .accent-text {
   fill: var(--vp-c-brand-2);
 }
-.cg-sign .soft {
+.pg-use-cases-custom-grant .cg-sign .soft {
   fill: var(--vp-c-bg-soft);
 }
 
-/* Source: src/ja/use-cases/device-code.md */
-.dc-box {
+/* pg-use-cases-device-code — src/use-cases/device-code.md + src/ja/use-cases/device-code.md */
+.pg-use-cases-device-code .dc-box {
   fill: var(--vp-c-bg-soft);
 }
-.dc-op {
+.pg-use-cases-device-code .dc-op {
   fill: var(--vp-c-brand-soft);
 }
-.dc-text {
+.pg-use-cases-device-code .dc-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -3314,7 +3727,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.dc-sub {
+.pg-use-cases-device-code .dc-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -3324,240 +3737,275 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.dc-flow {
+.pg-use-cases-device-code .dc-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/dpop-nonce.md */
-.dpop-nonce-dg text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-device-code text.dc-sub,
+.pg-use-cases-device-code text.dc-sub tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-dpop-nonce — src/use-cases/dpop-nonce.md + src/ja/use-cases/dpop-nonce.md */
+.pg-use-cases-dpop-nonce .dpop-nonce-dg text {
   stroke: none;
   fill: currentColor;
 }
-.dpop-nonce-dg .d-actor {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .d-actor {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
 }
-.dpop-nonce-dg .d-cap {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .d-cap {
   font-family: var(--vp-font-family-mono);
-  font-size: 10px;
+  font-size: 9.5px;
 }
-.dpop-nonce-dg .d-prose {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .d-prose {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
 }
-.dpop-nonce-dg .d-mono {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .d-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.dpop-nonce-dg .op-accent {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.dpop-nonce-dg .op-fill {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .op-fill {
   fill: var(--vp-c-brand-2);
 }
-.dpop-nonce-dg .life {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .life {
   opacity: 0.3;
   stroke-width: 1;
 }
-.dpop-nonce-dg .note {
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .note {
   opacity: 0.4;
   stroke-width: 1;
 }
+.pg-use-cases-dpop-nonce .dpop-nonce-dg .life {
+  stroke-dasharray: 3 4;
+}
+.pg-use-cases-dpop-nonce .dpop-nonce-dg rect.note {
+  fill: var(--vp-c-bg);
+}
 
-/* Source: src/ja/use-cases/dynamic-registration.md */
-.dcr-flow .d-box {
+/* pg-use-cases-dynamic-registration — src/use-cases/dynamic-registration.md + src/ja/use-cases/dynamic-registration.md */
+.pg-use-cases-dynamic-registration .dcr-flow .d-box {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
 }
-.dcr-flow .op-accent {
+.pg-use-cases-dynamic-registration .dcr-flow .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.dcr-flow .d-life {
+.pg-use-cases-dynamic-registration .dcr-flow .d-life {
   stroke: currentColor;
   stroke-width: 1.5;
   opacity: 0.35;
 }
-.dcr-flow .d-life-op {
+.pg-use-cases-dynamic-registration .dcr-flow .d-life-op {
   stroke: var(--vp-c-brand-2);
   stroke-width: 1.5;
   opacity: 0.5;
 }
-.dcr-flow .d-msg {
+.pg-use-cases-dynamic-registration .dcr-flow .d-msg {
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
 }
-.dcr-flow .d-msg-oob {
+.pg-use-cases-dynamic-registration .dcr-flow .d-msg-oob {
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
   stroke-dasharray: 5 4;
 }
-.dcr-flow .d-badge {
+.pg-use-cases-dynamic-registration .dcr-flow .d-badge {
   fill: var(--vp-c-bg);
   stroke: currentColor;
   stroke-width: 1.5;
 }
-.dcr-flow .d-name {
+.pg-use-cases-dynamic-registration .dcr-flow .d-name {
   font-family: var(--vp-font-family-base);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   fill: currentColor;
   stroke: none;
 }
-.dcr-flow .d-accent-fill {
+.pg-use-cases-dynamic-registration .dcr-flow .d-accent-fill {
   fill: var(--vp-c-brand-2);
 }
-.dcr-flow .d-lbl {
+.pg-use-cases-dynamic-registration .dcr-flow .d-lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
-  fill: currentColor;
-  stroke: none;
-}
-.dcr-flow .d-mono {
-  font-family: var(--vp-font-family-mono);
   font-size: 11.5px;
   fill: currentColor;
   stroke: none;
 }
-.dcr-flow .d-badge-t {
+.pg-use-cases-dynamic-registration .dcr-flow .d-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 10px;
+  font-size: 11px;
+  fill: currentColor;
+  stroke: none;
+}
+.pg-use-cases-dynamic-registration .dcr-flow .d-badge-t {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
   font-weight: 600;
   fill: currentColor;
   stroke: none;
 }
 
-/* Source: src/ja/use-cases/fapi2-baseline.md */
-.fapi2-flow-dg text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-dynamic-registration .dcr-flow text.d-badge-t,
+.pg-use-cases-dynamic-registration .dcr-flow text.d-badge-t tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-dynamic-registration .dcr-flow text.d-lbl,
+.pg-use-cases-dynamic-registration .dcr-flow text.d-lbl tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-fapi2-baseline — src/use-cases/fapi2-baseline.md + src/ja/use-cases/fapi2-baseline.md */
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg text {
   stroke: none;
   fill: currentColor;
 }
-.fapi2-flow-dg .d-actor {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .d-actor {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
 }
-.fapi2-flow-dg .d-cap {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .d-cap {
   font-family: var(--vp-font-family-mono);
-  font-size: 10px;
+  font-size: 9.5px;
 }
-.fapi2-flow-dg .d-prose {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .d-prose {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
 }
-.fapi2-flow-dg .d-mono {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .d-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.fapi2-flow-dg .op-accent {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.fapi2-flow-dg .op-fill {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .op-fill {
   fill: var(--vp-c-brand-2);
 }
-.fapi2-flow-dg .life {
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .life {
   opacity: 0.3;
   stroke-width: 1;
 }
+.pg-use-cases-fapi2-baseline .fapi2-flow-dg .life {
+  stroke-dasharray: 3 4;
+}
 
-/* Source: src/ja/use-cases/hot-cold-redis.md */
-text {
+/* pg-use-cases-hot-cold-redis — src/use-cases/hot-cold-redis.md + src/ja/use-cases/hot-cold-redis.md */
+.pg-use-cases-hot-cold-redis text {
   stroke: none;
 }
-.hcr-t {
+.pg-use-cases-hot-cold-redis .hcr-t {
   fill: var(--vp-c-text-1);
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
-}
-.hcr-m {
-  fill: var(--vp-c-text-1);
-  font-family: var(--vp-font-family-mono);
   font-size: 12.5px;
 }
-.hcr-edge {
-  fill: var(--vp-c-text-2);
-  font-family: var(--vp-font-family-base);
+.pg-use-cases-hot-cold-redis .hcr-m {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
   font-size: 12px;
 }
-.hcr-accent {
+.pg-use-cases-hot-cold-redis .hcr-edge {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+}
+.pg-use-cases-hot-cold-redis .hcr-accent {
   stroke: var(--vp-c-brand-2);
 }
-.hcr-accent-t {
+.pg-use-cases-hot-cold-redis .hcr-accent-t {
   fill: var(--vp-c-brand-2);
 }
-.hcr-db {
+.pg-use-cases-hot-cold-redis .hcr-db {
   stroke-dasharray: 5 4;
 }
 
-/* Source: src/ja/use-cases/i18n.md */
-.i18n-chain-box {
+/* pg-use-cases-i18n — src/use-cases/i18n.md + src/ja/use-cases/i18n.md */
+.pg-use-cases-i18n .i18n-chain-box {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
 }
-.i18n-chain-store {
+.pg-use-cases-i18n .i18n-chain-store {
   stroke-dasharray: 6 5;
 }
-.i18n-chain-accent {
+.pg-use-cases-i18n .i18n-chain-accent {
   stroke: var(--vp-c-brand-2);
 }
-.i18n-chain-flow {
+.pg-use-cases-i18n .i18n-chain-flow {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
 }
-.i18n-chain-axis {
+.pg-use-cases-i18n .i18n-chain-axis {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
   opacity: 0.4;
 }
-.i18n-chain-tok {
+.pg-use-cases-i18n .i18n-chain-tok {
   font-family: var(--vp-font-family-mono);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
   stroke: none;
   fill: currentColor;
 }
-.i18n-chain-tok-accent {
+.pg-use-cases-i18n .i18n-chain-tok-accent {
   fill: var(--vp-c-brand-2);
 }
-.i18n-chain-desc {
+.pg-use-cases-i18n .i18n-chain-desc {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   stroke: none;
   fill: currentColor;
   opacity: 0.6;
 }
-.i18n-chain-num {
+.pg-use-cases-i18n .i18n-chain-num {
   font-family: var(--vp-font-family-mono);
-  font-size: 12px;
+  font-size: 11.5px;
   stroke: none;
   fill: currentColor;
-  opacity: 0.5;
+  opacity: 0.7;
 }
-.i18n-chain-axislabel {
+.pg-use-cases-i18n .i18n-chain-axislabel {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
   stroke: none;
   fill: currentColor;
   opacity: 0.55;
   letter-spacing: 0.08em;
 }
 
-/* Source: src/ja/use-cases/index.md */
-.uc-box {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-i18n text.i18n-chain-axislabel,
+.pg-use-cases-i18n text.i18n-chain-axislabel tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-index — src/use-cases/index.md + src/ja/use-cases/index.md */
+.pg-use-cases-index .uc-box {
   fill: var(--vp-c-bg-soft);
 }
-.uc-main {
+.pg-use-cases-index .uc-main {
   fill: var(--vp-c-brand-soft);
 }
-.uc-text {
+.pg-use-cases-index .uc-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -3567,7 +4015,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.uc-sub {
+.pg-use-cases-index .uc-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -3577,18 +4025,18 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.uc-flow {
+.pg-use-cases-index .uc-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/jwe-encryption.md */
-.jwe-box {
+/* pg-use-cases-jwe-encryption — src/use-cases/jwe-encryption.md + src/ja/use-cases/jwe-encryption.md */
+.pg-use-cases-jwe-encryption .jwe-box {
   fill: var(--vp-c-bg-soft);
 }
-.jwe-main {
+.pg-use-cases-jwe-encryption .jwe-main {
   fill: var(--vp-c-brand-soft);
 }
-.jwe-text {
+.pg-use-cases-jwe-encryption .jwe-text {
   fill: var(--vp-c-text-1);
   stroke: none;
   font:
@@ -3598,7 +4046,7 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.jwe-sub {
+.pg-use-cases-jwe-encryption .jwe-sub {
   fill: var(--vp-c-text-2);
   stroke: none;
   font:
@@ -3608,301 +4056,340 @@ text {
     "Segoe UI",
     sans-serif;
 }
-.jwe-flow {
+.pg-use-cases-jwe-encryption .jwe-flow {
   stroke: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/mfa-step-up.md */
-.mfa-loginflow text {
+/* pg-use-cases-mfa-step-up — src/use-cases/mfa-step-up.md + src/ja/use-cases/mfa-step-up.md */
+.pg-use-cases-mfa-step-up .mfa-loginflow text {
   stroke: none;
 }
-.mfa-loginflow .d-lbl {
+.pg-use-cases-mfa-step-up .mfa-loginflow .d-lbl {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-text-1);
 }
-.mfa-loginflow .d-cap {
+.pg-use-cases-mfa-step-up .mfa-loginflow .d-cap {
   font-family: var(--vp-font-family-base);
   fill: var(--vp-c-text-2);
 }
-.mfa-loginflow .d-mono {
+.pg-use-cases-mfa-step-up .mfa-loginflow .d-mono {
   font-family: var(--vp-font-family-mono);
 }
-.mfa-loginflow .d-accent {
+.pg-use-cases-mfa-step-up .mfa-loginflow .d-accent {
   stroke: var(--vp-c-brand-2);
 }
-.mfa-loginflow .d-accent-t {
+.pg-use-cases-mfa-step-up .mfa-loginflow .d-accent-t {
   fill: var(--vp-c-brand-2);
 }
 
-/* Source: src/ja/use-cases/minimal-op.md */
-.minimal-op-flow text {
+/* pg-use-cases-minimal-op — src/use-cases/minimal-op.md + src/ja/use-cases/minimal-op.md */
+.pg-use-cases-minimal-op .minimal-op-flow text {
   stroke: none;
 }
-.minimal-op-flow .d-label {
+.pg-use-cases-minimal-op .minimal-op-flow .d-label {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
   fill: var(--vp-c-text-1);
 }
-.minimal-op-flow .d-sub {
+.pg-use-cases-minimal-op .minimal-op-flow .d-sub {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
+  font-size: 10.5px;
   fill: var(--vp-c-text-2);
 }
-.minimal-op-flow .d-mono {
+.pg-use-cases-minimal-op .minimal-op-flow .d-mono {
   font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--vp-c-text-1);
+}
+.pg-use-cases-minimal-op .minimal-op-flow .d-mono-2 {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+}
+.pg-use-cases-minimal-op .minimal-op-flow .d-mono-sm {
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  fill: var(--vp-c-text-2);
+}
+.pg-use-cases-minimal-op .minimal-op-flow .op-accent {
+  stroke: var(--vp-c-brand-2);
+}
+
+/* pg-use-cases-multi-account — src/use-cases/multi-account.md + src/ja/use-cases/multi-account.md */
+.pg-use-cases-multi-account .multi-account-flow .d-lbl {
+  font-family: var(--vp-font-family-base);
+  fill: currentColor;
   font-size: 11.5px;
-  fill: var(--vp-c-text-1);
 }
-.minimal-op-flow .d-mono-2 {
+.pg-use-cases-multi-account .multi-account-flow .d-mono {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
-  fill: var(--vp-c-text-2);
+  fill: currentColor;
+  font-size: 10.5px;
 }
-.minimal-op-flow .d-mono-sm {
-  font-family: var(--vp-font-family-mono);
+.pg-use-cases-multi-account .multi-account-flow .d-sm {
   font-size: 9.5px;
-  fill: var(--vp-c-text-2);
 }
-.minimal-op-flow .op-accent {
-  stroke: var(--vp-c-brand-2);
-}
-
-/* Source: src/ja/use-cases/multi-account.md */
-.multi-account-flow .d-lbl {
-  font-family: var(--vp-font-family-base);
-  fill: currentColor;
-  font-size: 12px;
-}
-.multi-account-flow .d-mono {
-  font-family: var(--vp-font-family-mono);
-  fill: currentColor;
-  font-size: 11px;
-}
-.multi-account-flow .d-sm {
-  font-size: 10px;
-}
-.multi-account-flow .d-ph {
+.pg-use-cases-multi-account .multi-account-flow .d-ph {
   font-family: var(--vp-font-family-mono);
   fill: var(--vp-c-brand-2);
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 1.5px;
 }
-.multi-account-flow .d-acc {
+.pg-use-cases-multi-account .multi-account-flow .d-acc {
   fill: var(--vp-c-brand-2);
 }
-.multi-account-flow .d-mut {
+.pg-use-cases-multi-account .multi-account-flow .d-mut {
   opacity: 0.6;
 }
-.multi-account-flow .d-op {
+.pg-use-cases-multi-account .multi-account-flow .d-op {
   fill: none;
   stroke: var(--vp-c-brand-2);
 }
-.multi-account-flow .d-life {
+.pg-use-cases-multi-account .multi-account-flow .d-life {
   stroke-opacity: 0.35;
 }
-.multi-account-flow text {
+.pg-use-cases-multi-account .multi-account-flow text {
   stroke: none;
 }
 
-/* Source: src/ja/use-cases/pairwise-subject.md */
-#psfd .d-lbl {
-  font-family: var(--vp-font-family-base);
-  font-size: 12px;
-  fill: var(--vp-c-text-1);
-  stroke: none;
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-multi-account .multi-account-flow text.d-lbl,
+.pg-use-cases-multi-account .multi-account-flow text.d-lbl tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
 }
-#psfd .d-cap {
-  font-family: var(--vp-font-family-base);
-  font-size: 13px;
-  font-weight: 600;
-  fill: var(--vp-c-text-1);
-  stroke: none;
+.pg-use-cases-multi-account .multi-account-flow text.d-lbl.d-mut,
+.pg-use-cases-multi-account .multi-account-flow text.d-lbl.d-mut tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
 }
-#psfd .d-sub {
-  font-family: var(--vp-font-family-base);
-  font-size: 10.5px;
-  fill: var(--vp-c-text-2);
-  stroke: none;
+.pg-use-cases-multi-account .multi-account-flow text.d-mono.d-acc,
+.pg-use-cases-multi-account .multi-account-flow text.d-mono.d-acc tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
 }
-#psfd .d-mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
-  fill: var(--vp-c-text-1);
-  stroke: none;
-}
-#psfd .d-muted {
-  fill: var(--vp-c-text-3);
-}
-#psfd .d-op {
-  fill: none;
-  stroke: var(--vp-c-brand-2);
-}
-#psfd .d-op-t {
-  fill: var(--vp-c-brand-2);
-  stroke: none;
-}
-#psfd .d-store {
-  stroke-dasharray: 5 4;
-}
-#psfd .d-flow {
-  opacity: 0.5;
+.pg-use-cases-multi-account .multi-account-flow text.d-ph,
+.pg-use-cases-multi-account .multi-account-flow text.d-ph tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
 }
 
-/* Source: src/ja/use-cases/spa-custom-interaction.md */
-.lbl {
+/* pg-use-cases-pairwise-subject — src/use-cases/pairwise-subject.md + src/ja/use-cases/pairwise-subject.md */
+.pg-use-cases-pairwise-subject #psfd .d-lbl {
   font-family: var(--vp-font-family-base);
-  font-size: 11px;
-  fill: var(--vp-c-text-2);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-1);
   stroke: none;
 }
-.mono {
-  font-family: var(--vp-font-family-mono);
-  font-size: 10.5px;
-  fill: var(--vp-c-text-2);
-  stroke: none;
-}
-.actor {
+.pg-use-cases-pairwise-subject #psfd .d-cap {
   font-family: var(--vp-font-family-base);
   font-size: 12.5px;
   font-weight: 600;
   fill: var(--vp-c-text-1);
   stroke: none;
 }
-.sub {
+.pg-use-cases-pairwise-subject #psfd .d-sub {
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.pg-use-cases-pairwise-subject #psfd .d-mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-use-cases-pairwise-subject #psfd .d-muted {
+  fill: var(--vp-c-text-3);
+}
+.pg-use-cases-pairwise-subject #psfd .d-op {
+  fill: none;
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-pairwise-subject #psfd .d-op-t {
+  fill: var(--vp-c-brand-2);
+  stroke: none;
+}
+.pg-use-cases-pairwise-subject #psfd .d-store {
+  stroke-dasharray: 5 4;
+}
+.pg-use-cases-pairwise-subject #psfd .d-flow {
+  opacity: 0.5;
+}
+
+/* pg-use-cases-spa-custom-interaction — src/use-cases/spa-custom-interaction.md + src/ja/use-cases/spa-custom-interaction.md */
+.pg-use-cases-spa-custom-interaction .lbl {
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.pg-use-cases-spa-custom-interaction .mono {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--vp-c-text-2);
+  stroke: none;
+}
+.pg-use-cases-spa-custom-interaction .actor {
+  font-family: var(--vp-font-family-base);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--vp-c-text-1);
+  stroke: none;
+}
+.pg-use-cases-spa-custom-interaction .sub {
+  font-family: var(--vp-font-family-mono);
+  font-size: 8.5px;
+  fill: var(--vp-c-text-3);
+  stroke: none;
+}
+.pg-use-cases-spa-custom-interaction .num {
   font-family: var(--vp-font-family-mono);
   font-size: 9px;
   fill: var(--vp-c-text-3);
   stroke: none;
 }
-.num {
-  font-family: var(--vp-font-family-mono);
-  font-size: 9.5px;
-  fill: var(--vp-c-text-3);
-  stroke: none;
-}
-.op-accent {
+.pg-use-cases-spa-custom-interaction .op-accent {
   stroke: var(--vp-c-brand-2);
 }
-.op-text {
+.pg-use-cases-spa-custom-interaction .op-text {
   fill: var(--vp-c-brand-2);
   stroke: none;
 }
-.life {
+.pg-use-cases-spa-custom-interaction .life {
   stroke-width: 1.2;
   stroke-dasharray: 3 4;
   opacity: 0.45;
 }
-.note {
+.pg-use-cases-spa-custom-interaction .note {
   fill: var(--vp-c-bg);
   stroke: currentColor;
   stroke-width: 1.4;
 }
-.badge {
+.pg-use-cases-spa-custom-interaction .badge {
   stroke-width: 1.4;
   opacity: 0.55;
 }
 
-/* Source: src/ja/use-cases/sql-store.md */
-text {
+/* Labels that cross an arrow or a lifeline: halo behind the glyph. */
+.pg-use-cases-spa-custom-interaction text:not([class]),
+.pg-use-cases-spa-custom-interaction text:not([class]) tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-spa-custom-interaction text.lbl,
+.pg-use-cases-spa-custom-interaction text.lbl tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+.pg-use-cases-spa-custom-interaction text.mono,
+.pg-use-cases-spa-custom-interaction text.mono tspan {
+  stroke: var(--vp-c-bg);
+  stroke-width: 3px;
+}
+
+/* pg-use-cases-sql-store — src/use-cases/sql-store.md + src/ja/use-cases/sql-store.md */
+.pg-use-cases-sql-store text {
   stroke: none;
 }
-.lbl {
+.pg-use-cases-sql-store .lbl {
   font-family: var(--vp-font-family-base);
   fill: currentColor;
 }
-.mono {
+.pg-use-cases-sql-store .mono {
   font-family: var(--vp-font-family-mono);
   fill: currentColor;
 }
-.arch-op {
+.pg-use-cases-sql-store .arch-op {
   stroke: var(--vp-c-brand-2);
 }
-.arch-db {
+.pg-use-cases-sql-store .arch-db {
   stroke-dasharray: 7 5;
 }
 
-/* Source: src/ja/use-cases/storage-decision.md */
-.storage-choice text {
+/* pg-use-cases-storage-decision — src/use-cases/storage-decision.md + src/ja/use-cases/storage-decision.md */
+.pg-use-cases-storage-decision .storage-choice text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.storage-choice .t {
+.pg-use-cases-storage-decision .storage-choice .t {
   font-family: var(--vp-font-family-base);
-  font-size: 13px;
+  font-size: 12.5px;
 }
-.storage-choice .h {
+.pg-use-cases-storage-decision .storage-choice .h {
   font-family: var(--vp-font-family-base);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
 }
-.storage-choice .m {
+.pg-use-cases-storage-decision .storage-choice .m {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.storage-choice .sub {
+.pg-use-cases-storage-decision .storage-choice .sub {
   fill: var(--vp-c-text-2);
 }
-.storage-choice .accent {
+.pg-use-cases-storage-decision .storage-choice .accent {
   stroke: var(--vp-c-brand-2);
 }
-.storage-choice .accent-text {
+.pg-use-cases-storage-decision .storage-choice .accent-text {
   fill: var(--vp-c-brand-2);
 }
-.storage-choice .soft {
+.pg-use-cases-storage-decision .storage-choice .soft {
   fill: var(--vp-c-bg-soft);
 }
 
-/* Source: src/ja/use-cases/token-exchange.md */
-.tx-flow text {
+/* pg-use-cases-token-exchange — src/use-cases/token-exchange.md + src/ja/use-cases/token-exchange.md */
+.pg-use-cases-token-exchange .tx-flow text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.tx-flow .h {
+.pg-use-cases-token-exchange .tx-flow .h {
   font-family: var(--vp-font-family-base);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
 }
-.tx-flow .t {
+.pg-use-cases-token-exchange .tx-flow .t {
   font-family: var(--vp-font-family-base);
-  font-size: 12px;
+  font-size: 11.5px;
 }
-.tx-flow .m {
+.pg-use-cases-token-exchange .tx-flow .m {
   font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-size: 10.5px;
 }
-.tx-flow .sub {
+.pg-use-cases-token-exchange .tx-flow .sub {
   fill: var(--vp-c-text-2);
 }
-.tx-flow .accent {
+.pg-use-cases-token-exchange .tx-flow .accent {
   stroke: var(--vp-c-brand-2);
 }
-.tx-flow .accent-text {
+.pg-use-cases-token-exchange .tx-flow .accent-text {
   fill: var(--vp-c-brand-2);
 }
-.tx-flow .soft {
+.pg-use-cases-token-exchange .tx-flow .soft {
   fill: var(--vp-c-bg-soft);
 }
 
-/* Source: src/ja/why.md */
-.why-split text {
+/* pg-why — src/why.md + src/ja/why.md */
+.pg-why .why-split text {
   stroke: none;
   fill: var(--vp-c-text-1);
 }
-.why-split .p {
+.pg-why .why-split .p {
   font-family: var(--vp-font-family-base);
 }
-.why-split .m {
+.pg-why .why-split .m {
   font-family: var(--vp-font-family-mono);
 }
-.why-split .sub {
+.pg-why .why-split .sub {
   fill: var(--vp-c-text-2);
 }
-.why-split .op {
+.pg-why .why-split .op {
   stroke: var(--vp-c-brand-2);
 }
-.why-split .opf {
+.pg-why .why-split .opf {
   fill: var(--vp-c-brand-2);
 }
-.why-split .soft {
+.pg-why .why-split .soft {
   fill: var(--vp-c-bg-soft);
 }
