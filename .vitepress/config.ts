@@ -1,30 +1,117 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitepress'
+import { generateLlmsTxt, type LlmsLocale, llmsDevPlugin } from './llms'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
-const docsVersion = '1.0.0'
+const docsVersion = '1.1.0'
 const docsVersionTag = `v${docsVersion}`
 const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
-const releaseNotesUrl = `${changelogUrl}#v100--2026-07-27`
+const releaseNotesUrl = `${changelogUrl}#v110--2026-08-13`
 
-const softwareApplicationJsonLd = {
+/** Per-locale structured data and social-card copy. */
+type Locale = 'en' | 'ja'
+
+const softwareApplicationJsonLd = (lang: Locale) => ({
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'go-oidc-provider',
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'Linux, macOS, Windows',
+  inLanguage: lang,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   description:
-    'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
-  url: siteUrl,
+    lang === 'ja'
+      ? 'Go 向けの OpenID Connect Provider（認可サーバー）ライブラリ。http.Handler として組み込め、FAPI 2.0 Baseline / Message Signing をターゲットにしています。'
+      : 'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
+  url: lang === 'ja' ? `${siteUrl}/ja/` : siteUrl,
   downloadUrl: githubUrl,
   softwareVersion: docsVersion,
   author: { '@type': 'Person', name: 'libraz' },
   license: 'https://opensource.org/licenses/Apache-2.0',
   keywords:
-    'OpenID Connect, OIDC, OAuth 2.0, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, Go, Authorization Server'
+    lang === 'ja'
+      ? 'OpenID Connect, OIDC, OAuth 2.0, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, Go, 認可サーバー'
+      : 'OpenID Connect, OIDC, OAuth 2.0, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, Go, Authorization Server'
+})
+
+const SEO: Record<Locale, { title: string; description: string; keywords: string }> = {
+  en: {
+    title: 'go-oidc-provider — OpenID Connect Provider library for Go',
+    description:
+      'OIDC Provider library that mounts as a Go http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
+    keywords:
+      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, refresh token rotation, Go, Authorization Server, http.Handler'
+  },
+  ja: {
+    title: 'go-oidc-provider — Go 向け OpenID Connect Provider ライブラリ',
+    description:
+      'Go の http.Handler として組み込める OIDC Provider ライブラリ。FAPI 2.0 Baseline / Message Signing をターゲットにしています。',
+    keywords:
+      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバー, http.Handler'
+  }
 }
+
+/** `ja/why.md` -> `/ja/why`, `index.md` -> `/` */
+function routeOf(relativePath: string): string {
+  const clean = relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')
+  return `/${clean}`.replace(/\/{2,}/g, '/')
+}
+
+const localeOf = (relativePath: string): Locale => (relativePath.startsWith('ja/') ? 'ja' : 'en')
+
+/** The same page in the other language. */
+function alternateRoute(relativePath: string): string {
+  return relativePath.startsWith('ja/')
+    ? routeOf(relativePath.slice(3))
+    : routeOf(`ja/${relativePath}`)
+}
+
+/** Prose for the per-locale llms.txt indexes; the page lists come from the nav/sidebar. */
+const LLMS_LOCALES: LlmsLocale[] = [
+  {
+    key: 'root',
+    prefix: '',
+    title: 'go-oidc-provider',
+    summary:
+      'OpenID Connect Provider (Authorization Server) for Go that embeds as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing with PAR, JAR, DPoP, and mTLS.',
+    intro:
+      'go-oidc-provider is a library, not a deployable product: it mounts into an existing Go\nservice and leaves storage, user authentication, and consent to the host application.\nThe documentation covers OAuth 2.0 / OIDC concepts from the ground up alongside the API\nreference, so it doubles as a primer. The links below point to the canonical HTML pages.',
+    overviewHeading: 'Key pages',
+    homeText: 'go-oidc-provider home',
+    alternate: {
+      heading: 'Japanese (日本語)',
+      items: [
+        {
+          text: '日本語版インデックス',
+          link: '/ja/llms.txt',
+          description: 'The same index in Japanese, covering the /ja/ documentation.'
+        }
+      ]
+    }
+  },
+  {
+    key: 'ja',
+    prefix: '/ja',
+    title: 'go-oidc-provider',
+    summary:
+      'Go の http.Handler に組み込める OpenID Connect Provider（Authorization Server）ライブラリ。PAR・JAR・DPoP・mTLS を備え、FAPI 2.0 Baseline / Message Signing をターゲットとする。',
+    intro:
+      'go-oidc-provider は単体で動く製品ではなくライブラリで、既存の Go サービスにマウントし、\nストレージ・ユーザー認証・同意画面はホスト側のアプリケーションに委ねる。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門書としても読める。\n以下は日本語ドキュメントへのリンク一覧。',
+    overviewHeading: '主要ページ',
+    homeText: 'go-oidc-provider トップ',
+    alternate: {
+      heading: 'English',
+      items: [
+        {
+          text: 'English index',
+          link: '/llms.txt',
+          description: '英語ドキュメントを対象とした同じ構成のインデックス。'
+        }
+      ]
+    }
+  }
+]
 
 export default defineConfig({
   srcDir: 'src',
@@ -41,7 +128,19 @@ export default defineConfig({
 
   sitemap: { hostname: siteUrl },
 
+  buildEnd(siteConfig) {
+    generateLlmsTxt({
+      siteUrl,
+      srcDir: siteConfig.srcDir,
+      outDir: siteConfig.outDir,
+      cleanUrls: siteConfig.cleanUrls,
+      site: siteConfig.site,
+      locales: LLMS_LOCALES
+    })
+  },
+
   vite: {
+    plugins: [llmsDevPlugin({ siteUrl, locales: LLMS_LOCALES })],
     resolve: {
       alias: {
         'vscode-jsonrpc/lib/common/cancellation.js': fileURLToPath(
@@ -54,6 +153,8 @@ export default defineConfig({
     }
   },
 
+  // Locale-independent only. Everything that differs per page or per language
+  // (canonical, OGP, keywords, JSON-LD) is emitted from transformHead below.
   head: [
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
@@ -64,35 +165,42 @@ export default defineConfig({
         href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap'
       }
     ],
-    ['script', { type: 'application/ld+json' }, JSON.stringify(softwareApplicationJsonLd)],
-    [
-      'meta',
-      {
-        name: 'keywords',
-        content:
-          'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, refresh token rotation, Go, Authorization Server, http.Handler'
-      }
-    ],
-    ['link', { rel: 'canonical', href: siteUrl }],
     ['meta', { property: 'og:site_name', content: 'go-oidc-provider' }],
-    [
-      'meta',
-      {
-        property: 'og:title',
-        content: 'go-oidc-provider — OpenID Connect Provider library for Go'
-      }
-    ],
-    [
-      'meta',
-      {
-        property: 'og:description',
-        content:
-          'OIDC Provider library that mounts as a Go http.Handler. Targets FAPI 2.0 Baseline / Message Signing.'
-      }
-    ],
-    ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:url', content: siteUrl }]
+    ['meta', { property: 'og:type', content: 'website' }]
   ],
+
+  transformHead({ pageData, description }) {
+    const lang = localeOf(pageData.relativePath)
+    const seo = SEO[lang]
+    const url = `${siteUrl}${routeOf(pageData.relativePath)}`
+    const altLang: Locale = lang === 'ja' ? 'en' : 'ja'
+    const altUrl = `${siteUrl}${alternateRoute(pageData.relativePath)}`
+    const title = pageData.frontmatter.title || seo.title
+    const desc = description || seo.description
+
+    return [
+      ['link', { rel: 'canonical', href: url }],
+      ['meta', { name: 'keywords', content: seo.keywords }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: desc }],
+      ['meta', { property: 'og:url', content: url }],
+      ['meta', { property: 'og:locale', content: lang }],
+      ['meta', { property: 'og:locale:alternate', content: altLang }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: desc }],
+      ['link', { rel: 'alternate', hreflang: lang, href: url }],
+      ['link', { rel: 'alternate', hreflang: altLang, href: altUrl }],
+      [
+        'link',
+        {
+          rel: 'alternate',
+          hreflang: 'x-default',
+          href: `${siteUrl}${routeOf(pageData.relativePath.replace(/^ja\//, ''))}`
+        }
+      ],
+      ['script', { type: 'application/ld+json' }, JSON.stringify(softwareApplicationJsonLd(lang))]
+    ]
+  },
 
   locales: {
     root: {
@@ -338,7 +446,8 @@ export default defineConfig({
               { text: 'JWKS endpoint', link: '/operations/jwks' },
               { text: 'Multi-instance', link: '/operations/multi-instance' },
               { text: 'Observability', link: '/operations/observability' },
-              { text: 'Backup & DR', link: '/operations/backup' }
+              { text: 'Backup & DR', link: '/operations/backup' },
+              { text: 'Storage maintenance', link: '/operations/storage-maintenance' }
             ]
           },
           {
@@ -714,7 +823,8 @@ export default defineConfig({
                 { text: 'JWKS endpoint', link: '/operations/jwks' },
                 { text: 'Multi-instance deployment', link: '/operations/multi-instance' },
                 { text: 'Observability', link: '/operations/observability' },
-                { text: 'Backup & DR', link: '/operations/backup' }
+                { text: 'Backup & DR', link: '/operations/backup' },
+                { text: 'Storage maintenance', link: '/operations/storage-maintenance' }
               ]
             }
           ],
@@ -1035,7 +1145,8 @@ export default defineConfig({
               { text: 'JWKS エンドポイント', link: '/ja/operations/jwks' },
               { text: 'マルチインスタンス展開', link: '/ja/operations/multi-instance' },
               { text: 'observability', link: '/ja/operations/observability' },
-              { text: 'バックアップ / DR', link: '/ja/operations/backup' }
+              { text: 'バックアップ / DR', link: '/ja/operations/backup' },
+              { text: 'ストレージ保守', link: '/ja/operations/storage-maintenance' }
             ]
           },
           {
@@ -1462,7 +1573,8 @@ export default defineConfig({
                 { text: 'JWKS エンドポイント', link: '/ja/operations/jwks' },
                 { text: 'マルチインスタンス展開', link: '/ja/operations/multi-instance' },
                 { text: 'observability', link: '/ja/operations/observability' },
-                { text: 'バックアップ / DR', link: '/ja/operations/backup' }
+                { text: 'バックアップ / DR', link: '/ja/operations/backup' },
+                { text: 'ストレージ保守', link: '/ja/operations/storage-maintenance' }
               ]
             }
           ],
