@@ -1,6 +1,6 @@
 ---
 title: Device Code (RFC 8628)
-description: How a TV / console / CLI gets an access token without a keyboard — the device-authorization grant in plain English.
+description: RFC 8628 device authorization for TVs, consoles, and CLIs — embedder-hosted verification, opaque attempt keys, and bounded user-code attempts.
 pageClass: pg-concepts-device-code
 ---
 
@@ -124,7 +124,7 @@ The token endpoint (`/token`) returns one of four shapes per poll:
 | `200 { access_token, ... }` | The user approved. | Treat as a normal token response. |
 
 ::: warning user_code is brute-forceable by design
-The `user_code` is short on purpose — long codes are unusable. That makes it brute-forceable in principle: an attacker who can hit `/device` faster than the user can type wins. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) with a per-record gate: `VerifyUserCode` constant-time-compares, increments a strike counter on miss, and locks the row out after `MaxUserCodeStrikes` (default 5). Embedders building their own verification page MUST use the helper, or implement an equivalent gate themselves.
+The `user_code` is short on purpose — long codes are unusable. That makes it brute-forceable in principle: an attacker who can hit `/device` faster than the user can type wins. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit). For the first manual entry, call `VerifyUserCodeByAttemptKey` with an opaque, server-side ceremony key, then call `ApproveUserCode` after the user authenticates and consents. Do not use the raw `user_code` as the attempt key. `Deps` contains a mutex-backed limiter and must be retained and passed by pointer; never copy it. The default limiter is process-local, so multi-instance deployments need a shared atomic `AttemptLimiter`.
 :::
 
 ## When to use it
@@ -150,5 +150,5 @@ The example is split into role-tagged files (`op.go` for the OP wiring, `cli.go`
 
 ## Read next
 
-- [Use case: device-code wiring](/use-cases/device-code) — `op.WithDeviceCodeGrant`, `devicecodekit.VerifyUserCode`, the verification page contract, and how to cascade-revoke issued tokens when a device is unenrolled.
+- [Use case: device-code wiring](/use-cases/device-code) — `op.WithDeviceCodeGrant`, `devicecodekit.VerifyUserCodeByAttemptKey`, the verification page contract, and how to cascade-revoke issued tokens when a device is unenrolled.
 - [CIBA primer](/concepts/ciba) — the conceptual sibling for "user is on a different channel" but without a code-on-screen ceremony.

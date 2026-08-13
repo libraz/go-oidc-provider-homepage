@@ -1,6 +1,6 @@
 ---
 title: 動的クライアント登録
-description: RP がランタイムに自身を登録できるようにする — RFC 7591 / RFC 7592。
+description: RFC 7591 / RFC 7592 に沿ってクライアントを動的に登録・管理・削除する。IAT の scope 上限と削除前の上限付き snapshot も説明します。
 pageClass: pg-use-cases-dynamic-registration
 ---
 
@@ -129,11 +129,19 @@ op.WithDynamicRegistration(op.RegistrationOption{
 })
 ```
 
-`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録は変わらず — Initial Access Token を提示した場合は `store.InitialAccessToken.AllowedScopes` が優先します。
+`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録では、Initial Access Token を提示した場合に `store.InitialAccessToken.AllowedScopes` が優先されます。
 
 ::: warning オープン登録の scope 既定は空です
 `scope` を省略したオープンな POST には、組み込み側が `OpenRegistrationDefaultScopes` を設定しない限り既定 scope は付きません。登録直後のクライアントに `openid` などの基準 scope を要求させたい場合は、このオプションを明示してください。
 :::
+
+## scope の上限と POST / PUT の違い
+
+2 つの HTTP method は、メンバーの省略を意図的に異なる方法で扱います。`POST /register` で `scope` を省略すると、登録経路の既定値が選ばれます。空でない `InitialAccessToken.AllowedScopes` があればそれが優先され、オープン登録では `OpenRegistrationDefaultScopes`（既定は空）が使われます。IAT 経由で上限が無い場合は、特定クライアントに制限された scope を除く OP の public scope カタログが既定値になります。明示した scope は、OP のカタログと、設定されていれば IAT の許可リストの両方に対して検証されます。
+
+クライアント作成時、Registration Access Token (RAT) は、そのクライアントを作った IAT の `AllowedScopes` 上限を引き継ぎます。この上限は `store.RegistrationAccessToken.AllowedScopes` に保存され、RAT のローテーションを経ても変わらず、後続の `PUT /register/{client_id}` にも適用されます。管理更新でクライアントの scope を狭めることはできますが、元の IAT 上限を超えて広げることはできません。このフィールドが無かった時期に保存された RAT は上限が空なので、従来どおり制限なしです。現在の SQL アダプタを使う前に `oidc_registration_access_tokens.allowed_scopes` を追加してください（[SQL の migration](/ja/use-cases/sql-store#sql-migration-before-first-request)を参照）。
+
+`PUT /register/{client_id}` で `scope` を省略すると、メンバーを削除する指定になり、保存済み scope セットは空になります。残したい scope は RP が更新リクエストに明示しなければなりません。これは新規 POST の省略時とは異なります。その他のメタデータも RFC 7592 の更新規則に従い、任意フィールドは省略時に消去され、一部のプロファイルフィールドは OP の既定値に戻ります。
 
 ## 認証コンテキスト系のクライアントメタデータ
 
@@ -177,6 +185,12 @@ op.WithDynamicRegistration(op.RegistrationOption{
 ```
 :::
 
+## 標準メタデータの扱い
+
+パーサは RFC 7591 §2 の寛容な扱いに従います。本 OP がモデル化していない標準メンバーや未知の vendor メンバーは無視し、登録レスポンスにも返しません。たとえば `frontchannel_logout_uri`、`software_id`、`software_version`、`tls_client_certificate_bound_access_tokens`、`backchannel_token_delivery_mode`、`backchannel_client_notification_endpoint`、`backchannel_authentication_request_signing_alg`、`backchannel_user_code_parameter`、`authorization_details_types` は、この DCR エンドポイントを設定しません。
+
+ただし、OP が提供できないセキュリティ特性や通信路上の形を要求するメンバーまで無視するわけではありません。そのような要求は `invalid_client_metadata` で拒否します。対象には `dpop_bound_access_tokens: true`、`require_pushed_authorization_requests: true`、対象の応答面が出力しない署名アルゴリズム、そして URI の有無にかかわらない `backchannel_logout_session_required: true` が含まれます。`software_statement` は別の明示的な拒否です。RFC 7591 の trust chain 検証を実装していないため、このフィールドを含むリクエストは黙って無視せず `invalid_software_statement` を返します。
+
 ## 登録時に強制している内容
 
 DCR は完全実装とは表記していませんが、対応しない差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反するメタデータを拒否します:
@@ -184,7 +198,7 @@ DCR は完全実装とは表記していませんが、対応しない差分は�
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
 - `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
 - `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ(`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`)は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール(絶対 URI、`https`、host 必須、userinfo 不可)は通常通り適用されます。
-- `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` と空の `backchannel_logout_uri` の組み合わせは `invalid_client_metadata` で拒否します — 配送先を持たないクライアントが `sid` 配送を有効化できないようにするためです。
+- `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` は、URI が正しく指定されていても `invalid_client_metadata` で拒否します。この OP は `sid` を安全に配送するための RP ごとの session 系譜を保存できないためです。
 - `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証(OIDC Core §8.1)。取得は 5 秒のタイムアウトと 64 KiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
 - `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
 - `request_object_signing_alg` は `RS256` / `PS256` / `ES256` / `EdDSA` に限定されます。
@@ -220,10 +234,11 @@ URI 系メタデータの典型的な境界は次の形です。
 `full` を名乗らない残差は、設計判断であって積み残しではありません。判断の根拠は [設計判断](/ja/security/design-judgments) ページに別エントリとして残しています — `client_secret` の非開示（[#dj-20](/ja/security/design-judgments#dj-20)）、PUT 省略のセマンティクス（[#dj-21](/ja/security/design-judgments#dj-21)）、`sector_identifier_uri` の fetch と native loopback ルール（[#dj-22](/ja/security/design-judgments#dj-22)）。
 
 - **`GET /register/{id}` では `client_secret` を再掲しない。** ストアは hash しか保持せず、平文は最初の `POST /register` と、後述する 2 つの PUT ケースだけで応答に乗ります。RFC 7591 §3.2.1 は読み取り応答での `client_secret` を OPTIONAL としており、非準拠ではありません。
-- **PUT の省略は削除ではなくサーバ既定へのリセット。** `PUT /register/{client_id}` で `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` のいずれかを省略すると、そのフィールドは OP の既定値に戻ります。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）は空値になります。
-- **PUT が `client_secret` を再掲するのは (a) `none` から confidential への auth method 昇格、(b) 明示的な rotation 要求のいずれか。** 通常のメタデータ編集の応答には平文 secret は含まれません。
+- **PUT の省略はフィールドごとに扱いが異なります。** `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` を省略すると、そのフィールドは OP の既定値に戻ります。新規登録時とは異なり、`scope` の省略はクライアントの scope を空にします。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）も空値になります。
+- **PUT が `client_secret` を返すのは public client を confidential に変更するときだけです。** confidential client の通常のメタデータ編集では保存済み hash を維持し、secret は返しません。リクエストに `client_secret` を含めた場合は認証済みクライアントの値と照合され、置換値としては扱われません。
 - **PUT の body にサーバ管理のフィールドを含めてはならない。** `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` を含めると `400 invalid_request`。認証中のクライアントの `client_secret` と一致しない値を送っても `400` になります。
-- **`backchannel_logout_uri` と `backchannel_logout_session_required` は end-to-end でラウンドトリップします。** いずれも `POST /register` で永続化され、`GET /register/{client_id}` で返却、`PUT /register/{client_id}` で上書きできます。
+- **`backchannel_logout_uri` は end-to-end でラウンドトリップしますが、session-bound logout は対応しません。** 有効な URI は `POST /register` で永続化され、`GET /register/{client_id}` で返却され、`PUT /register/{client_id}` で上書きできます。`backchannel_logout_session_required: true` は URI の有無にかかわらず不正なメタデータなので、ストレージには入りません。
+- **out-of-band の `Resources` は管理更新で保持されます。** RFC 8707 resource-indicator の許可リストは RFC 7591 メタデータ文書ではなく `store.Client.Resources` にあります。PUT 経路は既存クライアントをコピーしてから送信されたメタデータを適用するため、運用者が設定した `Resources` は残り、RP が表現できるフィールドだけが省略規則に従います。
 - **`software_statement`（RFC 7591 §2.3）は非対応。** 指定されたリクエストは `invalid_software_statement` で拒否します。federation / trust chain はスコープ外です。
 
 ## 読み取り / 更新 / 削除
@@ -241,6 +256,37 @@ curl -X PUT -H "Authorization: Bearer $RAT" -H "Content-Type: application/json" 
 # delete
 curl -X DELETE -H "Authorization: Bearer $RAT" $RCU
 ```
+
+### DELETE で保存状態に何が起きるか
+
+OP はクライアントとその RAT を削除し、組み込みの任意拡張 `store.RevokeByClient` があれば、refresh token、grant、保存済みアクセストークンの cascade も実行します。session と interaction は subject をキーにしているため、client をキーにした cascade の対象外です。ライブラリ外のレコードは組み込み側の hook で処理してください。
+
+設定した grant store が `store.GrantSubjectLister` を実装している場合、handler はクライアントの clone と `ListSubjectsByClient` の上限付き 1 ページを、クライアント削除の**前に** snapshot します。grant store が `store.GrantClientLister` も実装していれば、OP は削除前の snapshot から back-channel coordinator を組み立て、Logout Token を送れます。削除後に URI を参照するとクライアントが見つからないため、この順序が必要です。ページには意図的に上限があり、store は全 grant をメモリに展開せず `limit+1` でクエリしなければなりません。
+
+自前ストアは、同じ snapshot を `RegistrationOption.OnClientDeletedSnapshot` で受け取れます。
+
+```go
+import (
+  "context"
+
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/store"
+)
+
+provider, err := op.New(
+  /* issuer、store、keyset、その他の必須 option */
+  op.WithDynamicRegistration(op.RegistrationOption{
+    OnClientDeletedSnapshot: func(ctx context.Context, client *store.Client, subjects []string) error {
+      // アプリケーション所有レコードを失効させる、または独自の logout 通知を送る。
+      return nil
+    },
+  }),
+)
+_ = provider
+_ = err
+```
+
+従来の `OnClientDeleted` hook も client ID だけを使う cascade 用に残っています。hook のエラーは削除後にログへ記録され、成功した `204` レスポンスは変えません。自前の cleanup は再試行でき、監視できるようにしてください。
 
 ## 採用すべきとき
 

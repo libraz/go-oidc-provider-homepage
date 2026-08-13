@@ -1,6 +1,6 @@
 ---
 title: Custom consent UI
-description: Customise consent with op.WithConsentUI, locale bundles, or the JSON driver.
+description: Customise consent with op.WithConsentUI, locale bundles, or the JSON driver while respecting the provider's CSP policy and ceremony-origin rules.
 ---
 
 # Use case — Custom consent UI
@@ -58,6 +58,12 @@ op.New(
 
 See [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) for the form field shape.
 
+### CSP for a custom template
+
+`op.ConsentUI` has a `ContentSecurityPolicy` field. An empty value selects the library default (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`), which is intentionally too restrictive for a template that loads branding assets. A non-empty value is normalized by the public `interaction.NormalizeCSP` seam at `op.New`: you may add the `style-src`, `img-src`, `font-src`, or `script-src` policy your template needs, but `form-action` is forbidden, and `frame-ancestors` and `base-uri` must be exactly `'none'` when present. Missing `frame-ancestors` and `base-uri` are appended automatically. Invalid policy returns `interaction.ErrCSPNotPermitted` through the configuration error.
+
+Allowing scripts is a conscious trust decision: the page contains the CSRF token and continuation state. `html/template` escaping protects values such as the RP's display name, but it does not make arbitrary script execution harmless.
+
 ## Path 3 — JSON driver (full markup control)
 
 If you need to own the markup (custom layout, brand assets, framework-rendered consent), switch to the JSON driver. The OP returns the consent prompt as `{ type: "consent.scope", data: { scopes: [...] }, csrf_token, ... }` JSON; your page or SPA renders it and posts the user's choice back.
@@ -83,7 +89,9 @@ The SPA echoes `prompt.csrf_token` into the `X-CSRF-Token` header on submission;
 | Session lookup / consent persistence | yes |
 | Rendering the redirect back to the RP after approval | yes |
 
-The locale bundle path keeps the bundled CSP (`default-src 'none'; style-src 'unsafe-inline'`) and the rendered HTML; the JSON driver path lets your own page set the CSP it needs.
+The locale bundle path keeps the bundled CSP (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`) and the rendered HTML; the JSON driver path lets your own page set the CSP it needs. For a custom template, set `ConsentUI.ContentSecurityPolicy` rather than trying to add `form-action` for the RP redirect — `form-action` would block successful cross-origin completion.
+
+The POST's Origin / Referer ceremony check is not derived from the client's redirect URI. It accepts the issuer origin and origins explicitly supplied with `op.WithCORSOrigins`; a redirect URI on another origin does not authorize that origin to submit interaction or end-session state.
 
 ## Read next
 

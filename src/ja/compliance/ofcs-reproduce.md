@@ -8,6 +8,8 @@ pageClass: pg-compliance-ofcs-reproduce
 
 このページは運用者向けの runbook です。[OFCS 適合状況](/ja/compliance/ofcs)が「最新の実行で何が観測されたか」を記録するのに対し、本ページは「自分のマシンでそれを再現するには」「各 OFCS プランがどの `op.With...` オプションを使うか」を扱います。
 
+適合状況ページは、core のコミット [`ee4369a`](https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a) に対する最新の release run を要約しています。JSON snapshot はローカルの gitignore 対象 release artifact なので、この runbook で自分の環境向けに新しい snapshot を生成してください。
+
 最新の PASS / REVIEW / SKIPPED / WARNING 件数を確認したい場合は、まず [OFCS 適合状況](/ja/compliance/ofcs) を参照してください。自分の OP に同じ OFCS プランを通すためにどのオプションを組み込めばよいかを知りたい場合は、本ページが該当します。
 
 ::: warning 個人開発、認証取得は無し
@@ -53,7 +55,7 @@ pageClass: pg-compliance-ofcs-reproduce
 
 - **Docker** + Compose v2(ハーネスは `docker compose` を呼び出します。`docker-compose` ではありません)
 - **OpenSSL**(`scripts/conformance.sh certs` の証明書生成に使用)
-- `go.mod` に固定された **Go toolchain**
+- **Go 1.25+**。同じ release 環境を再現する場合は `go.mod` に固定された toolchain を使います。
 - seed-plans / drive スクリプト用の `curl` と `python3`
 
 OFCS イメージは [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml) で固定された tag を OpenID Foundation の registry から pull します。OFCS の checkout や `mvn install` は不要です。
@@ -90,7 +92,7 @@ OFCS テストプランによって検証するライブラリ機能が異なり
 | `oidcc-dynamic-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `op.WithDynamicRegistration` 分岐 |
 | `oidcc-formpost-basic-certification-test-plan` | `make conformance-op-up`(プロファイル無し) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
 | `oidcc-rp-initiated-logout-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
-| `oidcc-rp-initiated-logout-with-back-channel-logout-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
+| `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | `make conformance-op-up`（DCR は既定で有効） | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
 | `fapi2-security-profile-id2-test-plan` | `OP_PROFILE=fapi2-baseline make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2BaselineOptions` |
 | `fapi2-message-signing-id1-test-plan` | `OP_PROFILE=fapi2-message-signing make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2MessageSigningOptions` |
 | `fapi-ciba-id1-test-plan` | `OP_PROFILE=fapi-ciba make conformance-op-up` | [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) — `fapiCIBAOptions` |
@@ -141,7 +143,7 @@ demo は OFCS テストクライアントの公開鍵を保持する `op.Private
 `OP_PROFILE=fapi-ciba` を設定します。CIBA は fapi2-* プランと比較して 3 点で大きく異なります。
 
 - OFCS の `fapi-ciba-id1` プランは FAPI 1.0 由来の cert-bound アクセストークン要件をハードコードしており、sender-constraint variant を提供しません。そのため demo は `feature.DPoP` ではなく `op.WithFeature(feature.MTLS)` を組み込みます。どちらも `WithProfile` の "DPoP OR MTLS" 選言制約を満たします。
-- CIBA クライアントは `/authorize` を訪れません。seed は空の `redirect_uri` 集合と絞り込まれた grant 一覧(CIBA URN + `refresh_token`)を持ちます。
+- CIBA クライアントは認可エンドポイントを訪れません。seed は空の `redirect_uri` 集合と絞り込まれた grant 一覧(CIBA URN + `refresh_token`)を持ちます。
 - OFCS プランは認証デバイスが実在しない状態で `auth_req_id` ポーリングループを実行します。demo は in-memory `CIBARequestStore` を `cibaAutoApproveStore` でラップし、設定可能な遅延後に out-of-band の `Approve()` をスケジュールしてデバイスコールバックをシミュレーションします。**本番組み込みでは、ユーザの実際の認証デバイスのコールバックから `Approve` を呼び出す必要があります。OP プロセス内部から呼び出してはなりません。**
 
 実装の全体(auto-approve substore と hint resolver を含む)は [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) に置かれています。
@@ -155,7 +157,7 @@ demo は OFCS テストクライアントの公開鍵を保持する `op.Private
 OFCS UI から特定の module を反復確認するときに有用です。
 
 ```sh
-scripts/conformance.sh drive 'https://host.docker.internal:9443/oidc/authorize?...'
+scripts/conformance.sh drive 'https://host.docker.internal:9443/oidc/auth?...'
 ```
 
 OFCS のテスト詳細パネルが出力する `Browser` URL をコピーします。
@@ -186,11 +188,11 @@ OFCS は主に 4 種の終端 result value を返し、ハーネスは advisory 
 - **REVIEW** — module は実行されたが、視覚的 / out-of-band の挙動(同意 UI 文言、エラーページのスクリーンショット)を人間のレビュアーが確認する必要があります。failure ではありません。ヘッドレスハーネスは `REVIEW` をそのまま記録します。有償認証ではこれを clear するために OFCS UI に向かう必要があります。
 - **SKIPPED** — module は OP が discovery / per-client metadata で広告していない機能に依存します。例えば、クライアント metadata が `PS256` を署名 alg として宣言している場合、`RS256` ネガティブテストはそのプローブが対象外なため skip されます。failure ではありません。
 - **WARNING** — module は非 failure の advisory result に到達した状態。最新 status page では FAILED とは分けて集計します。
-- **FAILED** — module が suite の期待結果に到達しなかった状態。`make conformance-release-verify` がレビュー済みかつ期限内の exclusion と照合できない限り、release を止めます。現在の内訳は [OFCS 適合状況](/ja/compliance/ofcs#最新-baseline) を参照してください。
+- **FAILED** — module が suite の期待結果に到達しなかった状態。`make conformance-release-verify` がレビュー済みかつ期限内の exclusion と照合できない限り、release を止めます。現在の内訳は [OFCS 適合状況](/ja/compliance/ofcs) を参照してください。
 
-REVIEW / SKIPPED の各 module がどれで、なぜそうなっているかの詳細は [OFCS 適合状況](/ja/compliance/ofcs#review-中の-modules) にあります。
+REVIEW / SKIPPED の各 module がどれで、なぜそうなっているかの詳細は [OFCS 適合状況](/ja/compliance/ofcs) にあります。
 
-## ベースラインのキャプチャと差分取得
+## ベースラインのキャプチャと差分取得 {#reproduce-baseline}
 
 ハーネスは「現状を凍結し、変更がベースラインに対して回帰を起こさないか検証する」サイクルを中心に組まれています。
 

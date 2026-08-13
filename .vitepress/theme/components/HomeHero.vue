@@ -20,7 +20,12 @@ const copy = computed(() =>
         primary: { text: 'クイックスタート', link: '/ja/getting-started/install' },
         secondaryGh: { text: 'GitHub で見る', link: 'https://github.com/libraz/go-oidc-provider' },
         secondaryWhy: { text: 'go-oidc-provider とは', link: '/ja/why' },
-        trust: ['FAPI 2.0 BASELINE', 'OFCS 138 / 0', 'APACHE-2.0', 'GO ≥ 1.21'],
+        trust: [
+          'FAPI 2.0 BASELINE',
+          'OFCS 210 PASSED / 全271モジュール · 9プラン',
+          'APACHE-2.0',
+          'GO ≥ 1.25'
+        ],
         codeLabel: 'main.go',
         codeLang: 'GO'
       }
@@ -35,7 +40,12 @@ const copy = computed(() =>
         primary: { text: 'Quick Start', link: '/getting-started/install' },
         secondaryGh: { text: 'View on GitHub', link: 'https://github.com/libraz/go-oidc-provider' },
         secondaryWhy: { text: 'Why this library', link: '/why' },
-        trust: ['FAPI 2.0 BASELINE', 'OFCS 138 / 0', 'APACHE-2.0', 'GO ≥ 1.21'],
+        trust: [
+          'FAPI 2.0 BASELINE',
+          'OFCS 210 PASSED / 271 MODULES · 9 PLANS',
+          'APACHE-2.0',
+          'GO ≥ 1.25'
+        ],
         codeLabel: 'main.go',
         codeLang: 'GO'
       }
@@ -77,13 +87,18 @@ const copy = computed(() =>
         <pre
           class="op-hero-code-body"
         ><code><span class="tk-c">// Mount an OIDC Provider on any http.Handler.</span>
+store := inmem.<span class="tk-fn">New</span>()
 handler, err := op.<span class="tk-fn">New</span>(
     op.<span class="tk-fn">WithIssuer</span>(<span class="tk-s">"https://op.example.com"</span>),
-    op.<span class="tk-fn">WithStore</span>(inmem.<span class="tk-fn">New</span>()),
+    op.<span class="tk-fn">WithStore</span>(store),
     op.<span class="tk-fn">WithKeyset</span>(keys),
-    op.<span class="tk-fn">WithCookieKey</span>(cookieKey),
+    op.<span class="tk-fn">WithCookieKeys</span>(cookieKey),
+    op.<span class="tk-fn">WithLoginFlow</span>(op.LoginFlow{
+        Primary: op.PrimaryPassword{Store: store.UserPasswords()},
+    }),
     op.<span class="tk-fn">WithProfile</span>(profile.FAPI2Baseline),
 )
+if err != nil { panic(err) }
 http.<span class="tk-fn">ListenAndServe</span>(<span class="tk-s">":8080"</span>, handler)</code></pre>
       </aside>
     </div>

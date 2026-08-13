@@ -1,6 +1,6 @@
 ---
 title: 同意
-description: 同意画面が表示されるタイミング、スキップされる条件、ファーストパーティクライアントが何を変えるか、監査トレイルが何を記録するか。
+description: 同意 prompt、scope の絞り込み、RAR の既存 grant 判定、first-party skip、実際に発火する audit を整理する。
 pageClass: pg-concepts-consent
 ---
 
@@ -74,7 +74,7 @@ pageClass: pg-concepts-consent
 | **初回 grant** — その `(subject, client_id)` ペアに対する `Grant` が存在しない。 | プロンプト。ユーザは scope の全リストを目にします。送信時、本ライブラリは承認された scope を含む `Grant` 行を書き込みます。 |
 | **Scope delta** — `Grant` は存在するが、要求された scope 集合に「過去に承認されていない scope」が含まれる。 | プロンプト。差分が強調表示されます。ユーザは差分のみ承認、差分を拒否、全体を拒否のいずれかを選べます。承認時に行が更新されます。 |
 | **強制再プロンプト** — リクエストが `prompt=consent` を持つ。 | grant の状態に関係なくプロンプト。OIDC §3.1.2.1 が要求する挙動です。 |
-| **既存 grant が要求をカバー** — `Grant` 行がすべての要求 scope をカバーしており、`prompt` が `none` または `login`（`consent` ではない）。 | スキップ。本ライブラリは認可コード発行に直接進み、`op.AuditConsentSkippedExisting` を発火します。 |
+| **既存 grant が要求をカバー** — `Grant` 行がすべての要求 scope と、要求されたすべての `authorization_details` 要素をカバーしており、`prompt` が `none` または `login`（`consent` ではない）。 | スキップ。本ライブラリは認可コード発行に直接進みます。スキップ専用の監査イベントはありません。 |
 
 ::: details `prompt=none`、`prompt=login`、`prompt=consent` の違い
 - `prompt=none` — 「ユーザがログイン済みで同意も整っているなら、フローを静かに完了させる。さもなくばエラーを返す」。SPA の静かな再認証で使う。
@@ -111,6 +111,8 @@ op.WithConsentUI(op.ConsentUI{
 
 テンプレートには、要求 scope（既存 grant に対する delta があればそれも）、`client_id`、クライアントメタデータの任意のクライアントロゴ / 表示名、フォームに埋め込む CSRF トークンが渡されます。フォームの `POST` を受けて、本ライブラリは CSRF を検証し、承認された scope 集合を解析し、`Grant` 行を書き込み、authorize フローを継続します。
 
+RFC 9396 の `authorization_details` は deep equality でカバー判定します。新しい要素やメンバの変更があれば、scope 集合が既にカバーされていても同意を求めます。組み込みの同意契約が扱うのは scope の承認で、detail ごとの承認・絞り込み UI はありません。通常の同意が完了すると、要求された detail は grant と一緒に永続化されます。
+
 クライアント側で同意を描画する SPA（ログインフォームをすでに扱っている React アプリなど）では、SPA の入口と静的アセットも OP にマウントさせたい場合に `op.WithSPAUI(...)` を使います。このモードではブラウザは `LoginMount/{uid}` に着地し、SPA はプロンプトの状態を `LoginMount/state/{uid}` から取得します。SPA 本体を自前のルータで配信する場合は、低レベルな `op.WithInteractionDriver(interaction.JSONDriver{})` 経路を使います。この場合、状態取得エンドポイントは `/interaction/{uid}` のままです。
 
 `WithSPAUI` と `WithConsentUI` はどちらも同意描画面を所有するため相互排他です。コンストラクタは両方同時には受け付けません。route 形と使い分けは [SPA カスタムインタラクションの使い方](/ja/use-cases/spa-custom-interaction) を参照してください。
@@ -122,21 +124,20 @@ op.WithConsentUI(op.ConsentUI{
 1. **`/revoke`（RFC 7009）** — 単一トークン（refresh または access）を無効化します。これは背後の `Grant` 行には触れません — 同じ scope での次の authorize フローはまだ grant を見つけ、同意をスキップします。
 2. **Grant の失効** — `Grant` 行の `Revoked` 列を切り替えます。本ライブラリは `Grants` と `AccessTokens` の substore を通じてカスケードします — その grant に連なるすべてのリフレッシュトークン連鎖が無効化され、すべてのアクセストークン shadow row が revoked に切り替わり、JWT AT は OP が応答するすべてのエンドポイント（`/userinfo`、`/introspect`）で inactive になります。ユーザの次の authorize フローはカバーする grant を見つけられず、再び同意画面を出します。
 
-カスケードは `internal/revokeendpoint`、`op/store/grant_revocation.go`、`op/store/cascade.go` にまたがって実装されています。各経路はそれぞれの監査イベントを発火するので、ダッシュボードが何が起きたかを再構成できます。end-session カスケード（[セッションとログアウト](/ja/concepts/sessions-and-logout#end-session-カスケード)）も同じ仕組みを再利用します。
+カスケードは `internal/revokeendpoint`、`op/store/grant_revocation.go`、`op/store/cascade.go` にまたがって実装されています。Grant Management による失効が成功すると `grant_management.revoked` を発火します。一方、一般的な grant / token 失効に対して専用の `consent.revoked` イベントは発火しません。end-session カスケード（[セッションとログアウト](/ja/concepts/sessions-and-logout#end-session-カスケード)）も同じ仕組みを再利用します。
 
 ## 監査イベント
 
-token endpoint と同意フローは、`op.WithAuditLogger` 経由で 5 つの同意関連監査イベントを発火します。
+同意フローは、`op.WithAuditLogger` 経由で 2 つの同意関連監査イベントを発火します。
 
 | イベント | 発火タイミング |
 |---|---|
 | `op.AuditConsentGranted` | ユーザが同意フォームを送信し、`Grant` 行が書き込まれた。 |
 | `op.AuditConsentGrantedFirstParty` | ファーストパーティの自動同意が適用された（プロンプトは出していない）。 |
-| `op.AuditConsentGrantedDelta` | 既存 grant がある状態で、ユーザが scope delta を承認した。 |
-| `op.AuditConsentSkippedExisting` | 既存 grant が要求をカバーしており、プロンプトをスキップした。 |
-| `op.AuditConsentRevoked` | grant が `Revoked` に切り替わった。 |
 
-これらを組み合わせると、SOC ダッシュボードで「ユーザが明示的に同意画面をクリックした」と「操作者が事前承認した静かな経路でこのクライアントが同意を得た」を区別できます — 特定の `Grant` 行がなぜ存在するのかを振り返る際に有用です。
+`op.AuditConsentGranted` は scope や rich authorization detail を追加する通常の再同意も表します。本ライブラリは `AuditConsentGrantedDelta`、`AuditConsentSkippedExisting`、`AuditConsentRevoked` を発火しません。Grant Management による失効の成功は `op.AuditGrantManagementRevoked` で報告されます。
+
+発火する同意イベントを組み合わせると、SOC ダッシュボードで「ユーザが明示的に同意画面をクリックした」と「操作者が事前承認した静かな経路でこのクライアントが同意を得た」を区別できます — 特定の `Grant` 行がなぜ存在するのかを振り返る際に有用です。
 
 ## 次に読む
 

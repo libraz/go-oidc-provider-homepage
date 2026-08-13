@@ -1,6 +1,6 @@
 ---
 title: Client onboarding patterns
-description: Five ways to register, update, and remove RPs against your OP — when each fits, code seams, and what the library deliberately does not ship.
+description: Five patterns for registering, updating, and removing RPs against your OP, including static M2M seeds, code seams, and the surfaces the library deliberately does not ship.
 pageClass: pg-use-cases-client-onboarding
 ---
 
@@ -211,6 +211,8 @@ Hand `iat.Value` to the RP out-of-band. Keep the TTL short and `MaxUses: 1` so a
 ## 4. Scope-protected admin API
 
 This is the pattern most vendor SaaS providers ship as "the admin API", and the one the library deliberately does not ship. The shape is well-known: a privileged "management client" obtains an access token bearing scopes such as `client.read` / `client.write` (and optionally a `tenant=acme` claim), and the embedder's own HTTP handler verifies the AT, decodes the scope and tenant boundary, and calls `store.ClientRegistry`.
+
+The management client is confidential because its handler calls `/introspect`. A minimal M2M provider enables the client-credentials grant with `op.WithGrants(grant.ClientCredentials)` and does not configure a browser `LoginFlow`; a browser-capable provider instead wires its authorization-code grants and login flow explicitly. `/introspect` authenticates this client with its own credentials by default. If the handler must inspect an access token issued to another client, add the management client to that resource's `ProtectedResource.IntrospectionClients`; refresh tokens are never delegated across clients.
 
 ```go
 // 1. Static seed for the management client.

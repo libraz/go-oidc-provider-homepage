@@ -93,6 +93,7 @@ import (
   "context"
 
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
   oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
   oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
@@ -119,11 +120,15 @@ combined, err := composite.New(
 )
 if err != nil { /* ... */ }
 
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: durable.UserPasswords()}}
+
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(combined),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithStaticClients(op.PublicClient{
     ID:           "demo-rp",
     RedirectURIs: []string{"https://rp.example.com/callback"},
@@ -156,7 +161,7 @@ composite は意図的に `store.ClientRegistry` を型アサーションでは�
 | `OpaqueAccessTokenStore` | 永続(SQL — opaque アクセストークン形式を有効にしたときだけ書き込まれる) |
 | `GrantRevocationStore` | 永続(SQL — 既定の grant-tombstone 失効戦略を支えるストア) |
 | `PushedAuthRequestStore` | 永続(SQL — `request_uri` は短寿命だがトランザクションクラスタ内) |
-| `SessionStore` | `composite.With(composite.Sessions, ...)` でどちらの保存先にもルートできる。配置の宣言として `WithSessionDurabilityPosture`(既定 `SessionDurabilityVolatile`)を立てると、Back-Channel Logout 監査が想定内 / 想定外のギャップを分類できる |
+| `SessionStore` | `composite.With(composite.Sessions, ...)` でどちらの保存先にもルートできる。`WithSessionDurabilityPosture`(既定 `SessionDurabilityVolatile`) では logout の起点と session snapshot の耐久性を宣言し、BCL の target 自体は grant 由来で解決する |
 | `InteractionStore` | 揮発(Redis) |
 | `ConsumedJTIStore` | 揮発(Redis) |
 
@@ -167,7 +172,7 @@ composite は意図的に `store.ClientRegistry` を型アサーションでは�
 :::
 
 ::: details SessionStore がどちらにもなる理由
-揮発セッションストア（メモリ圧で追い出される、複製保証無し）は、多くの構成で許容範囲です — 最悪ケースでもユーザの再認証で済むためです。一方で、再起動を跨いでログイン状態を保ちたい組み込み側もいます。ルーティング自体は組み込み側の選択で、`composite.With(composite.Sessions, durableOrVolatileStore)` で行います。`op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` はライブラリ側で強制しない *宣言* で、値を Back-Channel Logout の `bcl.no_sessions_for_subject` 監査イベントに伝播するだけです。これにより SOC ダッシュボードは「揮発配置における想定内のギャップ」と「永続配置における想定外のギャップ」を区別できます。
+揮発セッションストア（メモリ圧で追い出される、複製保証無し）は、多くの構成で許容範囲です — 最悪ケースでもユーザの再認証で済みます。一方、ブラウザのログイン状態と logout の起点 / session snapshot を再起動後も保持したい組み込み側は、より強い耐久性を求めます。ルーティング自体は組み込み側の選択で、`composite.With(composite.Sessions, durableOrVolatileStore)` で行います。`op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` はライブラリ側で強制しない *宣言* で、logout の起点 / session snapshot の耐久性を示すものであり、BCL の audience を示すものではありません。`/end_session` は通知前に session を snapshot し、eligible な RP target は `GrantStore.ListClientIDsBySubject` から独立して grant 由来で解決します。`bcl.no_sessions_for_subject` は session を伴う logout 通知で grant 由来の RP target が 0 件だったことを示します。snapshot 前に eviction が起きた場合は back-channel 通知も監査イベントも発生しません。SOC dashboard では、起点 / snapshot の耐久性に関する欠落と grant 由来 zero-target event を別の概念として扱ってください。
 :::
 
 ## 観測性

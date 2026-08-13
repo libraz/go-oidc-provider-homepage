@@ -49,7 +49,7 @@ pageClass: pg-faq
   <li><a href="#logout"><div class="faq-index-title">ログアウト</div><div class="faq-index-desc">Front-Channel を持たない理由、Back-Channel fan-out のギャップ</div></a></li>
   <li><a href="#native-loopback"><div class="faq-index-title">ネイティブアプリとループバック</div><div class="faq-index-desc"><code>127.0.0.1</code> redirect_uri のオプトイン</div></a></li>
   <li><a href="#observability"><div class="faq-index-title">観測性</div><div class="faq-index-desc"><code>/metrics</code> を自動マウントしない理由、監査イベントカタログ</div></a></li>
-  <li><a href="#conformance"><div class="faq-index-title">適合性とバージョン</div><div class="faq-index-desc">REVIEW の意味、認証の称し方、v1 の安定性</div></a></li>
+  <li><a href="#conformance"><div class="faq-index-title">適合性とバージョン</div><div class="faq-index-desc">REVIEW の意味、認証の称し方、更新時の安定性</div></a></li>
   <li><a href="#errors"><div class="faq-index-title">よくあるエラー</div><div class="faq-index-desc"><code>redirect_uri</code> 不一致、<code>alg not allowed</code>、<code>jkt mismatch</code></div></a></li>
   <li><a href="#adoption"><div class="faq-index-title">採用判断</div><div class="faq-index-desc">本番投入の可否、セキュリティ報告の経路</div></a></li>
 </ul>
@@ -82,11 +82,15 @@ pageClass: pg-faq
 ### 最小構成は？
 
 ```go
+st := inmem.New()
 handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(myKeyset),
     op.WithCookieKeys(cookieKey), // 32 バイト
+    op.WithLoginFlow(op.LoginFlow{
+        Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
 )
 ```
 
@@ -172,7 +176,7 @@ OIDC Core 1.0 §11 は狭い解釈も許容しており、その場合は付与 
 
 <div id="dpop" class="faq-anchor"></div>
 
-## DPoP と送信者制約
+## DPoP と送信者制約 {#dpop-sender-constraint}
 
 ### DPoP nonce はなぜ必要？ どう配るのが正解？
 
@@ -194,7 +198,7 @@ op.WithDPoPNonceSource(src)
 
 ### `dpop_signing_alg_values_supported` に RS256 が含まれていないのはなぜ？
 
-意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。この許可リストは OP が client assertion や JAR request object を**検証する**ときの集合で、DPoP proof はそこから FAPI が推奨する部分集合に絞っています。なお `RS256` は OP 側の署名アルゴリズムでもありません。OP が発行するトークンの署名は `ES256` のみで、これは 1.x 系の恒久的な方針であり、未実装の穴ではありません。
+意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。この許可リストは OP が client assertion や JAR request object を**検証する**ときの集合で、DPoP proof はそこから FAPI が推奨する部分集合に絞っています。なお `RS256` は OP 側の署名アルゴリズムでもありません。OP が発行するトークンの署名は `ES256` のみで、これは恒久的な方針であり、未実装の穴ではありません。
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -252,6 +256,8 @@ op.WithCORSOrigins("https://app.example.com")
 
 `WithCORSOrigins` を呼ばない場合、登録済み redirect URI から許可リストが自動導出されます。詳細は <a class="doc-ref" href="/ja/use-cases/cors-spa">SPA 向け CORS</a>。
 
+API の CORS 許可リストが redirect URI の origin から導出される場合でも、それによって cross-origin の interaction や end-session ceremony が許可されるわけではありません。これらが受け付けるのは issuer origin と `WithCORSOrigins` に明示的に渡した origin だけです。
+
 ### ライブラリを fork せずに同意画面をカスタマイズしたい
 
 可能です。主な経路は次の 3 つです。
@@ -286,9 +292,7 @@ op.WithCORSOrigins("https://app.example.com")
 
 ### Back-Channel Logout の fan-out で一部の RP に届かない
 
-セッションが揮発ストアに置かれているケースで起こります。fan-out が走る前にセッションレコードが追い出された場合（Redis TTL がネットワーク分断中に切れたなど）、ライブラリはレコードを再構成できません。
-
-`op.AuditBCLNoSessionsForSubject` 監査イベントがそのギャップを記録し、`op.WithSessionDurabilityPosture` で設定したポスチャと組み合わせることで、SOC ダッシュボードで「揮発配置における想定内のギャップ」と「永続配置における想定外のギャップ」を区別できます。揮発配置における best-effort は設計上の挙動です — 詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §10</a>。
+`/end_session` handler は detached BCL coordinator を呼ぶ前に、OP session から subject を snapshot します。coordinator は `GrantStore.ListClientIDsBySubject` で grant 由来の audience を導出し、back-channel URI を登録した eligible な client を配信対象として解決します。したがって `op.AuditBCLNoSessionsForSubject` は、この session-bearing logout notice に対して grant 由来の eligible な RP target が 0 件に解決されたことを示すもので、session eviction を直接示すシグナルではありません。揮発性の `SessionStore` が handler の snapshot 前に session を失うと、logout trigger / snapshot 自体が失われ、fan-out（およびこの event）は開始されません。`op.WithSessionDurabilityPosture` は宣言された durability を記録し、SOC ダッシュボードがそのリスクを解釈できるようにするものです。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §10</a>。
 
 <div id="native-loopback" class="faq-anchor"></div>
 
@@ -344,7 +348,7 @@ OFCS は複数の結果を記録します。raw の `FAILED` は通常、suite �
 | `REVIEW` | テスト実行 / OP は正しく振る舞った — 人間が UI 成果物（描画されたエラーページのスクリーンショット等）を目視確認する必要がある |
 | `FAILED` | module が suite の期待結果に到達しなかった。レビュー済み・期限付き exclusion がなければ release を止める。 |
 
-本ハーネスは `REVIEW` を自動 pass にせず、そのまま記録します。v1.0.0 の 9 plan snapshot には raw failure が 6 件、終端結果なしが 2 件あり、いずれも release verifier が明示的にレビューしています。完全な内訳は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
+本ハーネスは `REVIEW` を自動 pass にせず、そのまま記録します。現在の release run と詳細な内訳は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> にまとめています。
 
 ### 「OIDF 認証取得済み」と称してよい？
 
@@ -352,11 +356,11 @@ OFCS は複数の結果を記録します。raw の `FAILED` は通常、suite �
 
 ### バージョンを固定すべき?
 
-すべきです。本番依存は `go.mod` で固定し、更新前に [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。v1 の公開 Go API は Semantic Versioning に従うので、破壊的変更にはメジャーバージョンが必要です。`Experimental:` マーカー付き API は例外です。
+すべきです。本番依存は `go.mod` で固定し、更新前に [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。`op.New` と同梱ストレージアダプターの構成は通常そのまま更新できますが、BYO ストアや他の拡張は現在の移行案内を確認する必要があります。`Experimental:` マーカー付き API は通常のマイナーリリース例外です。
 
 <div id="errors" class="faq-anchor"></div>
 
-## よくあるエラー
+## よくあるエラー {#common-errors}
 
 ### `invalid_request: redirect_uri does not match a registered URI`
 
@@ -376,7 +380,7 @@ DPoP proof の公開鍵 thumbprint（RFC 7638）が、アクセストークン�
 
 ### `/par` 成功後に `invalid_request_uri` が返る
 
-認可コード発行後に `/authorize?request_uri=…` へ再度アクセスしています。`request_uri` はコード発行時点で one-time として消費されます（RFC 9126 §2.2、詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §1</a>）。`/par` をやり直して新しい URI を発行してください。
+認可コード発行後に `/oidc/auth?request_uri=…` へ再度アクセスしています。`request_uri` はコード発行時点で one-time として消費されます（RFC 9126 §2.2、詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §1</a>）。`/par` をやり直して新しい URI を発行してください。
 
 <div id="adoption" class="faq-anchor"></div>
 

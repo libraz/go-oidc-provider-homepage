@@ -49,7 +49,7 @@ This page is the bottom of every section's "where do I look first?" answer. The 
   <li><a href="#logout"><div class="faq-index-title">Logout</div><div class="faq-index-desc">Why no Front-Channel, Back-Channel fan-out gaps</div></a></li>
   <li><a href="#native-loopback"><div class="faq-index-title">Native apps &amp; loopback</div><div class="faq-index-desc"><code>127.0.0.1</code> redirect_uri opt-in rules</div></a></li>
   <li><a href="#observability"><div class="faq-index-title">Observability</div><div class="faq-index-desc">Why no auto-mounted <code>/metrics</code>, audit event catalog</div></a></li>
-  <li><a href="#conformance"><div class="faq-index-title">Conformance &amp; versions</div><div class="faq-index-desc">REVIEW meaning, certification claims, v1 stability</div></a></li>
+  <li><a href="#conformance"><div class="faq-index-title">Conformance &amp; versions</div><div class="faq-index-desc">REVIEW meaning, certification claims, upgrade stability</div></a></li>
   <li><a href="#errors"><div class="faq-index-title">Common errors</div><div class="faq-index-desc"><code>redirect_uri</code> mismatch, <code>alg not allowed</code>, <code>jkt mismatch</code></div></a></li>
   <li><a href="#adoption"><div class="faq-index-title">Adoption</div><div class="faq-index-desc">Production fit, security disclosure path</div></a></li>
 </ul>
@@ -82,11 +82,15 @@ Wherever you mount the returned `http.Handler`. The default mount prefix is `/oi
 ### What's the smallest config that boots?
 
 ```go
+st := inmem.New()
 handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(myKeyset),
     op.WithCookieKeys(cookieKey), // 32 bytes
+    op.WithLoginFlow(op.LoginFlow{
+        Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
 )
 ```
 
@@ -172,7 +176,7 @@ OIDC Core 1.0 §11 also permits the strict reading, where a refresh token is iss
 
 <div id="dpop" class="faq-anchor"></div>
 
-## DPoP & sender-constraint
+## DPoP & sender-constraint {#dpop-sender-constraint}
 
 ### Why do I need a DPoP nonce, and how do I serve it?
 
@@ -194,7 +198,7 @@ A process-local nonce source breaks across replicas. For HA, plug a shared store
 
 ### `dpop_signing_alg_values_supported` — RS256 missing?
 
-Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the codebase JOSE allow-list, which the OP applies when it *verifies* a client assertion or JAR request object. DPoP proofs are restricted to the FAPI-recommended subset. Note that `RS256` is not an OP signing algorithm either: tokens the OP issues are signed with `ES256` only, and that is a permanent policy for the 1.x line rather than a gap.
+Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the codebase JOSE allow-list, which the OP applies when it *verifies* a client assertion or JAR request object. DPoP proofs are restricted to the FAPI-recommended subset. Note that `RS256` is not an OP signing algorithm either: tokens the OP issues are signed with `ES256` only, and that is a permanent policy rather than a gap.
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -252,6 +256,8 @@ op.WithCORSOrigins("https://app.example.com")
 
 The library auto-derives the allowlist from registered redirect URIs when you don't pass one. See [/use-cases/cors-spa](/use-cases/cors-spa).
 
+The API CORS allowlist may derive redirect-URI origins; that does not authorize cross-origin interaction or end-session ceremonies. Those accept only the issuer origin and origins explicitly passed to `WithCORSOrigins`.
+
 ### Can I customise the consent screen without forking the library?
 
 Yes. There are three supported paths:
@@ -286,7 +292,7 @@ Modern browser defaults (third-party-cookie phase-out, `SameSite=Lax` default) h
 
 ### Back-Channel Logout fan-out is missing some RPs.
 
-This is expected when sessions live in a volatile store. If a session record was evicted before the logout fan-out runs (e.g. Redis TTL expired during a network partition), the library cannot fabricate it back. The `op.AuditBCLNoSessionsForSubject` audit event records the gap and carries the configured `op.SessionDurabilityPosture`, so SOC dashboards can distinguish "expected gap under volatile placement" from "unexpected gap under durable placement". This is best-effort by design — see <a class="doc-ref" href="/security/design-judgments">Design judgments §10</a>.
+The `/end_session` handler snapshots each subject from the OP session before it calls the detached BCL coordinator. The coordinator derives its audience with `GrantStore.ListClientIDsBySubject` and resolves eligible clients with a registered back-channel URI. `op.AuditBCLNoSessionsForSubject` therefore means that this session-bearing logout notice resolved to zero eligible grant-derived RP targets; it is not a direct session-eviction signal. If a volatile `SessionStore` loses the session before the handler can take that snapshot, the logout trigger/snapshot can be lost and the fan-out (and this event) never starts. `op.WithSessionDurabilityPosture` records the declared durability so SOC dashboards can interpret that risk; see <a class="doc-ref" href="/security/design-judgments">Design judgments §10</a>.
 
 <div id="native-loopback" class="faq-anchor"></div>
 
@@ -340,7 +346,7 @@ OFCS records several outcomes. A raw `FAILED` normally means the suite did not o
 | `REVIEW` | Test ran, OP behaved correctly — OFCS wants a human to verify a UI artefact (e.g. a screenshot of the rendered error page). |
 | `FAILED` | The module did not reach the suite's expected result. It blocks a release unless it has a reviewed, expiry-bound exclusion. |
 
-The headless harness records `REVIEW` as-is rather than auto-passing it. The v1.0.0 nine-plan snapshot has six raw failures and two modules without a terminal verdict; all are explicitly reviewed by the release verifier. Full breakdown at <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
+The headless harness records `REVIEW` as-is rather than auto-passing it. The current release run and its detailed breakdown are documented on <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
 
 ### Can I cite this library as "OIDF-certified"?
 
@@ -348,11 +354,11 @@ No. The project pays no OpenID Foundation membership and holds no formal certifi
 
 ### Should I pin a tag?
 
-Yes. Pin production dependencies in `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) before an upgrade. The v1 public Go API follows Semantic Versioning, so breaking changes require a major version; APIs marked `Experimental:` are the exception.
+Yes. Pin production dependencies in `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) before an upgrade. Configurations using `op.New` with bundled storage adapters generally upgrade unchanged; BYO stores and other extensions need a review of the current migration guidance. APIs marked `Experimental:` remain the ordinary minor-release exemption.
 
 <div id="errors" class="faq-anchor"></div>
 
-## Common errors
+## Common errors {#common-errors}
 
 ### `invalid_request: redirect_uri does not match a registered URI`
 
@@ -372,7 +378,7 @@ The DPoP proof's public key thumbprint (RFC 7638) doesn't match the `cnf.jkt` bo
 
 ### `invalid_request_uri` after a successful `/par`
 
-You re-visited `/authorize?request_uri=…` after the authorization code was already issued. `request_uri` is one-time at code emission (RFC 9126 §2.2; see <a class="doc-ref" href="/security/design-judgments">Design judgments §1</a>). Re-running `/par` mints a fresh URI.
+You re-visited `/oidc/auth?request_uri=…` after the authorization code was already issued. `request_uri` is one-time at code emission (RFC 9126 §2.2; see <a class="doc-ref" href="/security/design-judgments">Design judgments §1</a>). Re-running `/par` mints a fresh URI.
 
 <div id="adoption" class="faq-anchor"></div>
 

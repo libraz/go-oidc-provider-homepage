@@ -11,7 +11,7 @@ pageClass: pg-concepts-mtls
 mTLS は既に PKI を運用している環境で特に強みを発揮します。たとえば B2B のサービスメッシュ、オープンバンキング、内部 CA が全関係者に証明書を発行しているバックエンド API などです。結び付きが TLS 層に乗っているため、アプリケーションコードはリクエストごとに何かを署名する必要がありません。代償として、TLS 終端（リバースプロキシ、ロードバランサ）が検証済み証明書を OP まで運ぶよう設定する必要があります。
 
 ::: warning 実装境界
-`feature.MTLS` が接続するのは、証明書結び付けアクセストークン（`cnf.x5t#S256`）とリバースプロキシからの証明書取得です。`tls_client_auth` / `self_signed_tls_client_auth` 用の検証器は内部にありますが、token endpoint のクライアント認証方式としては接続されていません。FAPI 構成では token endpoint クライアント認証に `private_key_jwt` を使い、mTLS は送信者制約レイヤとして使ってください。
+`feature.MTLS` が接続するのは、証明書結び付けアクセストークン（`cnf.x5t#S256`）と、直接 TLS または信頼済みリバースプロキシのヘッダからの証明書取得です。`tls_client_auth` / `self_signed_tls_client_auth` は token endpoint のクライアント認証方式として広告も振り分けもされません。FAPI のクライアント認証には `private_key_jwt` を使い、mTLS は送信者制約レイヤとして使ってください。
 :::
 
 ::: details このページで触れる仕様
@@ -21,29 +21,23 @@ mTLS は既に PKI を運用している環境で特に強みを発揮します�
 - [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
 :::
 
-## RFC 上のクライアント認証サブモード 2 種
+## 証明書を信頼する方法
 
-RFC 8705 は同じ証明書素材を使う 2 つの `token_endpoint_auth_method` を規定しています。違いは **クライアント身元を何に紐付けるか** です。以下は RFC モデルと内部検証器の形を説明するものです。これらは token endpoint の認証方式としては選択できません。
+RFC 8705 は証明書を使うクライアント認証方式を定義していますが、本ライブラリの公開 mTLS seam は送信者制約の経路です。token endpoint は `tls_client_auth` / `self_signed_tls_client_auth` を広告も振り分けも行いません。非対称クライアント認証を要求する profile では、クライアントを `private_key_jwt` で登録してください。
 
-### `tls_client_auth` — PKI チェーン (RFC 8705 §2.1)
+`feature.MTLS` を有効にすると、OP は直接 TLS ハンドシェイク、または後述する信頼済みプロキシ経路からクライアント証明書を取得し、RFC 8705 の thumbprint を計算して発行トークンに結び付けます。チェーン検証は通常 TLS 終端側の責務です。OP 自身にもチェーン検証をさせる場合は、nil ではない公開 pool を渡します:
 
-クライアントは OP が信頼する CA が発行した証明書を提示します。OP はトラストアンカーに対してチェーン検証を行い、その後にクライアントの登録メタデータと突き合わせます。本ライブラリは以下のうち **少なくとも 1 つ** の pin フィールドで照合します(`internal/mtls/auth.go` の `ClientMatcher` を参照):
+```go
+import "crypto/x509"
 
-| Pin | 証明書の参照元 |
-|---|---|
-| `SubjectDN` | `Subject` の RFC 4514 文字列形式 |
-| `SANDNS` | `DNSNames` 内の DNS 名 |
-| `SANURI` | `URIs` 内の URI |
-| `SANIP` | `IPAddresses` 内の IP literal |
-| `SANEmail` | `EmailAddresses` 内の rfc822Name |
+pool := x509.NewCertPool()
+pool.AppendCertsFromPEM(caPEM)
 
-少なくとも 1 つの非空 pin が必須です。matcher が完全に空のまま登録されると `ErrNoMatcherConfigured` で fail closed します — 任意のチェーン有効証明書を黙認すれば §2.1 の契約が崩れるためです。Subject DN の比較は `pkix.Name` を経由した DER ラウンドトリップで行うため、RFC 4514 の属性順序差は吸収されます。残ったケースは文字列フォールバックで補います。
+op.WithFeature(feature.MTLS),
+op.WithMTLSRootCAs(pool),
+```
 
-### `self_signed_tls_client_auth` — JWK thumbprint (RFC 8705 §2.2)
-
-クライアントは公開 JWK(または JWKS URI)を登録します。OP は CA チェーンを **歩かず**、証明書の公開鍵をハッシュして登録 JWKS と照合します。このモードを使えば、PKI を運用せずに mTLS を導入できます — 各クライアントが自分の証明書を自己署名する形になります。
-
-RFC モデルでは 2 つのモードはクライアント単位で排他です。token endpoint 側の振り分けが接続されるまでは、FAPI クライアントは `private_key_jwt` で登録し、`feature.MTLS` はトークンバインディングのためだけに有効化してください。
+`WithMTLSRootCAs(pool *x509.CertPool)` は任意の公開 option です。nil ではない pool は、ハンドシェイク証明書と `WithMTLSProxy` で選ばれた証明書の両方に適用され、client authentication 用のチェーン検証が必要になります。`nil` は設定エラーです。何も信頼しない場合は空の `x509.NewCertPool()` を渡してください。直接 TLS スタックまたは信頼済みプロキシが外部クライアントのチェーンを検証済みなら、この option は省略します。
 
 ## Confirmation claim — `cnf.x5t#S256`
 
@@ -58,7 +52,7 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
 ## リバースプロキシ構成
 
 <svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="mtls-proxy-trust-title">リバースプロキシの信頼境界: TLS 終端プロキシがクライアント証明書をヘッダに載せ、OP は信頼済み CIDR 内のリクエストからのみそれを参照し、前送りされた証明書を正本として扱い、実際の TLS ハンドシェイク証明書との不一致は invalid_request で拒否します。</title>
+  <title id="mtls-proxy-trust-title">リバースプロキシの信頼境界: TLS 終端プロキシがクライアント証明書をヘッダに載せ、OP は信頼済み CIDR 内のリクエストからのみそれを参照し、前送りされた証明書を正本として扱います。</title>
   <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="9.5">PUBLIC</text>
   <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="9.5">EDGE</text>
   <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="9.5">OP TRUST ZONE</text>
@@ -94,8 +88,8 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
   <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
   <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — 本ライブラリ</text>
   <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="10.5">直接 TLS 終端時はハンドシェイク証明書</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">ヘッダとハンドシェイクの不一致 →</text>
-  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">invalid_request</text>
+  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">前送りされた証明書を選択</text>
+  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">cnf.x5t#S256</text>
 </svg>
 
 本番では OP が自前で TLS を終端することはほぼありません。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが HTTP ヘッダ（`X-SSL-Cert`、`X-Forwarded-Client-Cert` など）で前送りする必要があります。
@@ -111,11 +105,9 @@ op.WithMTLSProxy("X-SSL-Cert", []string{"10.0.0.0/8"})
 - `headerName` が空文字なら設定エラー。ヘッダパスを無効化したい場合はオプション自体を渡さないでください。
 - `trustedCIDRs` が空 slice なら構築時に拒否されます。設定ミスで許可リストが黙って広がる経路を塞ぐためです。
 
-OP が自前で TLS を終端しているときは、ライブラリは TLS ハンドシェイクの証明書(`http.Request.TLS.PeerCertificates`)を優先します。ヘッダ経路は、ハンドシェイク証明書が無く **かつ** リクエストの `RemoteAddr` が `trustedCIDRs` のいずれかに含まれるときにのみ参照されます。リバースプロキシを迂回して OP に直接到達した攻撃者は、ヘッダを設定しても証明書を偽造できません — OP は fail closed して、証明書なしのリクエストと同じ応答を返します。
+直接経路では `http.Request.TLS.PeerCertificates` を読みます。プロキシ経路はリクエストの `RemoteAddr` が設定済み trusted CIDR 内にある場合だけ参照され、範囲外からのヘッダは無視されて fail closed になります。信頼済みプロキシから来たリクエストでは、前送りされた証明書が正本であり、プロキシから OP までの TLS hop にある証明書より優先されます。プロキシの transport 証明書は OAuth クライアント証明書として扱いません。
 
-信頼済みプロキシがクライアント証明書ヘッダを前送りした場合、そのヘッダ上の証明書がトークン結び付けの正本です。プロキシヘッダの証明書と実際の TLS ハンドシェイクの証明書が食い違う場合は、プロキシ自身の証明書へ黙って結び付けず `invalid_request` で拒否します。
-
-`op.MTLSProxyConfig(provider)` は記録された設定を返すので、外部に置いた introspection エンドポイントなどで `internal/mtls.Verifier` を自前構築する組み込み側でも、同じ許可リストを再利用できます。
+`op.MTLSProxy` は公開設定型です。`op.MTLSProxyConfig(provider)` は記録済みの `HeaderName` と fresh な `TrustedProxies` slice を返し、option が無ければ zero value を返します。組み込み側の edge code はこの公開 projection を使ってヘッダ除去ポリシーを OP と揃えられ、internal verifier の import は必要ありません。
 
 ## 実装例
 
@@ -134,16 +126,15 @@ op.New(
 )
 ```
 
-OP が自前で TLS を終端する環境(テスト、シングルテナント on-prem 等)では、`WithMTLSProxy` 行は省略可能です — ライブラリは `http.Request.TLS.PeerCertificates` から直接証明書を読みます。
+OP が自前で TLS を終端する環境(テスト、シングルテナント on-prem 等)では、`WithMTLSProxy` 行は省略可能です — ライブラリは `http.Request.TLS.PeerCertificates` から直接証明書を読みます。OP 自身にもチェーン再検証をさせる場合は、CA を追加した `x509.NewCertPool()` と `WithMTLSRootCAs` を渡してください。
 
 `op.WithProfile(profile.FAPI2Baseline)` は `[DPoP, MTLS]` に対する `RequiredAnyOf` を課します。どちらも明示しなければ、プロファイルは DPoP を既定メンバーとして選びます。mTLS の送信者制約を使う構成では `feature.MTLS` を明示してください。その場合は mTLS が制約を満たすため DPoP 既定は追加されません。クライアントの token endpoint 認証には `private_key_jwt` を使います。
 
 ## 落とし穴
 
 - **TLS 終端が証明書を正しく前送りすること。** プロキシごとにヘッダ名とエンコード（DER / PEM / URL エンコード PEM）が違います。両端で形式と `WithMTLSProxy` のヘッダ名を固定してください。
-- **証明書の更新には運用面の調整が必要。** `self_signed_tls_client_auth` の証明書を更新する場合、登録 JWKS も同時に更新しないと新証明書の thumbprint が一致しません。新旧証明書の有効期間が重なる間は、新旧両方の JWK が登録されているように rollover を計画してください。
+- **証明書の更新で binding が変わる。** トークンは発行時の leaf 証明書に結び付いています。証明書を更新したらトークンも再発行してください。新しい証明書では古いトークンの `cnf.x5t#S256` を満たせません。
 - **mTLS クライアント認証を token endpoint method として設定しない。** mTLS は送信者制約レイヤです。FAPI 構成のクライアント認証には `private_key_jwt` を使ってください。
-- **空の matcher は fail closed。** `tls_client_auth` では `SubjectDN` / `SANDNS` / `SANURI` / `SANIP` / `SANEmail` のうち少なくとも 1 つが必要です。すべて空のまま登録された場合、検証側が `ErrNoMatcherConfigured` で拒否します。
 - **多段プロキシでの `RemoteAddr` の意味。** OP の前にプロキシが 2 段ある場合、`RemoteAddr` に乗るのは **直前の** プロキシの IP のみです。その IP が `trustedCIDRs` に入っている必要があります。さらに外側のプロキシはヘッダ許可リストの対象外です（OP が直接見ないため）。
 
 ## mTLS が向いているケース

@@ -1,13 +1,13 @@
 ---
 title: Rich authorization requests (RFC 9396)
-description: Accept authorization_details, validate each element against a registered type, and echo the granted details on tokens and introspection.
+description: Register and validate RFC 9396 authorization_details, force consent for new details, and echo granted details on tokens and introspection.
 ---
 
 # Use case — Rich authorization requests (RFC 9396)
 
 Scopes are coarse: `scope=payments` says *this client may move money*, not *move €40 from IBAN X to IBAN Y once*. [RFC 9396](https://datatracker.ietf.org/doc/html/rfc9396) (Rich Authorization Requests, "RAR") adds an `authorization_details` parameter — a JSON array of typed objects — so the client can describe exactly what it is asking for, the OP can bind that description to the grant, and every token minted from the grant carries it.
 
-The library accepts `authorization_details` at `/authorize`, `/par`, and `/token`, validates each element against a type you register, persists the granted details on the grant, and echoes them on JWT access tokens (RFC 9068 §2.2.3) and introspection (RFC 9396 §9).
+The library accepts `authorization_details` at `/auth`, `/par`, and `/token`, validates each element against a type you register, persists the granted details on the grant, and echoes them on JWT access tokens (RFC 9068 §2.2.3) and introspection (RFC 9396 §9). When mounted at `/oidc`, the authorization endpoint is `/oidc/auth`.
 
 Use RAR when the resource server must decide from structured facts such as amount, account, location, action, or datatype. Do not use it just to create more scope names: if `read:orders` or `payments:initiate` is precise enough, scopes are simpler and better supported by existing clients.
 
@@ -39,11 +39,21 @@ import (
   "errors"
 
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/store"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
+
 op.New(
-  /* required options */
+  op.WithIssuer("https://op.example.com"),
+  op.WithStore(st),
+  op.WithKeyset(myKeyset),
+  op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithAuthorizationDetailTypes(op.AuthorizationDetailType{
     Type: "payment_initiation",
     Validate: func(_ context.Context, el map[string]any, _ *store.Client) error {
@@ -95,6 +105,12 @@ The same parameter is accepted on a [PAR](/use-cases/fapi2-baseline) push and at
 ```
 
 A JWT access token carries the same array as an `authorization_details` claim (RFC 9068 §2.2.3), and introspecting the token returns it in the introspection response (RFC 9396 §9), so a resource server reaches the granted details whether it parses the JWT itself or asks the OP.
+
+## Reconsent and detail coverage
+
+The OP silently reuses an existing grant only when every requested scope is already present and every requested `authorization_details` element is deeply equal to an element on that grant. `prompt=consent` still forces the consent interaction even when both sets are covered. A new element, or a changed value such as `amount: "100"` → `"999"`, also forces consent; after ordinary consent the existing grant is extended with the requested details.
+
+The consent UI can narrow the requested scope set, but the library does not provide a separate per-detail approval or narrowing control. Registered validators decide whether each detail is acceptable; once the ordinary consent path succeeds, the requested details are persisted and echoed as a unit.
 
 ## Errors
 

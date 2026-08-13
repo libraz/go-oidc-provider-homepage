@@ -35,13 +35,22 @@ RP がすべて first-party で（自分が全部所有していてどうせ DB 
 ## 設定
 
 ```go
-import "github.com/libraz/go-oidc-provider/op"
+import (
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
+
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
 
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(store),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithPairwiseSubject(pairwiseSalt), // pairwiseSalt: []byte、32 byte 以上
 )
@@ -78,7 +87,7 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 :::
 
 ::: info OP の外で同じ導出を使う
-`provider.SubjectGenerator()` は、OP の構築時に選ばれた subject generator と同じインスタンスを返します。管理画面のレポート、監査ジョブ、移行処理などで、ブラウザを `/authorize` に通さず同じ `sub` を導出したい場合に使います。
+`provider.SubjectGenerator()` は、OP の構築時に選ばれた subject generator と同じインスタンスを返します。管理画面のレポート、監査ジョブ、移行処理などで、ブラウザを `/auth` に通さず同じ `sub` を導出したい場合に使います。
 
 ただし `WithPairwiseSubject` が有効でも、実際の発行経路はクライアント単位で分岐します。`subject_type=pairwise` のクライアントだけが pairwise 導出を使い、`public` または未設定のクライアントは既定の UUIDv7 subject を使います。OP の外で「実際に発行される `sub`」と一致させたいコードは、generator を呼ぶ前にクライアントの `SubjectType` を確認してください。
 :::

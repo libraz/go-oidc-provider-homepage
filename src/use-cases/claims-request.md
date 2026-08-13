@@ -1,6 +1,6 @@
 ---
 title: Claims request parameter
-description: OIDC Core 1.0 §5.5 — RP asks for specific claims via the `claims` parameter, OP projects them onto id_token / userinfo.
+description: OIDC Core 1.0 §5.5 — RP asks for specific claims via `claims`; the OP projects them when claims support is enabled.
 ---
 
 # Use case — Claims request parameter
@@ -43,7 +43,7 @@ op.New(
 )
 ```
 
-`claims_parameter_supported` defaults to `true`; pass `op.WithClaimsParameterSupported(false)` only when you want to stop advertising and honoring `claims` requests.
+`claims_parameter_supported` defaults to `true`. Pass `op.WithClaimsParameterSupported(false)` to remove the advertisement and ignore valid `claims` payloads. Scope-derived claims continue to work; malformed JSON is still rejected at the request boundary.
 
 The discovery document then advertises:
 
@@ -101,6 +101,8 @@ When [JAR](/use-cases/fapi2-baseline) is enabled, the `claims` JSON goes inside 
 ```
 
 The library parses both shapes — query parameter and JAR-embedded — through the same merge path.
+
+When claims support is disabled, the OP also suppresses requested-claim projection from existing grants. That applies to both ID Tokens and UserInfo, including tokens descended from refresh rotation; claims released by scopes are unaffected. Re-enabling the option restores projection for grants that still carry their validated request.
 
 ## Authorization Details (RFC 9396)
 

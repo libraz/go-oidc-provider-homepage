@@ -35,12 +35,12 @@ http.ListenAndServe(":8080", r)
 
 ```go
 op.New(
-  op.WithMountPrefix("/auth"),
+  op.WithMountPrefix("/oidc"),
   /* ... */
 )
 ```
 
-`/authorize` は `/auth/authorize`、`/token` は `/auth/token` … となります。**Discovery (`/.well-known/openid-configuration`) は常にルートに公開されます** — OIDC Discovery 1.0 §4 の要請です。
+既定の `/auth` エンドポイントは `/oidc/auth`、`/token` は `/oidc/token` … となります。**Discovery (`/.well-known/openid-configuration`) は常にルートに公開されます** — OIDC Discovery 1.0 §4 の要請です。
 
 ## カスタムエンドポイントパス
 

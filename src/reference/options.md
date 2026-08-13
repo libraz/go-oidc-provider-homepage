@@ -128,6 +128,7 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
 | Option | Value | Section | Default |
 |---|---|---|---|
 | `WithStaticClients` | `...op.ClientSeed` (use `op.PublicClient` / `op.ConfidentialClient` / `op.PrivateKeyJWTClient`) | seeds the client registry at boot | empty |
+| `WithHighEntropyClientSecrets` | _(no args)_ | switches the OP-wide client-secret verifier to the high-entropy keyed-hash format. Existing Argon2 client hashes cannot be retrofitted; reprovision every client before enabling it. | Argon2-compatible client secrets |
 | `WithFirstPartyClients` | `...string` (client IDs) | grants first-party consent skip | none |
 | `WithDynamicRegistration` | `op.RegistrationOption` | mounts `/register` (RFC 7591/7592) | disabled |
 
@@ -140,7 +141,7 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
 | `WithInteractionDriver` | `interaction.Driver` | swaps the entire interaction transport (HTML driver / SPA driver / custom) | bundled HTML driver |
 | `WithInteractions` | `...op.Interaction` (variadic) | non-credential prompts (T&C, KYC) layered on top of the driver | consent only |
 | `WithCaptchaVerifier` | `op.CaptchaVerifier` | upstream captcha provider for `StepCaptcha` | none |
-| `WithRiskAssessor` | `op.RiskAssessor` | feeds `RuleRisk` and `LoginContext.RiskScore` | none |
+| `WithRiskAssessor` | `op.RiskAssessor` | supplies risk scores. With `WithAuthenticators`, it runs at pre-/post-factor boundaries; with `WithLoginFlow`, it becomes the flow assessor and runs once per chain. It is mutually exclusive with a non-nil `LoginFlow.Risk`; configuring both fails `op.New`. | none |
 | `WithLoginAttemptObserver` | `op.LoginAttemptObserver` | counts failed attempts for `RuleAfterFailedAttempts` | none |
 | `WithMFAEncryptionKeys` | 32-byte key(s) | AES-256-GCM seal of TOTP secrets at rest | none |
 | `WithAuthnLockoutStore` | `store.AuthnLockoutStore` | persists per-subject failed-attempt counters consulted by `RuleAfterFailedAttempts` | none |
@@ -150,21 +151,23 @@ Leaving `WithAuthnLockoutStore` unset disables cross-factor tracking, so only th
 
 Authentication-factor records are intentionally outside `store.Store`. `StepTOTP`, `PrimaryPasskey`, `StepRecoveryCode`, and `StepEmailOTP` receive their own stores because enrollment schema, encryption keys, and account-recovery policy belong to the embedding application. In-memory, SQL, and DynamoDB adapters expose the matching accessors. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) uses the shipped SQL adapter's factor stores alongside the core OP tables; implement the factor-store contracts yourself only for another backend.
 
-Two factor-store contracts matter for durability-sensitive deployments. `store.EmailOTPStore.Get` must keep records readable until `EmailOTPRecord.RetainUntil`, not merely until the code's `ExpiresAt`, so resend caps and brute-force counters survive an expired code. `store.RecoveryStore.Consume` must compare the presented code hash with the currently stored slot and reject stale hashes, so regenerated recovery batches revoke old leaked codes instead of burning a slot in the new batch.
+Two factor-store contracts matter for durability-sensitive deployments. `store.EmailOTPStore.Get` must keep records readable until `EmailOTPRecord.RetainUntil`, not merely until the code's `ExpiresAt`, so resend caps and brute-force counters survive an expired code. `store.RecoveryStore.Consume` must compare the presented code hash with the currently stored slot and reject stale hashes, so regenerated recovery batches revoke old leaked codes instead of burning a slot in the new batch. TOTP and email-OTP `Version` values are opaque, store-issued equality tokens for compare-and-swap; do not infer ordering or manufacture them. A stale CAS returns the consumed/stale error. `PasskeyStore.Put` must atomically refuse a duplicate credential ID when it names a different subject; it must never move that credential between subjects.
 
 ## UI
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithSPAUI` | `op.SPAUI` (struct: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | mounts the SPA shell and static asset tree while the OP serves the JSON interaction state surface | off |
+| `WithSPAUI` | `op.SPAUI` (struct: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | mounts the SPA shell and static asset tree while the OP serves the JSON interaction state surface. Only `LoginMount` is a route; `ConsentMount` and `LogoutMount` are retained for compatibility, validated as paths, and inert/deprecated. | off |
 | `WithConsentUI` | `op.ConsentUI` (wraps a `*html/template.Template`) | renders consent with an embedder-supplied HTML template; OP still owns state, CSRF, and persistence | bundled template |
 | `WithChooserUI` | `op.ChooserUI` (wraps a `*html/template.Template`) | renders `prompt=select_account` with an embedder-supplied HTML template | bundled template |
-| `WithCORSOrigins` | `...string` | strict-CORS allowlist (auto-derived from redirect URIs if omitted) | derived |
-| `WithDefaultLocale` | `op.Locale` (BCP 47 tag) | default UI locale when the request carries no `ui_locales` | `"en"` |
+| `WithCORSOrigins` | `...string` | explicit origins added to the API CORS allowlist. Redirect-URI origins may be derived for API CORS, but interaction and end-session ceremony checks allow only the issuer origin plus these explicit origins. | derived for API routes; issuer-only for ceremonies |
+| `WithDefaultLocale` | `op.Locale` (BCP 47 tag) | canonicalized BCP 47 default UI locale when the request carries no `ui_locales`; an unregistered default fails `op.New` | `"en"` |
 | `WithLocale` | `op.LocaleBundle` (one per call; repeatable) | registers a per-locale message bundle for the bundled HTML driver | English + Japanese seed |
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | per-user locale override consulted at the head of the §L.2 chain | none |
 
-`WithSPAUI` is mutually exclusive with `WithConsentUI`: both own the consent rendering surface. `WithChooserUI` may be configured alongside `WithSPAUI`, but SPA mode owns the chooser through the JSON state envelope; the chooser template is ignored and `op.New` emits a structured warning. See [Custom chooser UI](/use-cases/custom-chooser-ui).
+`WithSPAUI` is mutually exclusive with `WithConsentUI`: both own the consent rendering surface. `WithSPAUI.LoginMount` is the only SPA route; `ConsentMount` and `LogoutMount` no longer reserve routes. Consent uses the login interaction state surface, and built-in logout confirmation remains in the normal end-session flow. `WithChooserUI` may be configured alongside `WithSPAUI`, but SPA mode owns the chooser through the JSON state envelope; the chooser template is ignored and `op.New` emits a structured warning. See [Custom chooser UI](/use-cases/custom-chooser-ui).
+
+`WithLocale` canonicalizes locale tags to lowercase, hyphen-separated BCP 47 form. `Provider.SetLocaleCookie(w, locale)` and `Provider.ClearLocaleCookie(w)` are the public cookie seams; `SetLocaleCookie` resolves exact and language-only matches and returns `op.ErrLocaleNotRegistered` when no registered locale matches. The cookie is `__Host-oidc_locale`, secure, HttpOnly, SameSite=Lax, and independent of the login session.
 
 ## Tokens
 
@@ -188,7 +191,7 @@ Two factor-store contracts matter for durability-sensitive deployments. `store.E
 | `WithEndpoints` | `op.Endpoints` (struct: per-endpoint path overrides) | overrides default endpoint paths | spec defaults |
 | `WithMountPrefix` | `string` (must start with `/`; pass `/` for root) | embeds an issuer-relative path prefix | `/oidc` |
 | `WithClaimsSupported` | `...string` (variadic) | populates `claims_supported` in discovery | omitted |
-| `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported`; `false` also makes authorize / PAR ignore `claims` payloads after malformed JSON has been rejected | true |
+| `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported`; `false` rejects malformed JSON but suppresses the claims projection and ignores valid `claims` payloads at authorize / PAR | true |
 | `WithACRValuesSupported` | `...string` (variadic) | publishes `acr_values_supported`; FAPI / eIDAS / NIST 800-63 deployments use this to advertise honored ACR values | empty (omitted from discovery) |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata` (typed `service_documentation`, policy / TOS / UI locale / mTLS alias fields plus `Extra map[string]any`) | injects RFC 8414 / OIDC Discovery metadata not owned by the OP; `UILocalesSupported` overrides the auto-derived locale list when non-empty, and `Extra` keys that collide with OP-controlled fields are rejected | none |
 | `WithPARLifetime` | `time.Duration` | overrides the lifetime of `request_uri` values issued by `/par`; expiry is checked when the browser presents the URI at `/authorize`, while later code emission remains single-use | 60 s |
@@ -198,7 +201,7 @@ Two factor-store contracts matter for durability-sensitive deployments. `store.E
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithSubjectGenerator` | `op.SubjectGenerator` (interface) | overrides the `sub` claim derivation; the in-tree `op/subject.UUIDv7` is the default | UUIDv7 passthrough |
+| `WithSubjectGenerator` | `op.SubjectGenerator` (interface) | overrides the `sub` claim derivation; the in-tree `op/subject.UUIDv7` is the default. The generator is called at each projection and must be deterministic for identical input with no surprise I/O. | UUIDv7 passthrough |
 | `WithPairwiseSubject` | `[]byte` salt (≥ 32 bytes) | enables OIDC Core §8.1 pairwise sub derivation per sector; mid-life switching is rejected at `op.New` | public (UUIDv7) |
 
 See [Use case: pairwise subject](/use-cases/pairwise-subject).
@@ -212,7 +215,7 @@ See [Use case: pairwise subject](/use-cases/pairwise-subject).
 | `WithDeviceCodeExpiry` | `time.Duration` | overrides the `expires_in` lifetime for newly issued `device_code` records; independent of the access-token TTL | 10 min |
 | `WithDeviceCodePollInterval` | `time.Duration` | overrides the advertised polling `interval`; clients polling faster receive `slow_down` | 5 s |
 | `WithCIBA` | `...op.CIBAOption` | enables CIBA poll mode; mounts `/bc-authorize` and registers the CIBA URN. Sub-options: `WithCIBAHintResolver` (required), `WithCIBADefaultExpiresIn`, `WithCIBAMaxExpiresIn`, `WithCIBAPollInterval`, `WithCIBAMaxPollViolations` | disabled |
-| `WithCustomGrant` | `op.CustomGrantHandler` | registers an embedder-defined `grant_type` URN at `/token`; the handler returns a verbatim access token or a `BoundAccessToken` request the OP signs | none |
+| `WithCustomGrant` | `op.CustomGrantHandler` | registers an embedder-defined `grant_type` URN at `/token`; duplicate custom names and collisions with every built-in grant type are rejected at construction. The handler returns a verbatim access token or a `BoundAccessToken` request the OP signs | none |
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | enables the RFC 8693 token-exchange grant; the policy decides admission per request and may narrow OP-computed defaults | disabled |
 
 `WithDeviceCodeExpiry` and `WithDeviceCodePollInterval` are intentionally not derived from `WithAccessTokenTTL`; short-lived access tokens should not make a TV / CLI pairing ceremony expire before the user can reach the second screen. See [Use case: device code](/use-cases/device-code), [CIBA](/use-cases/ciba), [Custom grant](/use-cases/custom-grant), [Token exchange](/use-cases/token-exchange).
@@ -223,7 +226,7 @@ See [Use case: pairwise subject](/use-cases/pairwise-subject).
 |---|---|---|---|
 | `WithAuthorizationDetailTypes` | `...op.AuthorizationDetailType` | enables RFC 9396 Rich Authorization Requests; registers each accepted `type` with its validator. `authorization_details` is then validated at `/authorize`, `/par`, `/token`, persisted on the grant, echoed on JWT access tokens and introspection, and advertised in discovery. A nil `Validate` is rejected at `op.New` | disabled |
 | `WithGrantManagement` | `(actions []op.GrantManagementAction, actionRequired bool)` | enables the OAuth 2.0 Grant Management draft; honours `grant_management_action` / `grant_id`, mounts the query / revoke endpoint, stamps `grant_id` on the token response, and advertises the configured action set in discovery. Experimental (tracks an IETF draft) | disabled |
-| `WithProtectedResources` | `...op.ProtectedResource` | publishes RFC 9728 protected-resource metadata at `/.well-known/oauth-protected-resource` plus each resource path suffix, with the issuer in `authorization_servers` | none |
+| `WithProtectedResources` | `...op.ProtectedResource` | publishes RFC 9728 protected-resource metadata at `/.well-known/oauth-protected-resource` plus each resource path suffix, with the issuer in `authorization_servers`. `ProtectedResource.IntrospectionClients` allows named confidential callers to introspect access tokens whose audience is that resource; it never delegates refresh-token introspection. | none |
 
 `op.StepUpChallenge(realm, acrValues, maxAge)` is a standalone helper (not an `op.New` option) that builds the RFC 9470 `WWW-Authenticate: Bearer` challenge an embedder's resource server returns; the OP itself never emits it.
 
@@ -242,7 +245,8 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | header-based mTLS termination at edge | none |
+| `WithMTLSRootCAs` | `*x509.CertPool` | optional public trust pool for OP-side validation of direct or forwarded client certificates; nil is rejected | unset (terminator validates) |
+| `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | header-based mTLS termination at edge. The forwarded certificate is authoritative only for requests from the trusted CIDRs; `op.MTLSProxy` / `op.MTLSProxyConfig` are the public projection seams. | none |
 | `WithTrustedProxies` | `...string` (CIDRs) | resolves `X-Forwarded-*` / `Forwarded` to real client IP | none |
 | `WithTrustedProxyHosts` | `...string` (hostnames) | extends the `X-Forwarded-Host` allowlist beyond the canonical issuer host when trusted proxy CIDRs are configured | issuer host only |
 | `WithAllowLocalhostLoopback` | _(no args)_ | admits textual `localhost` in the RFC 8252 loopback carve-out for dev / native-app demos, **and in the issuer itself**; literal `127.0.0.1` / `[::1]` remain the strict defaults | strict literal loopback only |
@@ -250,18 +254,19 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 | `WithAllowPrivateNetworkJAR` | _(no args)_ | permits `request_uri` hosted on RFC 1918 (test only) | denied |
 | `WithAllowPrivateNetworkSector` | _(no args)_ | permits `sector_identifier_uri` hosted on RFC 1918 during dynamic registration (test / private RP networks only) | denied |
 | `WithJWKSHTTPTransport` | `http.RoundTripper` | custom transport for RP-controlled JWKS fetches used by JAR and `private_key_jwt`, while preserving the dial-time SSRF gate | system-trust transport |
-| `WithBackchannelAllowPrivateNetwork` | `bool` | permits `backchannel_logout_uri` on RFC 1918 (test only) | false |
+| `WithBackchannelAllowPrivateNetwork` | `bool` | explicitly permits delivery to RFC1918, loopback, link-local, or ULA `backchannel_logout_uri` destinations. Default deny is a production SSRF boundary; opt in only with a deliberate network policy. | false (deny) |
 | `WithAllowInsecureBackchannelLogoutForDev` | _(no args)_ | admits plain-HTTP loopback `backchannel_logout_uri` values and delivery only for dev / CI fixtures | denied |
 | `WithBackchannelLogoutHTTPClient` | `*http.Client` | HTTP client for back-channel logout fan-out | default |
 | `WithBackchannelLogoutTimeout` | `time.Duration` | per-RP fan-out timeout | 5 s |
+| `WithBackchannelFanOutBudget` | `time.Duration` (positive) | whole-event budget for back-channel logout fan-out, independent of each RP timeout | 30 s |
 
 ## Observability
 
 | Option | Value | Section | Default |
 |---|---|---|---|
 | `WithLogger` | `*slog.Logger` | structured operational log sink (handler is wrapped with the redaction middleware) | discard |
-| `WithAuditLogger` | `*slog.Logger` | dedicated audit-event log sink | inherits `WithLogger` |
-| `WithPrometheus` | `*prometheus.Registry` | registers OP counters on caller's registry (no `/metrics` mounted) | none |
+| `WithAuditLogger` | `*slog.Logger` | dedicated audit-event log sink for OIDC-domain business events; it is not an HTTP access log | inherits `WithLogger` |
+| `WithPrometheus` | `*prometheus.Registry` | registers the curated OP counters on the caller's registry (no `/metrics` route, HTTP lifecycle metrics, or health endpoint is mounted) | none |
 
 ## Operational posture
 

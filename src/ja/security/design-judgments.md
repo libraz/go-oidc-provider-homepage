@@ -1,6 +1,6 @@
 ---
 title: 設計判断
-description: RFC 同士が衝突する箇所で、本ライブラリがどの解釈を選び、何を退けたか。
+description: go-oidc-provider のセキュリティ設計判断 — RFC の衝突、introspection 認可、失効、profile、bounded fetch をどう整合させるかを記録します。
 pageClass: pg-security-design-judgments
 ---
 
@@ -66,7 +66,7 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
     <a href="#dj-2"><strong>#2</strong><span>リフレッシュローテーションには 60 秒の猶予と chain 侵害時の退役がある。</span></a>
     <a href="#dj-3"><strong>#3</strong><span><code>offline_access</code> は既定で UX / TTL シグナル。厳格モードではゲート。</span></a>
     <a href="#dj-15"><strong>#15</strong><span>DPoP リフレッシュ chain は public では束縛、confidential では未束縛。</span></a>
-    <a href="#dj-16"><strong>#16</strong><span>クロスクライアント introspection は unknown token と同じ inactive 形。</span></a>
+    <a href="#dj-16"><strong>#16</strong><span>confidential 限定の introspection は resource audience 経由だけ委譲する。</span></a>
     <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> は必要サブストアがあればアクセストークン失効をカスケードする。</span></a>
     <a href="#dj-18"><strong>#18</strong><span>アクセストークンは JWT 既定。opaque は opt-in で resource ごとに選べる。</span></a>
     <a href="#dj-19"><strong>#19</strong><span>JWT 失効は grant tombstone 既定。FAPI では no-revocation を拒否。</span></a>
@@ -227,7 +227,7 @@ OP 側で `jti` キャッシュを保持します。JAR ウィンドウごとに
 **衝突**: セッションを認可コード / リフレッシュトークン / クライアントと同じ SQL クラスタに置くと、セッションの書き込みレイテンシがトランザクション経路に直結します。Redis に置くと耐久性が下がります。ただし、セッション喪失はユーザの再ログインで回復できますが、認可コード喪失は RP のループを壊してしまいます。
 
 ::: tip 選択
-セッションは別サブストア(`store.SessionStore`)としてルーティングでき、揮発ストア(Redis、Memcached)に向けても構いません。Back-Channel Logout の配送は揮発セッション配下では best-effort とします。「セッションを失った場合、その RP には通知できない」を許容可能な失敗モードとして扱います(Redis 揮発スライス運用向け)。`op.AuditBCLNoSessionsForSubject` 監査イベントを、設定した `op.SessionDurabilityPosture` と組み合わせると、ダッシュボード上で 2 つのケースを区別できます。
+セッションは別サブストア（`store.SessionStore`）としてルーティングでき、揮発ストア（Redis / Memcached）に置くこともできます。`/end_session` は削除前にセッション snapshot を取得し、BCL coordinator は `GrantStore.ListClientIDsBySubject` による grant 起点の client ID から audience を解決します。snapshot 取得前に eviction が起きると fan-out は開始されず、BCL の no-sessions event も発火しません。`op.AuditBCLNoSessionsForSubject` は、セッションを伴う logout notice が coordinator に届いたものの、eligible な grant 起点 RP target が 0 件だったことを意味します。`op.SessionDurabilityPosture` は embedder が宣言した耐久性を記録し、event を eviction の直接シグナルとせず、logout trigger / snapshot 保持リスクを運用側が解釈できるようにします。
 :::
 
 <a class="faq-anchor" id="dj-11"></a>
@@ -298,7 +298,7 @@ verifier は、主 `Audience`(OIDC Core: token endpoint URL)と `AuxAudiences` �
 
 <a class="faq-anchor" id="dj-16"></a>
 
-## 16. Introspection — 同一クライアント限定 + 一様な inactive 形
+## 16. Introspection — confidential caller、audience 単位の委譲、一様な inactive 形
 
 **仕様**: RFC 7662 §2.2 は、inactive 応答に `"active": false` を必須とし、その場合は `active` メンバだけを含めてもよいと書いています。§2.1 は AS が「audience に応じて応答を変えてもよい」と書き、クロスクライアント拒否を許容しつつ、強制はしていません。
 
@@ -306,12 +306,12 @@ verifier は、主 `Audience`(OIDC Core: token endpoint URL)と `AuxAudiences` �
 
 1. **緩い解釈** — AS が認識するすべてのトークンを、認証済みなら誰でも introspect できる。発行先でないクライアントにも `"active": true` を返す。
 2. **厳格 + 区別可能** — クロスクライアントの introspection は拒否するが、区別可能な形で通知する(HTTP 403 や `error: not_authorized` など)。
-3. **保守的** — クロスクライアントの introspection を拒否しつつ、unknown / expired / revoked と同じ `{"active": false}` 形で返す。
+3. **audience 単位の委譲** — token の audience が示す resource server を明示的な allow-list で認め、それ以外の caller には unknown / expired / revoked と同じ `{"active": false}` 形を返す。
 
 解釈 2 は応答の形からトークン存在の情報を漏らします。攻撃者は応答の形の違いを観測することで、推測したトークンが *どこかの* 有効な grant に属するかを検出できてしまいます。
 
 ::: tip 選択
-**解釈 3** を採用します。`client_id` が呼び出し側と一致しないトークンは `{"active": false}` を返し、「unknown」「expired」「revoked」と構造的に区別できないようにします。同じ inactive 形を、JWT / opaque AT / リフレッシュトークンの各分岐すべてに適用します。実装は `internal/introspectendpoint.resolveJWT` / `resolveOpaque` / `resolveOpaqueAccessToken` です。すべての miss 経路が `inactive()` を返すので、timing と応答の形の双方を一様に保てます。
+**`/introspect` は confidential caller だけに開きます**。public client、または token endpoint 認証方式が `none` の client は token 解決より前に `401 invalid_client` を受け取ります。confidential client は自分に発行された access token / refresh token を introspect できます。別 client の access token は、token の audience が示す protected resource の `IntrospectionClients` に caller が登録されている場合だけ委譲されます。この audience 境界を越えた委譲はなく、refresh token は常に委譲されません。認められない cross-client access-token lookup は unknown / expired / revoked と同じ `{"active": false}` 形を返します。active な opaque response には `iss` も含まれます。実装は `internal/introspectendpoint` と protected-resource 設定にあり、confidential gate、audience 委譲、refresh-token 拒否をテストで固定しています。
 :::
 
 <a class="faq-anchor" id="dj-17"></a>

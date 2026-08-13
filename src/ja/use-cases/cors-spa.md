@@ -1,6 +1,6 @@
 ---
 title: SPA 向け CORS
-description: 異なる origin の SPA が OP のユーザ向けエンドポイントを呼べるようにする。
+description: SPA の API 呼び出しに明示的な CORS origin を設定しつつ、interaction と end-session ceremony の origin を狭く保つ方法を説明します。
 pageClass: pg-use-cases-cors-spa
 ---
 
@@ -72,6 +72,8 @@ pageClass: pg-use-cases-cors-spa
 1. **静的な許可リスト** — `op.WithCORSOrigins("https://app.example.com", ...)`
 2. **自動導出される許可リスト** — 登録済みクライアントの `redirect_uris` から origin を自動追加。`WithStaticClients` だけで大半は済む。
 
+この union は API CORS 用の許可リストです。interaction や end-session の trust list とは意図的に別です。redirect URI の origin だけでは、login、consent、chooser、logout state の cross-origin POST 送信元を認可しません。これらの ceremony check が許可するのは issuer origin と `WithCORSOrigins` で明示した origin だけです。SPA が JavaScript から interaction state を送信する場合は SPA origin を明示追加してください。
+
 ## コード
 
 ```go
@@ -140,7 +142,7 @@ CORS で origin を許可しても、OP のセッション cookie は **op.examp
 
 直前の表は、ライブラリが厳格な CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が許可リストにあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的な配備で *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
 
-許可リストは 2 つの集合の和です。`WithCORSOrigins` で明示した origin と、クライアントストアに登録された全 `redirect_uri` の origin です。SPA クライアントを `RedirectURIs: []string{"https://app.example.com/callback"}` で登録すれば、`https://app.example.com` は自動で CORS 許可リストに入ります。`WithCORSOrigins` は、`redirect_uri` として登場しないブラウザ側 origin（別の管理用 SPA、ステータスページ、localhost 開発 origin など）のためにあります。
+API CORS の許可リストは 2 つの集合の和です。`WithCORSOrigins` で明示した origin と、クライアントストアに登録された全 `redirect_uri` の origin です。SPA クライアントを `RedirectURIs: []string{"https://app.example.com/callback"}` で登録すれば、`https://app.example.com` は API CORS に自動で入ります。`WithCORSOrigins` は、`redirect_uri` として登場しないブラウザ側 origin（別の管理用 SPA、ステータスページ、localhost 開発 origin など）のためにあります。Origin / Referer ceremony check は redirect URI registry を参照せず、issuer origin + 明示 origin のままです。
 
 | Endpoint | ブラウザから呼ぶか? | 実運用で CORS が必要か? |
 |---|---|---|

@@ -1,6 +1,6 @@
 ---
 title: 永続化（SQL）
-description: SQLite / MySQL / PostgreSQL に対して OP を運用（database/sql アダプタ経由）。
+description: database/sql アダプタで SQLite / MySQL / PostgreSQL を使い、追加型のスキーマ migration と定期的な retention GC を運用する。
 pageClass: pg-use-cases-sql-store
 ---
 
@@ -12,7 +12,7 @@ OP が保持する行のうち、OAuth / OIDC 仕様が **再起動越しに保�
 
 - **リフレッシュトークンチェーン**（RFC 6749 §6, RFC 9700 §4.14）— 失えば全ユーザのセッションが切れる。
 - **登録クライアント**（DCR が ON なら OIDC Dynamic Client Registration 1.0 / RFC 7591、OFF なら静的シード）— 失えば全 RP が動かなくなる。
-- **セッション**（OIDC RP-Initiated Logout 1.0 / Back-Channel Logout 1.0）— ログアウトの 一斉通知 に必要。
+- **セッション**（OIDC RP-Initiated Logout 1.0）— ブラウザのログイン状態と RP-Initiated Logout の状態を再起動後も保持する。
 - **同意グラント**（OIDC Core 1.0 §3.1.2.4）— 失えば再起動のたびに全ユーザに再同意を強いることになる。
 - **監査 / introspection / revocation の shadow 行** — [Tokens](/ja/concepts/tokens) で説明したアクセストークン registry。
 
@@ -77,6 +77,7 @@ SQL アダプタは以下のテーブルを同梱します:
 
 ```go
 import (
+  "context"
   databasesql "database/sql"
   _ "modernc.org/sqlite" // または MySQL / Postgres driver
 
@@ -99,12 +100,35 @@ provider, err := op.New(
   op.WithStore(storage),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(op.LoginFlow{
+    Primary: op.PrimaryPassword{Store: storage.UserPasswords()},
+  }),
 )
 ```
 
 ::: tip マイグレーション
-`*sql.Store.Migrate(ctx)` がアクティブな dialect 用の同梱スキーマを適用します。最初のリクエストが届く前の配備時に実行してください。`Schema()` は同じ DDL を文字列で返すので、自前の migration ツールに渡すこともできます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
+`*sql.Store.Migrate(ctx)` はアクティブな dialect 用の同梱スキーマを適用しますが、`CREATE TABLE IF NOT EXISTS` は既存テーブルを変更しません。新しい DB や開発環境には適していますが、既存環境では `Migrate` だけに頼らず、[`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) の追加変更を通常の migration ツールで適用してください。SQLite と PostgreSQL は `Migrate` で独立したインデックス定義を再適用できますが、不足している互換性カラムには明示的な `ALTER` が必要です。`Schema()` は現在の DDL を文字列で返すので、レビューや migration ツールへの投入に利用できます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
 :::
+
+## 既存 DB で最初のリクエストを受ける前に {#sql-migration-before-first-request}
+
+現在の MFA と動的登録の契約を使うバイナリを起動する前に、migration を適用します。追加するものは `oidc_registration_access_tokens.allowed_scopes`（NULL 可）、`oidc_totp_secrets.row_version`、`oidc_email_otps.row_version`（いずれも `NOT NULL DEFAULT 1`）です。SQLite では `TEXT` / `INTEGER`、MySQL または MariaDB では `JSON` / `BIGINT`、PostgreSQL では `JSONB` / `BIGINT` を使います。`allowed_scopes = NULL` は、scope 上限を保存する前に作られた RAT を含め、制限なしの登録 access token 上限を表します。`row_version` はアダプタが管理する opaque な compare-and-swap 状態なので、アプリケーションが増分したり再利用したり意味を割り当てたりしてはいけません。
+
+現在の retention とクライアント削除のクエリには、次の正確なインデックスも必要です（`WithNaming` で物理名を変えている場合は物理名に読み替えます）。
+
+| インデックス | テーブルとカラム | 用途 |
+|---|---|---|
+| `idx_oidc_grants_client_subject` | `oidc_grants(client_id, subject, updated_at)` | クライアント削除時の subject 列挙 |
+| `idx_oidc_grants_client` | `oidc_grants(client_id)` | クライアント単位の cascade |
+| `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` | 期限切れ認可コードの sweep |
+| `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` | refresh 履歴の sweep |
+| `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` | access token の retention query |
+| `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` | session の sweep |
+| `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` | PAR の sweep |
+| `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` | interaction の sweep |
+| `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` | replay marker の retention query |
+
+SQLite と PostgreSQL は DDL の `CREATE INDEX IF NOT EXISTS` により `Migrate()` でこれらを追加できます。MySQL と MariaDB は `CREATE TABLE` 内で宣言するため、既存テーブルには `ALTER TABLE ... ADD INDEX` を明示的に適用します。既存 DB の更新を新しい `v1.sql` の実行だけに任せたり、テーブルを drop / 再作成したりしないでください。MFA については旧 writer を停止してからカラムを追加・検証し、opaque version protocol に参加する writer だけを起動します。ロールアウト順序は [ストレージの保守](/ja/operations/storage-maintenance) にまとめています。
 
 ## テーブル名を差し替える
 
@@ -179,6 +203,21 @@ _ = storage.PutUserWithPassword(ctx, &store.User{
 `inmem` を検査する同じ contract test suite (`op/store/contract`) が、SQL アダプタに対しても `go test -tags=testcontainers` で testcontainers-go 経由の実 MySQL / Postgres を起動して実行されます。「SQL アダプタは `Store` interface を実装する」というライブラリの主張は、モックではなく実エンジンに対して検証されたものです。
 
 固定しているイメージ(`mysql:8.4`、`postgres:16-alpine`)は、`examples/07-mysql-store` および `examples/09-redis-volatile` の docker-compose スタックが使うエンジンマトリクスと揃えてあるので、アダプタレベルと example レベルの統合検証で同じ組み合わせを共有できます。
+
+## retention GC をスケジュールする
+
+SQL アダプタは、期限切れの行をすべてリクエスト経路で削除するわけではありません。アプリケーションの cron、leader election した worker、または別の保守スケジューラから `(*oidcsql.Store).GC(ctx, cutoff)` を呼び出します。
+
+```go
+cutoff := time.Now().UTC().Add(-15 * time.Minute) // 短い調査用猶予を残す
+stats, err := storage.GC(ctx, cutoff)
+if err != nil {
+  return err
+}
+log.Printf("oidc GC removed %d rows", stats.Total())
+```
+
+`GC` は `oidcsql.GCStats` を返し、期限切れの認可コード、PAR、interaction、session、refresh token ローテーション履歴についてテーブルごとの削除件数を持ちます。refresh sweep は grant 配下の refresh token がすべて有効期限を過ぎるまで履歴を保持し、row 自体を残す場合でも predecessor 自身の期限を過ぎた sealed retry-response blob を消します。blob の消去は row 件数に加算されません。過去の cutoff は猶予期間を残し、`time.Now()` はその時点ですでに期限切れのものを回収します。アダプタはバックグラウンド GC goroutine も timer も起動しないため、呼び出しのスケジュールと監視は組み込み側が担当します。`GCStats`、所要時間、エラー、各テーブルの残量を記録し、sweep の停止を検知できるようにしてください。access token、opaque token、grant revocation、ConsumedJTI の各サブストアにはポリシー依存の独自 GC があり、device code と CIBA の row は insert 経路で期限切れが排除されます。
 
 ## いつ Redis を載せるか
 

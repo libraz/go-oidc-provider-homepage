@@ -66,6 +66,7 @@ No `/authorize`, no consent, no `id_token`, no refresh token.
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/feature"
   "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -74,21 +75,29 @@ provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKeys(myCookieKey),
+  // No browser grant is wired, so cookie keys are not needed.
+  op.WithGrants(grant.ClientCredentials),
+  op.WithFeature(feature.Introspect),
 
-  op.WithGrants(
-    grant.AuthorizationCode, // for human users
-    grant.RefreshToken,
-    grant.ClientCredentials, // <-- enable service-to-service
+  op.WithStaticClients(
+    op.ConfidentialClient{
+      ID:         "service-a",
+      Secret:     serviceASecret, // seed hashes it before storage
+      AuthMethod: op.AuthClientSecretBasic,
+      GrantTypes: []string{"client_credentials"},
+      Scopes:     []string{"read:things", "write:things"},
+      Resources:  []string{"https://api.b.example.com"}, // RFC 8707 audience pin
+    },
+    op.ConfidentialClient{
+      ID:         "service-b",
+      Secret:     serviceBSecret,
+      AuthMethod: op.AuthClientSecretBasic,
+      GrantTypes: []string{"client_credentials"},
+    },
   ),
-
-  op.WithStaticClients(op.ConfidentialClient{
-    ID:         "service-a",
-    Secret:     serviceASecret,            // plaintext; the seed hashes it via op.HashClientSecret
-    AuthMethod: op.AuthClientSecretBasic,
-    GrantTypes: []string{"client_credentials"},
-    Scopes:     []string{"read:things", "write:things"},
-    Resources:  []string{"https://api.b.example.com"}, // RFC 8707 audience pin
+  op.WithProtectedResources(op.ProtectedResource{
+    Resource:            "https://api.b.example.com",
+    IntrospectionClients: []string{"service-b"},
   }),
 )
 ```
@@ -152,6 +161,6 @@ curl -s -u service-b:<secret> \
   https://op.example.com/oidc/introspect
 ```
 
-::: warning Introspect requires its own client
-The introspection endpoint authenticates the **caller** (Service B, the resource server). Register Service B as a confidential client too, so it can call `/introspect`. See [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) for the full wiring.
+::: warning Introspect requires a confidential caller
+The introspection endpoint authenticates the **caller** (Service B, the resource server). Public clients and clients whose `token_endpoint_auth_method` is `none` receive `401 invalid_client`; register Service B as a confidential client. By default a client can introspect only its own tokens. Put Service B in `ProtectedResource.IntrospectionClients` for the `https://api.b.example.com` audience to delegate access-token introspection to that resource server. This delegation never covers refresh tokens. See [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) for the full wiring.
 :::

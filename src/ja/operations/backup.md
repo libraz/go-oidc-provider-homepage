@@ -1,6 +1,6 @@
 ---
 title: バックアップ / DR
-description: 何をバックアップし、何を捨てるか。サブストアごとの RPO 目標。
+description: 永続 OIDC 状態・スキーマ・鍵をバックアップし、サブストアごとの RPO に沿って復旧を訓練する。
 outline: 2
 pageClass: pg-operations-backup
 ---
@@ -92,6 +92,47 @@ DB 標準のバックアップツールがそのまま使えます。選択肢�
 
 スキーマはソースリポジトリの [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) 配下にあります。
 
+### 既存 SQL スキーマで開始する前に
+
+既存 DB に対して現在の SQL アダプタを使うバイナリを起動する前に、スキーマをバックアップし、追加変更を適用します。`Store.Migrate` は新しい DB や開発環境には便利ですが、`CREATE TABLE IF NOT EXISTS` は既存テーブルを変更しません。最初に古い MFA writer を停止し、カラムの存在と値を検証してから、現在の opaque compare-and-swap 契約に参加する writer だけを起動してください。プロトコルテーブルを drop / 再作成して済ませないでください。
+
+次のカラムを migration guide にある dialect 別の型で追加します。
+
+- `oidc_registration_access_tokens.allowed_scopes` — SQLite は NULL 可の `TEXT`、MySQL / MariaDB は `JSON`、PostgreSQL は `JSONB`。`NULL` は、このフィールドが無かった時期に作られた token を含め、RAT の上限が無制限であることを表します。
+- `oidc_totp_secrets.row_version` — SQLite は `INTEGER NOT NULL DEFAULT 1`、MySQL / MariaDB と PostgreSQL は `BIGINT NOT NULL DEFAULT 1`。
+- `oidc_email_otps.row_version` — `oidc_totp_secrets.row_version` と同じ `INTEGER` / `BIGINT` の定義。
+
+現在の retention とクライアント削除に必要なインデックスは次の名前です（`WithNaming` を使う場合は物理テーブル名を読み替えます）。
+
+| インデックス | テーブルとカラム |
+|---|---|
+| `idx_oidc_grants_client_subject` | `oidc_grants(client_id, subject, updated_at)` |
+| `idx_oidc_grants_client` | `oidc_grants(client_id)` |
+| `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` |
+| `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` |
+| `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` |
+| `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` |
+| `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` |
+| `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` |
+| `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` |
+
+SQLite と PostgreSQL は `Migrate()` でインデックスを追加できます。MySQL と MariaDB の既存テーブルには `ALTER TABLE ... ADD INDEX` が必要です。dialect ごとの文は [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) を使い、この migration の記録をバックアップ / 復旧 runbook と一緒に保管してください。
+
+### SQL の retention GC をスケジュールする
+
+SQL アダプタはバックグラウンド GC goroutine を起動しません。バックアップの健全性を記録する保守基盤から、`(*oidcsql.Store).GC(ctx, cutoff)` をスケジュールします。
+
+```go
+cutoff := time.Now().UTC().Add(-15 * time.Minute) // 短い復旧用の猶予を残す
+stats, err := storage.GC(ctx, cutoff)
+if err != nil {
+  return err
+}
+log.Printf("oidc GC removed %d rows", stats.Total())
+```
+
+返る `oidcsql.GCStats` は、期限切れの認可コード、PAR、interaction、session、refresh token ローテーション履歴の件数を持ちます。grant に有効な refresh token が残る間は履歴を保持し、期限切れの sealed retry-response blob は row 自体が残る場合でも条件を満たせば消去しますが、その blob 消去は row 件数に含めません。過去の cutoff は猶予期間を残し、`time.Now()` はすでに期限切れのものを回収します。件数、所要時間、エラー、テーブルサイズを監視し、一時的な失敗の後は再実行してください。access token、opaque token、grant revocation、ConsumedJTI の各ストアには独自の GC 方針があり、device code と CIBA の row は insert 時に期限切れを排除します。
+
 ### Redis アダプタ(`storeadapter/redis`)
 
 同梱アダプタは **揮発サブストアのみ**を Redis に置きます:
@@ -127,7 +168,7 @@ DB 標準のバックアップツールがそのまま使えます。選択肢�
 1. 新しい Redis を立てます。
 2. OP レプリカを再起動します。
 3. アクティブな session は消えるので、ユーザには再ログインしてもらいます。
-4. 喪失中に呼ばれた logout fan-out では `bcl.no_sessions_for_subject` が増加します。想定内のシグナルなので、収束を確認したら解決済み扱いで問題ありません。
+4. Redis の喪失だけで `bcl.no_sessions_for_subject` が増えるわけではありません。`/end_session` は通知前に session を snapshot し、このイベントは session を伴う logout 通知の grant 由来 eligible RP target が 0 件のときだけ発生します。snapshot 前に eviction が起きた場合は back-channel 通知もイベントも発生しません。zero-target イベントがあれば logout の snapshot と grant の状態を調べてください。
 
 ### 部分損失(1 サブストアだけ破損)
 

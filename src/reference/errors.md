@@ -1,6 +1,6 @@
 ---
 title: Error catalog
-description: The OAuth/OIDC error codes the OP returns, what triggers each, and the typical fix.
+description: The OAuth/OIDC error codes the OP returns, including invalid logout_scope and static 503 behavior on logout-store failure.
 outline: 2
 pageClass: pg-reference-errors
 ---
@@ -154,6 +154,8 @@ RFC 7662 / RFC 7009. Same client-auth code set as `/token`.
 | `unsupported_token_type` | 400 | `/revoke` only — token type not revocable |
 | `server_error` | 500 | internal failure |
 
+Failed client authentication at `/introspect` is also visible as `op.AuditIntrospectionError`; the wire response remains the generic `invalid_client`. `/revoke` follows the RFC 7009 response contract and does not use that introspection-specific audit name.
+
 ## PAR endpoint (`/par`)
 
 RFC 9126.
@@ -183,8 +185,10 @@ OIDC RP-Initiated Logout 1.0. Browser-facing; reaches the user via `post_logout_
 
 | Code | Trigger |
 |---|---|
-| `invalid_request` | malformed `id_token_hint`, mismatched `client_id` |
+| `invalid_request` | malformed `id_token_hint`, mismatched `client_id`, or invalid `logout_scope` (empty, unknown, repeated, or not exactly `current`) |
 | `invalid_request_uri` | `request_uri` (when JAR-style logout requests are used) expired |
+
+If the session store cannot be reached while `/end_session` resolves or destroys the session, the endpoint returns a static HTTP 503 error page. It does not redirect to `post_logout_redirect_uri`, and it preserves the browser cookie and session row so a transient store fault cannot turn into a partial logout. A missing or already-expired session is handled separately and is not the transport-failure case.
 
 ## Class-based dispatch
 

@@ -1,6 +1,6 @@
 ---
 title: Back-Channel Logout
-description: Notify every RP server-to-server when a session ends — OIDC Back-Channel Logout 1.0.
+description: Notify grant-derived RP targets server-to-server with bounded fan-out when a session ends — OIDC Back-Channel Logout 1.0.
 pageClass: pg-use-cases-back-channel-logout
 ---
 
@@ -10,7 +10,7 @@ pageClass: pg-use-cases-back-channel-logout
 
 A user typically signs into multiple apps (RPs) through the same OP — "sign in with Acme" buttons all share one identity session. When the user clicks **log out** at one RP, the other RPs still hold their own local cookies; without coordination, the user looks signed in at app B even though they signed out at app A.
 
-**Back-channel logout** is the OP-driven fan-out that closes that gap. Each RP registers a server-side callback URL with the OP. When the session ends, the OP **POSTs a signed `logout_token` directly to every RP** (server to server, behind the user's back — hence "back-channel"). Each RP verifies the token and drops its local cookie.
+**Back-channel logout** is the OP-driven fan-out that closes that gap. Each RP registers a server-side callback URL with the OP. When the session ends, the OP **POSTs a signed `logout_token` directly to every eligible RP target in the subject's grant-derived audience** (server to server, behind the user's back — hence "back-channel"). Each RP verifies the token and drops its local cookie.
 
 The alternative — *front-channel* logout — embeds an `<iframe>` per RP and depends on third-party cookies, which modern browsers progressively break. Back-channel is the deployable choice.
 
@@ -31,7 +31,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
 ## Architecture
 
 <svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="bcl-arch-title">Back-channel logout sequence: RP A drives /end_session, the OP terminates the session and fans out signed logout tokens to RP B and RP C, then redirects RP A.</title>
+  <title id="bcl-arch-title">Back-channel logout sequence: RP A drives /end_session, the OP terminates the session and fans out signed logout tokens to grant-derived RP targets B and C, then redirects RP A.</title>
 
   <path class="life" d="M70 48V372"/>
   <path class="life" d="M220 48V372"/>
@@ -72,7 +72,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
   <text class="bn" x="312" y="154.5" text-anchor="middle">3</text>
 
   <rect class="frame" x="350" y="176" width="396" height="94" rx="8"/>
-  <text class="fr" x="360" y="193">fan-out to every RP in the session</text>
+  <text class="fr" x="360" y="193">fan-out to grant-derived RP targets</text>
   <text class="lbm m" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = signed JWT</text>
 
   <path class="accent" d="M380 228L540 228M533 224L540 228L533 232"/>
@@ -106,7 +106,7 @@ The OP signs a `logout_token` per RP and POSTs it to that RP's `backchannel_logo
 | `iss` | OP issuer |
 | `aud` | The RP's `client_id` |
 | `iat`, `jti` | Issuance time + replay nonce |
-| `sub` | Whose session ended. `sid` is never emitted — see [below](#how-the-audience-is-resolved-and-why-it-is-bounded) |
+| `sub` | Whose session ended. `sid` is never emitted — see [below](#backchannel-target-resolution) |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
 The RP verifies the signature and `aud`, drops the local session, and returns 200.
@@ -121,7 +121,7 @@ op.WithStaticClients(op.PublicClient{
   RedirectURIs:                     []string{"https://rp-a.example.com/callback"},
   Scopes:                           []string{"openid", "profile"},
   BackchannelLogoutURI:             "https://rp-a.example.com/oidc/backchannel-logout",
-  BackchannelLogoutSessionRequired: true, // request the "sid" claim on the logout token
+  BackchannelLogoutSessionRequired: false, // sid is not supported; sub identifies the user
 })
 ```
 
@@ -134,6 +134,7 @@ op.New(
   /* ... */
   op.WithBackchannelLogoutHTTPClient(myHTTPClient), // mTLS / custom timeouts
   op.WithBackchannelLogoutTimeout(5 * time.Second),
+  op.WithBackchannelFanOutBudget(30 * time.Second), // whole detached fan-out; separate from per-RP timeout
 )
 ```
 
@@ -150,7 +151,7 @@ That option widens both the registration-time URL validator and the runtime SSRF
 ::: warning Private-network destinations are refused by default
 The deliverer **refuses** to POST to a `backchannel_logout_uri` whose host resolves to a loopback / link-local / RFC 1918 / IPv6 ULA address. Without this, an RP that can register an arbitrary URL becomes an SSRF oracle into the OP's internal network.
 
-The dial-time deny-list is layered on a URL-shape gate at registration time: `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host — `https://attacker:internal@rp.example.com/...` and `https://rp.example.com/cb#anchor` both fail with `invalid_client_metadata`. `backchannel_logout_session_required=true` paired with an empty URI is also rejected, so a client cannot opt into `sid` delivery without a destination.
+The dial-time deny-list is layered on a URL-shape gate at registration time: `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host — `https://attacker:internal@rp.example.com/...` and `https://rp.example.com/cb#anchor` both fail with `invalid_client_metadata`. `backchannel_logout_session_required=true` is unsupported and rejected; setting it does not enable `sid` delivery.
 
 Embedders fronting their RPs with private DNS opt in:
 
@@ -161,7 +162,7 @@ op.WithBackchannelAllowPrivateNetwork(true)
 This must be a deliberate choice — the option is the visible site for the security trade-off.
 :::
 
-## How the audience is resolved (and why it is bounded)
+## How the audience is resolved (and why it is bounded) {#backchannel-target-resolution}
 
 Fan-out resolves its audience from **grants**, not from session rows. The coordinator takes the ending session's subject and asks the grant store for the distinct clients that subject has consented to, through `store.GrantClientLister.ListClientIDsBySubject` — a keyset-paginated view separate from `ListBySubject`, because one subject can hold many historical grant rows per client. Every stage of the fan-out is bounded on purpose:
 
@@ -169,22 +170,25 @@ Fan-out resolves its audience from **grants**, not from session rows. The coordi
 |---|---|---|
 | Deduplicated audience | `DefaultMaxTargets` (256) | clients notified for one logout; the grant query itself is capped, not filtered afterwards |
 | Concurrent deliveries | `DefaultMaxConcurrentDeliveries` (8) | simultaneous outbound POSTs |
+| Whole detached fan-out | 30 seconds (`DefaultFanOutBudget`) | total wall-clock budget for one logout event |
 
 When the audience page comes back with a `NextCursor`, more clients matched than the cap allows and the coordinator emits an overflow audit event carrying that cursor rather than silently truncating. A single unreachable RP surfaces as a per-target audit event instead of failing the whole fan-out.
 
+`op.WithBackchannelFanOutBudget` changes the whole-event budget. It is independent of `op.WithBackchannelLogoutTimeout`, which limits each RP request. When the budget expires, remaining targets are recorded as failed and the detached work converges; `Provider.Shutdown(ctx)` waits for outstanding fan-outs when the process is draining.
+
 ::: tip `backchannel_logout_session_supported` is `false`
-Discovery advertises it as `false`, and that follows directly from grant-based resolution: the OP cannot prove that an OP-side session identifier belongs to a particular RP, so a `sid` is never copied into a Logout Token. RPs must key their local session teardown on `sub`. A client registering `backchannel_logout_session_required=true` is asking for something the OP does not emit.
+Discovery advertises it as `false`, and that follows directly from grant-based resolution: the OP cannot prove that an OP-side session identifier belongs to a particular RP, so a `sid` is never copied into a Logout Token. RPs must key their local session teardown on `sub`. Keep `BackchannelLogoutSessionRequired` false or omit it; `true` is unsupported and rejected.
 :::
 
 ## When the fan-out resolves nothing
 
-If the subject holds no live grants — every one revoked, or a stale record whose client no longer exists — the fan-out has nothing to notify. The library surfaces that as an audit event:
+If the subject has no eligible grant-derived RP targets — every grant is revoked, or a stale record points to a client that no longer exists — the fan-out has nothing to notify. The library surfaces that as an audit event:
 
 | Event | Meaning |
 |---|---|
-| `op.AuditBCLNoSessionsForSubject` | The caller named a session (`/end_session` with `id_token_hint`, or `Provider.Logout` against a session-bearing subject) but the fan-out resolved zero RPs. |
+| `op.AuditBCLNoSessionsForSubject` | `/end_session` named a session, but grant-based audience resolution produced zero eligible RP targets. |
 
-The event fires only when the caller actually named a session, so a `Provider.Logout` against a subject with no browser session does not generate noise. Under volatile session placement a miss is the OIDC Back-Channel Logout 1.0 §2.7 "best effort" floor; under durable placement it is an unexpected gap worth alerting on. The extras carry the configured `op.SessionDurabilityPosture` (`SessionDurabilityVolatile` or `SessionDurabilityDurable`) so SOC dashboards distinguish the two without keying on the store-adapter type.
+The event fires only when `/end_session` has named a session and grant-based audience resolution produces zero eligible RP targets. If a volatile `SessionStore` evicts the row before `/end_session` can snapshot it, the handler does not create a detached notice, so no fan-out or `AuditBCLNoSessionsForSubject` event starts. The extras carry the configured `op.SessionDurabilityPosture` (`SessionDurabilityVolatile` or `SessionDurabilityDurable`) as context for trigger/snapshot loss versus a no-target outcome; the posture does not claim that the no-target event itself proves eviction.
 
 ## Front-channel logout (a different mechanism)
 

@@ -1,13 +1,13 @@
 ---
 title: Audit event catalog
-description: Every op.Audit* event the OP emits, what fires it, and what the extras carry.
+description: The v1.1 audit catalog, distinguishing signals emitted by the OP from reserved vocabulary and documenting each event's extras.
 outline: 2
 pageClass: pg-reference-audit-events
 ---
 
 # Audit event catalog
 
-The OP emits structured audit events from a closed catalog defined in `op/audit.go`. Each event is a stable string identifier of shape `<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can pre-aggregate by area without parsing free-form messages.
+The OP emits structured audit events from a closed catalog defined in `op/audit.go`. The catalog is a vocabulary, not a promise that every constant fires: this page marks the v1.1 signals emitted by the OP and the names reserved for a future implementation or the embedder's account/device plane. Each identifier has shape `<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can pre-aggregate by area without parsing free-form messages.
 
 <svg role="img" aria-labelledby="audit-flow-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="audit-flow-title">How audit events flow: each OP code path emits from one closed catalog, and the emission reaches slog, the SOC pipeline, and the Prometheus counters.</title>
@@ -50,7 +50,7 @@ op.New(
 )
 ```
 
-`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry where the `msg` is the event identifier (e.g. `"token.issued"`) and the attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields.
+`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry where the `msg` is the event identifier (e.g. `"token.issued"`) and the attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields. Emission is synchronous on the request goroutine: the handler must not block on slow I/O or an unbounded queue, and it must be safe for concurrent calls.
 
 If `WithAuditLogger` is not supplied, audit events fall through to the logger configured by `WithLogger`. If neither logger is supplied, audit emission is discarded.
 
@@ -74,7 +74,7 @@ Read it when you need the event set as data rather than as prose — provisionin
 
 ## Common attributes
 
-Every event carries:
+Every emitted event carries:
 
 | Attribute | Type | Notes |
 |---|---|---|
@@ -85,7 +85,7 @@ Every event carries:
 
 ## Event catalog
 
-The catalog is regrouped by feature area. Each group opens with a short note on what the events mean for SOC and operations, followed by a table of `event constant` (the Go identifier in `op/audit.go`), `when it fires`, `severity hint` (a starting point for routing — `info` for routine activity, `warn` for suspicious / failure conditions, `alert` for replay or store-fault signals), and the page that documents the surrounding behaviour.
+The catalog is regrouped by feature area. Each group opens with a short note on what the events mean for SOC and operations, followed by a table of `event constant` (the Go identifier in `op/audit.go`), `when it fires` or why it is reserved, `severity hint` (a starting point for routing — `info` for routine activity, `warn` for suspicious / failure conditions, `alert` for replay or store-fault signals), and the page that documents the surrounding behaviour. Rows explicitly labelled **Reserved** are not emitted by the OP; an absent reserved event is not evidence that the underlying action did not occur.
 
 ### Provider lifecycle
 
@@ -97,57 +97,57 @@ The catalog is regrouped by feature area. Each group opens with a short note on 
 
 ### Account management
 
-Most of these fire from out-of-band admin paths the OP does not host directly — provisioning, recovery, federation linking. The catalog exists so a single subscription point covers SOC dashboards regardless of where the actual write originates.
+**Reserved.** These names cover out-of-band admin paths the OP does not host directly — provisioning, recovery, federation linking. The embedder may emit them through its audit sink; the OP itself does not.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
-| `AuditAccountCreated` | user account provisioned | info | — |
-| `AuditAccountDeleted` | user account removed | info | — |
-| `AuditAccountEmailAdded` | email address added to account | info | — |
-| `AuditAccountEmailVerified` | email ownership proven (link / OTP) | info | — |
-| `AuditAccountEmailRemoved` | email address removed | info | — |
-| `AuditAccountEmailSetPrimary` | primary email changed | info | — |
-| `AuditAccountPasskeyRegistered` | WebAuthn credential added | info | — |
-| `AuditAccountPasskeyRemoved` | WebAuthn credential removed | info | — |
-| `AuditAccountTOTPEnabled` | TOTP enrollment completed | info | — |
-| `AuditAccountTOTPDisabled` | TOTP removed | info | — |
-| `AuditAccountPasswordChanged` | password reset / changed | info | — |
-| `AuditAccountRecoveryRegenerated` | recovery batch reissued | info | — |
-| `AuditRecoverySupportEscalation` | manual recovery / support override invoked | warn | — |
-| `AuditAccountFederationLinked` | external IdP credential linked | info | — |
-| `AuditAccountFederationUnlinked` | external IdP credential unlinked | info | — |
+| `AuditAccountCreated` | **Reserved** — user account provisioned by the embedder | info | — |
+| `AuditAccountDeleted` | **Reserved** — user account removed by the embedder | info | — |
+| `AuditAccountEmailAdded` | **Reserved** — email address added to an account | info | — |
+| `AuditAccountEmailVerified` | **Reserved** — email ownership proven | info | — |
+| `AuditAccountEmailRemoved` | **Reserved** — email address removed | info | — |
+| `AuditAccountEmailSetPrimary` | **Reserved** — primary email changed | info | — |
+| `AuditAccountPasskeyRegistered` | **Reserved** — WebAuthn credential added | info | — |
+| `AuditAccountPasskeyRemoved` | **Reserved** — WebAuthn credential removed | info | — |
+| `AuditAccountTOTPEnabled` | **Reserved** — TOTP enrollment completed | info | — |
+| `AuditAccountTOTPDisabled` | **Reserved** — TOTP removed | info | — |
+| `AuditAccountPasswordChanged` | **Reserved** — password reset or changed | info | — |
+| `AuditAccountRecoveryRegenerated` | **Reserved** — recovery batch reissued | info | — |
+| `AuditRecoverySupportEscalation` | **Reserved** — manual recovery or support override invoked | warn | — |
+| `AuditAccountFederationLinked` | **Reserved** — external IdP credential linked | info | — |
+| `AuditAccountFederationUnlinked` | **Reserved** — external IdP credential unlinked | info | — |
 
 ### Login, MFA, step-up
 
-Fire from the authenticator chain after each factor resolves. `login.failed` and `mfa.failed` are the routine probing signals; sustained increases on either are the canonical credential-stuffing tell. `step_up.required` rates show how often RPs are asking the user to climb to a higher `acr_values`.
+`login.*` and `mfa.*` are emitted by the authenticator chain after a primary or additional factor resolves. `login.failed` and `mfa.failed` are the routine probing signals; sustained increases on either are the canonical credential-stuffing tell. `AuditMFARequired`, `AuditStepUpRequired`, and `AuditStepUpSuccess` are **Reserved**: the OP does not emit them. Step-up is decided by the resource server and an ordinary authorization request reaches the OP.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditLoginSuccess` | primary credential verified, subject bound | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditLoginFailed` | primary credential rejected | warn | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
-| `AuditMFARequired` | session AAL below requirement; second factor demanded | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
+| `AuditLockoutStalled` | cross-factor lockout CAS contention abandoned a failed attempt without counting it | alert | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
+| `AuditMFARequired` | **Reserved** — catalog vocabulary; the OP does not emit a separate requirement event | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditMFASuccess` | second factor accepted | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditMFAFailed` | second factor rejected | warn | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
-| `AuditStepUpRequired` | RP requested higher `acr_values`; user re-prompted | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
-| `AuditStepUpSuccess` | step-up factor accepted | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
+| `AuditStepUpRequired` | **Reserved** — resource-server decision; the OP does not emit it | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
+| `AuditStepUpSuccess` | **Reserved** — resource-server outcome; the OP does not emit it | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 
 ::: details extras
 - `factor` — `password`, `passkey`, `totp`, `email_otp`, `captcha`, `recovery_code`, or a user-defined Step kind
-- `aal` — assurance level the factor raised the session to
-- `amr_values` — RFC 8176 §2 codes contributed to the `amr` claim
+- `aal`, `acr`, `amr_values` — not automatically carried by these login/MFA events
 :::
 
 ### Consent
 
-Fire from the consent prompt and the first-party fast-path. `consent.granted.delta` is the signal that an existing grant did not cover the new request and the user re-confirmed; `consent.revoked` is the user-driven cleanup path SOC dashboards usually want to chart against `token.revoked`.
+`AuditConsentGranted` and `AuditConsentGrantedFirstParty` are emitted by the consent prompt and first-party fast-path. The other consent constants are **Reserved**: incremental consent is recorded as ordinary `consent.granted`, reuse of an existing grant has no audit event, and grant withdrawal uses Grant Management's `grant_management.revoked`.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditConsentGranted` | user clicked consent in the prompt | info | [Concepts: consent](/concepts/consent) |
 | `AuditConsentGrantedFirstParty` | first-party auto-consent applied (no prompt) | info | [Use case: first-party consent](/use-cases/first-party) |
-| `AuditConsentGrantedDelta` | delta-consent triggered re-prompt for newly requested sensitive scope | info | [Concepts: consent](/concepts/consent) |
-| `AuditConsentSkippedExisting` | existing grant already covered the request; no prompt | info | [Concepts: consent](/concepts/consent) |
-| `AuditConsentRevoked` | user revoked a prior grant | info | [Concepts: consent](/concepts/consent) |
+| `AuditConsentGrantedDelta` | **Reserved** — incremental request is emitted as ordinary `AuditConsentGranted` | info | [Concepts: consent](/concepts/consent) |
+| `AuditConsentSkippedExisting` | **Reserved** — reuse of a stored consent is not emitted | info | [Concepts: consent](/concepts/consent) |
+| `AuditConsentRevoked` | **Reserved** — Grant Management withdrawal emits `AuditGrantManagementRevoked` | info | [Concepts: consent](/concepts/consent) |
 
 ::: details extras
 - `scopes_granted`, `scopes_requested` — string slices
@@ -163,16 +163,17 @@ Fire from the authorize-code path and the token endpoint. The replay-detection e
 | `AuditCodeIssued` | authorization code minted | info | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditCodeConsumed` | code redeemed at `/token` | info | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditCodeReplayDetected` | code presented twice — chain revoked | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
-| `AuditTokenIssued` | access token + (optional) refresh + (optional) id_token issued | info | [Concepts: tokens](/concepts/tokens) |
+| `AuditTokenIssued` | a first refresh token is persisted for a grant (the event is not a counter for every access token) | info | [Concepts: tokens](/concepts/tokens) |
 | `AuditTokenRefreshed` | refresh token rotated; new access token minted | info | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 | `AuditTokenRevoked` | token revoked via `/revoke` or grant cascade | info | [Concepts: tokens](/concepts/tokens) |
 | `AuditTokenRevokeFailed` | revocation attempt observed a substore fault; wire still 200 per RFC 7009 §2.2 | alert | [Concepts: tokens](/concepts/tokens) |
 | `AuditRefreshReplayDetected` | refresh token presented past rotation grace — chain revoked | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 | `AuditRefreshChainRevokeFailed` | cascade revoke from a replay observed a substore fault | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 | `AuditRefreshGrantRevokeFailed` | grant-tombstone write failed during refresh-rotation cascade | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
+| `AuditRefreshPriorAccessTokenRevokeFailed` | refresh rotation could not revoke the prior access token; extras identify whether retry is possible | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 
 ::: details extras
-- `grant_type` — `authorization_code`, `refresh_token`, `client_credentials`
+- `refresh_origin` — the typed origin recorded on the refresh chain: `authorization_code`, `device_code`, `ciba`, or `custom_grant`; an unknown or missing origin is projected as `unknown` by the metrics bridge. This is the grant that actually minted the refresh chain, not an arbitrary request `grant_type` label.
 - `format` — `jwt` or `opaque` for the access token
 - `offline_access` — bool; true on `offline_access` chain
 - `cnf` — `dpop_jkt` or `mtls_x5t#S256` when sender-bound
@@ -180,38 +181,44 @@ Fire from the authorize-code path and the token endpoint. The replay-detection e
 - `grant_id` — on `token.revoke_failed` (token endpoint) and `refresh.grant_revoke_failed`: the grant whose tombstone write failed
 - `reason` — on `refresh.chain_revoke_failed` / `refresh.grant_revoke_failed`: stringified error from the substore
 - `err` — on `token.revoke_failed`: stringified error from the substore
+- `failure_stage`, `retryable` — on `refresh.prior_access_token_revoke_failed`
 :::
 
 ### Sessions and logout
 
-Fire from the session store and the logout endpoints. `bcl.no_sessions_for_subject` is the volatile-session signal documented below; the back-channel delivery events are the SOC pivot when an RP fails to honour logout.
+The session and logout rows below are emitted by the session manager, `/end_session`, and the detached Back-Channel Logout coordinator. `AuditLogoutRPInitiated` is **Reserved**: `/end_session` records the resulting session and delivery outcomes, not a separate marker that an RP asked.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditSessionCreated` | new browser session minted (post-login) | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditSessionDestroyed` | session deleted (logout, expiry, eviction) | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
-| `AuditLogoutRPInitiated` | RP-Initiated Logout invoked | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
+| `AuditSessionAlreadyAbsent` | logout targeted a session already absent or expired | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
+| `AuditSessionDestroyFailed` | session deletion hit a store failure; the request returns static 503 and preserves state | alert | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
+| `AuditLogoutRPInitiated` | **Reserved** — no separate RP-initiated marker is emitted | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
+| `AuditLogoutTokenRevokeFailed` | logout-token or logout cascade revocation hit a store failure | alert | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditLogoutBackChannelDelivered` | Back-Channel logout token delivered to RP | info | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
 | `AuditLogoutBackChannelFailed` | Back-Channel delivery failed (HTTP error / timeout / verification) | warn | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
-| `AuditBCLNoSessionsForSubject` | `/end_session` named a subject but no sessions resolved | info | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
+| `AuditLogoutBackChannelResolveFailed` | grant-based target resolution failed | alert | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
+| `AuditLogoutBackChannelOverflow` | bounded target resolution overflowed | warn | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
+| `AuditBCLNoSessionsForSubject` | a session-bearing `/end_session` notice resolved zero grant-derived RP targets (no RPs to notify) | info | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
 
 ::: details `bcl.no_sessions_for_subject` rationale
-Under a volatile `SessionStore` (Redis without persistence, in-memory under maxmemory eviction) this event is the signal that a session was evicted between establishment and logout — narrowing OIDC Back-Channel Logout 1.0 §2.7's best-effort delivery floor to zero. INFO-level by design: under volatile placement the gap is expected; SOC tooling should alert on elevated rates rather than per-event. The event includes the configured `WithSessionDurabilityPosture` so dashboards can split "expected gap under volatile" from "unexpected gap under durable".
+This event is emitted only when `Notice.SessionID` is present and grant-based audience resolution returns zero RP targets; it does not mean that the coordinator walked `SessionStore` or that a session was evicted. If `SessionStore` loses the row before `/end_session` can snapshot it, the handler does not start detached fan-out and this event is not emitted. INFO-level by design: zero grant-derived targets can be an ordinary no-op, so SOC tooling should alert on elevated rates rather than per-event. The event includes the configured `WithSessionDurabilityPosture` as context for trigger/snapshot loss versus a no-target outcome.
 :::
 
 ### Defensive signals
 
-Fire from request-validation paths that detect abuse signals or operator-visible policy hits. These are the events that feed automated abuse-mitigation pipelines.
+The OP emits the CORS, DPoP (when the opt-in loose verifier is used), and retired-key signals below. Rate-limit names are **Reserved for the embedder**. PKCE, redirect-mismatch, and legacy-algorithm names are **Reserved catalog vocabulary**: the OP rejects those requests but does not emit these audit events.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditRateLimitExceeded` | request rejected by rate limiter — **embedder-emitted** vocabulary; the library does not implement a generic per-IP / per-endpoint HTTP throttle | warn | — |
 | `AuditRateLimitBypassed` | rate-limit bypass token consumed (operator override) — **embedder-emitted** vocabulary; same scoping as `AuditRateLimitExceeded` | warn | — |
-| `AuditPKCEViolation` | PKCE verifier mismatch / `plain` rejected / missing on public, native, or FAPI-required authorization requests | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
-| `AuditRedirectURIMismatch` | redirect URI did not match the registered list | warn | [Concepts: redirect URI](/concepts/redirect-uri) |
-| `AuditAlgLegacyUsed` | a legacy alg path was reached (telemetry; rejected by the verifier) | warn | [Concepts: JOSE basics](/concepts/jose-basics) |
+| `AuditPKCEViolation` | **Reserved** — PKCE rejection is returned on the wire; no OP audit event is emitted | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
+| `AuditRedirectURIMismatch` | **Reserved** — redirect rejection is returned on the wire; no OP audit event is emitted | warn | [Concepts: redirect URI](/concepts/redirect-uri) |
+| `AuditAlgLegacyUsed` | **Reserved** — no OP path emits a legacy-algorithm telemetry event | warn | [Concepts: JOSE basics](/concepts/jose-basics) |
 | `AuditCORSPreflightAllowed` | a CORS preflight matched the strict allowlist | info | [Use case: CORS for SPA](/use-cases/cors-spa) |
-| `AuditDPoPLooseMethodCaseAdmitted` | DPoP proof presented `htm` in non-canonical case; admitted with telemetry | info | [Concepts: DPoP](/concepts/dpop) |
+| `AuditDPoPLooseMethodCaseAdmitted` | **Conditional** — emitted only by a verifier configured with the loose method-case bridge; the standard `op.New` path is strict | info | [Concepts: DPoP](/concepts/dpop) |
 | `AuditKeyRetiredKidPresented` | request presented a kid past the JWKS grace window — verifier rejected | warn | [Operations: key rotation](/operations/key-rotation) |
 
 ### Introspection
@@ -224,11 +231,11 @@ Fire from `/introspect` when client authentication or the RFC 7662 §2.2 wire co
 
 ### Client authentication
 
-Fire from `/token` and `/par` whenever client authentication rejects. The wire response stays at the canonical `invalid_client`; this event exposes the attempted `client_id` and a short reason code so SOC tooling can spot probing.
+Fire from `/token`, `/par`, `/device_authorization`, and `/bc-authorize` whenever client authentication rejects. The wire response stays at the canonical `invalid_client`; this event exposes the attempted `client_id` and a short reason code so SOC tooling can spot probing. `/introspect` uses `AuditIntrospectionError` instead, and `/revoke` does not emit this event.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
-| `AuditClientAuthnFailure` | `/token` or `/par` rejected the client (wrong secret, expired assertion, alg mismatch, missing `private_key_jwt`) | warn | [Concepts: client types](/concepts/client-types) |
+| `AuditClientAuthnFailure` | `/token`, `/par`, `/device_authorization`, or `/bc-authorize` rejected the client (wrong secret, expired assertion, alg mismatch, missing `private_key_jwt`) | warn | [Concepts: client types](/concepts/client-types) |
 
 ### Dynamic Client Registration
 
@@ -246,6 +253,10 @@ Fire from `/register` and `/register/{client_id}`. RAT and IAT failure events ar
 | `AuditDCRClientDeleted` | RAT-bearing DELETE against `/register/{client_id}` | info | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
 | `AuditDCRRATInvalid` | Registration Access Token rejected | warn | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
 | `AuditDCRMetadataValidation` | metadata payload failed policy | warn | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
+| `AuditDCRCascadeRefreshRevokeFailed` | client deletion could not revoke that client's refresh-token rows | alert | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
+| `AuditDCRCascadeGrantRevokeFailed` | client deletion could not revoke that client's grants | alert | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
+| `AuditDCRCascadeAccessTokenRevokeFailed` | client deletion could not revoke that client's JWT access-token rows | alert | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
+| `AuditDCRCascadeOpaqueAccessTokenRevokeFailed` | client deletion could not revoke that client's opaque access-token rows | alert | [Use case: Dynamic Client Registration](/use-cases/dynamic-registration) |
 
 ### Device Code (RFC 8628)
 
@@ -267,15 +278,15 @@ Fire from `/device_authorization`, the embedder's verification ceremony helpers 
 
 ### CIBA
 
-Fire from `/bc-authorize`, the embedder's authentication-device interaction, and the token-endpoint CIBA grant. `ciba.poll_abuse.lockout` is the canonical client-misbehaviour signal.
+Fire from `/bc-authorize` and the token-endpoint CIBA grant. `ciba.poll_abuse.lockout` is the canonical client-misbehaviour signal. The authentication-device approval and denial names are **Reserved**: the embedder calls `CIBARequestStore.Approve` or `Deny` directly, outside an OP emission point.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditCIBAAuthorizationIssued` | `/bc-authorize` returned a fresh `auth_req_id` | info | [Concepts: CIBA](/concepts/ciba) |
 | `AuditCIBAAuthorizationRejected` | `/bc-authorize` rejected the inbound request (unknown user, hint resolver failed, scope refusal) | warn | [Concepts: CIBA](/concepts/ciba) |
 | `AuditCIBAAuthorizationUnboundRejected` | DPoP / mTLS proof was required but absent from `/bc-authorize` | warn | [Concepts: sender-constrained tokens](/concepts/sender-constraint) |
-| `AuditCIBAAuthDeviceApproved` | the substore observed `Approve` for a pending request (embedder's authentication-device callback) | info | [Use case: CIBA](/use-cases/ciba) |
-| `AuditCIBAAuthDeviceDenied` | the substore observed `Deny` for a pending request | warn | [Use case: CIBA](/use-cases/ciba) |
+| `AuditCIBAAuthDeviceApproved` | **Reserved** — embedder authentication-device callback; the OP does not observe the direct `Approve` call | info | [Use case: CIBA](/use-cases/ciba) |
+| `AuditCIBAAuthDeviceDenied` | **Reserved** — embedder authentication-device callback; the OP does not observe the direct `Deny` call | warn | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBAPollAbuseLockout` | poll cadence sustained well below the negotiated interval; the request was locked out | alert | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBATokenIssued` | `/token` minted a token for an approved CIBA request | info | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBATokenRejected` | `/token` rejected the CIBA grant (`access_denied`, `expired_token`, `authorization_pending`) | warn | [Use case: CIBA](/use-cases/ciba) |
@@ -309,15 +320,18 @@ Fire from the in-tree `RegisterTokenExchange` handler. Every successful exchange
 
 | Event | Meaning | Level | See |
 |---|---|---|---|
-| `custom_grant.requested` | custom `grant_type` entered the dispatcher | info | [Use case: custom grant](/use-cases/custom-grant) |
-| `custom_grant.failed` | custom grant dispatch or handler failed | warn | [Use case: custom grant](/use-cases/custom-grant) |
-| `custom_grant.refresh_dropped` | handler asked for a refresh token with `IssueRefreshToken`, but the client is not registered for `refresh_token`; the access-token response still succeeds | info | [Use case: custom grant](/use-cases/custom-grant) |
+| `AuditCustomGrantRequested` (`custom_grant.requested`) | custom `grant_type` entered the dispatcher | info | [Use case: custom grant](/use-cases/custom-grant) |
+| `AuditCustomGrantFailed` (`custom_grant.failed`) | custom grant dispatch or handler failed | warn | [Use case: custom grant](/use-cases/custom-grant) |
+| `AuditCustomGrantRefreshDropped` (`custom_grant.refresh_dropped`) | handler asked for a refresh token with `IssueRefreshToken`, but the client is not registered for `refresh_token`; the access-token response still succeeds | info | [Use case: custom grant](/use-cases/custom-grant) |
 
 ### Grant management
+
+These events come from the OAuth 2.0 Grant Management endpoint. The failure signal is emitted when the authenticated revoke request cannot complete its grant cascade.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditGrantManagementRevoked` | a `DELETE` to the grant management endpoint revoked a grant and cascaded its tokens | info | [Use case: grant management](/use-cases/grant-management) |
+| `AuditGrantManagementRevokeFailed` | a `DELETE` was authenticated but the grant-revoke side effect failed | alert | [Use case: grant management](/use-cases/grant-management) |
 
 ## Stability
 
@@ -333,8 +347,23 @@ Pin your dashboards on the names; do not rely on the order or the extras shape f
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-grep -hE 'AuditEvent\("[a-z_.]+"\)' op/audit.go \
-  | grep -oE '"[a-z_.]+"' | sort -u
+audit_catalog_tmp=$(mktemp ./audit-catalog-XXXXXX.go)
+trap 'rm -f "$audit_catalog_tmp"' EXIT
+cat >"$audit_catalog_tmp" <<'EOF'
+package main
+
+import (
+  "fmt"
+  "github.com/libraz/go-oidc-provider/op"
+)
+
+func main() {
+  for _, def := range op.AuditEventCatalog() {
+    fmt.Println(def.Event)
+  }
+}
+EOF
+go run "$audit_catalog_tmp"
 ```
 
-The output is the closed catalog this page mirrors.
+This calls the public `op.AuditEventCatalog()` API and prints the closed catalog this page mirrors.

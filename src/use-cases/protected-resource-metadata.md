@@ -1,13 +1,13 @@
 ---
 title: Protected resource metadata (RFC 9728)
-description: Publish OAuth 2.0 Protected Resource Metadata documents so resource servers advertise their scopes, bearer methods, and protecting authorization server.
+description: Publish OAuth 2.0 Protected Resource Metadata, including resource audiences and confidential introspection delegation for protected APIs.
 ---
 
 # Use case — Protected resource metadata (RFC 9728)
 
 A client that holds a resource identifier (an API base URL) needs to learn *which authorization server protects it* and *what it accepts* — scopes, bearer methods, the JWKS it signs responses with — without that being hard-coded. [RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728) defines a well-known document for exactly that, the resource-server counterpart to the OP's own `/.well-known/openid-configuration`.
 
-`op.WithProtectedResources` lets the OP host these documents for one or more resource servers it protects. Each document is served read-only and names the OP's own issuer in `authorization_servers`.
+`op.WithProtectedResources` lets the OP host these documents for one or more resource servers it protects. Each document is served read-only and names the OP's own issuer in `authorization_servers`. The registration can also name confidential clients that are allowed to introspect access tokens addressed to that resource.
 
 Use this when clients discover APIs by resource identifier, or when more than one API needs machine-readable metadata that points back to the same OP. If your clients are all manually configured and already know the issuer, this metadata is optional; it will not add token validation or gateway behavior.
 
@@ -30,9 +30,10 @@ op.New(
   op.WithIssuer("https://op.example.com"),
   /* required options */
   op.WithProtectedResources(op.ProtectedResource{
-    Resource:               "https://op.example.com/api",
-    ScopesSupported:        []string{"api.read", "api.write"},
+    Resource:             "https://op.example.com/api",
+    ScopesSupported:      []string{"api.read", "api.write"},
     BearerMethodsSupported: []string{"header"},
+    IntrospectionClients: []string{"api-introspector"},
   }),
 )
 ```
@@ -44,7 +45,8 @@ op.New(
 | `BearerMethodsSupported` | `bearer_methods_supported` — `header`, `body`, `query` |
 | `ResourceSigningAlgValuesSupported` | `resource_signing_alg_values_supported` |
 | `JWKSURI` | `jwks_uri` |
-| `ResourceDocumentation` | `resource_documentation` |
+| `ResourceName` | `name` |
+| `IntrospectionClients` | not an RFC 9728 field; configures audience-scoped `/introspect` delegation |
 
 `Resource` is validated at `op.New` like an RFC 8707 `resource` parameter; an invalid identifier refuses to start. At least one resource is required, and two resources that canonicalise to the same identifier — or whose paths collide on the same well-known mount — are rejected.
 
@@ -66,6 +68,8 @@ curl https://op.example.com/.well-known/oauth-protected-resource/api
 ```
 
 `authorization_servers` is stamped with the OP's own issuer — the link a client follows back to discovery. Registering two resources (`/orders` and `/inventory`) serves each at its own path-suffixed location; the path is derived from the resource's path component only (host-insensitive per §3.1), which is why two resources whose paths would collide are rejected at construction rather than panicking the router.
+
+`IntrospectionClients` is an OP authorization rule, not a metadata field. The named caller must authenticate as a confidential client; public clients and `token_endpoint_auth_method=none` receive `401 invalid_client` at `/introspect`. Without delegation, a caller sees only its own access tokens. With `IntrospectionClients: []string{"api-introspector"}`, that confidential client may introspect access tokens whose audience is exactly this resource. The audience check is scoped per resource, and refresh tokens are never delegated.
 
 ## Read next
 

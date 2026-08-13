@@ -1,6 +1,6 @@
 ---
 title: Claims リクエストパラメータ
-description: OIDC Core 1.0 §5.5 — RP が `claims` パラメータで claim を指定し、OP が id_token / userinfo に投影。
+description: OIDC Core 1.0 §5.5 — RP が `claims` で claim を指定し、claims 機能が有効な場合に OP が id_token / userinfo へ投影します。
 ---
 
 # 使い方 — Claims リクエストパラメータ
@@ -43,7 +43,7 @@ op.New(
 )
 ```
 
-`claims_parameter_supported` の既定は `true` です。`claims` request を広告・処理したくない場合だけ `op.WithClaimsParameterSupported(false)` を渡します。
+`claims_parameter_supported` の既定は `true` です。`op.WithClaimsParameterSupported(false)` を渡すと、この広告を止め、正しい形式の `claims` payload を無視します。scope から導出する claim は変わらず、壊れた JSON はリクエスト境界で拒否されます。
 
 discovery 文書はこう公開します:
 
@@ -101,6 +101,8 @@ curl -G --data-urlencode "claims=$CLAIMS" \
 ```
 
 ライブラリは両方の形（query パラメータ、JAR 内）を同じマージ経路で処理します。
+
+claims サポートを無効にすると、既存の grant に保存された要求 claim の投影も抑止します。ID Token と UserInfo の両方が対象で、refresh rotation から派生した token も同じです。scope が公開する claim には影響しません。再び有効にすると、検証済みの要求を保持している grant では投影が戻ります。
 
 ## Authorization Details（RFC 9396）
 

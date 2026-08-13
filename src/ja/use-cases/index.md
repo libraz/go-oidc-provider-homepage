@@ -95,7 +95,7 @@ docker compose -f sample/compose.yaml up -d --build
 |---|---|---|
 | 実 DB に永続化 | [`06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store)、[`07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) | [SQL ストア](/ja/use-cases/sql-store) |
 | DynamoDB に永続化 | [`18-dynamodb-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/18-dynamodb-store) | [DynamoDB ストア](/ja/use-cases/dynamodb-store) |
-| SQL アダプタのテーブル名を差し替える | [`25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) | [SQL ストア § テーブル名を差し替える](/ja/use-cases/sql-store#テーブル名を差し替える) |
+| SQL アダプタのテーブル名を差し替える | [`25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) | [SQL ストア § テーブル名を差し替える](/ja/use-cases/sql-store#テーブル名を差し替える) |
 | ストアをゼロから実装する | [`26-byo-store-from-scratch`](https://github.com/libraz/go-oidc-provider/tree/main/examples/26-byo-store-from-scratch) | [ストアバックエンドを自前実装する](/ja/use-cases/byo-store) |
 | Hot / Cold 分離（Redis 揮発） | [`08-composite-hot-cold`](https://github.com/libraz/go-oidc-provider/tree/main/examples/08-composite-hot-cold)、[`09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) | [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) |
 

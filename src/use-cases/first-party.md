@@ -1,6 +1,6 @@
 ---
 title: First-party consent skip
-description: Skip the consent prompt for clients you own — the OIDC §3.1.2.4 "first-party" relationship.
+description: Explains how to skip the consent prompt for clients you own under the OIDC §3.1.2.4 first-party relationship.
 ---
 
 # Use case — First-party consent skip

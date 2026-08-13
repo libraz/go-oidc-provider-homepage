@@ -1,6 +1,6 @@
 ---
 title: アーキテクチャ概観
-description: リクエストが OP の中をどう流れるか — パッケージ構成、ハンドラの公開、ストレージの差し込み口。
+description: リクエストが OP の中をどう流れるか — パッケージ構成、ハンドラ、browser/M2M discovery の境界、origin 検査、LoginFlow の risk 評価、ストレージの差し込み口。
 outline: 2
 pageClass: pg-reference-architecture
 ---
@@ -110,6 +110,8 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 これらはオプションではありません。組み込み側のオプション設定に関係なく構造的に適用されます。
 
+origin の集合は意図的に分かれています。API の CORS は明示的な `WithCORSOrigins` でのみ拡張され（API 互換性のため redirect URI の origin も含まれます）、interaction と end-session の ceremony 検査は issuer origin と明示的な origin だけを許可します。redirect URI の origin だけで cross-origin interaction / logout POST が許可されることはありません。
+
 ## Authorize → token のライフサイクル
 
 最も流量の多いパスです。概略は次のとおりです。
@@ -193,6 +195,8 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 `/par` と `/end_session` も大筋は同じ形です。上記が標準的な成功経路です。
 
+<a class="faq-anchor" id="loginflow-internals"></a>
+
 ## LoginFlow の内部
 
 `WithLoginFlow(LoginFlow{...})` は構築時に内部のパイプラインへコンパイルされます:
@@ -205,7 +209,7 @@ internal/authn/CompiledLoginFlow
     ├── Primary  → Authenticator(Step descriptor → runtime 実装の解決)
     ├── Rules[]  → 順序付き (When, Then) ペア
     ├── Decider  → 任意の short-circuit
-    └── Risk     → 評価パスごとに 1 回呼ばれる
+    └── Risk     → chain 開始時に 1 回、score を cache
 ```
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
@@ -232,7 +236,7 @@ internal/authn/CompiledLoginFlow
 <text class="lfp-fld" x="270" y="122">decider</text>
 <text class="lfp-fld" x="270" y="142">risk</text>
 <path class="lfp-oln" d="M355 154 V196" marker-end="url(#lfp-arra)"/>
-<text class="lfp-cap" x="365" y="178" text-anchor="start">authorize リクエストごと</text>
+<text class="lfp-cap" x="365" y="178" text-anchor="start">chain 開始時に 1 回</text>
 <rect class="lfp-op" x="40" y="210" width="172" height="52" rx="8"/>
 <text class="lfp-nd" x="126" y="232" text-anchor="middle"><tspan class="lfp-mono">Primary.Begin /</tspan></text>
 <text class="lfp-nd" x="126" y="248" text-anchor="middle"><tspan class="lfp-mono">Continue → Step</tspan></text>
@@ -258,10 +262,10 @@ internal/authn/CompiledLoginFlow
 1. `Primary.Begin` が `interaction.Step`（Prompt または Result）を返します。
 2. UI ドライバ（HTML または SPA）が画面を描画し、ユーザが送信します。
 3. `Primary.Continue` が `Result`（`Identity` が確定している）まで進めます。
-4. オーケストレータが `LoginContext` を組み立てます（subject、scope、完了したステップ、リスクスコア、ACR values）。
+4. オーケストレータが `LoginContext` を組み立てます（subject、scope、完了したステップ、cache 済みのリスクスコア、ACR values）。
 5. `Decider` が動きます（nil 以外の場合）。`Pass` 以外の判定はそこで短絡します。
 6. それ以外は `Rules` を順に評価します。最初にマッチしたルールの `Step.Kind()` が `CompletedSteps` にまだ含まれていなければ発火します。
-7. 発火するルールが無くなるまで繰り返し、その後にセッションを発行します。
+7. 発火するルールが無くなるまで繰り返し、その後にセッションを発行します。`LoginFlow.Risk` は chain ごとに最大 1 回だけ呼ばれ、結果は cache されます。provider-level の `WithRiskAssessor` は別の seam であり、`LoginFlow.Risk` と同時に指定すると、どちらかを黙って選ばず構築時に拒否されます。
 
 `ExternalStep` 経由で自前の factor を差し込む手順は、[使い方: カスタム authenticator](/ja/use-cases/custom-authenticator) を参照してください。
 
@@ -298,7 +302,7 @@ MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`Recove
 
 `/.well-known/openid-configuration` は OP の実効設定から discovery 文書を組み立てます。広告されるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです。
 
-- **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。
+- **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。client-credentials だけの OP では空配列となり、browser authorization / logout の surface と flag は広告されません。
 - **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `FAPI2MessageSigning` が有効なときに FAPI の許可リストと交差します。
 - **`scopes_supported`** は組み込みの scope と `WithScope` で登録された scope の和集合です。
 - **`ui_locales_supported`** は runtime locale resolver（seed bundle + `WithLocale` 追加分）から自動導出されます。`WithDiscoveryMetadata(...).UILocalesSupported` に非空の明示リストを渡した場合だけ、それが優先されます。

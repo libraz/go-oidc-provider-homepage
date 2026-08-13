@@ -1,6 +1,6 @@
 ---
 title: セキュリティプロファイルの宣言
-description: Provider 構築時に、プレーンな OIDC Core 互換、OAuth 2.1 Baseline、FAPI のいずれを採るか明示する。
+description: Provider 構築時に OIDC Core、OAuth 2.1 Baseline、FAPI を明示 — profile は feature を補うが grant は補わない。
 ---
 
 # 使い方 — セキュリティプロファイルの宣言
@@ -41,9 +41,10 @@ public / native client は `profile.Baseline` を指定しなくても PKCE 必�
 ```go
 provider, err := op.New(
   // …
+  op.WithGrants(grant.CIBA),
   op.WithProfile(profile.FAPICIBA),
-  op.WithCIBA(cibaOpts...),  // これを省くと op.New が失敗し、必要なオプション名を示す
+  op.WithCIBA(op.WithCIBAHintResolver(resolver)),
 )
 ```
 
-エラーはプロファイルが要求する grant と、それを有効化するオプションの両方を示すので、メッセージだけを見て修正できます。`profile.FAPICIBA` 以外のプロファイルは、固有の grant を要求しません。
+エラーはプロファイルが要求する grant と、それを有効化するオプションの両方を示すので、メッセージだけを見て修正できます。`WithCIBA` には `op.WithCIBAHintResolver` などの CIBA option を渡します。`op.WithGrants(grant.CIBA)` の明示的な宣言を置き換えるものではありません。`profile.FAPICIBA` 以外のプロファイルは、固有の grant を要求しません。

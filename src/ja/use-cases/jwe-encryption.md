@@ -80,11 +80,11 @@ Elliptic Curve Diffie-Hellman Ephemeral Static の略。送信側がその場で
 AES-256 を Galois/Counter Mode で動かしたものです。256-bit の鍵は `alg` 側が届けてくれた CEK で、GCM が認証タグを付け加えるので受信側で改ざんを検出できます。`A128GCM` は同じ構成で鍵長が 128-bit。OP は GCM のみを採用し、CBC モードは見送っています。GCM なら 1 パスで機密性と完全性が同時に得られ、padding oracle 系のバグクラスに当たらないためです。
 :::
 
-**v2+ で対応** するもの:
+次のアルゴリズムは現在の許可リスト外です:
 
-- `RSA-OAEP-384`、`RSA-OAEP-512` — go-jose v4.1.x が定数を露出していない
-- `dir` — 対称直接暗号化モード。reserve
-- `A*KW`（対称鍵のみ key wrap） — reserve
+- `RSA-OAEP-384`、`RSA-OAEP-512`
+- `dir` — 対称直接暗号化モード
+- `A*KW`（対称鍵のみ key wrap）
 
 **永続的に拒否** するもの:
 
@@ -95,15 +95,24 @@ AES-256 を Galois/Counter Mode で動かしたものです。256-bit の鍵は 
 ## 暗号化鍵集合の登録
 
 ```go
-import "github.com/libraz/go-oidc-provider/op"
+import (
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
 
 // 1 つ以上の暗号化鍵を生成（または KMS から読み込み）。
 // 秘密鍵 1 つ以上が必要。複数鍵はローテーション中の重なり期間用。
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
+
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(store),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),                // 署名鍵（use=sig）
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithEncryptionKeyset(op.EncryptionKeyset{
     {KeyID: "enc-2026-05", PrivateKey: rsaKey1},  // 現行
@@ -157,7 +166,7 @@ JWT Secured Authorization Response Mode（OpenID Foundation FAPI WG）の略。r
 RFC 9701（"OAuth 2.0 JWT Response for Introspection"）。従来の `/introspect`（RFC 7662）は plain な JSON を返しますが、RFC 9701 ではリソースサーバが代わりに署名済（必要なら暗号化済）の JWT を要求できます。リソースサーバが「AS は alice のトークンだとこの時刻に言った」という否認不能な記録を保持したい場合や、introspection 応答自体が信頼境界をまたぐ場合に有用です。
 :::
 
-DCR マウントは `internal/jose.ParseJWEAlg` / `ParseJWEEnc` 経由で値を検証します — 実行時と同じ許可リストを参照するため、将来の許可リスト変更が自動的に伝播します。
+DCR マウントは `internal/jose.ParseJWEAlg` / `ParseJWEEnc` 経由で値を検証します。実行時と同じ許可リストを参照するため、登録時と request 処理時の判定が一致します。
 
 ::: warning 半ペア登録は拒否
 DCR は `id_token_encrypted_response_alg=RSA-OAEP-256` を `id_token_encrypted_response_enc` 無しで提出するような非対称な指定を、登録時点で `invalid_client_metadata` として拒否します。両方空 = OK(このクライアントはその応答型で暗号化を使わない)、両方値あり = OK、片方だけ = 拒否。「登録は通るが最初の暗号化応答が実行時に失敗する」失敗モードを塞ぎます。

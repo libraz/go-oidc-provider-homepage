@@ -1,6 +1,6 @@
 ---
 title: Sessions and logout
-description: How the OP encodes a browser session, how RP-Initiated Logout and Back-Channel Logout differ, and why this library does not implement Front-Channel Logout.
+description: How the OP encodes browser sessions, chooser-group and current-session RP-Initiated Logout, bounded Back-Channel Logout, and the deliberate lack of Front-Channel Logout.
 pageClass: pg-concepts-sessions-and-logout
 ---
 
@@ -29,7 +29,7 @@ The OP keeps a row in `store.SessionStore` with:
 
 | Field | Meaning |
 |---|---|
-| `ID` | Opaque session identifier (used as `sid` in logout tokens). |
+| `ID` | Opaque OP browser-session identifier; used for cookie/session lookup and audit correlation, but not emitted as the RP-specific `sid` claim in current sub-only Back-Channel Logout Tokens. |
 | `Subject` | The OP-internal stable user id. Becomes `sub` in ID Tokens. |
 | `AuthTime` | When the user authenticated. Becomes `auth_time` in ID Tokens. |
 | `ACR` | Authentication Context Class Reference — the assurance level the session satisfies. |
@@ -68,8 +68,12 @@ The OP does the following:
 
 1. Verifies the `id_token_hint` (matches a session it issued).
 2. Optionally renders an interstitial confirmation page (recommended for "are you sure?" UX).
-3. Deletes the cookie and the `store.SessionStore` row.
+3. Resolves the logout scope and deletes the selected session rows.
 4. If the `post_logout_redirect_uri` is registered for the client, redirects the browser back with `state` echoed.
+
+The default scope is the active chooser group: every session in that browser group is destroyed. Add the single-valued query parameter `logout_scope=current` to destroy only the active session; if a sibling survives, the OP rebinds the browser cookie to that sibling. An empty value, an unknown value, or a repeated `logout_scope` is rejected with HTTP 400 before session state is changed.
+
+An `id_token_hint` whose subject does not match the session cookie cannot bypass confirmation. If the session store has a transport failure while the OP is resolving or destroying the session, `/end_session` returns a static HTTP 503 page with no post-logout redirect and leaves both the cookie and the session row intact. An absent or already-expired session is a different, safe-to-continue case.
 
 For native and public clients, the same RFC 8252 loopback any-port rule used for `redirect_uri` also applies to `post_logout_redirect_uri`: a client may register a fixed loopback URI and return with a different ephemeral port at logout. Host, scheme, and path still have to match the registered shape; only the port varies.
 
@@ -77,14 +81,16 @@ The point is **end the OP's session for this browser**. The RP that initiated th
 
 ### Back-Channel Logout 1.0
 
-When `/end_session` (or any other logout trigger) fires, the OP `POST`s a signed `logout_token` JWT to every RP that registered a `backchannel_logout_uri`. The RP validates the JWT and invalidates its own local session.
+When `/end_session` terminates a session, the OP `POST`s a signed `logout_token` JWT to each eligible RP target derived from that subject's grants. The RP validates the JWT and invalidates its own local session.
 
-This is server-to-server. The browser is not involved, so it works whether the user closed the tab, switched browsers, or never had a tab open in the first place (e.g. a Back-Channel Logout triggered by an admin action).
+This is server-to-server. The browser is not involved, so it works whether the user closed the tab or switched browsers; the public session logout entry point is `/end_session`.
 
-The library guards the outbound HTTP request with the same SSRF deny-list as JWKS / sector_identifier_uri: no private networks unless the embedder explicitly opts in. Failures are logged via `op.AuditLogoutBackChannelFailed`. Successes via `op.AuditLogoutBackChannelDelivered`. A subject with no live sessions when `/end_session` fires emits `op.AuditBCLNoSessionsForSubject` — useful for distinguishing "delivery failed" from "no one to deliver to".
+The library guards the outbound HTTP request with the same SSRF deny-list as JWKS / sector_identifier_uri: no private networks unless the embedder explicitly opts in. Failures are logged via `op.AuditLogoutBackChannelFailed`. Successes via `op.AuditLogoutBackChannelDelivered`. A session-bearing logout notice whose grant-derived RP audience is empty emits `op.AuditBCLNoSessionsForSubject` — useful for distinguishing "no RP targets resolved" from "delivery failed".
+
+Detached fan-out has two independent time limits: `op.WithBackchannelLogoutTimeout` bounds one RP's HTTP delivery (5 seconds by default), while `op.WithBackchannelFanOutBudget` bounds the whole detached fan-out (30 seconds by default). The latter is a global event budget, not the per-RP timeout; `Provider.Shutdown(ctx)` also drains fan-outs that are still running.
 
 ::: warning Back-Channel Logout is best-effort under volatile sessions
-If `store.SessionStore` is served from a volatile cache and a session evicts before the logout fan-out runs, the library has nothing to walk. The user is logged out (the row is gone) but no notification reaches the RP. The `op.SessionDurabilityPosture` knob lets dashboards distinguish the two cases. See [design judgment #10](/security/design-judgments#dj-10).
+If a volatile `store.SessionStore` evicts the row before `/end_session` can resolve and snapshot it, the browser logout trigger is lost and no detached fan-out starts. When the snapshot is captured, the RP audience is resolved from the grant store rather than by walking `SessionStore` rows; zero grant-derived RP targets are reported only for a session-bearing notice. The `op.SessionDurabilityPosture` knob provides context for trigger/snapshot loss versus a no-target outcome. See [design judgment #10](/security/design-judgments#dj-10).
 :::
 
 ### Front-Channel Logout 1.0 — not implemented
@@ -185,16 +191,30 @@ The session substore is intentionally separate from the transactional store (aut
 
 The `op.WithSessionDurabilityPosture(...)` option declares the embedder's choice so that the audit trail (`op.AuditBCLNoSessionsForSubject`) can be interpreted correctly. See the [hot/cold split use case](/use-cases/hot-cold-redis) for a complete wiring.
 
+For graceful shutdown, stop accepting HTTP traffic first and then drain the provider's detached work:
+
+```go
+srv.Shutdown(ctx)      // stop accepting
+provider.Shutdown(ctx) // then drain detached fan-out
+```
+
 ## Audit events on the session lifecycle
 
 | Event | Fires on |
 |---|---|
 | `op.AuditSessionCreated` | New session minted. |
 | `op.AuditSessionDestroyed` | Session row deleted (logout, eviction, GC). |
-| `op.AuditLogoutRPInitiated` | `/end_session` fired. |
+| `op.AuditSessionAlreadyAbsent` | A logout targeted a session that was already absent or expired. |
+| `op.AuditSessionDestroyFailed` | Session deletion hit a store failure; the request is a static 503 and state is preserved. |
+| `op.AuditLogoutRPInitiated` | **Reserved** — the OP does not emit a separate event for the RP's logout request. |
+| `op.AuditLogoutTokenRevokeFailed` | Logout-token or session cascade revocation hit a store failure. |
 | `op.AuditLogoutBackChannelDelivered` | RP returned 2xx for a `logout_token` POST. |
 | `op.AuditLogoutBackChannelFailed` | RP returned non-2xx, the network errored, or the deny-list blocked the URL. |
-| `op.AuditBCLNoSessionsForSubject` | `/end_session` fired but the subject had no live sessions to fan out from. |
+| `op.AuditLogoutBackChannelResolveFailed` | Grant-based target resolution failed. |
+| `op.AuditLogoutBackChannelOverflow` | The bounded target list overflowed. |
+| `op.AuditBCLNoSessionsForSubject` | A session-bearing `/end_session` notice resolved zero grant-derived RP targets. |
+
+`op.AuditLogoutRPInitiated` is reserved catalog vocabulary; the OP does not emit a separate "RP asked" event. Correlate the resulting session and back-channel events instead.
 
 ## Read next
 

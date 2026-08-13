@@ -11,7 +11,7 @@ pageClass: pg-concepts-mtls
 mTLS is attractive in deployments that already operate a PKI: B2B service meshes, open-banking environments, and backend-only APIs where every party has a client certificate issued by an internal CA. Because the binding lives at the TLS layer, the application code does not have to sign anything per request; the trade-off is that the TLS terminator (reverse proxy, load balancer) must be configured to expose the verified certificate to the OP.
 
 ::: warning Implementation boundary
-`feature.MTLS` wires certificate-bound access tokens (`cnf.x5t#S256`) and reverse-proxy certificate extraction. The standalone verifier for `tls_client_auth` / `self_signed_tls_client_auth` exists internally, but the token endpoint does not dispatch those methods as client authentication. Use `private_key_jwt` for FAPI token endpoint client authentication, and use mTLS as the sender-constraint layer.
+`feature.MTLS` wires certificate-bound access tokens (`cnf.x5t#S256`) and certificate extraction from direct TLS or a trusted reverse-proxy header. It does not make `tls_client_auth` or `self_signed_tls_client_auth` available as token-endpoint client-authentication methods; use `private_key_jwt` for FAPI client authentication and mTLS as the sender-constraint layer.
 :::
 
 ::: details Specs referenced on this page
@@ -21,29 +21,23 @@ mTLS is attractive in deployments that already operate a PKI: B2B service meshes
 - [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
 :::
 
-## Two RFC client-auth sub-modes
+## Trusting the certificate
 
-RFC 8705 defines two `token_endpoint_auth_method` values that share the same certificate material but differ on **how the client identity is anchored**. The descriptions below explain the RFC model and the internal verifier shape; they are not selectable on the token endpoint dispatch path.
+RFC 8705 defines certificate client-authentication modes, but this library's public mTLS seam is the sender-constraint path. The token endpoint does not advertise or dispatch `tls_client_auth` / `self_signed_tls_client_auth`; a profile that requires asymmetric client authentication should register the client for `private_key_jwt`.
 
-### `tls_client_auth` — PKI chain (RFC 8705 §2.1)
+When `feature.MTLS` is enabled, the OP obtains a client certificate from the direct TLS handshake or from the trusted proxy path described below, computes its RFC 8705 thumbprint, and binds the issued token. Chain validation normally belongs to the TLS terminator. If the OP must validate the chain itself, pass a non-nil public pool:
 
-The client presents a certificate issued by a CA the OP trusts. The OP validates the chain against its trust anchors and then matches the certificate against the client's registered metadata. The library accepts any **one** of the following pin fields (defined in `internal/mtls/auth.go`'s `ClientMatcher`):
+```go
+import "crypto/x509"
 
-| Pin | Source on the certificate |
-|---|---|
-| `SubjectDN` | RFC 4514 string form of `Subject` |
-| `SANDNS` | DNS name in `DNSNames` |
-| `SANURI` | URI in `URIs` |
-| `SANIP` | IP literal in `IPAddresses` |
-| `SANEmail` | rfc822Name in `EmailAddresses` |
+pool := x509.NewCertPool()
+pool.AppendCertsFromPEM(caPEM)
 
-At least one non-empty pin is required. An entirely empty matcher fails closed with `ErrNoMatcherConfigured` — silently admitting any chain-valid cert would defeat the §2.1 contract. Subject DN comparison runs through a DER round-trip so RFC 4514 attribute-ordering differences disappear, and a verbatim string fallback handles the residual cases.
+op.WithFeature(feature.MTLS),
+op.WithMTLSRootCAs(pool),
+```
 
-### `self_signed_tls_client_auth` — JWK thumbprint (RFC 8705 §2.2)
-
-The client registers its public JWK (or JWKS URI). The OP does **not** walk a CA chain; instead, it hashes the cert's public key and matches the thumbprint against the client's registered JWKS. This mode lets a deployment use mTLS without operating a PKI — every client signs its own certificate.
-
-The two methods are mutually exclusive on a given client in the RFC model. Until endpoint dispatch is wired, register FAPI clients with `private_key_jwt` and enable `feature.MTLS` only for token binding.
+`WithMTLSRootCAs(pool *x509.CertPool)` is an optional public option. A non-nil pool is used for both handshake certificates and certificates selected from `WithMTLSProxy`; the chain must validate for client authentication. Passing `nil` is a configuration error. To trust nothing, pass an empty `x509.NewCertPool()`. Leave the option unset when the direct TLS stack or trusted proxy has already validated the external client chain.
 
 ## Confirmation claim — `cnf.x5t#S256`
 
@@ -58,7 +52,7 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
 ## Reverse-proxy deployments
 
 <svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="mtls-proxy-trust-title">Reverse-proxy trust boundary: a TLS-terminating proxy injects the client certificate into a header; the OP consults it only when the request arrives from a trusted CIDR, treats the forwarded certificate as authoritative, and rejects a mismatch with a live handshake certificate as invalid_request.</title>
+  <title id="mtls-proxy-trust-title">Reverse-proxy trust boundary: a TLS-terminating proxy injects the client certificate into a header; the OP consults it only when the request arrives from a trusted CIDR and treats the forwarded certificate as authoritative.</title>
   <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="9.5">PUBLIC</text>
   <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="9.5">EDGE</text>
   <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="9.5">OP TRUST ZONE</text>
@@ -94,8 +88,8 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
   <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
   <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — this library</text>
   <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="10.5">handshake cert used on direct TLS</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">header / handshake mismatch →</text>
-  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">invalid_request</text>
+  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">forwarded client cert selected</text>
+  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">cnf.x5t#S256</text>
 </svg>
 
 The OP almost never terminates TLS itself in production. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header (`X-SSL-Cert`, `X-Forwarded-Client-Cert`, …).
@@ -111,11 +105,9 @@ The two arguments are both required (see `op/options_fapi_proxy.go`):
 - An empty `headerName` returns a configuration error. To disable the header path, omit the option entirely.
 - An empty `trustedCIDRs` slice is rejected at construction time so a misconfiguration cannot silently widen the allow-list.
 
-The library prefers the live TLS handshake cert when the OP terminates TLS itself (`http.Request.TLS.PeerCertificates`); the header path is consulted only when no handshake cert is present **and** the request's `RemoteAddr` lies inside one of the trusted CIDRs. An attacker who reaches the OP directly (bypassing the reverse proxy) cannot forge a cert by setting the header — the OP fails closed and returns the same response as a request without a cert at all.
+The direct path reads `http.Request.TLS.PeerCertificates`. The proxy path is consulted only when the request's `RemoteAddr` is inside one of the configured trusted CIDRs; a request from elsewhere ignores the header and fails closed. When the request comes from a trusted proxy, the forwarded certificate is authoritative and takes precedence over any certificate on the proxy-to-OP TLS hop. The proxy's transport certificate is not treated as the OAuth client certificate.
 
-If a trusted proxy forwards a client certificate header, that forwarded certificate is authoritative for token binding. A mismatch between the proxy header certificate and a live handshake certificate is rejected as `invalid_request` instead of silently binding the proxy's own certificate.
-
-`op.MTLSProxyConfig(provider)` exposes the recorded configuration so an embedder constructing an `internal/mtls.Verifier` themselves (for example, an out-of-band introspection endpoint) can reuse the same allow-list.
+`op.MTLSProxy` is the public configuration type. `op.MTLSProxyConfig(provider)` returns the recorded `HeaderName` and a fresh `TrustedProxies` slice, or the zero value when the option was not configured. Embedder-side edge code can use that public projection to keep its header-stripping policy aligned with the OP; it does not require importing an internal verifier.
 
 ## Wiring
 
@@ -134,16 +126,15 @@ op.New(
 )
 ```
 
-When the OP terminates TLS itself (test environments, single-tenant on-prem deployments), the `WithMTLSProxy` line can be omitted — the OP reads the certificate directly from `http.Request.TLS.PeerCertificates`.
+When the OP terminates TLS itself (test environments, single-tenant on-prem deployments), the `WithMTLSProxy` line can be omitted — the OP reads the certificate directly from `http.Request.TLS.PeerCertificates`. Add `WithMTLSRootCAs(x509.NewCertPool())` populated with the deployment CA when the OP should re-check the chain.
 
 `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[DPoP, MTLS]`. If neither is explicit, the profile selects DPoP as the default member. Deployments that want mTLS sender constraint should enable `feature.MTLS`; that explicit choice satisfies the constraint and suppresses the DPoP default. Use `private_key_jwt` for the client's token endpoint authentication.
 
 ## Pitfalls
 
 - **TLS terminator must export the cert correctly.** Different proxies use different header names and encodings (DER, PEM, URL-encoded PEM). Lock the format on both ends and pin the header name in `WithMTLSProxy`.
-- **Certificate renewal needs operational coordination.** Rotating a `self_signed_tls_client_auth` cert means updating the registered JWKS at the same time, otherwise the new cert's thumbprint will not match. Plan the rollover so the old and new JWKs are both registered for the duration of the cert lifetime overlap.
+- **Certificate renewal changes the binding.** A token is bound to the leaf certificate it was issued with. Reissue tokens after certificate rotation; a new certificate cannot satisfy an old token's `cnf.x5t#S256`.
 - **Do not configure mTLS client authentication as the token endpoint method.** mTLS is the sender-constraint layer; `private_key_jwt` is the client-auth method for FAPI deployments.
-- **Empty matcher fails closed.** `tls_client_auth` requires at least one of `SubjectDN`, `SANDNS`, `SANURI`, `SANIP`, `SANEmail` populated. A registration that leaves them all empty is rejected at the verifier with `ErrNoMatcherConfigured`.
 - **`RemoteAddr` semantics behind multiple proxies.** When the OP sits behind two layers of proxy, only the **innermost** proxy's IP appears in `RemoteAddr` — that is the one that must be in `trustedCIDRs`. Outer proxies are irrelevant to the header allow-list because the OP never sees them directly.
 
 ## When mTLS shines

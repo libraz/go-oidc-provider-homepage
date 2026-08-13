@@ -1,17 +1,17 @@
 ---
 title: CIBA — Client-Initiated Backchannel Authentication
-description: When the consumption channel and the authentication channel are different — POS terminals, call centers, fraud confirmations — without a code on screen.
+description: CIBA poll mode for POS and other out-of-band approvals — verified hints, binding messages, and embedder-owned authentication-device approval.
 pageClass: pg-concepts-ciba
 ---
 
 # CIBA — Client-Initiated Backchannel Authentication
 
-CIBA solves a different shape of problem than the [device flow](/concepts/device-code). With device code, two surfaces meet at the OP through a short code shown on the device. With **CIBA**, the device that initiates the request is **not visible to the user at all** — the user is pushed (or rung up, or notified) on a **separate authentication device** they already trust.
+CIBA solves a different shape of problem than the [device flow](/concepts/device-code). With device code, two surfaces meet at the OP through a short code shown on the device. With **CIBA**, the device that initiates the request is **not visible to the user at all** — the embedder's notification service reaches a **separate authentication device** the user already trusts.
 
 The canonical setup:
 
 - **Consumption device** — a POS terminal, a call-center agent screen, an in-store kiosk, a bank's wire-transfer reviewer panel. It knows *who* the user is supposed to be (loyalty card, phone number, account number) but cannot authenticate them.
-- **Authentication device** — the user's phone, with a banking app already installed and signed in. It receives a push notification ("Approve $80.00 at Acme Coffee?") and the user taps **Approve** or **Deny**.
+- **Authentication device** — the user's phone, with a banking app already installed and signed in. The embedder's notification service presents (for example) "Approve $80.00 at Acme Coffee?", and the user taps **Approve** or **Deny**.
 
 The consumption device never asks the user for credentials — it just asks the OP "please ask Alice to approve this on her phone".
 
@@ -27,15 +27,13 @@ The consumption device never asks the user for credentials — it just asks the 
   - `id_token_hint` — a previously issued ID token whose `sub` identifies the user.
   - `login_hint_token` — a signed JWT the embedder verifies and maps to a subject (e.g. issued by another upstream system).
 - **Delivery mode** — how the OP tells the consumption device that approval landed:
-  - **poll** — the device polls `/token` with `auth_req_id`; this is the only delivery mode the library implements today.
-  - **ping** — the OP calls back to the device's HTTPS endpoint with `auth_req_id`, then the device polls `/token`. (Deferred to v2+.)
-  - **push** — the OP delivers the token directly to the device's HTTPS endpoint. (Deferred to v2+.)
+  - **poll** — the device polls `/token` with `auth_req_id`. This is the only delivery mode implemented by the library.
 :::
 
 ## How the flow runs (poll mode)
 
 <svg role="img" aria-labelledby="ciba-poll-flow-title" viewBox="0 0 760 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="ciba-poll-flow-title">CIBA poll-mode sequence: the POS terminal calls /bc-authorize, the OP resolves the hint and pushes to the staff phone, and the POS polls /token until the user approves and a token is issued.</title>
+<title id="ciba-poll-flow-title">CIBA poll-mode sequence: the POS terminal calls /bc-authorize, the OP resolves the hint, the embedder's notification service reaches the staff phone, and the POS polls /token until the user approves and a token is issued.</title>
 <line class="ciba-life" x1="93" y1="50" x2="93" y2="446"/>
 <line class="ciba-life ciba-accent" x1="430" y1="50" x2="430" y2="446"/>
 <line class="ciba-life ciba-sec" x1="680" y1="50" x2="680" y2="446"/>
@@ -58,7 +56,7 @@ The consumption device never asks the user for credentials — it just asks the 
 <polyline class="ciba-accent" points="437,118 430,122 437,126"/>
 <text class="ciba-tx ciba-fm ciba-accent-f" x="470" y="116" font-size="10.5">HintResolver → sub=alice123</text>
 <text class="ciba-tx ciba-fm ciba-muted" x="8" y="173" font-size="9.5">3</text>
-<text class="ciba-tx ciba-fb" x="555" y="147" text-anchor="middle" font-size="10.5">out-of-band push</text>
+<text class="ciba-tx ciba-fb" x="555" y="147" text-anchor="middle" font-size="10.5">embedder notification</text>
 <text class="ciba-tx ciba-fb ciba-sec-f" x="555" y="160" text-anchor="middle" font-size="10">Approve $80 at Acme Coffee?</text>
 <line class="ciba-accent" x1="430" y1="170" x2="680" y2="170"/>
 <polyline class="ciba-accent" points="673,166 680,170 673,174"/>
@@ -103,18 +101,18 @@ Both flows have two devices. The difference is **whether the user knows the cons
 
 | | Device Code | CIBA |
 |---|---|---|
-| **Who initiates the trust?** | The user types `user_code` on the verification page. | The consumption device pushes a request to the OP; the user only sees a notification. |
-| **Does the user have to discover the URL?** | Yes — `verification_uri` is shown on screen. | No — the OP knows where to push. |
+| **Who initiates the trust?** | The user types `user_code` on the verification page. | The consumption device asks the OP; the embedder's authentication-device service presents the request to the user. |
+| **Does the user have to discover the URL?** | Yes — `verification_uri` is shown on screen. | No — the deployment already knows the authentication device. |
 | **Trust model on consumption side?** | Anonymous device asking the user to bind it. | Pre-registered device asking the OP to ask the user to confirm. |
 | **Typical surface** | Smart TV, console, CLI, IoT pairing. | POS, call center, fraud-confirmation, in-app payments. |
 | **Identifier the user types** | `user_code` (e.g. `BDWP-HQPK`). | None — the OP has the user's identifier already (`login_hint`). |
-| **Risk of misdirection** | Low — the URL is on the device's screen. | Medium — the user must trust the push notification's text matches the consumption surface. **Use `binding_message`** so the prompt on the phone shows what the POS is requesting. |
+| **Risk of misdirection** | Low — the URL is on the device's screen. | Medium — the user must trust the out-of-band notification text matches the consumption surface. **Use `binding_message`** so the prompt on the phone shows what the POS is requesting. |
 
 If the user is **standing in front of the device** but the device cannot show a screen with a code — choose CIBA. If the user is **across the room from the device** and the device has a screen — choose device code. CIBA's authentication device must already know the user; device code's verification page works for any signed-in browser session.
 
 ## Hints — telling the OP "which user"
 
-The consumption device cannot authenticate the user, so it has to tell the OP **which user to push to**. CIBA Core §7.1 lists three hint kinds; the OP supports all three through a single `HintResolver` interface:
+The consumption device cannot authenticate the user, so it has to tell the OP **which user to identify for the approval service**. CIBA Core §7.1 lists three hint kinds; the OP supports all three through a single `HintResolver` interface:
 
 ```go
 op.WithCIBA(
@@ -125,8 +123,10 @@ op.WithCIBA(
                 // value = "alice", "alice@example.com", account number, etc.
                 return resolveLoginHint(ctx, value)
             case op.HintIDTokenHint:
-                // value = a previously issued ID token (already verified by the OP).
-                return claimsSubject(value)
+                // value is the OP-verified subject, not the raw JWT.
+                // The OP checked its signature, issuer, and the authenticated
+                // client's audience. It intentionally does not enforce exp.
+                return lookupSubject(ctx, value)
             case op.HintLoginHintToken:
                 // value = a signed JWT issued by another system you trust.
                 return verifyAndMap(ctx, value)
@@ -139,6 +139,8 @@ op.WithCIBA(
 
 Returning `op.ErrUnknownCIBAUser` collapses the wire response to `unknown_user_id`. Any other error becomes `login_required`. The handler is required — `op.WithCIBA` without a resolver fails at `op.New`.
 
+For `HintIDTokenHint`, the OP verifies the JWT against its own keys, requires its issuer and the authenticated client's audience, and passes only the verified `sub` to `Resolve`. It intentionally does not check `exp`. A client registered with pairwise subjects is rejected before `Resolve`, because the per-sector `sub` is not reversible; that client must use `login_hint` or `login_hint_token` instead. Never parse the raw JWT in the resolver.
+
 ## binding_message — the anti-confusion field
 
 CIBA `binding_message` is a short string the consumption device sends with `/bc-authorize`. The OP forwards it to the authentication device so the prompt on the user's phone shows the same text the cashier sees on the POS:
@@ -147,7 +149,7 @@ CIBA `binding_message` is a short string the consumption device sends with `/bc-
 >
 > [ Approve ] [ Deny ]
 
-Without `binding_message` the user has only the OP's generic prompt to go on, and a phishing flow ("we noticed unusual activity, please approve this push") becomes much more plausible. Treat `binding_message` as mandatory in the embedder's UX even though the spec marks it optional.
+Without `binding_message` the user has only the OP's generic prompt to go on, and a phishing flow ("we noticed unusual activity, please approve this notification") becomes much more plausible. Treat `binding_message` as mandatory in the embedder's UX even though the spec marks it optional.
 
 ## See it run
 

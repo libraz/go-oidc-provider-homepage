@@ -91,6 +91,7 @@ import (
   "context"
 
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
   oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
   oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
@@ -117,11 +118,15 @@ combined, err := composite.New(
 )
 if err != nil { /* ... */ }
 
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: durable.UserPasswords()}}
+
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(combined),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithStaticClients(op.PublicClient{
     ID:           "demo-rp",
     RedirectURIs: []string{"https://rp.example.com/callback"},
@@ -152,7 +157,7 @@ provider, err := op.New(
 | `OpaqueAccessTokenStore` | durable (SQL — populated only when opaque AT format is configured) |
 | `GrantRevocationStore` | durable (SQL — backs the default grant-tombstone revocation) |
 | `PushedAuthRequestStore` | durable (SQL — `request_uri` is short-lived but in the transactional cluster) |
-| `SessionStore` | route to either tier with `composite.With(composite.Sessions, ...)`; declare your placement intent via `WithSessionDurabilityPosture` (default `SessionDurabilityVolatile`) so the back-channel logout audit signal classifies expected vs unexpected gaps |
+| `SessionStore` | route to either tier with `composite.With(composite.Sessions, ...)`; declare the durability of the logout trigger and session snapshot via `WithSessionDurabilityPosture` (default `SessionDurabilityVolatile`), while BCL targets remain grant-derived |
 | `InteractionStore` | volatile (Redis) |
 | `ConsumedJTIStore` | volatile (Redis) |
 
@@ -161,7 +166,7 @@ provider, err := op.New(
 :::
 
 ::: details Why SessionStore can be either
-A volatile session store (eviction under memory pressure, no replication guarantees) is acceptable for many deployments — the worst case is a user re-authenticating. Some embedders want stronger guarantees so they can audit log-in state through restarts. Routing is the embedder's call (set via `composite.With(composite.Sessions, durable_or_volatile_store)`); `op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` is a *declaration* the library does not enforce — it just propagates the value into the back-channel logout `bcl.no_sessions_for_subject` audit event so SOC dashboards distinguish "expected gap under volatile placement" from "unexpected gap under durable placement."
+A volatile session store (eviction under memory pressure, no replication guarantees) is acceptable for many deployments — the worst case is a user re-authenticating. Some embedders want stronger durability so browser login state and the logout trigger/session snapshot survive restarts. Routing is the embedder's call (set via `composite.With(composite.Sessions, durable_or_volatile_store)`). `op.WithSessionDurabilityPosture(SessionDurabilityVolatile | SessionDurabilityDurable)` is a *declaration* the library does not enforce; it describes the durability of that logout trigger/session snapshot, not the BCL audience. `/end_session` snapshots the session before notifying, while eligible RP targets are derived independently from `GrantStore.ListClientIDsBySubject`. `bcl.no_sessions_for_subject` means a session-bearing logout notice found zero grant-derived RP targets; if eviction happens before the snapshot, neither the back-channel notification nor the audit event occurs. Keep trigger/snapshot durability findings separate from grant-derived zero-target events in SOC dashboards.
 :::
 
 ## Observability

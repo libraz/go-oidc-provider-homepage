@@ -1,6 +1,6 @@
 ---
 title: ブラウザを使わないフロー — CIBA と Device Code
-description: いずれも「アクセストークンを欲しがるデバイスにまともなブラウザがない」状況に対応するフロー。一見似ているが、誰が起点となるか・どのようにユーザを OP に識別させるかで分かれる。
+description: CIBA の poll 方式と RFC 8628 Device Code を比較 — hint による識別、opaque な検証試行、組み込み側の責任範囲の違いを整理する。
 pageClass: pg-concepts-no-browser-flows
 ---
 
@@ -16,7 +16,7 @@ pageClass: pg-concepts-no-browser-flows
 
 **Device Code（RFC 8628）.** ブラウザを持たないデバイスが OP に「使い切りのコードをくれ」と頼み、自分の画面に表示し、ユーザに「この URL をスマホで開いて、このコードを入力して」と告げます。ユーザは手元のブラウザで認証して承認します。その間デバイスは `/token` を poll し続け、承認が降りるのを待ちます。ユーザの識別は **フローの途中で発覚** します — TV の前に誰がやって来るかは OP もデバイスも事前には知りません。
 
-**CIBA（Core 1.0）.** RP はすでにユーザが誰かを知っています — `login_hint`（`alice@example.com`、口座番号など）、`id_token_hint`（過去に発行された ID トークン）、`login_hint_token`（上流のシステムが発行した署名付き JWT）のいずれかで。RP は OP に「このユーザを別経路で認証してくれ」と頼みます。OP は事前登録された認証デバイス（push 通知、SMS、アプリの確認画面）に通知を飛ばします。その間 RP は poll する（ping / push モードならコールバックを待つ）。ユーザの識別は **RP が事前に与えるもの** です — どのデバイスへ push するか、OP はそれがないと決められません。
+**CIBA（Core 1.0）.** RP はすでにユーザが誰かを知っています — `login_hint`（`alice@example.com`、口座番号など）、`id_token_hint`（過去に発行された ID トークン）、`login_hint_token`（上流のシステムが発行した署名付き JWT）のいずれかで。RP は OP に「このユーザを別経路で認証してくれ」と頼みます。組み込み側の通知・認証デバイスサービスがユーザへ通知し、OP はリクエストを保持して RP の poll に応答します。本ライブラリは poll 方式だけを実装し、ping / push 配信方式は提供しません。ユーザの識別は **RP が事前に与えるもの** なので、配備側は承認先の認証デバイスを決められます。
 
 ## 比較
 
@@ -24,15 +24,15 @@ pageClass: pg-concepts-no-browser-flows
 |---|---|---|
 | 発端 | ブラウザを持たないデバイス（入力デバイス → OP） | RP / API クライアント（RP → OP） |
 | ユーザの識別 | ユーザが別のブラウザに `user_code` を入力 | RP が `login_hint` / `id_token_hint` / `login_hint_token` を事前に渡す |
-| ユーザ側の端末 | ユーザが手元に持っている任意のブラウザ | OP に事前登録された backchannel push 用のデバイス |
+| ユーザ側の端末 | ユーザが手元に持っている任意のブラウザ | 配備側が事前登録した別経路承認用デバイス |
 | フィッシング対策の主軸 | デバイスが表示する `user_code` + ユーザが verification URI のホストを目視 | ユーザの認証デバイスに表示する `binding_message` |
-| ブラウザの関与 | あり（ユーザのスマホ側） | 任意 / 不要（push 通知で確認が完結する） |
+| ブラウザの関与 | あり（ユーザのスマホ側） | 任意 / 不要（組み込み側の認証デバイスが確認する） |
 | ポーリング主体 | ブラウザを持たないデバイス | RP |
 | 仕様上のエンドポイント | `/device_authorization` | `/bc-authorize` |
 | token grant_type | `urn:ietf:params:oauth:grant-type:device_code` | `urn:openid:params:grant-type:ciba` |
 | 主な用途 | TV アプリ、CLI ツール、kiosk、音声アシスタント、入力手段が乏しい IoT | 強力な顧客認証（PSD2 風）、金融 / ヘルスケアでの別経路承認、画面共有なしでアクセスをリセットするカスタマーサポートのフロー |
-| 本ライブラリでの対応 | RFC 8628 — フル対応、`op.WithDeviceCodeGrant()` で有効化 | OIDC CIBA Core 1.0 — 現リリースでは poll モードのみ。ping / push は将来対応 |
-| ブルートフォース対策 | `op/devicecodekit` の constant-time 比較 + N-strike ロックアウト（`MaxUserCodeStrikes`） | poll-abuse ロックアウト — `auth_req_id` 単位で `/token` 再試行を rate-limit、閾値超過で `AuditCIBAPollAbuseLockout` |
+| 本ライブラリでの対応 | RFC 8628 — `op.WithGrants(grant.DeviceCode)` と `op.WithDeviceCodeGrant()` で有効化 | OIDC CIBA Core 1.0 — poll モードのみ。Discovery も `poll` だけを広告し、ping / push は実装しない |
+| ブルートフォース対策 | `op/devicecodekit` の opaque attempt-key limiter + レコード単位ロックアウト（`MaxUserCodeStrikes`） | poll-abuse ロックアウト — `auth_req_id` 単位で `/token` 再試行を rate-limit、閾値超過で `AuditCIBAPollAbuseLockout` |
 | FAPI プロファイルとの関係 | FAPI 2.0 には組み込まれていない（RFC 8628 自体で Baseline 相当の構成は十分） | FAPI-CIBA — FAPI 2.0 Baseline / Message Signing とは別プロファイル。JAR + DPoP \| mTLS + access TTL 10 分上限を必須化 |
 
 ::: tip 2 つの grant、同じ症状
@@ -94,11 +94,11 @@ pageClass: pg-concepts-no-browser-flows
 **2. token を欲しがるデバイスに画面はあるか?**
 
 - **ある** → Device Code がそのまま `user_code` と `verification_uri` を表示できます。TV / ゲーム機 / CLI の典型ケース。
-- **ない（音声アシスタント、ヘッドレス IoT 等）** → どちらでも動きます。Device Code は TTS で `user_code` を読み上げる、`verification_uri_complete` を QR で出す等の方法が取れます。CIBA は別のデバイスに push するので、そもそも表示は不要です。
+- **ない（音声アシスタント、ヘッドレス IoT 等）** → どちらでも動きます。Device Code は TTS で `user_code` を読み上げる、`verification_uri_complete` を QR で出す等の方法が取れます。CIBA は別の認証デバイスを使い、組み込み側の通知サービスが承認 prompt を届けるため、利用デバイス自体の表示は不要です。
 
 **3. ユーザは認証デバイスを事前登録しているか?**
 
-- **CIBA は前提とします。** 事前登録された送信先がないと OP は push の宛先を持ちません。そのデバイスを事前登録する工程（銀行アプリ、スタッフのスマホ、規制当局が発行する authenticator、等）は配備の一部です。
+- **CIBA は前提とします。** 事前登録された認証デバイスがないと、組み込み側の承認サービスは届け先を持ちません。そのデバイスを事前登録する工程（銀行アプリ、スタッフのスマホ、規制当局が発行する authenticator、等）は配備の一部です。
 - **Device Code は前提としません。** ユーザがサインインできる任意のブラウザセッションで動きます。本人のスマホ、同僚のラップトップ、店舗の kiosk、いずれでも。
 
 **4. これは規制下の金融 / ヘルスケアで、別経路承認が要件になっているか?**
@@ -153,7 +153,7 @@ pageClass: pg-concepts-no-browser-flows
 ### CIBA（Core 1.0、poll モード）
 
 <svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ciba-seq-title">CIBA（OIDC Core 1.0、poll モード）のシーケンス。RP が /bc-authorize で login_hint を渡し、OP がそれを解決してユーザの事前登録デバイスに push し、RP は承認まで poll する。</title>
+  <title id="ciba-seq-title">CIBA（OIDC Core 1.0、poll モード）のシーケンス。RP が /bc-authorize で login_hint を渡し、OP がそれを解決し、組み込み側の通知サービスがユーザの事前登録デバイスへ届け、RP は承認まで poll する。</title>
   <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
   <line class="cbx-op cbx-life" x1="360" y1="50" x2="360" y2="554"/>
   <line class="cbx-user cbx-life" x1="605" y1="50" x2="605" y2="554"/>
@@ -175,7 +175,7 @@ pageClass: pg-concepts-no-browser-flows
   <path class="cbx-op" d="M360 158 H398 V184 H367 M367 180 L360 184 L367 188"/>
   <text class="cbx-note" x="406" y="176" text-anchor="start"><tspan class="cbx-step">2  </tspan><tspan class="cbx-mono">HintResolver</tspan> → subject</text>
   <path class="cbx-op" d="M360 210 H605 M598 206 L605 210 L598 214"/>
-  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>別経路 push</text>
+  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>組み込み側の通知</text>
   <rect class="cbx-frame" x="510" y="224" width="190" height="34" rx="4"/>
   <text class="cbx-note" x="605" y="245" text-anchor="middle">「Acme Coffee で 800 円を承認?」</text>
   <path class="cbx-op" d="M360 286 H115 M122 282 L115 286 L122 290"/>
@@ -202,11 +202,11 @@ pageClass: pg-concepts-no-browser-flows
 **Phishing — 攻撃者がユーザを騙して *攻撃者の* リクエストを承認させる.**
 
 - Device Code: ユーザは入力する URL のホストを目視で確認します。`user_code` 自体に session 単位の秘密値はありません（エントロピは意図的に控えめ）。ユーザがホストを打ち間違えたり phishing メールのリンクを踏んだりすれば、同じ `user_code` が攻撃者のサイトでも通ってしまいます。
-- CIBA: `binding_message` が `/bc-authorize` に同梱され、ユーザの認証デバイスに表示されます。ユーザは「Acme POS 端末 #14: Acme Coffee で 800 円を承認?」を見てから承認します。文脈のない push 確認画面（「異常なアクティビティを検知しました、承認しますか?」）が失敗モードです。
+- CIBA: `binding_message` が `/bc-authorize` に同梱され、ユーザの認証デバイスに表示されます。ユーザは「Acme POS 端末 #14: Acme Coffee で 800 円を承認?」を見てから承認します。文脈のない別経路確認画面（「異常なアクティビティを検知しました、承認しますか?」）が失敗モードです。
 
 **`user_code` への replay / brute-force.**
 
-- Device Code: `user_code` はユーザが手で入力できるよう短く（`BDWP-HQPK` 等）作られています。原理的には総当たり可能です。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) を同梱しており、`VerifyUserCode` が定数時間比較を行い、ミスごとに strike カウンタを増やし、`MaxUserCodeStrikes`（既定 5）でレコードをロックアウトします。組み込み側が用意する verification ページは **必ず** このヘルパを経由する必要があります。
+- Device Code: `user_code` はユーザが手で入力できるよう短く（`BDWP-HQPK` 等）作られています。原理的には総当たり可能です。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) を同梱しており、最初の手入力は raw `user_code` ではない opaque なサーバ側 ceremony key と `VerifyUserCodeByAttemptKey` で検証し、その後 `ApproveUserCode` または `DenyUserCode` を呼びます。レコード単位の helper は `MaxUserCodeStrikes`（既定 5）も適用します。組み込み側が用意する verification ページは **必ず** このヘルパを経由してください。
 - CIBA: ユーザが手で打つコードはありません。`auth_req_id` は不透明値で OP が発行します。
 
 **`/token` ポーリングへの replay / abuse.**
@@ -216,20 +216,21 @@ pageClass: pg-concepts-no-browser-flows
 
 ## 本ライブラリの現状の対応
 
-**Device Code（RFC 8628）.** フル対応、`op.WithDeviceCodeGrant()` で有効化します。verification ページ（ユーザが `user_code` を入力する画面）は **組み込み側がホスト** します。組み込み側は `devicecodekit.VerifyUserCode` と `ApproveUserCode` / `DenyUserCode` を呼んで OP 側の状態機械を進めます。Audit catalogue:
+**Device Code（RFC 8628）.** フル対応、`op.WithGrants(grant.DeviceCode)` と `op.WithDeviceCodeGrant()` で有効化します。verification ページ（ユーザが `user_code` を入力する画面）は **組み込み側がホスト** します。最初の手入力は raw `user_code` ではない opaque なサーバ側 ceremony key と `devicecodekit.VerifyUserCodeByAttemptKey` で検証し、その後 `ApproveUserCode` / `DenyUserCode` を呼びます。`devicecodekit.Deps` は pointer のまま保持・受け渡しし、既定 limiter はプロセス内限定です。複数インスタンスでは共有 atomic `AttemptLimiter` を注入します。Audit は `Deps.AuditLogger` 経由です。Audit catalogue:
 
 - `AuditDeviceAuthorizationIssued`、`AuditDeviceAuthorizationRejected`、`AuditDeviceAuthorizationUnboundRejected`
 - `AuditDeviceCodeVerificationApproved`、`AuditDeviceCodeVerificationDenied`、`AuditDeviceCodeUserCodeBruteForce`
 - `AuditDeviceCodeTokenIssued`、`AuditDeviceCodeTokenRejected`、`AuditDeviceCodeTokenSlowDown`
 - `AuditDeviceCodeRevoked`（公開 `Revoke` ヘルパから発火）
 
-**CIBA（Core 1.0）.** 現リリースでは poll モードのみ。ping / push は対象外です。`op.WithCIBA(op.WithCIBAHintResolver(...))` で組み込みます。`HintResolver` は組み込み側のフックで、受信した hint（`login_hint`、`id_token_hint`、`login_hint_token`）を subject に解決します。Audit catalogue:
+**CIBA（Core 1.0）.** poll モードのみで、Discovery も `poll` だけを広告します。ping / push 配信方式は提供しません。`op.WithGrants(grant.CIBA)` と `op.WithCIBA(op.WithCIBAHintResolver(...))` で組み込みます。`HintResolver` は組み込み側のフックで、受信した hint（`login_hint`、`id_token_hint`、`login_hint_token`）を subject に解決します。`id_token_hint` は OP が署名・issuer・認証済みクライアント audience を検証し、検証済み `sub` だけを resolver に渡します。`exp` は意図的に検証せず、pairwise client は resolver 前に拒否します。Audit catalogue:
 
 - `AuditCIBAAuthorizationIssued`、`AuditCIBAAuthorizationRejected`、`AuditCIBAAuthorizationUnboundRejected`
-- `AuditCIBAAuthDeviceApproved`、`AuditCIBAAuthDeviceDenied`
 - `AuditCIBAPollAbuseLockout`
 - `AuditCIBATokenIssued`、`AuditCIBATokenRejected`、`AuditCIBATokenSlowDown`
 - `AuditCIBAPollObservationFailed`（token endpoint がきれいに反映できない状態遷移を観測したとき）
+
+認証デバイスの callback は組み込み側が CIBA substore を直接呼ぶ経路です。その呼び出しに対して本ライブラリは `AuditCIBAAuthDeviceApproved` / `AuditCIBAAuthDeviceDenied` を発火しません。これらの名前は配備側 telemetry 用のカタログです。
 
 ## 続きはこちら
 

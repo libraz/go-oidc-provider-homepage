@@ -1,6 +1,6 @@
 ---
 title: カスタム認証器
-description: 自前の認証要素（ハードウェアトークン、SMS、magic link など）を、ライブラリを fork せずに LoginFlow へ差し込む。
+description: 公開されている op.Authenticator と op.ExternalStep を使って、ハードウェアトークン、SMS、magic link などの認証要素を追加する。
 pageClass: pg-use-cases-custom-authenticator
 ---
 
@@ -48,9 +48,8 @@ type Authenticator interface {
     // 検証する。
     Prompts() []string
 
-    // フローを開始する。返した interaction.Step は、Prompt（複数ステップ
-    // の認証要素）か Result（即完結する 1 ステップの認証要素。稀）の
-    // いずれかを載せる。
+    // フローを開始する。複数ステップなら Prompt、すぐに完了する
+    // 認証要素なら Result を載せる。
     Begin(ctx context.Context, in BeginInput) (interaction.Step, error)
 
     // SPA からの送信でフローを進める。
@@ -58,7 +57,9 @@ type Authenticator interface {
 }
 ```
 
-実装は並行安全であってください。オーケストレータは複数の goroutine の間で振り分けします。
+実装は並行安全でなければなりません。オーケストレータは複数の goroutine から呼び出します。`BeginInput` には、確定済みなら subject、client ID、基準時刻 `AuthTime`、要求された scope、読み取り専用の client view が入ります。`ContinueInput` には、`interaction.FormSubmission`、同じ `AuthTime`、確定済みの subject、直前の Step が返した不透明な `Scratch` が入ります。
+
+オーケストレータは `Begin` または `Continue` の戻り値に対して `Prompt.StateRef` を設定します。認証器が state reference を生成したり保存したりしてはいけません。試行ごとの状態は `interaction.Step.Scratch` に入れてください。この値はサーバー側に保持され、次の `ContinueInput.Scratch` に渡されます。
 
 ## 状態遷移の全体像
 
@@ -117,7 +118,9 @@ package smsauth
 import (
     "context"
     "crypto/rand"
+    "encoding/binary"
     "fmt"
+    "time"
 
     "github.com/libraz/go-oidc-provider/op"
     "github.com/libraz/go-oidc-provider/op/interaction"
@@ -133,26 +136,37 @@ type SMSAuthenticator struct {
 
 func (a *SMSAuthenticator) Type() op.FactorType { return "myorg.sms_otp" }
 func (a *SMSAuthenticator) AAL() op.AAL         { return op.AAL2 }
-func (a *SMSAuthenticator) AMR() string      { return "sms" } // RFC 8176 §2
+func (a *SMSAuthenticator) AMR() string         { return "otp" } // RFC 8176 §2
+
+const (
+    phonePrompt = "myorg.sms.collect_phone"
+    codePrompt  = "myorg.sms.collect_code"
+)
 
 func (a *SMSAuthenticator) Prompts() []string {
-    return []string{"myorg.sms.collect_phone", "myorg.sms.collect_code"}
+    return []string{phonePrompt, codePrompt}
 }
 
-func (a *SMSAuthenticator) Begin(ctx context.Context, in op.BeginInput) (interaction.Step, error) {
+func (a *SMSAuthenticator) Begin(_ context.Context, _ op.BeginInput) (interaction.Step, error) {
     // 最初の画面: 電話番号を集める。
     return interaction.Step{
         Prompt: &interaction.Prompt{
-            Type:     "myorg.sms.collect_phone",
-            StateRef: in.StateRef, // 試行ごとの state を引き継ぐ
+            Type: phonePrompt,
+            Inputs: []interaction.FieldSpec{{
+                Name:     "phone",
+                Kind:     interaction.FieldText,
+                Required: true,
+                MaxLen:   254,
+            }},
         },
+        Scratch: []byte(phonePrompt),
     }, nil
 }
 
 func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (interaction.Step, error) {
-    switch in.Prompt.Type {
-    case "myorg.sms.collect_phone":
-        phone := in.Submission["phone"]
+    switch string(in.Scratch) {
+    case phonePrompt:
+        phone := in.Submission.Values["phone"]
         if phone == "" {
             return interaction.Step{}, fmt.Errorf("phone required")
         }
@@ -176,13 +190,20 @@ func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (i
         }
         return interaction.Step{
             Prompt: &interaction.Prompt{
-                Type:     "myorg.sms.collect_code",
-                StateRef: in.StateRef,
+                Type: codePrompt,
+                Inputs: []interaction.FieldSpec{{
+                    Name:     "code",
+                    Kind:     interaction.FieldOTPCode,
+                    Required: true,
+                    MinLen:   6,
+                    MaxLen:   6,
+                }},
             },
+            Scratch: []byte(codePrompt),
         }, nil
 
-    case "myorg.sms.collect_code":
-        submitted := in.Submission["code"]
+    case codePrompt:
+        submitted := in.Submission.Values["code"]
         // 保存ハッシュとの定数時間比較。
         subject, ok := a.OTPStore.Verify(ctx, submitted)
         if !ok {
@@ -190,11 +211,12 @@ func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (i
         }
         return interaction.Step{
             Result: &interaction.Result{
-                Subject: subject,
+                Subject:  subject,
+                AuthTime: in.AuthTime,
             },
         }, nil
     }
-    return interaction.Step{}, fmt.Errorf("unexpected prompt: %q", in.Prompt.Type)
+    return interaction.Step{}, fmt.Errorf("unexpected authenticator state")
 }
 
 func generate6DigitCode() (string, error) {
@@ -235,24 +257,33 @@ op.New(
 
 ### 3. SPA で画面を描画する
 
-JSON ドライバ(`op.WithInteractionDriver(interaction.JSONDriver{})`)構成下では、SPA は `/interaction/{uid}` で画面状態を JSON として受け取ります:
+JSON ドライバ（`op.WithInteractionDriver(interaction.JSONDriver{})`）構成下では、SPA は `/interaction/{uid}` で画面状態を JSON として受け取ります。レスポンスにはカスタムの `type`、宣言した `inputs`、不透明な `state_ref` が含まれます。SPA はこの `state_ref` を `FormSubmission.StateRef` に戻し、値を `FormSubmission.Values` に入れて送信します。
 
 ```json
 {
   "prompt": {
     "type": "myorg.sms.collect_phone",
+    "inputs": [{"name": "phone", "kind": 0, "required": true}],
     "state_ref": "..."
   }
 }
 ```
 
-電話番号入力を描画し、`{ "phone": "+1..." }` を同じエンドポイントに POST します。次のレスポンスは `myorg.sms.collect_code` の画面なので、コード入力を描画して `{ "code": "123456" }` を POST します。3 番目のレスポンスは、subject が確定した `Result` です。
+電話番号入力を描画し、`values` に `{ "phone": "+1..." }` を入れた `FormSubmission` を同じエンドポイントに POST します。次のレスポンスは `myorg.sms.collect_code` の画面なので、コード入力を描画して `{ "values": { "code": "123456" } }` を POST します。3 番目のレスポンスは、subject が確定した `Result` です。
 
 HTML ドライバ構成では、2 種類の画面を扱うカスタムテンプレートを登録してください。
 
+## Prompt のフィールドと上限
+
+カスタム Prompt では、送信するフィールドをすべて `Prompt.Inputs` に宣言します。`PromptData` は sealed interface なので、アプリケーションが `interaction` パッケージの外から任意の data 型を追加することはできません。カスタムのフォーム項目には `FieldSpec` を使い、secret を `Prompt.StateRef` や Driver に公開し得る `Step.Scratch` に入れないでください。
+
+`FieldKind` は `FieldText`、`FieldPassword`、`FieldOTPCode`、`FieldEmail`、`FieldHidden` に限られます。`Required`、`MinLen`、`MaxLen`、全体一致の `Pattern` は `Continue` の前に検証されます。`MaxLen` が 0 の場合、byte 単位の上限は text が 512、password が 1024、OTP code が 32、email が 320、hidden が 16 KiB です。1 回の submission 全体にも名前と値の合計 32 KiB、宣言した項目を超える追加項目 4 個までという上限があります。Prompt の `StateRef` は 10 分で失効し、1 回しか使えません。古い、または再利用された reference は認証器が呼ばれる前に拒否されます。
+
+組み込み MFA の Prompt も同じ契約を使います。TOTP は `AttemptsRemaining` とちょうど 6 桁の `code` を返します。メール OTP はマスク済みアドレスと `ExpiresAt` を返し、254 byte のメールアドレスと 6 桁の code を受け付け、code の既定有効期間は 5 分です。passkey は WebAuthn の challenge と allow-list を返し、assertion response は 16 KiB までです。recovery code は `AttemptsRemaining` を返し、10〜32 byte を受け付けます。これらは Prompt のメタデータと入力上限であり、要素ごとのレート制限の代わりにはなりません。
+
 ## 契約条件
 
-オーケストレータが強制する項目です。違反すると LoginFlow のコンパイル時、または最初のリクエストでエラーになります:
+オーケストレータは Provider 構築時に設定を検証し、実行時に空の Step を拒否します。次の項目が公開契約です:
 
 | 要件 | 理由 |
 |---|---|
@@ -260,26 +291,25 @@ HTML ドライバ構成では、2 種類の画面を扱うカスタムテンプ�
 | `Kind()`（`ExternalStep.KindLabel` 経由）にドット形式プリフィックス | 組み込み用にプリフィックス無しの名前を予約しているため |
 | `AMR()` は RFC 8176 §2 の値、または `""` | 範囲外の値は警告付きの監査イベントを出して除外 |
 | `Prompts()` は Begin / Continue が返し得る全画面種別を列挙 | 起動時検証のため。漏れているとランタイムエラーになる |
-| Begin は **Prompt または Result のいずれか** を載せて返す（両方や両方無しは不可） | オーケストレータの状態遷移の前提 |
+| Begin と Continue は Prompt または Result を返す。空の Step は拒否される | オーケストレータの状態遷移の前提 |
 | 既知 / 未知の識別子でレスポンス形状とタイミングを一致させる | ユーザ存在の漏えい対策の基本 |
 | 呼び出しをまたいでステートレス | 試行ごとの状態は `interaction.Prompt.StateRef` に載せること。struct に持たない |
 
 ## テスト
 
-ストア実装には `op/store/contract` の契約テスト、認証器にはオーケストレータ側のテストハーネスを使います:
+認証器は通常の Go テストで検証します。`Begin` を呼び、`interaction.FormSubmission{Values: ...}` を `Continue` に渡し、返された Prompt または Result を確認し、同じ手順を並行実行します。公開パッケージ `op/testkit` には HTTP 層の fixture 用 subject-binding 認証器がありますが、本番用の認証器ではありません。
 
 ```go
-// 擬似コード — 実パスはソースリポジトリの harness を参照。
-import "github.com/libraz/go-oidc-provider/internal/authn/test"
-
 func TestSMSAuthenticator(t *testing.T) {
-    auth := &smsauth.SMSAuthenticator{
-        Sender:    fakeSender{},
-        OTPStore:  inmemOTPs(),
-        UserStore: testStore,
-        CodeTTL:   5 * time.Minute,
-    }
-    test.AuthenticatorContract(t, auth)
+    auth := &smsauth.SMSAuthenticator{Sender: sender, OTPStore: otps, UserStore: users, CodeTTL: 5 * time.Minute}
+    first, err := auth.Begin(context.Background(), op.BeginInput{})
+    if err != nil || first.Prompt == nil { t.Fatal(err) }
+    next, err := auth.Continue(context.Background(), op.ContinueInput{
+        AuthTime: time.Now(),
+        Scratch: first.Scratch,
+        Submission: interaction.FormSubmission{Values: map[string]string{"phone": "+1..."}},
+    })
+    if err != nil || next.Prompt == nil { t.Fatal(err) }
 }
 ```
 
@@ -296,6 +326,6 @@ func TestSMSAuthenticator(t *testing.T) {
 
 ## 参考
 
-- **[アーキテクチャ概観 § LoginFlow の内部](/ja/reference/architecture#loginflow-の内部)** — オーケストレータが認証器に対して何をするか。
+- **[アーキテクチャ概観 § LoginFlow の内部](/ja/reference/architecture#loginflow-internals)** — オーケストレータが認証器に対して何をするか。
 - **[MFA / ステップアップ](/ja/use-cases/mfa-step-up)** — 組み込みの Step を `Rule` で組み合わせるパターン。
-- **[監査イベントカタログ § ログイン / MFA / ステップアップ](/ja/reference/audit-events#ログイン-mfa-ステップアップ)** — 認証器の成功 / 失敗で何が発火するか。
+- **[監査イベントカタログ § ログイン / MFA / ステップアップ](/ja/reference/audit-events#login-mfa-step-up)** — 認証器の成功 / 失敗で何が発火するか。

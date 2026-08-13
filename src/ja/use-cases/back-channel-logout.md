@@ -1,6 +1,6 @@
 ---
 title: バックチャネルログアウト
-description: セッション終了時に全 RP へサーバ間通知 — OIDC Back-Channel Logout 1.0。
+description: セッション終了時に、grant から解決した RP 対象へ上限付き fan-out でサーバ間通知 — OIDC Back-Channel Logout 1.0。
 pageClass: pg-use-cases-back-channel-logout
 ---
 
@@ -10,7 +10,7 @@ pageClass: pg-use-cases-back-channel-logout
 
 ユーザは「Acme でサインイン」ボタンを介して、同じ OP に紐づく複数の RP にサインインしているのが普通です。あるアプリ（RP A）で **ログアウト** をクリックしても、他の RP B / RP C はそれぞれローカル cookie を保持したままなので、「アプリ A ではログアウトしたのにアプリ B ではログイン状態のまま」というズレが残ります。
 
-**バックチャネルログアウト** は、このズレを OP 側から閉じる 一斉通知 機構です。各 RP は OP に対してサーバサイドのコールバック URL を事前登録しておきます。セッション終了時、OP は **署名済み `logout_token` を各 RP の URL に直接 POST** します（ブラウザを経由しない＝バックチャネル）。RP はトークンを検証してローカル cookie を破棄します。
+**バックチャネルログアウト** は、このズレを OP 側から閉じる 一斉通知 機構です。各 RP は OP に対してサーバサイドのコールバック URL を事前登録しておきます。セッション終了時、OP は **subject の grant から導出した対象 RP それぞれに、署名済み `logout_token` を直接 POST** します（ブラウザを経由しない＝バックチャネル）。RP はトークンを検証してローカル cookie を破棄します。
 
 対になる仕組みとして *フロントチャネルログアウト* もありますが、こちらは `<iframe>` とサードパーティ cookie に依存しており、現代のブラウザでは段階的に動かなくなりつつあります。バックチャネル方式が現実的な選択肢です。
 
@@ -31,7 +31,7 @@ pageClass: pg-use-cases-back-channel-logout
 ## アーキテクチャ
 
 <svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して署名済み logout token を RP B と RP C に 一斉通知 したうえで RP A へリダイレクトする。</title>
+  <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して grant 由来の RP 対象 B と C に署名済み logout token を一斉通知したうえで RP A へリダイレクトする。</title>
 
   <path class="life" d="M70 48V372"/>
   <path class="life" d="M220 48V372"/>
@@ -72,7 +72,7 @@ pageClass: pg-use-cases-back-channel-logout
   <text class="bn" x="312" y="154.5" text-anchor="middle">3</text>
 
   <rect class="frame" x="350" y="176" width="396" height="94" rx="8"/>
-  <text class="fr" x="360" y="193">セッション内の全 RP に 一斉通知</text>
+  <text class="fr" x="360" y="193">grant 由来の RP 対象へ一斉通知</text>
   <text class="lbm m" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = 署名 JWT</text>
 
   <path class="accent" d="M380 228L540 228M533 224L540 228L533 232"/>
@@ -106,7 +106,7 @@ OP は RP 毎に `logout_token` に署名して RP の `backchannel_logout_uri` 
 | `iss` | OP issuer |
 | `aud` | RP の `client_id` |
 | `iat`、`jti` | 発行時刻 + replay nonce |
-| `sub` | 終了したセッションの subject。`sid` は発行されません([後述](#通知先はどう解決されるか-そしてなぜ上限があるか)) |
+| `sub` | 終了したセッションの subject。`sid` は発行されません([後述](#backchannel-target-resolution)) |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
 RP は署名と `aud` を検証し、ローカルセッションを破棄したうえで 200 を返します。
@@ -121,7 +121,7 @@ op.WithStaticClients(op.PublicClient{
   RedirectURIs:                     []string{"https://rp-a.example.com/callback"},
   Scopes:                           []string{"openid", "profile"},
   BackchannelLogoutURI:             "https://rp-a.example.com/oidc/backchannel-logout",
-  BackchannelLogoutSessionRequired: true, // logout token に "sid" claim を要求
+  BackchannelLogoutSessionRequired: false, // sid は非対応。ユーザ識別には sub を使う
 })
 ```
 
@@ -134,6 +134,7 @@ op.New(
   /* ... */
   op.WithBackchannelLogoutHTTPClient(myHTTPClient), // mTLS / カスタム timeout
   op.WithBackchannelLogoutTimeout(5 * time.Second),
+  op.WithBackchannelFanOutBudget(30 * time.Second), // detached fan-out 全体。RP ごとの timeout とは別
 )
 ```
 
@@ -150,24 +151,22 @@ op.WithAllowInsecureBackchannelLogoutForDev()
 ::: warning 既定でプライベートネットワーク宛先を拒否
 配送処理は、host が loopback / link-local / RFC 1918 / IPv6 ULA に解決される `backchannel_logout_uri` への POST を **拒否** します。これがないと、任意 URL を登録できる RP が OP の内部ネットワークへの SSRF オラクルになります。
 
-接続先アドレスの拒否リストに加えて、登録時にも URL の形を検査します。`backchannel_logout_uri` は `https` 必須、fragment 不可、userinfo 不可、host 必須です。`https://attacker:internal@rp.example.com/...` も `https://rp.example.com/cb#anchor` も `invalid_client_metadata` で弾かれます。`backchannel_logout_session_required=true` と空の URI の組み合わせも拒否します。配送先を持たないクライアントが `sid` 配送を有効化できないようにするためです。
+接続先アドレスの拒否リストに加えて、登録時にも URL の形を検査します。`backchannel_logout_uri` は `https` 必須、fragment 不可、userinfo 不可、host 必須です。`https://attacker:internal@rp.example.com/...` も `https://rp.example.com/cb#anchor` も `invalid_client_metadata` で弾かれます。`backchannel_logout_session_required=true` は非対応で拒否されます。これを設定しても `sid` 配送は有効になりません。
 
 ```jsonc
-// NG: userinfo と fragment は登録時に拒否
+// NG: userinfo と fragment は登録時に拒否。sid も非対応
 {
   "backchannel_logout_uri": "https://attacker:internal@rp.example.com/logout#sid",
-  "backchannel_logout_session_required": true
+  "backchannel_logout_session_required": false
 }
 
-// NG: sid 配送を要求しているのに配送先がない
-{
-  "backchannel_logout_session_required": true
-}
+// NG: sid 配送を要求する設定は非対応（フィールドを指定しない）
+{}
 
 // OK: public HTTPS の配送先を明示する
 {
   "backchannel_logout_uri": "https://rp.example.com/backchannel-logout",
-  "backchannel_logout_session_required": true
+  "backchannel_logout_session_required": false
 }
 ```
 
@@ -180,7 +179,7 @@ op.WithBackchannelAllowPrivateNetwork(true)
 この緩和は意図的に選び取る必要があります — オプションを明示的に存在させることで、セキュリティ上のトレードオフが設定箇所に可視化されます。
 :::
 
-## 通知先はどう解決されるか（そしてなぜ上限があるか）
+## 通知先はどう解決されるか（そしてなぜ上限があるか） {#backchannel-target-resolution}
 
 一斉通知の通知先は session の行ではなく **grant** から解決されます。coordinator は終了する session の subject を受け取り、その subject が同意している client の集合を grant ストアに問い合わせます。使うのは `store.GrantClientLister.ListClientIDsBySubject` で、これは `ListBySubject` とは別の keyset ページング付きのビューです。1 つの subject が同じ client に対して過去分を含む多数の grant 行を持ちうるため、専用のビューを置いています。一斉通知の各段階には意図的に上限が設けてあります。
 
@@ -188,22 +187,25 @@ op.WithBackchannelAllowPrivateNetwork(true)
 |---|---|---|
 | 重複排除後の通知先 | `DefaultMaxTargets`(256) | 1 回のログアウトで通知する client 数。後段で絞るのではなく grant クエリ自体に上限を効かせる |
 | 同時配送数 | `DefaultMaxConcurrentDeliveries`(8) | 同時に走る outbound POST の本数 |
+| detached fan-out 全体 | 30 秒（`DefaultFanOutBudget`） | 1 回のログアウトイベント全体の wall-clock 予算 |
 
 通知先ページに `NextCursor` が付いて返った場合、上限を超える client が該当したということです。coordinator は黙って切り捨てず、その cursor を載せた overflow の監査イベントを出します。到達できない RP が 1 つあっても、一斉通知全体は失敗せず、その RP 個別の監査イベントとして現れます。
 
+`op.WithBackchannelFanOutBudget` はイベント全体の予算を変更します。各 RP のリクエストを制限する `op.WithBackchannelLogoutTimeout` とは独立しています。予算が切れると残りの通知先も失敗として記録され、detached 処理は収束します。プロセス終了時は `Provider.Shutdown(ctx)` が実行中の fan-out を待ちます。
+
 ::: tip `backchannel_logout_session_supported` は `false`
-discovery はこれを `false` として広告します。これは grant ベースの解決から直接導かれる帰結です。OP 側の session 識別子が特定の RP のものであることを OP は証明できないため、`sid` を Logout Token に載せることはありません。RP は `sub` を手がかりにローカル session を破棄してください。`backchannel_logout_session_required=true` を登録する client は、OP が出さないものを要求していることになります。
+discovery はこれを `false` として広告します。これは grant ベースの解決から直接導かれる帰結です。OP 側の session 識別子が特定の RP のものであることを OP は証明できないため、`sid` を Logout Token に載せることはありません。RP は `sub` を手がかりにローカル session を破棄してください。`BackchannelLogoutSessionRequired` は false のままにするか省略してください。true は非対応で拒否されます。
 :::
 
 ## 通知先が 0 件になったとき
 
-subject が有効な grant を 1 つも持っていない場合(すべて失効済み、あるいは client が既に存在しない古いレコードだけ)、一斉通知には通知先がありません。本ライブラリはこれを監査イベントとして表面化させます。
+subject に grant 由来の対象 RP がない場合（すべての grant が失効済み、または古いレコードが存在しない client を指している場合）、一斉通知には通知先がありません。本ライブラリはこれを監査イベントとして表面化させます。
 
 | イベント | 意味 |
 |---|---|
-| `op.AuditBCLNoSessionsForSubject` | 呼出側がセッションを指定（`id_token_hint` 付き `/end_session` または `Provider.Logout`）したが、一斉通知 で解決した RP が 0 件だった。 |
+| `op.AuditBCLNoSessionsForSubject` | `/end_session` がセッションを指定したが、grant ベースの audience 解決で対象 RP が 0 件だった。 |
 
-このイベントは呼出側が実際に session を指定した場合にだけ発火するので、browser session を持たない subject に対する `Provider.Logout` がノイズを生むことはありません。揮発 session 配置では、通知先 0 件は OIDC Back-Channel Logout 1.0 §2.7 の "best effort" の下限です。永続配置では予期せぬギャップを意味し、アラートに値します。イベント extras に設定済みの `op.SessionDurabilityPosture`（`SessionDurabilityVolatile` または `SessionDurabilityDurable`）を載せておくことで、SOC ダッシュボードはストアアダプタの型に依存せず両者を区別できます。
+このイベントは `/end_session` がセッションを指定し、grant ベースの audience 解決で対象 RP が 0 件になった場合だけ発火します。揮発な `SessionStore` が snapshot 前に行を追い出すと、handler は detached notice を作らないため、fan-out も `AuditBCLNoSessionsForSubject` も開始しません。イベント extras の `op.SessionDurabilityPosture`（`SessionDurabilityVolatile` または `SessionDurabilityDurable`）は trigger / snapshot の喪失と対象 0 件を解釈する文脈であり、対象 0 件イベント自体が eviction を証明するわけではありません。
 
 ## フロントチャネルログアウト（別の機構）
 

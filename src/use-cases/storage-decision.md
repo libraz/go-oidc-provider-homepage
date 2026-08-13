@@ -1,6 +1,6 @@
 ---
 title: Choosing a storage layout
-description: A decision map — greenfield, existing database, or hot/cold split — for where each OIDC substore lives and what may go to Redis.
+description: Choose SQL, DynamoDB, Redis hot/cold, or a custom store, then apply existing-schema migrations and retention operations safely.
 pageClass: pg-use-cases-storage-decision
 ---
 
@@ -73,8 +73,10 @@ Two questions settle almost everything: **where do the OIDC tables live** (one b
 
 The `sql` adapter ships the entire schema, so you do not design the OIDC tables. `New(db, dialect)` builds the store against SQLite, MySQL 8.0+, or PostgreSQL 14+ via the matching `SQLite()` / `MySQL()` / `Postgres()` dialect, and the adapter owns its own `oidc_*` tables.
 
-- **Development / examples**: call the store's `Migrate(ctx)` to apply the embedded v1 schema to the live connection. It is a convenience for demos and tests, not a production migration runner.
+- **Development / examples**: call the store's `Migrate(ctx)` to apply the embedded schema to a fresh live connection. It is a convenience for demos and tests, not an upgrade path for existing tables.
 - **Production**: call the store's `Schema()` to get the dialect-specific DDL — with any `WithNaming` overrides already applied — and feed that string into your existing migration tooling. The DDL is exposed verbatim so a review can diff the adapter's expectations against your production schema.
+
+For an existing database, apply the additive columns and indexes in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) before the first request. The [SQL guide](/use-cases/sql-store#sql-migration-before-first-request) lists the exact `allowed_scopes`, MFA `row_version`, and retention-index names; [storage maintenance](/operations/storage-maintenance) gives the rollout and GC order.
 
 ## Existing database
 
@@ -101,10 +103,14 @@ The Redis-or-SQL choice is **not** "is this data short-lived." It follows one in
 |---|---|---|
 | **Must be durable (SQL)** | `AuthorizationCodeStore`, `RefreshTokenStore`, `GrantStore`, `PushedAuthRequestStore`, `AccessTokenRegistry`, `OpaqueAccessTokenStore`, `GrantRevocationStore` | Members of the atomic-routing cluster — they commit or CAS in one consistency domain. The Redis adapter returns `nil` for these, so `composite` cannot route them off the durable tier. |
 | **Good fit for Redis (volatile)** | `InteractionStore`, `ConsumedJTIStore` | Short-lived, high-churn, losable in isolation, and *outside* the cluster. |
-| **Your call** | `SessionStore` | Route to either tier; declare intent with `WithSessionDurabilityPosture` so the back-channel-logout audit signal classifies expected vs unexpected gaps. |
+| **Your call** | `SessionStore` | Route to either tier; declare logout-trigger/session-snapshot durability with `WithSessionDurabilityPosture`. BCL targets remain grant-derived, and `bcl.no_sessions_for_subject` records a session-bearing logout with zero eligible RP targets. |
 
 The counter-intuitive member is PAR: its `request_uri` is short-lived and *looks* volatile, but the OP consumes it inside the authorization-code path, so it belongs to the cluster and stays durable. The authoritative per-substore table — and the exact `op.New` guardrails for when a required backend is `nil` — live on the [Hot/cold split](/use-cases/hot-cold-redis) page.
 
 ::: warning Redis safety floor
 `redis.New` refuses to start without TLS (`rediss://`) and AUTH. The dev-only escape hatch is `redis.WithDevModeAllowPlaintext`; shipping it in production is a security regression you have to type out by hand.
 :::
+
+## Keep the layout healthy
+
+Before launch, apply the schema and verify the writer compatibility boundary. During operation, schedule SQL retention GC, monitor its `GCStats`, and treat DynamoDB TTL as reclamation rather than expiry enforcement. See [storage maintenance](/operations/storage-maintenance), [backup & disaster recovery](/operations/backup), and the backend-specific [SQL](/use-cases/sql-store), [DynamoDB](/use-cases/dynamodb-store), and [BYO store](/use-cases/byo-store) guides.

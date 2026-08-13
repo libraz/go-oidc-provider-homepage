@@ -1,6 +1,6 @@
 ---
 title: Custom Grant — wiring
-description: Define your own grant_type URN and route it through the OP — handler contract, BoundAccessToken, ParamPolicy.
+description: Define a custom grant_type URN without colliding with built-in grants — handler context, BoundAccessToken, ParamPolicy, and OP-owned issuance.
 pageClass: pg-use-cases-custom-grant
 ---
 
@@ -23,13 +23,22 @@ Custom grants exist for the cases where the standard catalog (`authorization_cod
 ## Registering a handler
 
 ```go
-import "github.com/libraz/go-oidc-provider/op"
+import (
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
 
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+
+  // The custom grant is an extension dispatcher path. Select at least
+  // one built-in grant explicitly so the default browser grants are not
+  // enabled accidentally for this machine-to-machine example.
+  op.WithGrants(grant.ClientCredentials),
 
   op.WithCustomGrant(&serviceTokenHandler{}),
   // op.WithCustomGrant can be called repeatedly to register multiple handlers.
@@ -45,6 +54,8 @@ Construction-time errors:
 | `op.ErrCustomGrantBuiltinCollision` | `Name()` collides with a built-in URN |
 | `op.ErrCustomGrantDuplicate` | a handler with the same Name was already registered |
 | `op.ErrCustomGrantSecretLikeExempt` | `ParamPolicy.DupesAllowed` named a security-sensitive parameter |
+
+`Name()` is compared byte-for-byte with every grant wire the OP implements: `authorization_code`, `refresh_token`, `client_credentials`, the Device Code and CIBA URNs, and the RFC 8693 token-exchange URN. A custom handler cannot replace one of those built-in dispatchers; choose a deployment-owned URN instead.
 
 ## The handler interface
 
@@ -84,6 +95,8 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
     }, nil
 }
 ```
+
+`req.Subject` is always `nil` and `req.AuthTime` is always the zero time. A token request authenticates the client, not an end user, and the OP does not interpret custom-grant parameters to invent a subject or authentication ceremony. Resolve any subject in the handler and report it through `CustomGrantResponse.Subject` (or `BoundAccessToken.Subject`); report its authentication time through `CustomGrantResponse.AuthTime` when the handler has one.
 
 ## Two issuance shapes
 

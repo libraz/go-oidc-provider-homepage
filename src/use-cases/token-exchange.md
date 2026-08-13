@@ -74,6 +74,7 @@ RFC 8693 §4.1 defines the `act` claim as a record of "who acted on whose behalf
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
@@ -83,6 +84,9 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  // Token exchange is an extension grant; select at least one built-in
+  // grant explicitly. This example also serves machine-to-machine clients.
+  op.WithGrants(grant.ClientCredentials),
   op.RegisterTokenExchange(myPolicy),
   // ...
 )

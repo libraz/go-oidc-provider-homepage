@@ -1,11 +1,11 @@
 ---
 title: Redirect URI
-description: redirect_uri の完全一致ポリシー、RFC 8252 の loopback 緩和の本当の意味、そして CVE 級の脆弱性を生んだ古典的なミス。
+description: 既定の /auth における redirect_uri 完全一致、RFC 8252 loopback 緩和の範囲、CVE 級の誤設定を整理する。
 ---
 
 # Redirect URI
 
-**Redirect URI** は、`/authorize` 完了後に OP がユーザを送り戻す URL です — 成功時は `?code=...&state=...`、失敗時は `?error=...&state=...` が付きます。RP はクライアント生成時に 1 つ以上を登録しておき、OP は authorize 要求の `redirect_uri` クエリパラメータを登録値と比較します。一致しなければ、ユーザを送り出す前にリクエストを拒否します。
+**Redirect URI** は、`/auth` 完了後に OP がユーザを送り戻す URL です — 成功時は `?code=...&state=...`、失敗時は `?error=...&state=...` が付きます。OP を `/oidc` に mount した場合の endpoint は `/oidc/auth` です。RP はクライアント生成時に 1 つ以上を登録しておき、OP は authorize 要求の `redirect_uri` クエリパラメータを登録値と比較します。一致しなければ、ユーザを送り出す前にリクエストを拒否します。
 
 ::: tip 30 秒で頭に入れる相関図
 - `redirect_uri` はデフォルトで **byte 単位の完全一致**。`/cb` と `/cb/` は別の URI です。

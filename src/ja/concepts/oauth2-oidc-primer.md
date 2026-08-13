@@ -86,7 +86,7 @@ pageClass: pg-concepts-oauth2-oidc-primer
   <text class="p sub" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> アクセストークン</text>
 </svg>
 
-ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE](#最もよく見かける処理-認可コード-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
+ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE](#authorization-code-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
 
 ::: tip 同じソフトが複数の役割を兼ねることもある
 たとえば「Backend for Frontend」は、ユーザをログインさせる **RP** であると同時に、SPA からアクセストークン付きで呼ばれる **RS** でもあります。
@@ -147,7 +147,7 @@ Authorization: Bearer eyJ...access_token...
 ```
 :::
 
-## 最もよく見かける処理: 認可コード + PKCE
+## 最もよく見かける処理: 認可コード + PKCE {#authorization-code-pkce}
 
 <svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authcode-title">認可コード + PKCE のシーケンス: ブラウザがユーザを RP と OP の間で運んでログインと code 交換を行い、その後 RP が access token で RS を呼び出す。</title>

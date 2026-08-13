@@ -1,13 +1,13 @@
 ---
 title: Rich authorization requests（RFC 9396）
-description: authorization_details を受理し、各要素を登録済みの type で検証し、トークンと introspection に許可済みの内容を反映する。
+description: RFC 9396 authorization_details を登録・検証し、新規 detail の再同意を要求して、token と introspection に反映する。
 ---
 
 # 使い方 — Rich authorization requests（RFC 9396）
 
 scope は粗い単位です。`scope=payments` は *このクライアントは送金してよい* を表しますが、*IBAN X から IBAN Y へ €40 を一度だけ動かす* までは表せません。[RFC 9396](https://datatracker.ietf.org/doc/html/rfc9396)（Rich Authorization Requests、通称 RAR）は `authorization_details` パラメータを追加します。これは型付きオブジェクトの JSON 配列で、クライアントは要求内容を細かく記述でき、OP はその内容を grant に束ね、その grant から発行されるトークンへ引き継げます。
 
-本ライブラリは `authorization_details` を `/authorize`、`/par`、`/token` で受理し、各要素を登録済みの type で検証し、許可済みの内容を grant に永続化し、JWT アクセストークン（RFC 9068 §2.2.3）と introspection（RFC 9396 §9）に反映します。
+本ライブラリは `authorization_details` を `/auth`、`/par`、`/token` で受理し、各要素を登録済みの type で検証し、許可済みの内容を grant に永続化し、JWT アクセストークン（RFC 9068 §2.2.3）と introspection（RFC 9396 §9）に反映します。`/oidc` に mount した場合の認可 endpoint は `/oidc/auth` です。
 
 RAR は、リソースサーバが金額、口座、location、action、datatype のような構造化された事実を見て判断する必要がある場合に使います。単に scope 名を増やしたいだけなら使わない方がよいです。`read:orders` や `payments:initiate` で十分に表せるなら、scope の方が単純で既存クライアントからも扱いやすいです。
 
@@ -39,11 +39,21 @@ import (
   "errors"
 
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/store"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
+
 op.New(
-  /* 必須オプション */
+  op.WithIssuer("https://op.example.com"),
+  op.WithStore(st),
+  op.WithKeyset(myKeyset),
+  op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithAuthorizationDetailTypes(op.AuthorizationDetailType{
     Type: "payment_initiation",
     Validate: func(_ context.Context, el map[string]any, _ *store.Client) error {
@@ -95,6 +105,12 @@ curl -G --data-urlencode "authorization_details=$DETAILS" \
 ```
 
 JWT アクセストークンは同じ配列を `authorization_details` claim として保持し（RFC 9068 §2.2.3）、トークンを introspect すると introspection レスポンスにもそれが返ります（RFC 9396 §9）。そのためリソースサーバは、JWT を自分でパースしても OP に問い合わせても、許可済みの内容に到達できます。
+
+## 再同意と detail の適用範囲
+
+OP が既存 grant を同意なしで再利用するのは、要求されたすべての scope が既に含まれ、要求されたすべての `authorization_details` 要素がその grant の要素と deep-equal の場合だけです。`prompt=consent` は両方の集合がカバーされていても同意 interaction を強制します。新しい要素、または `amount: "100"` → `"999"` のように値が変わった要素も同意を強制し、通常の同意が完了すると既存 grant に要求された detail を追加します。
+
+同意 UI は要求 scope の集合を絞れますが、detail ごとの承認・絞り込み UI は本ライブラリにありません。各 detail が受理可能かは登録した validator が決め、通常の同意経路が完了すると要求された detail はまとめて永続化され、token と introspection に反映されます。
 
 ## エラー
 

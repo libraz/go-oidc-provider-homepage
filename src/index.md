@@ -15,7 +15,7 @@ pageClass: pg-index
   <rect class="home-main" x="302" y="78" width="156" height="110" rx="8"/>
   <text class="home-text" x="380" y="116" text-anchor="middle">OIDC Provider</text>
   <text class="home-sub" x="380" y="138" text-anchor="middle">http.Handler</text>
-  <text class="home-sub" x="380" y="156" text-anchor="middle">/authorize /token /jwks</text>
+  <text class="home-sub" x="380" y="156" text-anchor="middle">/oidc/auth /oidc/token /oidc/jwks</text>
 
   <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
   <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
@@ -53,11 +53,15 @@ import (
 )
 
 func main() {
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(myKeyset),    // see Quick Start: ephemeral key generation
     op.WithCookieKeys(cookieKey), // 32 bytes — AES-256-GCM
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -71,13 +75,23 @@ func main() {
 ### 2. Run a FAPI 2.0 Baseline OP
 
 ```go
+st := inmem.New()
+clientJWKS, _ := op.LoadPublicJWKS("conformance/keys/fapi-client.jwks.json")
 handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(inmem.New()),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(op.LoginFlow{
+    Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+  }),
   op.WithProfile(profile.FAPI2Baseline), // PAR + JAR, DPoP default, ES256, FAPI narrowing
-  op.WithStaticClients(/* private_key_jwt client with JWKS */),
+  op.WithStaticClients(op.PrivateKeyJWTClient{
+    ID: "demo-fapi",
+    JWKS: clientJWKS,
+    RedirectURIs: []string{"https://app.example.com/callback"},
+    Scopes: []string{"openid", "profile"},
+  }),
 )
 ```
 
@@ -92,8 +106,15 @@ handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKeys(cookieKey),
-  op.WithGrants(grant.ClientCredentials, grant.AuthorizationCode, grant.RefreshToken),
+  op.WithGrants(grant.ClientCredentials),
+  op.WithStaticClients(op.ConfidentialClient{
+    ID: "backend-service",
+    Secret: "cc-demo-secret-rotate-me",
+    AuthMethod: op.AuthClientSecretBasic,
+    GrantTypes: []string{"client_credentials"},
+    Scopes: []string{"api:read"},
+  }),
+  op.WithScope(op.PublicScope("api:read", "Read API resources")),
 )
 ```
 
@@ -102,12 +123,18 @@ handler, _ := op.New(
 ### 4. Drive login / consent / logout from an SPA
 
 ```go
+st := inmem.New()
 handler, _ := op.New(
-  /* required options */
-  op.WithLoginFlow(flow),
+  op.WithIssuer("https://op.example.com"),
+  op.WithStore(st),
+  op.WithKeyset(myKeyset),
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(op.LoginFlow{
+    Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+  }),
   op.WithSPAUI(op.SPAUI{
     LoginMount: "/login",
-    StaticDir:  "./web/static",
+    StaticDir:  "../internal/webui/static",
   }),
 )
 ```
@@ -122,6 +149,7 @@ handler, _ := op.New(
 import (
   "context"
 
+  "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
   oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
   oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
@@ -139,9 +167,13 @@ combined, _ := composite.New(
   composite.With(composite.ConsumedJTIs, volatile),
 )
 
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: durable.UserPasswords()}}
 handler, _ := op.New(
+  op.WithIssuer("https://op.example.com"),
   op.WithStore(combined),
-  /* … */
+  op.WithKeyset(myKeyset),
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
 )
 ```
 
@@ -152,11 +184,11 @@ handler, _ := op.New(
 ## Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@latest
+go get github.com/libraz/go-oidc-provider/op@v1.1.0
 ```
 
 ::: info Stable API
-The library is at v1.0.0 and follows Semantic Versioning: the public API changes only in a major release. APIs marked `Experimental:` in godoc remain the stated exception and may change in a minor release.
+A configuration built with `op.New` and the bundled storage adapters generally upgrades unchanged, while embedders with BYO stores or other extensions should review the current migration guidance in [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md). Symbols marked `Experimental:` in godoc remain the ordinary minor-release exemption.
 :::
 
 ## License & related

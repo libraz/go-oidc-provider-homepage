@@ -1,6 +1,6 @@
 ---
 title: Persistent storage (SQL)
-description: Run the OP against SQLite / MySQL / PostgreSQL via the database/sql adapter.
+description: Run the OP on SQLite, MySQL, or PostgreSQL with additive schema migrations and scheduled retention GC through the database/sql adapter.
 pageClass: pg-use-cases-sql-store
 ---
 
@@ -12,7 +12,7 @@ The OP holds rows the OAuth/OIDC specs require to be **persistent across restart
 
 - **Refresh-token chains** (RFC 6749 §6, RFC 9700 §4.14) — losing them signs every user out.
 - **Registered clients** (OIDC Dynamic Client Registration 1.0 / RFC 7591 when enabled, or static seeds otherwise) — losing them breaks every RP.
-- **Sessions** (OIDC RP-Initiated Logout 1.0, Back-Channel Logout 1.0) — needed to fan out logout to other RPs.
+- **Sessions** (OIDC RP-Initiated Logout 1.0) — preserve browser login state and RP-initiated logout state across restarts.
 - **Consent grants** (OIDC Core 1.0 §3.1.2.4) — losing them re-prompts every user on every restart.
 - **Audit / introspection / revocation shadow rows** — the access-token registry described in [Tokens](/concepts/tokens).
 
@@ -70,6 +70,7 @@ Embedders shipping a custom `Store` aggregator (rather than reusing the bundled 
 
 ```go
 import (
+  "context"
   databasesql "database/sql"
   _ "modernc.org/sqlite" // or your MySQL / Postgres driver
 
@@ -92,12 +93,35 @@ provider, err := op.New(
   op.WithStore(storage),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(op.LoginFlow{
+    Primary: op.PrimaryPassword{Store: storage.UserPasswords()},
+  }),
 )
 ```
 
 ::: tip Migrations
-`*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect. Run it at deploy time before the first request lands. `Schema()` returns the same DDL as a string for callers that want to hand it to their own migration tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
+`*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect, but its `CREATE TABLE IF NOT EXISTS` statements do not alter an existing table. It is suitable for a fresh database or development; an existing installation must apply the additive statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) with the deployment's migration tool rather than relying on `Migrate` alone. SQLite and PostgreSQL can use `Migrate` to reapply their standalone index statements, but missing compatibility columns still require the explicit `ALTER` statements. `Schema()` returns the current DDL as a string for callers that want to review or hand it to that tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
 :::
+
+## Before the first request on an existing database {#sql-migration-before-first-request}
+
+Apply the migration before starting a binary that uses the current MFA and dynamic-registration contracts. The additive changes are `oidc_registration_access_tokens.allowed_scopes` (nullable), `oidc_totp_secrets.row_version`, and `oidc_email_otps.row_version` (both `NOT NULL DEFAULT 1`). Use `TEXT` / `INTEGER` on SQLite, `JSON` / `BIGINT` on MySQL or MariaDB, and `JSONB` / `BIGINT` on PostgreSQL. `allowed_scopes = NULL` means an unrestricted registration access-token ceiling, including a RAT created before scope ceilings were stored. The `row_version` columns are adapter-managed opaque compare-and-swap state; applications must not increment, reuse, or assign meaning to them.
+
+The current retention and client-deletion queries also require these exact indexes (substitute the physical names selected by `WithNaming`):
+
+| Index | Table and columns | Purpose |
+|---|---|---|
+| `idx_oidc_grants_client_subject` | `oidc_grants(client_id, subject, updated_at)` | Bounded subject enumeration during client deletion |
+| `idx_oidc_grants_client` | `oidc_grants(client_id)` | Client-scoped cascade |
+| `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` | Expired-code retention sweep |
+| `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` | Refresh-history retention sweep |
+| `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` | Access-token retention queries |
+| `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` | Session retention sweep |
+| `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` | PAR retention sweep |
+| `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` | Interaction retention sweep |
+| `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` | Replay-marker retention queries |
+
+SQLite and PostgreSQL can acquire these indexes through `Migrate()` because their DDL uses separate `CREATE INDEX IF NOT EXISTS` statements. MySQL and MariaDB declare them inside `CREATE TABLE`, so an existing table needs explicit `ALTER TABLE ... ADD INDEX` statements. Do not rely on a fresh `v1.sql` run to upgrade an existing database, and do not run old and current MFA writers against the same tables: drain old writers, apply and validate the columns, then start only writers that participate in the opaque version protocol. The [storage-maintenance](/operations/storage-maintenance) page gives the rollout order.
 
 ## Renaming the tables
 
@@ -166,6 +190,21 @@ Passing an empty username and `nil` hash clears the credential — useful when a
 ## Contract test harness
 
 The same contract test suite (`op/store/contract`) that exercises `inmem` runs against the SQL adapter under `go test -tags=testcontainers`, spinning up real MySQL / Postgres engines via testcontainers-go. So when the library says "the SQL adapter implements `Store`," it means against a real engine, not a mock. The pinned images (`mysql:8.4`, `postgres:16-alpine`) match the engine matrix the docker-compose stacks under `examples/07-mysql-store` and `examples/09-redis-volatile` use, so adapter-level and example-level integration share a single matrix.
+
+## Schedule retention GC
+
+The SQL adapter does not delete every expired row in the request path. Schedule `(*oidcsql.Store).GC(ctx, cutoff)` from the application's cron, leader-elected worker, or other maintenance scheduler:
+
+```go
+cutoff := time.Now().UTC().Add(-15 * time.Minute) // retain a short forensic grace window
+stats, err := storage.GC(ctx, cutoff)
+if err != nil {
+  return err
+}
+log.Printf("oidc GC removed %d rows", stats.Total())
+```
+
+`GC` returns an `oidcsql.GCStats` value with per-table counts for expired authorization codes, PAR records, interactions, sessions, and refresh-token rotation history. The refresh sweep retains history until no refresh token under the grant is live, and clears sealed retry-response blobs once the predecessor's own expiry has passed even when the row itself is retained; clearing a blob does not increase a row count. A cutoff in the past keeps a grace window, while `time.Now()` reclaims everything already expired. The adapter starts no background GC goroutine and owns no timer, so schedule and monitor the call yourself. Publish `GCStats`, duration, errors, and remaining table sizes so a stalled sweep is visible. Access-token, opaque-token, grant-revocation, and consumed-JTI stores expose their own policy-sensitive GC methods; device-code and CIBA rows are evicted on their insert paths.
 
 ## When to add Redis on top
 

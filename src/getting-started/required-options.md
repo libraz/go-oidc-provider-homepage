@@ -38,7 +38,8 @@ The `store.Store` interface is the union of small substore interfaces (`Authoriz
 
 - [`op/storeadapter/inmem`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/inmem) — every substore in memory. Reference + dev + tests.
 - [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) — durable substores against `database/sql`.
-- [`op/storeadapter/redis`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/redis) — volatile substores (`InteractionStore`, `ConsumedJTIStore`).
+- [`op/storeadapter/dynamodb`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/dynamodb) — bundled full store for DynamoDB.
+- [`op/storeadapter/redis`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/redis) — volatile tier (`InteractionStore`, `ConsumedJTIStore`) for use through `composite`.
 - [`op/storeadapter/composite`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/composite) — hot/cold splitter, routes durable substores to one backend and volatile substores to another.
 
 ::: tip BYO storage

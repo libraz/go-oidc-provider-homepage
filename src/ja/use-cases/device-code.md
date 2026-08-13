@@ -1,6 +1,6 @@
 ---
 title: Device Code（RFC 8628） — 組み込み
-description: device-authorization grant を有効化 — /device_authorization、ポーリング、slow_down、組み込み側が所有する verification ページ。
+description: RFC 8628 device authorization を有効化 — /device_authorization、opaque attempt key による検証、polling、slow_down、組み込み側の承認ページ。
 pageClass: pg-use-cases-device-code
 ---
 
@@ -67,6 +67,7 @@ import (
   "time"
 
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
@@ -76,13 +77,14 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  op.WithGrants(grant.DeviceCode),
   op.WithDeviceCodeGrant(),
   op.WithDeviceCodeExpiry(10*time.Minute),       // 任意。既定 10 分
   op.WithDeviceCodePollInterval(5*time.Second), // 任意。既定 5 秒
 
   op.WithStaticClients(op.PublicClient{
     ID:           "tv-app",
-    RedirectURIs: nil, // device-code クライアントは /authorize に来ない
+    RedirectURIs: nil, // device-code クライアントは /auth に来ない
     GrantTypes:   []string{"urn:ietf:params:oauth:grant-type:device_code"},
     Scopes:       []string{"openid", "profile", "offline_access"},
   }),
@@ -113,28 +115,49 @@ device-code サブストア（`store.DeviceCodeStore`）は必須です。in-mem
 `expires_in` と `interval` には専用の knob があります: `op.WithDeviceCodeExpiry(...)` と `op.WithDeviceCodePollInterval(...)` です。これらは `op.WithAccessTokenTTL` からは導出されません。アクセストークンを 30 秒や 60 秒にしている deployment でも、ユーザがスマホに移り、コードを入力し、承認するための 10 分をそのまま残せます。
 
 ::: warning user_code は構造的に総当たり可能
-短いコードは入力しやすい一方で、総当たりを受けやすくなります。verification ページを自前で作る組み込み側のために、本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で総当たり対策を同梱しています。**使ってください** — 同等の制御が既存スタックにあるなら別ですが。
+短いコードは入力しやすい一方で、総当たりを受けやすくなります。verification ページを自前で作る組み込み側のために、本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で総当たり対策を同梱しています。最初の手入力では opaque なサーバ側 ceremony key を渡して `VerifyUserCodeByAttemptKey` を呼び、認証と同意の後に `ApproveUserCode` を呼んでください。raw `user_code` を attempt key に使ってはなりません。`Deps` は mutex を含むため保持し、必ず pointer で渡してください。既定 limiter はプロセスローカルなので、マルチインスタンス構成では共有 atomic `AttemptLimiter` を注入する必要があります。
 :::
 
 ### 提出された user_code を検証する
 
 ```go
-import "github.com/libraz/go-oidc-provider/op/devicecodekit"
+import (
+    "crypto/rand"
+    "encoding/base64"
+    "errors"
+    "time"
 
-// verification ハンドラの中で:
-matched, err := devicecodekit.VerifyUserCode(ctx, deps, deviceCodeID, submittedUserCode)
+    "github.com/libraz/go-oidc-provider/op/devicecodekit"
+)
+
+// deps は一度構築して保持し、すべての helper に同じ pointer を渡す。
+// Deps は mutex 付き既定 limiter を持つため、使用後にコピーしてはならない。
+deps := &devicecodekit.Deps{
+    DeviceCodes:  st.DeviceCodes(),
+    AuditLogger: auditLogger, // 任意。helper の監査レコードを受け取る
+}
+
+// attempt key は認証済みのサーバ側 ceremony を識別する opaque 値。
+// ユーザが入力した user_code を使ってはならない。
+var rawAttemptKey [32]byte
+if _, err := rand.Read(rawAttemptKey[:]); err != nil { /* 500 として処理 */ }
+attemptKey := base64.RawURLEncoding.EncodeToString(rawAttemptKey[:])
+
+matched, err := devicecodekit.VerifyUserCodeByAttemptKey(ctx, deps, attemptKey, submittedUserCode)
 switch {
 case err == nil && matched:
     // コード一致 — consent 画面へ進む
 case errors.Is(err, devicecodekit.ErrAlreadyDecided):
     // レコードはすでに承認 / 拒否済。「使用済」と表示
-case errors.Is(err, devicecodekit.ErrUserCodeMismatch):
-    // 不一致。カウンタを加算。「コードが違います」と表示。残り回数は漏らさない
-case errors.Is(err, devicecodekit.ErrUserCodeLockout):
-    // 5 ストライク — レコードが Denied（理由 "user_code_lockout"）に遷移
-    // デバイスは次のポーリングで access_denied を見る
+case errors.Is(err, devicecodekit.ErrUnknownDeviceCode), errors.Is(err, devicecodekit.ErrAttemptLocked):
+    // 不明 / malformed / 予算超過。どれかは表示しない
 default:
     // 想定外 — log して汎用エラーを返す
+}
+
+// 認証済みユーザが要求された scope に同意した後:
+if matched {
+    err = devicecodekit.ApproveUserCode(ctx, deps, submittedUserCode, approvedSubject, time.Now())
 }
 ```
 
@@ -142,22 +165,22 @@ default:
 
 - 提出文字列を **正規化**（大文字小文字の正規化、ハイフン除去）
 - 保存値と **constant-time 比較**
-- 不一致でストライクカウンタを加算し `device_code.verification.user_code_brute_force` 監査イベントを発火
-- `devicecodekit.MaxUserCodeStrikes`（既定 5）回外したら、レコードを **Denied**（理由 `"user_code_lockout"`）に遷移し `device_code.verification.denied` を発火
+- normalization と lookup の前に opaque attempt key を消費するため、malformed / 不明な入力も同じ bounded budget を消費します。不一致は `Deps.AuditLogger` を設定していれば `device_code.verification.user_code_brute_force` 監査イベントになります
+- 既定 limiter はプロセスローカルで bounded です。複数 OP インスタンスでは、`Deps.AttemptLimiter` に共有 atomic `AttemptLimiter` を注入してください。read と increment を分けた実装は安全ではありません
+- レコード単位の既存 helper は `devicecodekit.MaxUserCodeStrikes`（既定 5）を適用します。`ApproveUserCode` はストアの遷移後に `Deps.AuditLogger` 経由で `device_code.verification.approved` を発火します
 
-ユーザが打ち間違いではなく **拒否** をクリックした場合は、`devicecodekit.Revoke(ctx, deps, deviceCodeID, "user_denied")` を呼んでください — 同じ監査イベントが発火し、総当たりカウンタは触りません。
+ユーザが打ち間違いではなく **拒否** をクリックした場合は、`devicecodekit.DenyUserCode(ctx, deps, submittedUserCode, devicecodekit.DenyReasonUserDenied)`、または既知の device-code id に対して `devicecodekit.Revoke` を呼んでください。helper は `Deps.AuditLogger` 経由で対応する監査イベントを発火し、手入力の不一致としてはカウントしません。
 
 ### 承認後
 
-consent が取れたら、ハンドラはサブストアを直接呼んでレコードを **Approved** に遷移させます:
+consent が取れたら、ハンドラは同じ `*devicecodekit.Deps` pointer で `ApproveUserCode` を呼び、レコードを **Approved** に遷移させます:
 
 ```go
-// `op.WithStore` に渡したのと同じストア参照に対して呼ぶ。
-// `provider.Store()` のようなアクセサは存在しない。
+// `deps` は VerifyUserCodeByAttemptKey に渡した retained pointer。
 // authTime はユーザが実際に認証した壁時計時刻。token endpoint が
 // id_token.auth_time に記録し（ゼロ値は claim を出さない）、
 // `RequireAuthTime` を登録したクライアントはこの値で可否を判定する。
-err := st.DeviceCodes().Approve(ctx, deviceCodeID, approvedSubject, time.Now())
+err := devicecodekit.ApproveUserCode(ctx, deps, submittedUserCode, approvedSubject, time.Now())
 ```
 
 デバイスからの次の `/token` ポーリングが成功します。
@@ -184,11 +207,11 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 
 ## RFC 8707 `resource=`
 
-デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。ハンドラは `/authorize` / `/token` と同じ検査を適用します:
+デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。ハンドラは `/auth` / `/token` と同じ検査を適用します:
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否します。
 - 正規化後の値(scheme + host を小文字化、末尾 `/` 除去)はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
-- `resource=` を複数指定すると `400 invalid_target` で拒否されます。このリリースの発行パイプラインは単一 audience だけを encode するため、ハンドラは「黙って切り捨てる」入力を受け付けません。
+- `resource=` を複数指定すると `400 invalid_target` で拒否されます。発行パイプラインは audience を 1 つだけ受け付けるため、ハンドラは「黙って切り捨てる」入力を受け付けません。
 
 ::: warning 未登録 resource は拒否されます
 OP が audience として発行できるのは、クライアントの `Resources` に登録済みの値だけです。組み込み側は device flow で使うリソースサーバ URI を、`resource=` として送る前にクライアントシードまたは dynamic registration のメタデータへ追加してください。
@@ -216,7 +239,7 @@ OP が audience として発行できるのは、クライアントの `Resource
 deps := &devicecodekit.Deps{
     DeviceCodes:  st.DeviceCodes(),
     AccessTokens: st.AccessTokens(), // 任意。nil なら連鎖失効をスキップ
-    Audit:        auditEmitter,
+    AuditLogger:  auditLogger, // 任意。revoke 監査レコードを受け取る
 }
 
 if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReasonUserRevokedDevice); err != nil {

@@ -1,6 +1,6 @@
 ---
 title: エラーカタログ
-description: OP が返す OAuth / OIDC のエラーコードと、各エラーの典型的な発生条件・対処を一覧化。
+description: OP が返す OAuth / OIDC のエラーコード。logout_scope とログアウト用ストア障害時の静的 503 も説明します。
 outline: 2
 pageClass: pg-reference-errors
 ---
@@ -154,6 +154,8 @@ RFC 7662 / RFC 7009。`/token` と同じクライアント認証コードの集�
 | `unsupported_token_type` | 400 | `/revoke` のみ — 失効不可なトークンタイプ |
 | `server_error` | 500 | 内部障害 |
 
+`/introspect` でクライアント認証に失敗すると、wire では一般的な `invalid_client` のまま、`op.AuditIntrospectionError` として監査にも現れます。`/revoke` はこの introspection 固有の監査名を使いません。
+
 ## PAR エンドポイント(`/par`)
 
 RFC 9126。
@@ -183,8 +185,10 @@ OIDC RP-Initiated Logout 1.0。ブラウザ向けです。`post_logout_redirect_
 
 | コード | 発生条件 |
 |---|---|
-| `invalid_request` | `id_token_hint` の不正、`client_id` 不一致 |
+| `invalid_request` | `id_token_hint` の不正、`client_id` 不一致、`logout_scope` が不正（空、未知、重複、または `current` 以外） |
 | `invalid_request_uri` | (JAR 形式の logout request 利用時)`request_uri` の期限切れ |
+
+`/end_session` がセッションの解決または破棄中にセッションストアへ接続できない場合は、静的な HTTP 503 エラーページを返します。`post_logout_redirect_uri` へはリダイレクトせず、ブラウザ cookie とセッション行を保持します。一時的なストア障害で部分的なログアウトにならないためです。存在しない、または期限切れのセッションは別の扱いであり、transport 障害とは異なります。
 
 ## クラス単位での振り分け
 

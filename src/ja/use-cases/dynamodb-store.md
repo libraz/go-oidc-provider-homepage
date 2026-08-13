@@ -1,6 +1,6 @@
 ---
 title: DynamoDB ストア
-description: go-oidc-provider を DynamoDB で動かし、サブストアごとのテーブルをプロビジョニングして、DynamoDB TTL の掃除とは独立して失効を判定する。
+description: DynamoDB のテーブル定義を意図して用意し、トランザクション予約 item と TTL に依存しない read 時の失効確認で go-oidc-provider を運用する。
 ---
 
 # 使い方 — DynamoDB ストア
@@ -18,7 +18,7 @@ OIDC の永続プロトコル状態と揮発プロトコル状態を AWS DynamoD
 adapter は別モジュールです。DynamoDB を使わないアプリケーションに AWS SDK の依存は入りません。
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.0.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.1.0
 ```
 
 AWS の認証情報解決とリージョン選択はアプリケーション側の責任です。設定済み SDK client を adapter に渡します。
@@ -54,7 +54,13 @@ if err := storage.CreateTables(ctx); err != nil {
 }
 ```
 
-サブストアごとにテーブルが 1 つあります。adapter はレコードを JSON として保存し、DynamoDB が問い合わせる key、index、condition 属性だけを別に持ちます。この構成ではレコード形状を変えてもテーブル migration は不要です。
+テーブル定義はストアの形ごとに分かれており、ほとんどのサブストアは 1 つのテーブルを使います。grant revocation と revoked JTI の tombstone は 1 つのテーブルを共有します。adapter はレコードを JSON として保存し、DynamoDB が問い合わせる key、index、condition 属性だけを別に持ちます。この構成ではレコード形状を変えてもテーブル migration は不要です。
+
+## デバイスコードテーブルの更新
+
+現在のデバイスコードテーブルは `by_user_code` グローバルセカンダリインデックスを使いません。デバイスレコードは `device_code` のダイジェストをキーにし、`user_code` を持つ場合は `Save` が `uc#<user_code>` という予約 item を同じ `TransactWriteItems` で書き込みます。`FindByUserCode`、`ApproveByUserCode`、`DenyByUserCode` はこの予約 item を strongly consistent read で解決します。予約 item が一意性制約です。セカンダリインデックスは重複を検索できても、2 つの writer が同じコードを同時に取得することまでは防げません。
+
+既存テーブルには、以前の未使用な `by_user_code` インデックスが残っていることがあります。容量を見直すまで残しても安全です。不要になった時点で、通常の DynamoDB インフラ手順を使って削除してください。更新のためにテーブルを drop したり作り直したりする必要はありません。予約 item 方式より前に発行したデバイスコードには `uc#...` 予約がないため、意図的に `user_code` では解決されず、通常の短い有効期間を経て自然に期限切れになります。古いインデックスへのフォールバックはありません。そうすると、まだ有効な更新前レコードが保持する `user_code` を新しいリクエストが取得できてしまうためです。
 
 ## 失効と整合性
 

@@ -1,6 +1,6 @@
 ---
 title: Protected resource メタデータ（RFC 9728）
-description: OAuth 2.0 Protected Resource Metadata 文書を公開し、リソースサーバが scope・bearer method・保護元の認可サーバを広告できるようにする。
+description: OAuth 2.0 Protected Resource Metadata を公開し、resource audience と confidential な introspection 委譲を含む保護 API の設定を説明します。
 ---
 
 # 使い方 — Protected resource メタデータ（RFC 9728）
@@ -30,9 +30,10 @@ op.New(
   op.WithIssuer("https://op.example.com"),
   /* 必須オプション */
   op.WithProtectedResources(op.ProtectedResource{
-    Resource:               "https://op.example.com/api",
-    ScopesSupported:        []string{"api.read", "api.write"},
+    Resource:             "https://op.example.com/api",
+    ScopesSupported:      []string{"api.read", "api.write"},
     BearerMethodsSupported: []string{"header"},
+    IntrospectionClients: []string{"api-introspector"},
   }),
 )
 ```
@@ -44,7 +45,8 @@ op.New(
 | `BearerMethodsSupported` | `bearer_methods_supported` — `header`、`body`、`query` |
 | `ResourceSigningAlgValuesSupported` | `resource_signing_alg_values_supported` |
 | `JWKSURI` | `jwks_uri` |
-| `ResourceDocumentation` | `resource_documentation` |
+| `ResourceName` | `name` |
+| `IntrospectionClients` | RFC 9728 フィールドではない。audience 単位の `/introspect` 委譲を設定 |
 
 `Resource` は `op.New` で RFC 8707 の `resource` パラメータと同じように検証され、不正な識別子は起動を拒否します。リソースは最低 1 つ必要で、同じ識別子に正規化される 2 つのリソース — あるいはパスが同じ well-known マウントに衝突するもの — は拒否されます。
 
@@ -66,6 +68,8 @@ curl https://op.example.com/.well-known/oauth-protected-resource/api
 ```
 
 `authorization_servers` には OP 自身の issuer が刻まれます — クライアントが discovery へ辿り戻すリンクです。2 つのリソース（`/orders` と `/inventory`）を登録すると、それぞれが自身のパス接尾辞付きの場所で配信されます。パスはリソースのパス component だけから導出される（§3.1 によりホスト非依存）ため、パスが衝突する 2 つのリソースは、ルータを panic させる代わりに構築時に拒否されます。
+
+`IntrospectionClients` は RFC 9728 文書のフィールドではなく、OP 内部の認可ルールです。列挙した caller は confidential client として認証しなければならず、public client と `token_endpoint_auth_method=none` は `/introspect` で `401 invalid_client` になります。委譲が無ければ caller は自分の access token だけを見られます。`IntrospectionClients: []string{"api-introspector"}` を設定すると、その confidential client はこの resource を audience とする access token を introspect できます。audience ごとに範囲が決まり、refresh token には委譲されません。
 
 ## 続きはこちら
 

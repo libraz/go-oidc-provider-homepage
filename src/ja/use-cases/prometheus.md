@@ -1,6 +1,6 @@
 ---
 title: Prometheus メトリクス
-description: 厳選した業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
+description: issuer を固定ラベルに持つ v1.1 の業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
 ---
 
 # 使い方 — Prometheus メトリクス
@@ -44,19 +44,23 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
 ## ライブラリが export するもの
 
-公開する counter は意図的に絞ってあり、安定しています。実名は `oidc_*` 接頭辞で、最新一覧は example 側を参照してください。カテゴリは次のとおり。
+公開する counter は意図的に絞ってあり、安定しています。すべてのメトリクスに `op.WithIssuer` 由来の固定 `issuer` label が付きます。そのため複数 issuer は 1 つの registry を共有しても別 series になりますが、同じ issuer の provider を同じ registry に登録すると descriptor が衝突します。登録は all-or-nothing で、collector の登録途中に失敗した場合は、その呼び出しで先に登録した collector も解除されてから `op.New` がエラーを返します。
+
+実名は `oidc_*` 接頭辞で、最新一覧は example 側を参照してください。カテゴリは次のとおりです。
 
 | カテゴリ | counter / label |
 |---|---|
-| Token endpoint | `oidc_token_issued_total{grant_type,client_id}`、`oidc_tokens_refreshed_total{client_id}`、refresh / authorization-code replay 検知、method / reason 別の client-auth 失敗 |
-| 認証 | result / authenticator 別の login attempt |
+| Token endpoint | `oidc_token_issued_total{issuer,grant_type,client_id}`、`oidc_tokens_refreshed_total{issuer,client_id}`、refresh / authorization-code replay 検知、method / reason 別の client-auth 失敗 |
+| 認証 | `oidc_login_attempts_total{issuer,factor,result}`。primary login と MFA の試行を `factor` で区別 |
 | 拡張フロー | DCR、Device Authorization、Device Code、CIBA、Token Exchange のイベントカウンタ。label は audit event の sub-name |
-| Logout / revocation | back-channel 配送結果、session が無い 一斉通知 gap、token / refresh-chain / grant revocation の副作用失敗 |
+| Logout / revocation | back-channel 配送結果、grant 由来の eligible RP target が 0 件になった session を伴う logout 通知（`bcl.no_sessions_for_subject`）、token / refresh-chain / grant revocation の副作用失敗 |
 | 運用シグナル | introspection 認証エラー、DPoP loose-method-case bridge の受理、retired JWKS `kid` の提示 |
 
 metrics bridge は audit emitter から供給されます。1 回の audit event が slog stream と対応 counter の両方を更新するため、組み込み側が metrics 用に別 emit する必要はありません。
 
 Dynamic client の `client_id` は生の label として出しません。label に出るのは静的にシード済みの client ID だけです。DCR 由来または未知の client は空の `client_id` バケットに畳み、cardinality を上限付きに保ちます。
+
+`oidc_token_issued_total` の `grant_type` は任意のリクエスト label をコピーせず、refresh chain に永続化された origin から決まります。値は `authorization_code`、`device_code`、`ciba`、`custom_grant` のいずれかで、origin が無い・閉じた集合外なら `unknown` です。refresh rotation は独自の `oidc_tokens_refreshed_total` で数えます。
 
 ## なぜ「外付け」で、束ね込まないのか
 
@@ -65,4 +69,4 @@ Dynamic client の `client_id` は生の label として出しません。label 
 1. **registry の所有権** — 組み込み側はカーディナリティと collector 一覧の監査を 1 か所にまとめるため、プロセス全体で単一の `prometheus.Registry` を維持することが多いものです。ライブラリが自前 registry を作るとそれを分断してしまいます。
 2. **パス / 認証の所有権** — `/metrics` は認証ゲートの背後、あるいは別 listener 専用に置かれることが多く、組み込み側の選択を予測できません。パスのマウントは組み込み側に委ねます。
 
-同じ分離方針はトレーシングにも適用されます。`op.WithLogger` / `op.WithAuditLogger` は `*slog.Logger` を受け取りますが、HTTP サーバセマンティクスの OpenTelemetry スパンは組み込み側の `otelhttp.NewMiddleware` 側に委ねます。OP は組み込み側がトレーシングを設定したときでも **業務系スパン** のみを発行し、リクエスト / レスポンスのライフサイクルスパンは発行しません。
+同じ分離方針はトレーシングにも適用されます。`op.WithLogger` / `op.WithAuditLogger` は `*slog.Logger` を受け取りますが、HTTP サーバセマンティクスの OpenTelemetry スパンは組み込み側の `otelhttp.NewMiddleware` 側に委ねます。OP は業務系・リクエスト／レスポンスのライフサイクルを含め、組み込みの tracing span を発行しません。追加の業務段階を測る場合は組み込み側で計装してください。

@@ -1,6 +1,6 @@
 ---
 title: Device Code (RFC 8628) — wiring
-description: Enable the device-authorization grant — /device_authorization, polling, slow_down, and the embedder-owned verification page.
+description: Enable RFC 8628 device authorization — /device_authorization, polling, opaque-attempt-key verification, slow_down, and the embedder-owned approval page.
 pageClass: pg-use-cases-device-code
 ---
 
@@ -67,6 +67,7 @@ import (
   "time"
 
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
@@ -76,13 +77,14 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  op.WithGrants(grant.DeviceCode),
   op.WithDeviceCodeGrant(),
   op.WithDeviceCodeExpiry(10*time.Minute),       // optional; default 10 minutes
   op.WithDeviceCodePollInterval(5*time.Second), // optional; default 5 seconds
 
   op.WithStaticClients(op.PublicClient{
     ID:           "tv-app",
-    RedirectURIs: nil, // device-code clients never visit /authorize
+    RedirectURIs: nil, // device-code clients never visit /auth
     GrantTypes:   []string{"urn:ietf:params:oauth:grant-type:device_code"},
     Scopes:       []string{"openid", "profile", "offline_access"},
   }),
@@ -113,28 +115,49 @@ The default URI is `<issuer>/device`; override it with `op.WithDeviceVerificatio
 `expires_in` and `interval` have their own knobs: `op.WithDeviceCodeExpiry(...)` and `op.WithDeviceCodePollInterval(...)`. They are no longer derived from `op.WithAccessTokenTTL`. A deployment that uses 30- or 60-second access tokens can still leave the user ten minutes to reach a phone, enter the code, and approve the request.
 
 ::: warning user_code is brute-forceable by design
-Short codes are usable; long codes are not. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) so embedders building the verification page do not have to invent the brute-force gate. **Use it** unless you have a fully-equivalent gate in your existing stack.
+Short codes are usable; long codes are not. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) so embedders building the verification page do not have to invent the brute-force gate. For the first manual entry, **use `VerifyUserCodeByAttemptKey`** with an opaque server-side ceremony key, then call `ApproveUserCode` after authentication and consent. Never use the raw `user_code` as the attempt key.
 :::
 
 ### Verifying a submitted user_code
 
 ```go
-import "github.com/libraz/go-oidc-provider/op/devicecodekit"
+import (
+    "crypto/rand"
+    "encoding/base64"
+    "errors"
+    "time"
 
-// In your verification handler:
-matched, err := devicecodekit.VerifyUserCode(ctx, deps, deviceCodeID, submittedUserCode)
+    "github.com/libraz/go-oidc-provider/op/devicecodekit"
+)
+
+// Build deps once, retain it, and pass the same pointer to every helper.
+// Deps contains a mutex-backed default limiter; never copy it after use.
+deps := &devicecodekit.Deps{
+    DeviceCodes:  st.DeviceCodes(),
+    AuditLogger: auditLogger, // optional; receives helper audit records
+}
+
+// The attempt key identifies the authenticated server-side ceremony. It is
+// opaque and must not be the user-supplied user_code.
+var rawAttemptKey [32]byte
+if _, err := rand.Read(rawAttemptKey[:]); err != nil { /* handle 500 */ }
+attemptKey := base64.RawURLEncoding.EncodeToString(rawAttemptKey[:])
+
+matched, err := devicecodekit.VerifyUserCodeByAttemptKey(ctx, deps, attemptKey, submittedUserCode)
 switch {
 case err == nil && matched:
     // Code matched — proceed to consent screen.
 case errors.Is(err, devicecodekit.ErrAlreadyDecided):
     // The record was already approved or denied. Surface "already used".
-case errors.Is(err, devicecodekit.ErrUserCodeMismatch):
-    // Wrong code; counter incremented. Show "incorrect code"; do not leak how many strikes remain.
-case errors.Is(err, devicecodekit.ErrUserCodeLockout):
-    // Five strikes — the row was flipped to Denied with reason "user_code_lockout".
-    // The device will see access_denied on its next poll.
+case errors.Is(err, devicecodekit.ErrUnknownDeviceCode), errors.Is(err, devicecodekit.ErrAttemptLocked):
+    // Unknown/malformed or over-budget entry. Do not reveal which.
 default:
     // Unexpected — log and surface a generic error.
+}
+
+// After the authenticated user approves the requested scopes:
+if matched {
+    err = devicecodekit.ApproveUserCode(ctx, deps, submittedUserCode, approvedSubject, time.Now())
 }
 ```
 
@@ -142,22 +165,22 @@ The helper:
 
 - **Canonicalises** the submitted string (case folding, hyphen stripping).
 - **Constant-time compares** against the stored value.
-- Increments the strike counter on miss and emits the `device_code.verification.user_code_brute_force` audit event.
-- After `devicecodekit.MaxUserCodeStrikes` (default 5) misses, transitions the row to **Denied** with reason `"user_code_lockout"` and emits `device_code.verification.denied`.
+- Charges the opaque attempt key before normalization and lookup, so malformed and unknown entries consume the same bounded budget; mismatches emit the `device_code.verification.user_code_brute_force` audit event through `Deps.AuditLogger` when configured.
+- The built-in limiter is process-local and bounded. A deployment with multiple OP instances must inject a shared, atomic `AttemptLimiter` into `Deps.AttemptLimiter`; a separate read-then-increment implementation is not safe.
+- Record-bound helpers still apply `devicecodekit.MaxUserCodeStrikes` (default 5) per device-code row. `ApproveUserCode` emits `device_code.verification.approved` through `Deps.AuditLogger` after the store transition.
 
-If the user pressed **deny** rather than mistyping, your handler calls `devicecodekit.Revoke(ctx, deps, deviceCodeID, "user_denied")` instead — same audit event, no brute-force counter mutation.
+If the user pressed **deny** rather than mistyping, your handler calls `devicecodekit.DenyUserCode(ctx, deps, submittedUserCode, devicecodekit.DenyReasonUserDenied)` or `devicecodekit.Revoke` for a known device-code id. The helper emits the corresponding audit event through `Deps.AuditLogger`; it does not charge a manual-entry mismatch.
 
 ### After approval
 
-Once consent is granted, your handler calls the substore directly to flip the record to **Approved**:
+Once consent is granted, your handler calls `ApproveUserCode` with the same `*devicecodekit.Deps` pointer to flip the record to **Approved**:
 
 ```go
-// Call the substore on the *inmem.Store (or other adapter) the embedder
-// passed to op.WithStore — there is no provider.Store() accessor.
+// `deps` is the retained pointer passed to VerifyUserCodeByAttemptKey.
 // authTime is the wall-clock when the user actually authenticated; the
 // token endpoint stamps id_token.auth_time from it (omit-on-zero), and
 // clients with `RequireAuthTime` registered enforce it on the gate.
-err := st.DeviceCodes().Approve(ctx, deviceCodeID, approvedSubject, time.Now())
+err := devicecodekit.ApproveUserCode(ctx, deps, submittedUserCode, approvedSubject, time.Now())
 ```
 
 The next `/token` poll from the device will succeed.
@@ -184,11 +207,11 @@ The device displays the `user_code` + `verification_uri`. If it can render a QR 
 
 ## RFC 8707 `resource=`
 
-Devices may pin the issued access token to a specific resource server by sending `resource=<absolute URI>` on `/device_authorization`. The handler enforces the same gate as `/authorize` and `/token`:
+Devices may pin the issued access token to a specific resource server by sending `resource=<absolute URI>` on `/device_authorization`. The handler enforces the same gate as `/auth` and `/token`:
 
 - The value MUST be an absolute URI (RFC 8707 §2). Relative URIs are rejected with `400 invalid_target`.
 - The canonical form (lowercase scheme + host, trailing slash stripped) MUST appear in the client's registered `Resources` allowlist. A request that names a resource the client was never registered for is rejected with `400 invalid_target` — `Resources` is the only audience the OP will mint into the issued AT's `aud`.
-- Multiple non-empty `resource=` values are rejected with `400 invalid_target`. The current issuance pipeline encodes a single audience, so the handler refuses input it would otherwise silently truncate. Multi-aud support is deferred.
+- Multiple non-empty `resource=` values are rejected with `400 invalid_target`. The issuance pipeline accepts one audience, so the handler refuses input it would otherwise silently truncate.
 
 ::: warning Unregistered resources are rejected
 The OP mints only audiences that appear in the client's registered `Resources`. Embedders must add every device-flow resource server URI to the client seed (or dynamic-registration metadata) before sending it as `resource=`.
@@ -216,7 +239,7 @@ When a "parent" record (here, the device authorization) is revoked, every "child
 deps := &devicecodekit.Deps{
     DeviceCodes:  st.DeviceCodes(),
     AccessTokens: st.AccessTokens(), // optional; nil skips the cascade
-    Audit:        auditEmitter,
+    AuditLogger:  auditLogger, // optional; receives the revoke audit record
 }
 
 if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReasonUserRevokedDevice); err != nil {

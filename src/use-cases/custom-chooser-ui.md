@@ -1,6 +1,6 @@
 ---
 title: Custom chooser UI
-description: Replace the server-rendered prompt=select_account chooser template while the OP keeps state, CSRF, and session switching.
+description: Replace the prompt=select_account chooser while the OP keeps state, CSRF, session switching, CSP enforcement, and ceremony-origin checks.
 pageClass: pg-use-cases-custom-chooser-ui
 ---
 
@@ -63,6 +63,8 @@ provider, err := op.New(
 ```
 
 The field names are part of the OP contract. Keep `state_ref`, `csrf_token`, and the dynamic `SessionIDField` in the submitted form.
+
+`op.ChooserUI` also has a `ContentSecurityPolicy` field. An empty value uses the strict default (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`). A custom policy is normalized by `interaction.NormalizeCSP` at construction: `form-action` is forbidden, while `frame-ancestors` and `base-uri` must be exactly `'none'` when present; missing protections are appended. A rejected policy fails `op.New` with `interaction.ErrCSPNotPermitted`. Add only the asset directives the template needs, and keep scripts disabled unless the template's trust boundary explicitly requires them.
 
 ## Flow
 

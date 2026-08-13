@@ -1,6 +1,6 @@
 ---
 title: クライアントオンボーディングのパターン
-description: RP を OP に登録・更新・削除する 5 つの方法 — 適用場面、コードの差し込み口、本ライブラリが意図的に提供しないもの。
+description: RP を OP に登録・更新・削除する 5 つの方法。M2M の静的 seed、コードの差し込み口、本ライブラリが意図的に提供しない surface を説明します。
 pageClass: pg-use-cases-client-onboarding
 ---
 
@@ -211,6 +211,8 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 ## 4. scope で保護した管理 API
 
 これは vendor SaaS 系のプロバイダが「管理 API」として同梱していることが多いパターンで、本ライブラリが意図的に同梱していないパターンでもあります。形は決まっています。特権を持つ「管理用クライアント」が `client.read` / `client.write` のような scope（必要なら `tenant=acme` のような claim も）を持つアクセストークンを取得します。組み込み側が用意した HTTP ハンドラがその AT を検証して scope と tenant 境界を解釈し、最終的に `store.ClientRegistry` を呼び出します。
+
+管理用クライアントは `/introspect` を呼び出すため confidential でなければなりません。最小の M2M provider では `op.WithGrants(grant.ClientCredentials)` で client-credentials grant を有効にし、browser 用の `LoginFlow` は設定しません。browser 対応 provider なら authorization-code grant と login flow を明示的に配線します。`/introspect` は通常この管理用クライアント自身の認証情報で認証します。別 client が発行した access token をハンドラが検査する必要がある場合は、対象 resource の `ProtectedResource.IntrospectionClients` に管理用クライアントを追加してください。refresh token は client 間で委譲されません。
 
 ```go
 // 1. 管理用クライアントの静的シード。

@@ -35,13 +35,22 @@ If your RPs are all first-party (you own them all and they share databases anywa
 ## Wiring
 
 ```go
-import "github.com/libraz/go-oidc-provider/op"
+import (
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
+
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
 
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(store),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithPairwiseSubject(pairwiseSalt), // pairwiseSalt: []byte, ≥ 32 bytes
 )
@@ -78,7 +87,7 @@ A high-entropy secret (≥ 256 bits) shared across every replica of the OP. It i
 :::
 
 ::: info Reusing the generator outside the OP
-`provider.SubjectGenerator()` returns the same generator instance the OP was built with. Use it when an admin report, audit job, or migration needs to derive the same `sub` values without sending a browser through `/authorize`.
+`provider.SubjectGenerator()` returns the same generator instance the OP was built with. Use it when an admin report, audit job, or migration needs to derive the same `sub` values without sending a browser through `/auth`.
 
 When `WithPairwiseSubject` is enabled, issuance still decides per client: `subject_type=pairwise` uses pairwise derivation, while `public` or unset uses the default UUIDv7 subject. Out-of-band code that needs the exact issued `sub` must inspect the client's `SubjectType` before calling the generator.
 :::

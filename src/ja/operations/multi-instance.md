@@ -1,6 +1,6 @@
 ---
 title: マルチインスタンス展開
-description: OP レプリカを複数立てる — DPoP nonce 共有、session 配置、sticky か round-robin かのトレードオフ。
+description: 共有セッション、device-code 試行リミッタ、DPoP nonce、detached logout の順序付き終了を含む複数 OP レプリカ運用。
 outline: 2
 pageClass: pg-operations-multi-instance
 ---
@@ -63,6 +63,8 @@ op.WithAuthnLockoutStore(storage.AuthnLockouts())
 
 `inmem.Store.AuthnLockouts()` は process-local です。再起動でリセットされ、レプリカごとに別の試行回数枠を持ちます。別のバックエンドを使う場合に、cross-factor のブルートフォース対策を再起動後も維持し、全レプリカで一貫させるには、耐久性があり共有される `store.AuthnLockoutStore` を実装してください。
 
+device-code の確認でも、レコード状態と試行状態を分けて考えます。レコードに紐付くフローでは `devicecodekit.VerifyUserCode` または `VerifyUserCodeByUserCode` が共有 device-code store を使います。まだ `device_code` が分からない最初の手入力画面では、opaque で安定した ceremony key（ブラウザセッションやアカウント単位の key など）を使って `devicecodekit.VerifyUserCodeByAttemptKey` を呼びます。`devicecodekit.Deps` に共有 `devicecodekit.AttemptLimiter` を渡してください。既定の `InMemoryAttemptLimiter` はプロセス単位なので、レプリカごとに別の予算になります。分散リミッタの `Allow` は compare-and-increment を atomic に実行し、key の reset は認証済み ceremony の所有者だけが行います。
+
 ## 明示的に対処が必要なもの
 
 | 論点 | レプリカ 1 つ | レプリカ N 個 |
@@ -102,10 +104,10 @@ session は永続(SQL)にも揮発(永続化無しの Redis)にも置けます�
 
 | 配置 | 利点 | 欠点 |
 |---|---|---|
-| 永続(SQL) | 再起動 / failover を生き延びる。Back-Channel logout の fan-out が全 session を見つけられる | login のたびに DB 書き込みが発生する |
-| 揮発(Redis) | 書き込みレイテンシが低く、DB のホットな行が無い | 再起動や `maxmemory` で session が追い出される — Back-Channel logout が 0 件しか見つけないことがある |
+| 永続(SQL) | 再起動 / failover 後も browser logout trigger が subject と session snapshot を解決できる。RP の対象は session 一覧ではなく grant から導出する | login のたびに DB 書き込みが発生する |
+| 揮発(Redis) | 書き込みレイテンシが低く、DB のホットな行が無い | 再起動や `maxmemory` の追い出しで snapshot 前に browser logout trigger を失うことがある。snapshot 後の RP 対象も `SessionStore` の行ではなく grant から導出する |
 
-`WithSessionDurabilityPosture(...)` で audit イベントに配置を注釈できます(`bcl.no_sessions_for_subject` がこの方針を載せます)。ライブラリは配置自体を制約しません。方針注釈は、SOC ダッシュボードが「揮発で想定内」と「永続で想定外」を分離するためのものです。
+`WithSessionDurabilityPosture(...)` で audit イベントに配置を注釈できます(`bcl.no_sessions_for_subject` は session-bearing notice で grant 由来の RP 対象が 0 件だったことを記録します)。ライブラリは配置自体を制約しません。永続配置は再起動 / failover 後の browser logout trigger と fan-out 前の snapshot を保護し、揮発な追い出しは fan-out 開始前に trigger を失わせることがあります。snapshot 後の対象解決は `SessionStore` の行を辿らず grant から行うため、方針注釈は trigger loss と対象 0 件を SOC ダッシュボードで解釈するための文脈になります。
 
 ## Interaction 状態
 
@@ -115,6 +117,17 @@ session は永続(SQL)にも揮発(永続化無しの Redis)にも置けます�
 2. **共有 interaction store。** `store.InteractionStore` を Redis 実装にします(または同梱の Redis アダプタを使います)。任意のレプリカが任意のログインを再開できます。本番の既定推奨です。
 
 Redis アダプタの `InteractionStore` は揮発適格で、[composite store](/ja/use-cases/hot-cold-redis) の揮発スライスに住みます。
+
+## graceful shutdown と detached logout
+
+RP-Initiated Logout は、ブラウザへの応答後も Back-Channel Logout 配送を実行していることがあります。HTTP サーバを先に止め、その後 provider を drain します。
+
+```go
+srv.Shutdown(ctx)      // 受付を停止
+provider.Shutdown(ctx) // detached fan-out を drain
+```
+
+`WithBackchannelFanOutBudget` は detached fan-out 全体（デフォルト 30 秒）を制限し、`WithBackchannelLogoutTimeout` は各 RP リクエストを別々に制限します。`Provider.Shutdown(ctx)` は実行中の fan-out が完了するまで待つため、drain 中も全レプリカで共有セッション／grant store を使って対象解決を一貫させてください。
 
 ## Cookie 鍵の一貫性
 

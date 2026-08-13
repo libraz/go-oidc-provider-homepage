@@ -15,7 +15,7 @@ pageClass: pg-index
   <rect class="home-main" x="302" y="78" width="156" height="110" rx="8"/>
   <text class="home-text" x="380" y="116" text-anchor="middle">OIDC Provider</text>
   <text class="home-sub" x="380" y="138" text-anchor="middle">http.Handler</text>
-  <text class="home-sub" x="380" y="156" text-anchor="middle">/authorize /token /jwks</text>
+  <text class="home-sub" x="380" y="156" text-anchor="middle">/oidc/auth /oidc/token /oidc/jwks</text>
 
   <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
   <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
@@ -53,11 +53,15 @@ import (
 )
 
 func main() {
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(myKeyset),     // クイックスタート: 揮発鍵の生成例あり
     op.WithCookieKeys(cookieKey), // 32 バイト — AES-256-GCM
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -71,13 +75,23 @@ func main() {
 ### 2. FAPI 2.0 Baseline 対応の OP を動かす
 
 ```go
+st := inmem.New()
+clientJWKS, _ := op.LoadPublicJWKS("conformance/keys/fapi-client.jwks.json")
 handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(inmem.New()),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(op.LoginFlow{
+    Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+  }),
   op.WithProfile(profile.FAPI2Baseline), // PAR + JAR、DPoP 既定、ES256、FAPI 絞り込み
-  op.WithStaticClients(/* JWKS 付き private_key_jwt クライアント */),
+  op.WithStaticClients(op.PrivateKeyJWTClient{
+    ID: "demo-fapi",
+    JWKS: clientJWKS,
+    RedirectURIs: []string{"https://app.example.com/callback"},
+    Scopes: []string{"openid", "profile"},
+  }),
 )
 ```
 
@@ -92,8 +106,15 @@ handler, _ := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKeys(cookieKey),
-  op.WithGrants(grant.ClientCredentials, grant.AuthorizationCode, grant.RefreshToken),
+  op.WithGrants(grant.ClientCredentials),
+  op.WithStaticClients(op.ConfidentialClient{
+    ID: "backend-service",
+    Secret: "cc-demo-secret-rotate-me",
+    AuthMethod: op.AuthClientSecretBasic,
+    GrantTypes: []string{"client_credentials"},
+    Scopes: []string{"api:read"},
+  }),
+  op.WithScope(op.PublicScope("api:read", "API リソースの読み取り")),
 )
 ```
 
@@ -102,12 +123,18 @@ handler, _ := op.New(
 ### 4. ログイン・同意・ログアウトを SPA から扱う
 
 ```go
+st := inmem.New()
 handler, _ := op.New(
-  /* 必須オプション */
-  op.WithLoginFlow(flow),
+  op.WithIssuer("https://op.example.com"),
+  op.WithStore(st),
+  op.WithKeyset(myKeyset),
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(op.LoginFlow{
+    Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+  }),
   op.WithSPAUI(op.SPAUI{
     LoginMount: "/login",
-    StaticDir:  "./web/static",
+    StaticDir:  "../internal/webui/static",
   }),
 )
 ```
@@ -122,6 +149,7 @@ handler, _ := op.New(
 import (
   "context"
 
+  "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/storeadapter/composite"
   oidcredis "github.com/libraz/go-oidc-provider/op/storeadapter/redis"
   oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
@@ -139,9 +167,13 @@ combined, _ := composite.New(
   composite.With(composite.ConsumedJTIs, volatile),
 )
 
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: durable.UserPasswords()}}
 handler, _ := op.New(
+  op.WithIssuer("https://op.example.com"),
   op.WithStore(combined),
-  /* … */
+  op.WithKeyset(myKeyset),
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
 )
 ```
 
@@ -152,11 +184,11 @@ handler, _ := op.New(
 ## インストール
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@latest
+go get github.com/libraz/go-oidc-provider/op@v1.1.0
 ```
 
 ::: info 安定 API
-ライブラリは v1.0.0 に到達し、公開 API は Semantic Versioning に従います。破壊的変更はメジャーリリースでのみ行われます。godoc が `Experimental:` で始まる API は例外で、マイナーリリースでも変更される可能性があります。
+`op.New` と同梱ストレージアダプターで構成した場合は通常そのまま更新できますが、BYO ストアや他の拡張を組み込んでいる場合は、更新前に [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) の移行案内を確認してください。godoc が `Experimental:` で始まる symbol は通常のマイナーリリース例外で、変更される可能性があります。
 :::
 
 ## ライセンス

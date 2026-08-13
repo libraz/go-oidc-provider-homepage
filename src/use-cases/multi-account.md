@@ -1,6 +1,6 @@
 ---
 title: Multi-account chooser
-description: Two users, one browser. The OP keeps a chooser group and routes prompt=select_account through a UI seam.
+description: "Two users, one browser: chooser-group switching plus group-wide or current-session logout through the OP UI seam."
 pageClass: pg-use-cases-multi-account
 ---
 
@@ -19,6 +19,8 @@ OIDC Core 1.0 §3.1.2.1 defines a `prompt` request parameter the RP sends with `
 `select_account` is what the "switch account" button on big SaaS products fires. The user has multiple accounts signed in to the same OP browser session (work + personal, or alice + bob); the OP renders a list and lets them choose.
 
 This library implements it as a **chooser group** inside the OP's internal session manager: a group of sessions the same browser is signed into, with internal orchestration to add, switch between, and log out the whole set.
+
+RP-Initiated Logout uses that group by default: `/end_session` without `logout_scope` destroys every active session in the chooser group. A request with the single-valued `logout_scope=current` destroys only the active session and rebinds the cookie to a surviving sibling. Empty, unknown, or repeated `logout_scope` values return HTTP 400 without changing the group. A mismatched `id_token_hint` still requires confirmation; it cannot be used to skip the chooser's confirmation step.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.1 (`prompt` parameter), §3.1.2.4 (interaction with consent)

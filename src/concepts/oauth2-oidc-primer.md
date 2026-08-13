@@ -86,7 +86,7 @@ If you're new to authentication and authorization, the standards stack looks lik
   <text class="p sub" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> access token</text>
 </svg>
 
-The actual login steps (redirect to `/auth`, code exchange, token retrieval) are spelled out in the [authorization code + PKCE flow](#the-most-common-flow-authorization-code--pkce) below. The diagram above is the static "who's responsible for what" view.
+The actual login steps (redirect to `/auth`, code exchange, token retrieval) are spelled out in the [authorization code + PKCE flow](#authorization-code-pkce) below. The diagram above is the static "who's responsible for what" view.
 
 ::: tip Same actor, different hat
 A single piece of software can wear two hats. Your "backend for frontend" might be both the **RP** (it logs users in) and the **RS** (it has APIs the SPA calls with the access token).
@@ -131,7 +131,7 @@ The trade-off is "every request hits the OP" vs "OP loses fine-grained revocatio
 A common beginner mistake: sending the ID Token to your API. Don't — ID Tokens are for the RP to read; access tokens are for the RS. Your API should validate the **access token**, optionally with `Authorization Server`-side **introspection** (RFC 7662) or as a self-contained JWT (RFC 9068).
 :::
 
-## The flow you'll see most often: Authorization Code + PKCE
+## The flow you'll see most often: Authorization Code + PKCE {#authorization-code-pkce}
 
 <svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authcode-title">Authorization Code + PKCE sequence: the browser carries the user between the RP and the OP for login and code exchange, then the RP calls the RS with the access token.</title>

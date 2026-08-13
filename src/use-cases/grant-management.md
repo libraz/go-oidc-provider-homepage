@@ -1,6 +1,6 @@
 ---
 title: Grant management
-description: Let clients create, replace, merge, query, and revoke long-lived grants by id via the OAuth 2.0 Grant Management endpoint.
+description: Let clients create, replace, merge, query, and revoke long-lived grants by id, with deletion limited to the named grant_id.
 ---
 
 # Use case — Grant management
@@ -101,9 +101,9 @@ curl -u demo:demo-secret https://op.example.com/oidc/grant_management/g-9f3c...
 
 ## Revoking a grant
 
-`DELETE` tears the grant down and cascades: it tombstones / denylists the grant's JWT access tokens, revokes the opaque access tokens and refresh tokens bound to it, and deletes the grant record so a subsequent query reports it gone.
+`DELETE` tears down only the named `grant_id` and cascades to the artefacts bound to that grant: it tombstones / denylists the grant's JWT access tokens, revokes the opaque access tokens and refresh tokens bound to it, and deletes the grant record so a subsequent query reports it gone. Other grants held by the same subject and client are not touched.
 
-The revoke unit is not only the path `grant_id`: every active grant the same subject holds with the same client is revoked together. The implementation resolves the target grant's subject, lists that subject's grants, filters by the same `ClientID`, and applies the same cascade to each grant ID. That keeps stores that retain multiple historical grants from leaving a partial consent state visible to the client. The OP answers `204 No Content` and emits a `grant_management.revoked` audit event with `revoked_grant_ids`.
+The OP answers `204 No Content` and emits a `grant_management.revoked` audit event for the named grant. Treat `grant_id` as the revocation unit; if a deployment wants to revoke every grant for a subject or client, it must enumerate and delete those grant IDs explicitly.
 
 ```sh
 curl -u demo:demo-secret -X DELETE https://op.example.com/oidc/grant_management/g-9f3c...

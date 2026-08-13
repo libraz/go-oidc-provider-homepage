@@ -1,6 +1,6 @@
 ---
 title: No-browser flows — CIBA vs Device Code
-description: Both flows handle the case where the device that wants the token cannot host a usable browser. They look similar from a distance but differ in who initiates and how the user is identified to the OP.
+description: Compare CIBA poll mode with RFC 8628 Device Code — hint-based identity, opaque verification attempts, and the different embedder responsibilities.
 pageClass: pg-concepts-no-browser-flows
 ---
 
@@ -16,7 +16,7 @@ This page is the selection guide. The mechanics live on the dedicated pages for 
 
 **Device Code (RFC 8628).** The device with no browser asks the OP for a one-time code, displays it on its own screen, and tells the user "open this URL on your phone and enter this code". The user authenticates on whatever browser they happen to have at hand and approves. Meanwhile the device polls `/token` until approval lands. The user's identity is **discovered during the flow** — the OP did not know who would walk up to the TV.
 
-**CIBA (Core 1.0).** The RP already knows who the user is — `login_hint` (`alice@example.com`, an account number), `id_token_hint` (a previously issued ID token), or `login_hint_token` (a signed JWT from an upstream system). The RP asks the OP "please authenticate this user out-of-band". The OP pings the user's pre-registered authentication device (push notification, SMS, app prompt). Meanwhile the RP polls (or, in ping/push mode, waits for a callback) until approval lands. The user's identity is **supplied upfront by the RP** — the OP needs it to know which device to push to.
+**CIBA (Core 1.0).** The RP already knows who the user is — `login_hint` (`alice@example.com`, an account number), `id_token_hint` (a previously issued ID token), or `login_hint_token` (a signed JWT from an upstream system). The RP asks the OP "please authenticate this user out-of-band". The embedder's notification and authentication-device services notify the user; the OP stores the request and the RP polls until approval lands. This library implements poll mode only — ping and push delivery modes are not provided. The user's identity is **supplied upfront by the RP** so the deployment can route the approval to the right authentication device.
 
 ## Comparison
 
@@ -24,15 +24,15 @@ This page is the selection guide. The mechanics live on the dedicated pages for 
 |---|---|---|
 | Trigger origin | The device with no browser (input device → OP) | The RP / API client (RP → OP) |
 | User identification | The user types `user_code` on a separate browser | The RP supplies `login_hint` / `id_token_hint` / `login_hint_token` upfront |
-| User device | Any browser the user happens to have | A device pre-registered with the OP for backchannel push |
+| User device | Any browser the user happens to have | A device pre-registered by the deployment for out-of-band approval |
 | Anti-phishing primitive | `user_code` displayed by the device + verification URI host visible to the user | `binding_message` shown on the user's authentication device |
-| Browser involvement | Yes (on the user's phone) | Optional / none (push notification confirms) |
+| Browser involvement | Yes (on the user's phone) | Optional / none (the embedder's authentication device confirms) |
 | Polling subject | The device with no browser | The RP |
 | Spec endpoint | `/device_authorization` | `/bc-authorize` |
 | Token `grant_type` | `urn:ietf:params:oauth:grant-type:device_code` | `urn:openid:params:grant-type:ciba` |
 | Typical use cases | TV apps, CLI tools, kiosks, voice assistants, low-input IoT | Strong customer authentication (PSD2-style), finance / health out-of-band approval, customer-support flows that reset access without sharing a screen |
-| Library status | RFC 8628 — full support, gated by `op.WithDeviceCodeGrant()` | OIDC CIBA Core 1.0 — poll mode only in the current release; ping / push deferred |
-| Brute-force defense | `op/devicecodekit` constant-time compare + N-strike lockout (`MaxUserCodeStrikes`) | Poll-abuse lockout — rate-limited `/token` retries per `auth_req_id`, `AuditCIBAPollAbuseLockout` on cross |
+| Library status | RFC 8628 — full support, gated by `op.WithGrants(grant.DeviceCode)` plus `op.WithDeviceCodeGrant()` | OIDC CIBA Core 1.0 — poll mode only; discovery advertises `poll` only; ping and push are not implemented |
+| Brute-force defense | `op/devicecodekit` opaque-attempt-key limiter plus record lockout (`MaxUserCodeStrikes`) | Poll-abuse lockout — rate-limited `/token` retries per `auth_req_id`, `AuditCIBAPollAbuseLockout` on crossing the cap |
 | FAPI profile | Not in FAPI 2.0 (RFC 8628 itself is sufficient for Baseline-like deployments) | FAPI-CIBA — a separate FAPI profile from FAPI 2.0 Baseline / Message Signing, pinning JAR + DPoP \| mTLS + 10-minute access TTL |
 
 ::: tip Two grants, one symptom
@@ -94,11 +94,11 @@ Run through these four questions in order. The first one usually settles it.
 **2. Is there a screen on the device that wants the token?**
 
 - **Yes** → Device Code can display the `user_code` and `verification_uri` directly. This is the canonical TV / console / CLI case.
-- **No (voice assistant, headless IoT)** → Both can work. Device Code can emit the `user_code` via TTS or print it as a QR (`verification_uri_complete`). CIBA pushes to a separate device entirely and needs no display.
+- **No (voice assistant, headless IoT)** → Both can work. Device Code can emit the `user_code` via TTS or print it as a QR (`verification_uri_complete`). CIBA uses a separate authentication device; the embedder's notification service delivers the approval prompt, so the consumption device needs no display.
 
 **3. Does the user have a registered authentication device?**
 
-- **CIBA assumes yes.** Without a registered device the OP has nowhere to push. Provisioning that device — the banking app, the staff phone, the regulator-issued authenticator — is part of the deployment.
+- **CIBA assumes yes.** Without a registered device the embedder's approval service has no destination. Provisioning that device — the banking app, the staff phone, the regulator-issued authenticator — is part of the deployment.
 - **Device Code does not assume.** Any browser session the user can sign into works. The user's phone, a colleague's laptop, a kiosk in the store.
 
 **4. Is this a regulated finance / health context with out-of-band approval requirements?**
@@ -153,7 +153,7 @@ If you are still unsure after running the questions: default to **Device Code** 
 ### CIBA (Core 1.0, poll mode)
 
 <svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ciba-seq-title">CIBA (OIDC Core 1.0, poll mode) sequence: the RP supplies a login_hint at /bc-authorize, the OP resolves it and pushes to the user's pre-registered device, and the RP polls until approval.</title>
+  <title id="ciba-seq-title">CIBA (OIDC Core 1.0, poll mode) sequence: the RP supplies a login_hint at /bc-authorize, the OP resolves it, the embedder's notification service addresses the user's pre-registered device, and the RP polls until approval.</title>
   <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
   <line class="cbx-op cbx-life" x1="360" y1="50" x2="360" y2="554"/>
   <line class="cbx-user cbx-life" x1="605" y1="50" x2="605" y2="554"/>
@@ -175,7 +175,7 @@ If you are still unsure after running the questions: default to **Device Code** 
   <path class="cbx-op" d="M360 158 H398 V184 H367 M367 180 L360 184 L367 188"/>
   <text class="cbx-note" x="406" y="176" text-anchor="start"><tspan class="cbx-step">2  </tspan><tspan class="cbx-mono">HintResolver</tspan> → subject</text>
   <path class="cbx-op" d="M360 210 H605 M598 206 L605 210 L598 214"/>
-  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>out-of-band push</text>
+  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>embedder notification</text>
   <rect class="cbx-frame" x="510" y="224" width="190" height="34" rx="4"/>
   <text class="cbx-note" x="605" y="245" text-anchor="middle">“Approve $80 at Acme Coffee?”</text>
   <path class="cbx-op" d="M360 286 H115 M122 282 L115 286 L122 290"/>
@@ -202,11 +202,11 @@ The shape is similar enough to map between the two mentally. The decisive differ
 **Phishing — attacker tricks the user into approving the *attacker's* request.**
 
 - Device Code: the user verifies the URL host they are typing the code into. The `user_code` itself has no per-session secret value (entropy is intentional but moderate). If the user mistypes the host or clicks a link in a phishing email, the same `user_code` works on the attacker's site.
-- CIBA: `binding_message` is attached to `/bc-authorize` and shown on the user's authentication device. The user sees "Acme POS terminal #14: Approve $80 at Acme Coffee?" before approving. A pure push prompt without context ("we noticed unusual activity, approve?") is the failure mode.
+- CIBA: `binding_message` is attached to `/bc-authorize` and shown on the user's authentication device. The user sees "Acme POS terminal #14: Approve $80 at Acme Coffee?" before approving. An out-of-band prompt without context ("we noticed unusual activity, approve?") is the failure mode.
 
 **Replay / brute-force on `user_code`.**
 
-- Device Code: the `user_code` is short (`BDWP-HQPK`) on purpose so users can type it. That makes it brute-forceable in principle. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) — `VerifyUserCode` constant-time-compares and increments a strike counter on miss, locking the row after `MaxUserCodeStrikes` (default 5). Embedder verification pages **MUST** route through the helper.
+- Device Code: the `user_code` is short (`BDWP-HQPK`) on purpose so users can type it. That makes it brute-forceable in principle. The library ships [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) — the first manual entry must call `VerifyUserCodeByAttemptKey` with an opaque server-side ceremony key, then `ApproveUserCode` or `DenyUserCode`; record-bound helpers still enforce `MaxUserCodeStrikes` (default 5). Embedder verification pages **MUST** route through the helper and must not use the raw `user_code` as the attempt key.
 - CIBA: there is no user-typed code. The `auth_req_id` is opaque and OP-issued.
 
 **Replay / abuse on `/token` polling.**
@@ -216,20 +216,21 @@ The shape is similar enough to map between the two mentally. The decisive differ
 
 ## What this library implements today
 
-**Device Code (RFC 8628).** Full support, gated by `op.WithDeviceCodeGrant()`. The verification ceremony page (where the user types the `user_code`) is **embedder-hosted**; the embedder calls `devicecodekit.VerifyUserCode` and `ApproveUserCode` / `DenyUserCode` to drive the OP-side state machine. Audit catalogue:
+**Device Code (RFC 8628).** Full support, gated by `op.WithGrants(grant.DeviceCode)` plus `op.WithDeviceCodeGrant()`. The verification ceremony page (where the user types the `user_code`) is **embedder-hosted**; the first manual entry should call `devicecodekit.VerifyUserCodeByAttemptKey` with an opaque server-side ceremony key, followed by `ApproveUserCode` / `DenyUserCode`. Retain `devicecodekit.Deps` and pass it by pointer; its default limiter is process-local, so multi-instance deployments need a shared atomic `AttemptLimiter`. Audit records from these helpers go through `Deps.AuditLogger`. Audit catalogue:
 
 - `AuditDeviceAuthorizationIssued`, `AuditDeviceAuthorizationRejected`, `AuditDeviceAuthorizationUnboundRejected`
 - `AuditDeviceCodeVerificationApproved`, `AuditDeviceCodeVerificationDenied`, `AuditDeviceCodeUserCodeBruteForce`
 - `AuditDeviceCodeTokenIssued`, `AuditDeviceCodeTokenRejected`, `AuditDeviceCodeTokenSlowDown`
 - `AuditDeviceCodeRevoked` (from the public `Revoke` helper)
 
-**CIBA (Core 1.0).** Poll mode only in the current release; ping and push are deferred. Wired through `op.WithCIBA(op.WithCIBAHintResolver(...))`; the `HintResolver` is the embedder hook that maps the inbound hint (`login_hint`, `id_token_hint`, `login_hint_token`) to a subject. Audit catalogue:
+**CIBA (Core 1.0).** Poll mode only; discovery advertises `poll` only. Wire it with `op.WithGrants(grant.CIBA)` plus `op.WithCIBA(op.WithCIBAHintResolver(...))`. The `HintResolver` is the embedder hook that maps the inbound hint (`login_hint`, `id_token_hint`, `login_hint_token`) to a subject. For `id_token_hint`, the OP verifies signature, issuer, and authenticated-client audience before calling the resolver and passes only the verified `sub`; it intentionally does not check `exp`, and rejects pairwise clients before resolution. Ping and push delivery modes are not provided. Audit catalogue:
 
 - `AuditCIBAAuthorizationIssued`, `AuditCIBAAuthorizationRejected`, `AuditCIBAAuthorizationUnboundRejected`
-- `AuditCIBAAuthDeviceApproved`, `AuditCIBAAuthDeviceDenied`
 - `AuditCIBAPollAbuseLockout`
 - `AuditCIBATokenIssued`, `AuditCIBATokenRejected`, `AuditCIBATokenSlowDown`
 - `AuditCIBAPollObservationFailed` (the token endpoint observed a state transition it could not act on cleanly)
+
+The authentication-device callback is an embedder path that calls the CIBA substore directly. The library does not emit `AuditCIBAAuthDeviceApproved` or `AuditCIBAAuthDeviceDenied` for those calls; those catalog names are available for deployment-owned telemetry.
 
 ## Read next
 

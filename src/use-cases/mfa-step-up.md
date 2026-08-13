@@ -1,6 +1,6 @@
 ---
 title: MFA / step-up
-description: Compose authenticators and rules — TOTP always, captcha after N failures, ACR step-up on demand.
+description: Compose authenticators and rules — TOTP always, captcha after N failures, and ACR step-up on demand with v1.1 login/MFA audit signals.
 pageClass: pg-use-cases-mfa-step-up
 ---
 
@@ -167,7 +167,7 @@ op.New(
 )
 ```
 
-If the user already authenticated at `aal2` earlier in the session, the RP requesting `acr_values=aal3` triggers an interactive step-up: the OP runs `passkeyAuth` to lift the session to `aal3` before redirecting back.
+If the user already authenticated at `aal2` earlier in the session, the RP requesting `acr_values=aal3` triggers the configured rule's interactive factor before redirecting back. The factor is the one you put in `RuleACR`; the OP does not substitute a fixed `passkeyAuth` implementation.
 
 ## The resource-server side: `op.StepUpChallenge`
 
@@ -194,14 +194,11 @@ Terminal factor failures — an expired or already-consumed one-time code, locko
 
 ## Audit trail
 
-Each authenticator step emits a structured event from the `op.Audit*` catalog — `op.AuditLoginSuccess` / `op.AuditLoginFailed`, `op.AuditMFARequired` / `op.AuditMFASuccess` / `op.AuditMFAFailed`, `op.AuditStepUpRequired` / `op.AuditStepUpSuccess`. Each event records:
+The authentication flow emits actual factor outcomes from the `op.Audit*` catalog: the primary factor uses `op.AuditLoginSuccess` / `op.AuditLoginFailed`, and an additional factor uses `op.AuditMFASuccess` / `op.AuditMFAFailed`. `op.AuditLockoutStalled` reports repeated cross-factor lockout CAS contention that abandoned a failed attempt without counting it. `op.AuditMFARequired`, `op.AuditStepUpRequired`, and `op.AuditStepUpSuccess` are reserved catalog constants; the OP does not emit them.
 
 - `factor` (`pwd`, `otp`, `webauthn`, …)
-- `aal` (the AAL level reached)
-- `acr` (the ACR class value)
-- `amr` (RFC 8176 method references)
 
-The events thread through `op.WithAuditLogger` (a `*slog.Logger`).
+The events carry the resolved `factor` in `extras` and thread through `op.WithAuditLogger` (a `*slog.Logger`). Emission is synchronous on request goroutines, so the handler must not block and must be concurrency-safe.
 
 ## Where authenticators come from
 

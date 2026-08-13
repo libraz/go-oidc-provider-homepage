@@ -66,6 +66,7 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/feature"
   "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -74,21 +75,29 @@ provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
-  op.WithCookieKeys(myCookieKey),
+  // ブラウザ grant を組み込まないため cookie key は不要です。
+  op.WithGrants(grant.ClientCredentials),
+  op.WithFeature(feature.Introspect),
 
-  op.WithGrants(
-    grant.AuthorizationCode, // 人間ユーザ向け
-    grant.RefreshToken,
-    grant.ClientCredentials, // <-- サービス間を有効化
+  op.WithStaticClients(
+    op.ConfidentialClient{
+      ID:         "service-a",
+      Secret:     serviceASecret, // seed が保存前に hash
+      AuthMethod: op.AuthClientSecretBasic,
+      GrantTypes: []string{"client_credentials"},
+      Scopes:     []string{"read:things", "write:things"},
+      Resources:  []string{"https://api.b.example.com"}, // RFC 8707 で audience を固定
+    },
+    op.ConfidentialClient{
+      ID:         "service-b",
+      Secret:     serviceBSecret,
+      AuthMethod: op.AuthClientSecretBasic,
+      GrantTypes: []string{"client_credentials"},
+    },
   ),
-
-  op.WithStaticClients(op.ConfidentialClient{
-    ID:         "service-a",
-    Secret:     serviceASecret,            // 平文。seed が op.HashClientSecret でハッシュ化する
-    AuthMethod: op.AuthClientSecretBasic,
-    GrantTypes: []string{"client_credentials"},
-    Scopes:     []string{"read:things", "write:things"},
-    Resources:  []string{"https://api.b.example.com"}, // RFC 8707 で audience を固定
+  op.WithProtectedResources(op.ProtectedResource{
+    Resource:            "https://api.b.example.com",
+    IntrospectionClients: []string{"service-b"},
   }),
 )
 ```
@@ -152,6 +161,6 @@ curl -s -u service-b:<secret> \
   https://op.example.com/oidc/introspect
 ```
 
-::: warning Introspect は呼び出し側自身のクライアント認証が必要
-introspection エンドポイントは **呼び出し元**（Service B、resource server）を認証します。Service B も confidential クライアントとして登録し、`/introspect` を呼べるようにしてください。フル実装は [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials)。
+::: warning Introspect の呼び出し元には confidential client が必要
+introspection エンドポイントは **呼び出し元**（Service B、resource server）を認証します。public client と `token_endpoint_auth_method=none` の client は `401 invalid_client` になります。Service B を confidential client として登録してください。既定では client は自分が発行を受けた token だけを introspect できます。`https://api.b.example.com` audience の access token を Service B に委譲するには、その resource の `ProtectedResource.IntrospectionClients` に Service B を列挙します。この委譲は refresh token には適用されません。フル実装は [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) を参照してください。
 :::

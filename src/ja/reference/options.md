@@ -128,6 +128,7 @@ pageClass: pg-reference-options
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
 | `WithStaticClients` | `...op.ClientSeed`(`op.PublicClient` / `op.ConfidentialClient` / `op.PrivateKeyJWTClient` を渡す) | 起動時にクライアントレジストリを初期投入 | 空 |
+| `WithHighEntropyClientSecrets` | _(引数なし)_ | OP 全体の client-secret 検証を high-entropy keyed-hash 形式へ切り替える。既存の Argon2 client hash は後から変換できないため、有効化前に全クライアントを再プロビジョニングする | Argon2 互換の client secret |
 | `WithFirstPartyClients` | `...string`(client ID) | ファーストパーティ同意スキップの対象 | なし |
 | `WithDynamicRegistration` | `op.RegistrationOption` | `/register` を公開(RFC 7591 / 7592) | 無効 |
 
@@ -140,7 +141,7 @@ pageClass: pg-reference-options
 | `WithInteractionDriver` | `interaction.Driver` | 対話レイヤのトランスポート全体を差し替え(HTML ドライバ / SPA ドライバ / 独自実装) | 同梱の HTML ドライバ |
 | `WithInteractions` | `...op.Interaction`(可変長) | ドライバの上に重ねる、資格情報以外の追加画面(T&C、KYC など) | consent のみ |
 | `WithCaptchaVerifier` | `op.CaptchaVerifier` | `StepCaptcha` の上流 captcha プロバイダ | なし |
-| `WithRiskAssessor` | `op.RiskAssessor` | `RuleRisk` と `LoginContext.RiskScore` の供給元 | なし |
+| `WithRiskAssessor` | `op.RiskAssessor` | risk score の供給元。`WithAuthenticators` では factor 前後、`WithLoginFlow` では flow assessor として chain ごとに 1 回実行される。non-nil な `LoginFlow.Risk` と同時に設定すると `op.New` が失敗する | なし |
 | `WithLoginAttemptObserver` | `op.LoginAttemptObserver` | `RuleAfterFailedAttempts` 用の失敗回数集計 | なし |
 | `WithMFAEncryptionKeys` | 32 byte の鍵 | TOTP シークレットを AES-256-GCM で保存時暗号化 | なし |
 | `WithAuthnLockoutStore` | `store.AuthnLockoutStore` | `RuleAfterFailedAttempts` が参照する subject 単位の失敗回数を永続化 | なし |
@@ -150,21 +151,25 @@ pageClass: pg-reference-options
 
 認証 factor のレコードは意図的に `store.Store` の外にあります。`StepTOTP` / `PrimaryPasskey` / `StepRecoveryCode` / `StepEmailOTP` はそれぞれ専用 store を受け取ります。登録スキーマ、暗号鍵、アカウント復旧ポリシーは組み込みアプリケーション側の設計だからです。in-memory、SQL、DynamoDB adapter は対応する accessor を公開します。[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) は、同梱 SQL adapter の factor store を OP のコアテーブルと同じ DB で使う例です。別のバックエンドでだけ factor-store 契約を自前実装してください。
 
+TOTP と email-OTP の `Version` は store が発行する opaque な equality-only CAS token です。順序性を推測したり自前で生成したりせず、stale な CAS は consumed / stale error として扱います。`PasskeyStore.Put` は異なる subject の同じ credential ID を atomically に拒否し、credential を別 subject へ移してはなりません。
+
 耐久 store 実装者向けに重要な factor-store 契約が 2 つあります。`store.EmailOTPStore.Get` は code の `ExpiresAt` だけでなく `EmailOTPRecord.RetainUntil` までは record を読める状態に保つ必要があります。これにより、code が失効しても resend cap と brute-force counter はリセットされません。`store.RecoveryStore.Consume` は、提示された code hash と現在保存されている slot の hash を比較し、古い hash を拒否する必要があります。recovery code を再生成した後に、漏洩済みの古い code が新しい batch の slot を消費するのを防ぐためです。
 
 ## UI
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithSPAUI` | `op.SPAUI`(構造体: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | SPA の入口と静的アセット一式を OP 側で公開し、interaction の状態も JSON で提供 | 無効 |
+| `WithSPAUI` | `op.SPAUI`(構造体: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | SPA の入口と静的アセット一式を OP 側で公開し、interaction の状態も JSON で提供。route になるのは `LoginMount` だけで、`ConsentMount` と `LogoutMount` は互換性のため検証されるだけの inert / deprecated field | 無効 |
 | `WithConsentUI` | `op.ConsentUI`(`*html/template.Template` をラップ) | 同意画面を組み込み側テンプレートで描画。state / CSRF / 永続化は OP が担当 | 同梱テンプレート |
 | `WithChooserUI` | `op.ChooserUI`(`*html/template.Template` をラップ) | `prompt=select_account` を組み込み側テンプレートで描画 | 同梱テンプレート |
-| `WithCORSOrigins` | `...string` | 厳格 CORS の許可リスト(未指定なら redirect URI から自動導出) | 自動導出 |
-| `WithDefaultLocale` | `op.Locale`(BCP 47 タグ) | `ui_locales` が無いリクエスト時の既定ロケール | `"en"` |
+| `WithCORSOrigins` | `...string` | API CORS に追加する明示 origin。redirect URI の origin は API CORS 用には自動導出されるが、interaction と end-session の ceremony check は issuer origin + この明示リストだけを許可 | API route は自動導出、ceremony は issuer のみ |
+| `WithDefaultLocale` | `op.Locale`(BCP 47 タグ) | canonical BCP 47 の既定 UI locale。未登録の default は `op.New` が拒否 | `"en"` |
 | `WithLocale` | `op.LocaleBundle`(1 呼び出しで 1 つ、繰り返し可) | 同梱 HTML ドライバ用のロケール別メッセージバンドルを登録 | 英語 + 日本語の初期バンドル |
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | §L.2 優先順序の先頭で参照されるユーザ単位ロケール上書き | なし |
 
-`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意画面の描画を受け持つためです。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA モードではアカウント選択も JSON の状態取得を通じて SPA が描画します。そのため chooser テンプレートは使われず、`op.New` が構造化された警告を出します。詳細は [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
+`WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意画面の描画を受け持つためです。`WithSPAUI.LoginMount` だけが SPA route になり、`ConsentMount` と `LogoutMount` は route を予約しません。同意画面は login interaction state surface を使い、組み込み logout confirmation は通常の end-session flow に残ります。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA モードではアカウント選択も JSON の状態取得を通じて SPA が描画します。そのため chooser テンプレートは使われず、`op.New` が構造化された警告を出します。詳細は [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
+
+`WithLocale` は locale tag を小文字・ハイフン区切りの canonical BCP 47 形式にします。`Provider.SetLocaleCookie(w, locale)` と `Provider.ClearLocaleCookie(w)` が公開 cookie seam です。`SetLocaleCookie` は exact match と language-only fallback を解決し、登録済み locale に一致しなければ `op.ErrLocaleNotRegistered` を返します。cookie は `__Host-oidc_locale`、Secure、HttpOnly、SameSite=Lax で、login session とは独立しています。
 
 ## トークン
 
@@ -188,7 +193,7 @@ pageClass: pg-reference-options
 | `WithEndpoints` | `op.Endpoints`(構造体: 各エンドポイントのパス上書き) | 各エンドポイントのパスを上書き | 仕様の既定 |
 | `WithMountPrefix` | `string`(`/` で始める。ルートに置くなら `/`) | issuer 直下にプリフィックスを設けて公開 | `/oidc` |
 | `WithClaimsSupported` | `...string`(可変長) | discovery の `claims_supported` を埋める | 省略 |
-| `WithClaimsParameterSupported` | `bool` | `claims_parameter_supported` を切り替える。`false` の場合、authorize / PAR は malformed JSON の拒否後に `claims` の中身を無視する | true |
+| `WithClaimsParameterSupported` | `bool` | `claims_parameter_supported` を切り替える。`false` の場合、malformed JSON は拒否するが、正しい `claims` payload の投影は抑止して authorize / PAR では無視する | true |
 | `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。FAPI / eIDAS / NIST 800-63 のように特定の ACR 値を扱う配備が広告するために使う | 空(discovery に出ない) |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata`(型付きの `service_documentation` / policy / TOS / UI locale / mTLS alias フィールド + `Extra map[string]any`) | OP が所有しない RFC 8414 / OIDC Discovery メタデータを discovery 文書に追加。`UILocalesSupported` は非空時に自動導出された locale list を上書きし、OP 管理フィールドと衝突する `Extra` key は拒否 | なし |
 | `WithPARLifetime` | `time.Duration` | `/par` が発行する `request_uri` の寿命を上書き。失効判定はブラウザが `/authorize` に URI を提示した時点で行い、その後の code 発行では単回使用性だけを強制 | 60 秒 |
@@ -198,7 +203,7 @@ pageClass: pg-reference-options
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithSubjectGenerator` | `op.SubjectGenerator`(interface) | `sub` claim の導出を上書き。同梱の `op/subject.UUIDv7` が既定 | UUIDv7 通し |
+| `WithSubjectGenerator` | `op.SubjectGenerator`(interface) | `sub` claim の導出を上書き。同梱の `op/subject.UUIDv7` が既定。generator は各 projection で呼ばれ、同じ input に deterministic で surprise I/O を行ってはならない | UUIDv7 通し |
 | `WithPairwiseSubject` | `[]byte` salt(32 byte 以上) | OIDC Core §8.1 の sector ごと pairwise sub 導出を有効化。途中で戦略を切り替えると `op.New` が拒否する | public(UUIDv7) |
 
 詳細は [使い方: pairwise subject](/ja/use-cases/pairwise-subject)。
@@ -212,7 +217,7 @@ pageClass: pg-reference-options
 | `WithDeviceCodeExpiry` | `time.Duration` | 新規 `device_code` レコードの `expires_in` 寿命を上書き。アクセストークン TTL とは独立 | 10 分 |
 | `WithDeviceCodePollInterval` | `time.Duration` | 広告する poll `interval` を上書き。これより速い poll は `slow_down` | 5 秒 |
 | `WithCIBA` | `...op.CIBAOption` | CIBA poll mode を有効化。`/bc-authorize` を公開し CIBA URN を登録。サブオプション: `WithCIBAHintResolver`(必須)、`WithCIBADefaultExpiresIn`、`WithCIBAMaxExpiresIn`、`WithCIBAPollInterval`、`WithCIBAMaxPollViolations` | 無効 |
-| `WithCustomGrant` | `op.CustomGrantHandler` | 組み込み側が定義する `grant_type` URN を `/token` に登録。handler はアクセストークンをそのまま返すか、`BoundAccessToken` 要求として返して OP に署名させる | なし |
+| `WithCustomGrant` | `op.CustomGrantHandler` | 組み込み側が定義する `grant_type` URN を `/token` に登録。custom name の重複と組み込み grant type との collision は構築時に拒否される。handler はアクセストークンをそのまま返すか、`BoundAccessToken` 要求として返して OP に署名させる | なし |
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | RFC 8693 token-exchange grant を有効化。ポリシーがリクエスト単位で受理可否(admission)を判断し、OP の既定値をさらに狭めることもできる | 無効 |
 
 `WithDeviceCodeExpiry` と `WithDeviceCodePollInterval` は `WithAccessTokenTTL` から導出されません。アクセストークンを短命にしても、TV / CLI のペアリング手順までユーザがセカンドスクリーンに移る前に失効しないようにするためです。詳細は [使い方: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
@@ -223,7 +228,7 @@ pageClass: pg-reference-options
 |---|---|---|---|
 | `WithAuthorizationDetailTypes` | `...op.AuthorizationDetailType` | RFC 9396 Rich Authorization Requests を有効化。受理する `type` を validator とともに登録する。`authorization_details` は `/authorize`、`/par`、`/token` で検証され、grant に永続化され、JWT アクセストークンと introspection に反映され、discovery で公開される。nil の `Validate` は `op.New` で拒否される | 無効 |
 | `WithGrantManagement` | `(actions []op.GrantManagementAction, actionRequired bool)` | OAuth 2.0 Grant Management draft を有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントを公開し、token 応答に `grant_id` を載せ、設定した action 集合を discovery で公開する。Experimental（IETF draft 追跡） | 無効 |
-| `WithProtectedResources` | `...op.ProtectedResource` | 登録した各リソースについて RFC 9728 protected-resource メタデータを `/.well-known/oauth-protected-resource` とリソース path の接尾辞で公開し、`authorization_servers` に issuer を載せる | なし |
+| `WithProtectedResources` | `...op.ProtectedResource` | 登録した各リソースについて RFC 9728 protected-resource メタデータを `/.well-known/oauth-protected-resource` とリソース path の接尾辞で公開し、`authorization_servers` に issuer を載せる。`ProtectedResource.IntrospectionClients` はその resource を audience とする access token を指定 confidential caller が introspect するための委譲であり、refresh token には適用されない | なし |
 
 `op.StepUpChallenge(realm, acrValues, maxAge)` は `op.New` のオプションではなく独立したヘルパで、組み込み側のリソースサーバが返す RFC 9470 の `WWW-Authenticate: Bearer` challenge を組み立てます。OP 自身はこれを発行しません。
 
@@ -242,7 +247,8 @@ pageClass: pg-reference-options
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | エッジでヘッダ経由の mTLS を終端 | なし |
+| `WithMTLSRootCAs` | `*x509.CertPool` | 直接または前送りされた client certificate を OP 自身が検証するための公開 trust pool。nil は拒否 | 未設定（終端側で検証） |
+| `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | edge でヘッダ経由の mTLS を終端。trusted CIDR から来た request の forwarded certificate が正本で、`op.MTLSProxy` / `op.MTLSProxyConfig` が公開 projection seam | なし |
 | `WithTrustedProxies` | `...string`(CIDR) | `X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 | なし |
 | `WithTrustedProxyHosts` | `...string`(hostname) | trusted proxy CIDR が設定されている場合に、正規の issuer host 以外の `X-Forwarded-Host` 許可リストを追加 | issuer host のみ |
 | `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発 / ネイティブアプリデモ用に RFC 8252 の loopback 緩和へ文字列 `localhost` を追加し、**issuer 自体にも** `localhost` を許可。リテラル `127.0.0.1` / `[::1]` は厳格既定のまま | リテラル loopback のみ |
@@ -250,18 +256,19 @@ pageClass: pg-reference-options
 | `WithAllowPrivateNetworkJAR` | _(引数なし)_ | RFC 1918 上の `request_uri` を許容(テスト専用) | 拒否 |
 | `WithAllowPrivateNetworkSector` | _(引数なし)_ | dynamic registration 時の `sector_identifier_uri` が RFC 1918 上にあることを許容(テスト / private RP network 専用) | 拒否 |
 | `WithJWKSHTTPTransport` | `http.RoundTripper` | JAR と `private_key_jwt` が使う RP 管理 JWKS 取得の transport を差し替える。接続時の SSRF 判定は維持される | システム trust の transport |
-| `WithBackchannelAllowPrivateNetwork` | `bool` | RFC 1918 上の `backchannel_logout_uri` を許容(テスト専用) | false |
+| `WithBackchannelAllowPrivateNetwork` | `bool` | RFC1918、loopback、link-local、ULA の `backchannel_logout_uri` 宛先への配送を明示的に許可。既定 deny は production SSRF 境界なので、明確な network policy がある場合だけ opt in | false（deny） |
 | `WithAllowInsecureBackchannelLogoutForDev` | _(引数なし)_ | dev / CI fixture 用に plain-HTTP loopback の `backchannel_logout_uri` と配送を許容 | 拒否 |
 | `WithBackchannelLogoutHTTPClient` | `*http.Client` | Back-Channel ログアウト用の HTTP クライアント | 既定 |
 | `WithBackchannelLogoutTimeout` | `time.Duration` | RP ごとの 一斉通知 タイムアウト | 5 秒 |
+| `WithBackchannelFanOutBudget` | `time.Duration`（正値） | RP ごとの timeout とは独立した、back-channel logout 1 event 全体の fan-out budget | 30 秒 |
 
 ## 観測
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
 | `WithLogger` | `*slog.Logger` | 構造化された運用ログ(handler は redaction ミドルウェアで包まれる) | discard |
-| `WithAuditLogger` | `*slog.Logger` | 監査イベント専用のロガー | `WithLogger` を継承 |
-| `WithPrometheus` | `*prometheus.Registry` | OP のカウンタを呼び出し側のレジストリに登録(`/metrics` は公開しない) | なし |
+| `WithAuditLogger` | `*slog.Logger` | OIDC domain business event 専用の監査 sink。HTTP access log ではない | `WithLogger` を継承 |
+| `WithPrometheus` | `*prometheus.Registry` | curated な OP counter を呼び出し側 registry に登録（`/metrics` route、HTTP lifecycle metric、health endpoint は mount しない） | なし |
 
 ## 運用方針
 
@@ -274,7 +281,7 @@ pageClass: pg-reference-options
 
 意図的にオプションにしていない項目です。理由は各リンク先の設計判断を参照してください。
 
-- **JOSE 検証用の許可リスト** — client assertion、JAR request object、DPoP proof など入力側の署名検証では `RS256` / `PS256` / `ES256` / `EdDSA` の固定集合を使います。OP が発行する JWT の署名は `ES256` のみです。どちらの面も広げるフラグはありません。[セキュリティ方針 §2](/ja/security/posture#_2-the-jose-alg-list-is-a-closed-type) を参照。
+- **JOSE 検証用の許可リスト** — client assertion、JAR request object、DPoP proof など入力側の署名検証では `RS256` / `PS256` / `ES256` / `EdDSA` の固定集合を使います。OP が発行する JWT の署名は `ES256` のみです。どちらの面も広げるフラグはありません。[セキュリティ方針 §2](/ja/security/posture#jose-alg-list) を参照。
 - **PKCE method** — `S256` のみ。`plain` は構造的に拒否されます。
 - **Cookie scheme** — `__Host-` プリフィックス、AES-256-GCM、double-submit CSRF が常に有効です。[必須オプション § WithCookieKeys](/ja/getting-started/required-options#withcookiekeys) を参照。
 - **乱数源** — `crypto/rand` のみ。`math/rand` は lint で禁止しています。

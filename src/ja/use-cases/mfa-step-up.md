@@ -1,6 +1,6 @@
 ---
 title: MFA / step-up
-description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up。
+description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up、v1.1 の login/MFA 監査シグナル。
 pageClass: pg-use-cases-mfa-step-up
 ---
 
@@ -170,7 +170,7 @@ op.New(
 )
 ```
 
-ユーザがセッション内で `aal2` で認証済の場合、RP の `acr_values=aal3` 要求は対話的 step-up を発火させます。OP は次の step を実行してセッションを `aal3` に引き上げてから RP に redirect で返します。
+ユーザがセッション内で `aal2` で認証済の場合、RP の `acr_values=aal3` 要求は対話的 step-up を発火させます。実行される factor は `RuleACR` に設定したものです。OP が固定の `passkeyAuth` 実装へ差し替えることはありません。
 
 ## リソースサーバ側: `op.StepUpChallenge`
 
@@ -197,14 +197,11 @@ terminal な factor 失敗 — 期限切れまたは消費済みのワンタイ�
 
 ## 監査記録
 
-各 step は `op.Audit*` カタログから構造化イベントを発行します — `op.AuditLoginSuccess` / `op.AuditLoginFailed`、`op.AuditMFARequired` / `op.AuditMFASuccess` / `op.AuditMFAFailed`、`op.AuditStepUpRequired` / `op.AuditStepUpSuccess` など。各イベントは次の属性を持ちます。
+認証フローが発行するのは、実際に解決した factor の結果です。primary factor には `op.AuditLoginSuccess` / `op.AuditLoginFailed`、additional factor には `op.AuditMFASuccess` / `op.AuditMFAFailed` が使われます。cross-factor lockout の CAS 競合で失敗試行がカウントされずに中断された場合は `op.AuditLockoutStalled` です。`op.AuditMFARequired`、`op.AuditStepUpRequired`、`op.AuditStepUpSuccess` は予約されたカタログ定数であり、OP は発行しません。
 
 - `factor`（`pwd`、`otp`、`webauthn` …）
-- `aal`（達成した AAL レベル）
-- `acr`（ACR class 値）
-- `amr`（RFC 8176 method references）
 
-イベントは `op.WithAuditLogger`（`*slog.Logger`）経由で流れます。
+イベントは `extras` に解決した `factor` を載せ、`op.WithAuditLogger`（`*slog.Logger`）経由で流れます。発行は request goroutine 上で同期的に行われるため、handler を block させず、並行呼び出しに安全な実装にしてください。
 
 ## 同梱の step
 

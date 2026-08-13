@@ -1,6 +1,6 @@
 ---
 title: SPA / 対話画面のカスタマイズ
-description: 任意の SPA（React / Vue / Svelte / Angular など）からログイン / 同意 / ログアウトを扱う。SPA から読み取りやすいエラー描画も同梱。
+description: SPA からログインと同意を扱い、組み込みのログアウト確認を使う方法を説明します。custom interaction mount、CSP、ceremony の origin ルールも明記します。
 pageClass: pg-use-cases-spa-custom-interaction
 ---
 
@@ -37,7 +37,7 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 
 ## アーキテクチャ
 
-低レベル JSON ドライバでは、OP は interaction の状態機械を `/interaction/{uid}` に出し、各画面を JSON で返します。SPA の入口や静的アセットは、自前のルーターで好きなパスから配信します。`op.WithSPAUI` では、OP が SPA 向けの一式を公開します。`LoginMount/{uid}` が SPA の入口、`LoginMount/state/{uid}` が画面状態 JSON、`StaticDir` 設定時は `LoginMount/assets/{path...}` が静的アセットです。
+低レベル JSON ドライバでは、OP は interaction の状態機械を `/interaction/{uid}` に出し、各画面を JSON で返します。SPA の入口や静的アセットは、自前のルーターで好きなパスから配信します。`op.WithSPAUI` では、OP が SPA 向けの一式を公開します。`LoginMount/{uid}` が SPA の入口、`LoginMount/state/{uid}` が画面状態 JSON、`StaticDir` 設定時は `LoginMount/assets/{path...}` が静的アセットです。route に影響する field は `LoginMount` だけで、`ConsentMount` と `LogoutMount` は互換性のため残る inert / deprecated field であり、route を作りません。
 
 | Method | Path | 役割 |
 |---|---|---|
@@ -177,7 +177,7 @@ OP が `/interaction/{uid}` に画面状態 JSON を返し、`/login/...` に置
 :::
 
 ::: info `op.WithSPAUI`
-`op.SPAUI` は `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir` を取り、SPA の入口・静的アセット一式・画面状態 JSON を 1 オプションで公開します。JSON の状態取得エンドポイントは `LoginMount/state/{uid}` です。自前ルータで SPA を配信し、`/interaction/{uid}` から fetch したい場合だけ `interaction.JSONDriver` を直接使ってください。
+`op.SPAUI` で実際に使われるのは `LoginMount` と `StaticDir` です。`ConsentMount` と `LogoutMount` は source compatibility のため struct に残っていますが、handler は読みません。同意画面は同じ `LoginMount/state/{uid}` prompt surface を使い、組み込み logout confirmation は通常の end-session flow に残ります。自前ルータで SPA を配信し、`/interaction/{uid}` から fetch したい場合だけ `interaction.JSONDriver` を直接使ってください。
 :::
 
 ### フロントエンドスニペット
@@ -365,7 +365,7 @@ op.WithCORSOrigins(
 )
 ```
 
-ライブラリは登録済み `redirect_uri` の origin を RP ごとの許可リストへ自動で追加します（static クライアント設定なら CORS 設定の重複不要）。詳細は [SPA 向け CORS](/ja/use-cases/cors-spa)。
+API CORS では、ライブラリは登録済み `redirect_uri` の origin を RP ごとの許可リストへ自動で追加します（static クライアント設定なら CORS 設定の重複不要）。ただし、その導出だけで interaction や end-session state の POST 送信元が認可されるわけではありません。ceremony check は issuer origin と `op.WithCORSOrigins` で明示した origin だけを許可します。詳細は [SPA 向け CORS](/ja/use-cases/cors-spa) を参照してください。
 
 ## フル SPA 化せず、文言だけ差し替えたい
 

@@ -16,7 +16,7 @@ Things that ought to be easy to embed (two-factor, passkeys, risk-based auth, SP
 
 </div>
 
-You're writing a Go service. You need to **be** an OpenID Connect Provider — issuing ID tokens / access tokens, hosting `/authorize` and `/token`, signing the discovery document. The choices on the market are:
+You're writing a Go service. You need to **be** an OpenID Connect Provider — issuing ID tokens / access tokens, hosting the authorization and token endpoints, signing the discovery document. The choices on the market are:
 
 | Choice | What you gain | What you take on |
 |---|---|---|
@@ -40,7 +40,7 @@ This page argues option 3 by walking through the things that hurt when you build
   <rect class="op" x="310" y="28" width="246" height="88" rx="8"/>
   <text class="p opf" x="433" y="58" text-anchor="middle" font-size="15.5" font-weight="700">go-oidc-provider</text>
   <text class="p sub" x="433" y="82" text-anchor="middle" font-size="11.5">the OIDC / OAuth ceremony</text>
-  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/authorize · /token · JWKS</text>
+  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/oidc/auth · /oidc/token · /oidc/jwks</text>
   <rect x="596" y="28" width="140" height="88" rx="8"/>
   <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
   <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">the consuming app</text>
@@ -72,6 +72,8 @@ FAPI 2.0 Baseline mandates **PAR** (RFC 9126) for authorization requests, **PKCE
 ```go
 op.New(
   /* required options */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
   op.WithProfile(profile.FAPI2Baseline),
   op.WithDPoPNonceSource(nonces),
 )
@@ -90,9 +92,10 @@ Heavyweight IdPs often make user storage part of the product boundary: import us
 ```go
 op.New(
   /* required options */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(passwordLoginFlow),
   op.WithStore(myStore),                 // protocol state
   op.WithUserStore(applicationUsers),    // claims from your users table
-  op.WithLoginFlow(passwordLoginFlow),   // authentication against those records
 )
 ```
 
@@ -136,10 +139,11 @@ The protocol engine should decide what prompt is next; your frontend should deci
 ```go
 op.New(
   /* required options */
+  op.WithCookieKeys(cookieKey),
   op.WithLoginFlow(flow),
   op.WithSPAUI(op.SPAUI{
     LoginMount: "/login",
-    StaticDir:  "./web/static",
+    StaticDir:  "../internal/webui/static",
   }),
 )
 ```
@@ -156,7 +160,7 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` so
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
-Each release is regressed against the OpenID Foundation conformance suite. The v1.0.0 release snapshot (SHA `3ccc6bc`) covers all nine plans: **209 PASSED**, **39 REVIEW**, **15 SKIPPED**, **6 FAILED**, and **2 modules without a terminal verdict**. The strict release verifier accepted it with zero blockers because every failure or no-verdict result is a reviewed, expiry-bound exclusion; the full raw breakdown and rationale are on [OFCS conformance](/compliance/ofcs).
+Each release is regressed against the OpenID Foundation conformance suite. The latest release run and its full raw breakdown, review rationale, and blocker decision are on [OFCS conformance](/compliance/ofcs).
 
 ::: tip Reading REVIEW / SKIPPED
 `REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects). A raw `FAILED` or no-verdict result is never silently accepted: it must match a reviewed, unexpired exclusion for the release verifier to pass.
@@ -176,6 +180,8 @@ The `token.issued` / `token.refreshed` audit events carry an `offline_access` fl
 ```go
 op.New(
   /* required options */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
   op.WithRefreshGracePeriod(60*time.Second),
   op.WithRefreshTokenOfflineTTL(90*24*time.Hour),
   op.WithAuditLogger(auditLogger),
@@ -194,6 +200,8 @@ The same separation holds for tracing (you bring `otelhttp`) and request duratio
 reg := prometheus.NewRegistry()
 provider, _ := op.New(
   /* required options */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
   op.WithPrometheus(reg),
 )
 

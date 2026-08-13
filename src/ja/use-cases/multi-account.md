@@ -1,6 +1,6 @@
 ---
 title: マルチアカウント選択
-description: 1 ブラウザに複数ユーザがログイン中の状態を OP が chooser group として保持し、prompt=select_account を UI 差し込み口経由で扱う。
+description: 1 ブラウザの複数ユーザを chooser group として保持し、group 全体／current セッション単位のログアウトと prompt=select_account を扱う。
 pageClass: pg-use-cases-multi-account
 ---
 
@@ -19,6 +19,8 @@ OIDC Core 1.0 §3.1.2.1 では、RP が `/authorize` に `prompt` 要求パラ�
 `select_account` は、大手 SaaS の「アカウント切り替え」ボタンの裏側で使われる仕様です。1 つのブラウザで同じ OP に複数アカウント（仕事 + 個人、alice + bob 等）でサインインしているとき、OP が一覧を出してユーザに選ばせます。
 
 本ライブラリではこれを OP 内部のセッションマネージャが持つ **chooser group**（同一ブラウザで同時に有効なセッション群）として実装し、追加・切替・全ログアウトを内部で処理します。
+
+RP-Initiated Logout はデフォルトでこの group を対象にします。`logout_scope` なしの `/end_session` は chooser group の有効なセッションをすべて破棄します。単一値の `logout_scope=current` を指定するとアクティブセッションだけを破棄し、兄弟が残れば cookie をそのセッションへ再バインドします。空値、未知の値、重複した `logout_scope` は group を変更せず HTTP 400 になります。一致しない `id_token_hint` では確認画面を省略できません。
 
 ::: details このページで触れる仕様
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.1（`prompt` パラメータ）、§3.1.2.4（同意との相互作用）

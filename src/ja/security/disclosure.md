@@ -1,6 +1,6 @@
 ---
 title: 脆弱性報告 / CVE
-description: go-oidc-provider のセキュリティ問題の報告経路、対応の流れ、現在の advisory 状況。
+description: go-oidc-provider のセキュリティ問題の報告経路、対応の流れ、サポート対象バージョンと advisory の最新情報の参照先を説明します。
 pageClass: pg-security-disclosure
 ---
 
@@ -97,11 +97,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 ## 現在の Advisory 状況
 
-::: details 本ページ更新時点
-**現時点で公開済みの CVE は 0 件です。** CVE 発番の条件を満たすセキュリティ報告はまだ届いていません。これは「公開すべきものが現状ない」という事実をそのまま示しているだけで、「監査済みで安全」を主張しているわけではありません。本プロジェクトが構造的に防いでいる範囲とその限界については [セキュリティ方針](/ja/security/posture) を参照してください。
-
-正規の情報源は GitHub Security Advisories です。提出された advisory は [advisories ページ](https://github.com/libraz/go-oidc-provider/security/advisories) に直ちに反映されます。
-:::
+Advisory の状況は時間とともに変わるため、このページでは特定時点の CVE 件数を複製しません。現在の記録は GitHub Security Advisories です。[advisories ページ](https://github.com/libraz/go-oidc-provider/security/advisories) とリポジトリの [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) で最新の方針と公開状況を確認してください。プロジェクトの防御範囲と限界は [セキュリティ方針](/ja/security/posture) にまとめています。
 
 ## 周辺のサプライチェーン衛生
 

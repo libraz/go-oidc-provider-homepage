@@ -61,11 +61,15 @@ func main() {
     log.Fatal(err)
   }
 
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
     op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -96,11 +100,15 @@ func main() {
     log.Fatal(err)
   }
 
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
     op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -134,11 +142,15 @@ func main() {
     log.Fatal(err)
   }
 
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
     op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -154,7 +166,7 @@ func main() {
 
 ::: tip Production caveats
 - **Keys**: ephemeral here; load from a vault / KMS in production.
-- **Store**: in-memory; use `op/storeadapter/sql` or `composite` in production.
+- **Store**: in-memory; use `op/storeadapter/sql`, `op/storeadapter/dynamodb`, or `composite` in production. Redis is a volatile tier for composite deployments.
 - **Listener**: plain HTTP; front behind a TLS-terminating ingress.
 :::
 
@@ -162,7 +174,7 @@ func main() {
 1. `curl http://localhost:8080/.well-known/openid-configuration` — discovery, always mounted at the root regardless of mount prefix.
 2. `curl http://localhost:8080/oidc/jwks` — public JWKS for verifying ID tokens.
 3. The default mount prefix is `/oidc` — change it with `op.WithMountPrefix("/")`.
-4. Authorization will return errors until you register a client and an authenticator.
+4. Authorization will return errors until you register a client and seed a user; the password authenticator is configured above.
 :::
 
 ## Run the upstream example

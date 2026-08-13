@@ -1,18 +1,18 @@
 ---
 title: Observability
-description: Wiring logging, tracing, and Prometheus metrics around the OP.
+description: Wiring synchronous audit logging, issuer-labelled Prometheus metrics, and embedder-owned HTTP tracing around the OP.
 outline: 2
 pageClass: pg-operations-observability
 ---
 
 # Observability
 
-Three streams cover what you need to see in production:
+Four streams cover what you need to see in production:
 
 | Stream | What it carries | OP-side seam | Embedder-side seam |
 |---|---|---|---|
 | Operational logs | request errors, config-time issues, startup state | `WithLogger(*slog.Logger)` | your structured-log destination |
-| Audit events | every protocol action ([catalog](/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC pipeline |
+| Audit events | emitted signals plus reserved catalog vocabulary ([catalog](/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC pipeline |
 | Metrics | OIDC business counters | `WithPrometheus(*prometheus.Registry)` | your `/metrics` route |
 | Tracing | request spans | none built-in | `otelhttp.NewMiddleware` around the `http.Handler` |
 
@@ -86,6 +86,8 @@ op.New(
 
 Each event is a JSON line with `msg = "<event.name>"`, plus the common attributes (`request_id`, `subject`, `client_id`, `extras`). See the [Audit event catalog](/reference/audit-events) for the full list.
 
+`WithAuditLogger` is synchronous: the handler runs on the request goroutine. It must not block on slow I/O or unbounded queues, and it must be safe for concurrent calls from many requests. Use a bounded, concurrency-safe handoff when the final sink is asynchronous. The catalog contains reserved names as well as events emitted by this library, so do not treat every constant as proof that a signal fired.
+
 ::: tip One stream, multiple sinks
 A single `*slog.Logger` can fan out to file + Loki + Splunk via a multiplexing handler. The OP doesn't care; it just calls `logger.LogAttrs(...)`.
 :::
@@ -148,9 +150,7 @@ http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 
 Spans cover the request lifecycle. The library does not currently emit per-endpoint child spans — if you need per-stage traces (e.g. "how long did PKCE verification take inside `/token`") you'll see them only at the HTTP level today.
 
-::: info Future tracing
-Per-stage spans are planned, but the public tracing surface is intentionally small. The audit event catalog gives you the same coverage (per-event emission) at the cost of higher cardinality.
-:::
+The OP emits no built-in OpenTelemetry spans, business or request-lifecycle. `otelhttp.NewHandler` (or equivalent middleware) supplies HTTP spans; instrument internal business stages in the embedder if needed. The audit event catalog supplies discrete event records, not tracing spans.
 
 ## Request IDs
 
@@ -184,11 +184,11 @@ A minimum-viable production dashboard surfaces:
 | Token-issue rate by `grant_type` | Prometheus counter | sustained drop > 50 % vs baseline |
 | 5xx rate at `/token` | HTTP middleware histogram | > 0.5 % over 5 min |
 | `refresh.replay_detected` rate | audit log → Loki / ES | > 0 (any non-zero is investigation-worthy) |
-| `bcl.no_sessions_for_subject` rate | audit log | spikes against `posture=durable` |
+| `bcl.no_sessions_for_subject` rate | audit log | elevated rates correlated with grant/client state; inspect snapshot context separately |
 | Active sessions | store query / metric you maintain | drop > 30 % |
 | JWKS request rate | HTTP middleware | tracks RP cache health |
 
-The first three are the highest-signal indicators of production trouble. The fourth catches storage drift; the last two catch RP-side regressions.
+The first three are the highest-signal indicators of production trouble. For `bcl.no_sessions_for_subject`, correlate elevated rates with grant/client state; the configured `posture` is context for logout-trigger and session-snapshot durability, not the cause of an empty RP audience. The last two catch RP-side regressions.
 
 ## Rate limiting and abuse signals
 
@@ -198,10 +198,10 @@ What the library does emit is a set of audit events that an abuse pipeline can c
 
 | Audit event | Constant | What it tells you |
 |---|---|---|
-| `pkce.violation` | `op.AuditPKCEViolation` | The code exchange failed PKCE verification. Repeat from a single IP / client is a strong signal of an attacker probing a stolen authorization code. |
-| `redirect_uri.mismatch` | `op.AuditRedirectURIMismatch` | The presented `redirect_uri` did not match a registered URI. Repeat is reconnaissance against a known `client_id`. |
-| `client_authn.failure` | `op.AuditClientAuthnFailure` | Client authentication at `/token`, `/par`, `/introspect`, or `/revoke` failed. Bursts are credential brute-force. |
-| `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | The device-code verification page is being walked through user-code guesses. The `devicecodekit` enforces a built-in per-device-code lockout — see [Device Code](/use-cases/device-code) for the verification helper. |
+| `pkce.violation` | `op.AuditPKCEViolation` (reserved) | The catalog name is reserved; the OP currently reports a PKCE rejection on the wire and does not emit this audit event. |
+| `redirect_uri.mismatch` | `op.AuditRedirectURIMismatch` (reserved) | The catalog name is reserved; the OP currently reports a mismatch on the wire and does not emit this audit event. |
+| `client_authn.failure` | `op.AuditClientAuthnFailure` | Client authentication at `/token`, `/par`, `/device_authorization`, or `/bc-authorize` failed. Bursts are credential brute-force. `/introspect` has its separate `op.AuditIntrospectionError` signal; `/revoke` does not use either event. |
+| `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | The device-code verification page is being walked through user-code guesses. Record-bound helpers use per-record gates; first-entry pages should use `devicecodekit.VerifyUserCodeByAttemptKey` with a shared limiter when deployed across replicas — see [Device Code](/use-cases/device-code) for the verification helper. |
 | `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | The CIBA polling counter has crossed the per-`auth_req_id` threshold. The library denies the request on the wire (`access_denied`) and emits the event so SOC tooling can correlate. |
 | `rate_limit.exceeded` | `op.AuditRateLimitExceeded` | Reserved for embedder-emitted events from your own rate-limit middleware. The library defines the constant so the audit catalog stays consistent across embedders, but does not fire it from internal paths. |
 | `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | Same shape — for embedder middleware to log explicit bypasses (allowlisted IP, internal probe, etc.). |
@@ -210,7 +210,7 @@ The last two are intentionally a vocabulary the library shares with operator-sid
 
 ::: tip Recommended pattern
 1. **Reverse proxy or edge service enforces a global rate** — for example, 100 requests/second/IP on `/token`, lower on `/par`. This is the actual mechanism that costs an attacker requests.
-2. **Audit pipeline alerts on bursts** of `pkce.violation`, `redirect_uri.mismatch`, and `client_authn.failure` from a single IP, ASN, or `client_id`. These are the high-signal events for "someone is poking the OP."
+2. **Audit pipeline alerts on bursts** of `client_authn.failure` from a single IP, ASN, or `client_id`. This is the high-signal event for "someone is poking the OP." Reserved PKCE and redirect-mismatch names are not currently emitted by the library.
 3. **Per-client allow-lists reduce the attack surface upstream.** `WithCORSOrigins` and the `redirect_uris` registry both work as allowlists — the smaller they are, the less surface a misconfigured or compromised client exposes.
 :::
 
@@ -218,8 +218,8 @@ The last two are intentionally a vocabulary the library shares with operator-sid
 
 Three specific abuse paths have built-in lockouts because they don't fit a generic per-IP rate limiter — the abuser can rotate IPs cheaply, and the protected resource is a low-entropy code or a per-subject credential, not an arbitrary URL:
 
-- **Login brute force (cross-factor).** When `op.WithAuthnLockoutStore` is wired, every built-in second-factor `Step` (TOTP, email OTP, password) consults the same per-subject counter so an attacker pivoting between factors cannot double their guess budget. The login flow emits `op.AuditLoginFailed` on each failed step (and `op.AuditLoginSuccess` on the eventual win); the lockout layer is what keeps the failure stream from running unbounded.
-- **Device Code user-code brute force.** The `op.devicecodekit` package keeps a per-`device_code` strike counter. After enough mismatches it short-circuits the verification helper, and every strike emits `op.AuditDeviceCodeUserCodeBruteForce`. This is the only way to defend a user-typed short code without making the legitimate path painful.
+- **Login brute force (cross-factor).** When `op.WithAuthnLockoutStore` is wired, every built-in second-factor `Step` (TOTP, email OTP, password) consults the same per-subject counter so an attacker pivoting between factors cannot double their guess budget. The login flow emits `op.AuditLoginFailed` or `op.AuditMFAFailed` for failed primary/additional factors and `op.AuditLoginSuccess` or `op.AuditMFASuccess` for successes; `op.AuditLockoutStalled` reports repeated CAS contention that abandoned a failed attempt without counting it.
+- **Device Code user-code brute force.** The `op.devicecodekit` package keeps a per-record strike counter for record-bound helpers. A first-entry page that does not have a `device_code` should call `VerifyUserCodeByAttemptKey` with an opaque stable key and a shared `AttemptLimiter`; every mismatch emits `op.AuditDeviceCodeUserCodeBruteForce`. This is the way to defend a user-typed short code without giving each replica its own budget.
 - **CIBA poll abuse.** The token endpoint counts how often a single `auth_req_id` is polled past its allowed cadence. Above the threshold, the request store's `Deny` is called with `reason="poll_abuse"`, the wire response becomes `access_denied`, and `op.AuditCIBAPollAbuseLockout` fires. This shuts a pathological RP down without a global rate limiter that would also penalise well-behaved RPs.
 
 Each of those gates emits its **own** dedicated audit event, **not** `rate_limit.exceeded` / `rate_limit.bypassed`. The split is deliberate:
@@ -229,7 +229,7 @@ Each of those gates emits its **own** dedicated audit event, **not** `rate_limit
 | Generic HTTP rate limiting (per-IP, per-endpoint, per-`client_id`) | Embedder middleware (reverse proxy, gateway, Go handler chain) | `op.AuditRateLimitExceeded` / `op.AuditRateLimitBypassed` — emitted by the embedder against the OP's audit logger |
 | Purpose-specific brute-force defence (login, user-code, poll cadence) | Library-internal | `op.AuditLoginFailed`, `op.AuditDeviceCodeUserCodeBruteForce`, `op.AuditCIBAPollAbuseLockout` |
 
-Everything else — bursts of failed PKCE, repeated `redirect_uri` mismatches, sustained `client_authn` failures — is observable through audit events but not enforced by the library. That is a deliberate split: the OP emits structured signals, the operator decides the response (block, throttle, page).
+Everything else — sustained `client_authn` failures and the wire-level PKCE or `redirect_uri` rejection responses — is not enforced by a built-in HTTP limiter. The client-authentication failures are audit signals; PKCE and redirect-mismatch names remain reserved catalog vocabulary. That is a deliberate split: the OP emits the signals it owns, and the operator decides the response (block, throttle, page).
 
 ## Log retention
 

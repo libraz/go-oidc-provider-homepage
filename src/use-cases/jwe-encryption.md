@@ -77,14 +77,14 @@ Elliptic Curve Diffie-Hellman Ephemeral Static. The sender generates a one-shot 
 :::
 
 ::: details A256GCM — what's that?
-AES-256 in Galois/Counter Mode. The 256-bit key is the CEK that the `alg` half delivered; GCM adds an authentication tag so the receiver can detect tampering. `A128GCM` is the same construction with a 128-bit key. The OP uses GCM exclusively — CBC modes are deferred because GCM gives you confidentiality and integrity in one pass without padding-oracle classes of bug.
+AES-256 in Galois/Counter Mode. The 256-bit key is the CEK that the `alg` half delivered; GCM adds an authentication tag so the receiver can detect tampering. `A128GCM` is the same construction with a 128-bit key. The OP uses GCM exclusively; CBC modes are outside the supported allow-list because GCM gives you confidentiality and integrity in one pass without padding-oracle classes of bug.
 :::
 
-What is **deferred to v2+**:
+These algorithms are outside the supported allow-list:
 
-- `RSA-OAEP-384`, `RSA-OAEP-512` — go-jose v4.1.x exposes no constants.
-- `dir` — symmetric direct-encryption mode; reserved.
-- `A*KW` (symmetric-only key wrap) — reserved.
+- `RSA-OAEP-384`, `RSA-OAEP-512`
+- `dir` — symmetric direct-encryption mode
+- `A*KW` — symmetric-only key wrap
 
 What is **permanently rejected**:
 
@@ -95,15 +95,24 @@ What is **permanently rejected**:
 ## Wiring the encryption keyset
 
 ```go
-import "github.com/libraz/go-oidc-provider/op"
+import (
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
 
 // Generate (or load from KMS) one or more encryption keys.
 // At least one private key is required; multiple keys overlap during rotation.
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
+
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(store),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),                // signing keys (use=sig)
   op.WithCookieKeys(myCookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithEncryptionKeyset(op.EncryptionKeyset{
     {KeyID: "enc-2026-05", PrivateKey: rsaKey1},  // current
@@ -157,7 +166,7 @@ JWT Secured Authorization Response Mode (OpenID Foundation FAPI WG). Instead of 
 RFC 9701 ("OAuth 2.0 JWT Response for Introspection"). The classic `/introspect` endpoint (RFC 7662) returns a plain JSON document; RFC 9701 lets the resource server ask for a signed (and optionally encrypted) JWT instead. Useful when the RS wants a non-repudiable record of "the AS told me this token belonged to alice at this time", or when the introspection response itself crosses a trust boundary.
 :::
 
-The DCR mount validates these via `internal/jose.ParseJWEAlg` / `ParseJWEEnc` — the same allow-list source the runtime uses, so future allow-list edits propagate automatically.
+The DCR mount validates these via `internal/jose.ParseJWEAlg` / `ParseJWEEnc`, the same allow-list source used by the runtime, so registration and request handling stay aligned.
 
 ::: warning Half-pair registrations are rejected
 DCR rejects asymmetric submissions like `id_token_encrypted_response_alg=RSA-OAEP-256` without `id_token_encrypted_response_enc` with `invalid_client_metadata` at registration. Both empty is admit (the client opts out of encryption for that response type); both populated is admit; only one populated is reject. This stops the failure mode where registration succeeds but the first encrypted response fails at runtime.

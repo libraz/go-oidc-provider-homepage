@@ -1,6 +1,6 @@
 ---
 title: FAPI 2.0 Baseline
-description: One profile switch enables PAR, JAR, DPoP, ES256 lock, and the FAPI auth-method allow-list.
+description: Enable FAPI 2.0 Baseline with PAR, JAR, DPoP-or-mTLS, ES256, private_key_jwt, and the 60-minute JAR request-object age bound.
 pageClass: pg-use-cases-fapi2-baseline
 ---
 
@@ -42,7 +42,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 ## Architecture
 
 <svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 720 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline sequence: the RP pushes the authorization request to /par, the OP returns a request_uri, and after /authorize and /token the OP issues DPoP-bound tokens signed with ES256.</title>
+  <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline sequence: the RP pushes the authorization request to /par, the OP returns a request_uri, and after /auth and /token the OP issues DPoP-bound tokens signed with ES256.</title>
   <line class="life" x1="150" y1="68" x2="150" y2="448"/>
   <line class="life op-accent" x1="570" y1="68" x2="570" y2="448"/>
   <rect x="75" y="14" width="150" height="30" rx="5"/>
@@ -58,7 +58,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
   <text class="d-mono" x="360" y="150" text-anchor="middle">2 · 201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
   <line x1="570" y1="158" x2="150" y2="158"/>
   <path d="M157,154 L150,158 L157,162"/>
-  <text class="d-mono" x="360" y="190" text-anchor="middle">3 · GET /authorize?request_uri=urn:…&amp;client_id</text>
+  <text class="d-mono" x="360" y="190" text-anchor="middle">3 · GET /auth?request_uri=urn:…&amp;client_id</text>
   <line x1="150" y1="198" x2="570" y2="198"/>
   <path d="M563,194 L570,198 L563,202"/>
   <path class="op-accent" d="M570,224 h-16 v28 h16"/>
@@ -86,6 +86,8 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/feature"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -96,12 +98,18 @@ const (
   demoRedirectURI = "https://rp.example.com/callback"
 )
 
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
+
 provider, err := op.New(
   op.WithIssuer(demoIssuer),
-  op.WithStore(inmem.New()),
+  op.WithStore(st),
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKeys(opKeys.CookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithProfile(profile.FAPI2Baseline), // <--- the profile switch
+  op.WithFeature(feature.DPoP),
   op.WithStaticClients(op.PrivateKeyJWTClient{
     ID:            demoClientID,
     JWKS:          clientJWKs, // public JWK Set as JSON bytes
@@ -122,6 +130,8 @@ The `WithProfile` call:
 3. Keeps `id_token_signing_alg_values_supported = ["ES256"]` (the OP only ever advertises and signs `ES256` id_tokens; FAPI 2.0's anti-`RS256` clause is satisfied by construction).
 4. Forces `redirect_uri` exact match (no wildcards anywhere).
 5. Satisfies the DPoP-or-mTLS sender-constraint requirement by preserving an explicit `feature.MTLS` opt-in when present, or by adding `feature.DPoP` when neither binding was selected.
+
+For JAR, `profile.MaxRequestObjectAge(profile.FAPI2Baseline)` returns `60 * time.Minute`. `op.New` passes that value to the request-object verifier, which applies it to the signed request object's `iat` age while still checking its `nbf` and `exp` claims.
 
 ::: tip mTLS instead of DPoP
 The profile's default sender binding is DPoP because it needs no TLS client-certificate plumbing. If your deployment standardizes on mTLS, enable `feature.MTLS` explicitly and configure `op.WithMTLSProxy(...)` for a TLS-terminating proxy; that explicit choice suppresses the DPoP default.

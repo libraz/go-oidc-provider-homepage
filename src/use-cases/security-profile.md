@@ -1,6 +1,6 @@
 ---
 title: Declaring a security profile
-description: Choose plain OIDC Core compatibility, OAuth 2.1 Baseline, or FAPI explicitly at provider construction.
+description: Declare OIDC Core, OAuth 2.1 Baseline, or FAPI deliberately — profiles add features but never silently add grants.
 ---
 
 # Use case — Declaring a security profile
@@ -41,9 +41,10 @@ A profile constrains its two neighbouring declaration axes differently, and the 
 ```go
 provider, err := op.New(
   // …
+  op.WithGrants(grant.CIBA),
   op.WithProfile(profile.FAPICIBA),
-  op.WithCIBA(cibaOpts...),  // omit this and op.New fails, naming the option
+  op.WithCIBA(op.WithCIBAHintResolver(resolver)),
 )
 ```
 
-The error names both the grant the profile requires and the option that activates it, so the fix is readable off the message. Every profile other than `profile.FAPICIBA` requires no grant of its own.
+The error names both the grant the profile requires and the option that activates it, so the fix is readable off the message. `WithCIBA` takes CIBA options such as `op.WithCIBAHintResolver`; it does not replace the explicit `op.WithGrants(grant.CIBA)` declaration. Every profile other than `profile.FAPICIBA` requires no grant of its own.

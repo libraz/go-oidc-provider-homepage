@@ -85,13 +85,18 @@ Enable the grant explicitly. The library refuses to mint tokens for any grant ty
 import (
   "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
+
+st := inmem.New()
+browserFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
 
 handler, err := op.New(
   op.WithIssuer("https://op.example.com"),
-  op.WithStore(inmem.New()),
+  op.WithStore(st),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(browserFlow),
   op.WithGrants(
     grant.AuthorizationCode, // for human users
     grant.RefreshToken,

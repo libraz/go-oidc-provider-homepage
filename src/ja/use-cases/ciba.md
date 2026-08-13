@@ -1,6 +1,6 @@
 ---
 title: CIBA ポーリング方式 — 組み込み
-description: Client-Initiated Backchannel Authentication を有効化 — /bc-authorize、HintResolver、FAPI-CIBA プロファイル、組み込み側が所有する認証デバイス。
+description: CIBA の poll 方式を有効化 — /bc-authorize、検証済み subject を受け取る HintResolver、FAPI-CIBA 制約、組み込み側の認証デバイス承認。
 pageClass: pg-use-cases-ciba
 ---
 
@@ -43,12 +43,12 @@ CIBA の概念的背景（何で、device flow とどう違い、なぜ `binding
   <path class="ciba-flow" d="M376 208 L380 199 L384 208"/>
 </svg>
 
-::: details poll / ping / push 配信モードの違い
-CIBA は OP が利用デバイスに「ユーザが承認した」と伝える方法を 3 つ定義しています。**poll** は利用デバイスが応答が来るまで `/token` を繰り返しポーリングする方式（device-code と同じ）です。**ping** は OP がクライアント登録済みの webhook に通知し、それを受けたクライアントが `/token` をポーリングする方式です。**push** は OP が発行済みトークンを直接クライアントの webhook に届ける方式です。本ライブラリは poll のみを実装しており、discovery のサポートリストもそれに揃えてあるので、クライアント側で他モードへ交渉できません。
+::: details 実装されている poll 配信
+CIBA は poll、ping、push の 3 配信モードを定義していますが、本ライブラリが実装するのは **poll** だけです。利用デバイスが応答を受け取るまで `/token` を繰り返しポーリングします。discovery も `poll` だけを広告するため、クライアントは未実装のモードを交渉できません。
 :::
 
 ::: details `auth_req_id` とは
-`/bc-authorize` が利用デバイスに返す不透明識別子です。CIBA における `device_code` 相当で、デバイスが内部に保持し `/token` への poll ごとに送信します。device-code と異なり、ユーザに見せる別途のコードはありません。ユーザの認証デバイスへ push 通知で承認画面が直接届くので、利用デバイスは polling 用のハンドルだけ持っていれば十分です。
+`/bc-authorize` が利用デバイスに返す不透明識別子です。CIBA における `device_code` 相当で、デバイスが内部に保持し `/token` への poll ごとに送信します。device-code と異なり、ユーザに見せる別途のコードはありません。組み込み側の認証デバイスサービスが別経路で承認画面を表示するので、利用デバイスは polling 用のハンドルだけ持っていれば十分です。
 :::
 
 ::: details `binding_message` とは
@@ -56,14 +56,18 @@ CIBA は OP が利用デバイスに「ユーザが承認した」と伝える�
 :::
 
 ::: warning poll 配信のみ
-本ライブラリは **poll** 配信を実装します。push / ping 配信モードは v2+ で対応予定です。Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告するため、クライアント側からこれら 2 モードへ交渉することはできません。設計が push / ping を必要とするなら、このリリースの OP は適していません。
+本ライブラリは **poll** 配信だけを実装します。Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告します。この OP は ping や push の配信を提供しません。
 :::
 
 ## CIBA を有効化
 
 ```go
 import (
+  "context"
+  "time"
+
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
@@ -73,6 +77,7 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  op.WithGrants(grant.CIBA),
   op.WithCIBA(
     op.WithCIBAHintResolver(myHintResolver),
     op.WithCIBAPollInterval(5 * time.Second),       // 任意。既定 5 秒
@@ -101,10 +106,10 @@ CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory �
 
 ## `HintResolver` を実装する
 
-CIBA では、承認以前に **どのユーザに push するか** を OP が知る必要があります。`op.WithCIBAHintResolver(...)` は必須で、これ無しで `WithCIBA` を呼ぶと `op.New` が失敗します:
+CIBA では、承認以前に **どのユーザを承認サービスの対象にするか** を OP が知る必要があります。`op.WithCIBAHintResolver(...)` は必須で、これ無しで `WithCIBA` を呼ぶと `op.New` が失敗します:
 
 ::: details `login_hint` / `id_token_hint` / `login_hint_token` の違い
-CIBA は利用デバイスがユーザを指名する方法を 3 つ用意しています。**`login_hint`** は組み込み側が解釈する自由形式の文字列で、メール、口座番号、ロイヤリティカード等が入ります。**`id_token_hint`** は過去発行の ID token で、OP が signature / issuer / audience / 有効期限を検証してからリゾルバに値を渡します。**`login_hint_token`** は信頼している上流システム（federation IdP、企業ディレクトリ等）が発行した署名付き JWT で、リゾルバ側で登録済みの鍵を使って署名検証してから `sub` を読み取ります。OP が inbound リクエストを適切な `HintKind` に振り分けるので、リゾルバ側は形ごとに分岐を 1 つ書くだけで済みます。
+CIBA は利用デバイスがユーザを指名する方法を 3 つ用意しています。**`login_hint`** は組み込み側が解釈する自由形式の文字列で、メール、口座番号、ロイヤリティカード等が入ります。**`id_token_hint`** は過去発行の ID トークンで、OP が自分の鍵に対する署名、issuer、認証済みクライアントの audience を検証してから、検証済みの `sub` だけを resolver に渡します。CIBA では hint の exp を意図的に検証しません。pairwise クライアントは resolver の前に拒否されるため、`login_hint` または `login_hint_token` を使ってください。**`login_hint_token`** は信頼している上流システム（federation IdP、企業ディレクトリ等）が発行した署名付き JWT で、resolver 側でそのシステムの契約に従って署名、issuer、audience を検証し、subject にマップします。resolver は raw `id_token_hint` JWT を parse してはなりません。
 :::
 
 ::: details `HintResolver` とは
@@ -127,9 +132,9 @@ func (r *myHintResolver) Resolve(ctx context.Context, kind op.HintKind, value st
         }
         return sub, nil
     case op.HintIDTokenHint:
-        // value は過去発行の ID token。OP が signature + iss + aud + exp を
-        // すでに検証済で Resolve を呼ぶ。sub を引き出す。
-        return claimsSubject(value), nil
+        // value は OP が検証した id_token_hint の subject であり、JWT ではない。
+        // OP は signature + iss + aud を検証するが、exp は意図的に検証しない。
+        return lookupSubject(ctx, value)
     case op.HintLoginHintToken:
         // value は信頼している別の上流システムが発行した署名付き JWT。
         // 登録済みの鍵で署名を検証し、`sub` claim を読み取る。
@@ -140,7 +145,7 @@ func (r *myHintResolver) Resolve(ctx context.Context, kind op.HintKind, value st
 ```
 
 ::: warning Resolver はリクエスト処理中に毎回呼ばれる
-`Resolve` は `/bc-authorize` POST ごとに呼ばれます。バックエンドがリモートならローカルでキャッシュしてください。push 通知ごとにこの呼び出しを待ちます。
+`Resolve` は `/bc-authorize` POST ごとに呼ばれます。バックエンドがリモートならローカルでキャッシュしてください。承認通知の経路はこの呼び出しを待ちます。
 :::
 
 ワンオフ / 関数的に使うなら `op.HintResolverFunc` で関数を `HintResolver` に変換できます。
@@ -185,7 +190,7 @@ func handleApproval(w http.ResponseWriter, r *http.Request, st *inmem.Store) {
 
 ## binding_message
 
-`/bc-authorize` POST のたびに利用デバイスから `binding_message` を渡します。OP がサブストアレコード経由で転送するので、認証デバイスの push がレジ係の見ている文字列と同じものを描画できます:
+`/bc-authorize` POST のたびに利用デバイスから `binding_message` を渡します。OP がサブストアレコード経由で転送するので、組み込み側の認証デバイス通知がレジ係の見ている文字列と同じものを描画できます:
 
 ```sh
 curl -s -u pos-terminal:<secret> \
@@ -199,15 +204,15 @@ curl -s -u pos-terminal:<secret> \
 
 OP は `binding_message` を検証（trim 後の長さと制御文字チェック）し、HTML escape 済みではなく raw 値として永続化します。認証デバイス UI で描画するときに escape してください。`/bc-authorize` に送る前に事前 escape すると、`&`、`<`、`>`、`"`、`'` を含む取引文言がレジ側表示と一致しなくなります。
 
-`scope` については、クライアントが送るべき仕様準拠の ASCII space 区切りをそのまま受け付け、lenient な CIBA クライアント向けに Unicode whitespace も `strings.Fields` で分割します。ただし、tab や改行をエンドポイント横断の互換性前提にしないでください。`/authorize` と `/par` はより厳格な wire grammar を維持します。
+`scope` については、クライアントが送るべき仕様準拠の ASCII space 区切りをそのまま受け付け、lenient な CIBA クライアント向けに Unicode whitespace も `strings.Fields` で分割します。ただし、tab や改行をエンドポイント横断の互換性前提にしないでください。`/auth` と `/par` はより厳格な wire grammar を維持します（`/oidc` に mount した場合は `/oidc/auth` です）。
 
 ## RFC 8707 `resource=`
 
-利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを resource server に固定できます。エンドポイントは `/authorize` / `/token` と同じ判定を適用します:
+利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを resource server に固定できます。エンドポイントは `/auth` / `/token` と同じ判定を適用します:
 
 - 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否されます。
 - 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます。
-- `resource=` を複数指定すると `400 invalid_target` で拒否されます。このリリースの CIBA 発行パイプラインは単一 audience だけを encode するため、複数 audience を黙って切り捨てる入力は受け付けません。
+- `resource=` を複数指定すると `400 invalid_target` で拒否されます。CIBA 発行パイプラインは audience を 1 つだけ受け付け、複数値を黙って切り捨てません。
 
 ::: warning `resource=` は登録済みである必要があります
 `resource=` は絶対 URI で、かつクライアントの `Resources` 許可リストに含まれている必要があります。許可リスト外の値は `invalid_target` で拒否されます。
@@ -217,7 +222,7 @@ OP は `binding_message` を検証（trim 後の長さと制御文字チェッ�
 
 CIBA フロー終端で発行される id_token の `acr` は、認証デバイスが実際に満たした ACR ── 組み込み側のコールバックが `CIBARequestStore.Approve` の `acr` 引数として渡す値 ── をそのまま反映します。要求された `acr_values` から決まるわけではなく、コールバックが `""` を渡した場合は空になります。これは比較可能な ACR 語彙を持たない配備メントで想定される挙動です。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
 
-CIBA id_token の `amr` を読んでいる RP は、実値を提供するサブストア拡張が入るまで、空 / 不在として扱ってください。
+CIBA id_token の `amr` を読む RP は、claim を空 / 不在として扱ってください。現在の CIBA request レコードには、検証済みの認証手段 signal がありません。
 
 ## FAPI-CIBA プロファイル
 
@@ -230,7 +235,7 @@ CIBA id_token の `amr` を読んでいる RP は、実値を提供するサブ�
 - `RequiresAccessTokenRevocation` = true
 - `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須、request-object 寿命は 60 分上限(FAPI 2.0 Message Signing §5.6)。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な要件に戻ります。
 - `requested_expiry > 600s` はハードエラー `invalid_request`(FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 の 10 分上限)。プロファイル無効時の素の CIBA は黙って上限へクランプする挙動のまま
-- `/bc-authorize` で発生したあらゆる JAR 失敗(署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…)は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/authorize` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
+- `/bc-authorize` で発生したあらゆる JAR 失敗(署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…)は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/auth` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
 
 `op.WithACRValuesSupported(...)` が非空のとき、エンドポイントは要求された `acr_values` の各エントリを公開済みリストに対して検証します。空リストの場合は従来どおり緩い受理(permissive)のままです。
 

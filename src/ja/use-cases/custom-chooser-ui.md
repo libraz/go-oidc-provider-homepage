@@ -1,6 +1,6 @@
 ---
 title: カスタムアカウント選択 UI
-description: prompt=select_account のサーバ描画テンプレートを差し替えつつ、state、CSRF、セッション切替は OP に保持させる。
+description: prompt=select_account の chooser を差し替えつつ、state、CSRF、セッション切替、CSP 強制、ceremony の origin 検査を OP に保持させます。
 pageClass: pg-use-cases-custom-chooser-ui
 ---
 
@@ -63,6 +63,8 @@ provider, err := op.New(
 ```
 
 フィールド名は OP との契約です。`state_ref`、`csrf_token`、動的な `SessionIDField` は送信フォームに残してください。
+
+`op.ChooserUI` にも `ContentSecurityPolicy` field があります。空文字は厳格な既定値（`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`）を使います。独自 policy は構築時に `interaction.NormalizeCSP` で正規化され、`form-action` は禁止、`frame-ancestors` と `base-uri` は指定する場合も厳密に `'none'` でなければなりません。欠けている保護 directive は自動追加され、不正な policy は `interaction.ErrCSPNotPermitted` を包んだ `op.New` エラーになります。テンプレートに必要な asset directive だけを追加し、trust boundary 上の理由がない限り script は無効のままにしてください。
 
 ## Flow
 

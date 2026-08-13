@@ -1251,8 +1251,15 @@ div[class*="language-"] code {
   border-radius: 5px;
   background: var(--vp-c-divider);
 }
-.pg-compliance-ofcs .ofcs-summary .ofcs-track {
-  margin: 16px 0 0;
+/* The run-wide bar and the per-plan bars have different denominators, so the run-wide one names its own: full width is all 271 modules. */
+.pg-compliance-ofcs .vp-doc .ofcs-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 18px 0 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--vp-c-text-3);
+  font-variant-numeric: tabular-nums;
 }
 .pg-compliance-ofcs .ofcs-stack {
   display: flex;
@@ -1405,7 +1412,7 @@ div[class*="language-"] code {
   padding-top: 2px;
 }
 
-/* Per-plan bars share one scale — bar length is the plan's module count against the largest plan — so a one-module plan cannot look as heavy as a seventy-one-module one. */
+/* Every per-plan bar is normalised to its own plan: full width is that plan's module count, printed as the numerator/denominator beside the name. Length therefore always means share, never plan size. */
 .pg-compliance-ofcs .vp-doc .ofcs-plans {
   display: grid;
   gap: 16px;
@@ -1441,10 +1448,19 @@ div[class*="language-"] code {
   font-variant-numeric: tabular-nums;
   color: var(--vp-c-text-1);
 }
-.pg-compliance-ofcs .vp-doc .ofcs-plan-total {
-  font-size: 12px;
+.pg-compliance-ofcs .vp-doc .ofcs-plan > .ofcs-plan-counts {
+  margin-top: 8px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-score {
+  flex: none;
+  font-size: 12.5px;
   color: var(--vp-c-text-3);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-score b {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
 }
 
 /* pg-compliance-rfc-matrix — src/compliance/rfc-matrix.md + src/ja/compliance/rfc-matrix.md */

@@ -1,6 +1,6 @@
 ---
 title: Grant management
-description: OAuth 2.0 Grant Management エンドポイントで、長命な grant を id 指定で作成・置換・統合・照会・失効する。
+description: OAuth 2.0 Grant Management エンドポイントで長命な grant を id 指定で操作し、削除は指定した grant_id だけに限定します。
 ---
 
 # 使い方 — Grant management
@@ -101,9 +101,9 @@ curl -u demo:demo-secret https://op.example.com/oidc/grant_management/g-9f3c...
 
 ## grant の失効
 
-`DELETE` は grant を失効させ、関連するトークンへカスケードします。grant の JWT アクセストークンを tombstone / denylist し、grant に束ねられた opaque アクセストークンとリフレッシュトークンを失効させ、grant レコードを削除します。これにより後続の照会は「もう存在しない」と応答します。
+`DELETE` は指定された `grant_id` だけを削除し、その grant に紐付く artefact へ cascade します。grant の JWT アクセストークンを tombstone / denylist し、grant に束ねられた opaque アクセストークンとリフレッシュトークンを失効させ、grant レコードを削除します。これにより後続の照会は「もう存在しない」と応答します。同じ subject / client が持つ別の grant には影響しません。
 
-失効単位は「指定された `grant_id` だけ」ではなく、同じ subject と同じ client が持つ active grant 全体です。実装は対象 grant の subject を基準に `Grants.ListBySubject` を引き、同じ `ClientID` の grant ID を集めて同じ cascade を適用します。複数の履歴 grant を保持するストアでも、クライアントから見える同一ユーザ・同一クライアントの同意状態が中途半端に残らないようにするためです。OP は `204 No Content` を返し、`grant_management.revoked` 監査イベントに `revoked_grant_ids` を載せます。
+OP は `204 No Content` を返し、指定 grant の `grant_management.revoked` 監査イベントを発火します。subject または client の全 grant を失効させたい配備では、grant ID を列挙して各 ID を明示的に削除してください。
 
 ```sh
 curl -u demo:demo-secret -X DELETE https://op.example.com/oidc/grant_management/g-9f3c...

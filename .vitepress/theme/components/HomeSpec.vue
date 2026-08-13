@@ -39,14 +39,7 @@ const rows = computed<Row[]>(() =>
         {
           key: 'STORAGE',
           parts: [
-            { text: 'Store インターフェースで持ち込み — ' },
-            { text: 'inmem', mono: true },
-            { text: ' · ' },
-            { text: 'sql', mono: true },
-            { text: ' · ' },
-            { text: 'redis', mono: true },
-            { text: ' · ' },
-            { text: 'composite', mono: true }
+            { text: '同梱フルストア — inmem · SQL · DynamoDB。Redis は composite 経由の揮発ティア' }
           ],
           link: '/ja/use-cases/sql-store'
         },
@@ -61,7 +54,9 @@ const rows = computed<Row[]>(() =>
         },
         {
           key: 'CONFORMANCE',
-          parts: [{ text: 'OFCS 138 PASSED · 0 FAILED · 3 プラン' }],
+          parts: [
+            { text: 'OFCS 210 PASSED / 全271モジュール · 9プラン · strict release blocker 0' }
+          ],
           link: '/ja/compliance/ofcs'
         },
         {
@@ -97,14 +92,9 @@ const rows = computed<Row[]>(() =>
         {
           key: 'STORAGE',
           parts: [
-            { text: 'BYO via store interface — ' },
-            { text: 'inmem', mono: true },
-            { text: ' · ' },
-            { text: 'sql', mono: true },
-            { text: ' · ' },
-            { text: 'redis', mono: true },
-            { text: ' · ' },
-            { text: 'composite', mono: true }
+            {
+              text: 'Bundled full stores — inmem · SQL · DynamoDB; Redis is a volatile tier through composite'
+            }
           ],
           link: '/use-cases/sql-store'
         },
@@ -119,7 +109,7 @@ const rows = computed<Row[]>(() =>
         },
         {
           key: 'CONFORMANCE',
-          parts: [{ text: 'OFCS 138 PASSED · 0 FAILED · 3 plans' }],
+          parts: [{ text: 'OFCS 210 PASSED / 271 MODULES · 9 plans · 0 strict release blockers' }],
           link: '/compliance/ofcs'
         },
         {

@@ -1,14 +1,14 @@
 ---
 title: Clock skew and replay windows
-description: Every signed artifact in OIDC has an issuance timestamp and an expiration. Servers without a sane clock accept stale things; servers without dedup tables accept replays. This page lists every time-related window go-oidc-provider uses, in one place.
+description: Clock, replay, reauthentication, passkey-challenge, and remote-JWKS freshness rules in go-oidc-provider, with the defaults and bounded limits that affect deployment review.
 pageClass: pg-security-clock-and-replay
 ---
 
 # Clock skew and replay windows
 
-Every signed artifact OIDC produces — codes, refresh tokens, DPoP proofs, JAR objects, PAR records, ID tokens, access tokens, client assertions — carries an issuance timestamp (`iat`) and an expiration (`exp`). A server whose clock has drifted will accept stale artifacts long after the issuer thinks they have expired. A server with no replay table will accept the *same* signed artifact a second time. Defending the OP against both is mostly bookkeeping: pick a window, store seen identifiers until the window closes, and reject anything outside the window.
+OIDC artifacts do not all have the same freshness or replay shape: authorization codes and PAR records are consumed server-side, while JWTs and proofs carry time claims. A server whose clock has drifted can accept stale artifacts, and a server without replay state can accept the same one twice. The OP therefore combines explicit TTLs, bounded clock tolerance, one-time state, and compare-and-set replay stores.
 
-This page collects every window the library applies, the constant or option that controls it, and the page where the surrounding feature is explained. If you are reviewing the OP for embedding, the table below is the one-pager you want.
+This page collects the security-relevant defaults that are easy to misread, the constant or option that controls each one, and the page where the surrounding feature is explained. It also records the reauthentication, passkey, and JWKS limits that are not represented by an `iat`/`exp` row.
 
 ## Clock source
 
@@ -20,7 +20,7 @@ type Clock interface {
 }
 ```
 
-Production deployments leave the field unset and the library installs a `time.Now()`-backed implementation. Test suites and deterministic replay harnesses pass a fake `Clock` so token TTLs, audit timestamps, and rate-limit windows all advance under their control. There is no place in the codebase that reads `time.Now()` directly for a freshness decision — every freshness gate funnels through this interface so that "what time is it?" is one mockable seam, not a hundred.
+Production deployments leave the field unset and the library installs a system-clock implementation. Test suites and deterministic replay harnesses pass a fake `Clock` so token TTLs, audit timestamps, and rate-limit windows all advance under their control. Freshness decisions in the core use the clock seam; an adapter that cannot import the seam documents its own fallback and can expose an override. Keep the clock boundary singular in an embedder rather than adding ad-hoc `time.Now()` checks around protocol decisions.
 
 The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its own wall clock to compare `iat` and `exp` against the current instant. A machine whose clock has drifted by minutes will silently accept proofs that the issuing client believes are stale, or reject proofs that the issuing client just signed. Run an OP only on hosts with disciplined time sync.
 
@@ -41,9 +41,9 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | Refresh token (absolute lifetime) | `exp` from issuance | `timex.RefreshTokenTTLDefault = 30 days` | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 | `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
 
-The constants in the "Default window" column are the source of truth — every entry in the table comes from a `grep` against the library's `internal/...` packages rather than from documentation alone. If the library raises or lowers a default, this table is the page to refresh first.
+The constants in the "Default window" column are the source of truth for the current core. The table intentionally does not turn every application-configurable TTL into a promise: `With*` options and active profiles can narrow or replace many defaults. Recheck the linked source and tests when upgrading the core.
 
-The same windows, drawn to scale on a logarithmic time axis, make the shape obvious at a glance: every replay-and-clock window collapses into a tight band at or just past 60 seconds, token lifetimes step up to a few minutes, and only the refresh token's absolute lifetime lives out at 30 days — with nothing in between.
+The same selected windows, drawn to scale on a logarithmic time axis, show the broad shape: replay and clock windows cluster around a minute, token lifetimes step up to minutes, and the refresh token's absolute lifetime reaches 30 days.
 
 <svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="clock-replay-window-scale-title">Logarithmic comparison of every clock and replay window go-oidc-provider enforces, from the 60-second replay band to the 30-day refresh-token lifetime.</title>
@@ -106,11 +106,27 @@ The same windows, drawn to scale on a logarithmic time axis, make the shape obvi
 <text class="d-tick" x="724" y="375" text-anchor="middle">30 days</text>
 </svg>
 
+## Reauthentication freshness
+
+`prompt=login` and a violated `max_age` are freshness requirements, not display hints. At `/authorize` entry, `prompt=login` sets the reauthentication flag unconditionally; `max_age` compares the request's integer seconds with the session's recorded `auth_time`, and `max_age=0` always requires a new factor. The existing browser session or consent grant cannot satisfy either requirement. The interaction state carries the decision to the authenticator orchestrator, whose terminal guard rejects a factor-less result with `ErrReauthNotPerformed`; a completed factor stamps a new `auth_time` on the resulting session and grant.
+
+## JWT `jti` and clock tolerance
+
+The in-library JWT access-token verifier applies `tokens.DefaultLeeway = 30 s` symmetrically to `exp` and `iat` when no verifier-specific leeway is configured. `RequireJTI` is enabled for the OP's non-`None` access-token revocation strategies, because the registry or denylist cannot answer a revocation query without a token identifier; `RevocationStrategyNone` does not require it. This is separate from DPoP/JAR/client-assertion replay retention: there is no universal 30-second `jti` cache for every JWT use.
+
+## Passkey challenge retirement
+
+Each passkey registration or login attempt mints a fresh WebAuthn challenge and receives a `Session` with a default five-minute absolute lifetime. If an assertion fails, the authenticator orchestrator clears the in-flight factor scratch and increments the signed `StateRef` counter before persisting the failed state. The old `StateRef` and its challenge are therefore retired together; a rejected assertion cannot be replayed during the broader ten-minute interaction-state lifetime. A successful assertion follows the normal credential update and clone-warning rules.
+
+## Remote JWKS bounds
+
+Relying-party JWKS fetched from a registered `jwks_uri` is bounded by a five-second total fetch timeout, a five-minute maximum positive-cache TTL, a 64 KiB response body, 64 declared keys, and 64 distinct URL loads in flight across the process. Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cache cardinality is capped at 256 positive/negative URL entries, and a negative fetch result is cached for five seconds. These are core safety limits, not a guarantee that a deployment's upstream JWKS will remain available; allow a key rotation strategy that works within them.
+
 ## What "replay" means here
 
 "Replay" is one word in the spec and three different defenses in the code.
 
-**Token replay** — the same bearer-shaped credential is presented twice. Authorization codes are *consumed* on first use (the row is marked spent in `AuthorizationCodeStore`). Refresh tokens *rotate* on every redemption and reuse-detection cascades a revoke when the previous token is presented after the grace window closes. DPoP proofs are *deduped* by `jti`: the verifier marks every accepted proof's `jti` into `ConsumedJTIStore` before any further work, so a second proof carrying the same `jti` returns `ErrProofReplayed` regardless of whether the second submission's nonce was fresh.
+**Token replay** — the same bearer-shaped credential is presented twice. Authorization codes are *consumed* on first use (the row is marked spent in `AuthorizationCodeStore`). Refresh tokens *rotate* on every redemption and reuse-detection cascades a revoke when the previous token is presented after the grace window closes. DPoP proofs are *deduped* by `jti`: the nonce gate runs first, then the accepted proof is committed to `ConsumedJTIStore`, so a second proof carrying the same `jti` returns `ErrProofReplayed` once the first proof has passed the gate.
 
 **Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: once `/authorize` consumes the URN it is gone from `PushedAuthRequestStore`. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore, scoped to `jar:<clientID>:<jti>` keys and evicted at the request object's own `exp`.
 
@@ -124,13 +140,13 @@ Read these three together as the model: the artifact's *use* defines the defense
 
 For multi-instance deployments, the substore must be shared across instances or every instance must be sticky-routed for the lifetime of a given `jti`. Backing it with the in-memory implementation across multiple replicas defeats the defense — replica A and replica B will each accept the same proof exactly once. A fast shared cache (Redis, Memcached) is the typical choice; the deployment guidance in [/operations/multi-instance](/operations/multi-instance) discusses the volatile / durable split that this implies.
 
-`ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed") and a total cache flush opens at most a window of attacker-controlled replay equal to each artifact's remaining lifetime — bounded by twice the `iat` window for DPoP, by `exp` for JAR / `client_assertion`. This is why none of the windows above is much larger than 120 seconds.
+`ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed"). A total cache flush reopens replay only until each artifact's own acceptance boundary: the DPoP marker is retained through the proof's allowable `iat` range, while JAR and client assertions retain markers through their bounded expiry calculation. Token lifetimes and browser interaction state are separate budgets and are intentionally longer.
 
 The other deployment knob is the wall clock itself. Every replica runs the same OP code with the same defaults; if their clocks disagree by more than the relevant window, the replicas will disagree about whether a given artifact is fresh. NTP discipline across the whole fleet is part of the security posture, not a "nice to have".
 
 ## Edge cases
 
-**Daylight saving and leap seconds are not relevant.** Every timestamp the OP stores is a Unix epoch second. DST transitions and leap-second adjustments do not move the epoch. The constants above are pure `time.Duration` values and a 60-second grace stays 60 seconds across midnight on the last Sunday of October.
+**Daylight saving and leap seconds are not relevant.** Every protocol timestamp the OP compares is a Unix epoch second. DST transitions and leap-second adjustments do not move the epoch. The constants above are pure `time.Duration` values, so a 60-second grace stays 60 seconds across a local-time transition.
 
 **Long-lived tokens versus short windows.** Refresh tokens default to 30 days; the rotation grace is 60 seconds. This pairing is deliberate: the long lifetime supports background-sync clients across reasonable network outages, while the short grace bounds how long a leaked previous token remains usable after the legitimate client has rotated. The trade-off is documented in [/security/design-judgments](/security/design-judgments) — the library prefers correctness (cascade-revoke on reuse) over availability (silently accept replays) under network blips, and the 60-second window is the smallest interval that covers the typical mobile retry without leaving the previous token usable for long.
 

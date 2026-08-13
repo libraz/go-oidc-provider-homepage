@@ -1,6 +1,6 @@
 ---
 title: セッションとログアウト
-description: OP がブラウザセッションをどう表現し、RP-Initiated Logout と Back-Channel Logout がどう違うか、そして本ライブラリが Front-Channel Logout を実装しない理由。
+description: OP のブラウザセッション表現、chooser group 全体／current セッション単位の RP-Initiated Logout、上限付き Back-Channel Logout、Front-Channel Logout を実装しない理由。
 pageClass: pg-concepts-sessions-and-logout
 ---
 
@@ -29,7 +29,7 @@ OP は `store.SessionStore` に次の行を保持します。
 
 | フィールド | 内容 |
 |---|---|
-| `ID` | 不透明なセッション識別子（logout token の `sid` として使われます）。 |
+| `ID` | 不透明な OP ブラウザセッション識別子。cookie / セッション検索と監査相関に使う値ですが、現在の sub-only Back-Channel Logout Token では RP 固有の `sid` claim として発行されません。 |
 | `Subject` | OP 内部の安定したユーザ ID。ID トークンの `sub` になります。 |
 | `AuthTime` | ユーザがいつ認証したか。ID トークンの `auth_time` になります。 |
 | `ACR` | Authentication Context Class Reference — セッションが満たす保証レベル。 |
@@ -68,8 +68,12 @@ OP は次のことを行います。
 
 1. `id_token_hint` を検証（自分が発行したセッションに紐付くか確認）。
 2. 任意で「本当にログアウトしますか？」の確認画面を挟む（UX として推奨）。
-3. cookie と `store.SessionStore` 行を削除。
+3. `logout_scope` を解決し、選択されたセッション行を削除。
 4. `post_logout_redirect_uri` がそのクライアントに登録されていれば、`state` を反射させてブラウザをリダイレクト。
+
+デフォルトの scope は、アクティブな chooser group 全体です。ブラウザの group にあるすべてのセッションを破棄します。単一値のクエリパラメータ `logout_scope=current` を指定すると、アクティブなセッションだけを破棄し、兄弟セッションが残れば cookie をそのセッションへ再バインドします。空値、未知の値、`logout_scope` の重複は、セッション状態を変更する前に HTTP 400 で拒否します。
+
+セッション cookie の subject と一致しない `id_token_hint` では確認画面を省略できません。セッションストアの transport 障害がセッションの解決または破棄中に起きた場合、`/end_session` は静的な HTTP 503 ページを返します。`post_logout_redirect_uri` へはリダイレクトせず、cookie とセッション行をそのまま残します。セッションが存在しない、または期限切れの場合は別の安全に継続できるケースです。
 
 native / public client では、`redirect_uri` と同じ RFC 8252 の loopback any-port ルールを `post_logout_redirect_uri` にも適用します。固定の loopback URI を登録しておき、logout 時には別の ephemeral port で戻る形を許容します。変動できるのは port だけで、host / scheme / path は登録形状と一致している必要があります。
 
@@ -77,14 +81,16 @@ native / public client では、`redirect_uri` と同じ RFC 8252 の loopback a
 
 ### Back-Channel Logout 1.0
 
-`/end_session`（あるいは他のログアウト契機）が発火すると、OP は `backchannel_logout_uri` を登録したすべての RP に対して、署名された `logout_token` JWT を `POST` します。RP は JWT を検証し、自身のローカルセッションを無効化します。
+`/end_session` がセッションを終了すると、OP はその subject の grant から導出した対象 RP それぞれに、署名された `logout_token` JWT を `POST` します。RP は JWT を検証し、自身のローカルセッションを無効化します。
 
-これは server-to-server で動きます。ブラウザは関与しないので、ユーザがタブを閉じていても、別のブラウザに移っていても、そもそもタブを開いていなくても（管理者操作で発火した場合など）動作します。
+これは server-to-server で動きます。ブラウザは関与しないので、ユーザがタブを閉じていても、別のブラウザに移っていても動作します。公開されているセッションログアウトの入口は `/end_session` です。
 
-外向き HTTP リクエストは、JWKS / sector_identifier_uri 取得と同じ SSRF 拒否リストでガードされます — 組み込み側が明示的にオプトインしない限り、private network には到達しません。失敗は `op.AuditLogoutBackChannelFailed`、成功は `op.AuditLogoutBackChannelDelivered` で記録されます。`/end_session` 発火時に対象 subject に live なセッションがひとつもなかった場合は `op.AuditBCLNoSessionsForSubject` が出ます — 「配送に失敗した」と「配送先がそもそも存在しなかった」を区別するのに有用です。
+外向き HTTP リクエストは、JWKS / sector_identifier_uri 取得と同じ SSRF 拒否リストでガードされます — 組み込み側が明示的にオプトインしない限り、private network には到達しません。失敗は `op.AuditLogoutBackChannelFailed`、成功は `op.AuditLogoutBackChannelDelivered` で記録されます。session-bearing logout notice の grant 由来 RP audience が空の場合は `op.AuditBCLNoSessionsForSubject` が出ます — 「RP の対象を解決できなかった」と「配送に失敗した」を区別するのに有用です。
+
+detached fan-out には独立した 2 つの時間制限があります。`op.WithBackchannelLogoutTimeout` は 1 RP への HTTP 配送（デフォルト 5 秒）を制限し、`op.WithBackchannelFanOutBudget` は detached fan-out 全体（デフォルト 30 秒）を制限します。後者は RP ごとの timeout ではなく、イベント全体の予算です。実行中の fan-out は `Provider.Shutdown(ctx)` でも drain されます。
 
 ::: warning 揮発セッション下では Back-Channel Logout は best-effort
-`store.SessionStore` を揮発キャッシュに振り向けていて、ログアウトの fan-out が実行される前にセッションが追い出された場合、本ライブラリは辿る対象を失います。ユーザは（行が消えているので）ログアウト済みですが、RP に通知は届きません。`op.SessionDurabilityPosture` ノブで、ダッシュボードがこの 2 つを区別できるようにしています。詳細は [設計判断 #10](/ja/security/design-judgments#dj-10) を参照。
+揮発な `store.SessionStore` が `/end_session` の解決と snapshot 取得より前に行を追い出すと、ブラウザからの logout trigger を失い detached fan-out は起動しません。snapshot を取得できた場合、RP audience は `SessionStore` の行を辿らず grant store から解決されます。session-bearing notice で grant 由来 RP 対象が 0 件の場合だけ、対象 0 件として監査されます。`op.SessionDurabilityPosture` ノブは trigger / snapshot の喪失と対象 0 件をダッシュボードで解釈する文脈を提供します。詳細は [設計判断 #10](/ja/security/design-judgments#dj-10) を参照。
 :::
 
 ### Front-Channel Logout 1.0 — 非実装
@@ -185,16 +191,30 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 
 `op.WithSessionDurabilityPosture(...)` で組み込み側のスタンスを宣言することで、監査トレイル（`op.AuditBCLNoSessionsForSubject`）を正しく解釈できます。完全な実装例は [Hot / Cold 分離の使い方](/ja/use-cases/hot-cold-redis) を参照。
 
+graceful shutdown では、まず HTTP トラフィックの受付を止め、その後 provider の detached 処理を drain します。
+
+```go
+srv.Shutdown(ctx)      // 受付を停止
+provider.Shutdown(ctx) // detached fan-out を drain
+```
+
 ## セッションライフサイクルの監査イベント
 
 | イベント | 発火タイミング |
 |---|---|
 | `op.AuditSessionCreated` | 新規セッション発行。 |
 | `op.AuditSessionDestroyed` | セッション行が削除された（ログアウト、追い出し、GC）。 |
-| `op.AuditLogoutRPInitiated` | `/end_session` が発火。 |
+| `op.AuditSessionAlreadyAbsent` | ログアウト対象のセッションがすでに存在しない、または期限切れだった。 |
+| `op.AuditSessionDestroyFailed` | セッション削除がストア障害になった。リクエストは静的 503 となり、状態は保持される。 |
+| `op.AuditLogoutRPInitiated` | **予約語** — OP は RP が要求したことだけを示すイベントを発火しない。 |
+| `op.AuditLogoutTokenRevokeFailed` | logout token またはログアウトカスケードの失効処理がストア障害になった。 |
 | `op.AuditLogoutBackChannelDelivered` | RP が `logout_token` の POST に 2xx を返した。 |
 | `op.AuditLogoutBackChannelFailed` | RP が non-2xx を返した、ネットワークエラー、または拒否リストで URL が遮断された。 |
-| `op.AuditBCLNoSessionsForSubject` | `/end_session` が発火したが、該当 subject に live なセッションがなかった。 |
+| `op.AuditLogoutBackChannelResolveFailed` | grant ベースの配送先解決に失敗した。 |
+| `op.AuditLogoutBackChannelOverflow` | 上限付き配送先解決が overflow した。 |
+| `op.AuditBCLNoSessionsForSubject` | session-bearing `/end_session` notice で grant 由来の RP 対象が 0 件だった。 |
+
+`op.AuditLogoutRPInitiated` は予約されたカタログ語彙です。OP は個別の「RP が要求した」イベントではなく、結果としてのセッション／配送イベントを記録します。
 
 ## 次に読む
 

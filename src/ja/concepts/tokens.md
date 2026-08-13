@@ -1,6 +1,6 @@
 ---
 title: ID トークン / アクセストークン / userinfo
-description: 似ているが別物の 3 つの要素 —「JWT vs opaque」が実装に効いてくる本当の理由。
+description: ID Token、アクセストークン、UserInfo の契約と、JWT / opaque の選択、OP 側の失効、introspection の認可を説明します。
 pageClass: pg-concepts-tokens
 ---
 
@@ -134,20 +134,20 @@ Authorization: Bearer eyJ...access_token...
 | 形式 | 検証方法 | OP 側の状態 |
 |---|---|---|
 | **Opaque** | RS が毎回 `/introspect`（RFC 7662）を呼ぶ。 | OP がトークンに対応する行を保持。 |
-| **JWT (RFC 9068)** | RS が署名 + `aud` + `exp` を自己完結的に検証。 | ステートレス — 検証に行は不要。 |
+| **JWT (RFC 9068)** | RS が署名 + `aud` + `exp` をローカルで検証。 | 検証は自己完結するが、OP は OP 経由の失効のために grant tombstone や JTI 行を保持することがある。 |
 
 ### ここが本題: session_end / userinfo / revocation はトークン履歴に依存する
 
-::: warning 純粋ステートレス JWT には「まだ有効か」を表す手段が `exp` 以外にない
-スライド上はきれいに見えますが、本番では複数の OIDC フローを壊します。ステートレス JWT アクセストークンを運用する OP は「失効処理そのものを諦める」か「外部の拒否リストを別途用意する」かの二択になります。
+::: warning JWT のオフライン検証からは OP 側の失効が見えない
+RS は OP に問い合わせず JWT を検証できますが、その経路では grant tombstone、JTI の失効行、ログアウトカスケード、認可コード再利用による失効を検出できません。OP の `/userinfo` と `/introspect` は設定された OP 側の状態を参照します。オフライン RS で同じ状態が必要なら、introspection、監査イベントから作る拒否リスト、または短いアクセストークン寿命を組み合わせます。
 :::
 
 | フロー | 本来の判定 | 純粋ステートレス JWT で壊れる箇所 |
 |---|---|---|
-| **`/userinfo`**（OIDC Core §5.3） | このトークンは今もユーザを正しく代表しているか | OP が参照する材料を持たない。ログアウト済みユーザに対しても claim が返る。 |
-| **`/end_session`**（RP-Initiated Logout） | セッションを終了させる | JWT は `exp` まで動き続ける。「ログアウト」した直後でも、漏洩したトークンがあと 10 分 API を呼び出せる。 |
-| **`/revoke`**（RFC 7009） | 特定トークンを無効化 | 実質的に何もしない。RFC 7009 §2.2 は self-contained トークンに revocation を実装しないことを許容しています。 |
-| **`/introspect`**（RFC 7662） | revoke 済みトークンに `active: false` を返す | 反映できるのは署名 / `exp` だけ。セッション状態には到達しない。 |
+| **`/userinfo`**（OIDC Core §5.3） | このトークンは今もユーザを正しく代表しているか | OP が JWT の grant / JTI 状態を確認してから claim を投影する。 |
+| **`/end_session`**（RP-Initiated Logout） | セッションを終了させる | OP は失効を記録するが、オフライン RS は `exp` まで JWT を受け入れ続ける。 |
+| **`/revoke`**（RFC 7009） | 特定トークンを無効化 | 設定した OP 側の戦略が失効を記録する。オフライン RS には伝わらない。 |
+| **`/introspect`**（RFC 7662） | revoke 済みトークンに `active: false` を返す | OP が署名、寿命、issuer、設定された失効状態を確認する。 |
 
 「JWT vs opaque」記事ではしばしば軽く流される論点ですが、本番運用では重く効いてきます。
 
@@ -159,18 +159,22 @@ Authorization: Bearer eyJ...access_token...
 |---|---|---|
 | 通信路上の形式 | base64url JWT（`header.payload.signature`） | ランダムな bearer 文字列 |
 | RS 側の検証 | JWKS でオフライン検証 | リクエスト毎に `/introspect` を呼ぶ |
-| 発行時の OP 側状態 | なし — JWT の `gid` private claim だけ | `store.OpaqueAccessTokenStore` にハッシュ化した行 |
+| 発行時の OP 側状態 | 既定の grant-tombstone 戦略では行なし。JTI registry を選んだ場合だけ JTI shadow 行を作る | `store.OpaqueAccessTokenStore` にハッシュ化した行 |
 | カスケードの到達範囲 | OP が経由する境界（`/userinfo`、`/introspect`） | RS の全リクエスト |
 | 発行時の監査証跡 | 既定では無し。`RevocationStrategyJTIRegistry` を明示すると発行ごとに 1 行 | 発行ごとに 1 行(自動) |
 | 設定方法 | （既定） | `op.WithAccessTokenFormat(...)` あるいは RFC 8707 の resource 毎に `op.WithAccessTokenFormatPerAudience(...)` |
 
 ::: warning カスケードの及ぶ範囲は形式に依存する
-`/userinfo`・`/introspect`・`/revoke`・`/end_session`・認可コード再利用検出のカスケードはすべて OP 側の状態を参照します。revoke 済み / ログアウトでカスケード失効したトークンは `/userinfo` で `WWW-Authenticate: Bearer error="invalid_token"` を返して拒否されます — JWT の署名がまだ通っていてもです。
+`/userinfo`・`/introspect`・`/revoke`・`/end_session`・認可コード再利用検出のカスケードはすべて OP 側の失効状態を使います。revoke 済み / ログアウトでカスケード失効したトークンは、JWT の署名がまだ通っていても `/userinfo` で `WWW-Authenticate: Bearer error="invalid_token"` を返して拒否されます。
 
-**ただし、検証経路が OP を経由する場合に限ります。** JWKS でオフライン検証している RS は次の refresh ローテーションまでカスケードを察知しません。
-
-opaque 形式はこのギャップを閉じます — すべての使用が OP 解決になるためです。
+**ただし、リクエストが OP に到達する場合に限ります。** JWKS でオフライン検証する RS は、同等の拒否リストを受け取るか token が期限切れになるまでカスケードを知りません。opaque 形式は、すべての RS 検証が `/introspect` に到達するため、この隙間を閉じます。
 :::
+
+### introspection を呼べるのは confidential client だけ
+
+`/introspect` はトークンを見る前に呼び出し元を認証します。public client と token endpoint 認証方式が `none` の client は、`401` と `invalid_client` を受け取ります。confidential client は自分に発行された access token または refresh token を introspect できます。client をまたぐアクセスは既定で inactive になり、呼び出し元が対応する protected resource の `IntrospectionClients` に登録され、access token の `aud` がその resource を示す場合だけ有効になります。この委譲は refresh token には適用されません。
+
+active な opaque access token の introspection response には、値が存在する場合、通常の `active`、`client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope` に加えて `iss` も含まれます。RS はローカルポリシーの一部として `iss` と `aud` を検証してください。
 
 ::: details `jti` / `gid` / tombstone とは
 各アクセストークン JWT は `jti`（RFC 7519 §4.1.7、トークンごとの一意 ID）と `gid` という private claim（OP 側の GrantID、omitempty）を含みます。`gid` は OP だけが解釈する claim で、RS は無視します。
@@ -232,7 +236,7 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 - **ID トークン claim** はログイン時点のスナップショットです。
 - **UserInfo** は最新値の参照経路 — ユーザが変えうる値（表示名など）が必要なら呼びます。
 
-ほとんどのアプリは ID トークン claim で足ります。UserInfo は最新性が必要なときに使ってください。実装上は、ライブラリがアクセストークンの shadow 行を先に確認するので、ログインから UserInfo 呼び出しまでの間に revoke されたトークンは、JWT の署名が通っていても拒否されます。
+ほとんどのアプリは ID トークン claim で足ります。UserInfo は最新性が必要なときに使ってください。実装上は、ライブラリがアクセストークンを検証して設定された OP 側の失効状態を確認するので、ログインから UserInfo 呼び出しまでの間に revoke されたトークンは、JWT の署名が通っていても拒否されます。
 :::
 
 ## 設定オプション
@@ -243,7 +247,7 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 | `op.WithRefreshTokenTTL(d)` | リフレッシュトークン寿命 | 30 日 |
 | `op.WithRefreshTokenOfflineTTL(d)` | `offline_access` リフレッシュトークン寿命 | `WithRefreshTokenTTL` 継承 |
 | `op.WithClaimsSupported(...)` | OP が返せる claim の列挙。discovery 文書に出る | — |
-| `op.WithClaimsParameterSupported(false)` | OIDC §5.5 の `claims` 要求パラメータを広告せず、malformed JSON の拒否後は処理しない | on |
+| `op.WithClaimsParameterSupported(false)` | OIDC §5.5 の正しい `claims` 要求を広告せず投影しない。malformed JSON は引き続き拒否 | on |
 | `op.WithStrictOfflineAccess()` | 発行とリフレッシュ交換を OIDC Core §11 の厳格解釈に切り替え、`offline_access` が granted scope に含まれているときに限りリフレッシュトークンを発行・受理する（下の callout 参照） | off（緩い設定。`openid` + クライアントの `refresh_token` grant で発行）|
 
 ::: details `offline_access` とは

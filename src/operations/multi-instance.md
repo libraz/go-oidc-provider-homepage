@@ -1,6 +1,6 @@
 ---
 title: Multi-instance deployment
-description: Running more than one OP replica — DPoP nonce sharing, session placement, and the trade-offs behind sticky vs round-robin.
+description: Running multiple OP replicas with shared sessions, device-code attempt limiters, DPoP nonces, and orderly detached-logout shutdown.
 outline: 2
 pageClass: pg-operations-multi-instance
 ---
@@ -63,6 +63,8 @@ op.WithAuthnLockoutStore(storage.AuthnLockouts())
 
 `inmem.Store.AuthnLockouts()` is process-local: it resets on restart and gives each replica its own guess budget. An embedder using another backend must provide a durable, shared `store.AuthnLockoutStore` when cross-factor brute-force lockout must survive restarts and be consistent across replicas.
 
+Device-code verification has the same distinction between record state and attempt state. `devicecodekit.VerifyUserCode` and `VerifyUserCodeByUserCode` use the shared device-code store for record-bound flows. For a first-entry manual page that does not yet know a `device_code`, use `devicecodekit.VerifyUserCodeByAttemptKey` with an opaque, stable ceremony key (for example a browser-session or account-scoped key). Supply a shared `devicecodekit.AttemptLimiter` in `devicecodekit.Deps`; the default `InMemoryAttemptLimiter` is per-process and gives each replica a separate budget. A distributed limiter's `Allow` operation must atomically compare-and-increment; reset the key only from the authenticated ceremony owner.
+
 ## What needs explicit attention
 
 | Concern | Single replica | N replicas |
@@ -102,10 +104,10 @@ Sessions can live durably (SQL) or volatile (Redis without persistence). The tra
 
 | Placement | Pros | Cons |
 |---|---|---|
-| Durable (SQL) | survives restart / failover; back-channel logout fan-out can find every session | every login round-trips your DB write |
-| Volatile (Redis) | low write latency; no DB hot row | sessions evicted on restart / `maxmemory` — back-channel logout may find zero RPs |
+| Durable (SQL) | survives restart / failover, so the browser logout trigger can still resolve its subject and session snapshot; RP targets come from grants, not a session list | every login round-trips your DB write |
+| Volatile (Redis) | low write latency; no DB hot row | eviction on restart / `maxmemory` can lose the browser logout trigger before the snapshot; once a snapshot exists, RP targets still come from grants, not `SessionStore` rows |
 
-Use `WithSessionDurabilityPosture(...)` to annotate the choice in audit events (`bcl.no_sessions_for_subject` carries the posture). The library does not constrain placement; the posture is for SOC dashboards to distinguish "expected gap under volatile" from "unexpected gap under durable".
+Use `WithSessionDurabilityPosture(...)` to annotate the choice in audit events (`bcl.no_sessions_for_subject` records a session-bearing notice with zero grant-derived RP targets). The library does not constrain placement; durable placement protects the browser logout trigger and pre-fan-out snapshot across restart/failover, while volatile eviction can lose that trigger before fan-out starts. Once a snapshot exists, target resolution is grant-derived rather than a walk of `SessionStore` rows; the posture gives SOC dashboards context for trigger loss versus a no-target outcome.
 
 ## Interaction state
 
@@ -115,6 +117,17 @@ The `/interaction/{uid}` flow stores per-attempt state under a `uid` cookie. Wit
 2. **Shared interaction store.** Implement `store.InteractionStore` against Redis (or use the bundled Redis adapter). Any replica can resume any login. This is the default recommendation for production.
 
 The Redis adapter's `InteractionStore` is volatile-eligible and lives in the volatile slice of a [composite store](/use-cases/hot-cold-redis).
+
+## Graceful shutdown and detached logout
+
+RP-initiated logout may leave Back-Channel Logout deliveries running after the browser response. Stop the HTTP server before draining the provider:
+
+```go
+srv.Shutdown(ctx)      // stop accepting
+provider.Shutdown(ctx) // then drain detached fan-out
+```
+
+`WithBackchannelFanOutBudget` bounds one whole detached fan-out (30 seconds by default), while `WithBackchannelLogoutTimeout` bounds each RP request independently. `Provider.Shutdown(ctx)` waits for fan-outs already in flight; use the shared session and grant stores on every replica so target resolution is consistent during the drain.
 
 ## Cookie key consistency
 

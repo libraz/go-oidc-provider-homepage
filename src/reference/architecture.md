@@ -1,6 +1,6 @@
 ---
 title: Architecture overview
-description: Where each request goes inside the OP — the package layout, the handler dispatch, and the storage seams.
+description: Where requests go inside the OP — package layout, handler dispatch, browser/M2M discovery boundaries, origin checks, LoginFlow risk evaluation, and storage seams.
 outline: 2
 pageClass: pg-reference-architecture
 ---
@@ -110,6 +110,8 @@ Every handler is wrapped by:
 
 These are not optional — they apply structurally regardless of which options the embedder set.
 
+The origin sets are deliberately separate. API CORS is widened only by explicit `WithCORSOrigins` (with redirect-URI origins included for API compatibility); interaction and end-session ceremony checks allow the issuer origin plus those explicit origins only. A redirect URI's origin never authorizes a cross-origin interaction or logout POST by itself.
+
 ## Authorize → token lifecycle
 
 The most-trodden path. Roughly:
@@ -193,6 +195,8 @@ The most-trodden path. Roughly:
 
 `/par` and `/end_session` follow the same general shape; the sequence-diagram is the canonical happy path.
 
+<a class="faq-anchor" id="loginflow-internals"></a>
+
 ## LoginFlow internals
 
 `WithLoginFlow(LoginFlow{...})` is compiled at construction time into an internal pipeline:
@@ -205,7 +209,7 @@ internal/authn/CompiledLoginFlow
     ├── Primary  → Authenticator (resolves Step descriptor → runtime impl)
     ├── Rules[]  → ordered (When, Then) pairs
     ├── Decider  → optional short-circuit
-    └── Risk     → invoked once per evaluation pass
+    └── Risk     → invoked once at chain start; score is cached
 ```
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
@@ -232,7 +236,7 @@ internal/authn/CompiledLoginFlow
 <text class="lfp-fld" x="270" y="122">decider</text>
 <text class="lfp-fld" x="270" y="142">risk</text>
 <path class="lfp-oln" d="M355 154 V196" marker-end="url(#lfp-arra)"/>
-<text class="lfp-cap" x="365" y="178" text-anchor="start">per authorize request</text>
+<text class="lfp-cap" x="365" y="178" text-anchor="start">once at chain start</text>
 <rect class="lfp-op" x="40" y="210" width="172" height="52" rx="8"/>
 <text class="lfp-nd" x="126" y="232" text-anchor="middle"><tspan class="lfp-mono">Primary.Begin /</tspan></text>
 <text class="lfp-nd" x="126" y="248" text-anchor="middle"><tspan class="lfp-mono">Continue → Step</tspan></text>
@@ -258,10 +262,10 @@ For each authorize request:
 1. `Primary.Begin` produces an `interaction.Step` (Prompt or Result).
 2. UI driver (HTML or React) renders the prompt; the user submits.
 3. `Primary.Continue` advances to a `Result` carrying the bound `Identity`.
-4. Orchestrator builds a `LoginContext` (subject, scopes, completed steps, risk score, ACR values).
+4. Orchestrator builds a `LoginContext` (subject, scopes, completed steps, cached risk score, ACR values).
 5. `Decider` runs (if non-nil); a non-`Pass` decision short-circuits.
 6. Otherwise `Rules` evaluate in order; the first matching rule whose `Step.Kind()` is not in `CompletedSteps` fires.
-7. Loop until no rule fires; the session is then issued.
+7. Loop until no rule fires; the session is then issued. `LoginFlow.Risk` is consulted at most once for the chain and its outcome is cached. A provider-level `WithRiskAssessor` is the alternative seam; combining it with `LoginFlow.Risk` is rejected at construction rather than choosing silently.
 
 See [Use case: Custom authenticator](/use-cases/custom-authenticator) for how to plug your own factor in via `ExternalStep`.
 
@@ -298,7 +302,7 @@ See [Architecture: storage tiering](/use-cases/hot-cold-redis) for production pl
 
 The discovery handler at `/.well-known/openid-configuration` builds its document from the OP's effective configuration. Every advertised field is the authoritative answer for what the OP will actually do — there is no drift between discovery and behaviour because:
 
-- **`response_types_supported`** is computed from `WithGrants` + the FAPI profile.
+- **`response_types_supported`** is computed from `WithGrants` + the FAPI profile; a client-credentials-only OP advertises an empty list and omits browser authorization/logout surfaces.
 - **`token_endpoint_auth_methods_supported`** is intersected with the FAPI allow-list when `WithProfile(profile.FAPI2Baseline)` / `FAPI2MessageSigning` is active.
 - **`scopes_supported`** is the union of built-in scopes and `WithScope` registrations.
 - **`ui_locales_supported`** is auto-derived from the runtime locale resolver (seed bundles plus `WithLocale` additions) unless `WithDiscoveryMetadata(...).UILocalesSupported` supplies an explicit non-empty override.

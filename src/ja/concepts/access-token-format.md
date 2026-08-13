@@ -1,6 +1,6 @@
 ---
 title: アクセストークンの形式 — JWT と opaque
-description: 設計判断のためのページ。JWT が既定で opaque は明示時のみ。検証負荷の置き場所が違うだけで、信頼境界と運用形態に合うほうを選びます。
+description: JWT と opaque の選択を、現在の失効、introspection 認可、issuer、リソースサーバの運用差に基づいて判断します。
 pageClass: pg-concepts-access-token-format
 ---
 
@@ -78,6 +78,10 @@ RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `au
 
 opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 文字にしたランダム識別子です。claim を一切運びません。RS は毎リクエストごとに OP の `/introspect`（RFC 7662）でトークンを解決します（あるいは結果を意図的に短い時間幅だけキャッシュします）。OP は **リクエストの処理経路に入ります**。
 
+`/introspect` は confidential client 向けのエンドポイントです。public client や token endpoint 認証方式が `none` の client は、token を提示しても `401 invalid_client` を受け取ります。confidential caller は自分の token を introspect できます。リソースサーバが別 client に発行された access token を調べられるのは、その client ID が protected resource の `IntrospectionClients` に登録され、token の `aud` がその resource を示す場合だけです。この委譲は audience 単位で、refresh token には適用されません。
+
+opaque access token が active のとき、RFC 7662 response には利用可能な `client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope` に加えて `iss` も含まれます。JWT と opaque を切り替えても同じ issuer 検証を行えるようにするためです。
+
 ::: details `jti` — それは何か
 `jti` は JWT 標準 claim（RFC 7519 §4.1.7）の "JWT ID" です。トークンごとに付ける一意の識別子で、特定のトークンを参照・失効・重複排除するときに使います。JWT アクセストークンには `jti` が含まれ、OP は旧来の JTI registry 戦略でこれをキーにし、拒否リストのテーブルでも重複排除キーとして使います。opaque トークンには `jti` がありません — bearer 文字列自体がすでに一意の識別子になるからです。
 :::
@@ -116,7 +120,7 @@ JWT は検証を RS 群に分散させます。各 RS は JWKS キャッシュ�
 
 opaque は検証を OP に集中させます。RS の呼び出しは（運用者が許した RS 側キャッシュを除けば）必ず `/introspect` 呼び出しに変換されます。RS が 10 台になれば introspect トラフィックも 10 倍になります。OP はコントロールプレーンだけでなく **データプレーンの単一容量点** になります。
 
-「JWT はステートレス、opaque はステートフル」という古典的な説明は半分正解です。本ライブラリでは **どちらの形式でも OP 側に 1 行ずつ記録します**（後述）— 違うのは **RS が毎リクエスト OP に問い合わせる必要があるか** です。
+「JWT はステートレス、opaque はステートフル」という古典的な説明は RS 側の経路だけを表します。本ライブラリでは opaque の発行行に加え、JWT にも grant tombstone や JTI 行を設定できます。違うのは **RS が毎リクエスト OP に問い合わせる必要があるか** です。
 
 ::: info ユーザ側帯域とサーバ間 RTT は別軸
 「OP 負荷集中 vs RS 分散」とは別に **「ユーザ側回線が運ぶ byte 数」 vs 「サーバ間 RTT」** の軸があります。両者を混ぜて評価しないでください。
@@ -200,8 +204,8 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 - **JWT 経路。** トークンが OP のエンドポイント（`/userinfo`、`/introspect`、`/revoke`）に到達したときに registry を参照します。そこに来た revoked JWT は即座に拒否されます。**JWKS でオフライン JWT 検証している RS は registry を参照しません** — それが自己完結トークンの存在意義だからです。その RS では revoked JWT が `exp` まで通り続けます。
 - **Opaque 経路。** トークンを使うすべての経路が `/introspect` を通るので、カスケードは定義上どの RS にも届きます。
 
-::: info opaque は introspection 側で「inactive 形を統一」+ 同一クライアント限定ゲート
-opaque AT を `/introspect` に問い合わせるとき、(a) 別クライアントが問い合わせた / (b) 該当行が無い / (c) 失効済み / (d) 期限切れ / (e) DPoP・mTLS proof 不一致はすべて同じ `{"active": false}` に集約されます（RFC 7662 §2.2 準拠）。introspection を経由した列挙や状態推測が構造的に閉じられるので、同等の性質を JWT 形式で得るには RS 側に追加実装が必要です。
+::: info opaque の introspection は inactive 形を統一する
+confidential client の認証後は、認可されない client、該当行なし、失効済み、期限切れ、DPoP / mTLS proof 不一致、委譲対象外の audience など、すべての inactive 経路が同じ `{"active": false}` に集約されます（RFC 7662 §2.2 準拠）。認証前の失敗はプロトコルのエラーを返します。introspection を経由した列挙や状態推測が構造的に閉じられます。
 :::
 
 ::: danger 「ログアウトされた」の要件に合う形式を選んでください
@@ -255,29 +259,16 @@ JWT アクセストークンは `gid` という private claim（RFC 7519 §4.3�
 :::
 
 ::: details 戦略の選択方法
+下の「設定例」にある完全な browser Provider に追加する差分です。issuer、store、keyset、cookie key、login flow は意図的に省略しています。
+
 ```go
-// 既定 — RevocationStrategyGrantTombstone なのでオプション追加不要
-provider, err := op.New(
-    op.WithIssuer("https://op.example.com"),
-    op.WithKeyset(keys),
-    op.WithStore(storage),
-)
+// 既定は RevocationStrategyGrantTombstone なので、追加オプションは不要です。
 
-// 旧来の jti 単位 registry 方式に固定する
-provider, err := op.New(
-    op.WithIssuer("https://op.example.com"),
-    op.WithKeyset(keys),
-    op.WithStore(storage),
-    op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry),
-)
+// 完全な構成にこのオプションを追加すると、旧来の jti 単位 registry 方式になります。
+op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)
 
-// サーバ側 JWT 失効を無効化する（非 FAPI 配備専用）
-provider, err := op.New(
-    op.WithIssuer("https://op.example.com"),
-    op.WithKeyset(keys),
-    op.WithStore(storage),
-    op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone),
-)
+// サーバ側 JWT 失効を意図的に無効化する場合だけ追加します（非 FAPI 配備専用）。
+op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 ```
 :::
 
@@ -343,7 +334,22 @@ provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
     op.WithStore(storage),
+    op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(browserFlow),
     // 形式オプション無し — AccessTokenFormatJWT が選ばれる
+)
+```
+
+`browserFlow` は subject を確定する primary step を持つ `LoginFlow`、`cookieKey` は 32 byte の AES-256-GCM 鍵です。既定の grant set は `authorization_code` + `refresh_token` なので、ブラウザ用 Provider には cookie key と login flow（または従来の authenticator 設定）が必要です。
+
+machine-to-machine 用の Provider では client-credentials grant だけを選びます。ブラウザの認可ステップ、login flow、cookie key は必要ありません:
+
+```go
+provider, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
+    op.WithGrants(grant.ClientCredentials),
 )
 ```
 
@@ -354,6 +360,8 @@ provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
     op.WithStore(storage),
+    op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(browserFlow),
     op.WithAccessTokenFormat(op.AccessTokenFormatOpaque),
 )
 ```
@@ -366,6 +374,8 @@ provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
     op.WithStore(storage),
+    op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(browserFlow),
     op.WithAccessTokenFormatPerAudience(map[string]op.AccessTokenFormat{
         "https://api.internal.example.com": op.AccessTokenFormatOpaque,
         "https://reports.example.com":      op.AccessTokenFormatJWT,

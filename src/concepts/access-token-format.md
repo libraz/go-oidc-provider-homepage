@@ -1,6 +1,6 @@
 ---
 title: Access token format — JWT vs opaque
-description: A design-judgment page. JWT is the default; opaque is an opt-in. The two formats put the verification load in different places — pick the one that matches your trust boundary and operational shape.
+description: Choose JWT or opaque access tokens with their current revocation, introspection authorization, issuer, and resource-server trade-offs.
 pageClass: pg-concepts-access-token-format
 ---
 
@@ -78,6 +78,10 @@ The RS holds a cached JWKS, validates the JWT signature offline, checks `aud` an
 
 The opaque token is a 32-byte random identifier (base64url, 43 characters). It carries no claims. The RS resolves the token by calling the OP's `/introspect` endpoint (RFC 7662) on every request — or caches the result for a short, deliberate window. The OP is **on the request hot path**.
 
+`/introspect` is a confidential-client endpoint. A public client or a client registered with token-endpoint authentication method `none` receives `401 invalid_client`, even when it presents a token. A confidential caller may introspect its own tokens. A resource server may inspect another client's access token only when its client ID appears in the protected resource's `IntrospectionClients` and the token's `aud` names that resource. The delegation is audience-scoped and never applies to refresh tokens.
+
+When the opaque access token is active, the RFC 7662 response includes `iss` as well as the available `client_id`, `token_type`, `exp`, `iat`, `sub`, `aud`, and `scope` values. The issuer is present so an RS can apply the same issuer check after switching between JWT and opaque formats.
+
 ::: details `jti` — what is it?
 `jti` is a standard JWT claim (RFC 7519 §4.1.7) — "JWT ID." A unique identifier per token, used to reference, revoke, or deduplicate that specific token. JWT access tokens carry a `jti`; the OP uses it as the key in the legacy JTI registry strategy and as the deduplication key in the deny-list table. Opaque tokens don't have a `jti` because the bearer string itself is already a unique identifier.
 :::
@@ -116,7 +120,7 @@ JWT distributes verification across resource servers. Each RS holds a JWKS cache
 
 Opaque concentrates verification on the OP. Every RS call ultimately becomes an `/introspect` call (modulo any RS-side cache the operator chose to allow). Adding a tenth RS multiplies introspection traffic. The OP becomes a single point of capacity for the data plane, not just the control plane.
 
-The classical advice "JWT is stateless, opaque is stateful" is half true. With this library the OP keeps an OP-side row for **both** shapes (see the "Storage cost is the same" note below) — what differs is whether the **RS** also has to talk to the OP per request.
+The classical advice "JWT is stateless, opaque is stateful" describes the RS path only. With this library the OP keeps an issuance row for opaque tokens and may keep grant tombstones or JTI rows for JWTs; what differs is whether the **RS** also has to talk to the OP per request.
 
 ::: info User-side bandwidth and server-to-server RTT are separate axes
 "OP load concentration vs RS distribution" is a different axis from **"bytes carried over the user's connection vs server-to-server RTT"**. Don't conflate them.
@@ -198,8 +202,8 @@ This is the half of the trade-off most often glossed over.
 - **JWT path.** The library consults the registry whenever the token reaches an OP-served boundary (`/userinfo`, `/introspect`, `/revoke`). A revoked JWT presented there is rejected immediately. **A resource server that validates the JWT offline against the JWKS does not consult the registry** — because that's the whole point of self-contained tokens. The revoked JWT remains usable at that RS until its `exp` claim elapses.
 - **Opaque path.** Every use of the token has to round-trip through `/introspect`. The cascade reaches every RS by definition.
 
-::: info Opaque introspection collapses to a uniform inactive shape + same-client gate
-For an opaque token presented to `/introspect`, every miss path — different client, no row, revoked, expired, DPoP/mTLS proof mismatch — collapses to the same `{"active": false}` response (RFC 7662 §2.2). Introspection-based enumeration and state probing are structurally closed. Matching the same property under JWT requires additional RS-side implementation.
+::: info Opaque introspection collapses to a uniform inactive shape
+After confidential client authentication, every inactive path — an unauthorized client, no row, revoked, expired, DPoP/mTLS proof mismatch, or an audience that does not authorize delegation — collapses to the same `{"active": false}` response (RFC 7662 §2.2). Before successful client authentication, the endpoint returns the protocol error instead. Introspection-based enumeration and state probing are structurally closed.
 :::
 
 ::: danger Pick the form that matches your "what does logged out mean" requirement
@@ -249,29 +253,18 @@ JWT access tokens carry a `gid` private claim (RFC 7519 §4.3, omitempty) that h
 :::
 
 ::: details Selecting a strategy
+These are option diffs to the complete browser-provider configuration in “Configuration” below; they intentionally omit the shared issuer, store, keyset, cookie-key, and login-flow wiring.
+
 ```go
-// Default — RevocationStrategyGrantTombstone, no extra option needed.
-provider, err := op.New(
-    op.WithIssuer("https://op.example.com"),
-    op.WithKeyset(keys),
-    op.WithStore(storage),
-)
+// Default — RevocationStrategyGrantTombstone, so no extra option is needed.
 
-// Pin the legacy per-jti registry model.
-provider, err := op.New(
-    op.WithIssuer("https://op.example.com"),
-    op.WithKeyset(keys),
-    op.WithStore(storage),
-    op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry),
-)
+// Add this option to the complete configuration to pin the legacy per-jti
+// registry model.
+op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)
 
-// Disable server-side JWT revocation (non-FAPI deployments only).
-provider, err := op.New(
-    op.WithIssuer("https://op.example.com"),
-    op.WithKeyset(keys),
-    op.WithStore(storage),
-    op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone),
-)
+// Add this option only for non-FAPI deployments that intentionally disable
+// server-side JWT revocation.
+op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 ```
 :::
 
@@ -337,7 +330,22 @@ provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
     op.WithStore(storage),
+    op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(browserFlow),
     // No format option — defaults to AccessTokenFormatJWT.
+)
+```
+
+`browserFlow` is a `LoginFlow` whose primary step binds the user; `cookieKey` is a 32-byte AES-256-GCM key. The default grant set is `authorization_code` + `refresh_token`, so a browser provider needs cookie keys and a login flow (or the legacy authenticator wiring).
+
+For a machine-to-machine provider, select only the client-credentials grant. It has no browser authorization step, login flow, or cookie-key requirement:
+
+```go
+provider, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithKeyset(keys),
+    op.WithStore(storage),
+    op.WithGrants(grant.ClientCredentials),
 )
 ```
 
@@ -348,6 +356,8 @@ provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
     op.WithStore(storage),
+    op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(browserFlow),
     op.WithAccessTokenFormat(op.AccessTokenFormatOpaque),
 )
 ```
@@ -360,6 +370,8 @@ provider, err := op.New(
     op.WithIssuer("https://op.example.com"),
     op.WithKeyset(keys),
     op.WithStore(storage),
+    op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(browserFlow),
     op.WithAccessTokenFormatPerAudience(map[string]op.AccessTokenFormat{
         "https://api.internal.example.com": op.AccessTokenFormatOpaque,
         "https://reports.example.com":      op.AccessTokenFormatJWT,

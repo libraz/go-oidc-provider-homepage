@@ -1,6 +1,6 @@
 ---
 title: Dynamic Client Registration
-description: Let RPs register themselves at runtime via RFC 7591 / RFC 7592.
+description: Register, manage, scope, and safely delete clients at runtime with RFC 7591 / RFC 7592, including immutable IAT scope ceilings and bounded deletion snapshots.
 pageClass: pg-use-cases-dynamic-registration
 ---
 
@@ -135,6 +135,14 @@ op.WithDynamicRegistration(op.RegistrationOption{
 An open POST that omits `scope` receives no default scopes unless the embedder sets `OpenRegistrationDefaultScopes`. Set that option explicitly when freshly registered clients should be able to request `openid` or other baseline scopes immediately.
 :::
 
+## Scope ceilings and POST versus PUT
+
+The two HTTP methods intentionally have different omission semantics. On `POST /register`, an omitted `scope` receives the registration-path default: a non-empty `InitialAccessToken.AllowedScopes` list wins; an open registration uses `OpenRegistrationDefaultScopes` (empty by default); an IAT-bound registration without an IAT ceiling falls back to the OP's public scope catalog, excluding scopes restricted to specific clients. An explicitly supplied scope is always checked against the OP catalog and, when present, the IAT allow-list.
+
+The registration access token (RAT) inherits the IAT's `AllowedScopes` ceiling when the client is created. The ceiling is stored in `store.RegistrationAccessToken.AllowedScopes`, survives every RAT rotation, and is applied to every subsequent `PUT /register/{client_id}`. A management update can narrow the client's scopes but can never widen them past the original IAT ceiling. RATs persisted before this field existed have an empty ceiling and therefore remain unrestricted; SQL installations must add `oidc_registration_access_tokens.allowed_scopes` before using the current adapter (see [SQL migrations](/use-cases/sql-store#sql-migration-before-first-request)).
+
+On `PUT /register/{client_id}`, an omitted `scope` is a request to delete the member, so the stored scope set becomes empty. The RP must send the scopes it wants to keep. This is different from a fresh POST, where omission can select a creation default. Other metadata members follow RFC 7592's update rules: optional fields are cleared when omitted, while a small set of profile fields is reapplied to the OP's defaults.
+
 ## Authentication-context client metadata
 
 Three client-metadata fields shape `/authorize` defaults and the `auth_time` claim of the resulting `id_token`. They are accepted both from DCR registration (RFC 7591) and from `op.ClientSeed` static seeds; the OP enforces them at request time.
@@ -157,6 +165,12 @@ The default `application_type` is `web`. Web clients may register an `http` `red
 Native clients (`application_type=native`) follow OIDC Registration §2 and additionally accept all three loopback hosts (`127.0.0.1` / `[::1]` / `localhost`) over `http` without an opt-in, plus `https` (claimed) and reverse-DNS custom URI schemes (e.g. `com.example.app:/callback`) per RFC 8252 §7.1. Custom schemes that lack a `.` are rejected because non-reverse-DNS schemes collide across applications.
 :::
 
+## Standard metadata tolerance
+
+The parser follows RFC 7591 §2's tolerance rule. A standard member that this OP does not model, or an unknown vendor member, is ignored and is not echoed in the registration response. For example, `frontchannel_logout_uri`, `software_id`, `software_version`, `tls_client_certificate_bound_access_tokens`, `backchannel_token_delivery_mode`, `backchannel_client_notification_endpoint`, `backchannel_authentication_request_signing_alg`, `backchannel_user_code_parameter`, and `authorization_details_types` do not configure this DCR endpoint.
+
+That tolerance does not apply when a member asks the OP to promise a security property or wire shape it cannot provide. The endpoint rejects such a request with `invalid_client_metadata`, including `dpop_bound_access_tokens: true`, `require_pushed_authorization_requests: true`, a response-signing algorithm the relevant surface does not emit, and `backchannel_logout_session_required: true` whether or not `backchannel_logout_uri` is present. `software_statement` is a separate explicit refusal: because RFC 7591 trust-chain verification is not implemented, a request carrying it returns `invalid_software_statement` rather than silently dropping it.
+
 ## What registration enforces today
 
 The DCR surface is `partial` rather than `full`, but the partial label captures intentional design choices, not TBDs. The validator rejects metadata that violates any of the rules below at `POST /register` and at `PUT /register/{client_id}`:
@@ -164,7 +178,7 @@ The DCR surface is `partial` rather than `full`, but the partial label captures 
 - `redirect_uris` shape per `application_type` (see the warning above), with no fragments and absolute URLs only.
 - `grant_types` and `response_types` are cross-checked against the OIDC Core §3 / OIDC Registration §2 combination table; an inconsistent pair is rejected with `invalid_client_metadata` rather than silently auto-fixed.
 - `jwks` and `jwks_uri` are mutually exclusive; URI-bearing metadata fields (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `jwks_uri`, `sector_identifier_uri`, `initiate_login_uri`) must be absolute, `https`, and fragment-free. Userinfo segments (`https://user:pass@host/...`) are rejected. **Exception:** `request_uris` admit a fragment because OIDC Core §6.2 RECOMMENDS the base64url-encoded SHA-256 hash of the request file there so caches can detect content changes; every other shape rule (absolute, `https`, host required, no userinfo) still applies.
-- `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host. `backchannel_logout_session_required=true` paired with an empty `backchannel_logout_uri` is rejected as `invalid_client_metadata` so a client cannot opt into `sid` delivery without a destination.
+- `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host. Any `backchannel_logout_session_required=true` is rejected as `invalid_client_metadata`, even when a valid URI is also present: this OP cannot persist the RP-specific session lineage needed to deliver `sid` safely.
 - `sector_identifier_uri` is fetched at registration time and the document MUST be a JSON array of strings that contains every registered `redirect_uri` (OIDC Core §8.1). The fetch is bounded to a 5 s timeout and a 64 KiB body; failure or containment mismatch produces `invalid_client_metadata`.
 - `subject_type=pairwise` without `sector_identifier_uri` requires every `redirect_uri` host to match.
 - `request_object_signing_alg` is restricted to `RS256` / `PS256` / `ES256` / `EdDSA`.
@@ -174,10 +188,11 @@ The DCR surface is `partial` rather than `full`, but the partial label captures 
 The remaining gap to a `full` claim is design choice, not pending work. The reasoning behind each is documented as a separate entry on [design judgments](/security/design-judgments) — `client_secret` non-disclosure ([#dj-20](/security/design-judgments#dj-20)), PUT omission semantics ([#dj-21](/security/design-judgments#dj-21)), and the `sector_identifier_uri` fetch / native loopback rules ([#dj-22](/security/design-judgments#dj-22)).
 
 - **`client_secret` is not re-emitted on `GET /register/{id}`.** The store keeps a hash; the plaintext exists in the response only on the original `POST /register` and on the two PUT cases below. RFC 7591 §3.2.1 makes the field optional in the read response.
-- **PUT omission resets to server defaults, not deletion.** A `PUT /register/{client_id}` that omits `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, or `id_token_signed_response_alg` reapplies the OP default for that field; optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, …) becomes empty.
-- **PUT only re-emits `client_secret` on (a) `none` → confidential auth-method upgrade or (b) explicit rotation request.** The body of a routine metadata edit does not include the secret.
+- **PUT omission resets selected fields to server defaults and clears the rest.** A `PUT /register/{client_id}` that omits `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, or `id_token_signed_response_alg` reapplies the OP default for that field. Omitted `scope` is the important exception to the fresh-registration path: it clears the client's scopes. Optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, …) becomes empty.
+- **PUT only re-emits `client_secret` when a public client becomes confidential.** A routine confidential-client metadata edit preserves the stored hash and does not include the secret; a submitted `client_secret` is checked against the authenticated client and never acts as a replacement value.
 - **PUT body MUST NOT include server-managed fields.** `registration_access_token`, `registration_client_uri`, `client_secret_expires_at`, and `client_id_issued_at` cause `400 invalid_request`. A `client_secret` value that does not match the authenticated client also returns `400`.
-- **`backchannel_logout_uri` and `backchannel_logout_session_required` round-trip end-to-end.** Both fields are persisted on `POST /register`, returned on `GET /register/{client_id}`, and overwritable through `PUT /register/{client_id}`.
+- **`backchannel_logout_uri` round-trips end-to-end; session-bound logout does not.** A valid URI is persisted on `POST /register`, returned on `GET /register/{client_id}`, and overwritable through `PUT /register/{client_id}`. `backchannel_logout_session_required: true` is invalid metadata with or without a URI, so it never enters storage.
+- **Out-of-band `Resources` survives a management update.** RFC 8707 resource-indicator allow-list values live on `store.Client.Resources`, not in the RFC 7591 metadata document. The PUT path copies the existing client before applying submitted metadata, so an operator-set `Resources` list is preserved while fields the RP can express follow omission rules.
 - **`software_statement` (RFC 7591 §2.3) is not accepted.** A request that includes the field returns `invalid_software_statement`. Federation / trust-chain support is out of scope.
 
 ## Read / update / delete
@@ -195,6 +210,37 @@ curl -X PUT -H "Authorization: Bearer $RAT" -H "Content-Type: application/json" 
 # delete
 curl -X DELETE -H "Authorization: Bearer $RAT" $RCU
 ```
+
+### What DELETE does to stored state
+
+The OP deletes the client and its RAT, and invokes optional in-tree `store.RevokeByClient` cascades for refresh tokens, grants, and persisted access-token records. Sessions and interactions are subject-keyed, so they are not reached by that client-keyed cascade; use the embedder hook for records outside the library's stores.
+
+When the configured grant store implements `store.GrantSubjectLister`, the handler snapshots a clone of the client and a bounded page from `ListSubjectsByClient` **before** deleting the client. If the grant store also implements `store.GrantClientLister`, the OP can build the back-channel coordinator for this path and send Logout Tokens from the pre-delete snapshot. This ordering matters because looking up the URI after deletion would find no client. The page is deliberately bounded; a store must implement the query with a `limit+1` bound rather than materializing every grant.
+
+Custom stores can receive the same snapshot through `RegistrationOption.OnClientDeletedSnapshot`:
+
+```go
+import (
+  "context"
+
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/store"
+)
+
+provider, err := op.New(
+  /* issuer, store, keyset, and other required options */
+  op.WithDynamicRegistration(op.RegistrationOption{
+    OnClientDeletedSnapshot: func(ctx context.Context, client *store.Client, subjects []string) error {
+      // Revoke application-owned records and/or deliver custom logout notices.
+      return nil
+    },
+  }),
+)
+_ = provider
+_ = err
+```
+
+The older `OnClientDeleted` hook remains available for a client-ID-only cascade. Hook errors are logged after the deletion and do not change the successful `204` response, so custom cleanup must be retryable and observable.
 
 ## When to use it
 

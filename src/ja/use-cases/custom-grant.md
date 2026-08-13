@@ -1,6 +1,6 @@
 ---
 title: カスタム grant — 組み込み
-description: 独自 grant_type URN を定義して OP にルーティングさせる — ハンドラ契約、BoundAccessToken、ParamPolicy。
+description: built-in grant と衝突しない独自 grant_type URN を定義 — ハンドラの request context、BoundAccessToken、ParamPolicy、OP 管理の発行を扱う。
 pageClass: pg-use-cases-custom-grant
 ---
 
@@ -23,13 +23,21 @@ custom grant は標準カタログ（`authorization_code`、`client_credentials`
 ## ハンドラを登録する
 
 ```go
-import "github.com/libraz/go-oidc-provider/op"
+import (
+  "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
+  "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
+)
 
 provider, err := op.New(
   op.WithIssuer("https://op.example.com"),
   op.WithStore(inmem.New()),
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
+
+  // custom grant は拡張 dispatcher 経路。machine-to-machine の例で
+  // 既定の browser grant を誤って有効にしないよう built-in を明示。
+  op.WithGrants(grant.ClientCredentials),
 
   op.WithCustomGrant(&serviceTokenHandler{}),
   // op.WithCustomGrant は複数ハンドラを登録するため繰り返し呼べる
@@ -45,6 +53,8 @@ provider, err := op.New(
 | `op.ErrCustomGrantBuiltinCollision` | `Name()` が built-in URN と衝突 |
 | `op.ErrCustomGrantDuplicate` | 同名ハンドラが登録済み |
 | `op.ErrCustomGrantSecretLikeExempt` | `ParamPolicy.DupesAllowed` がセキュリティセンシティブパラメータを含む |
+
+`Name()` は OP が実装するすべての grant wire（`authorization_code`、`refresh_token`、`client_credentials`、Device Code / CIBA の URN、RFC 8693 token-exchange の URN）と byte 単位で比較されます。custom handler が built-in dispatcher を置き換えることはできないため、配備側が所有する URN を選んでください。
 
 ## ハンドラインターフェース
 
@@ -84,6 +94,8 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
     }, nil
 }
 ```
+
+`req.Subject` は常に `nil`、`req.AuthTime` は常に zero time です。token request が認証するのは end-user ではなく client であり、OP は custom-grant のパラメータを解釈して subject や認証 ceremony を作りません。subject が必要なら handler が解決し、`CustomGrantResponse.Subject`（または `BoundAccessToken.Subject`）で返してください。認証時刻を持っている場合は `CustomGrantResponse.AuthTime` に返します。
 
 ## 発行の 2 形態
 

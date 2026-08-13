@@ -6,14 +6,15 @@ description: Adding go-oidc-provider to a Go module.
 # Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@latest
+go get github.com/libraz/go-oidc-provider/op@v1.1.0
 ```
 
-If you use the SQL or Redis adapter sub-modules, pin them to the same tag:
+If you use the SQL, Redis, or DynamoDB adapter sub-modules, pin them to the same tag:
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
-go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@latest
+go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v1.1.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v1.1.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.1.0
 ```
 
 The module language floor is **Go 1.25+** (the `go.mod` directive is `go 1.25.0`). The release is built and tested with the pinned `toolchain go1.26.5`; use that toolchain or newer when you want the same TLS and dependency security baseline as the project CI.
@@ -35,7 +36,7 @@ The SQL, Redis, and DynamoDB adapters are published as Go sub-modules. You only 
 
 ## Stability
 
-The library is at **v1.0.0**. Its public API follows Semantic Versioning, so breaking changes require a major release. A symbol whose godoc starts with `Experimental:` is the exception and may change in a minor release. Today that covers the login-flow and interaction-UI seams, Grant Management, and the DynamoDB adapter. The generated [experimental API manifest](https://github.com/libraz/go-oidc-provider/blob/main/api/experimental.txt) is the complete current list; everything absent from it is stable. See [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) for release details.
+Configurations built with `op.New` and the bundled storage adapters generally upgrade unchanged. Embedders with BYO stores or other extensions should review the current migration guidance in [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) before upgrading. Symbols marked `Experimental:` in godoc remain the ordinary minor-release exemption; the generated [experimental API manifest](https://github.com/libraz/go-oidc-provider/blob/main/api/experimental.txt) is the current list.
 
 ## Next
 

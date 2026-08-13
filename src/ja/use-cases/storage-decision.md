@@ -1,6 +1,6 @@
 ---
 title: ストレージ構成の選び方
-description: 更地・既存 DB・Hot/Cold 分離という入口別に、各 OIDC サブストアの置き場と Redis に載せてよいものを判断するマップ。
+description: SQL、DynamoDB、Redis の Hot / Cold 分離、自前ストアから選び、既存スキーマの migration と retention 保守を安全に進めるための判断マップ。
 pageClass: pg-use-cases-storage-decision
 ---
 
@@ -77,8 +77,10 @@ pageClass: pg-use-cases-storage-decision
 
 `sql` アダプタはスキーマ一式を同梱しているので、組み込み側が OIDC テーブルを設計する必要はありません。`New(db, dialect)` が SQLite / MySQL 8.0+ / PostgreSQL 14+ に対して(対応する `SQLite()` / `MySQL()` / `Postgres()` dialect 経由で)ストアを構築し、アダプタが自身の `oidc_*` テーブルを所有します。
 
-- **開発 / examples**: ストアの `Migrate(ctx)` を呼ぶと、同梱の v1 スキーマをライブ接続に適用します。これはデモとテストのための便宜であり、本番のマイグレーション実行系ではありません。
+- **開発 / examples**: 新しい接続に同梱スキーマを適用するために、ストアの `Migrate(ctx)` を呼びます。これはデモとテストのための便宜であり、既存テーブルの更新経路ではありません。
 - **本番**: ストアの `Schema()` を呼ぶと、dialect 固有の DDL を(`WithNaming` の上書きを適用済みの状態で)得られます。この文字列を既存のマイグレーションツールに流し込んでください。DDL をそのまま公開しているのは、アダプタが前提とするスキーマと本番スキーマをレビューで差分比較できるようにするためです。
+
+既存 DB では、最初のリクエスト前に [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) の追加カラムとインデックスを適用してください。正確な `allowed_scopes`、MFA の `row_version`、retention インデックス名は [SQL ガイド](/ja/use-cases/sql-store#sql-migration-before-first-request)に、ロールアウトと GC の順序は [ストレージの保守](/ja/operations/storage-maintenance)にまとめています。
 
 ## 既存データベース
 
@@ -105,10 +107,14 @@ Redis か SQL かの選択は「そのデータが短寿命かどうか」では
 |---|---|---|
 | **永続側(SQL)必須** | `AuthorizationCodeStore`、`RefreshTokenStore`、`GrantStore`、`PushedAuthRequestStore`、`AccessTokenRegistry`、`OpaqueAccessTokenStore`、`GrantRevocationStore` | トランザクションクラスタのメンバー — 1 つの整合性ドメインでコミット / CAS されます。Redis アダプタはこれらに `nil` を返すので、`composite` は永続側の外へルートできません。 |
 | **Redis 向き(揮発)** | `InteractionStore`、`ConsumedJTIStore` | 短寿命・高頻度生成で、単体では失っても差し支えなく、クラスタの *外* にあります。 |
-| **組み込み側の判断** | `SessionStore` | どちらの保存先にもルートできます。`WithSessionDurabilityPosture` で意図を宣言すると、Back-Channel Logout の監査シグナルが想定内 / 想定外のギャップを分類します。 |
+| **組み込み側の判断** | `SessionStore` | どちらの保存先にもルートできます。`WithSessionDurabilityPosture` は logout の起点 / session snapshot の耐久性を宣言します。BCL の target は grant 由来で解決され、`bcl.no_sessions_for_subject` は eligible RP target が 0 件だった session 付き logout を記録します。 |
 
 直感に反するメンバーが PAR です: `request_uri` は短寿命で *揮発に見えます* が、OP はこれを認可コードの経路の中で消費するため、クラスタに属し永続側に留まります。サブストア単位の正式な表と、必須バックエンドが `nil` のときの `op.New` のガードレールは [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) のページにあります。
 
 ::: warning Redis の最低ライン
 `redis.New` は TLS(`rediss://`)と AUTH 無しでは起動を拒否します。開発専用の例外口は `redis.WithDevModeAllowPlaintext` で、本番で使うのは手で打ち込まないと出てこないセキュリティ後退です。
 :::
+
+## 構成を健全に保つ
+
+起動前にスキーマを適用し、writer の互換性境界を確認します。運用中は SQL の retention GC をスケジュールして `GCStats` を監視し、DynamoDB TTL は期限判定ではなくストレージ回収として扱います。[ストレージの保守](/ja/operations/storage-maintenance)、[バックアップ / DR](/ja/operations/backup)、バックエンド別の [SQL](/ja/use-cases/sql-store)、[DynamoDB](/ja/use-cases/dynamodb-store)、[BYO ストア](/ja/use-cases/byo-store) を参照してください。

@@ -16,7 +16,7 @@ pageClass: pg-why
 
 </div>
 
-Go でサービスを書いていると、自前で OpenID Connect Provider を立てる必要が出ることがあります。つまり、ID トークンとアクセストークンを発行し、`/authorize` と `/token` を公開し、発見用 JSON（discovery 文書）を配信する立場になるということです。選択肢は大きく 3 つあります。
+Go でサービスを書いていると、自前で OpenID Connect Provider を立てる必要が出ることがあります。つまり、ID トークンとアクセストークンを発行し、認可エンドポイントとトークンエンドポイントを公開し、発見用 JSON（discovery 文書）を配信する立場になるということです。選択肢は大きく 3 つあります。
 
 | 選択肢 | 得られるもの | 引き受けるもの |
 |---|---|---|
@@ -40,7 +40,7 @@ Go でサービスを書いていると、自前で OpenID Connect Provider を�
   <rect class="op" x="310" y="28" width="246" height="88" rx="8"/>
   <text class="p opf" x="433" y="58" text-anchor="middle" font-size="15.5" font-weight="700">go-oidc-provider</text>
   <text class="p sub" x="433" y="82" text-anchor="middle" font-size="11.5">OIDC / OAuth の手続き</text>
-  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/authorize · /token · JWKS</text>
+  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/oidc/auth · /oidc/token · /oidc/jwks</text>
   <rect x="596" y="28" width="140" height="88" rx="8"/>
   <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
   <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">利用アプリ</text>
@@ -72,6 +72,8 @@ FAPI 2.0 Baseline は **PAR**（RFC 9126）、**PKCE**（RFC 7636）、**送信�
 ```go
 op.New(
   /* 必須オプション */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
   op.WithProfile(profile.FAPI2Baseline),
   op.WithDPoPNonceSource(nonces),
 )
@@ -90,9 +92,10 @@ op.New(
 ```go
 op.New(
   /* 必須オプション */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(passwordLoginFlow),
   op.WithStore(myStore),                 // プロトコル状態
   op.WithUserStore(applicationUsers),    // 既存 users テーブルから claim を読む
-  op.WithLoginFlow(passwordLoginFlow),   // 同じレコードで認証
 )
 ```
 
@@ -136,10 +139,11 @@ op.New(
 ```go
 op.New(
   /* 必須オプション */
+  op.WithCookieKeys(cookieKey),
   op.WithLoginFlow(flow),
   op.WithSPAUI(op.SPAUI{
     LoginMount: "/login",
-    StaticDir:  "./web/static",
+    StaticDir:  "../internal/webui/static",
   }),
 )
 ```
@@ -156,7 +160,7 @@ op.New(
 
 セキュリティレビューで問題になるのは、RFC 名を挙げられないことよりも、任意仕様のどの分岐を実装し、どれを拒否し、適合性テストが実際にどの経路を検証したのかを示せないことです。
 
-各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。v1.0.0 のリリース snapshot（SHA `3ccc6bc`）は 9 plan 全体を対象にし、**209 PASSED**、**39 REVIEW**、**15 SKIPPED**、**6 FAILED**、**終端結果なし 2** でした。strict release verifier は blocker 0 と判定しています。failure と未判定はすべてレビュー済み・期限付き exclusion と照合されており、raw の全内訳と理由は [OFCS 適合状況](/ja/compliance/ofcs) で公開しています。
+各リリースは OpenID Foundation の Conformance Suite に対して回帰検査されます。最新リリース run の raw 内訳、レビュー理由、blocker 判定は [OFCS 適合状況](/ja/compliance/ofcs) にまとめています。
 
 ::: tip REVIEW / SKIPPED の読み方
 `REVIEW` は OFCS の「人間レビューが必要」判定で、エラーページで止まる挙動はそれが正しい姿です（[詳細](/ja/compliance/ofcs)）。`SKIPPED` は OP が設計上拒否しているケースです（例: `alg=none` の request object）。raw の `FAILED` と未判定を黙って受け入れることはなく、release verifier を通すにはレビュー済みかつ期限内の exclusion と一致しなければなりません。
@@ -176,6 +180,8 @@ op.New(
 ```go
 op.New(
   /* 必須オプション */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
   op.WithRefreshGracePeriod(60*time.Second),
   op.WithRefreshTokenOfflineTTL(90*24*time.Hour),
   op.WithAuditLogger(auditLogger),
@@ -194,6 +200,8 @@ op.New(
 reg := prometheus.NewRegistry()
 provider, _ := op.New(
   /* 必須オプション */
+  op.WithCookieKeys(cookieKey),
+  op.WithLoginFlow(loginFlow),
   op.WithPrometheus(reg),
 )
 

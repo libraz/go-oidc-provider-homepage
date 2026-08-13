@@ -1,6 +1,6 @@
 ---
 title: カスタム同意 UI
-description: op.WithConsentUI、ロケール bundle、JSON ドライバで同意画面をカスタマイズします。
+description: op.WithConsentUI、ロケール bundle、JSON ドライバで、provider の CSP 制約と ceremony の origin ルールを守りながら同意画面をカスタマイズします。
 ---
 
 # 使い方 — カスタム同意 UI
@@ -58,6 +58,12 @@ op.New(
 
 form field の形は [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) を参照してください。
 
+### カスタムテンプレートの CSP
+
+`op.ConsentUI` には `ContentSecurityPolicy` field があります。空文字なら、ライブラリの既定値（`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`）を使います。ブランド用 asset を読み込むテンプレートには意図的に厳しすぎるため、必要な `style-src`、`img-src`、`font-src`、`script-src` を含む policy を設定できます。`op.New` の構築時に公開 seam の `interaction.NormalizeCSP` で正規化され、`form-action` は禁止、`frame-ancestors` と `base-uri` は指定する場合も厳密に `'none'` でなければなりません。未指定の `frame-ancestors` と `base-uri` は自動追加されます。不正な policy は `interaction.ErrCSPNotPermitted` を包んだ構築エラーになります。
+
+script を許可するのは明示的な trust decision です。ページには CSRF token と continuation state が含まれます。`html/template` の escape は RP の表示名などの値を保護しますが、任意 script の実行を安全にはしません。
+
 ## 経路 3 — JSON ドライバ(HTML を完全に自前で持つ)
 
 レイアウト・ブランドアセット・フレームワーク描画など、HTML ごと自前で持ちたいケースでは JSON ドライバに切り替えます。OP は同意画面を `{ type: "consent.scope", data: { scopes: [...] }, csrf_token, ... }` という JSON で返し、自前のページ（または SPA）がそれを描画してユーザの選択を POST で送り返します。
@@ -83,7 +89,9 @@ SPA は送信時に `prompt.csrf_token` を `X-CSRF-Token` ヘッダに乗せ、
 | セッション参照 / 同意の永続化 | yes |
 | 承認後の RP へのリダイレクト | yes |
 
-経路 1 は同梱 CSP（`default-src 'none'; style-src 'unsafe-inline'`）と描画される HTML をそのまま使います。経路 2 は自前テンプレートを OP の HTML driver に差し込みます。経路 3 は自前のページが必要な CSP を自分で設定します。
+経路 1 は同梱 CSP（`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`）と描画される HTML をそのまま使います。経路 2 のカスタムテンプレートでは `ConsentUI.ContentSecurityPolicy` を設定してください。RP への cross-origin redirect を許可するために `form-action` を追加してはいけません。成功時の完了 redirect をブラウザが止めます。経路 3 は自前のページが必要な CSP を自分で設定します。
+
+POST の Origin / Referer ceremony check は client の redirect URI から導出されません。issuer origin と `op.WithCORSOrigins` で明示した origin だけを受け付けます。別 origin の redirect URI があるだけでは interaction や end-session state の送信元として認可されません。
 
 ## 続きはこちら
 

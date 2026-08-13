@@ -61,11 +61,15 @@ func main() {
     log.Fatal(err)
   }
 
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
     op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -96,11 +100,15 @@ func main() {
     log.Fatal(err)
   }
 
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
     op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -134,11 +142,15 @@ func main() {
     log.Fatal(err)
   }
 
+  st := inmem.New()
   handler, err := op.New(
     op.WithIssuer("https://op.example.com"),
-    op.WithStore(inmem.New()),
+    op.WithStore(st),
     op.WithKeyset(op.Keyset{{KeyID: "k1", Signer: priv}}),
     op.WithCookieKeys(cookieKey),
+    op.WithLoginFlow(op.LoginFlow{
+      Primary: op.PrimaryPassword{Store: st.UserPasswords()},
+    }),
   )
   if err != nil {
     log.Fatal(err)
@@ -154,7 +166,7 @@ func main() {
 
 ::: tip 本番運用の注意
 - **鍵**: ここでは揮発性ですが、本番では Vault / KMS から読み込むこと。
-- **ストア**: in-memory ですが、本番では `op/storeadapter/sql` か `composite` を使うこと。
+- **ストア**: in-memory ですが、本番では `op/storeadapter/sql`、`op/storeadapter/dynamodb`、または `composite` を使うこと。Redis は composite 構成で揮発ティアとして使います。
 - **リスナ**: 平文 HTTP のままです。TLS 終端 ingress の背後に置いてください。
 :::
 
@@ -162,7 +174,7 @@ func main() {
 1. `curl http://localhost:8080/.well-known/openid-configuration` — discovery。mount prefix に関わらず常にルート直下に公開されます。
 2. `curl http://localhost:8080/oidc/jwks` — ID トークン検証用の公開 JWKS。
 3. 既定の mount prefix は `/oidc` です。`op.WithMountPrefix("/")` で変更できます。
-4. クライアントと authenticator を登録するまで認可は error を返します。
+4. クライアントを登録してユーザーを seed するまで認可は error を返します。password authenticator は上で構成済みです。
 :::
 
 ## upstream 例の実行

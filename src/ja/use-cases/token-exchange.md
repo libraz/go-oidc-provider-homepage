@@ -78,6 +78,7 @@ RFC 8693 §4.1 は `act` claim を「誰が誰の代わりに動作したか」�
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
@@ -87,6 +88,9 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  // token exchange は拡張 grant。組み込み grant を少なくとも 1 つ
+  // 明示します。この例では machine-to-machine 用も有効にします。
+  op.WithGrants(grant.ClientCredentials),
   op.RegisterTokenExchange(myPolicy),
   // ...
 )

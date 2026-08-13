@@ -1,6 +1,6 @@
 ---
 title: セキュリティ方針
-description: go-oidc-provider が「安全」をどう考えているか — 5 つの独立した性質、構造的に強制している防御、個人開発の OSS としての明確な限界。
+description: go-oidc-provider の構造的なセキュリティ防御、組み込み時の前提、参照すべきソース、個人開発 OSS としての明確な限界をまとめます。
 pageClass: pg-security-posture
 ---
 
@@ -68,7 +68,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 多くの「デフォルト ON」型のフレームワークは設定不足でも気付かれずに起動します。本ライブラリの設計では「OP が立ち上がったが署名鍵がない / 推測可能な cookie 鍵 / 誤った issuer」といった種類のバグを、最初の 1 リクエストが届く前に閉じます。詳細は `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` の不在時に出るビルド時エラーを参照してください。
 :::
 
-### 2. JOSE の alg リストは閉じた型
+### 2. JOSE の alg リストは閉じた型 {#jose-alg-list}
 
 `internal/jose.Algorithm` は `RS256`、`PS256`、`ES256`、`EdDSA` の 4 値のみを列挙しています。`none`、`HS256/384/512`、その他の文字列は `IsAllowed()` で false を返します。`ParseAlgorithm` は不明値に対してフォールバックせず、`ok=false` を返します。生 go-jose ハンドルを保持する `internal/jar`、`internal/dpop`、`internal/mtls`、`internal/backchannel` などの経路も含めて、すべての入力 JWS 検証パスは入力された `alg` をこの閉じた型でゲートします。OP 発行 JWT の署名はさらに狭く、`WithKeyset` は ECDSA P-256 鍵だけを受理し、discovery は `ES256` を広告します。**alg 混同攻撃（RFC 7519 §6 / RFC 8725 §2.1）は構造的に到達できません**。
 
@@ -115,7 +115,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 | Issuer 正規化(末尾スラッシュなどの揺れを防ぐ) | `op/options_validate.go` | RFC 9207 |
 | Resource indicator の正規化(scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否)を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の 許可リストに適用 | `internal/resourceindicator` | RFC 8707 §2 |
 | `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否(RFC 8707 の `resource=` のみ例外)。認証情報を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
-| Argon2id パラメータを OWASP 2024 ベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
+| Argon2id パラメータを OWASP Password Storage Cheat Sheet のベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet |
 | DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
 | 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 | クライアント検証鍵（`client_assertion`、JAR request object）を OP の鍵 shape 最低水準に保持: RSA は 2048 bit 以上、EC 曲線は宣言された `alg` と一致 | `internal/clientauth`、`internal/jar`、`internal/jose`（`AssertAlgKeyShape`） | RFC 7518 §3.3、RFC 8725 §3.2 |
@@ -135,12 +135,14 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 | 階層 | ツール | 場所 |
 |---|---|---|
-| Lint | `golangci-lint v2`（errcheck、govet、staticcheck、unused、**gosec**、errorlint、revive、depguard など） | `.golangci.yml` |
+| Lint | `golangci-lint`（errcheck、govet、staticcheck、unused、**gosec**、errorlint、revive、depguard など） | `.golangci.yml` |
 | 脆弱性スキャン | `govulncheck` | `scripts/govulncheck.sh` |
 | Fuzz | Go 標準 `Fuzz*`（`make fuzz` / `scripts/fuzz.sh 30s`） | `internal/jose`、`internal/dpop`、`internal/pkce`、`internal/clientauth`、`internal/parendpoint`、`internal/introspectendpoint`、`internal/revokeendpoint`、`internal/jarm`、`internal/mtls`、`internal/authorizationdetails` など |
 | ライセンス | `go-licenses` | `scripts/licenses.sh` |
 | 適合性 | `make conformance-baseline` | `tools/conformance/`、`conformance/` |
 | シナリオ | カタログに基づく Spec Scenario Suite | `test/scenarios/` |
+
+Go の language baseline と toolchain は core module が宣言しています。このページにリリース固有の値を写すのではなく、core の [`go.mod`](https://github.com/libraz/go-oidc-provider/blob/main/go.mod) を確認してください。
 
 ## ここに **無い** もの
 
@@ -152,7 +154,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 - ❌ **OpenID Foundation の公式認証は取得していません。**（<a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> 参照）
 - ❌ **パッチ適用 SLA は提供していません。** SECURITY.md には *目安* として「3 営業日以内に受領、確認済み問題は 14 日以内に緩和方針」を書いていますが、契約上の保証ではありません。
 - ❌ **24/7 のインシデント対応窓口はありません。** 報告経路は GitHub Security Advisories または Maintainer プロフィールです。
-- ❌ **CVE データベース上のエントリは現時点でゼロです**（<a class="doc-ref" href="/ja/security/disclosure">脆弱性報告ガイド</a>）。CVE の条件を満たす報告がまだ届いていないので公開すべきものがない、というのが文字通りの状況です。「真面目にやっていない」わけではありません。
+- ❌ **このページは CVE の最新台帳ではありません。** Advisory の状況は変わり得るため、<a class="doc-ref" href="/ja/security/disclosure">脆弱性報告ガイド</a> とリポジトリの GitHub Security Advisories を現在の記録として確認してください。
 :::
 
 これらのいずれかが採用要件に含まれているなら、本ライブラリは選ばないでください。公式監査が出るまでは控えるべきです。限界を明示しておくことは、誤用を防ぐために必要です。

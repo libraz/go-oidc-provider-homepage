@@ -1,6 +1,6 @@
 ---
 title: SPA / custom interaction
-description: Drive login, consent, and logout from any SPA — React, Vue, Svelte, Angular, or your own. SPA-safe error rendering ships out of the box.
+description: Drive login and consent from a SPA, and use the built-in logout confirmation; custom interaction mounts, CSP, and ceremony-origin rules are explicit.
 pageClass: pg-use-cases-spa-custom-interaction
 ---
 
@@ -34,7 +34,7 @@ This library models the UX as a pluggable `interaction.Driver`. The default driv
 
 ## Architecture
 
-With the lower-level JSON driver, the OP exposes the interaction state machine at `/interaction/{uid}` and every prompt comes back as JSON; your own router serves the SPA shell + static assets at whatever path you pick. With `op.WithSPAUI`, the OP mounts a SPA-friendly tree instead: `LoginMount/{uid}` for the shell, `LoginMount/state/{uid}` for prompt JSON, and `LoginMount/assets/{path...}` for bundled assets when `StaticDir` is set.
+With the lower-level JSON driver, the OP exposes the interaction state machine at `/interaction/{uid}` and every prompt comes back as JSON; your own router serves the SPA shell + static assets at whatever path you pick. With `op.WithSPAUI`, the OP mounts a SPA-friendly tree instead: `LoginMount/{uid}` for the shell, `LoginMount/state/{uid}` for prompt JSON, and `LoginMount/assets/{path...}` for bundled assets when `StaticDir` is set. `LoginMount` is the only routing field; `ConsentMount` and `LogoutMount` are deprecated/inert compatibility fields and do not create routes.
 
 | Method | Path | Role |
 |---|---|---|
@@ -174,7 +174,7 @@ With the lower-level JSON driver, `/authorize` redirects to `/interaction/{uid}`
 :::
 
 ::: info `op.WithSPAUI`
-`op.SPAUI` carries `LoginMount`, `ConsentMount`, `LogoutMount`, and `StaticDir` so the OP can auto-mount the SPA shell, static asset tree, and prompt JSON under one option. The JSON state endpoint is `LoginMount/state/{uid}`; pass `interaction.JSONDriver` directly only when your own router owns the shell and should fetch from `/interaction/{uid}`.
+`op.SPAUI` carries `LoginMount` and `StaticDir` for the active routes. `ConsentMount` and `LogoutMount` remain in the struct for source compatibility, but no handler reads them: consent uses the same `LoginMount/state/{uid}` prompt surface and built-in logout confirmation remains on the normal end-session flow. The JSON state endpoint is `LoginMount/state/{uid}`; pass `interaction.JSONDriver` directly only when your own router owns the shell and should fetch from `/interaction/{uid}`.
 :::
 
 ### Frontend snippet
@@ -362,7 +362,7 @@ op.WithCORSOrigins(
 )
 ```
 
-Per-RP, the library also auto-allowlists each registered `redirect_uri`'s origin (so a static client setup doesn't need duplicate CORS config). See [Use case: CORS for SPA](/use-cases/cors-spa).
+For API CORS, the library also auto-allowlists each registered `redirect_uri`'s origin (so a static client setup doesn't need duplicate CORS config). That derivation does not authorize an origin to POST interaction or end-session state: those ceremony checks allow only the issuer origin and origins explicitly passed to `op.WithCORSOrigins`. See [Use case: CORS for SPA](/use-cases/cors-spa).
 
 ## Custom consent UI without going full-SPA
 

@@ -1,6 +1,6 @@
 ---
 title: FAPI 2.0 Baseline
-description: 1 つのプロファイル指定で PAR、JAR、DPoP、ES256 署名、FAPI 用のクライアント認証制約を有効化。
+description: 1 つの指定で FAPI 2.0 Baseline の PAR、JAR、DPoP / mTLS、ES256、private_key_jwt、JAR 60 分上限を有効化。
 pageClass: pg-use-cases-fapi2-baseline
 ---
 
@@ -8,7 +8,7 @@ pageClass: pg-use-cases-fapi2-baseline
 
 ## FAPI 2.0 とは
 
-**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 + OIDC のプロファイルです。OAuth / OIDC が任意として残している選択肢のうち、攻撃に使われやすいものを禁じます。たとえば `RS256` を避けて `ES256` / `PS256` を使う、すべての認可で PKCE を必須にする、送信者制約付きトークン（DPoP **または** mTLS）を必須にする、RP の `/authorize` 要求を生のクエリ文字列ではなく PAR + JAR で送らせる、といった制約です。本ライブラリは id_token を `ES256` のみで署名するため、FAPI の `RS256` 禁止要件は構造的に満たされます。
+**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 + OIDC のプロファイルです。OAuth / OIDC が任意として残している選択肢のうち、攻撃に使われやすいものを禁じます。たとえば `RS256` を避けて `ES256` / `PS256` を使う、すべての認可で PKCE を必須にする、送信者制約付きトークン（DPoP **または** mTLS）を必須にする、RP の `/auth` 要求を生のクエリ文字列ではなく PAR + JAR で送らせる、といった制約です。既定の mount が `/oidc` なら endpoint は `/oidc/auth` になります。本ライブラリは id_token を `ES256` のみで署名するため、FAPI の `RS256` 禁止要件は構造的に満たされます。
 
 銀行・医療・行政の運用では、「安全なオプションを全部覚えているか」ではなく「決まったチェックリストに対して監査できるか」が問われます。FAPI 2.0 は FAPI 1.0（こちらも依然現役）の後継です。FAPI 2.0 Baseline は最低限の安全要件を固定し、FAPI 2.0 Message Signing は JARM + DPoP nonce + RS 側の応答署名を追加します。
 
@@ -42,7 +42,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 ## アーキテクチャ
 
 <svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 720 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline のシーケンス: RP が認可要求を /par に送り、OP が request_uri を返し、/authorize と /token を経て OP が ES256 署名の DPoP 結びつき付きトークンを発行するまで。</title>
+  <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline のシーケンス: RP が認可要求を /par に送り、OP が request_uri を返し、/auth と /token を経て OP が ES256 署名の DPoP 結びつき付きトークンを発行するまで。</title>
   <line class="life" x1="150" y1="68" x2="150" y2="448"/>
   <line class="life op-accent" x1="570" y1="68" x2="570" y2="448"/>
   <rect x="75" y="14" width="150" height="30" rx="5"/>
@@ -58,7 +58,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
   <text class="d-mono" x="360" y="150" text-anchor="middle">2 · 201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
   <line x1="570" y1="158" x2="150" y2="158"/>
   <path d="M157,154 L150,158 L157,162"/>
-  <text class="d-mono" x="360" y="190" text-anchor="middle">3 · GET /authorize?request_uri=urn:…&amp;client_id</text>
+  <text class="d-mono" x="360" y="190" text-anchor="middle">3 · GET /auth?request_uri=urn:…&amp;client_id</text>
   <line x1="150" y1="198" x2="570" y2="198"/>
   <path d="M563,194 L570,198 L563,202"/>
   <path class="op-accent" d="M570,224 h-16 v28 h16"/>
@@ -86,6 +86,8 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
+  "github.com/libraz/go-oidc-provider/op/feature"
+  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -96,12 +98,18 @@ const (
   demoRedirectURI = "https://rp.example.com/callback"
 )
 
+st := inmem.New()
+loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
+
 provider, err := op.New(
   op.WithIssuer(demoIssuer),
-  op.WithStore(inmem.New()),
+  op.WithStore(st),
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKeys(opKeys.CookieKey),
+  op.WithLoginFlow(loginFlow),
+  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithProfile(profile.FAPI2Baseline), // <--- プロファイル切り替え
+  op.WithFeature(feature.DPoP),
   op.WithStaticClients(op.PrivateKeyJWTClient{
     ID:            demoClientID,
     JWKS:          clientJWKs, // 公開 JWK Set を JSON バイト列で
@@ -122,6 +130,8 @@ provider, err := op.New(
 3. `id_token_signing_alg_values_supported = ["ES256"]` を維持。OP は ES256 でしか id_token を署名・広告しないため、FAPI 2.0 の `RS256` 禁止要件は構造的に満たされます。
 4. `redirect_uri` の完全一致を強制（どこにもワイルドカード無し）。
 5. DPoP または mTLS の送信者制約は、明示された `feature.MTLS` があればそれを尊重し、どちらも選ばれていない場合は `feature.DPoP` を追加して満たす。
+
+JAR では `profile.MaxRequestObjectAge(profile.FAPI2Baseline)` が `60 * time.Minute` を返します。`op.New` はこの値を request-object verifier に渡し、署名済み request object の `iat` 経過時間に適用します。`nbf` と `exp` の検証も引き続き行われます。
 
 ::: tip DPoP の代わりに mTLS
 プロファイルの既定の送信者制約方式は、TLS クライアント証明書の配線が不要な DPoP です。mTLS に標準化している配備では `feature.MTLS` を明示し、TLS 終端プロキシ用に `op.WithMTLSProxy(...)` を設定してください。その明示選択があれば DPoP 既定は追加されません。

@@ -1,6 +1,6 @@
 ---
 title: Device Code（RFC 8628）
-description: TV / コンソール / CLI がキーボードなしでアクセストークンを得る仕組み — device-authorization grant をやさしく解説。
+description: TV / コンソール / CLI 向け RFC 8628 device authorization — 組み込み側の verification、opaque attempt key、user-code 試行制限を解説。
 pageClass: pg-concepts-device-code
 ---
 
@@ -124,7 +124,7 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 | `200 { access_token, ... }` | ユーザが承認 | 通常の token 応答として処理 |
 
 ::: warning user_code は構造的に brute-force 可能
-`user_code` は短いから使い物になります。長くしたら誰も入力しません。これは原理的に brute-force され得るということでもあり、ユーザが打つより速く `/device` を呼び出せる攻撃者が勝ってしまいます。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) でレコード単位の防御を同梱しています。`VerifyUserCode` が constant-time 比較を行い、失敗したらストライクカウンタを加算し、`MaxUserCodeStrikes`（既定 5）でレコードをロックアウトします。自前で verification ページを作る組み込み側は、このヘルパを使うか同等の防御を実装する必要があります。
+`user_code` は短いから使い物になります。長くしたら誰も入力しません。これは原理的に brute-force され得るということでもあり、ユーザが打つより速く `/device` を呼び出せる攻撃者が勝ってしまいます。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) を同梱しています。最初の手入力では、opaque なサーバ側 ceremony key を渡して `VerifyUserCodeByAttemptKey` を呼び、ユーザの認証と同意の後に `ApproveUserCode` を呼んでください。raw `user_code` を attempt key に使ってはなりません。`Deps` は mutex を含むため保持し、必ず pointer で渡してください。既定 limiter はプロセスローカルなので、マルチインスタンス構成では共有 atomic `AttemptLimiter` が必要です。
 :::
 
 ## 使うべきとき
@@ -150,5 +150,5 @@ example は役割別ファイルに分割されています（`op.go` で OP の
 
 ## 続きはこちら
 
-- [使い方: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCode`、検証ページの契約、デバイス登録解除(unenroll)時に発行済みトークンを連鎖失効させる手順。
+- [使い方: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCodeByAttemptKey`、検証ページの契約、デバイス登録解除(unenroll)時に発行済みトークンを連鎖失効させる手順。
 - [CIBA 入門](/ja/concepts/ciba) — 「ユーザが別チャネルにいる」の概念的な兄弟。コード表示を使わない方式。

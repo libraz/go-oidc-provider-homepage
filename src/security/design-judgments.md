@@ -1,6 +1,6 @@
 ---
 title: Design judgments
-description: Where the library's behaviour is the result of a deliberate read of conflicting RFCs — what was chosen, what was rejected, and why.
+description: Security design decisions in go-oidc-provider — how conflicting RFCs, introspection authorization, revocation, profiles, and bounded fetches are reconciled.
 pageClass: pg-security-design-judgments
 ---
 
@@ -66,7 +66,7 @@ Start with the cards for the surface you are changing. Each detailed entry then 
     <a href="#dj-2"><strong>#2</strong><span>Refresh rotation has a 60 s grace window and chain compromise retirement.</span></a>
     <a href="#dj-3"><strong>#3</strong><span><code>offline_access</code> is a UX / TTL signal by default; strict mode makes it a gate.</span></a>
     <a href="#dj-15"><strong>#15</strong><span>DPoP refresh-token chains bind for public clients, not confidential clients.</span></a>
-    <a href="#dj-16"><strong>#16</strong><span>Cross-client introspection returns the same inactive shape as unknown tokens.</span></a>
+    <a href="#dj-16"><strong>#16</strong><span>Confidential-only introspection delegates across clients only through the resource audience.</span></a>
     <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> cascades access-token revocation when substores are wired.</span></a>
     <a href="#dj-18"><strong>#18</strong><span>JWT access tokens are the default; opaque is opt-in and can vary by resource.</span></a>
     <a href="#dj-19"><strong>#19</strong><span>JWT revocation uses grant tombstones by default; FAPI rejects no-revocation.</span></a>
@@ -227,7 +227,7 @@ A two-layer model — `op/aal.go` for the internal AAL ladder, `op/acr.go` for t
 **Conflict:** Putting sessions in the same SQL cluster as auth codes / refresh tokens / clients (the transactional store) couples session mutation latency to the transactional path. Putting them on Redis loses durability — but session loss is recoverable (the user logs in again), whereas authorization-code loss is not (the RP loop breaks).
 
 ::: tip Decision
-Sessions are routed through a separate substore (`store.SessionStore`) that the embedder may serve from a volatile store (Redis / Memcached). Back-channel logout delivery is best-effort under volatile sessions — "we lost a session, the RP doesn't get notified" is an acceptable failure mode for a Redis sliced deployment, and the `op.AuditBCLNoSessionsForSubject` event together with the embedder-configured `op.SessionDurabilityPosture` lets dashboards distinguish the two cases.
+Sessions are routed through a separate substore (`store.SessionStore`) that the embedder may serve from a volatile store (Redis / Memcached). `/end_session` takes the session snapshot before deleting it, and the BCL coordinator resolves its audience from grant-derived client IDs via `GrantStore.ListClientIDsBySubject`. If eviction happens before that snapshot, no fan-out starts and no BCL no-sessions event is emitted. `op.AuditBCLNoSessionsForSubject` instead means that a session-bearing logout notice reached the coordinator but resolved to zero eligible grant-derived RP targets; `op.SessionDurabilityPosture` records the embedder's declared durability so operators can interpret logout-trigger and snapshot-retention risk without treating the event as a direct eviction signal.
 :::
 
 <a class="faq-anchor" id="dj-11"></a>
@@ -294,19 +294,19 @@ The OP rejects `plain` **regardless of profile**. `internal/pkce.Method` is the 
 
 <a class="faq-anchor" id="dj-16"></a>
 
-## 16. Introspection — same-client gate + uniform inactive shape
+## 16. Introspection — confidential callers, audience-scoped delegation, and uniform inactive shape
 
 **Spec:** RFC 7662 §2.2 says introspection responses MUST carry `"active": false` for tokens the AS does not consider active, and MAY include only the `active` member in that case. §2.1 lets the AS "differently respond depending on the audience" — i.e. permits cross-client refusal but does not mandate it.
 
 **Conflict:** Three readings circulate:
 1. **Liberal** — let any authenticated client introspect any token the AS recognises, returning `"active": true` even when the calling client is not the issuer.
 2. **Strict-distinguishable** — refuse cross-client introspection but signal it (e.g. HTTP 403 or `error: not_authorized`).
-3. **Conservative** — refuse cross-client introspection and surface the same `{"active": false}` shape used for unknown / expired / revoked tokens.
+3. **Audience-scoped** — allow the resource server named by the token audience to introspect through an explicit allow-list, while refusing unrelated callers with the same `{"active": false}` shape used for unknown / expired / revoked tokens.
 
 Reading 2 leaks token-existence information through the response shape: a curious client can probe whether a guessed token belongs to *some* live grant.
 
 ::: tip Decision
-**Reading 3.** A token whose `client_id` does not match the calling client returns `{"active": false}` — structurally indistinguishable from "unknown", "expired", and "revoked". The same uniform inactive shape applies to JWT, opaque-AT, and refresh-token branches. Implemented in `internal/introspectendpoint.resolveJWT` / `resolveOpaque` / `resolveOpaqueAccessToken`; every miss path returns `inactive()` so timing and shape both stay uniform.
+**Only confidential callers may use `/introspect`.** A public client or a client whose token-endpoint authentication method is `none` receives `401 invalid_client` before token resolution. A confidential client may introspect its own access or refresh token. Cross-client access-token introspection is allowed only when the calling client is listed in the token audience's protected resource `IntrospectionClients`; the audience check is the delegation boundary. Refresh tokens are never delegated across clients. An unauthorized cross-client access-token lookup returns the same `{"active": false}` shape as an unknown, expired, or revoked token. Active opaque responses include `iss`. Implemented in `internal/introspectendpoint` and the protected-resource configuration; tests cover the confidential gate, audience delegation, and refresh-token refusal.
 :::
 
 <a class="faq-anchor" id="dj-17"></a>

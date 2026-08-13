@@ -6,14 +6,15 @@ description: Go モジュールに go-oidc-provider を追加する。
 # インストール
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@latest
+go get github.com/libraz/go-oidc-provider/op@v1.1.0
 ```
 
-SQL / Redis のストアアダプタサブモジュールを使う場合は、同じタグに揃えてください:
+SQL / Redis / DynamoDB のストアアダプタサブモジュールを使う場合は、同じタグに揃えてください:
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
-go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@latest
+go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v1.1.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v1.1.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.1.0
 ```
 
 モジュールの言語バージョン下限は **Go 1.25+** です（`go.mod` の directive は `go 1.25.0`）。このリリースは `toolchain go1.26.5` に固定してビルド・テストしています。プロジェクト CI と同じ TLS / 依存関係のセキュリティ baseline に揃える場合は、この toolchain 以上を使ってください。
@@ -35,7 +36,7 @@ SQL、Redis、DynamoDB adapter は Go サブモジュールとして公開して
 
 ## 安定性
 
-ライブラリは **v1.0.0** です。公開 API は Semantic Versioning に従うため、破壊的変更にはメジャーリリースが必要です。godoc が `Experimental:` で始まる symbol は例外で、マイナーリリースでも変更される可能性があります。現在は login-flow と interaction UI の seam、Grant Management、DynamoDB adapter が該当します。完全な一覧は生成済みの [experimental API manifest](https://github.com/libraz/go-oidc-provider/blob/main/api/experimental.txt) です。そこにない API は stable です。リリースの詳細は [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を参照してください。
+`op.New` と同梱ストレージアダプターで構成した場合は通常そのまま更新できますが、BYO ストアや他の拡張を組み込んでいる場合は、更新前に [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) の移行案内を確認してください。godoc が `Experimental:` で始まる symbol は通常のマイナーリリース例外で、変更される可能性があります。生成済みの [experimental API manifest](https://github.com/libraz/go-oidc-provider/blob/main/api/experimental.txt) が現在の一覧です。
 
 ## 次へ
 

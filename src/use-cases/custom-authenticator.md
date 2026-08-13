@@ -1,6 +1,6 @@
 ---
 title: Custom authenticator
-description: Plugging your own factor (hardware token, SMS, magic link, …) into LoginFlow without forking the library.
+description: Add a hardware token, SMS, magic link, or other factor through the public op.Authenticator and op.ExternalStep seams.
 pageClass: pg-use-cases-custom-authenticator
 ---
 
@@ -49,8 +49,8 @@ type Authenticator interface {
     Prompts() []string
 
     // Begin starts the ceremony. The returned interaction.Step
-    // either carries a Prompt (multi-step factor) or a populated
-    // Result (single-step factor that completes immediately, rare).
+    // carries a Prompt for a multi-step factor or a populated Result
+    // for a factor that completes immediately.
     Begin(ctx context.Context, in BeginInput) (interaction.Step, error)
 
     // Continue advances the ceremony with the SPA's submission.
@@ -58,7 +58,9 @@ type Authenticator interface {
 }
 ```
 
-Implementations MUST be safe for concurrent use; the orchestrator dispatches across goroutines.
+Implementations MUST be safe for concurrent use; the orchestrator dispatches across goroutines. `BeginInput` carries the bound subject (when one exists), client ID, reference `AuthTime`, requested scopes, and a read-only client view. `ContinueInput` carries the submitted `interaction.FormSubmission`, the same `AuthTime`, the bound subject, and the opaque `Scratch` returned on the previous step.
+
+The orchestrator stamps `Prompt.StateRef` after `Begin` or `Continue` returns. An authenticator must not invent or persist a state reference. Put per-attempt state in `interaction.Step.Scratch`; the value is kept server-side and returned through `ContinueInput.Scratch`.
 
 <svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authenticator-flow-title">The state machine of a custom authenticator. LoginFlow calls Begin, the user passes a phone-number prompt and then a code prompt, and returning a Result writes the subject and factor into the session.</title>
@@ -113,7 +115,9 @@ package smsauth
 import (
     "context"
     "crypto/rand"
+    "encoding/binary"
     "fmt"
+    "time"
 
     "github.com/libraz/go-oidc-provider/op"
     "github.com/libraz/go-oidc-provider/op/interaction"
@@ -129,26 +133,37 @@ type SMSAuthenticator struct {
 
 func (a *SMSAuthenticator) Type() op.FactorType { return "myorg.sms_otp" }
 func (a *SMSAuthenticator) AAL() op.AAL         { return op.AAL2 }
-func (a *SMSAuthenticator) AMR() string      { return "sms" } // RFC 8176 §2
+func (a *SMSAuthenticator) AMR() string         { return "otp" } // RFC 8176 §2
+
+const (
+    phonePrompt = "myorg.sms.collect_phone"
+    codePrompt  = "myorg.sms.collect_code"
+)
 
 func (a *SMSAuthenticator) Prompts() []string {
-    return []string{"myorg.sms.collect_phone", "myorg.sms.collect_code"}
+    return []string{phonePrompt, codePrompt}
 }
 
-func (a *SMSAuthenticator) Begin(ctx context.Context, in op.BeginInput) (interaction.Step, error) {
+func (a *SMSAuthenticator) Begin(_ context.Context, _ op.BeginInput) (interaction.Step, error) {
     // First prompt: collect phone number.
     return interaction.Step{
         Prompt: &interaction.Prompt{
-            Type:     "myorg.sms.collect_phone",
-            StateRef: in.StateRef, // carry per-attempt state
+            Type: phonePrompt,
+            Inputs: []interaction.FieldSpec{{
+                Name:     "phone",
+                Kind:     interaction.FieldText,
+                Required: true,
+                MaxLen:   254,
+            }},
         },
+        Scratch: []byte(phonePrompt),
     }, nil
 }
 
 func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (interaction.Step, error) {
-    switch in.Prompt.Type {
-    case "myorg.sms.collect_phone":
-        phone := in.Submission["phone"]
+    switch string(in.Scratch) {
+    case phonePrompt:
+        phone := in.Submission.Values["phone"]
         if phone == "" {
             return interaction.Step{}, fmt.Errorf("phone required")
         }
@@ -171,13 +186,20 @@ func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (i
         }
         return interaction.Step{
             Prompt: &interaction.Prompt{
-                Type:     "myorg.sms.collect_code",
-                StateRef: in.StateRef,
+                Type: codePrompt,
+                Inputs: []interaction.FieldSpec{{
+                    Name:     "code",
+                    Kind:     interaction.FieldOTPCode,
+                    Required: true,
+                    MinLen:   6,
+                    MaxLen:   6,
+                }},
             },
+            Scratch: []byte(codePrompt),
         }, nil
 
-    case "myorg.sms.collect_code":
-        submitted := in.Submission["code"]
+    case codePrompt:
+        submitted := in.Submission.Values["code"]
         // Constant-time compare against stored hash.
         subject, ok := a.OTPStore.Verify(ctx, submitted)
         if !ok {
@@ -185,11 +207,12 @@ func (a *SMSAuthenticator) Continue(ctx context.Context, in op.ContinueInput) (i
         }
         return interaction.Step{
             Result: &interaction.Result{
-                Subject: subject,
+                Subject:  subject,
+                AuthTime: in.AuthTime,
             },
         }, nil
     }
-    return interaction.Step{}, fmt.Errorf("unexpected prompt: %q", in.Prompt.Type)
+    return interaction.Step{}, fmt.Errorf("unexpected authenticator state")
 }
 
 func generate6DigitCode() (string, error) {
@@ -230,24 +253,33 @@ The dotted prefix on `KindLabel` (`myorg.sms_otp`) is **required** — the Login
 
 ### 3. Render the prompts in your UI
 
-The SPA receives the prompt at `/interaction/{uid}` as JSON when the JSON interaction driver is configured (`op.WithInteractionDriver(interaction.JSONDriver{})`):
+The SPA receives the prompt at `/interaction/{uid}` as JSON when the JSON interaction driver is configured (`op.WithInteractionDriver(interaction.JSONDriver{})`). The envelope includes the custom `type`, the declared `inputs`, and an opaque `state_ref`; the SPA must echo that `state_ref` in `FormSubmission.StateRef` and send values under `FormSubmission.Values`.
 
 ```json
 {
   "prompt": {
     "type": "myorg.sms.collect_phone",
+    "inputs": [{"name": "phone", "kind": 0, "required": true}],
     "state_ref": "..."
   }
 }
 ```
 
-Render a phone input, POST `{ "phone": "+1..." }` back to the same endpoint. The next response carries the `myorg.sms.collect_code` prompt; render a code input, POST `{ "code": "123456" }`. The third response is a `Result` with the bound subject.
+Render a phone input, then POST a `FormSubmission` whose `values` contains `{ "phone": "+1..." }` back to the same endpoint. The next response carries the `myorg.sms.collect_code` prompt; render a code input and POST `{ "values": { "code": "123456" } }`. The third response is a `Result` with the bound subject.
 
 For HTML-driver setups, register a custom template that handles the two prompt types.
 
+## Prompt fields and limits
+
+Custom prompts should declare every submitted field in `Prompt.Inputs`. `PromptData` is a sealed interface; an application cannot add an arbitrary data type from outside the `interaction` package. Use `FieldSpec` for custom form fields, and keep secrets out of `Prompt.StateRef` and `Step.Scratch` values that a driver could expose.
+
+`FieldKind` is limited to `FieldText`, `FieldPassword`, `FieldOTPCode`, `FieldEmail`, and `FieldHidden`. `Required`, `MinLen`, `MaxLen`, and a full-match `Pattern` are enforced before `Continue` runs. If `MaxLen` is zero, the byte limits are 512 for text, 1024 for password, 32 for OTP code, 320 for email, and 16 KiB for hidden fields. Every submission is also capped at 32 KiB across names and values and may contain at most four entries beyond the declared fields. A prompt's `StateRef` expires after 10 minutes and is single-use; a stale or replayed reference is rejected before the authenticator runs.
+
+The built-in MFA prompts use the same contract: TOTP exposes an `AttemptsRemaining` value and an exactly six-digit `code`; email OTP exposes a masked address and `ExpiresAt`, accepts a 254-byte email and a six-digit code, and defaults its code lifetime to five minutes; passkey exposes the WebAuthn challenge and allow-list and caps the assertion response at 16 KiB; recovery codes expose `AttemptsRemaining` and accept 10–32-byte codes. These values are prompt metadata and validation bounds, not a replacement for factor-specific rate limiting.
+
 ## Contract requirements
 
-The orchestrator enforces these — getting them wrong is a programming error caught at compile-time of the LoginFlow or at first request:
+The orchestrator validates configuration at provider construction and rejects an empty step when it runs. The following rules are part of the public contract:
 
 | Requirement | Why |
 |---|---|
@@ -255,26 +287,25 @@ The orchestrator enforces these — getting them wrong is a programming error ca
 | `Kind()` (via `ExternalStep.KindLabel`) has a dotted prefix | reserves bare names for built-ins |
 | `AMR()` returns one of RFC 8176 §2 codes or `""` | foreign values are dropped with a warning audit |
 | `Prompts()` lists every prompt type Begin / Continue may emit | startup validation; missing types cause runtime errors |
-| Begin returns a Step with **either** Prompt or Result (not both, not neither) | orchestrator state machine |
+| Begin and Continue return a Prompt or Result; an empty Step is rejected | orchestrator state machine |
 | User-existence leak defence: identical response shape and timing for known vs unknown identifiers | basic security hygiene |
 | Stateless across calls | per-attempt state lives in `interaction.Prompt.StateRef`, not in your struct |
 
 ## Testing
 
-Use the contract suite in `op/store/contract` for store implementations, and the orchestrator harness for authenticators:
+Test your authenticator with ordinary Go tests: call `Begin`, submit `interaction.FormSubmission{Values: ...}` to `Continue`, assert the returned prompt or result, and run the same sequence concurrently. The public `op/testkit` package provides a subject-binding authenticator for HTTP-layer fixtures; it is not a production authenticator.
 
 ```go
-// Pseudocode — use the actual harness path from the source repo.
-import "github.com/libraz/go-oidc-provider/internal/authn/test"
-
 func TestSMSAuthenticator(t *testing.T) {
-    auth := &smsauth.SMSAuthenticator{
-        Sender:    fakeSender{},
-        OTPStore:  inmemOTPs(),
-        UserStore: testStore,
-        CodeTTL:   5 * time.Minute,
-    }
-    test.AuthenticatorContract(t, auth)
+    auth := &smsauth.SMSAuthenticator{Sender: sender, OTPStore: otps, UserStore: users, CodeTTL: 5 * time.Minute}
+    first, err := auth.Begin(context.Background(), op.BeginInput{})
+    if err != nil || first.Prompt == nil { t.Fatal(err) }
+    next, err := auth.Continue(context.Background(), op.ContinueInput{
+        AuthTime: time.Now(),
+        Scratch: first.Scratch,
+        Submission: interaction.FormSubmission{Values: map[string]string{"phone": "+1..."}},
+    })
+    if err != nil || next.Prompt == nil { t.Fatal(err) }
 }
 ```
 

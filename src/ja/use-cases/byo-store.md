@@ -1,6 +1,6 @@
 ---
 title: ストアバックエンドを自前実装する
-description: store.Store インターフェースを直接実装し、独自のテーブル名・カラム名で OP を支える。
+description: 自前のテーブルや非 SQL バックエンドで store.Store を実装し、ハッシュ化・トランザクション・等価比較だけの並行性契約を守る。
 ---
 
 # 使い方 — ストアバックエンドを自前実装する
@@ -61,6 +61,20 @@ description: store.Store インターフェースを直接実装し、独自の�
 ::: tip 推測せず contract で確かめる
 [`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) は core の契約をバックエンドに対して実行し、未実装の拡張はスキップします。どの capability が実際に揃ったかは、このスイートが教えてくれます。
 :::
+
+## 実装すべき並行性の契約
+
+現在の `store` インターフェースは、セキュリティに関わる read-modify-write の規則を明示しています。近い動作で済ませるのではなく、バックエンドの契約として実装してください。
+
+- `store.TOTPRecord.Version` と `store.EmailOTPRecord.Version` は、保存後にストアが発行するゼロでない opaque token です。**等価性だけ**に使い、増分、順序比較、削除 / 再作成後の再利用、JSON 文書への露出をしてはいけません。`Put` は呼び出し側の record を変更せず新しい token を割り当て、`CompareAndSwap` は読み出した token を受け取って新しい後継 token を割り当てます。古い、または不正な snapshot には `store.ErrAlreadyConsumed` を返します。
+- `store.CIBARequestStore.Approve` は Pending → Approved を原子的に遷移させます。遅延解決型の record にすでに空でない `Subject` があり、別の subject を渡した場合は `store.ErrConflict` を返して record を変更しません。空の subject は 1 回だけ設定できます。不在または期限切れには `store.ErrNotFound`、Pending でない record の承認には `store.ErrConflict` を返します。`Consume` は Approved → Consumed の単回遷移を別に行い、Consumed には `store.ErrAlreadyConsumed`、Pending または Denied には `store.ErrConflict` を返します。
+- CIBA は集約の `store.Transactional` クラスタの外にあります。`Approve` と `Consume` は read と write を分けて近似せず、それぞれで原子的な遷移を提供してください。
+- `store.InteractionStoreCAS` は `RawState` を byte 単位で比較します。byte 列をそのまま保持し、`CompareAndSwap` / `DeleteIfUnchanged` を原子的に実行してください。JSON の再エンコードや whitespace の正規化で version を変えると、正しい完了処理まで `store.ErrConflict` になります。
+- `store.GrantStore.Save` は既存 grant を更新します。トランザクション中に row を lock するか、serializable isolation を使うか、古い基礎に対して `store.ErrConflict` を返してください。ロックなしの read と無条件の save では、並行する同意更新を黙って失います。
+
+SQL アダプタはこれらの version token を `oidc_totp_secrets.row_version` と `oidc_email_otps.row_version` に保存します。version-aware writer を起動する前に [SQL の migration 順序](/ja/use-cases/sql-store#sql-migration-before-first-request)を確認してください。各 sentinel と遷移の実行可能な基準は [contract suite](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) です。
+
+これらの SQL 名は同梱アダプタ固有です。BYO バックエンドは別のカラムや非 SQL の表現を選べますが、registration-token store には `RegistrationAccessToken.AllowedScopes` を保存し、MFA store には最初のリクエスト前から同等の opaque compare-and-swap 状態を用意する必要があります。
 
 ## カラム名は自由
 

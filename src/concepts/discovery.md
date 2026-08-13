@@ -1,6 +1,6 @@
 ---
 title: Discovery
-description: What /.well-known/openid-configuration is, the fields a beginner cares about, and how the library builds it.
+description: What /.well-known/openid-configuration is, how browser and client-credentials-only OPs differ, and how the library builds it.
 ---
 
 # Discovery
@@ -36,11 +36,11 @@ A representative subset of the fields a beginner will actually see and use. Ever
 | `pushed_authorization_request_endpoint` | URL of `/par` — present only when the PAR feature (RFC 9126) is enabled. |
 | `device_authorization_endpoint` | URL of `/device_authorization` — present only when the device-code grant is wired. |
 | `grant_types_supported` | Grant types the OP accepts at `/token`: `authorization_code`, `refresh_token`, `client_credentials`, … |
-| `response_types_supported` | Response types `/authorize` accepts. The library advertises only `code` (the OIDC Core "code flow"). |
+| `response_types_supported` | Response types `/authorize` accepts. Browser-capable configurations advertise only `code` (the OIDC Core "code flow"). A client-credentials-only OP emits an empty array because no browser authorization endpoint is enabled. |
 | `response_modes_supported` | How `/authorize` returns the result: `query`, `form_post`, plus `query.jwt`, `fragment.jwt`, `form_post.jwt`, `jwt` when JARM is enabled. |
 | `id_token_signing_alg_values_supported` | JWS algorithms used to sign ID Tokens. The library publishes `ES256` only because OP signing keys are ECDSA P-256. |
 | `request_object_signing_alg_values_supported` | JWS algorithms accepted on JAR `request=` parameters: `RS256`, `PS256`, `ES256`, `EdDSA`. |
-| `token_endpoint_auth_methods_supported` | How confidential RPs authenticate at `/token`: `client_secret_basic`, `client_secret_post`, `private_key_jwt`. FAPI profiles narrow this to `private_key_jwt`. Public clients use `none` in registration metadata, but the discovery advertisement does not list `none`; mTLS sender-constraint metadata is advertised separately via `mtls_endpoint_aliases`. |
+| `token_endpoint_auth_methods_supported` | How clients authenticate at `/token`. The default list includes `client_secret_basic`, `client_secret_post`, `private_key_jwt`, and `none`; FAPI profiles narrow it. The introspection and revocation auth-method lists intentionally omit `none`, because those endpoints require a confidential caller. mTLS sender-constraint metadata is advertised separately via `mtls_endpoint_aliases`. |
 | `code_challenge_methods_supported` | PKCE transformations. The library advertises **only** `S256`. |
 | `subject_types_supported` | `public` and (when `op.WithPairwiseSubject(...)` is wired) `pairwise`. |
 | `claims_supported` | Claims the OP can return. Operator-controlled via `op.WithClaimsSupported(...)`. |
@@ -76,7 +76,9 @@ The OP builds and marshals the discovery document when the provider is mounted, 
 
 ## How this library builds it
 
-Discovery is constructed once at `op.New` (in `internal/discovery/build.go`) from the wired feature set. There is no runtime drift: if the embedder did not wire PAR, `pushed_authorization_request_endpoint` is absent and `require_pushed_authorization_requests` does not appear. If the embedder wired `op.WithProfile(profile.FAPI2Baseline)`, the FAPI narrowing applies — `token_endpoint_auth_methods_supported` is filtered to the FAPI-permitted set, `require_pushed_authorization_requests=true` appears, and the introspection / revocation auth-method lists are copied from the same narrowed list.
+Discovery is constructed once at `op.New` (in `internal/discovery/build.go`) from the wired feature set. There is no runtime drift: if the embedder did not wire PAR, `pushed_authorization_request_endpoint` is absent and `require_pushed_authorization_requests` does not appear. If the embedder wired `op.WithProfile(profile.FAPI2Baseline)`, the FAPI narrowing applies — `token_endpoint_auth_methods_supported` is filtered to the FAPI-permitted set, `require_pushed_authorization_requests=true` appears, and the introspection / revocation auth-method lists are copied from the same narrowed list with `none` removed. The authorization endpoint and its browser-only metadata are emitted only when a configured grant needs the browser authorization flow. A `client_credentials`-only OP therefore omits `authorization_endpoint`, `end_session_endpoint`, and `backchannel_logout_supported`, while retaining `response_types_supported: []`.
+
+`WithDiscoveryMetadata(DiscoveryMetadata{UILocalesSupported: ...})` is also a construction-time contract: every explicitly advertised locale must be served by the registered locale resolver. Advertising an unserved locale makes `op.New` fail instead of producing discovery metadata that the UI cannot honor.
 
 A discovery golden test in the repository asserts the document shape per profile so silent drift between "what the discovery says" and "what handlers actually do" is caught at PR time. See [design judgment #12](/security/design-judgments#dj-12) for the rationale.
 
@@ -84,7 +86,7 @@ A discovery golden test in the repository asserts the document shape per profile
 
 The library narrows the discovery document deliberately:
 
-- **No `none` alg.** `id_token_signing_alg_values_supported` and `request_object_signing_alg_values_supported` never contain `none`. The underlying type does not include it (see [JOSE basics](/concepts/jose-basics) and [design judgment #11](/security/design-judgments#dj-11)).
+- **No `none` alg.** `id_token_signing_alg_values_supported` and `request_object_signing_alg_values_supported` never contain `none`. This is separate from the `none` client-authentication method listed for `/token`; `none` is never a signing algorithm (see [JOSE basics](/concepts/jose-basics) and [design judgment #11](/security/design-judgments#dj-11)).
 - **No HMAC-family alg for ID Tokens.** `HS256` / `HS384` / `HS512` are not advertised. The alg-confusion attack class needs them to be reachable; closing the type closes the attack.
 - **No `request_uri` indication when PAR is off.** `request_uri_parameter_supported` and `pushed_authorization_request_endpoint` only appear when the embedder wired PAR.
 - **`claims_parameter_supported` defaults to `true`, but can be disabled.** Passing `op.WithClaimsParameterSupported(false)` makes the discovery document omit OIDC §5.5 support and makes authorize / PAR ignore `claims` payloads after malformed JSON has been rejected.

@@ -1,6 +1,6 @@
 ---
 title: CORS for SPA
-description: Allow a SPA on a different origin to call the OP's user-facing endpoints.
+description: Configure explicit CORS origins for SPA API calls while keeping interaction and end-session ceremony origins narrowly scoped.
 pageClass: pg-use-cases-cors-spa
 ---
 
@@ -72,6 +72,8 @@ Two layers compose:
 1. **Static allowlist** — `op.WithCORSOrigins("https://app.example.com", ...)`
 2. **Auto-derived allowlist** — every registered client's `redirect_uris` contributes its origin automatically. So `WithStaticClients` already gets you most of the way.
 
+That union is the API CORS allowlist. It is deliberately **not** the interaction or end-session trust list. Redirect URI origins never authorize a cross-origin POST of login, consent, chooser, or logout state. Those ceremony checks accept the issuer origin plus only the origins explicitly passed to `WithCORSOrigins`; add the SPA origin explicitly when the SPA submits interaction state from JavaScript.
+
 ## Code
 
 ```go
@@ -140,7 +142,7 @@ Even with CORS allowing the origin, the OP's session cookie is set on **op.examp
 
 The previous table records which endpoints the library *wraps* with the strict CORS handler. That is an upper bound — every wrapped endpoint can answer a cross-origin request when the origin is allowlisted. The lower bound — which endpoints actually *need* CORS for a typical deployment — is narrower and depends on who calls the endpoint from a browser.
 
-The allowlist is the union of two sources: explicit entries from `WithCORSOrigins` and the origin of every `redirect_uri` registered through the client store. So registering a SPA client with `RedirectURIs: []string{"https://app.example.com/callback"}` already contributes `https://app.example.com` to the CORS allowlist; `WithCORSOrigins` is for the cases where a browser-side origin does not appear as a `redirect_uri` (a separate admin SPA, a status page, a localhost dev origin).
+For API CORS, the allowlist is the union of two sources: explicit entries from `WithCORSOrigins` and the origin of every `redirect_uri` registered through the client store. So registering a SPA client with `RedirectURIs: []string{"https://app.example.com/callback"}` already contributes `https://app.example.com` to API CORS; `WithCORSOrigins` is for the cases where a browser-side origin does not appear as a `redirect_uri` (a separate admin SPA, a status page, a localhost dev origin). The ceremony Origin / Referer check remains issuer-plus-explicit-only, regardless of the redirect URI registry.
 
 | Endpoint | Does a browser typically call it? | CORS needed in practice? |
 |---|---|---|

@@ -1,6 +1,6 @@
 ---
 title: Discovery
-description: /.well-known/openid-configuration の中身、初学者が押さえるべきフィールド、本ライブラリでの構築方法。
+description: /.well-known/openid-configuration の中身、browser と client-credentials-only OP の違い、本ライブラリでの構築方法を説明します。
 ---
 
 # Discovery
@@ -36,11 +36,11 @@ discovery がなければ、すべての RP がエンドポイント URL・署�
 | `pushed_authorization_request_endpoint` | `/par` の URL — PAR 機能（RFC 9126）を有効化した場合のみ。 |
 | `device_authorization_endpoint` | `/device_authorization` の URL — device code grant を組み込んだ場合のみ。 |
 | `grant_types_supported` | `/token` で受け付ける grant 種別: `authorization_code`、`refresh_token`、`client_credentials`、… |
-| `response_types_supported` | `/authorize` が受け付ける response type。本ライブラリは `code` のみ（OIDC Core の "code flow"）を広告します。 |
+| `response_types_supported` | `/authorize` が受け付ける response type。ブラウザ認可を使う構成では `code` のみ（OIDC Core の "code flow"）を広告します。`client_credentials` だけの OP ではブラウザ認可エンドポイントが無いため、空配列になります。 |
 | `response_modes_supported` | `/authorize` の応答方式: `query`、`form_post`、加えて JARM 有効時は `query.jwt`、`fragment.jwt`、`form_post.jwt`、`jwt`。 |
 | `id_token_signing_alg_values_supported` | ID トークンの署名に使う JWS アルゴリズム。OP 署名鍵は ECDSA P-256 のため、本ライブラリは `ES256` のみを公開します。 |
 | `request_object_signing_alg_values_supported` | JAR の `request=` パラメータで受理する JWS アルゴリズム: `RS256`、`PS256`、`ES256`、`EdDSA`。 |
-| `token_endpoint_auth_methods_supported` | confidential RP が `/token` で認証する方式: `client_secret_basic`、`client_secret_post`、`private_key_jwt`。FAPI profile では `private_key_jwt` に絞られます。public client は登録 metadata では `none` を使いますが、discovery の広告には `none` を列挙しません。mTLS 送信者制約の metadata は `mtls_endpoint_aliases` で別に広告します。 |
+| `token_endpoint_auth_methods_supported` | クライアントが `/token` で認証する方式。既定のリストには `client_secret_basic`、`client_secret_post`、`private_key_jwt`、`none` が含まれ、FAPI profile では絞り込まれます。introspection と revocation の auth method リストからは、confidential caller を必須とするため `none` が意図的に除かれます。mTLS 送信者制約の metadata は `mtls_endpoint_aliases` で別に広告します。 |
 | `code_challenge_methods_supported` | PKCE 変換。本ライブラリが広告するのは **`S256` のみ**。 |
 | `subject_types_supported` | `public` と、`op.WithPairwiseSubject(...)` を組み込んだ場合は `pairwise`。 |
 | `claims_supported` | OP が返せる claim。`op.WithClaimsSupported(...)` で操作者が制御。 |
@@ -76,7 +76,9 @@ OP は provider のマウント時に discovery 文書を構築・marshal し、
 
 ## 本ライブラリでの構築方法
 
-discovery は `op.New` の時点で（`internal/discovery/build.go` で）、組み込まれた機能集合から一度だけ構築されます。実行時のドリフトは発生しません — 組み込み側が PAR を組み込んでいなければ `pushed_authorization_request_endpoint` は出力されず、`require_pushed_authorization_requests` も登場しません。組み込み側が `op.WithProfile(profile.FAPI2Baseline)` を組み込んでいれば FAPI の絞り込みが適用されます — `token_endpoint_auth_methods_supported` は FAPI が許可する集合に絞り込まれ、`require_pushed_authorization_requests=true` が出現し、introspection / revocation の auth method リストは絞り込み後の同じリストからコピーされます。
+discovery は `op.New` の時点で（`internal/discovery/build.go` で）、組み込まれた機能集合から一度だけ構築されます。実行時のドリフトは発生しません — 組み込み側が PAR を組み込んでいなければ `pushed_authorization_request_endpoint` は出力されず、`require_pushed_authorization_requests` も登場しません。組み込み側が `op.WithProfile(profile.FAPI2Baseline)` を組み込んでいれば FAPI の絞り込みが適用されます — `token_endpoint_auth_methods_supported` は FAPI が許可する集合に絞り込まれ、`require_pushed_authorization_requests=true` が出現し、introspection / revocation の auth method リストは `none` を除いた絞り込み後の同じリストからコピーされます。認可エンドポイントとブラウザ専用の metadata は、ブラウザ認可を必要とする grant が設定されている場合だけ出力されます。そのため `client_credentials` だけの OP では `authorization_endpoint`、`end_session_endpoint`、`backchannel_logout_supported` が省略され、`response_types_supported: []` は残ります。
+
+`WithDiscoveryMetadata(DiscoveryMetadata{UILocalesSupported: ...})` で locale を明示的に広告する場合も、構築時の契約が適用されます。広告する locale が登録済み resolver から提供されていなければ `op.New` が失敗し、UI が提供できない locale を discovery に出すことを防ぎます。
 
 リポジトリには、プロファイルごとの discovery 文書形状を検証する golden test があり、「discovery が言うこと」と「ハンドラが実際に行うこと」の間で気付かれずに進行するドリフトを PR 時点で捕捉します。背景は [設計判断 #12](/ja/security/design-judgments#dj-12) を参照。
 
@@ -84,7 +86,7 @@ discovery は `op.New` の時点で（`internal/discovery/build.go` で）、組
 
 本ライブラリは、意図的に discovery 文書を絞り込んでいます。
 
-- **`none` alg は出さない。** `id_token_signing_alg_values_supported` と `request_object_signing_alg_values_supported` に `none` は含まれません。型自体に存在しません（[JOSE 基礎](/ja/concepts/jose-basics) と [設計判断 #11](/ja/security/design-judgments#dj-11) を参照）。
+- **`none` alg は出さない。** `id_token_signing_alg_values_supported` と `request_object_signing_alg_values_supported` に `none` は含まれません。これは `/token` に列挙される `none` client-authentication method とは別の話で、`none` は署名アルゴリズムとしては使いません（[JOSE 基礎](/ja/concepts/jose-basics) と [設計判断 #11](/ja/security/design-judgments#dj-11) を参照）。
 - **ID トークンに HMAC 系 alg を出さない。** `HS256` / `HS384` / `HS512` は広告しません。alg-confusion 攻撃クラスはこれらが到達可能であることを必要とするため、型を閉じることで攻撃を構造的に閉じます。
 - **PAR が無効なら `request_uri` を示すフィールドを出さない。** `request_uri_parameter_supported` と `pushed_authorization_request_endpoint` は、組み込み側が PAR を組み込んでいるときだけ登場します。
 - **`claims_parameter_supported` のデフォルトは `true` だが、無効化できる。** `op.WithClaimsParameterSupported(false)` を渡すと、discovery 文書は OIDC §5.5 対応を広告せず、authorize / PAR は malformed JSON の拒否後に `claims` payload を無視します。

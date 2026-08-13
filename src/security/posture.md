@@ -1,6 +1,6 @@
 ---
 title: Security posture
-description: How go-oidc-provider thinks about safety — five separate properties, what's structurally enforced, and the explicit limits of an individually-maintained OSS library.
+description: Structural security defenses, deployment assumptions, source links, and explicit limits of go-oidc-provider as an individually maintained OSS library.
 pageClass: pg-security-posture
 ---
 
@@ -116,7 +116,7 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | Issuer canonicalisation / no trailing slash drift | `op/options_validate.go` | RFC 9207 |
 | Resource indicator canonicalisation (lowercase scheme + host, default port stripped, trailing slash normalised, fragment / userinfo refused) on `/authorize`, `/token`, `/device_authorization`, `/bc-authorize`, and the `WithAccessTokenFormatPerAudience` allow-list | `internal/resourceindicator` | RFC 8707 §2 |
 | Duplicate single-valued parameters refused on `/token`, `/bc-authorize`, `/end_session` (RFC 8707 `resource=` excepted); credentials presented in more than one location refused at `clientauth.Parse` | `internal/httpx`, `internal/clientauth`, `internal/tokenendpoint`, `internal/cibaendpoint`, `internal/endsession` | RFC 6749 §3.2.1, OIDC RP-Initiated Logout 1.0 §3 |
-| Argon2id parameters above the OWASP 2024 floor (memory ≥ 19 MiB, time ≥ 2) for `client_secret`, end-user passwords, and recovery codes; recovery-code batch verification capped at 16; duplicate parameter segments in encoded hashes refused | `internal/argon2id`, `internal/authn/password`, `internal/authn/recovery`, `internal/clientauth/secret` | OWASP Password Storage Cheat Sheet (2024) |
+| Argon2id parameters above the OWASP Password Storage Cheat Sheet floor (memory ≥ 19 MiB, time ≥ 2) for `client_secret`, end-user passwords, and recovery codes; recovery-code batch verification capped at 16; duplicate parameter segments in encoded hashes refused | `internal/argon2id`, `internal/authn/password`, `internal/authn/recovery`, `internal/clientauth/secret` | OWASP Password Storage Cheat Sheet |
 | Trailing JSON documents refused on the DCR metadata decoder and the interaction JSON driver | `internal/registrationendpoint`, `op/interaction` | RFC 7591 §2 |
 | `op.New` rejects configurations whose enabled grants / features need a substore the wired store does not expose | `op/options_validate.go`, `op/storeadapter/redis` | — (defence in depth) |
 | Client verification keys (`client_assertion`, JAR request objects) held to the OP key-shape floor: RSA ≥ 2048 bits, EC curve matches the declared `alg` | `internal/clientauth`, `internal/jar`, `internal/jose` (`AssertAlgKeyShape`) | RFC 7518 §3.3, RFC 8725 §3.2 |
@@ -136,12 +136,14 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 
 | Tier | Tool | Where |
 |---|---|---|
-| Lint | `golangci-lint v2` (errcheck, govet, staticcheck, unused, **gosec**, errorlint, revive, depguard, …) | `.golangci.yml` |
+| Lint | `golangci-lint` (errcheck, govet, staticcheck, unused, **gosec**, errorlint, revive, depguard, …) | `.golangci.yml` |
 | Vuln scan | `govulncheck` | `scripts/govulncheck.sh` |
 | Fuzz | Go native `Fuzz*` (run `make fuzz` or `scripts/fuzz.sh 30s`) | targets across `internal/jose`, `internal/dpop`, `internal/pkce`, `internal/clientauth`, `internal/parendpoint`, `internal/introspectendpoint`, `internal/revokeendpoint`, `internal/jarm`, `internal/mtls`, `internal/authorizationdetails` |
 | License | `go-licenses` | `scripts/licenses.sh` |
 | Conformance | `make conformance-baseline` | `tools/conformance/`, `conformance/` |
 | Scenarios | catalog-driven Spec Scenario Suite | `test/scenarios/` |
+
+The Go language baseline and toolchain are declared by the core module; review the core [`go.mod`](https://github.com/libraz/go-oidc-provider/blob/main/go.mod) rather than relying on a release-specific value copied into this page.
 
 ## What is **not** here
 
@@ -153,7 +155,7 @@ Be loud about the limits. This is the part you should read twice.
 - ❌ **No formal OpenID Foundation certification.** (See <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.)
 - ❌ **No SLA on patch turnaround.** SECURITY.md commits to *aim* — 3 business days ack, 14 days for confirmed-issue mitigations — without a contractual guarantee.
 - ❌ **No 24/7 incident channel.** Disclosure is via GitHub Security Advisories or the maintainer profile.
-- ❌ **No CVE database entry yet** (see <a class="doc-ref" href="/security/disclosure">Disclosure policy</a>). No report meeting the CVE criteria has been received, so there is nothing to publish; that's the literal status, not "we don't bother".
+- ❌ **This page is not a live CVE ledger.** Advisory status can change; use the <a class="doc-ref" href="/security/disclosure">Disclosure policy</a> and the repository's GitHub Security Advisories for the current record.
 :::
 
 If you need any of those for compliance, this library is the wrong choice until it has a formal audit. The honest framing costs nothing and prevents misuse.

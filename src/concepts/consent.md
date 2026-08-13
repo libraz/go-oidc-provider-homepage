@@ -1,6 +1,6 @@
 ---
 title: Consent
-description: When the consent screen is shown, when it is skipped, what first-party clients change, and what the audit trail records.
+description: Consent prompting, scope narrowing, RAR coverage, first-party skips, and the audit events this library actually emits.
 pageClass: pg-concepts-consent
 ---
 
@@ -74,7 +74,7 @@ The library evaluates four cases on every authorize flow.
 | **First-time grant** — no prior `Grant` for this `(subject, client_id)` pair. | Prompt. The user sees the full scope list. On submit, the library writes a `Grant` row with the approved scopes. |
 | **Scope delta** — a `Grant` exists but the requested scope set adds a scope not previously approved. | Prompt, with the delta highlighted. The user can approve the delta, deny it, or deny everything. On approve, the row is updated. |
 | **Forced re-prompt** — the request carries `prompt=consent`. | Prompt regardless of grant state. OIDC §3.1.2.1 mandates this. |
-| **Existing grant covers the request** — `Grant` row already covers every requested scope and `prompt` is `none` or `login` (not `consent`). | Skipped. The library proceeds straight to authorization-code emission and emits `op.AuditConsentSkippedExisting`. |
+| **Existing grant covers the request** — `Grant` row already covers every requested scope and every requested `authorization_details` element, and `prompt` is `none` or `login` (not `consent`). | Skipped. The library proceeds straight to authorization-code emission. There is no dedicated "skipped" audit event. |
 
 ::: details `prompt=none`, `prompt=login`, `prompt=consent` — what's the difference?
 - `prompt=none` — "if the user is signed in and consent is already in place, complete the flow silently. Otherwise return an error." Used by SPAs for silent re-auth.
@@ -111,6 +111,8 @@ op.WithConsentUI(op.ConsentUI{
 
 The template receives the requested scopes (and any deltas relative to an existing grant), the `client_id`, the optional client logo / display name from the client metadata, and the CSRF token to embed in the form. On `POST` from the form, the library validates the CSRF, parses the approved scope set, writes the `Grant` row, and continues the authorize flow.
 
+For RFC 9396 `authorization_details`, coverage uses deep equality: a new element or a changed member forces consent, even when the scope set is already covered. The built-in consent contract exposes scope approval; it has no separate per-detail approval or narrowing control. After ordinary consent, the requested details are persisted with the grant.
+
 For SPAs that render consent client-side (e.g. inside a React shell that already drives the login form), use `op.WithSPAUI(...)` when the OP should also mount the shell and static assets. In that mode the browser lands on `LoginMount/{uid}` and the SPA fetches prompt state from `LoginMount/state/{uid}`. If your own router serves the shell, use the lower-level `op.WithInteractionDriver(interaction.JSONDriver{})` path instead; then the state endpoint remains `/interaction/{uid}`.
 
 `WithSPAUI` and `WithConsentUI` are mutually exclusive because they both own the consent rendering surface. The constructor refuses both at once. See the [SPA custom interaction use case](/use-cases/spa-custom-interaction) for the route shapes and trade-off.
@@ -122,21 +124,20 @@ A user (or admin) can revoke a grant at any time. Revocation flows through two p
 1. **`/revoke` (RFC 7009)** — invalidates a single token (refresh or access). This does not touch the underlying `Grant` row; the next authorize flow with the same scopes still finds the grant and skips consent.
 2. **Grant revocation** — flips the `Grant` row's `Revoked` column. The library cascades through the `Grants` and `AccessTokens` substores: every refresh token in the grant's chain is invalidated, every access token shadow row flips to revoked, and JWT ATs become inactive at every OP-served boundary (`/userinfo`, `/introspect`). The user's next authorize flow finds no covering grant and re-prompts.
 
-The cascade is implemented across `internal/revokeendpoint`, `op/store/grant_revocation.go`, and `op/store/cascade.go`. Each leg emits its own audit event so dashboards can reconstruct what happened. The end-session cascade ([sessions and logout](/concepts/sessions-and-logout#end-session-cascade)) reuses the same machinery.
+The cascade is implemented across `internal/revokeendpoint`, `op/store/grant_revocation.go`, and `op/store/cascade.go`. Successful Grant Management revocation emits `grant_management.revoked`; the library does not emit a dedicated `consent.revoked` event for generic grant or token revocation. The end-session cascade ([sessions and logout](/concepts/sessions-and-logout#end-session-cascade)) reuses the same machinery.
 
 ## Audit events
 
-The token endpoint and consent flow emit five consent-related audit events through `op.WithAuditLogger`:
+The consent flow emits two consent-related audit events through `op.WithAuditLogger`:
 
 | Event | Fires on |
 |---|---|
 | `op.AuditConsentGranted` | User submitted the consent form and a `Grant` row was written. |
 | `op.AuditConsentGrantedFirstParty` | First-party auto-consent applied (no prompt shown). |
-| `op.AuditConsentGrantedDelta` | Existing grant existed; the user approved a scope delta. |
-| `op.AuditConsentSkippedExisting` | Existing grant covered the request; the prompt was skipped. |
-| `op.AuditConsentRevoked` | Grant flipped to `Revoked`. |
 
-Together they let an SOC dashboard distinguish "this user explicitly clicked through consent" from "this client got consent on a silent path that the operator pre-approved" — useful when reviewing why a particular `Grant` row exists.
+`op.AuditConsentGranted` also covers an ordinary reconsent that adds a scope or rich authorization detail; the library does not emit separate `AuditConsentGrantedDelta`, `AuditConsentSkippedExisting`, or `AuditConsentRevoked` events. A successful Grant Management revocation is reported as `op.AuditGrantManagementRevoked`.
+
+Together the emitted consent events let an SOC dashboard distinguish "this user explicitly clicked through consent" from "this client got consent on a silent path that the operator pre-approved" — useful when reviewing why a particular `Grant` row exists.
 
 ## Read next
 

@@ -1,6 +1,6 @@
 ---
 title: Backup & disaster recovery
-description: What to back up, what to skip, and the RPO targets per substore.
+description: Back up durable OIDC state, schema, and keys, then rehearse recovery with per-substore RPOs.
 outline: 2
 pageClass: pg-operations-backup
 ---
@@ -90,6 +90,47 @@ Standard DB backup tooling applies. Two modes that matter:
 
 Schema is documented in the source repo under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql).
 
+### Existing SQL schema before start
+
+Back up the schema and apply the additive changes before starting a binary that uses the current SQL adapter against an existing database. `Store.Migrate` is useful for a new database or development, but its `CREATE TABLE IF NOT EXISTS` statements do not alter existing tables. Drain old MFA writers first; after the columns are present and validated, start only writers that participate in the current opaque compare-and-swap contract. Do not drop and recreate protocol tables as a shortcut.
+
+Add these columns with the dialect types in the migration guide:
+
+- `oidc_registration_access_tokens.allowed_scopes` — nullable `TEXT` on SQLite, `JSON` on MySQL/MariaDB, and `JSONB` on PostgreSQL. `NULL` means an unrestricted RAT ceiling, including tokens created before this field existed.
+- `oidc_totp_secrets.row_version` — `INTEGER NOT NULL DEFAULT 1` on SQLite; `BIGINT NOT NULL DEFAULT 1` on MySQL/MariaDB and PostgreSQL.
+- `oidc_email_otps.row_version` — the same `INTEGER` / `BIGINT` definitions as `oidc_totp_secrets.row_version`.
+
+The current retention and client-deletion schema also needs these exact indexes (replace physical table names when using `WithNaming`):
+
+| Index | Table and columns |
+|---|---|
+| `idx_oidc_grants_client_subject` | `oidc_grants(client_id, subject, updated_at)` |
+| `idx_oidc_grants_client` | `oidc_grants(client_id)` |
+| `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` |
+| `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` |
+| `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` |
+| `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` |
+| `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` |
+| `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` |
+| `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` |
+
+SQLite and PostgreSQL can add the indexes through `Migrate()`; MySQL and MariaDB need explicit `ALTER TABLE ... ADD INDEX` statements for existing tables. Use the dialect-specific statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md), and keep that migration record with the backup/recovery runbook.
+
+### Schedule SQL retention GC
+
+The SQL adapter does not start a background GC goroutine. Schedule `(*oidcsql.Store).GC(ctx, cutoff)` from the same maintenance system that records backup health:
+
+```go
+cutoff := time.Now().UTC().Add(-15 * time.Minute) // keep a short recovery grace window
+stats, err := storage.GC(ctx, cutoff)
+if err != nil {
+  return err
+}
+log.Printf("oidc GC removed %d rows", stats.Total())
+```
+
+The returned `oidcsql.GCStats` counts expired authorization codes, PAR records, interactions, sessions, and refresh-token rotation histories. Refresh history remains while a grant still has a live refresh token; expired sealed retry-response blobs are cleared when eligible even if their row remains, and that blob cleanup is not a row count. A past cutoff leaves a grace period; `time.Now()` reclaims everything already expired. Monitor counts, duration, errors, and table sizes, and run the sweep again after a transient failure. Access-token, opaque-token, grant-revocation, and consumed-JTI stores have their own GC policies; device-code and CIBA rows evict expired records on insert.
+
 ### Redis adapter (`storeadapter/redis`)
 
 Redis stores **only volatile substores** in the bundled adapter:
@@ -125,7 +166,7 @@ If you wrote your own `store.Store`, the contract test suite at [`op/store/contr
 1. Bring up a fresh Redis instance.
 2. Restart the OP replicas.
 3. Active sessions — gone. Users re-login.
-4. The audit log shows a spike in `bcl.no_sessions_for_subject` for any logout fan-out invoked during the gap. Expected; resolve.
+4. A Redis loss does not by itself cause `bcl.no_sessions_for_subject` to spike. `/end_session` snapshots the session before notifying; the event is emitted only when a session-bearing logout notice has zero eligible RP targets derived from grants. If eviction happened before the snapshot, neither the back-channel notification nor the event occurs. Investigate any zero-target events against the logout snapshot and grant state.
 
 ### Partial loss (one substore corrupted)
 

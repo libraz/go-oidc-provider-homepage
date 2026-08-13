@@ -38,7 +38,8 @@ op.WithStore(myCompositeStore)
 
 - [`op/storeadapter/inmem`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/inmem) — 全サブストアをメモリに保持。参考・開発・テスト用。
 - [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql) — `database/sql` 上の永続サブストア。
-- [`op/storeadapter/redis`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/redis) — 揮発性サブストア（`InteractionStore`、`ConsumedJTIStore`）。
+- [`op/storeadapter/dynamodb`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/dynamodb) — DynamoDB 用の同梱フルストア。
+- [`op/storeadapter/redis`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/redis) — `composite` 経由で使う揮発ティア（`InteractionStore`、`ConsumedJTIStore`）。
 - [`op/storeadapter/composite`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/composite) — Hot/Cold 分離。永続サブストアを片方のバックエンドに、揮発性サブストアをもう一方のバックエンドにルートする。
 
 ::: tip 既存ストレージへの接続

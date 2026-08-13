@@ -1,6 +1,6 @@
 ---
 title: Vulnerability disclosure & CVE
-description: How to report a security issue in go-oidc-provider, what to expect, and the current advisory state.
+description: How to report a security issue in go-oidc-provider, what to expect, and where supported-version and advisory status are maintained.
 pageClass: pg-security-disclosure
 ---
 
@@ -98,11 +98,7 @@ The project follows **coordinated disclosure** — nothing about that is adversa
 
 ## Current advisory state
 
-::: details Status as of this page revision
-**No public CVE has been assigned to date.** No security report meeting the criteria for a CVE has been received against this library. This is a literal status — there is nothing to publish — not a claim of audited safety. See the [Security posture](/security/posture) page for the honest framing around what the project's defences cover and don't cover.
-
-GitHub Security Advisories are the canonical source of truth and will appear on the [advisories page](https://github.com/libraz/go-oidc-provider/security/advisories) as soon as one is filed.
-:::
+Advisory status changes over time, so this page intentionally does not duplicate a point-in-time CVE count. GitHub Security Advisories are the canonical current record; consult the [advisories page](https://github.com/libraz/go-oidc-provider/security/advisories) and the repository [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) for the live policy and disclosures. See the [Security posture](/security/posture) page for the limits of the project's defences.
 
 ## Adjacent supply-chain hygiene
 

@@ -1,6 +1,6 @@
 ---
 title: Bring your own store backend
-description: Implement the store.Store interfaces directly to back the OP with your own tables and your own column names.
+description: Implement store.Store with the hashing, transaction, and equality-only concurrency contracts required by custom tables or non-SQL backends.
 ---
 
 # Use case — Bring your own store backend
@@ -61,6 +61,20 @@ These stay optional, and the OP degrades rather than refusing to start:
 ::: tip Verify the placement, don't infer it
 [`op/store/contract`](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) runs the core contract against your backend and skips each extension you do not implement, so the suite tells you which capabilities you actually landed.
 :::
+
+## Concurrency contracts to implement
+
+The current `store` interfaces make several security-sensitive read-modify-write rules explicit. They are backend contracts, not hints to approximate:
+
+- `store.TOTPRecord.Version` and `store.EmailOTPRecord.Version` are non-zero, store-issued opaque tokens after persistence. They are **equality-only**: do not increment them, compare their order, reuse one after delete/recreate, or expose them in the JSON document. `Put` assigns a fresh token without mutating the caller's record; `CompareAndSwap` carries the token read by the caller and assigns a fresh successor. A stale or malformed snapshot returns `store.ErrAlreadyConsumed`.
+- `store.CIBARequestStore.Approve` is an atomic Pending → Approved transition. If a deferred record already has a non-empty `Subject`, a different subject returns `store.ErrConflict` and leaves the record untouched; an empty subject may be populated exactly once. Approving a missing or expired record returns `store.ErrNotFound`, and approving a record that is no longer Pending returns `store.ErrConflict`. `Consume` separately performs the Approved → Consumed single-use transition, returning `store.ErrAlreadyConsumed` for a consumed record and `store.ErrConflict` for Pending or Denied.
+- CIBA is outside the aggregate's `store.Transactional` cluster; `Approve` and `Consume` must provide their own atomic transitions rather than approximating them with a read followed by a write.
+- `store.InteractionStoreCAS` compares `RawState` byte-for-byte. Preserve the bytes exactly and make `CompareAndSwap` / `DeleteIfUnchanged` atomic; re-encoding JSON or normalizing whitespace changes the version and causes a legitimate completion to lose with `store.ErrConflict`.
+- `store.GrantStore.Save` amends an existing grant. Lock the row through the transaction, use serializable isolation, or reject a stale basis with `store.ErrConflict`; an unlocked read followed by an unconditional save can silently drop a concurrent consent update.
+
+The SQL adapter stores these version tokens in `oidc_totp_secrets.row_version` and `oidc_email_otps.row_version`; see [the SQL migration order](/use-cases/sql-store#sql-migration-before-first-request) before starting a version-aware writer. The [contract suite](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) is the executable reference for each sentinel and transition.
+
+Those SQL names are adapter-specific. A BYO backend may choose different columns or a non-SQL representation, but its registration-token store still has to persist `RegistrationAccessToken.AllowedScopes`, and its MFA stores still need equivalent opaque compare-and-swap state before the first request.
 
 ## Column names are yours
 

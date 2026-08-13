@@ -1,18 +1,18 @@
 ---
 title: 可観測性
-description: OP に対するログ、監査ログ、Prometheus、トレースの組み込み。
+description: 同期的な監査ログ、issuer ラベル付き Prometheus、組み込み側が所有する HTTP トレースを OP に接続します。
 outline: 2
 pageClass: pg-operations-observability
 ---
 
 # 可観測性
 
-本番で必要な可視化は 3 系統あります:
+本番で必要な可視化は 4 系統あります:
 
 | 系統 | 載るもの | OP 側の差し込み口 | 組み込み側の責務 |
 |---|---|---|---|
 | 運用ログ | リクエストエラー、設定の問題、起動時の状態 | `WithLogger(*slog.Logger)` | 構造化ログの送り先 |
-| 監査イベント | 各プロトコル動作([カタログ](/ja/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC パイプライン |
+| 監査イベント | 発火するシグナルと予約語([カタログ](/ja/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC パイプライン |
 | メトリクス | OIDC の業務カウンタ | `WithPrometheus(*prometheus.Registry)` | `/metrics` ルート |
 | トレース | リクエストスパン | 内蔵なし | `http.Handler` を `otelhttp.NewMiddleware` でラップ |
 
@@ -84,7 +84,7 @@ op.New(
 )
 ```
 
-各イベントは、`msg = "<event.name>"` と共通属性(`request_id`、`subject`、`client_id`、`extras`)を持つ JSON 1 行として記録されます。全イベント名は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。
+各イベントは、`msg = "<event.name>"` と共通属性(`request_id`、`subject`、`client_id`、`extras`)を持つ JSON 1 行として記録されます。全イベント名は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。`WithAuditLogger` の handler は同期的に request goroutine 上で実行されます。遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。カタログには OP が発火しない予約語もあるため、すべての定数を発火の証拠として扱わないでください。
 
 ::: tip 1 本のストリームを複数の出力先へ
 1 つの `*slog.Logger` を fan-out 用のハンドラに通せば、ファイル + Loki + Splunk に同時に流せます。OP 側は `logger.LogAttrs(...)` を呼ぶだけです。
@@ -146,11 +146,7 @@ import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 ```
 
-リクエストのライフサイクルがスパンでカバーされます。エンドポイント内部の子スパンは現状は発火していません。「`/token` の中で PKCE 検証にどれだけかかったか」のような段階別の trace は、HTTP 層から見える粒度に留まります。
-
-::: info 将来のトレース
-段階別スパンは計画していますが、公開トレーシング面は意図的に小さく保っています。同等のカバレッジを高カーディナリティと引き換えに欲しい場合は、監査イベントカタログ(イベント単位の発火)を使えます。
-:::
+リクエストのライフサイクルは `otelhttp.NewHandler` などの組み込み側 middleware がスパンにします。OP は業務系・リクエストライフサイクルを含め、OpenTelemetry span を内蔵しません。`/token` 内の PKCE 検証時間など段階別の計装が必要なら組み込み側で追加してください。監査イベントカタログはスパンではなく、離散的なイベント記録を提供します。
 
 ## リクエスト ID
 
@@ -184,11 +180,11 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 | `grant_type` 別のトークン発行レート | Prometheus カウンタ | ベースライン比 50 % 以上の持続的な低下 |
 | `/token` の 5xx 率 | HTTP ミドルウェアのヒストグラム | 5 分窓で 0.5 % 超 |
 | `refresh.replay_detected` の発生率 | 監査ログ → Loki / ES | 0 超(非ゼロ自体が要調査) |
-| `bcl.no_sessions_for_subject` の発生率 | 監査ログ | `posture=durable` 環境でのスパイク |
+| `bcl.no_sessions_for_subject` の発生率 | 監査ログ | 発生率の上昇を grant / client 状態と相関し、snapshot の文脈は別途確認 |
 | アクティブセッション数 | ストアのクエリまたは自前メトリクス | 30 % 超の低下 |
 | JWKS リクエスト率 | HTTP ミドルウェア | RP キャッシュの健全性指標 |
 
-最初の 3 つが本番異常の S/N が高い指標です。4 つ目はストア drift。残り 2 つは RP 側の regression を捕まえます。
+最初の 3 つが本番異常の S/N が高い指標です。`bcl.no_sessions_for_subject` の発生率が上昇したら grant / client 状態と相関させ、設定した `posture` は logout trigger と session snapshot の永続性を解釈する文脈として確認します。空の RP audience の原因とみなしてはいけません。残り 2 つは RP 側の regression を捕まえます。
 
 ## レート制限と濫用シグナル
 
@@ -198,10 +194,10 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 
 | 監査イベント | 定数 | 何を示すか |
 |---|---|---|
-| `pkce.violation` | `op.AuditPKCEViolation` | コード交換が PKCE 検証に失敗。単一 IP / クライアントから繰り返すなら、盗んだ認可コードを試している攻撃者の強いシグナル。 |
-| `redirect_uri.mismatch` | `op.AuditRedirectURIMismatch` | 提示された `redirect_uri` が登録 URI と一致しない。繰り返しは既知の `client_id` に対する偵察。 |
-| `client_authn.failure` | `op.AuditClientAuthnFailure` | `/token`・`/par`・`/introspect`・`/revoke` でのクライアント認証失敗。バーストは credential のブルートフォース。 |
-| `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | デバイスコード確認画面で user_code が総当たりされている。`devicecodekit` がデバイスコード単位のロックアウトを内蔵しています — 確認ヘルパは [Device Code](/ja/use-cases/device-code) を参照。 |
+| `pkce.violation` | `op.AuditPKCEViolation`（予約語） | カタログ名は予約されています。OP は PKCE 拒否を通信路上で返しますが、この監査イベントは発火しません。 |
+| `redirect_uri.mismatch` | `op.AuditRedirectURIMismatch`（予約語） | カタログ名は予約されています。OP は mismatch を通信路上で返しますが、この監査イベントは発火しません。 |
+| `client_authn.failure` | `op.AuditClientAuthnFailure` | `/token`・`/par`・`/device_authorization`・`/bc-authorize` でのクライアント認証失敗。`/introspect` は別の `op.AuditIntrospectionError` を使い、`/revoke` はどちらも使いません。 |
+| `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | デバイスコード確認画面で user_code が総当たりされている。レコードに紐付く helper はレコード単位で制限し、最初の手入力画面を複数レプリカで動かす場合は共有 limiter と `devicecodekit.VerifyUserCodeByAttemptKey` を使います — 確認 helper は [Device Code](/ja/use-cases/device-code) を参照。 |
 | `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | CIBA のポーリングカウンタが `auth_req_id` 単位の閾値を超えた。ライブラリはワイヤ応答を `access_denied` で拒否し、SOC ツールが相関できるようイベントを発行します。 |
 | `rate_limit.exceeded` | `op.AuditRateLimitExceeded` | 組み込み側のレート制限ミドルウェアから発火させるための予約イベント。ライブラリは定数だけ定義してカタログの一貫性を保ちますが、内部経路から発火させはしません。 |
 | `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | 同じ趣旨 — 組み込み側ミドルウェアが明示的な bypass（許可リスト済み IP、内部プローブ等）を記録するためのもの。 |
@@ -210,7 +206,7 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 
 ::: tip 推奨パターン
 1. **リバースプロキシまたはエッジサービスでグローバルなレートを執行する** — 例えば `/token` は IP 当たり 100 req/s、`/par` はもっと低めに。これが攻撃者にリクエストを「コスト」として支払わせる実機構です。
-2. **監査パイプラインがバーストにアラートを出す** — 単一 IP・ASN・`client_id` から `pkce.violation`・`redirect_uri.mismatch`・`client_authn.failure` が立て続けに来たとき。これらが「誰かが OP を突いている」の S/N が高いイベントです。
+2. **監査パイプラインがバーストにアラートを出す** — 単一 IP・ASN・`client_id` から `client_authn.failure` が立て続けに来たとき。これは「誰かが OP を突いている」ことを示す S/N の高いイベントです。予約語である PKCE と redirect mismatch は現在 OP から発火しません。
 3. **クライアント単位の許可リストで攻撃面を上流で削る。** `WithCORSOrigins` も `redirect_uris` レジストリも許可リストとして働きます — 小さく保つほど、設定ミスや侵害されたクライアントが晒す攻撃面は減ります。
 :::
 
@@ -218,8 +214,8 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 
 汎用の IP 単位レート制限では塞げない 3 つの濫用経路だけは、ライブラリ側にロックアウトが組み込まれています — 攻撃者は IP を安価に切り替えられ、保護対象がエントロピーの低いコードや subject 単位の credential（任意の URL ではない）だからです:
 
-- **ログインのブルートフォース（要素跨ぎ）。** `op.WithAuthnLockoutStore` を組み込むと、組み込みの第 2 要素 `Step`（TOTP、メール OTP、パスワード）が同じ subject 単位カウンタを参照するので、攻撃者が要素を切り替えて推測予算を 2 倍にすることはできません。ログインフローは失敗ステップごとに `op.AuditLoginFailed`（最終的に成功した時点で `op.AuditLoginSuccess`）を発火しますが、失敗ストリームを無制限に流さないのはこのロックアウト層の役目です。
-- **Device Code user_code の総当たり。** `op.devicecodekit` パッケージが `device_code` ごとの strike カウンタを持ちます。一定回数のミスマッチで verification ヘルパが短絡し、strike ごとに `op.AuditDeviceCodeUserCodeBruteForce` を発火します。ユーザに短いコードを手で打たせる UX を壊さずに防御するには、これしか方法がありません。
+- **ログインのブルートフォース（要素跨ぎ）。** `op.WithAuthnLockoutStore` を組み込むと、組み込みの第 2 要素 `Step`（TOTP、メール OTP、パスワード）が同じ subject 単位カウンタを参照するので、攻撃者が要素を切り替えて推測予算を 2 倍にすることはできません。primary/additional factor の失敗は `op.AuditLoginFailed` または `op.AuditMFAFailed`、成功は `op.AuditLoginSuccess` または `op.AuditMFASuccess` になります。`op.AuditLockoutStalled` は CAS 競合で失敗試行がカウントされずに中断されたことを示します。
+- **Device Code user_code の総当たり。** レコードに紐付く helper では `op.devicecodekit` が record ごとの strike カウンタを持ちます。最初の手入力画面で `device_code` が無い場合は、opaque で安定した key と共有 `AttemptLimiter` を使って `VerifyUserCodeByAttemptKey` を呼びます。ミスマッチごとに `op.AuditDeviceCodeUserCodeBruteForce` が発火し、レプリカごとに予算が分かれることを防げます。
 - **CIBA poll abuse。** トークンエンドポイントは単一 `auth_req_id` が許容ケイデンスを超えてポーリングされた回数を数えます。閾値を超えると、リクエストストアの `Deny` を `reason="poll_abuse"` で呼び、通信路上の応答は `access_denied` になり、`op.AuditCIBAPollAbuseLockout` が発火します。グローバルなレート制限で行儀の良い RP まで巻き添えにすることなく、病的な RP だけを止められます。
 
 これらのゲートはいずれも **専用の** 監査イベントを発火します — `rate_limit.exceeded` / `rate_limit.bypassed` ではありません。この分担は意図的です:
@@ -229,7 +225,7 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 | 汎用 HTTP レート制限（IP 単位、エンドポイント単位、`client_id` 単位） | 組み込み側ミドルウェア（リバースプロキシ、ゲートウェイ、Go ハンドラチェーン） | `op.AuditRateLimitExceeded` / `op.AuditRateLimitBypassed` — 組み込み側が OP の監査ロガーに発火させる |
 | 用途特化のブルートフォース防御（ログイン、user_code、ポーリングケイデンス） | ライブラリ内部 | `op.AuditLoginFailed`、`op.AuditDeviceCodeUserCodeBruteForce`、`op.AuditCIBAPollAbuseLockout` |
 
-それ以外 — PKCE 失敗のバースト、`redirect_uri` ミスマッチの繰り返し、`client_authn` 失敗の継続 — は監査イベントとしては観測できますが、ライブラリ側で執行はしていません。これは意図的な分担です。OP は構造化シグナルを発行する側、運用側はそれに対する応答（ブロック、スロットル、ページング）を決める側、という切り分けです。
+それ以外 — `client_authn` 失敗の継続や、通信路上で返る PKCE / `redirect_uri` 拒否 — には組み込みの HTTP リミッタがありません。client-auth 失敗は監査シグナルですが、PKCE と redirect mismatch は予約語です。これは意図的な分担です。OP は所有するシグナルを発行する側、運用側はそれに対する応答（ブロック、スロットル、ページング）を決める側、という切り分けです。
 
 ## ログ保持
 

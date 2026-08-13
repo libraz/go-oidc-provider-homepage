@@ -1,6 +1,6 @@
 ---
 title: ID Token, access token, userinfo
-description: Three artefacts that look similar but answer different questions — and why "JWT vs opaque" actually matters.
+description: Understand the ID Token, access token, and UserInfo contracts, including JWT or opaque access tokens, OP-side revocation, and introspection authorization.
 pageClass: pg-concepts-tokens
 ---
 
@@ -122,20 +122,20 @@ The Bearer token your resource server validates (RFC 6750). Two classical format
 | Format | Validation | State on the OP |
 |---|---|---|
 | **Opaque** | RS calls `/introspect` (RFC 7662) every request. | OP keeps a row keyed on the token. |
-| **JWT (RFC 9068)** | RS validates signature + `aud` + `exp` self-contained. | Stateless — no row needed to verify. |
+| **JWT (RFC 9068)** | RS validates signature + `aud` + `exp` locally. | Verification is self-contained; the OP may keep grant tombstones or JTI rows for OP-served revocation. |
 
 ### Why this matters: session_end, userinfo, and revocation depend on history
 
-::: warning A pure stateless JWT has no "still alive" beyond `exp`
-The trade-off looks tidy on a slide and breaks several OIDC flows in production. Anyone running an OP with **stateless** JWT access tokens either ships without revocation or layers an external denylist on top.
+::: warning Offline JWT verification cannot see OP-side revocation
+The RS can validate a JWT without calling the OP, but that path cannot observe grant tombstones, JTI revocation rows, logout cascades, or code-replay revocation. OP-served `/userinfo` and `/introspect` paths still consult the configured OP-side state; an offline RS must use introspection, an audit-fed denylist, or a short access-token lifetime when it needs that state.
 :::
 
 | Flow | What it should answer | What breaks under stateless JWT |
 |---|---|---|
-| **`/userinfo`** (OIDC Core §5.3) | "Is this token still valid for the user it represents?" | OP has nothing to look up. Logged-out users still get claims back. |
-| **`/end_session`** (RP-Initiated Logout) | Ends the session | The JWT keeps working until `exp`. A leaked token calls APIs for ten more minutes after the user "logged out." |
-| **`/revoke`** (RFC 7009) | Invalidates a specific token | No-op. RFC 7009 §2.2 explicitly allows revocation to be unsupported for self-contained tokens. |
-| **`/introspect`** (RFC 7662) | Returns `active: false` for revoked tokens | Can only reflect signature / `exp` — never session state. |
+| **`/userinfo`** (OIDC Core §5.3) | "Is this token still valid for the user it represents?" | The OP checks the JWT's grant/JTI state before projecting claims. |
+| **`/end_session`** (RP-Initiated Logout) | Ends the session | The OP records revocation; an offline RS keeps accepting the JWT until `exp`. |
+| **`/revoke`** (RFC 7009) | Invalidates a specific token | The configured OP-side strategy records the token's revocation; offline RSes do not see it. |
+| **`/introspect`** (RFC 7662) | Returns `active: false` for revoked tokens | The OP checks signature, lifetime, issuer, and configured revocation state. |
 
 Pages comparing "JWT vs opaque" sometimes gloss over this. In production the trade-off is real.
 
@@ -147,14 +147,20 @@ The library defaults to JWT (RFC 9068) and offers opaque as opt-in. Both shapes 
 |---|---|---|
 | Wire format | base64url JWT (`header.payload.signature`) | random bearer string |
 | RS validation | offline against the JWKS | calls `/introspect` per request |
-| OP-side state on issuance | none — only a `gid` private claim in the JWT | hashed row in `store.OpaqueAccessTokenStore` |
+| OP-side state on issuance | no row under the default grant-tombstone strategy; optional JTI shadow row when selected | hashed row in `store.OpaqueAccessTokenStore` |
 | Revocation reach | OP-served boundaries (`/userinfo`, `/introspect`) | every RS request |
 | Audit trail of issuance | none by default; opt in via `RevocationStrategyJTIRegistry` for one shadow row per issuance | one row per issuance, automatically |
 | Configured via | (default) | `op.WithAccessTokenFormat(...)` or `op.WithAccessTokenFormatPerAudience(...)` (RFC 8707) |
 
 ::: warning Cascade scope depends on the format
-`/userinfo`, `/introspect`, `/revoke`, `/end_session`, and the code-replay cascade all consult OP-side state. A revoked or logout-cascaded token is rejected at `/userinfo` with `WWW-Authenticate: Bearer error="invalid_token"` even when its JWT signature still verifies — **but only as long as the verification path goes through the OP**. An RS that validates a JWT offline against the JWKS will not see the cascade until the next refresh-token rotation. Opaque format closes that gap because every use is OP-resolved.
+`/userinfo`, `/introspect`, `/revoke`, `/end_session`, and the code-replay cascade all use OP-side revocation state. A revoked or logout-cascaded token is rejected at `/userinfo` with `WWW-Authenticate: Bearer error="invalid_token"` even when its JWT signature still verifies — **but only when the request reaches the OP**. An RS that validates a JWT offline against the JWKS does not see the cascade until it receives equivalent denylist state or the token expires. Opaque format closes that gap because every RS validation reaches `/introspect`.
 :::
+
+### Introspection is for confidential callers
+
+`/introspect` authenticates the caller before it examines a token. Public clients and clients registered with token-endpoint authentication method `none` receive `401` with `invalid_client`; they cannot use introspection. A confidential caller can introspect its own access or refresh tokens. Cross-client access is inactive by default and becomes active only when the caller is listed in the matching protected resource's `IntrospectionClients` and the access token's `aud` names that resource. This delegation never applies to refresh tokens.
+
+An active opaque access-token introspection response includes `iss` alongside the usual `active`, `client_id`, `token_type`, `exp`, `iat`, `sub`, `aud`, and `scope` fields when those values exist. Resource servers should validate `iss` and `aud` as part of their local policy.
 
 ::: details `jti`? `gid`? Tombstones?
 Each access token JWT includes a `jti` (RFC 7519 §4.1.7, unique per-token) and a `gid` private claim (the OP-side GrantID, omitempty, consumed by the OP only — RSes ignore it).
@@ -216,7 +222,7 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 - **ID Token claims** are a snapshot at login time.
 - **UserInfo** is the live source — call it when you need a value (e.g. display name) that the user might have changed.
 
-For most apps, ID Token claims are enough. UserInfo is for the cases where you need freshness. Behind the scenes, the library checks the access-token shadow row first, so a token revoked between login and the UserInfo call is rejected even though its JWT signature is still valid.
+For most apps, ID Token claims are enough. UserInfo is for the cases where you need freshness. Behind the scenes, the library verifies the access token and consults the configured OP-side revocation state, so a token revoked between login and the UserInfo call is rejected even though its JWT signature may still be valid.
 :::
 
 ## Configuration knobs
@@ -227,7 +233,7 @@ For most apps, ID Token claims are enough. UserInfo is for the cases where you n
 | `op.WithRefreshTokenTTL(d)` | Lifetime of refresh tokens. | 30 days |
 | `op.WithRefreshTokenOfflineTTL(d)` | Lifetime of `offline_access` refresh tokens. | inherits `WithRefreshTokenTTL` |
 | `op.WithClaimsSupported(...)` | Claims the OP can return. Surfaced in the discovery document. | — |
-| `op.WithClaimsParameterSupported(false)` | Stop advertising and honoring the OIDC §5.5 `claims` request parameter after malformed JSON has been rejected. | on |
+| `op.WithClaimsParameterSupported(false)` | Stop advertising and projecting valid OIDC §5.5 `claims` requests; malformed JSON is still rejected. | on |
 | `op.WithStrictOfflineAccess()` | Switch issuance and refresh exchange to the strict OIDC Core §11 reading: refresh tokens are issued only when the granted scope contains `offline_access`. See callout below. | off (lax — `openid` + client `refresh_token` grant suffices) |
 
 ::: details `offline_access` — what's that?

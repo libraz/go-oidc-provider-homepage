@@ -35,12 +35,12 @@ http.ListenAndServe(":8080", r)
 
 ```go
 op.New(
-  op.WithMountPrefix("/auth"),
+  op.WithMountPrefix("/oidc"),
   /* ... */
 )
 ```
 
-Now `/authorize` becomes `/auth/authorize`, `/token` becomes `/auth/token`, and so on. **Discovery (`/.well-known/openid-configuration`) is always mounted at the root** — OIDC Discovery 1.0 §4 requires it.
+The default `/auth` endpoint becomes `/oidc/auth`, `/token` becomes `/oidc/token`, and so on. **Discovery (`/.well-known/openid-configuration`) is always mounted at the root** — OIDC Discovery 1.0 §4 requires it.
 
 ## Custom endpoint paths
 

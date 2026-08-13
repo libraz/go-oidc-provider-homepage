@@ -8,6 +8,8 @@ pageClass: pg-compliance-ofcs-reproduce
 
 This page is the operator's runbook. It complements [OFCS conformance status](/compliance/ofcs), which records *what* the suite saw on the latest run; this page covers *how* to reproduce it on your own machine and *which library options* each OFCS plan exercises.
 
+The status page summarizes the latest release run at core commit [`ee4369a`](https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a). Its JSON snapshot is a local, gitignored release artifact; use this runbook to generate a fresh snapshot for your own environment.
+
 If you are looking for the latest PASS/REVIEW/SKIPPED/WARNING counts, start at [OFCS conformance status](/compliance/ofcs). If you want to understand which `op.With...` options to wire into your own OP so the same OFCS plans pass against it, you are in the right place.
 
 ::: warning Personal project, not certified
@@ -53,7 +55,7 @@ The numbers on this site are reproducible snapshots — this page tells you how 
 
 - **Docker** with Compose v2 (the harness invokes `docker compose`, not `docker-compose`).
 - **OpenSSL** for cert generation (`scripts/conformance.sh certs`).
-- **Go toolchain** matching the version pinned in `go.mod`.
+- **Go 1.25+**; use the toolchain version pinned in `go.mod` for the same release environment.
 - `curl` and `python3` for the seed-plans / drive scripts.
 
 The OFCS image is pulled from the OpenID Foundation registry at the tag pinned in [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml). You do not need a separate OFCS checkout or `mvn install` step.
@@ -90,7 +92,7 @@ OFCS test plans differ in which library features they exercise. The table below 
 | `oidcc-dynamic-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) — `op.WithDynamicRegistration` branch |
 | `oidcc-formpost-basic-certification-test-plan` | `make conformance-op-up` (no profile) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
 | `oidcc-rp-initiated-logout-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
-| `oidcc-rp-initiated-logout-with-back-channel-logout-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
+| `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | `make conformance-op-up` (DCR enabled by default) | [`cmd/op-demo/main.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/main.go) |
 | `fapi2-security-profile-id2-test-plan` | `OP_PROFILE=fapi2-baseline make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2BaselineOptions` |
 | `fapi2-message-signing-id1-test-plan` | `OP_PROFILE=fapi2-message-signing make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2MessageSigningOptions` |
 | `fapi-ciba-id1-test-plan` | `OP_PROFILE=fapi-ciba make conformance-op-up` | [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) — `fapiCIBAOptions` |
@@ -141,7 +143,7 @@ Set `OP_PROFILE=fapi2-message-signing`. Everything Baseline does plus:
 Set `OP_PROFILE=fapi-ciba`. CIBA differs from the fapi2-* plans in three significant ways:
 
 - The OFCS `fapi-ciba-id1` plan inherits FAPI 1.0's hardcoded cert-bound access-token requirement and exposes no sender-constraint variant. The demo therefore wires `op.WithFeature(feature.MTLS)` instead of `feature.DPoP`. Both satisfy `WithProfile`'s "DPoP OR MTLS" disjunctive constraint.
-- CIBA clients never visit `/authorize`. Their seeds carry an empty `redirect_uri` set and a narrowed grant list (CIBA URN + `refresh_token`).
+- CIBA clients never visit the authorization endpoint. Their seeds carry an empty `redirect_uri` set and a narrowed grant list (CIBA URN + `refresh_token`).
 - The OFCS plan drives the `auth_req_id` poll loop without a real authentication device. The demo wraps the in-memory `CIBARequestStore` with `cibaAutoApproveStore`, which schedules an out-of-band `Approve()` after a configurable delay so the OP can simulate a device callback. **Production embedders MUST trigger `Approve` from the user's actual authentication-device callback, never from inside the OP process.**
 
 The full wiring (including the auto-approve substore and the hint resolver) lives in [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go).
@@ -155,7 +157,7 @@ With the stack up and the plans seeded, you can drive modules in three ways.
 Useful when iterating on one module from the OFCS UI:
 
 ```sh
-scripts/conformance.sh drive 'https://host.docker.internal:9443/oidc/authorize?...'
+scripts/conformance.sh drive 'https://host.docker.internal:9443/oidc/auth?...'
 ```
 
 Copy the `Browser` URL OFCS prints in the test detail panel.
@@ -186,11 +188,11 @@ OFCS mainly reports four terminal result values, and the harness also preserves 
 - **REVIEW** — the module ran but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture (consent UI strings, error page screenshots). Not a failure. The headless harness records `REVIEW` as-is; paid certification would require sitting in front of the OFCS UI to clear it.
 - **SKIPPED** — the module depends on a feature this OP does not advertise in discovery or per-client metadata. For example, a per-client `RS256` negative test skips when the client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
 - **WARNING** — the module reached a non-failed advisory result. The current status page tracks these separately from FAILED.
-- **FAILED** — the module did not reach the suite's expected result. It blocks the release unless `make conformance-release-verify` matches it to a reviewed, unexpired exclusion; see [OFCS conformance status](/compliance/ofcs#latest-baseline) for the current breakdown.
+- **FAILED** — the module did not reach the suite's expected result. It blocks the release unless `make conformance-release-verify` matches it to a reviewed, unexpired exclusion; see [OFCS conformance status](/compliance/ofcs) for the current breakdown.
 
-The detailed breakdown of which modules currently sit in REVIEW or SKIPPED, and why, is on [OFCS conformance status](/compliance/ofcs#modules-currently-in-review).
+The detailed breakdown of which modules currently sit in REVIEW or SKIPPED, and why, is on [OFCS conformance status](/compliance/ofcs).
 
-## Capturing and diffing a baseline
+## Capturing and diffing a baseline {#reproduce-baseline}
 
 The harness is built around the cycle "freeze the current state, then verify a change does not regress against it":
 

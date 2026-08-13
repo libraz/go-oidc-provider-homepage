@@ -1,6 +1,6 @@
 ---
 title: scope と claim
-description: scope とは、claim とは、OIDC 標準の scope-to-claim 対応表、本ライブラリでのカスタム scope 登録方法。
+description: scope と claim、OIDC 標準の対応表、カスタム scope 登録を整理 — wire parsing と resource indicator も扱う。
 ---
 
 # scope と claim
@@ -28,10 +28,10 @@ scope は要求、claim は応答。scope を grant するから、対応する 
 
 ## scope: クライアントが要求するもの
 
-`/authorize` の `scope` パラメータは、半角スペース区切りの不透明な識別子のリストです。ユーザはその集合に同意し、OP は grant された集合を、結果として返す認可コード、アクセストークン、リフレッシュトークン、ID トークンに記録します。
+`/auth` の `scope` パラメータは、半角スペース区切りの不透明な識別子のリストです。ユーザはその集合に同意し、OP は grant された集合を、結果として返す認可コード、アクセストークン、リフレッシュトークン、ID トークンに記録します。OP を `/oidc` に mount した場合の既定 endpoint は `/oidc/auth` です。
 
 ```
-GET /authorize?response_type=code&client_id=...&scope=openid%20profile%20email&...
+GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
 ```
 
 初学者が見落としがちな点をいくつか:
@@ -93,7 +93,7 @@ op.WithScope(op.Scope{
 
 OIDC 標準 scope は組み込みのデフォルトで自動認識されます。標準名（例: `email`）に対して `WithScope` を呼ぶと組み込みエントリが上書きされます — 翻訳や追加の claim mapping を付与する目的で使うのが典型です — が、`Public: false` で標準 scope を登録すると `op.New` が失敗します。discovery 文書が「標準 scope を欠落」と公告するのを防ぐためです。
 
-`op.Scope.Parse` は組み込み側の文字列処理用ヘルパで、Unicode whitespace の連続で分割します。一方、通信路上の scope parsing は RFC 6749 の ASCII space grammar を使うため、`/authorize` / `/par` 入力に tab や改行を混ぜることを互換性前提にしないでください。
+`op.Scope.Parse` は組み込み側の文字列処理用ヘルパで、Unicode whitespace の連続で分割します。一方、通信路上の scope parsing は RFC 6749 の ASCII space grammar を使うため、`/auth` / `/par` 入力に tab や改行を混ぜることを互換性前提にしないでください。
 
 i18n ラベル、claim mapping、consent prompt のレンダリングを含む詳細は[使い方: scope](/ja/use-cases/scopes)を参照してください。
 

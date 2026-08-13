@@ -1,14 +1,14 @@
 ---
 title: 時刻ずれとリプレイ猶予
-description: OIDC が扱う署名済みアーティファクトには発行時刻 (`iat`) と有効期限 (`exp`) が付きます。サーバの時刻がずれると期限切れの署名物を受理し、重複検出テーブルがなければリプレイを防げません。本ページは go-oidc-provider が用いる時刻関連の猶予を 1 か所にまとめます。
+description: go-oidc-provider の時計、リプレイ、再認証、passkey challenge、remote JWKS の freshness ルールと、組み込み時に確認すべき既定値・上限をまとめます。
 pageClass: pg-security-clock-and-replay
 ---
 
 # 時刻ずれとリプレイ猶予
 
-OIDC が扱う署名済みアーティファクト、つまり認可コード、リフレッシュトークン、DPoP proof、JAR オブジェクト、PAR レコード、ID トークン、アクセストークン、`client_assertion` は、発行時刻 (`iat`) と有効期限 (`exp`) を持ちます。OP の時計がずれると、クライアント側では期限切れと見なされる署名物を OP が受理してしまいます。リプレイ検出テーブルを持たなければ、同じ署名物を 2 度受理してしまいます。OP はこの両方を防ぐために、受理できる時間幅を決め、観測した識別子をその時間幅が閉じるまで保持し、範囲外のものを拒否します。
+OIDC のアーティファクトは、すべてが同じ freshness / replay 形状を持つわけではありません。認可コードや PAR レコードはサーバ側で消費され、JWT や proof は時刻 claim を持ちます。OP の時計がずれると古いアーティファクトを受理でき、replay state がなければ同じものを 2 度受理できます。そのため OP は、明示的な TTL、時計の許容幅、一回限りの state、compare-and-set の重複検出ストアを組み合わせます。
 
-本ページは、ライブラリが適用する時刻関連の猶予、対応する定数またはオプション、該当機能を解説しているページを 1 つの表にまとめます。OP を組み込む際にセキュリティ観点でレビューするなら、まずこの表が出発点になります。
+本ページは、誤解しやすいセキュリティ上の既定値、対応する定数またはオプション、該当機能を解説しているページをまとめます。`iat` / `exp` だけでは表せない再認証、passkey、JWKS の上限も記載します。
 
 ## 時計の発生源
 
@@ -20,7 +20,7 @@ type Clock interface {
 }
 ```
 
-実運用ではこのフィールドを設定せずに渡せば、ライブラリ側が `time.Now()` を使う実装を組み込みます。テストや決定論的なリプレイ検証のハーネスでは fake `Clock` を渡すことで、トークン TTL、監査タイムスタンプ、レートリミットの時間幅を制御できます。コードベース内には、新鮮性判定のために直接 `time.Now()` を読む箇所はありません。すべての新鮮性判定はこのインターフェースを通ります。「今何時か」という判断が、あちこちに散らばらず、モック可能な 1 か所に集約されています。
+実運用ではこのフィールドを設定せずに渡せば、ライブラリ側が system clock 実装を組み込みます。テストや決定論的なリプレイ検証のハーネスでは fake `Clock` を渡すことで、トークン TTL、監査タイムスタンプ、レートリミットの時間幅を制御できます。コアの freshness 判定はこの seam を使いますが、seam を import できない adapter は自身の fallback と override を文書化します。組み込み側で protocol 判定のための ad-hoc な `time.Now()` を増やさず、時計の境界を 1 か所に保ってください。
 
 組み込み側への含意として、**NTP / chronyd は必須**です。OP は自分の wall clock を信用して `iat` と `exp` を現在時刻と比較します。時計が分単位でずれているマシンでは、クライアント側では古いと判断される proof を OP が受理したり、逆にクライアントが署名したばかりの proof を拒否したりします。OP は時刻同期が確立されているホストでのみ動かしてください。
 
@@ -41,9 +41,9 @@ type Clock interface {
 | リフレッシュトークン (絶対寿命) | 発行時の `exp` | `timex.RefreshTokenTTLDefault = 30 日` | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
 | `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` 重複検出、±60 秒の clock leeway | `jti` は `expiresAt = assertion.exp + leeway`(60 秒)で記録。`now + maxAssertionLifetime + leeway` を上限にキャップ | [/ja/concepts/client-types](/ja/concepts/client-types) |
 
-「既定の窓 / TTL」列の定数は、隣接するライブラリ本体のソースを読んで確認した一次情報です。ライブラリ側で既定値が変わったときに最初に追従すべきページがここです。
+「既定の窓 / TTL」列は、現行 core のソースとテストで確認した値です。`With*` オプションや有効な profile により狭くなったり置き換わったりする TTL を、固定契約として過度に一般化しないようにしています。core を更新したら、リンク先のソースとテストを再確認してください。
 
-同じ猶予を対数時間軸で実スケールに並べると、形が一目で分かります。リプレイと時計に関する猶予はいずれも 60 秒前後の狭い帯に収まり、トークンの寿命は数分に上がり、リフレッシュトークンの絶対寿命だけが 30 日という遠い位置にあります。その間には何もありません。
+表中の代表的な猶予を対数時間軸で実スケールに並べると、リプレイと時計の窓は 1 分前後に集まり、トークンの寿命は数分、リフレッシュトークンの絶対寿命は 30 日に達することが分かります。
 
 <svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="clock-replay-window-scale-title">go-oidc-provider が適用する時刻・リプレイ猶予を、60 秒のリプレイ帯から 30 日のリフレッシュトークン寿命まで対数軸で並べた比較図。</title>
@@ -106,11 +106,27 @@ type Clock interface {
 <text class="d-tick" x="724" y="375" text-anchor="middle">30 日</text>
 </svg>
 
+## 再認証の freshness
+
+`prompt=login` と、期限を超えた `max_age` は表示上のヒントではなく freshness 要求です。`/authorize` の入口で `prompt=login` は常に再認証フラグを立て、`max_age` は request の整数秒を session に記録された `auth_time` と比較します。`max_age=0` は必ず新しい factor を要求します。既存の browser session や consent grant だけでは、どちらの要求も満たせません。interaction state はこの決定を authenticator orchestrator へ運び、factor のない終端結果を `ErrReauthNotPerformed` で拒否します。factor が完了すると、新しい `auth_time` が session と grant に記録されます。
+
+## JWT の `jti` と時計の許容幅
+
+ライブラリ内の JWT access-token verifier は、個別の leeway を設定しない場合、`tokens.DefaultLeeway = 30 秒` を `exp` と `iat` の両方に対称に適用します。OP の access-token revocation strategy が `None` 以外なら、registry / denylist が token identifier なしに失効を判定できないため `RequireJTI` も有効になります。`RevocationStrategyNone` では必須ではありません。これは DPoP / JAR / client assertion の replay retention とは別で、JWT のすべての利用に共通する 30 秒の `jti` cache があるわけではありません。
+
+## passkey challenge の退役
+
+passkey の registration / login は毎回新しい WebAuthn challenge を発行し、既定では絶対寿命 5 分の `Session` を返します。assertion が失敗すると authenticator orchestrator は factor の処理中 scratch を消し、署名済み `StateRef` の counter を進めてから失敗した state を保存します。これにより古い `StateRef` と challenge は一緒に退役し、拒否された assertion を interaction state の 10 分の寿命いっぱい replay できなくなります。成功した assertion は通常の credential 更新と clone-warning の規則に従います。
+
+## remote JWKS の上限
+
+登録済み `jwks_uri` から取得する RP JWKS には、fetch 全体 5 秒、成功 cache の最大 TTL 5 分、応答 body 64 KiB、宣言できる key 64 個、プロセス全体で同時に読み込める異なる URL 64 個という上限があります。不明な `kid` による強制 refresh は URL ごとに 20 秒に 1 回へ制限されます。cache の URL 数は成功 / 失敗を合わせて 256 件、失敗結果の negative cache は 5 秒です。これらは core の安全上の上限であり、上流 JWKS の可用性を保証するものではありません。key rotation はこの上限内で完了する運用にしてください。
+
 ## ここでの「リプレイ」とは
 
 仕様文では replay は 1 語ですが、コード上の防御は 3 種類に分かれます。
 
-**トークンリプレイ** — 同じ bearer 形式のクレデンシャルを 2 回提示する形です。認可コードは初回使用時に *消費* されます（`AuthorizationCodeStore` の該当行が使用済みに切り替わります）。リフレッシュトークンは引き換えのたびに *ローテーション* し、猶予期間が閉じた後に直前のトークンを提示すると、リユース検出によって失効カスケードが走ります。DPoP proof は `jti` で *重複検出* されます。検証器は受理した proof の `jti` を `ConsumedJTIStore` に記録するため、同じ `jti` を持つ 2 個目の proof は、2 回目の nonce が新鮮であっても `ErrProofReplayed` を返します。
+**トークンリプレイ** — 同じ bearer 形式のクレデンシャルを 2 回提示する形です。認可コードは初回使用時に *消費* されます（`AuthorizationCodeStore` の該当行が使用済みに切り替わります）。リフレッシュトークンは引き換えのたびに *ローテーション* し、猶予期間が閉じた後に直前のトークンを提示すると、リユース検出によって失効カスケードが走ります。DPoP proof は `jti` で *重複検出* されます。まず nonce gate を通し、受理した proof を `ConsumedJTIStore` に commit するため、最初の proof が gate を通過した後に同じ `jti` を持つ proof を送ると `ErrProofReplayed` になります。
 
 **リクエストリプレイ** — 同じ `/authorize` リクエストを同じパラメータで再送信する形です。PAR は一回限りの `request_uri` を発行するため、構造的にこのリプレイを防ぎます。`/authorize` がその URN を消費した時点で、レコードは `PushedAuthRequestStore` から消えます。JAR（`request=` でインライン渡しする request object）は同じ `ConsumedJTIStore` サブストアに対して `jti` 重複検出を行い、`jar:<clientID>:<jti>` 形式のキーで保持して、request object 自身の `exp` を境に削除します。
 
@@ -124,13 +140,13 @@ type Clock interface {
 
 複数インスタンス構成では、このサブストアを全インスタンスで共有するか、または特定の `jti` の存続期間中はその `jti` を同じインスタンスへルーティングする必要があります。複数レプリカそれぞれに in-memory 実装を持たせると、この防御は無効化されます。レプリカ A とレプリカ B が同じ proof を 1 度ずつ、合計 2 度受理してしまうためです。Redis / Memcached のような高速な共有キャッシュが標準的な選択肢で、これに伴う揮発 / 永続ストアの分離指針は [/ja/operations/multi-instance](/ja/operations/multi-instance) で扱っています。
 
-`ConsumedJTIStore` はトランザクション対象の永続ストアの外側に明示的に置かれています（`op/store/tx.go` 参照）。操作は冪等です。最初に書いた側が勝ち、後続の書き込みは consumed として観測されます。キャッシュが完全に消えても、攻撃者がリプレイできる時間幅は各アーティファクトの残り寿命に限られます。DPoP は `iat` 窓の 2 倍、JAR / `client_assertion` は `exp` で上限が決まります。表中の窓がいずれもおおむね 120 秒以下に収まっているのはこのためです。
+`ConsumedJTIStore` はトランザクション対象の永続ストアの外側に明示的に置かれています（`op/store/tx.go` 参照）。操作は冪等です。最初に書いた側が勝ち、後続の書き込みは consumed として観測されます。cache が完全に消えた場合に replay が再び成立する時間は、各アーティファクト固有の受理境界までです。DPoP marker は許容された `iat` 範囲を、JAR / client assertion は bounded な expiry 計算を基準に保持されます。token の寿命や browser interaction state は別の予算であり、意図的にこれより長くなります。
 
 もう 1 つの運用上の前提は wall clock 自体です。すべてのレプリカは同じ OP コード・同じ既定値で動いていても、レプリカ間の時計が該当する猶予を超えてずれると、同じアーティファクトが新鮮かどうかについて判断が割れます。フリート全体の NTP 規律はセキュリティ姿勢の一部であり、付け足しではありません。
 
 ## エッジケース
 
-**サマータイムや閏秒は無関係**です。OP が保持するタイムスタンプはすべて Unix epoch 秒です。DST 移行や閏秒調整が epoch を動かすことはありません。表中の定数はすべて純粋な `time.Duration` 値であり、60 秒の猶予は 10 月最終日曜日の深夜をまたいでも 60 秒のままです。
+**サマータイムや閏秒は無関係**です。OP が比較する protocol timestamp は Unix epoch 秒です。DST 移行や閏秒調整が epoch を動かすことはありません。表中の定数は `time.Duration` 値なので、60 秒の猶予は local time の移行をまたいでも 60 秒のままです。
 
 **長寿命トークンと短い窓の組み合わせ**。リフレッシュトークンの既定は 30 日、ローテーション猶予は 60 秒です。この組み合わせは意図的なものです。長い寿命によって、妥当なネットワーク断絶下でもバックグラウンド同期クライアントを支えます。一方で短い猶予によって、漏洩した直前のトークンが正規クライアントのローテーション後に使える時間を抑え込みます。本ライブラリはネットワークの瞬断下でも、リプレイを黙って受理して可用性を優先するのではなく、リユース検出による失効カスケードを優先します。60 秒という窓は、典型的なモバイル端末の retry を覆える最小幅でありながら、直前のトークンが長く使える状態を残さない値として選ばれています。トレードオフの判断は [/ja/security/design-judgments](/ja/security/design-judgments) にあります。
 
