@@ -1,6 +1,7 @@
 ---
 title: ストアバックエンドを自前実装する
 description: 自前のテーブルや非 SQL バックエンドで store.Store を実装し、ハッシュ化・トランザクション・等価比較だけの並行性契約を守る。
+pageClass: pg-use-cases-byo-store
 ---
 
 # 使い方 — ストアバックエンドを自前実装する
@@ -24,16 +25,16 @@ description: 自前のテーブルや非 SQL バックエンドで store.Store �
 <svg role="img" aria-labelledby="byo-store-seam-title" viewBox="0 0 760 152" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="byo-store-seam-title">op.WithStore の境界。各操作の意味は本ライブラリが持ち、その表現は自前のバックエンドが持つ。境界を越えるのは store.* Go 構造体と sentinel エラーだけ。</title>
 
-  <path d="M380 26 V140" style="stroke:var(--vp-c-divider);stroke-width:1.5;stroke-dasharray:6 5"/>
-  <text x="380" y="18" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">op.WithStore</text>
+  <path class="bs-seam" d="M380 26 V140"/>
+  <text class="bs-seam-name" x="380" y="18" text-anchor="middle">op.WithStore</text>
 
-  <rect x="20" y="40" width="240" height="84" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="140" y="72" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2)">本ライブラリ</text>
-  <text x="140" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">意味</text>
+  <rect class="bs-lib" x="20" y="40" width="240" height="84" rx="8"/>
+  <text class="bs-lib-title" x="140" y="72" text-anchor="middle">本ライブラリ</text>
+  <text class="bs-role" x="140" y="94" text-anchor="middle">意味</text>
 
-  <rect x="500" y="40" width="240" height="84" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="620" y="72" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">自前のバックエンド</text>
-  <text x="620" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">表現</text>
+  <rect class="bs-app" x="500" y="40" width="240" height="84" rx="8"/>
+  <text class="bs-app-title" x="620" y="72" text-anchor="middle">自前のバックエンド</text>
+  <text class="bs-role" x="620" y="94" text-anchor="middle">表現</text>
 
   <path d="M264 70 H496"/>
   <path d="M272 66 L264 70 L272 74"/>
@@ -41,8 +42,8 @@ description: 自前のテーブルや非 SQL バックエンドで store.Store �
   <path d="M496 100 H264"/>
   <path d="M272 96 L264 100 L272 104"/>
 
-  <text class="halo" x="380" y="74" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono)">store.*</text>
-  <text class="halo" x="380" y="104" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono)">store.Err*</text>
+  <text class="halo bs-wire" x="380" y="74" text-anchor="middle">store.*</text>
+  <text class="halo bs-wire" x="380" y="104" text-anchor="middle">store.Err*</text>
 </svg>
 
 この境界を越えるのは `store.*` Go 構造体と sentinel エラーだけです。境界の向こう側にあるもの（名前、エンジン、エンコーディング）は OP からは一切見えません。
@@ -157,7 +158,7 @@ example は、すべてのテーブルとカラムに意図的に非 OIDC 的な
 ## 動かす
 
 ```sh
-(cd examples/26-byo-store-from-scratch && go run -tags example .)
+(cd examples/26-byo-store-from-scratch && GOWORK=off go run -tags example .)
 ```
 
 example は OP を `:8080`、ペアの RP を `:9090` で起動します。`demo@example.test` / `demo` でサインインすると、RP の `/me` ページに払い出された ID Token の claim が表示されます。すべて `vault_*` スキーマから提供されています。

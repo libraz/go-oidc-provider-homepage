@@ -2,7 +2,6 @@
 title: Storage maintenance
 description: Apply SQL schema changes in the right order, schedule retention GC, and monitor the storage work that keeps an OP safe to restart.
 outline: 2
-pageClass: pg-operations-storage-maintenance
 ---
 
 # Storage maintenance

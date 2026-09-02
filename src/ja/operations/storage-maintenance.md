@@ -2,7 +2,6 @@
 title: ストレージの保守
 description: SQL スキーマ変更の順序、retention GC のスケジュール、OP の再起動を支えるストレージ監視をまとめます。
 outline: 2
-pageClass: pg-operations-storage-maintenance
 ---
 
 # ストレージの保守

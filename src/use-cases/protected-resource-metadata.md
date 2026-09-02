@@ -1,6 +1,7 @@
 ---
 title: Protected resource metadata (RFC 9728)
 description: Publish OAuth 2.0 Protected Resource Metadata, including resource audiences and confidential introspection delegation for protected APIs.
+pageClass: pg-use-cases-protected-resource-metadata
 ---
 
 # Use case — Protected resource metadata (RFC 9728)
@@ -14,27 +15,27 @@ Use this when clients discover APIs by resource identifier, or when more than on
 <svg role="img" aria-labelledby="prm-discovery-title" viewBox="0 0 760 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="prm-discovery-title">How a client gets from a resource identifier to the authorization server: it fetches the resource's well-known metadata, reads authorization_servers out of it, and follows that issuer to the OP's own discovery document.</title>
 
-  <path d="M40 48 V192" opacity="0.4"/>
+  <path class="prm-rail" d="M40 48 V192"/>
 
-  <circle cx="40" cy="48" r="9" fill="var(--vp-c-bg)"/>
-  <text x="40" y="51.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">1</text>
-  <text x="66" y="52" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">The client holds a resource identifier</text>
-  <text x="744" y="52" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">https://op.example.com/api</text>
+  <circle class="prm-dot" cx="40" cy="48" r="9"/>
+  <text class="prm-step-no" x="40" y="51.5" text-anchor="middle">1</text>
+  <text class="prm-step" x="66" y="52">The client holds a resource identifier</text>
+  <text class="prm-value" x="744" y="52" text-anchor="end">https://op.example.com/api</text>
 
-  <circle cx="40" cy="96" r="9" fill="var(--vp-c-bg)"/>
-  <text x="40" y="99.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">2</text>
-  <text x="66" y="100" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">It fetches that resource's metadata</text>
-  <text x="744" y="100" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">/.well-known/oauth-protected-resource/api</text>
+  <circle class="prm-dot" cx="40" cy="96" r="9"/>
+  <text class="prm-step-no" x="40" y="99.5" text-anchor="middle">2</text>
+  <text class="prm-step" x="66" y="100">It fetches that resource's metadata</text>
+  <text class="prm-value" x="744" y="100" text-anchor="end">/.well-known/oauth-protected-resource/api</text>
 
-  <circle cx="40" cy="144" r="9" fill="var(--vp-c-bg)"/>
-  <text x="40" y="147.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">3</text>
-  <text x="66" y="148" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">The document names the AS</text>
-  <text x="744" y="148" text-anchor="end" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="11">"authorization_servers": ["https://op.example.com"]</text>
+  <circle class="prm-dot" cx="40" cy="144" r="9"/>
+  <text class="prm-step-no" x="40" y="147.5" text-anchor="middle">3</text>
+  <text class="prm-step" x="66" y="148">The document names the AS</text>
+  <text class="prm-value-hit" x="744" y="148" text-anchor="end">"authorization_servers": ["https://op.example.com"]</text>
 
-  <circle cx="40" cy="192" r="9" fill="var(--vp-c-bg)"/>
-  <text x="40" y="195.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">4</text>
-  <text x="66" y="196" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">The client follows that issuer to discovery</text>
-  <text x="744" y="196" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">/.well-known/openid-configuration</text>
+  <circle class="prm-dot" cx="40" cy="192" r="9"/>
+  <text class="prm-step-no" x="40" y="195.5" text-anchor="middle">4</text>
+  <text class="prm-step" x="66" y="196">The client follows that issuer to discovery</text>
+  <text class="prm-value" x="744" y="196" text-anchor="end">/.well-known/openid-configuration</text>
 </svg>
 
 The OP serves both documents in that ladder; validating the bearer token stays with the resource server.

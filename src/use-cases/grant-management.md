@@ -1,6 +1,7 @@
 ---
 title: Grant management
 description: Let clients create, replace, merge, query, and revoke long-lived grants by id, with deletion limited to the named grant_id.
+pageClass: pg-use-cases-grant-management
 ---
 
 # Use case — Grant management
@@ -14,19 +15,19 @@ Use it when clients must manage a consent-like grant after the first authorizati
 <svg role="img" aria-labelledby="gm-lifecycle-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="gm-lifecycle-title">The grant lifecycle. create, replace and merge ride the authorization request and set the grant's scope and authorization_details; query and revoke are operations on the grant management endpoint; only revoke reaches the tokens bound to the grant.</title>
 
-  <text x="111" y="26" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="11.5">On the authorization request</text>
+  <text class="gm-cap" x="111" y="26" text-anchor="middle">On the authorization request</text>
 
   <rect x="16" y="40" width="190" height="40" rx="6"/>
-  <text x="30" y="59" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="12" font-weight="600">create</text>
-  <text x="30" y="73" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">no grant_id — the OP mints one</text>
+  <text class="gm-mode" x="30" y="59">create</text>
+  <text class="gm-note" x="30" y="73">no grant_id — the OP mints one</text>
 
   <rect x="16" y="92" width="190" height="40" rx="6"/>
-  <text x="30" y="111" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="12" font-weight="600">replace</text>
-  <text x="30" y="125" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">scope := the new request's</text>
+  <text class="gm-mode" x="30" y="111">replace</text>
+  <text class="gm-note" x="30" y="125">scope := the new request's</text>
 
   <rect x="16" y="144" width="190" height="40" rx="6"/>
-  <text x="30" y="163" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="12" font-weight="600">merge</text>
-  <text x="30" y="177" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">scope := existing ∪ new</text>
+  <text class="gm-mode" x="30" y="163">merge</text>
+  <text class="gm-note" x="30" y="177">scope := existing ∪ new</text>
 
   <path d="M206 60 H240"/>
   <path d="M206 112 H240"/>
@@ -35,32 +36,32 @@ Use it when clients must manage a consent-like grant after the first authorizati
   <path d="M240 108 H272"/>
   <path d="M266 104 L274 108 L266 112"/>
 
-  <rect x="274" y="60" width="212" height="96" rx="8" stroke="var(--vp-c-brand-2)"/>
-  <text x="380" y="88" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">Grant</text>
-  <text x="380" y="108" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="11">grant_id = g-9f3c…</text>
-  <rect x="288" y="118" width="184" height="28" rx="5" fill="var(--vp-c-bg-soft)" stroke="none"/>
-  <text x="380" y="136" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="9.5">scope + authorization_details</text>
+  <rect class="gm-grant" x="274" y="60" width="212" height="96" rx="8"/>
+  <text class="gm-grant-title" x="380" y="88" text-anchor="middle">Grant</text>
+  <text class="gm-mono" x="380" y="108" text-anchor="middle">grant_id = g-9f3c…</text>
+  <rect class="gm-chip" x="288" y="118" width="184" height="28" rx="5"/>
+  <text class="gm-chip-text" x="380" y="136" text-anchor="middle">scope + authorization_details</text>
 
   <path d="M380 156 V196"/>
   <path d="M376 190 L380 199 L384 190"/>
 
-  <rect x="274" y="200" width="212" height="86" rx="8" stroke-dasharray="5 4"/>
-  <text x="380" y="220" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10.5">tokens bound to this grant</text>
-  <text x="380" y="240" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="10">JWT access tokens</text>
-  <text x="380" y="258" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="10">opaque access tokens</text>
-  <text x="380" y="276" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="10">refresh tokens</text>
+  <rect class="gm-tokens" x="274" y="200" width="212" height="86" rx="8"/>
+  <text class="gm-sub" x="380" y="220" text-anchor="middle">tokens bound to this grant</text>
+  <text class="gm-token" x="380" y="240" text-anchor="middle">JWT access tokens</text>
+  <text class="gm-token" x="380" y="258" text-anchor="middle">opaque access tokens</text>
+  <text class="gm-token" x="380" y="276" text-anchor="middle">refresh tokens</text>
 
-  <text x="649" y="26" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="11.5">On the grant management endpoint</text>
+  <text class="gm-cap" x="649" y="26" text-anchor="middle">On the grant management endpoint</text>
 
   <rect x="554" y="40" width="190" height="40" rx="6"/>
-  <text x="568" y="60" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="11">GET …/{grant_id}</text>
-  <text x="568" y="74" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">reads scope + details</text>
+  <text class="gm-mono" x="568" y="60">GET …/{grant_id}</text>
+  <text class="gm-note" x="568" y="74">reads scope + details</text>
 
   <rect x="554" y="92" width="190" height="40" rx="6"/>
-  <text x="568" y="112" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="11">DELETE …/{grant_id}</text>
-  <text x="568" y="126" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">204 · grant record deleted</text>
+  <text class="gm-mono" x="568" y="112">DELETE …/{grant_id}</text>
+  <text class="gm-note" x="568" y="126">204 · grant record deleted</text>
 
-  <text x="649" y="152" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10.5">cascade to every bound token</text>
+  <text class="gm-sub" x="649" y="152" text-anchor="middle">cascade to every bound token</text>
 
   <path d="M552 60 H520 V90 H492"/>
   <path d="M498 86 L490 90 L498 94"/>

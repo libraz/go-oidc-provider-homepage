@@ -1,6 +1,7 @@
 ---
 title: DynamoDB storage
 description: Run go-oidc-provider on DynamoDB with deliberate table definitions, transactional device-code reservations, and read-time expiry checks independent of TTL cleanup.
+pageClass: pg-use-cases-dynamodb-store
 ---
 
 # Use case — DynamoDB storage
@@ -67,33 +68,33 @@ The current device-code table does **not** use a `by_user_code` global secondary
 <svg role="img" aria-labelledby="ddb-reservation-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="ddb-reservation-title">The device-code reservation layout: one Save writes both the device record and a user_code reservation item in a single TransactWriteItems call, and a lookup by user_code reads the reservation with a strongly consistent read before resolving the record.</title>
 
-  <rect x="20" y="28" width="190" height="60" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="115" y="54" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">Save</text>
-  <text x="115" y="74" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">one TransactWriteItems</text>
+  <rect class="ddb-call" x="20" y="28" width="190" height="60" rx="8"/>
+  <text class="ddb-call-name" x="115" y="54" text-anchor="middle">Save</text>
+  <text class="ddb-note" x="115" y="74" text-anchor="middle">one TransactWriteItems</text>
 
-  <rect x="420" y="16" width="320" height="58" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="440" y="42" font-size="11.5" fill="currentColor" style="font-family:var(--vp-font-family-mono)">pk = digest(device_code)</text>
-  <text x="440" y="62" font-size="10.5" style="fill:var(--vp-c-text-2)">the device record</text>
+  <rect class="ddb-item" x="420" y="16" width="320" height="58" rx="8"/>
+  <text class="ddb-item-key" x="440" y="42">pk = digest(device_code)</text>
+  <text class="ddb-note" x="440" y="62">the device record</text>
 
-  <rect x="420" y="104" width="320" height="58" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="440" y="130" font-size="11.5" fill="currentColor" style="font-family:var(--vp-font-family-mono)">pk = uc#&lt;user_code&gt;</text>
-  <text x="440" y="150" font-size="10.5" style="fill:var(--vp-c-text-2)">the uniqueness reservation</text>
+  <rect class="ddb-item" x="420" y="104" width="320" height="58" rx="8"/>
+  <text class="ddb-item-key" x="440" y="130">pk = uc#&lt;user_code&gt;</text>
+  <text class="ddb-note" x="440" y="150">the uniqueness reservation</text>
 
-  <path d="M210 48 H414" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M408 43 L414 48 L408 53" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M210 70 C312 70 322 133 414 133" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M408 128 L414 133 L408 138" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="ddb-flow" d="M210 48 H414"/>
+  <path class="ddb-flow" d="M408 43 L414 48 L408 53"/>
+  <path class="ddb-flow" d="M210 70 C312 70 322 133 414 133"/>
+  <path class="ddb-flow" d="M408 128 L414 133 L408 138"/>
 
-  <rect x="20" y="176" width="190" height="60" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="115" y="202" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindByUserCode</text>
-  <text x="115" y="222" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">strongly consistent read</text>
+  <rect class="ddb-call" x="20" y="176" width="190" height="60" rx="8"/>
+  <text class="ddb-call-name" x="115" y="202" text-anchor="middle">FindByUserCode</text>
+  <text class="ddb-note" x="115" y="222" text-anchor="middle">strongly consistent read</text>
 
-  <path d="M210 202 C312 202 330 150 414 148" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M408 143 L414 148 L409 154" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="ddb-flow" d="M210 202 C312 202 330 150 414 148"/>
+  <path class="ddb-flow" d="M408 143 L414 148 L409 154"/>
 
-  <path d="M580 104 V78" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M575 85 L580 78 L585 85" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="592" y="96" font-size="10.5" style="fill:var(--vp-c-text-2)">resolves the record</text>
+  <path class="ddb-flow" d="M580 104 V78"/>
+  <path class="ddb-flow" d="M575 85 L580 78 L585 85"/>
+  <text class="ddb-note" x="592" y="96">resolves the record</text>
 </svg>
 
 An existing table may therefore still contain the old, unused `by_user_code` index. It is safe to leave that index in place while planning capacity changes; if it is no longer wanted, remove it through the deployment's normal DynamoDB infrastructure procedure after the pre-upgrade records have expired. Do not drop or recreate the table as part of this upgrade. Device codes written before the reservation-item layout have no `uc#...` reservation and are intentionally not resolved by `user_code`; they expire naturally within their normal short lifetime. The adapter does not fall back to the old index, because doing so would let a new request claim a code still held by a live pre-upgrade record.

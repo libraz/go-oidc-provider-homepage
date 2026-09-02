@@ -1,6 +1,7 @@
 ---
 title: セキュリティプロファイルの宣言
 description: Provider 構築時に OIDC Core、OAuth 2.1 Baseline、FAPI を明示 — profile は feature を補うが grant は補わない。
+pageClass: pg-use-cases-security-profile
 ---
 
 # 使い方 — セキュリティプロファイルの宣言
@@ -37,8 +38,8 @@ public / native client は `profile.Baseline` を指定しなくても PKCE 必�
 <svg role="img" aria-labelledby="profile-axes-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="profile-axes-title">宣言したプロファイルは必要な feature flag を補うが、grant は補わない。プロファイルが要求する grant を配備側が宣言していない場合は op.New が失敗する。</title>
 
-  <rect x="260" y="16" width="240" height="44" rx="8" stroke="var(--vp-c-brand-2)"/>
-  <text x="380" y="43" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="12.5">op.WithProfile(…)</text>
+  <rect class="sp-option" x="260" y="16" width="240" height="44" rx="8"/>
+  <text class="sp-option-name" x="380" y="43" text-anchor="middle">op.WithProfile(…)</text>
 
   <path d="M380 60 V82"/>
   <path d="M192 82 H568"/>
@@ -48,18 +49,18 @@ public / native client は `profile.Baseline` を指定しなくても PKCE 必�
   <path d="M564 102 L568 111 L572 102"/>
 
   <rect x="24" y="114" width="336" height="130" rx="8"/>
-  <text x="192" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">feature</text>
-  <text x="192" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">feature.PAR, feature.JAR, feature.JARM, …</text>
-  <path d="M44 178 H340" opacity="0.35"/>
-  <text x="192" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">プロファイルが決めてよいポリシー</text>
-  <text x="192" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">未宣言 → プロファイルが有効化</text>
+  <text class="sp-axis" x="192" y="140" text-anchor="middle">feature</text>
+  <text class="sp-axis-example" x="192" y="162" text-anchor="middle">feature.PAR, feature.JAR, feature.JARM, …</text>
+  <path class="sp-divider" d="M44 178 H340"/>
+  <text class="sp-claim" x="192" y="202" text-anchor="middle">プロファイルが決めてよいポリシー</text>
+  <text class="sp-outcome" x="192" y="226" text-anchor="middle">未宣言 → プロファイルが有効化</text>
 
   <rect x="400" y="114" width="336" height="130" rx="8"/>
-  <text x="568" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">grant</text>
-  <text x="568" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">grant.AuthorizationCode, grant.CIBA, …</text>
-  <path d="M420 178 H716" opacity="0.35"/>
-  <text x="568" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">協力者を用意できるのは組み込み側だけ</text>
-  <text x="568" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">未宣言 → op.New が失敗</text>
+  <text class="sp-axis" x="568" y="140" text-anchor="middle">grant</text>
+  <text class="sp-axis-example" x="568" y="162" text-anchor="middle">grant.AuthorizationCode, grant.CIBA, …</text>
+  <path class="sp-divider" d="M420 178 H716"/>
+  <text class="sp-claim" x="568" y="202" text-anchor="middle">協力者を用意できるのは組み込み側だけ</text>
+  <text class="sp-outcome" x="568" y="226" text-anchor="middle">未宣言 → op.New が失敗</text>
 </svg>
 
 どちらの場合も、解決後のポリシーは `startup.profile` 監査イベントに記録されます。OP が実際にどの設定で起動したかは、オプションの並びから推測するのではなく監査証跡から読み取れます。

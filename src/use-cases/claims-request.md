@@ -1,6 +1,7 @@
 ---
 title: Claims request parameter
 description: OIDC Core 1.0 §5.5 — RP asks for specific claims via `claims`; the OP projects them when claims support is enabled.
+pageClass: pg-use-cases-claims-request
 ---
 
 # Use case — Claims request parameter
@@ -20,37 +21,37 @@ The two mechanisms differ in where their output lands. A scope releases its whol
 <svg role="img" aria-labelledby="claims-routing-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="claims-routing-title">Where each request lands: the id_token member of the claims parameter selects claims for the ID Token only, the userinfo member selects claims for the /userinfo response only, and the scope-mapped bundle reaches both.</title>
 
-  <rect x="24" y="32" width="250" height="56" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="40" y="58" fill="currentColor" font-size="12.5" font-weight="600" style="font-family:var(--vp-font-family-mono)">claims["id_token"]</text>
-  <text x="40" y="78" font-size="11" style="fill:var(--vp-c-text-2)">the claims it names, ID Token only</text>
+  <rect class="cr-src" x="24" y="32" width="250" height="56" rx="8"/>
+  <text class="cr-src-title" x="40" y="58">claims["id_token"]</text>
+  <text class="cr-note" x="40" y="78">the claims it names, ID Token only</text>
 
-  <rect x="24" y="112" width="250" height="56" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="40" y="138" fill="currentColor" font-size="12.5" font-weight="600" style="font-family:var(--vp-font-family-mono)">scope</text>
-  <text x="40" y="158" font-size="11" style="fill:var(--vp-c-text-2)">the whole §5.4 bundle, both destinations</text>
+  <rect class="cr-src" x="24" y="112" width="250" height="56" rx="8"/>
+  <text class="cr-src-title" x="40" y="138">scope</text>
+  <text class="cr-note" x="40" y="158">the whole §5.4 bundle, both destinations</text>
 
-  <rect x="24" y="192" width="250" height="56" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="40" y="218" fill="currentColor" font-size="12.5" font-weight="600" style="font-family:var(--vp-font-family-mono)">claims["userinfo"]</text>
-  <text x="40" y="238" font-size="11" style="fill:var(--vp-c-text-2)">the claims it names, UserInfo only</text>
+  <rect class="cr-src" x="24" y="192" width="250" height="56" rx="8"/>
+  <text class="cr-src-title" x="40" y="218">claims["userinfo"]</text>
+  <text class="cr-note" x="40" y="238">the claims it names, UserInfo only</text>
 
-  <rect x="526" y="44" width="210" height="64" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="631" y="74" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">id_token</text>
-  <text x="631" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">signed into the JWT</text>
+  <rect class="cr-dest" x="526" y="44" width="210" height="64" rx="8"/>
+  <text class="cr-dest-title" x="631" y="74" text-anchor="middle">id_token</text>
+  <text class="cr-note" x="631" y="94" text-anchor="middle">signed into the JWT</text>
 
-  <rect x="526" y="176" width="210" height="64" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="631" y="206" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">GET /userinfo</text>
-  <text x="631" y="226" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">returned in the JSON body</text>
+  <rect class="cr-dest" x="526" y="176" width="210" height="64" rx="8"/>
+  <text class="cr-dest-title" x="631" y="206" text-anchor="middle">GET /userinfo</text>
+  <text class="cr-note" x="631" y="226" text-anchor="middle">returned in the JSON body</text>
 
-  <path d="M274 60 H522" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 55 L522 60 L516 65" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 60 H522"/>
+  <path class="cr-flow" d="M516 55 L522 60 L516 65"/>
 
-  <path d="M274 128 C398 128 398 92 522 92" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 87 L522 92 L516 97" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 128 C398 128 398 92 522 92"/>
+  <path class="cr-flow" d="M516 87 L522 92 L516 97"/>
 
-  <path d="M274 152 C398 152 398 208 522 208" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 203 L522 208 L516 213" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 152 C398 152 398 208 522 208"/>
+  <path class="cr-flow" d="M516 203 L522 208 L516 213"/>
 
-  <path d="M274 220 H522" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 215 L522 220 L516 225" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 220 H522"/>
+  <path class="cr-flow" d="M516 215 L522 220 L516 225"/>
 </svg>
 
 `essential` does not change that routing. It changes only how hard the OP tries: for `acr` an essential request forces re-authentication, and for every other claim it stays a best-effort hint.

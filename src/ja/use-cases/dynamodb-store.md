@@ -1,6 +1,7 @@
 ---
 title: DynamoDB ストア
 description: DynamoDB のテーブル定義を意図して用意し、トランザクション予約 item と TTL に依存しない read 時の失効確認で go-oidc-provider を運用する。
+pageClass: pg-use-cases-dynamodb-store
 ---
 
 # 使い方 — DynamoDB ストア
@@ -67,33 +68,33 @@ if err := storage.CreateTables(ctx); err != nil {
 <svg role="img" aria-labelledby="ddb-reservation-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="ddb-reservation-title">デバイスコードの予約 item 構成: 1 回の Save がデバイスレコードと user_code の予約 item を同じ TransactWriteItems で書き込み、user_code による参照は予約 item を strongly consistent read で読んでからレコードを解決する。</title>
 
-  <rect x="20" y="28" width="190" height="60" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="115" y="54" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">Save</text>
-  <text x="115" y="74" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">1 回の TransactWriteItems</text>
+  <rect class="ddb-call" x="20" y="28" width="190" height="60" rx="8"/>
+  <text class="ddb-call-name" x="115" y="54" text-anchor="middle">Save</text>
+  <text class="ddb-note" x="115" y="74" text-anchor="middle">1 回の TransactWriteItems</text>
 
-  <rect x="420" y="16" width="320" height="58" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="440" y="42" font-size="11.5" fill="currentColor" style="font-family:var(--vp-font-family-mono)">pk = digest(device_code)</text>
-  <text x="440" y="62" font-size="10.5" style="fill:var(--vp-c-text-2)">デバイスレコード本体</text>
+  <rect class="ddb-item" x="420" y="16" width="320" height="58" rx="8"/>
+  <text class="ddb-item-key" x="440" y="42">pk = digest(device_code)</text>
+  <text class="ddb-note" x="440" y="62">デバイスレコード本体</text>
 
-  <rect x="420" y="104" width="320" height="58" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="440" y="130" font-size="11.5" fill="currentColor" style="font-family:var(--vp-font-family-mono)">pk = uc#&lt;user_code&gt;</text>
-  <text x="440" y="150" font-size="10.5" style="fill:var(--vp-c-text-2)">一意性を担保する予約 item</text>
+  <rect class="ddb-item" x="420" y="104" width="320" height="58" rx="8"/>
+  <text class="ddb-item-key" x="440" y="130">pk = uc#&lt;user_code&gt;</text>
+  <text class="ddb-note" x="440" y="150">一意性を担保する予約 item</text>
 
-  <path d="M210 48 H414" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M408 43 L414 48 L408 53" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M210 70 C312 70 322 133 414 133" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M408 128 L414 133 L408 138" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="ddb-flow" d="M210 48 H414"/>
+  <path class="ddb-flow" d="M408 43 L414 48 L408 53"/>
+  <path class="ddb-flow" d="M210 70 C312 70 322 133 414 133"/>
+  <path class="ddb-flow" d="M408 128 L414 133 L408 138"/>
 
-  <rect x="20" y="176" width="190" height="60" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="115" y="202" text-anchor="middle" font-size="12" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindByUserCode</text>
-  <text x="115" y="222" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">strongly consistent read</text>
+  <rect class="ddb-call" x="20" y="176" width="190" height="60" rx="8"/>
+  <text class="ddb-call-name" x="115" y="202" text-anchor="middle">FindByUserCode</text>
+  <text class="ddb-note" x="115" y="222" text-anchor="middle">strongly consistent read</text>
 
-  <path d="M210 202 C312 202 330 150 414 148" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M408 143 L414 148 L409 154" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="ddb-flow" d="M210 202 C312 202 330 150 414 148"/>
+  <path class="ddb-flow" d="M408 143 L414 148 L409 154"/>
 
-  <path d="M580 104 V78" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M575 85 L580 78 L585 85" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="592" y="96" font-size="10.5" style="fill:var(--vp-c-text-2)">レコードを解決</text>
+  <path class="ddb-flow" d="M580 104 V78"/>
+  <path class="ddb-flow" d="M575 85 L580 78 L585 85"/>
+  <text class="ddb-note" x="592" y="96">レコードを解決</text>
 </svg>
 
 既存テーブルには、以前の未使用な `by_user_code` インデックスが残っていることがあります。容量を見直すまで残しても安全です。不要になった時点で、通常の DynamoDB インフラ手順を使って削除してください。更新のためにテーブルを drop したり作り直したりする必要はありません。予約 item 方式より前に発行したデバイスコードには `uc#...` 予約がないため、意図的に `user_code` では解決されず、通常の短い有効期間を経て自然に期限切れになります。古いインデックスへのフォールバックはありません。そうすると、まだ有効な更新前レコードが保持する `user_code` を新しいリクエストが取得できてしまうためです。

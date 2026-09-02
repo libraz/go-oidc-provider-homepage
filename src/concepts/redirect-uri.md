@@ -1,6 +1,7 @@
 ---
 title: Redirect URI
 description: How the default /auth redirect_uri check uses exact matching, what RFC 8252 loopback relaxation permits, and how to avoid a CVE-class mistake.
+pageClass: pg-concepts-redirect-uri
 ---
 
 # Redirect URI
@@ -38,26 +39,26 @@ The library implements this literally. Whatever string the client registered is 
 
 <svg role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="redirect-exact-title">Only a byte-for-byte identical redirect_uri matches the registered value. A trailing slash, an added query parameter, a different host case, and a different port all fail.</title>
-  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">REGISTERED</text>
-  <rect x="24" y="28" width="712" height="40" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="44" y="53" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
-  <text x="24" y="98" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">SENT ON THE AUTHORIZE REQUEST</text>
-  <line x1="24" y1="108" x2="736" y2="108" style="stroke:var(--vp-c-divider);stroke-width:1"/>
-  <text x="30" y="132" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✓</text>
-  <text x="56" y="132" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
-  <text x="470" y="132" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">exact match — accepted</text>
-  <text x="30" y="164" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="164" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">/</tspan></text>
-  <text x="470" y="164" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">trailing slash</text>
-  <text x="30" y="196" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="196" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">?env=prod</tspan></text>
-  <text x="470" y="196" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">extra query parameter</text>
-  <text x="30" y="228" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="228" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://<tspan style="fill:var(--vp-c-danger-1);font-weight:700">APP</tspan>.example.com/cb</text>
-  <text x="470" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">host spelled in another case</text>
-  <text x="30" y="260" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="260" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com<tspan style="fill:var(--vp-c-danger-1);font-weight:700">:8443</tspan>/cb</text>
-  <text x="470" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">different port</text>
+  <text class="ru-cap" x="24" y="18">REGISTERED</text>
+  <rect class="ru-registered" x="24" y="28" width="712" height="40" rx="8"/>
+  <text class="ru-registered-uri" x="44" y="53">https://app.example.com/cb</text>
+  <text class="ru-cap" x="24" y="98">SENT ON THE AUTHORIZE REQUEST</text>
+  <line class="ru-rule" x1="24" y1="108" x2="736" y2="108"/>
+  <text class="ru-ok" x="30" y="132">✓</text>
+  <text class="ru-uri" x="56" y="132">https://app.example.com/cb</text>
+  <text class="ru-why" x="470" y="132">exact match — accepted</text>
+  <text class="ru-no" x="30" y="164">✗</text>
+  <text class="ru-uri" x="56" y="164">https://app.example.com/cb<tspan class="ru-diff">/</tspan></text>
+  <text class="ru-why" x="470" y="164">trailing slash</text>
+  <text class="ru-no" x="30" y="196">✗</text>
+  <text class="ru-uri" x="56" y="196">https://app.example.com/cb<tspan class="ru-diff">?env=prod</tspan></text>
+  <text class="ru-why" x="470" y="196">extra query parameter</text>
+  <text class="ru-no" x="30" y="228">✗</text>
+  <text class="ru-uri" x="56" y="228">https://<tspan class="ru-diff">APP</tspan>.example.com/cb</text>
+  <text class="ru-why" x="470" y="228">host spelled in another case</text>
+  <text class="ru-no" x="30" y="260">✗</text>
+  <text class="ru-uri" x="56" y="260">https://app.example.com<tspan class="ru-diff">:8443</tspan>/cb</text>
+  <text class="ru-why" x="470" y="260">different port</text>
 </svg>
 
 Every rejected row above differs from the registered string by one or two characters. The OP does not normalise any of them: it compares the two strings and stops. The one exception is the loopback carve-out below, where a native client may vary the port.

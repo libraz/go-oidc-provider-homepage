@@ -1,6 +1,7 @@
 ---
 title: Required options
 description: The options op.New refuses to start without — and why each one matters.
+pageClass: pg-getting-started-required-options
 ---
 
 # Required options
@@ -9,29 +10,29 @@ description: The options op.New refuses to start without — and why each one ma
 
 <svg role="img" aria-labelledby="required-options-title" viewBox="0 0 760 292" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="required-options-title">Three options are always required — issuer, store, and keyset. Cookie keys are required in addition whenever the authorization_code grant is enabled.</title>
-  <text x="34" y="32" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">Always required</text>
+  <text class="ro-head" x="34" y="32">Always required</text>
 
-  <rect x="34" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="141" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithIssuer</text>
-  <text x="141" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">iss claim · discovery URL</text>
-  <text x="141" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">cookie scope</text>
+  <rect class="ro-box" x="34" y="44" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="141" y="72" text-anchor="middle">op.WithIssuer</text>
+  <text class="ro-note" x="141" y="94" text-anchor="middle">iss claim · discovery URL</text>
+  <text class="ro-note" x="141" y="112" text-anchor="middle">cookie scope</text>
 
-  <rect x="272" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="379" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithStore</text>
-  <text x="379" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">codes · sessions · clients</text>
-  <text x="379" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">refresh chains · JTI sets</text>
+  <rect class="ro-box" x="272" y="44" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="379" y="72" text-anchor="middle">op.WithStore</text>
+  <text class="ro-note" x="379" y="94" text-anchor="middle">codes · sessions · clients</text>
+  <text class="ro-note" x="379" y="112" text-anchor="middle">refresh chains · JTI sets</text>
 
-  <rect x="510" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="617" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithKeyset</text>
-  <text x="617" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ES256 signing keys for</text>
-  <text x="617" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ID Token · JWT AT · JARM</text>
+  <rect class="ro-box" x="510" y="44" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="617" y="72" text-anchor="middle">op.WithKeyset</text>
+  <text class="ro-note" x="617" y="94" text-anchor="middle">ES256 signing keys for</text>
+  <text class="ro-note" x="617" y="112" text-anchor="middle">ID Token · JWT AT · JARM</text>
 
-  <text x="272" y="170" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">Required with the authorization_code grant</text>
+  <text class="ro-head" x="272" y="170">Required with the authorization_code grant</text>
 
-  <rect x="272" y="182" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)" stroke-dasharray="6 5"/>
-  <text x="379" y="210" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithCookieKeys</text>
-  <text x="379" y="232" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">AES-256-GCM sealing of</text>
-  <text x="379" y="250" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">session + CSRF cookies</text>
+  <rect class="ro-box ro-conditional" x="272" y="182" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="379" y="210" text-anchor="middle">op.WithCookieKeys</text>
+  <text class="ro-note" x="379" y="232" text-anchor="middle">AES-256-GCM sealing of</text>
+  <text class="ro-note" x="379" y="250" text-anchor="middle">session + CSRF cookies</text>
 </svg>
 
 | Option | Why it's required |

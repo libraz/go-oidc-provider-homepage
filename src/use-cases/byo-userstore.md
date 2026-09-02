@@ -1,6 +1,7 @@
 ---
 title: Bring your own user store
 description: Project an application-owned users table onto OIDC without moving user records into the bundled OP schema.
+pageClass: pg-use-cases-byo-userstore
 ---
 
 # Use case — Bring your own user store
@@ -12,36 +13,36 @@ The seam runs between the OAuth records and the end-user records. The library ke
 <svg role="img" aria-labelledby="byo-userstore-seam-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="byo-userstore-seam-title">The seam between the two halves: the library keeps the OAuth and OIDC records in its bundled store, the application keeps the end-user rows, and the OP reads across the boundary through FindBySubject, FindByUsername, and ReadPasswordHash.</title>
 
-  <path d="M380 26 V268" style="stroke:var(--vp-c-divider);stroke-width:1.5;stroke-dasharray:6 5"/>
-  <text x="380" y="16" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">op.WithUserStore</text>
+  <path class="bu-seam" d="M380 26 V268"/>
+  <text class="bu-call" x="380" y="16" text-anchor="middle">op.WithUserStore</text>
 
-  <rect x="20" y="28" width="280" height="88" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="160" y="56" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2)">The library owns</text>
-  <text x="160" y="80" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">clients · codes · refresh tokens · grants</text>
-  <text x="160" y="100" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">sessions · PAR · IATs · RATs · access tokens</text>
+  <rect class="bu-lib" x="20" y="28" width="280" height="88" rx="8"/>
+  <text class="bu-lib-title" x="160" y="56" text-anchor="middle">The library owns</text>
+  <text class="bu-note" x="160" y="80" text-anchor="middle">clients · codes · refresh tokens · grants</text>
+  <text class="bu-note" x="160" y="100" text-anchor="middle">sessions · PAR · IATs · RATs · access tokens</text>
 
-  <rect x="460" y="28" width="280" height="88" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="600" y="56" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">You own</text>
-  <text x="600" y="80" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">members: member_id · email_address</text>
-  <text x="600" y="100" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">password_phc · full_name · locale_pref</text>
+  <rect class="bu-app" x="460" y="28" width="280" height="88" rx="8"/>
+  <text class="bu-app-title" x="600" y="56" text-anchor="middle">You own</text>
+  <text class="bu-note" x="600" y="80" text-anchor="middle">members: member_id · email_address</text>
+  <text class="bu-note" x="600" y="100" text-anchor="middle">password_phc · full_name · locale_pref</text>
 
-  <text x="300" y="156" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">ID Token and /userinfo claims</text>
-  <path d="M310 152 H450" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M444 147 L450 152 L444 157" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="142" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindBySubject</text>
-  <text x="460" y="156" font-size="11" style="fill:var(--vp-c-text-2)">reads the member row</text>
+  <text class="bu-note" x="300" y="156" text-anchor="end">ID Token and /userinfo claims</text>
+  <path class="bu-flow" d="M310 152 H450"/>
+  <path class="bu-flow" d="M444 147 L450 152 L444 157"/>
+  <text class="bu-call" x="380" y="142" text-anchor="middle">FindBySubject</text>
+  <text class="bu-note" x="460" y="156">reads the member row</text>
 
-  <text x="300" y="202" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">login identifier to subject</text>
-  <path d="M310 198 H450" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M444 193 L450 198 L444 203" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="188" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindByUsername</text>
-  <text x="460" y="202" font-size="11" style="fill:var(--vp-c-text-2)">matches email_address</text>
+  <text class="bu-note" x="300" y="202" text-anchor="end">login identifier to subject</text>
+  <path class="bu-flow" d="M310 198 H450"/>
+  <path class="bu-flow" d="M444 193 L450 198 L444 203"/>
+  <text class="bu-call" x="380" y="188" text-anchor="middle">FindByUsername</text>
+  <text class="bu-note" x="460" y="202">matches email_address</text>
 
-  <text x="300" y="248" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">op.PrimaryPassword</text>
-  <path d="M310 244 H450" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M444 239 L450 244 L444 249" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="234" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">ReadPasswordHash</text>
-  <text x="460" y="248" font-size="11" style="fill:var(--vp-c-text-2)">returns password_phc</text>
+  <text class="bu-note" x="300" y="248" text-anchor="end">op.PrimaryPassword</text>
+  <path class="bu-flow" d="M310 244 H450"/>
+  <path class="bu-flow" d="M444 239 L450 244 L444 249"/>
+  <text class="bu-call" x="380" y="234" text-anchor="middle">ReadPasswordHash</text>
+  <text class="bu-note" x="460" y="248">returns password_phc</text>
 </svg>
 
 > **Source:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
@@ -113,7 +114,7 @@ Use [Hot/cold + Redis](/use-cases/hot-cold-redis) when you want to route multipl
 ## Run it
 
 ```sh
-(cd examples/24-byo-userstore && go run -tags example .)
+(cd examples/24-byo-userstore && GOWORK=off go run -tags example .)
 ```
 
 The example starts the OP on `:8080` and a paired RP on `:9090`. Sign in as `demo@example.test` / `demo`; the RP's `/me` page shows the released ID Token claims.

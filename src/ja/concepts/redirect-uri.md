@@ -1,6 +1,7 @@
 ---
 title: Redirect URI
 description: 既定の /auth における redirect_uri 完全一致、RFC 8252 loopback 緩和の範囲、CVE 級の誤設定を整理する。
+pageClass: pg-concepts-redirect-uri
 ---
 
 # Redirect URI
@@ -38,26 +39,26 @@ RFC 9700 §4.1 はこれを閉じています。
 
 <svg role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="redirect-exact-title">登録値と 1 バイトも違わない redirect_uri だけが一致する。末尾のスラッシュ、query パラメータの追加、host の大文字小文字、ポート番号の違いはいずれも不一致になる。</title>
-  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">登録値</text>
-  <rect x="24" y="28" width="712" height="40" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="44" y="53" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
-  <text x="24" y="98" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">authorize 要求で送られてきた値</text>
-  <line x1="24" y1="108" x2="736" y2="108" style="stroke:var(--vp-c-divider);stroke-width:1"/>
-  <text x="30" y="132" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✓</text>
-  <text x="56" y="132" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
-  <text x="470" y="132" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">完全一致 — 受理</text>
-  <text x="30" y="164" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="164" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">/</tspan></text>
-  <text x="470" y="164" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">末尾のスラッシュ</text>
-  <text x="30" y="196" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="196" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">?env=prod</tspan></text>
-  <text x="470" y="196" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">query パラメータの追加</text>
-  <text x="30" y="228" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="228" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://<tspan style="fill:var(--vp-c-danger-1);font-weight:700">APP</tspan>.example.com/cb</text>
-  <text x="470" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">ホスト名の大文字小文字が違う</text>
-  <text x="30" y="260" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
-  <text x="56" y="260" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com<tspan style="fill:var(--vp-c-danger-1);font-weight:700">:8443</tspan>/cb</text>
-  <text x="470" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">ポート番号が違う</text>
+  <text class="ru-cap" x="24" y="18">登録値</text>
+  <rect class="ru-registered" x="24" y="28" width="712" height="40" rx="8"/>
+  <text class="ru-registered-uri" x="44" y="53">https://app.example.com/cb</text>
+  <text class="ru-cap" x="24" y="98">authorize 要求で送られてきた値</text>
+  <line class="ru-rule" x1="24" y1="108" x2="736" y2="108"/>
+  <text class="ru-ok" x="30" y="132">✓</text>
+  <text class="ru-uri" x="56" y="132">https://app.example.com/cb</text>
+  <text class="ru-why" x="470" y="132">完全一致 — 受理</text>
+  <text class="ru-no" x="30" y="164">✗</text>
+  <text class="ru-uri" x="56" y="164">https://app.example.com/cb<tspan class="ru-diff">/</tspan></text>
+  <text class="ru-why" x="470" y="164">末尾のスラッシュ</text>
+  <text class="ru-no" x="30" y="196">✗</text>
+  <text class="ru-uri" x="56" y="196">https://app.example.com/cb<tspan class="ru-diff">?env=prod</tspan></text>
+  <text class="ru-why" x="470" y="196">query パラメータの追加</text>
+  <text class="ru-no" x="30" y="228">✗</text>
+  <text class="ru-uri" x="56" y="228">https://<tspan class="ru-diff">APP</tspan>.example.com/cb</text>
+  <text class="ru-why" x="470" y="228">ホスト名の大文字小文字が違う</text>
+  <text class="ru-no" x="30" y="260">✗</text>
+  <text class="ru-uri" x="56" y="260">https://app.example.com<tspan class="ru-diff">:8443</tspan>/cb</text>
+  <text class="ru-why" x="470" y="260">ポート番号が違う</text>
 </svg>
 
 拒否される行はいずれも登録値と 1 〜 2 文字しか違いません。OP はそのどれも正規化しません。2 つの文字列を比較して、それで終わりです。唯一の例外が後述の loopback の緩和で、native client だけがポート番号を変えられます。
@@ -101,7 +102,7 @@ loopback の carve-out 外では、厳密な完全一致ポリシーが引き続
 OP に redirect URI を届ける経路は 2 つあります。
 
 - **静的シード** — 構築時に `op.WithStaticClients(seeds...)` を渡します。各シードに `RedirectURIs` を列挙し、OP は起動時に検証して、不正な値があれば最初のリクエストを処理する前に拒否します。少数の既知クライアント — 社内ツール、シングルテナント SaaS、すべてのクライアントを審査済みの FAPI デプロイ — に最適です。
-- **Dynamic Client Registration（RFC 7591）**。OP は `POST /register` を公開し、RP は `redirect_uris` を含むメタデータを送って実行時に自分自身を登録します。同じ検証が走り、規定に違反するエントリは `400 invalid_redirect_uri` または `400 invalid_client_metadata` として拒否されます。マルチテナント SaaS、マーケットプレース、OP オペレータがクライアントの集団を事前に把握できない用途に最適です。詳細は[Dynamic Client Registration](/ja/use-cases/dynamic-registration)を参照。
+- **Dynamic Client Registration（RFC 7591）**。OP は `POST /register` を公開し、RP は `redirect_uris` を含むメタデータを送って実行時に自分自身を登録します。同じ検証が走り、規定に違反するエントリは `400 invalid_redirect_uri` または `400 invalid_client_metadata` として拒否されます。マルチテナント SaaS、マーケットプレース、OP オペレータがクライアントの集団を事前に把握できない用途に最適です。詳細は [Dynamic Client Registration](/ja/use-cases/dynamic-registration) を参照。
 
 両経路は同じ validator を共有するので、起動時に審査されたか 10 秒前に自己登録されたかに関わらず、同じルールが適用されます。
 

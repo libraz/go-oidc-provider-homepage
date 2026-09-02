@@ -1,6 +1,7 @@
 ---
 title: Bring your own store backend
 description: Implement store.Store with the hashing, transaction, and equality-only concurrency contracts required by custom tables or non-SQL backends.
+pageClass: pg-use-cases-byo-store
 ---
 
 # Use case — Bring your own store backend
@@ -24,16 +25,16 @@ The split is not negotiable in one direction and fully open in the other. The li
 <svg role="img" aria-labelledby="byo-store-seam-title" viewBox="0 0 760 152" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="byo-store-seam-title">The op.WithStore seam: the library holds the meaning of each operation, the backend holds the representation, and only the store.* Go structs and the sentinel errors cross between them.</title>
 
-  <path d="M380 26 V140" style="stroke:var(--vp-c-divider);stroke-width:1.5;stroke-dasharray:6 5"/>
-  <text x="380" y="18" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">op.WithStore</text>
+  <path class="bs-seam" d="M380 26 V140"/>
+  <text class="bs-seam-name" x="380" y="18" text-anchor="middle">op.WithStore</text>
 
-  <rect x="20" y="40" width="240" height="84" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="140" y="72" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2)">the library</text>
-  <text x="140" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">meaning</text>
+  <rect class="bs-lib" x="20" y="40" width="240" height="84" rx="8"/>
+  <text class="bs-lib-title" x="140" y="72" text-anchor="middle">the library</text>
+  <text class="bs-role" x="140" y="94" text-anchor="middle">meaning</text>
 
-  <rect x="500" y="40" width="240" height="84" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="620" y="72" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">your backend</text>
-  <text x="620" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">representation</text>
+  <rect class="bs-app" x="500" y="40" width="240" height="84" rx="8"/>
+  <text class="bs-app-title" x="620" y="72" text-anchor="middle">your backend</text>
+  <text class="bs-role" x="620" y="94" text-anchor="middle">representation</text>
 
   <path d="M264 70 H496"/>
   <path d="M272 66 L264 70 L272 74"/>
@@ -41,8 +42,8 @@ The split is not negotiable in one direction and fully open in the other. The li
   <path d="M496 100 H264"/>
   <path d="M272 96 L264 100 L272 104"/>
 
-  <text class="halo" x="380" y="74" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono)">store.*</text>
-  <text class="halo" x="380" y="104" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono)">store.Err*</text>
+  <text class="halo bs-wire" x="380" y="74" text-anchor="middle">store.*</text>
+  <text class="halo bs-wire" x="380" y="104" text-anchor="middle">store.Err*</text>
 </svg>
 
 Only the `store.*` Go structs and the sentinel errors cross that seam. Everything on your side of it — names, engine, encoding — is invisible to the OP.
@@ -157,7 +158,7 @@ The substore godoc is normative. A backend that compiles but ignores these does 
 ## Run it
 
 ```sh
-(cd examples/26-byo-store-from-scratch && go run -tags example .)
+(cd examples/26-byo-store-from-scratch && GOWORK=off go run -tags example .)
 ```
 
 The example starts the OP on `:8080` and a paired RP on `:9090`. Sign in as `demo@example.test` / `demo`; the RP's `/me` page shows the released ID Token claims, served entirely from the `vault_*` schema.

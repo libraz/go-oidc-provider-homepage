@@ -1,6 +1,7 @@
 ---
 title: Claims リクエストパラメータ
 description: OIDC Core 1.0 §5.5 — RP が `claims` で claim を指定し、claims 機能が有効な場合に OP が id_token / userinfo へ投影します。
+pageClass: pg-use-cases-claims-request
 ---
 
 # 使い方 — Claims リクエストパラメータ
@@ -20,37 +21,37 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 <svg role="img" aria-labelledby="claims-routing-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="claims-routing-title">要求ごとの出力先: claims パラメータの id_token メンバーは ID Token だけ、userinfo メンバーは /userinfo 応答だけに claim を出し、scope が定める束は両方に届く。</title>
 
-  <rect x="24" y="32" width="250" height="56" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="40" y="58" fill="currentColor" font-size="12.5" font-weight="600" style="font-family:var(--vp-font-family-mono)">claims["id_token"]</text>
-  <text x="40" y="78" font-size="11" style="fill:var(--vp-c-text-2)">指定した claim だけ · ID Token のみ</text>
+  <rect class="cr-src" x="24" y="32" width="250" height="56" rx="8"/>
+  <text class="cr-src-title" x="40" y="58">claims["id_token"]</text>
+  <text class="cr-note" x="40" y="78">指定した claim だけ · ID Token のみ</text>
 
-  <rect x="24" y="112" width="250" height="56" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="40" y="138" fill="currentColor" font-size="12.5" font-weight="600" style="font-family:var(--vp-font-family-mono)">scope</text>
-  <text x="40" y="158" font-size="11" style="fill:var(--vp-c-text-2)">§5.4 の束すべて · 両方へ</text>
+  <rect class="cr-src" x="24" y="112" width="250" height="56" rx="8"/>
+  <text class="cr-src-title" x="40" y="138">scope</text>
+  <text class="cr-note" x="40" y="158">§5.4 の束すべて · 両方へ</text>
 
-  <rect x="24" y="192" width="250" height="56" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="40" y="218" fill="currentColor" font-size="12.5" font-weight="600" style="font-family:var(--vp-font-family-mono)">claims["userinfo"]</text>
-  <text x="40" y="238" font-size="11" style="fill:var(--vp-c-text-2)">指定した claim だけ · UserInfo のみ</text>
+  <rect class="cr-src" x="24" y="192" width="250" height="56" rx="8"/>
+  <text class="cr-src-title" x="40" y="218">claims["userinfo"]</text>
+  <text class="cr-note" x="40" y="238">指定した claim だけ · UserInfo のみ</text>
 
-  <rect x="526" y="44" width="210" height="64" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="631" y="74" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">id_token</text>
-  <text x="631" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">JWT に署名して載る</text>
+  <rect class="cr-dest" x="526" y="44" width="210" height="64" rx="8"/>
+  <text class="cr-dest-title" x="631" y="74" text-anchor="middle">id_token</text>
+  <text class="cr-note" x="631" y="94" text-anchor="middle">JWT に署名して載る</text>
 
-  <rect x="526" y="176" width="210" height="64" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="631" y="206" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">GET /userinfo</text>
-  <text x="631" y="226" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">JSON 応答の本文に載る</text>
+  <rect class="cr-dest" x="526" y="176" width="210" height="64" rx="8"/>
+  <text class="cr-dest-title" x="631" y="206" text-anchor="middle">GET /userinfo</text>
+  <text class="cr-note" x="631" y="226" text-anchor="middle">JSON 応答の本文に載る</text>
 
-  <path d="M274 60 H522" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 55 L522 60 L516 65" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 60 H522"/>
+  <path class="cr-flow" d="M516 55 L522 60 L516 65"/>
 
-  <path d="M274 128 C398 128 398 92 522 92" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 87 L522 92 L516 97" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 128 C398 128 398 92 522 92"/>
+  <path class="cr-flow" d="M516 87 L522 92 L516 97"/>
 
-  <path d="M274 152 C398 152 398 208 522 208" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 203 L522 208 L516 213" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 152 C398 152 398 208 522 208"/>
+  <path class="cr-flow" d="M516 203 L522 208 L516 213"/>
 
-  <path d="M274 220 H522" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M516 215 L522 220 L516 225" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="cr-flow" d="M274 220 H522"/>
+  <path class="cr-flow" d="M516 215 L522 220 L516 225"/>
 </svg>
 
 `essential` はこの出力先を変えません。変わるのは OP がどこまで取得を試みるかだけです。`acr` に対する essential な要求は再認証を強制しますが、それ以外の claim では best-effort のヒントにとどまります。

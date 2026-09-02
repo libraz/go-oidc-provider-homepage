@@ -1,6 +1,7 @@
 ---
 title: 必須オプション
 description: op.New が起動を拒否するオプション — それぞれの理由。
+pageClass: pg-getting-started-required-options
 ---
 
 # 必須オプション
@@ -9,29 +10,29 @@ description: op.New が起動を拒否するオプション — それぞれの�
 
 <svg role="img" aria-labelledby="required-options-title" viewBox="0 0 760 292" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="required-options-title">常に必須なのは issuer、store、keyset の 3 つ。cookie 鍵は authorization_code grant を有効にしている場合に加えて必須になる。</title>
-  <text x="34" y="32" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">常に必須</text>
+  <text class="ro-head" x="34" y="32">常に必須</text>
 
-  <rect x="34" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="141" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithIssuer</text>
-  <text x="141" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">iss claim・discovery URL</text>
-  <text x="141" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">cookie の適用範囲</text>
+  <rect class="ro-box" x="34" y="44" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="141" y="72" text-anchor="middle">op.WithIssuer</text>
+  <text class="ro-note" x="141" y="94" text-anchor="middle">iss claim・discovery URL</text>
+  <text class="ro-note" x="141" y="112" text-anchor="middle">cookie の適用範囲</text>
 
-  <rect x="272" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="379" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithStore</text>
-  <text x="379" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">認可コード・session・クライアント</text>
-  <text x="379" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">リフレッシュ連鎖・JTI 集合</text>
+  <rect class="ro-box" x="272" y="44" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="379" y="72" text-anchor="middle">op.WithStore</text>
+  <text class="ro-note" x="379" y="94" text-anchor="middle">認可コード・session・クライアント</text>
+  <text class="ro-note" x="379" y="112" text-anchor="middle">リフレッシュ連鎖・JTI 集合</text>
 
-  <rect x="510" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="617" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithKeyset</text>
-  <text x="617" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ID トークン・JWT AT・JARM の</text>
-  <text x="617" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ES256 署名鍵</text>
+  <rect class="ro-box" x="510" y="44" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="617" y="72" text-anchor="middle">op.WithKeyset</text>
+  <text class="ro-note" x="617" y="94" text-anchor="middle">ID トークン・JWT AT・JARM の</text>
+  <text class="ro-note" x="617" y="112" text-anchor="middle">ES256 署名鍵</text>
 
-  <text x="272" y="170" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">authorization_code grant を有効にする場合に必須</text>
+  <text class="ro-head" x="272" y="170">authorization_code grant を有効にする場合に必須</text>
 
-  <rect x="272" y="182" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)" stroke-dasharray="6 5"/>
-  <text x="379" y="210" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithCookieKeys</text>
-  <text x="379" y="232" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">session と CSRF cookie を</text>
-  <text x="379" y="250" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">AES-256-GCM で暗号化</text>
+  <rect class="ro-box ro-conditional" x="272" y="182" width="214" height="86" rx="8"/>
+  <text class="ro-option" x="379" y="210" text-anchor="middle">op.WithCookieKeys</text>
+  <text class="ro-note" x="379" y="232" text-anchor="middle">session と CSRF cookie を</text>
+  <text class="ro-note" x="379" y="250" text-anchor="middle">AES-256-GCM で暗号化</text>
 </svg>
 
 | Option | 必須である理由 |

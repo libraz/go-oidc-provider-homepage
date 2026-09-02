@@ -1,6 +1,7 @@
 ---
 title: Rich authorization requests (RFC 9396)
 description: Register and validate RFC 9396 authorization_details, force consent for new details, and echo granted details on tokens and introspection.
+pageClass: pg-use-cases-authorization-details
 ---
 
 # Use case — Rich authorization requests (RFC 9396)
@@ -32,35 +33,35 @@ A type registered without a validator would accept arbitrary payloads under that
 <svg role="img" aria-labelledby="rar-shape-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="rar-shape-title">One authorization_details element: the OP checks the array shape and the type member, a registered validator checks every other member, and the granted array is then echoed on the token response, the JWT access token, and introspection.</title>
 
-  <rect x="24" y="24" width="340" height="140" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="44" y="52" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">[{</text>
-  <text x="60" y="74" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">"type": "payment_initiation",</text>
-  <text x="60" y="100" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">"actions": ["initiate"],</text>
-  <text x="60" y="122" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">"amount": "40.00"</text>
-  <text x="44" y="148" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">}]</text>
+  <rect class="rar-doc" x="24" y="24" width="340" height="140" rx="8"/>
+  <text class="rar-json" x="44" y="52">[{</text>
+  <text class="rar-json" x="60" y="74">"type": "payment_initiation",</text>
+  <text class="rar-json" x="60" y="100">"actions": ["initiate"],</text>
+  <text class="rar-json" x="60" y="122">"amount": "40.00"</text>
+  <text class="rar-json" x="44" y="148">}]</text>
 
-  <path d="M364 70 H396" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="404" y="74" font-size="11" style="fill:var(--vp-c-brand-2)">the OP: array shape + registered type</text>
+  <path class="rar-flow" d="M364 70 H396"/>
+  <text class="rar-check-op" x="404" y="74">the OP: array shape + registered type</text>
 
-  <path d="M364 111 H384 M384 96 V126 M384 96 H392 M384 126 H392" style="stroke:var(--vp-c-text-3)"/>
-  <text x="404" y="115" font-size="11" style="fill:var(--vp-c-text-2)">your Validate: every other member</text>
+  <path class="rar-hook" d="M364 111 H384 M384 96 V126 M384 96 H392 M384 126 H392"/>
+  <text class="rar-check-you" x="404" y="115">your Validate: every other member</text>
 
-  <path d="M194 164 V182 M134 182 H626 M134 182 V198 M380 182 V198 M626 182 V198" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M129 193 L134 200 L139 193" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M375 193 L380 200 L385 193" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M621 193 L626 200 L631 193" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="rar-flow" d="M194 164 V182 M134 182 H626 M134 182 V198 M380 182 V198 M626 182 V198"/>
+  <path class="rar-flow" d="M129 193 L134 200 L139 193"/>
+  <path class="rar-flow" d="M375 193 L380 200 L385 193"/>
+  <path class="rar-flow" d="M621 193 L626 200 L631 193"/>
 
-  <rect x="34" y="204" width="200" height="54" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="134" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--vp-c-brand-2)">token response</text>
-  <text x="134" y="247" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">echoed as granted</text>
+  <rect class="rar-sink" x="34" y="204" width="200" height="54" rx="8"/>
+  <text class="rar-sink-title" x="134" y="228" text-anchor="middle">token response</text>
+  <text class="rar-sink-note" x="134" y="247" text-anchor="middle">echoed as granted</text>
 
-  <rect x="280" y="204" width="200" height="54" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--vp-c-brand-2)">JWT access token</text>
-  <text x="380" y="247" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">RFC 9068 §2.2.3</text>
+  <rect class="rar-sink" x="280" y="204" width="200" height="54" rx="8"/>
+  <text class="rar-sink-title" x="380" y="228" text-anchor="middle">JWT access token</text>
+  <text class="rar-sink-note" x="380" y="247" text-anchor="middle">RFC 9068 §2.2.3</text>
 
-  <rect x="526" y="204" width="200" height="54" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="626" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--vp-c-brand-2)">introspection</text>
-  <text x="626" y="247" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">RFC 9396 §9</text>
+  <rect class="rar-sink" x="526" y="204" width="200" height="54" rx="8"/>
+  <text class="rar-sink-title" x="626" y="228" text-anchor="middle">introspection</text>
+  <text class="rar-sink-note" x="626" y="247" text-anchor="middle">RFC 9396 §9</text>
 </svg>
 
 ## Wiring

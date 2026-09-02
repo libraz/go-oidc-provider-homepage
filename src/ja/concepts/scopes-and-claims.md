@@ -1,6 +1,7 @@
 ---
 title: scope と claim
 description: scope と claim、OIDC 標準の対応表、カスタム scope 登録を整理 — wire parsing と resource indicator も扱う。
+pageClass: pg-concepts-scopes-and-claims
 ---
 
 # scope と claim
@@ -70,63 +71,63 @@ OIDC Core §5.4 が標準 scope に対応する claim を固定しています�
 
 <svg role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="scope-claim-map-title">各標準 scope が開示する claim 群と、その届き先。openid が開示する sub は ID トークンに載り、profile・email・address・phone の claim は /userinfo から返る。offline_access は claim を開示しない。</title>
-  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">要求された scope</text>
-  <text x="166" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">開示される claim</text>
-  <text x="560" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">届き先</text>
-  <line x1="24" y1="28" x2="736" y2="28" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+  <text class="sc-cap" x="24" y="18">要求された scope</text>
+  <text class="sc-cap" x="166" y="18">開示される claim</text>
+  <text class="sc-cap" x="560" y="18">届き先</text>
+  <line class="sc-rule" x1="24" y1="28" x2="736" y2="28"/>
 
-  <rect x="560" y="40" width="176" height="104" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="576" y="64" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600">ID トークン</text>
-  <text x="576" y="86" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">iss · aud · exp · iat · sub</text>
-  <text x="576" y="102" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">nonce · auth_time · azp</text>
-  <text x="576" y="118" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">acr · amr · at_hash · sid</text>
-  <text x="576" y="136" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">OP 自身が埋める</text>
+  <rect class="sc-dest" x="560" y="40" width="176" height="104" rx="8"/>
+  <text class="sc-dest-title" x="576" y="64">ID トークン</text>
+  <text class="sc-dest-claims" x="576" y="86">iss · aud · exp · iat · sub</text>
+  <text class="sc-dest-claims" x="576" y="102">nonce · auth_time · azp</text>
+  <text class="sc-dest-claims" x="576" y="118">acr · amr · at_hash · sid</text>
+  <text class="sc-note" x="576" y="136">OP 自身が埋める</text>
 
-  <rect x="24" y="74" width="118" height="34" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
-  <text x="83" y="96" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">openid</text>
-  <path d="M142 91 H158 M152 87 L159 91 L152 95" style="stroke:var(--vp-c-text-3)"/>
-  <text x="166" y="96" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">sub</text>
-  <path d="M212 91 H556" stroke-dasharray="5 4" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M549 87 L556 91 L549 95" style="stroke:var(--vp-c-brand-2)"/>
+  <rect class="sc-scope" x="24" y="74" width="118" height="34" rx="6"/>
+  <text class="sc-name" x="83" y="96" text-anchor="middle">openid</text>
+  <path class="sc-link" d="M142 91 H158 M152 87 L159 91 L152 95"/>
+  <text class="sc-name" x="166" y="96">sub</text>
+  <path class="sc-route sc-route-dashed" d="M212 91 H556"/>
+  <path class="sc-route" d="M549 87 L556 91 L549 95"/>
 
-  <line x1="24" y1="162" x2="736" y2="162" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+  <line class="sc-rule" x1="24" y1="162" x2="736" y2="162"/>
 
-  <rect x="560" y="182" width="176" height="128" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="576" y="206" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px;font-weight:600">/userinfo</text>
-  <text x="576" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">RP がアクセストークンを</text>
-  <text x="576" y="244" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">付けて呼び出すと</text>
-  <text x="576" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">JSON が返る</text>
-  <text x="576" y="284" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">許可された scope の</text>
-  <text x="576" y="300" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">claim だけが載る</text>
+  <rect class="sc-dest" x="560" y="182" width="176" height="128" rx="8"/>
+  <text class="sc-dest-path" x="576" y="206">/userinfo</text>
+  <text class="sc-note" x="576" y="228">RP がアクセストークンを</text>
+  <text class="sc-note" x="576" y="244">付けて呼び出すと</text>
+  <text class="sc-note" x="576" y="260">JSON が返る</text>
+  <text class="sc-note" x="576" y="284">許可された scope の</text>
+  <text class="sc-note" x="576" y="300">claim だけが載る</text>
 
-  <rect x="24" y="180" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
-  <text x="83" y="200" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">profile</text>
-  <path d="M142 195 H158 M152 191 L159 195 L152 199" style="stroke:var(--vp-c-text-3)"/>
-  <text x="166" y="200" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">name · family_name · given_name · …（14 claim）</text>
+  <rect class="sc-scope" x="24" y="180" width="118" height="30" rx="6"/>
+  <text class="sc-name" x="83" y="200" text-anchor="middle">profile</text>
+  <path class="sc-link" d="M142 195 H158 M152 191 L159 195 L152 199"/>
+  <text class="sc-claims" x="166" y="200">name · family_name · given_name · …（14 claim）</text>
 
-  <rect x="24" y="218" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
-  <text x="83" y="238" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">email</text>
-  <path d="M142 233 H158 M152 229 L159 233 L152 237" style="stroke:var(--vp-c-text-3)"/>
-  <text x="166" y="238" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">email · email_verified</text>
+  <rect class="sc-scope" x="24" y="218" width="118" height="30" rx="6"/>
+  <text class="sc-name" x="83" y="238" text-anchor="middle">email</text>
+  <path class="sc-link" d="M142 233 H158 M152 229 L159 233 L152 237"/>
+  <text class="sc-claims" x="166" y="238">email · email_verified</text>
 
-  <rect x="24" y="256" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
-  <text x="83" y="276" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">address</text>
-  <path d="M142 271 H158 M152 267 L159 271 L152 275" style="stroke:var(--vp-c-text-3)"/>
-  <text x="166" y="276" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">address</text>
+  <rect class="sc-scope" x="24" y="256" width="118" height="30" rx="6"/>
+  <text class="sc-name" x="83" y="276" text-anchor="middle">address</text>
+  <path class="sc-link" d="M142 271 H158 M152 267 L159 271 L152 275"/>
+  <text class="sc-claims" x="166" y="276">address</text>
 
-  <rect x="24" y="294" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
-  <text x="83" y="314" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">phone</text>
-  <path d="M142 309 H158 M152 305 L159 309 L152 313" style="stroke:var(--vp-c-text-3)"/>
-  <text x="166" y="314" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">phone_number · phone_number_verified</text>
+  <rect class="sc-scope" x="24" y="294" width="118" height="30" rx="6"/>
+  <text class="sc-name" x="83" y="314" text-anchor="middle">phone</text>
+  <path class="sc-link" d="M142 309 H158 M152 305 L159 309 L152 313"/>
+  <text class="sc-claims" x="166" y="314">phone_number · phone_number_verified</text>
 
-  <path d="M506 192 V312" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M506 252 H556" stroke-dasharray="5 4" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M549 248 L556 252 L549 256" style="stroke:var(--vp-c-brand-2)"/>
+  <path class="sc-route" d="M506 192 V312"/>
+  <path class="sc-route sc-route-dashed" d="M506 252 H556"/>
+  <path class="sc-route" d="M549 248 L556 252 L549 256"/>
 
-  <line x1="24" y1="336" x2="736" y2="336" style="stroke:var(--vp-c-divider);stroke-width:1"/>
-  <rect x="24" y="352" width="140" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
-  <text x="94" y="372" text-anchor="middle" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:11.5px">offline_access</text>
-  <text x="184" y="372" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11px">claim なし — consent prompt とリフレッシュトークンの TTL バケットを決める</text>
+  <line class="sc-rule" x1="24" y1="336" x2="736" y2="336"/>
+  <rect class="sc-scope" x="24" y="352" width="140" height="30" rx="6"/>
+  <text class="sc-name-muted" x="94" y="372" text-anchor="middle">offline_access</text>
+  <text class="sc-aside" x="184" y="372">claim なし — consent prompt とリフレッシュトークンの TTL バケットを決める</text>
 </svg>
 
 ユーザ claim を ID トークンに載せたい RP は、OIDC Core §5.5 の `claims` パラメータで明示的に要求する必要があります。scope を許可しただけでは `/userinfo` 側に載ります。

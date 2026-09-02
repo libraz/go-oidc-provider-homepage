@@ -1,6 +1,7 @@
 ---
 title: Declaring a security profile
 description: Declare OIDC Core, OAuth 2.1 Baseline, or FAPI deliberately — profiles add features but never silently add grants.
+pageClass: pg-use-cases-security-profile
 ---
 
 # Use case — Declaring a security profile
@@ -37,8 +38,8 @@ A profile constrains its two neighbouring declaration axes differently, and the 
 <svg role="img" aria-labelledby="profile-axes-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="profile-axes-title">A declared profile fills in the feature flags it needs, but never adds a grant: a grant the profile requires and the deployment did not declare fails op.New instead.</title>
 
-  <rect x="260" y="16" width="240" height="44" rx="8" stroke="var(--vp-c-brand-2)"/>
-  <text x="380" y="43" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="12.5">op.WithProfile(…)</text>
+  <rect class="sp-option" x="260" y="16" width="240" height="44" rx="8"/>
+  <text class="sp-option-name" x="380" y="43" text-anchor="middle">op.WithProfile(…)</text>
 
   <path d="M380 60 V82"/>
   <path d="M192 82 H568"/>
@@ -48,18 +49,18 @@ A profile constrains its two neighbouring declaration axes differently, and the 
   <path d="M564 102 L568 111 L572 102"/>
 
   <rect x="24" y="114" width="336" height="130" rx="8"/>
-  <text x="192" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">Features</text>
-  <text x="192" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">feature.PAR, feature.JAR, feature.JARM, …</text>
-  <path d="M44 178 H340" opacity="0.35"/>
-  <text x="192" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">Policy the profile is entitled to decide.</text>
-  <text x="192" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">not declared → the profile switches it on</text>
+  <text class="sp-axis" x="192" y="140" text-anchor="middle">Features</text>
+  <text class="sp-axis-example" x="192" y="162" text-anchor="middle">feature.PAR, feature.JAR, feature.JARM, …</text>
+  <path class="sp-divider" d="M44 178 H340"/>
+  <text class="sp-claim" x="192" y="202" text-anchor="middle">Policy the profile is entitled to decide.</text>
+  <text class="sp-outcome" x="192" y="226" text-anchor="middle">not declared → the profile switches it on</text>
 
   <rect x="400" y="114" width="336" height="130" rx="8"/>
-  <text x="568" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">Grants</text>
-  <text x="568" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">grant.AuthorizationCode, grant.CIBA, …</text>
-  <path d="M420 178 H716" opacity="0.35"/>
-  <text x="568" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">Only the embedder can supply the collaborators.</text>
-  <text x="568" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">not declared → op.New fails</text>
+  <text class="sp-axis" x="568" y="140" text-anchor="middle">Grants</text>
+  <text class="sp-axis-example" x="568" y="162" text-anchor="middle">grant.AuthorizationCode, grant.CIBA, …</text>
+  <path class="sp-divider" d="M420 178 H716"/>
+  <text class="sp-claim" x="568" y="202" text-anchor="middle">Only the embedder can supply the collaborators.</text>
+  <text class="sp-outcome" x="568" y="226" text-anchor="middle">not declared → op.New fails</text>
 </svg>
 
 Either way, the resolved policy is recorded in the `startup.profile` audit event, so the configuration the OP actually booted with is readable from the audit trail rather than inferred from the option list.

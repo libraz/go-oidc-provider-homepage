@@ -1,6 +1,7 @@
 ---
 title: 既存ユーザストアの投影
 description: アプリケーション所有の users テーブルを移行せずに、OIDC のユーザ読み取り面へ投影する。
+pageClass: pg-use-cases-byo-userstore
 ---
 
 # 使い方 — 既存ユーザストアの投影
@@ -12,36 +13,36 @@ description: アプリケーション所有の users テーブルを移行せず
 <svg role="img" aria-labelledby="byo-userstore-seam-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="byo-userstore-seam-title">2 つの責務の境界: 本ライブラリは OAuth / OIDC レコードを同梱ストアで持ち、組み込み側はエンドユーザの行を持ち、OP は FindBySubject、FindByUsername、ReadPasswordHash で境界をまたいで読む。</title>
 
-  <path d="M380 26 V268" style="stroke:var(--vp-c-divider);stroke-width:1.5;stroke-dasharray:6 5"/>
-  <text x="380" y="16" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">op.WithUserStore</text>
+  <path class="bu-seam" d="M380 26 V268"/>
+  <text class="bu-call" x="380" y="16" text-anchor="middle">op.WithUserStore</text>
 
-  <rect x="20" y="28" width="280" height="88" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
-  <text x="160" y="56" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2)">ライブラリが持つ</text>
-  <text x="160" y="80" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">clients · codes · refresh tokens · grants</text>
-  <text x="160" y="100" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">sessions · PAR · IAT · RAT · access tokens</text>
+  <rect class="bu-lib" x="20" y="28" width="280" height="88" rx="8"/>
+  <text class="bu-lib-title" x="160" y="56" text-anchor="middle">ライブラリが持つ</text>
+  <text class="bu-note" x="160" y="80" text-anchor="middle">clients · codes · refresh tokens · grants</text>
+  <text class="bu-note" x="160" y="100" text-anchor="middle">sessions · PAR · IAT · RAT · access tokens</text>
 
-  <rect x="460" y="28" width="280" height="88" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
-  <text x="600" y="56" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">組み込み側が持つ</text>
-  <text x="600" y="80" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">members: member_id · email_address</text>
-  <text x="600" y="100" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">password_phc · full_name · locale_pref</text>
+  <rect class="bu-app" x="460" y="28" width="280" height="88" rx="8"/>
+  <text class="bu-app-title" x="600" y="56" text-anchor="middle">組み込み側が持つ</text>
+  <text class="bu-note" x="600" y="80" text-anchor="middle">members: member_id · email_address</text>
+  <text class="bu-note" x="600" y="100" text-anchor="middle">password_phc · full_name · locale_pref</text>
 
-  <text x="300" y="156" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">ID トークンと /userinfo の claim</text>
-  <path d="M310 152 H450" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M444 147 L450 152 L444 157" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="142" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindBySubject</text>
-  <text x="460" y="156" font-size="11" style="fill:var(--vp-c-text-2)">member の行を読む</text>
+  <text class="bu-note" x="300" y="156" text-anchor="end">ID トークンと /userinfo の claim</text>
+  <path class="bu-flow" d="M310 152 H450"/>
+  <path class="bu-flow" d="M444 147 L450 152 L444 157"/>
+  <text class="bu-call" x="380" y="142" text-anchor="middle">FindBySubject</text>
+  <text class="bu-note" x="460" y="156">member の行を読む</text>
 
-  <text x="300" y="202" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">ログイン識別子から subject へ</text>
-  <path d="M310 198 H450" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M444 193 L450 198 L444 203" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="188" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindByUsername</text>
-  <text x="460" y="202" font-size="11" style="fill:var(--vp-c-text-2)">email_address で照合</text>
+  <text class="bu-note" x="300" y="202" text-anchor="end">ログイン識別子から subject へ</text>
+  <path class="bu-flow" d="M310 198 H450"/>
+  <path class="bu-flow" d="M444 193 L450 198 L444 203"/>
+  <text class="bu-call" x="380" y="188" text-anchor="middle">FindByUsername</text>
+  <text class="bu-note" x="460" y="202">email_address で照合</text>
 
-  <text x="300" y="248" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">op.PrimaryPassword</text>
-  <path d="M310 244 H450" style="stroke:var(--vp-c-brand-2)"/>
-  <path d="M444 239 L450 244 L444 249" style="stroke:var(--vp-c-brand-2)"/>
-  <text x="380" y="234" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">ReadPasswordHash</text>
-  <text x="460" y="248" font-size="11" style="fill:var(--vp-c-text-2)">password_phc を返す</text>
+  <text class="bu-note" x="300" y="248" text-anchor="end">op.PrimaryPassword</text>
+  <path class="bu-flow" d="M310 244 H450"/>
+  <path class="bu-flow" d="M444 239 L450 244 L444 249"/>
+  <text class="bu-call" x="380" y="234" text-anchor="middle">ReadPasswordHash</text>
+  <text class="bu-note" x="460" y="248">password_phc を返す</text>
 </svg>
 
 > **ソース:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
@@ -113,7 +114,7 @@ if err != nil || !op.VerifyPassword(hash, submittedPassword) {
 ## 実行
 
 ```sh
-(cd examples/24-byo-userstore && go run -tags example .)
+(cd examples/24-byo-userstore && GOWORK=off go run -tags example .)
 ```
 
 この例は OP を `:8080`、ペアの RP を `:9090` で起動します。`demo@example.test` / `demo` でログインすると、RP の `/me` ページで開示された ID トークン claim を確認できます。

@@ -2294,6 +2294,55 @@ div[class*="language-"] code {
   opacity: 0.45;
 }
 
+/* pg-concepts-redirect-uri — src/concepts/redirect-uri.md + src/ja/concepts/redirect-uri.md */
+.pg-concepts-redirect-uri .ru-cap {
+  fill: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.pg-concepts-redirect-uri .ru-rule {
+  stroke: var(--vp-c-divider);
+  stroke-width: 1;
+}
+.pg-concepts-redirect-uri .ru-registered {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-redirect-uri .ru-registered-uri {
+  fill: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+}
+.pg-concepts-redirect-uri .ru-ok {
+  fill: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+}
+.pg-concepts-redirect-uri .ru-no {
+  fill: var(--vp-c-danger-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 700;
+}
+.pg-concepts-redirect-uri .ru-uri {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+}
+/* The one span of the candidate URI that differs from the registered value. */
+.pg-concepts-redirect-uri .ru-diff {
+  fill: var(--vp-c-danger-1);
+  font-weight: 700;
+}
+.pg-concepts-redirect-uri .ru-why {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+}
+
 /* pg-concepts-refresh-tokens — src/concepts/refresh-tokens.md + src/ja/concepts/refresh-tokens.md */
 .pg-concepts-refresh-tokens .rr-flow-dg text {
   fill: currentColor;
@@ -2334,6 +2383,81 @@ div[class*="language-"] code {
 }
 .pg-concepts-refresh-tokens .rr-flow-dg .life {
   stroke-dasharray: 3 4;
+}
+
+/* pg-concepts-scopes-and-claims — src/concepts/scopes-and-claims.md + src/ja/concepts/scopes-and-claims.md */
+.pg-concepts-scopes-and-claims .sc-cap {
+  fill: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.pg-concepts-scopes-and-claims .sc-rule {
+  stroke: var(--vp-c-divider);
+  stroke-width: 1;
+}
+.pg-concepts-scopes-and-claims .sc-scope {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-divider);
+}
+.pg-concepts-scopes-and-claims .sc-name {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+}
+/* offline_access releases no claim, so its pill is set in the muted colour. */
+.pg-concepts-scopes-and-claims .sc-name-muted {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+}
+.pg-concepts-scopes-and-claims .sc-claims {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+}
+.pg-concepts-scopes-and-claims .sc-aside {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 11px;
+}
+.pg-concepts-scopes-and-claims .sc-dest {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-scopes-and-claims .sc-dest-title {
+  fill: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pg-concepts-scopes-and-claims .sc-dest-path {
+  fill: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pg-concepts-scopes-and-claims .sc-dest-claims {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+}
+.pg-concepts-scopes-and-claims .sc-note {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+}
+/* Scope to claim group. */
+.pg-concepts-scopes-and-claims .sc-link {
+  stroke: var(--vp-c-text-3);
+}
+/* Claim group to the place it is delivered. */
+.pg-concepts-scopes-and-claims .sc-route {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-concepts-scopes-and-claims .sc-route-dashed {
+  stroke-dasharray: 5 4;
 }
 
 /* pg-concepts-sender-constraint — src/concepts/sender-constraint.md + src/ja/concepts/sender-constraint.md */
@@ -2578,6 +2702,59 @@ div[class*="language-"] code {
 }
 .pg-getting-started-minimal .min-flow {
   stroke: var(--vp-c-brand-2);
+}
+
+/* pg-getting-started-mount — src/getting-started/mount.md + src/ja/getting-started/mount.md */
+.pg-getting-started-mount .mt-layer {
+  stroke: var(--vp-c-divider);
+}
+.pg-getting-started-mount .mt-title {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pg-getting-started-mount .mt-hint {
+  fill: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.pg-getting-started-mount .mt-route {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.pg-getting-started-mount .mt-box {
+  fill: var(--vp-c-bg-soft);
+}
+.pg-getting-started-mount .mt-op {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+
+/* pg-getting-started-required-options — src/getting-started/required-options.md + src/ja/getting-started/required-options.md */
+.pg-getting-started-required-options .ro-head {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pg-getting-started-required-options .ro-box {
+  fill: var(--vp-c-bg-soft);
+}
+/* Required only once a particular grant is enabled, hence the broken outline. */
+.pg-getting-started-required-options .ro-conditional {
+  stroke-dasharray: 6 5;
+}
+.pg-getting-started-required-options .ro-option {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 13px;
+}
+.pg-getting-started-required-options .ro-note {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
 }
 
 /* pg-index — src/index.md + src/ja/index.md */
@@ -3272,6 +3449,45 @@ div[class*="language-"] code {
   stroke: var(--vp-c-brand-2);
 }
 
+/* pg-use-cases-authorization-details — src/use-cases/authorization-details.md + src/ja/use-cases/authorization-details.md */
+.pg-use-cases-authorization-details .rar-doc {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-text-3);
+}
+.pg-use-cases-authorization-details .rar-json {
+  fill: currentColor;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+}
+.pg-use-cases-authorization-details .rar-flow {
+  stroke: var(--vp-c-brand-2);
+}
+/* The brace that gathers the members a registered validator owns. */
+.pg-use-cases-authorization-details .rar-hook {
+  stroke: var(--vp-c-text-3);
+}
+.pg-use-cases-authorization-details .rar-check-op {
+  fill: var(--vp-c-brand-2);
+  font-size: 11px;
+}
+.pg-use-cases-authorization-details .rar-check-you {
+  fill: var(--vp-c-text-2);
+  font-size: 11px;
+}
+.pg-use-cases-authorization-details .rar-sink {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-authorization-details .rar-sink-title {
+  fill: var(--vp-c-brand-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pg-use-cases-authorization-details .rar-sink-note {
+  fill: var(--vp-c-text-2);
+  font-size: 10.5px;
+}
+
 /* pg-use-cases-back-channel-logout — src/use-cases/back-channel-logout.md + src/ja/use-cases/back-channel-logout.md */
 .pg-use-cases-back-channel-logout .bcl-svg text {
   font-family: var(--vp-font-family-base);
@@ -3337,6 +3553,87 @@ div[class*="language-"] code {
   stroke-width: 3px;
 }
 
+/* pg-use-cases-byo-store — src/use-cases/byo-store.md + src/ja/use-cases/byo-store.md */
+/* The seam itself is drawn, not implied: everything left of it is the library's
+   meaning, everything right of it is the backend's representation. */
+.pg-use-cases-byo-store .bs-seam {
+  stroke: var(--vp-c-divider);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+.pg-use-cases-byo-store .bs-seam-name {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.pg-use-cases-byo-store .bs-lib {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-byo-store .bs-lib-title {
+  fill: var(--vp-c-brand-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pg-use-cases-byo-store .bs-app {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-text-3);
+}
+.pg-use-cases-byo-store .bs-app-title {
+  fill: currentColor;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pg-use-cases-byo-store .bs-role {
+  fill: var(--vp-c-text-2);
+  font-size: 11px;
+}
+/* Sits on the arrows crossing the seam, so it carries the shared .halo utility;
+   leaving `stroke` unset here keeps that halo alive. */
+.pg-use-cases-byo-store .bs-wire {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+}
+
+/* pg-use-cases-byo-userstore — src/use-cases/byo-userstore.md + src/ja/use-cases/byo-userstore.md */
+.pg-use-cases-byo-userstore .bu-seam {
+  stroke: var(--vp-c-divider);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+.pg-use-cases-byo-userstore .bu-lib {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-byo-userstore .bu-lib-title {
+  fill: var(--vp-c-brand-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pg-use-cases-byo-userstore .bu-app {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-text-3);
+}
+.pg-use-cases-byo-userstore .bu-app-title {
+  fill: currentColor;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pg-use-cases-byo-userstore .bu-note {
+  fill: var(--vp-c-text-2);
+  font-size: 11px;
+}
+/* The three UserStore methods that read across the boundary. */
+.pg-use-cases-byo-userstore .bu-call {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.pg-use-cases-byo-userstore .bu-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
 /* pg-use-cases-ciba — src/use-cases/ciba.md + src/ja/use-cases/ciba.md */
 .pg-use-cases-ciba .ciba-box {
   fill: var(--vp-c-bg-soft);
@@ -3373,6 +3670,35 @@ div[class*="language-"] code {
 .pg-use-cases-ciba text.halo tspan {
   stroke: var(--vp-c-bg);
   stroke-width: 3px;
+}
+
+/* pg-use-cases-claims-request — src/use-cases/claims-request.md + src/ja/use-cases/claims-request.md */
+.pg-use-cases-claims-request .cr-src {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-text-3);
+}
+.pg-use-cases-claims-request .cr-src-title {
+  fill: currentColor;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.pg-use-cases-claims-request .cr-note {
+  fill: var(--vp-c-text-2);
+  font-size: 11px;
+}
+.pg-use-cases-claims-request .cr-dest {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-claims-request .cr-dest-title {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pg-use-cases-claims-request .cr-flow {
+  stroke: var(--vp-c-brand-2);
 }
 
 /* pg-use-cases-client-credentials — src/use-cases/client-credentials.md + src/ja/use-cases/client-credentials.md */
@@ -3808,6 +4134,34 @@ div[class*="language-"] code {
   stroke-width: 3px;
 }
 
+/* pg-use-cases-dynamodb-store — src/use-cases/dynamodb-store.md + src/ja/use-cases/dynamodb-store.md */
+.pg-use-cases-dynamodb-store .ddb-call {
+  fill: var(--vp-c-brand-soft);
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-dynamodb-store .ddb-call-name {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pg-use-cases-dynamodb-store .ddb-item {
+  fill: var(--vp-c-bg-soft);
+  stroke: var(--vp-c-text-3);
+}
+.pg-use-cases-dynamodb-store .ddb-item-key {
+  fill: currentColor;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+}
+.pg-use-cases-dynamodb-store .ddb-note {
+  fill: var(--vp-c-text-2);
+  font-size: 10.5px;
+}
+.pg-use-cases-dynamodb-store .ddb-flow {
+  stroke: var(--vp-c-brand-2);
+}
+
 /* pg-use-cases-fapi2-baseline — src/use-cases/fapi2-baseline.md + src/ja/use-cases/fapi2-baseline.md */
 /* No blanket `stroke: none` here: it would outrank the shared `.halo` opt-in and
    leave the message labels unprotected where they cross a lifeline. */
@@ -3844,6 +4198,62 @@ div[class*="language-"] code {
 }
 .pg-use-cases-fapi2-baseline .fapi2-flow-dg .life {
   stroke-dasharray: 3 4;
+}
+
+/* pg-use-cases-grant-management — src/use-cases/grant-management.md + src/ja/use-cases/grant-management.md */
+.pg-use-cases-grant-management .gm-cap {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+}
+/* create · replace · merge — the grant_management_action values. */
+.pg-use-cases-grant-management .gm-mode {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pg-use-cases-grant-management .gm-note {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 10px;
+}
+.pg-use-cases-grant-management .gm-sub {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 10.5px;
+}
+.pg-use-cases-grant-management .gm-mono {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+.pg-use-cases-grant-management .gm-grant {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-grant-management .gm-grant-title {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pg-use-cases-grant-management .gm-chip {
+  fill: var(--vp-c-bg-soft);
+  stroke: none;
+}
+.pg-use-cases-grant-management .gm-chip-text {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+}
+/* The tokens are consequences of the grant, not part of its record. */
+.pg-use-cases-grant-management .gm-tokens {
+  stroke-dasharray: 5 4;
+}
+.pg-use-cases-grant-management .gm-token {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
 }
 
 /* pg-use-cases-hot-cold-redis — src/use-cases/hot-cold-redis.md + src/ja/use-cases/hot-cold-redis.md */
@@ -4159,6 +4569,71 @@ div[class*="language-"] code {
 }
 .pg-use-cases-pairwise-subject #psfd .d-flow {
   opacity: 0.5;
+}
+
+/* pg-use-cases-protected-resource-metadata — src/use-cases/protected-resource-metadata.md + src/ja/use-cases/protected-resource-metadata.md */
+/* The rail the four numbered steps hang off. */
+.pg-use-cases-protected-resource-metadata .prm-rail {
+  opacity: 0.4;
+}
+.pg-use-cases-protected-resource-metadata .prm-dot {
+  fill: var(--vp-c-bg);
+}
+.pg-use-cases-protected-resource-metadata .prm-step-no {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 9.5px;
+}
+.pg-use-cases-protected-resource-metadata .prm-step {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 12.5px;
+}
+.pg-use-cases-protected-resource-metadata .prm-value {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+/* The one line the client is actually looking for. */
+.pg-use-cases-protected-resource-metadata .prm-value-hit {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+
+/* pg-use-cases-security-profile — src/use-cases/security-profile.md + src/ja/use-cases/security-profile.md */
+.pg-use-cases-security-profile .sp-option {
+  stroke: var(--vp-c-brand-2);
+}
+.pg-use-cases-security-profile .sp-option-name {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+}
+.pg-use-cases-security-profile .sp-axis {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.pg-use-cases-security-profile .sp-axis-example {
+  fill: var(--vp-c-text-2);
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+}
+.pg-use-cases-security-profile .sp-divider {
+  opacity: 0.35;
+}
+.pg-use-cases-security-profile .sp-claim {
+  fill: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+}
+/* What a profile does when the deployment left the axis undeclared. */
+.pg-use-cases-security-profile .sp-outcome {
+  fill: var(--vp-c-brand-2);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
 }
 
 /* pg-use-cases-spa-custom-interaction — src/use-cases/spa-custom-interaction.md + src/ja/use-cases/spa-custom-interaction.md */

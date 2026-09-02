@@ -1,6 +1,7 @@
 ---
 title: Mount on your router
 description: Mounting the op.Provider on net/http, chi, gin, and friends.
+pageClass: pg-getting-started-mount
 ---
 
 # Mount on your router
@@ -11,27 +12,27 @@ The provider sits one level below your router, as a sibling of your own handlers
 
 <svg role="img" aria-labelledby="mount-layers-title" viewBox="0 0 760 296" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="mount-layers-title">The provider handler sits inside your router, alongside your own handlers, with your listener and middleware wrapping both.</title>
-  <rect x="24" y="24" width="712" height="248" rx="10" stroke="var(--vp-c-divider)"/>
-  <text x="48" y="52" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your listener</text>
-  <text x="712" y="52" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">http.ListenAndServe</text>
+  <rect class="mt-layer" x="24" y="24" width="712" height="248" rx="10"/>
+  <text class="mt-title" x="48" y="52">Your listener</text>
+  <text class="mt-hint" x="712" y="52" text-anchor="end">http.ListenAndServe</text>
 
-  <rect x="56" y="64" width="648" height="184" rx="10" stroke="var(--vp-c-divider)"/>
-  <text x="80" y="92" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your middleware</text>
-  <text x="680" y="92" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">otelhttp · promhttp · access log</text>
+  <rect class="mt-layer" x="56" y="64" width="648" height="184" rx="10"/>
+  <text class="mt-title" x="80" y="92">Your middleware</text>
+  <text class="mt-hint" x="680" y="92" text-anchor="end">otelhttp · promhttp · access log</text>
 
-  <rect x="88" y="104" width="584" height="124" rx="10" stroke="var(--vp-c-divider)"/>
-  <text x="112" y="132" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your router</text>
-  <text x="648" y="132" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">net/http · chi · gin</text>
+  <rect class="mt-layer" x="88" y="104" width="584" height="124" rx="10"/>
+  <text class="mt-title" x="112" y="132">Your router</text>
+  <text class="mt-hint" x="648" y="132" text-anchor="end">net/http · chi · gin</text>
 
-  <rect x="112" y="140" width="252" height="76" rx="8" fill="var(--vp-c-bg-soft)"/>
-  <text x="238" y="164" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your handlers</text>
-  <text x="238" y="184" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/ · /api/* · /healthz</text>
-  <text x="238" y="202" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/metrics · /debug/pprof</text>
+  <rect class="mt-box" x="112" y="140" width="252" height="76" rx="8"/>
+  <text class="mt-title" x="238" y="164" text-anchor="middle">Your handlers</text>
+  <text class="mt-route" x="238" y="184" text-anchor="middle">/ · /api/* · /healthz</text>
+  <text class="mt-route" x="238" y="202" text-anchor="middle">/metrics · /debug/pprof</text>
 
-  <rect x="396" y="140" width="252" height="76" rx="8" fill="var(--vp-c-brand-soft)" stroke="var(--vp-c-brand-2)"/>
-  <text x="522" y="164" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">op.Provider</text>
-  <text x="522" y="184" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/oidc/* (mount prefix)</text>
-  <text x="522" y="202" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/.well-known/openid-configuration</text>
+  <rect class="mt-op" x="396" y="140" width="252" height="76" rx="8"/>
+  <text class="mt-title" x="522" y="164" text-anchor="middle">op.Provider</text>
+  <text class="mt-route" x="522" y="184" text-anchor="middle">/oidc/* (mount prefix)</text>
+  <text class="mt-route" x="522" y="202" text-anchor="middle">/.well-known/openid-configuration</text>
 </svg>
 
 ## Mount on net/http, chi, or gin
