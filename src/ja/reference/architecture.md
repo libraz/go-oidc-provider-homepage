@@ -41,8 +41,8 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 |---|---|---|---|
 | `/.well-known/openid-configuration` | `internal/discovery` | OP の実効設定を discovery 文書として返す | 常時 |
 | `/jwks` | `internal/jwks` | 署名鍵セットの公開側（設定時は `use=enc` 鍵も） | 常時 |
-| `/authorize` | `internal/authorizeendpoint` | リクエストの解析、クライアントと `redirect_uri` の検証、interaction へのリダイレクト | 常時 |
-| `/interaction/{uid}` | `internal/authorizeendpoint` + `op/interaction` ドライバ | ログインと同意の ceremony。HTML で描画するか、SPA へ JSON で返す | `/authorize` と同時 |
+| `/auth` | `internal/authorizeendpoint` | リクエストの解析、クライアントと `redirect_uri` の検証、interaction へのリダイレクト | `authorization_code` grant が有効な場合 |
+| `/interaction/{uid}` | `internal/authorizeendpoint` + `op/interaction` ドライバ | ログインと同意の ceremony。HTML で描画するか、SPA へ JSON で返す | `/auth` と同時 |
 | `/par` | `internal/parendpoint` | pushed authorization request を受け取り、一度限りの `request_uri` を返す | `feature.PAR` |
 | `/token` | `internal/tokenendpoint` | クライアント認証、認可コードとリフレッシュトークンの引き換え、トークン発行 | 常時 |
 | `/userinfo` | `internal/userinfo` | 提示されたアクセストークンが指す subject の claim | 常時 |

@@ -105,22 +105,7 @@ DB 標準のバックアップツールがそのまま使えます。選択肢�
 - `oidc_totp_secrets.row_version` — SQLite は `INTEGER NOT NULL DEFAULT 1`、MySQL / MariaDB と PostgreSQL は `BIGINT NOT NULL DEFAULT 1`。
 - `oidc_email_otps.row_version` — `oidc_totp_secrets.row_version` と同じ `INTEGER` / `BIGINT` の定義。
 
-現在の retention とクライアント削除に必要なインデックスは次の名前です（`WithNaming` を使う場合は物理テーブル名を読み替えます）。
-
-| インデックス | テーブルとカラム |
-|---|---|
-| `idx_oidc_grants_client_subject` | `oidc_grants(client_id, subject, updated_at)` |
-| `idx_oidc_grants_client` | `oidc_grants(client_id)` |
-| `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` |
-| `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` |
-| `idx_oidc_refresh_tokens_client` | `oidc_refresh_tokens(client_id)` |
-| `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` |
-| `idx_oidc_access_tokens_client` | `oidc_access_tokens(client_id)` |
-| `idx_oidc_opaque_access_tokens_client` | `oidc_opaque_access_tokens(client_id)` |
-| `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` |
-| `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` |
-| `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` |
-| `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` |
+現在の retention とクライアント削除には、決まったインデックスの一式が必要です。名前の一覧は [ストレージの保守](/ja/operations/storage-maintenance#sql-に追加する形)に、各インデックスの用途を添えた同じ一覧は [SQL ストア](/ja/use-cases/sql-store#sql-migration-before-first-request)にあります。`WithNaming` を使う場合は物理テーブル名を読み替えてください。
 
 SQLite と PostgreSQL は `Migrate()` でインデックスを追加できます。MySQL と MariaDB の既存テーブルには `ALTER TABLE ... ADD INDEX` が必要です。既存の MySQL / MariaDB では `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;` も適用してください。大文字小文字を区別しない username の衝突を、この変更の前に解消します。SQLite と PostgreSQL に同じ照合順序変更は必要ありません。dialect ごとの文は [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) を使い、この migration の記録をバックアップ / 復旧 runbook と一緒に保管してください。
 

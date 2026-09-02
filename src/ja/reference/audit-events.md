@@ -77,14 +77,14 @@ for _, def := range op.AuditEventCatalog() {
 
 ## 共通の属性
 
-発火したイベントが持つ属性:
+発火したイベントには常に `audit`、`event`、レコード時刻があります。次の属性は emitter が設定したときに出力されます:
 
 | 属性 | 型 | 補足 |
 |---|---|---|
-| `request_id` | string | リクエスト単位の識別子。OP が HTTP header から自動設定することはありません |
-| `subject` | string | 該当ユーザの OIDC `sub`。認証前のイベントでは空 |
-| `client_id` | string | OAuth `client_id`。アカウント管理イベントでは空 |
-| `extras` | group | カテゴリ固有のフィールド（各セクションを参照） |
+| `request_id` | string | リクエスト単位の識別子。未知の場合は出力されません |
+| `actor_id` | string | ユーザ起点のイベントでは subject 識別子、クライアント起点では `client_id`。未知の場合は出力されません |
+| `client_id` | string | OAuth `client_id`。未知の場合は出力されません |
+| `extras` | group | カテゴリ固有のフィールド（各セクションを参照）。空の場合は出力されません |
 | `time` | timestamp | `slog.Record.Time`。`WithClock` に従い、未設定ならシステム時刻を使います |
 
 ## イベントカタログ

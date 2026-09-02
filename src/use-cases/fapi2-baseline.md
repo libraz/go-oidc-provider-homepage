@@ -8,7 +8,7 @@ pageClass: pg-use-cases-fapi2-baseline
 
 ## What is FAPI 2.0?
 
-**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused. FAPI rejects `RS256` signatures in favour of `ES256` / `PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and makes RPs send their authorize requests through PAR + JAR rather than as plain query strings. This library signs id_tokens with `ES256` only, so the anti-`RS256` clause is satisfied by construction.
+**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused. FAPI rejects `RS256` signatures in favour of `ES256` / `PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and makes RPs send their authorize requests through PAR + JAR rather than as plain query strings. The authorize endpoint is `/auth` under the configured mount prefix, so the default `/oidc` mount serves it at `/oidc/auth`. This library signs id_tokens with `ES256` only, so the anti-`RS256` clause is satisfied by construction.
 
 The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). FAPI 2.0 Baseline is the entry-level profile; FAPI 2.0 Message Signing adds JARM + DPoP nonce + RS-side proof signing.
 
@@ -34,7 +34,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 |---|---|---|
 | Pushed Authorization Requests | RFC 9126 | `feature.PAR` auto-enabled by the profile. `request_uri` returned from `/par` is the only authorize entry. |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` required; `plain` rejected. |
-| Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | Profile flags `RequiredAnyOf=[DPoP, MTLS]`; if neither is configured, the constructor auto-selects DPoP as the no-infrastructure default. |
+| Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | `profile.RequiredAnyOf` returns `{DPoP, MTLS}` for this profile, so either one satisfies the requirement; if neither is configured, the constructor auto-selects DPoP as the no-infrastructure default. |
 | ES256 signing | RFC 7518 | `id_token_signing_alg_values_supported` is `["ES256"]` unconditionally; `RS256` / `none` / HS* never advertised. |
 | `redirect_uri` exact match | FAPI 2.0 §5.3 | No wildcards. Byte-identical comparison. |
 | `private_key_jwt` client auth | FAPI 2.0 §3.1.3 | Use `private_key_jwt` for the token endpoint auth path. mTLS can satisfy sender constraint, but mTLS client-auth dispatch is not wired. |

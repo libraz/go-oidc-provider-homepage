@@ -285,11 +285,11 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 ### Step-up 認証はどう実装する？
 
-クライアント別ポリシーで `op.RuleACR(level)` を使います。RP が現セッションよりも高い `acr_values` を要求すると、OP は `WWW-Authenticate: error="insufficient_user_authentication"`（RFC 9470）を返します。セッションは authenticator チェーンを通って step-up し、その後再開します。詳細は [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up)。
+`LoginFlow.Rules` に `op.RuleACR("urn:example:mfa", op.StepTOTP{...})` を追加します。認可リクエストの `acr_values` にその値が含まれると、指定した step を実行します。どの ACR 値でどの factor を求めるかはフロー側で決めます。これは認可リクエストの rule であり、RFC 9470 の resource server から authorization server への challenge ではありません。完全なフローは [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) を参照してください。
 
 ### リスクスコアが高いときだけ MFA を挟める？
 
-`op.RuleRisk(...)` が、組み込み側で用意する `RiskAssessor` の評価結果を受け取ります。`RiskOutcome` は明示的な `RiskScore` を持ちます。詳細は [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa)。
+`RiskAssessor` を設定し、`LoginFlow.Rules` に `op.RuleRisk(op.RiskScoreHigh, op.StepTOTP{...})` のような rule を追加します。`RiskOutcome.Score` がしきい値を選び、rule の第2引数が実行する step です。詳細は [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) を参照してください。
 
 <div id="logout" class="faq-anchor"></div>
 

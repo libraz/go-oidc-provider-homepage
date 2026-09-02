@@ -62,6 +62,10 @@ Implementations MUST be safe for concurrent use; the orchestrator dispatches acr
 
 The orchestrator stamps `Prompt.StateRef` after `Begin` or `Continue` returns. An authenticator must not invent or persist a state reference. Put per-attempt state in `interaction.Step.Scratch`; the value is kept server-side and returned through `ContinueInput.Scratch`.
 
+## State transitions
+
+An `Authenticator` returns either the next prompt or a result that completes authentication. For a two-step factor such as SMS OTP, `Begin` returns the first prompt and each SPA submission makes `Continue` return the next prompt or the final result.
+
 <svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 352" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authenticator-flow-title">The state machine of a custom authenticator. LoginFlow calls Begin, the user passes a phone-number prompt and then a code prompt, and returning a Result writes the subject and factor into the session.</title>
   <defs>

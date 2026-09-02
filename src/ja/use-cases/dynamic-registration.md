@@ -129,7 +129,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 })
 ```
 
-`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません（組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む）。未知の値は `op.New` で拒否されます。IAT 経由の登録では、Initial Access Token を提示した場合に `store.InitialAccessToken.AllowedScopes` が優先されます。
+`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません（組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む）。未知の値は `op.New` で拒否されます。IAT 経由の経路はこれまでどおりで、Initial Access Token を提示した場合は引き続き `store.InitialAccessToken.AllowedScopes` が優先されます。
 
 ::: warning オープン登録の scope 既定は空です
 `scope` を省略したオープンな POST には、組み込み側が `OpenRegistrationDefaultScopes` を設定しない限り既定 scope は付きません。登録直後のクライアントに `openid` などの基準 scope を要求させたい場合は、このオプションを明示してください。
@@ -199,7 +199,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 ## 登録時に強制している内容
 
-DCR は完全実装とは表記していませんが、対応しない差分は意図的な設計判断であって TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反するメタデータを拒否します:
+DCR の対応状況は `full` ではなく `partial` と表記していますが、この `partial` は意図的な設計判断を表しているのであって、未着手の TODO ではありません。バリデータは `POST /register` と `PUT /register/{client_id}` のいずれでも、以下に違反するメタデータを拒否します:
 
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
 - `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
@@ -239,8 +239,8 @@ URI 系メタデータの典型的な境界は次の形です。
 
 `full` を名乗らない残差は、設計判断であって積み残しではありません。判断の根拠は [設計判断](/ja/security/design-judgments) ページに別エントリとして残しています — `client_secret` の非開示（[#dj-20](/ja/security/design-judgments#dj-20)）、PUT 省略のセマンティクス（[#dj-21](/ja/security/design-judgments#dj-21)）、`sector_identifier_uri` の fetch と native loopback ルール（[#dj-22](/ja/security/design-judgments#dj-22)）。
 
-- **`GET /register/{id}` では `client_secret` を再掲しない。** ストアは hash しか保持せず、平文は最初の `POST /register` と、後述する 2 つの PUT ケースだけで応答に乗ります。RFC 7591 §3.2.1 は読み取り応答での `client_secret` を OPTIONAL としており、非準拠ではありません。
-- **PUT の省略はフィールドごとに扱いが異なります。** `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` を省略すると、そのフィールドは OP の既定値に戻ります。新規登録時とは異なり、`scope` の省略はクライアントの scope を空にします。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）も空値になります。
+- **`GET /register/{id}` では `client_secret` を再掲しない。** ストアは hash しか保持せず、平文は最初の `POST /register` と、後述する 2 つの PUT ケースだけで応答に乗ります。RFC 7591 §3.2.1 は読み取り応答での `client_secret` を OPTIONAL としているため、省略しても仕様に適合します。
+- **PUT の省略は、一部のフィールドを OP の既定値に戻し、残りは消去します。** `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` を省略すると、そのフィールドは OP の既定値に戻ります。新規登録時とは異なり、`scope` の省略はクライアントの scope を空にします。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、…）も空値になります。
 - **PUT が `client_secret` を返すのは public client を confidential に変更するときだけです。** confidential client の通常のメタデータ編集では保存済み hash を維持し、secret は返しません。リクエストに `client_secret` を含めた場合は認証済みクライアントの値と照合され、置換値としては扱われません。
 - **PUT の body にサーバ管理のフィールドを含めてはならない。** `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` を含めると `400 invalid_request`。認証中のクライアントの `client_secret` と一致しない値を送っても `400` になります。
 - **`backchannel_logout_uri` は end-to-end でラウンドトリップしますが、session-bound logout は対応しません。** 有効な URI は `POST /register` で永続化され、`GET /register/{client_id}` で返却され、`PUT /register/{client_id}` で上書きできます。`backchannel_logout_session_required: true` は URI の有無にかかわらず不正なメタデータなので、ストレージには入りません。

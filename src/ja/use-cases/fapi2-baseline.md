@@ -34,7 +34,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 |---|---|---|
 | Pushed Authorization Requests | RFC 9126 | プロファイルが `feature.PAR` を自動有効化。`/par` で得た `request_uri` を authorize の入口にする。 |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` 必須、`plain` 拒否。 |
-| 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | どちらか一方を必須化。どちらも指定されていなければ、インフラ前提の少ない DPoP を既定として選ぶ。 |
+| 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | このプロファイルでは `profile.RequiredAnyOf` が `{DPoP, MTLS}` を返すため、どちらか一方を満たせばよい。どちらも指定されていなければ、コンストラクタがインフラ前提の少ない DPoP を既定として選ぶ。 |
 | ES256 署名 | RFC 7518 | `id_token_signing_alg_values_supported` は無条件で `["ES256"]`。`RS256` / `none` / `HS*` はそもそも公告しない。 |
 | `redirect_uri` 完全一致 | FAPI 2.0 §5.3 | ワイルドカード無し、バイト一致比較。 |
 | `private_key_jwt` クライアント認証 | FAPI 2.0 §3.1.3 | token endpoint のクライアント認証には `private_key_jwt` を使う。mTLS は送信者制約を満たせますが、mTLS をクライアント認証方式として扱う経路は未接続。 |

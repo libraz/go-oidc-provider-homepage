@@ -7,7 +7,7 @@ pageClass: pg-reference-options
 
 # Options reference
 
-Every public option accepted by `op.New`, grouped by what it touches. The first four are constructor-required; everything else is optional and refines the defaults.
+Every public option accepted by `op.New`, grouped by what it touches. `WithIssuer`, `WithStore`, and `WithKeyset` are always required. `WithCookieKeys` is required when the `authorization_code` grant is enabled, including by the default grant set; everything else is optional and refines the defaults.
 
 ::: tip How to read this page
 Click the option name for the deep-dive page. The "Section" column tells you which discovery / endpoint surface the option moves. "Default" is empty when the option has no built-in default — supplying it is the only way to enable the behaviour.

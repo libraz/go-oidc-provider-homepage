@@ -97,11 +97,11 @@ FAPI 2.0 has two bands:
 FAPI is not a separate protocol. It is a profile that pins down how to use OAuth 2.0 and OpenID Connect safely, which is why the diagram stacks it on top of the base specs rather than beside them.
 
 ::: tip Baseline — the floor
-Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS sender constraint, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, and `private_key_jwt` client authentication. This is the floor for any FAPI 2.0 deployment.
+Pushed Authorization Requests (PAR), JAR, PKCE, DPoP **or** mTLS sender constraint, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, and `private_key_jwt` client authentication. This is the floor for any FAPI 2.0 deployment.
 :::
 
 ::: tip Message Signing — non-repudiation
-On top of Baseline: **JAR** (the authorize request itself is a signed JWT), **JARM** (the authorize response is signed too), **DPoP nonce** required, RS-side response signing. The result is full non-repudiation: every request and response is cryptographically attributable to its sender.
+On top of Baseline: **JARM** (the authorize response is signed), **DPoP nonce** required, and RS-side response signing. Baseline already requires **JAR**, which makes the authorize request a signed JWT. The result is full non-repudiation: every request and response is cryptographically attributable to its sender.
 
 UK Open Banking and Brazil Open Insurance mandate Message Signing.
 :::

@@ -97,11 +97,11 @@ FAPI 2.0 は 2 段構成です。
 FAPI は別仕様ではありません。OAuth 2.0 と OpenID Connect の安全な使い方を固定するプロファイルです。図で基盤仕様の横ではなく上に積んでいるのはそのためです。
 
 ::: tip Baseline — 必須要件の最低ライン
-Pushed Authorization Requests（PAR）、PKCE、DPoP **または** mTLS、OP 発行物の ES256 署名、FAPI で許可されるクライアント側署名アルゴリズム、`redirect_uri` の完全一致、`private_key_jwt` / mTLS でのクライアント認証。**どの FAPI 2.0 配備にも求められる最低水準** です。
+Pushed Authorization Requests（PAR）、JAR、PKCE、DPoP **または** mTLS、OP 発行物の ES256 署名、FAPI で許可されるクライアント側署名アルゴリズム、`redirect_uri` の完全一致、`private_key_jwt` によるクライアント認証。mTLS は送信者制約に使えますが、`tls_client_auth` と `self_signed_tls_client_auth` は token endpoint で処理されません。**どの FAPI 2.0 配備にも求められる最低水準** です。
 :::
 
 ::: tip Message Signing — 後から否認できない証拠
-Baseline に加えて、**JAR**（authorize 要求自体を署名 JWT にする）、**JARM**（authorize 応答も署名する）、**DPoP nonce** 必須、RS 側の応答署名を求めます。すべての要求・応答が暗号学的に発信元へ結びつくため、後から「その要求・応答は送っていない」と否認しにくくなります。
+Baseline に加えて、**JARM**（authorize 応答を署名する）、**DPoP nonce** 必須、RS 側の応答署名を求めます。JAR は Baseline ですでに必須で、authorize 要求自体を署名 JWT にします。すべての要求・応答が暗号学的に発信元へ結びつくため、後から「その要求・応答は送っていない」と否認しにくくなります。
 
 UK Open Banking と Brazil Open Insurance は Message Signing を必須化しています。
 :::

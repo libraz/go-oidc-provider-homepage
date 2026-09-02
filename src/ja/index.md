@@ -194,4 +194,4 @@ go get github.com/libraz/go-oidc-provider/op@v1.2.0
 
 ## ライセンスと関連情報
 
-Apache-2.0。ソースは [`libraz/go-oidc-provider`](https://github.com/libraz/go-oidc-provider)。脆弱性報告は [SECURITY.md](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) を参照してください。
+Apache-2.0。ソースは [`libraz/go-oidc-provider`](https://github.com/libraz/go-oidc-provider)。脆弱性報告は [SECURITY.md](https://github.com/libraz/go-oidc-provider/blob/main/.github/SECURITY.md) を参照してください。

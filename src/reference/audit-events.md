@@ -77,14 +77,14 @@ Read it when you need the event set as data rather than as prose — provisionin
 
 ## Common attributes
 
-Every emitted event carries:
+Each emitted event always carries `audit`, `event`, and the record time. The following attributes appear when the emitter populated them:
 
 | Attribute | Type | Notes |
 |---|---|---|
-| `request_id` | string | per-request identifier; the OP does not populate it from HTTP headers automatically |
-| `subject` | string | OIDC `sub` of the affected user; empty for pre-authn events |
-| `client_id` | string | OAuth `client_id`; empty for account-management events |
-| `extras` | group | category-specific fields (see each section) |
+| `request_id` | string | per-request identifier; omitted when unknown |
+| `actor_id` | string | subject identifier for a user-initiated event, or `client_id` for a client-initiated event; omitted when unknown |
+| `client_id` | string | OAuth `client_id`; omitted when unknown |
+| `extras` | group | category-specific fields (see each section); omitted when empty |
 | `time` | timestamp | `slog.Record.Time`; follows `WithClock` (or the system clock when no clock is configured) |
 
 ## Event catalog

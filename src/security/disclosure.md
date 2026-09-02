@@ -28,7 +28,7 @@ Please include whatever you have:
 
 If a detail is missing it's fine — partial reports are still useful, and follow-up questions are normal.
 
-The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) in the source repository; this page is the same intent in friendlier prose.
+The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/.github/SECURITY.md) in the source repository; this page is the same intent in friendlier prose.
 
 ## What to expect
 
@@ -100,7 +100,7 @@ The project follows **coordinated disclosure** — nothing about that is adversa
 
 ## Current advisory state
 
-Advisory status changes over time, so this page intentionally does not duplicate a point-in-time CVE count. GitHub Security Advisories are the canonical current record; consult the [advisories page](https://github.com/libraz/go-oidc-provider/security/advisories) and the repository [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) for the live policy and disclosures. See the [Security posture](/security/posture) page for the limits of the project's defences.
+Advisory status changes over time, so this page intentionally does not duplicate a point-in-time CVE count. GitHub Security Advisories are the canonical current record; consult the [advisories page](https://github.com/libraz/go-oidc-provider/security/advisories) and the repository [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/.github/SECURITY.md) for the live policy and disclosures. See the [Security posture](/security/posture) page for the limits of the project's defences.
 
 ## Adjacent supply-chain hygiene
 

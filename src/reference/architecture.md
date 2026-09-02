@@ -41,8 +41,8 @@ The boundary is enforced structurally: external code cannot reach into `internal
 |---|---|---|---|
 | `/.well-known/openid-configuration` | `internal/discovery` | the OP's effective configuration as a discovery document | always |
 | `/jwks` | `internal/jwks` | the public half of the signing keyset (plus `use=enc` keys when configured) | always |
-| `/authorize` | `internal/authorizeendpoint` | request parsing, client and `redirect_uri` validation, the redirect into interaction | always |
-| `/interaction/{uid}` | `internal/authorizeendpoint` + the `op/interaction` driver | the login and consent ceremony, rendered as HTML or served as JSON to an SPA | with `/authorize` |
+| `/auth` | `internal/authorizeendpoint` | request parsing, client and `redirect_uri` validation, the redirect into interaction | when the `authorization_code` grant is enabled |
+| `/interaction/{uid}` | `internal/authorizeendpoint` + the `op/interaction` driver | the login and consent ceremony, rendered as HTML or served as JSON to an SPA | with `/auth` |
 | `/par` | `internal/parendpoint` | pushed authorization requests, returning a one-time `request_uri` | `feature.PAR` |
 | `/token` | `internal/tokenendpoint` | client authentication, code and refresh redemption, token issuance | always |
 | `/userinfo` | `internal/userinfo` | claims for the subject behind a presented access token | always |

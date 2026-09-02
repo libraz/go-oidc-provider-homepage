@@ -319,7 +319,7 @@ Both tabs follow the same flow: GET the prompt at `/interaction/{uid}`, render t
 The contract is identical across frameworks — only the rendering idiom differs.
 
 ::: tip Consent step
-When `prompt.type === "consent.scope"` the OP omits `inputs` and moves the scope catalogue into `prompt.data.scopes`. The SPA renders that list (with `s.required` styled as non-toggleable) and submits `{ approved_scopes: "openid profile" }` (a space-joined subset). See [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login)'s `web/static/assets/main.js` for a worked switch on `prompt.type`.
+When `prompt.type === "consent.scope"` the OP omits `inputs` and moves the scope catalogue into `prompt.data.scopes`. The SPA renders that list (with `s.required` styled as non-toggleable) and submits `{ approved_scopes: "openid profile" }` (a space-joined subset). [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) serves the shared built-in SPA; implement the `prompt.type` switch in your own client when replacing it.
 :::
 
 ::: info Why send `X-CSRF-Token`?

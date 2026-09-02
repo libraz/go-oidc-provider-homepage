@@ -169,6 +169,26 @@ RFC violations of `require_auth_time` are rare in practice — the OP records `a
 The default `application_type` is `web`. Web clients may register an `http` `redirect_uri` only when the host is the **IP literal** `127.0.0.1` or `[::1]`; the textual `localhost` is rejected by default to close the RFC 8252 §8.3 DNS-rebinding window. Web clients that legitimately bind to `localhost` opt in via `op.WithAllowLocalhostLoopback()` so the deviation from the safe default is visible in the configuration site.
 
 Native clients (`application_type=native`) follow OIDC Registration §2 and additionally accept all three loopback hosts (`127.0.0.1` / `[::1]` / `localhost`) over `http` without an opt-in, plus `https` (claimed) and reverse-DNS custom URI schemes (e.g. `com.example.app:/callback`) per RFC 8252 §7.1. Custom schemes that lack a `.` are rejected because non-reverse-DNS schemes collide across applications.
+
+```jsonc
+// NG: http://localhost on a web client is rejected by default
+{
+  "application_type": "web",
+  "redirect_uris": ["http://localhost:5173/callback"]
+}
+
+// OK: web clients use the IP literal for loopback development
+{
+  "application_type": "web",
+  "redirect_uris": ["http://127.0.0.1:5173/callback"]
+}
+
+// OK: native clients may use the localhost loopback
+{
+  "application_type": "native",
+  "redirect_uris": ["http://localhost:49152/callback"]
+}
+```
 :::
 
 ## Standard metadata tolerance
@@ -189,11 +209,37 @@ The DCR surface is `partial` rather than `full`, but the partial label captures 
 - `subject_type=pairwise` without `sector_identifier_uri` requires every `redirect_uri` host to match.
 - `request_object_signing_alg` is restricted to `RS256` / `PS256` / `ES256` / `EdDSA`.
 
+The typical boundaries for URI-bearing metadata look like this:
+
+```jsonc
+// NG: jwks together with jwks_uri, plus userinfo and a fragment
+{
+  "jwks": { "keys": [] },
+  "jwks_uri": "https://client.example.com/jwks.json",
+  "client_uri": "https://user:pass@client.example.com/app",
+  "policy_uri": "https://client.example.com/policy#v1"
+}
+
+// OK: URI-bearing metadata is an absolute https URL, no fragment, no userinfo
+{
+  "jwks_uri": "https://client.example.com/jwks.json",
+  "client_uri": "https://client.example.com/app",
+  "policy_uri": "https://client.example.com/policy"
+}
+
+// OK: only request_uris admit the request-file hash fragment
+{
+  "request_uris": [
+    "https://client.example.com/request.jwt#sha256-abc123"
+  ]
+}
+```
+
 ## Intentional limits
 
 The remaining gap to a `full` claim is design choice, not pending work. The reasoning behind each is documented as a separate entry on [design judgments](/security/design-judgments) — `client_secret` non-disclosure ([#dj-20](/security/design-judgments#dj-20)), PUT omission semantics ([#dj-21](/security/design-judgments#dj-21)), and the `sector_identifier_uri` fetch / native loopback rules ([#dj-22](/security/design-judgments#dj-22)).
 
-- **`client_secret` is not re-emitted on `GET /register/{id}`.** The store keeps a hash; the plaintext exists in the response only on the original `POST /register` and on the two PUT cases below. RFC 7591 §3.2.1 makes the field optional in the read response.
+- **`client_secret` is not re-emitted on `GET /register/{id}`.** The store keeps a hash; the plaintext exists in the response only on the original `POST /register` and on the two PUT cases below. RFC 7591 §3.2.1 makes the field optional in the read response, so omitting it is conformant.
 - **PUT omission resets selected fields to server defaults and clears the rest.** A `PUT /register/{client_id}` that omits `grant_types`, `response_types`, `token_endpoint_auth_method`, `application_type`, `subject_type`, or `id_token_signed_response_alg` reapplies the OP default for that field. Omitted `scope` is the important exception to the fresh-registration path: it clears the client's scopes. Optional metadata (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, …) becomes empty.
 - **PUT only re-emits `client_secret` when a public client becomes confidential.** A routine confidential-client metadata edit preserves the stored hash and does not include the secret; a submitted `client_secret` is checked against the authenticated client and never acts as a replacement value.
 - **PUT body MUST NOT include server-managed fields.** `registration_access_token`, `registration_client_uri`, `client_secret_expires_at`, and `client_id_issued_at` cause `400 invalid_request`. A `client_secret` value that does not match the authenticated client also returns `400`.

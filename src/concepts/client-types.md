@@ -47,7 +47,7 @@ OAuth / OIDC therefore names public clients explicitly. Instead of pretending a 
 
 The library treats a client as public when its `TokenEndpointAuthMethod` is `"none"`. The structural protections that compensate for the missing secret are:
 
-- **PKCE is required.** The OP rejects `S256` PKCE only (`plain` is refused regardless of profile, see [Design judgments #14](/security/design-judgments#dj-14)). The `code_verifier` is the per-request secret that proves "the same client that started the flow is the one finishing it"; without it, an authorization code intercepted on the redirect is enough to mint tokens.
+- **PKCE is required.** The OP accepts only `S256` PKCE (`plain` is refused regardless of profile; see [Design judgments #14](/security/design-judgments#dj-14)). The `code_verifier` is the per-request secret that proves "the same client that started the flow is the one finishing it"; without it, an authorization code intercepted on the redirect is enough to mint tokens.
 - **Refresh tokens are rotated and DPoP-bound.** Every successful refresh exchange retires the previous refresh token and binds the next one to the DPoP key the client presented. A leaked refresh on a public client cannot be reused without the matching key, and a reuse of an already-rotated token revokes the entire chain. See [Design judgments #15](/security/design-judgments#dj-15).
 - **Loopback redirects are admitted.** RFC 8252 §7.3 lets native clients vary the port on `127.0.0.1` / `[::1]` so a CLI can use an OS-assigned ephemeral port; see [Redirect URI](/concepts/redirect-uri).
 

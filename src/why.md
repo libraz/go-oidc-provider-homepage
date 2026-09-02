@@ -62,7 +62,7 @@ Where the line falls:
 You can make PAR work, then later remember JAR, then later discover that discovery still advertises `client_secret_basic`, then later find that one test path signs an ID Token with a non-FAPI alg. That is the kind of drift FAPI makes expensive.
 
 ::: details Background — what FAPI 2.0 demands
-FAPI 2.0 Baseline mandates **PAR** (RFC 9126) for authorization requests, **PKCE** (RFC 7636), **sender-constrained tokens** via DPoP (RFC 9449) or mTLS (RFC 8705), **ES256** OP signing, and **redirect_uri exact match**. Message Signing additionally requires **JAR** (RFC 9101) and **JARM** for non-repudiation of authorize request/response. Toggling these by hand is a half-dozen options and three places the discovery document needs to agree.
+FAPI 2.0 Baseline mandates **PAR** (RFC 9126), **JAR** (RFC 9101), **PKCE** (RFC 7636), **sender-constrained tokens** via DPoP (RFC 9449) or mTLS (RFC 8705), **ES256** OP signing, and **redirect_uri exact match**. Message Signing additionally requires **JARM**, a DPoP nonce, and RS-side response signing for non-repudiation. Toggling these by hand is a half-dozen options and three places the discovery document needs to agree.
 :::
 
 `op.WithProfile(profile.FAPI2Baseline)` does the profile work — auto-enables PAR + JAR, selects DPoP unless mTLS is explicitly enabled, intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and keeps OP-issued JWT signing on ES256.

@@ -28,7 +28,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 不足している項目があっても問題ありません。部分的な報告でも十分役に立ちますし、足りない情報はこちらから追って伺います。
 
-ポリシーの正式版はソースリポジトリの [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) にあります。本ページは同じ内容を読みやすい散文として書き直したものです。
+ポリシーの正式版はソースリポジトリの [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/.github/SECURITY.md) にあります。本ページは同じ内容を読みやすい散文として書き直したものです。
 
 ## 報告後の流れ
 
@@ -100,7 +100,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 ## 現在の Advisory 状況
 
-Advisory の状況は時間とともに変わるため、このページでは特定時点の CVE 件数を複製しません。現在の記録は GitHub Security Advisories です。[advisories ページ](https://github.com/libraz/go-oidc-provider/security/advisories) とリポジトリの [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) で最新の方針と公開状況を確認してください。プロジェクトの防御範囲と限界は [セキュリティ方針](/ja/security/posture) にまとめています。
+Advisory の状況は時間とともに変わるため、このページでは特定時点の CVE 件数を複製しません。現在の記録は GitHub Security Advisories です。[advisories ページ](https://github.com/libraz/go-oidc-provider/security/advisories) とリポジトリの [`SECURITY.md`](https://github.com/libraz/go-oidc-provider/blob/main/.github/SECURITY.md) で最新の方針と公開状況を確認してください。プロジェクトの防御範囲と限界は [セキュリティ方針](/ja/security/posture) にまとめています。
 
 ## 周辺のサプライチェーン衛生
 

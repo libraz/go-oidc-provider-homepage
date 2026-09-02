@@ -62,7 +62,7 @@ Go でサービスを書いていると、自前で OpenID Connect Provider を�
 まず PAR を有効化し、後から JAR も必要だと気づき、さらに discovery がまだ `client_secret_basic` を広告していることに気づき、最後にテスト用の経路だけ ID トークンが FAPI 外の alg で署名されていた、という順で発覚しがちです。FAPI では、この種の設定ずれが高くつきます。
 
 ::: details FAPI 2.0 が要求するもの
-FAPI 2.0 Baseline は **PAR**（RFC 9126）、**PKCE**（RFC 7636）、**送信者制約付きトークン**（DPoP RFC 9449 もしくは mTLS RFC 8705）、OP 発行物の **ES256** 署名、`redirect_uri` の **完全一致** を必須にしています。Message Signing ではさらに、**JAR**（RFC 9101）と **JARM** で authorize 要求 / 応答に署名します。手で組むと、関連オプションが 6〜7 個、discovery の整合を保つべき箇所が 3 か所あります。
+FAPI 2.0 Baseline は **PAR**（RFC 9126）、**JAR**（RFC 9101）、**PKCE**（RFC 7636）、**送信者制約付きトークン**（DPoP RFC 9449 もしくは mTLS RFC 8705）、OP 発行物の **ES256** 署名、`redirect_uri` の **完全一致** を必須にしています。Message Signing ではさらに、authorize 応答の非否認性のために **JARM**、DPoP nonce、RS 側の応答署名を求めます。手で組むと、関連オプションが 6〜7 個、discovery の整合を保つべき箇所が 3 か所あります。
 :::
 
 `op.WithProfile(profile.FAPI2Baseline)` がプロファイル側の処理をまとめて行います。PAR + JAR の自動有効化、mTLS が明示されていない場合の DPoP 既定選択、`token_endpoint_auth_methods_supported` の FAPI 許可リストへの絞り込み、OP 発行 JWT の ES256 固定まで一度に設定します。

@@ -285,11 +285,11 @@ The library ships building blocks (`op.PrimaryPassword`, `op.StepTOTP`, `op.Rule
 
 ### How do I implement step-up?
 
-`op.RuleACR(level)` on the per-client policy. When the RP requests a higher `acr_values` than the current session provides, the OP returns `WWW-Authenticate: error="insufficient_user_authentication"` (RFC 9470). The session steps up through your authenticator chain and resumes. [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up).
+Add `op.RuleACR("urn:example:mfa", op.StepTOTP{...})` to `LoginFlow.Rules`. It runs its step when the authorization request's `acr_values` contains that exact value; your flow defines which ACR values require which factors. This is an authorization-request rule, not the RFC 9470 resource-server-to-authorization-server challenge. [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) shows the complete flow.
 
 ### Can I trigger MFA only when the risk score is high?
 
-`op.RuleRisk(...)` consumes a `RiskAssessor` you supply. `RiskOutcome` carries an explicit `RiskScore`. See [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa).
+Configure a `RiskAssessor`, then add a rule such as `op.RuleRisk(op.RiskScoreHigh, op.StepTOTP{...})` to `LoginFlow.Rules`. `RiskOutcome.Score` selects the threshold; the rule's second argument is the step to run. See [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa).
 
 <div id="logout" class="faq-anchor"></div>
 

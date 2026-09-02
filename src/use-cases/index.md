@@ -9,7 +9,7 @@ pageClass: pg-use-cases-index
 Each card below maps to a runnable example under [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) in the source repo. Examples build behind the `example` build tag so they don't bloat your `go.sum` or get pulled into `go test ./...`:
 
 ```sh
-(cd examples/01-minimal && go run -tags example .)
+(cd examples/01-minimal && GOWORK=off go run -tags example .)
 ```
 
 Most pages start with the same decision shape:
@@ -88,6 +88,7 @@ Every example folder maps to one of the use-case pages below.
 
 | Use case | Example | Page |
 |---|---|---|
+| Built-in HTML login, consent, and chooser | [`19-default-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/19-default-ui) | [SPA / custom interaction](/use-cases/spa-custom-interaction) |
 | Drive UI from a SPA | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction), [`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login), [`17-spa-composite-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-spa-composite-store) | [SPA / custom interaction](/use-cases/spa-custom-interaction) |
 | Custom HTML consent page | [`11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) | [Custom consent UI](/use-cases/custom-consent-ui) |
 | Custom HTML account chooser | [`12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) | [Custom chooser UI](/use-cases/custom-chooser-ui) |

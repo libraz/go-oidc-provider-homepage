@@ -322,7 +322,7 @@ async function onSubmit() {
 通信路上の契約はフレームワーク間で同一です。違うのは描画方法だけです。
 
 ::: tip 同意ステップ
-`prompt.type === "consent.scope"` のときは `inputs` が空で、scope カタログは `prompt.data.scopes` に入ります。SPA はそのリストを描画して（`s.required` のものはトグル不可で表示）、`{ approved_scopes: "openid profile" }`（空白区切りのサブセット）として送信します。`prompt.type` 分岐の実装例は [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) の `web/static/assets/main.js` を参照。
+`prompt.type === "consent.scope"` のときは `inputs` が空で、scope カタログは `prompt.data.scopes` に入ります。SPA はそのリストを描画して（`s.required` のものはトグル不可で表示）、`{ approved_scopes: "openid profile" }`（空白区切りのサブセット）として送信します。[`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) は共有の組み込み SPA を配信します。置き換える場合はクライアント側で `prompt.type` の分岐を実装してください。
 :::
 
 ::: info `X-CSRF-Token` を送る理由

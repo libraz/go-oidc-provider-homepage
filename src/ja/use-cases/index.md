@@ -9,7 +9,7 @@ pageClass: pg-use-cases-index
 各カードはソースリポジトリの [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) の実行可能例にマップされています。例は `example` build tag の背後でビルドされ、`go.sum` を肥大化させたり `go test ./...` に巻き込まれたりしません。
 
 ```sh
-(cd examples/01-minimal && go run -tags example .)
+(cd examples/01-minimal && GOWORK=off go run -tags example .)
 ```
 
 各ページは、おおよそ同じ判断の流れで読めるようにしています。
@@ -88,6 +88,7 @@ docker compose -f sample/compose.yaml up -d --build
 
 | 使い方 | 例 | ページ |
 |---|---|---|
+| 組み込み HTML のログイン・同意・アカウント選択 | [`19-default-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/19-default-ui) | [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) |
 | SPA から UI を扱う | [`16-custom-interaction`](https://github.com/libraz/go-oidc-provider/tree/main/examples/16-custom-interaction)、[`10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login)、[`17-spa-composite-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/17-spa-composite-store) | [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction) |
 | カスタム HTML 同意画面 | [`11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) | [カスタム同意 UI](/ja/use-cases/custom-consent-ui) |
 | カスタム HTML アカウント選択 | [`12-custom-chooser-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/12-custom-chooser-ui) | [カスタムアカウント選択 UI](/ja/use-cases/custom-chooser-ui) |

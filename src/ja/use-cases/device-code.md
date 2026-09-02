@@ -65,7 +65,7 @@ device flow がどういうものか、いつ選ぶべきか、なぜ `slow_down
 :::
 
 ::: details `interval` とポーリングとは
-RFC 8628 では、デバイスはユーザがスマホなどで承認するのを待つあいだ `/token` を繰り返し呼び出します。`interval`（秒）は、OP が指定するポーリング間の最小待ち時間です。デバイスがそれより速く呼び出した場合、OP は `slow_down` を返し、デバイス側に保存された interval を引き上げます。全レプリカが新しい下限を尊重します。既定は 5 秒。短くできる場合もありますが、5 秒の待ち時間が実際に問題になっているときだけ検討してください。
+RFC 8628 では、デバイスはユーザがスマホなどで承認するのを待つあいだ `/token` を繰り返し呼び出します。`interval`（秒）は、OP が指定するポーリング間の最小待ち時間です。デバイスがそれより速く呼び出した場合、OP は `slow_down` を返し、デバイス側に保存された interval を引き上げます。全レプリカが新しい下限を尊重します。既定は 5 秒です。短くするのは、デバイス群の障害時の後始末が十分速く回る構成で、5 秒の待ち時間が実際にボトルネックになっているときだけにしてください。
 :::
 
 ## grant を有効化
@@ -123,7 +123,7 @@ device-code サブストア（`store.DeviceCodeStore`）は必須です。in-mem
 `expires_in` と `interval` には専用の knob があります: `op.WithDeviceCodeExpiry(...)` と `op.WithDeviceCodePollInterval(...)` です。これらは `op.WithAccessTokenTTL` からは導出されません。アクセストークンを 30 秒や 60 秒にしている deployment でも、ユーザがスマホに移り、コードを入力し、承認するための 10 分をそのまま残せます。
 
 ::: warning user_code は構造的に総当たり可能
-短いコードは入力しやすい一方で、総当たりを受けやすくなります。verification ページを自前で作る組み込み側のために、本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で総当たり対策を同梱しています。最初の手入力では opaque なサーバ側 ceremony key を渡して `VerifyUserCodeByAttemptKey` を呼び、認証と同意の後に `ApproveUserCode` を呼んでください。raw `user_code` を attempt key に使ってはなりません。`Deps` は mutex を含むため保持し、必ず pointer で渡してください。既定 limiter はプロセスローカルなので、マルチインスタンス構成では共有 atomic `AttemptLimiter` を注入する必要があります。
+短いコードは入力しやすい一方で、総当たりを受けやすくなります。verification ページを自前で作る組み込み側のために、本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で総当たり対策を同梱しています。最初の手入力では opaque なサーバ側 ceremony key を渡して `VerifyUserCodeByAttemptKey` を呼び、認証と同意の後に `ApproveUserCode` を呼んでください。raw `user_code` を attempt key に使ってはなりません。
 :::
 
 ### 提出された user_code を検証する
@@ -266,7 +266,7 @@ if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReason
 [`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) は RFC 8628 のフルラウンドトリップを実演します:
 
 ```sh
-(cd examples/31-device-code-cli && go run -tags example .)
+(cd examples/31-device-code-cli && GOWORK=off go run -tags example .)
 ```
 
 OP を起動し、枠付きの `user_code` パネルと `verification_uri_complete` ショートカットを表示します。数秒後にブラウザ承認をシミュレートし、access_token + id_token が発行されるまでポーリングします。ファイルは役割別に分割（`op.go` / `cli.go` / `device.go` / `probe.go`）。

@@ -103,22 +103,7 @@ Add these columns with the dialect types in the migration guide:
 - `oidc_totp_secrets.row_version` — `INTEGER NOT NULL DEFAULT 1` on SQLite; `BIGINT NOT NULL DEFAULT 1` on MySQL/MariaDB and PostgreSQL.
 - `oidc_email_otps.row_version` — the same `INTEGER` / `BIGINT` definitions as `oidc_totp_secrets.row_version`.
 
-The current retention and client-deletion schema also needs these exact indexes (replace physical table names when using `WithNaming`):
-
-| Index | Table and columns |
-|---|---|
-| `idx_oidc_grants_client_subject` | `oidc_grants(client_id, subject, updated_at)` |
-| `idx_oidc_grants_client` | `oidc_grants(client_id)` |
-| `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` |
-| `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` |
-| `idx_oidc_refresh_tokens_client` | `oidc_refresh_tokens(client_id)` |
-| `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` |
-| `idx_oidc_access_tokens_client` | `oidc_access_tokens(client_id)` |
-| `idx_oidc_opaque_access_tokens_client` | `oidc_opaque_access_tokens(client_id)` |
-| `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` |
-| `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` |
-| `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` |
-| `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` |
+The current retention and client-deletion schema also needs an exact set of indexes. [Storage maintenance](/operations/storage-maintenance#additive-sql-shape) lists them, and the [SQL storage guide](/use-cases/sql-store#sql-migration-before-first-request) repeats the list with a note on what each index is for. Replace the physical table names when using `WithNaming`.
 
 SQLite and PostgreSQL can add the indexes through `Migrate()`; MySQL and MariaDB need explicit `ALTER TABLE ... ADD INDEX` statements for existing tables. Existing MySQL and MariaDB installs also need `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;`; resolve case-insensitive username collisions before applying it. SQLite and PostgreSQL need no equivalent collation change. Use the dialect-specific statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md), and keep that migration record with the backup/recovery runbook.
 
