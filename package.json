@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "description": "Homepage for go-oidc-provider",
   "type": "module",
+  "packageManager": "yarn@4.18.0",
   "homepage": "https://go-oidc-provider.libraz.net",
   "repository": {
     "type": "git",
