@@ -95,9 +95,9 @@ const LLMS_LOCALES: LlmsLocale[] = [
     prefix: '/ja',
     title: 'go-oidc-provider',
     summary:
-      'Go の http.Handler に組み込める OpenID Connect Provider（Authorization Server）ライブラリ。PAR・JAR・DPoP・mTLS を備え、FAPI 2.0 Baseline / Message Signing をターゲットとする。',
+      'Go の http.Handler に組み込める OpenID Connect Provider（Authorization Server）ライブラリです。PAR・JAR・DPoP・mTLS を備え、FAPI 2.0 Baseline / Message Signing をターゲットにしています。',
     intro:
-      'go-oidc-provider は単体で動く製品ではなくライブラリで、既存の Go サービスにマウントし、\nストレージ・ユーザ認証・同意画面はホスト側のアプリケーションに委ねる。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門書としても読める。\n以下は日本語ドキュメントへのリンク一覧。',
+      'go-oidc-provider は単体で動く製品ではなく、既存の Go サービスに組み込むライブラリです。\nストレージ・ユーザ認証・同意画面はホスト側のアプリケーションが担います。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門にも使えます。\n以下は日本語ドキュメントへのリンク一覧です。',
     overviewHeading: '主要ページ',
     homeText: 'go-oidc-provider トップ',
     alternate: {
@@ -979,7 +979,7 @@ export default defineConfig({
                     link: '/ja/concepts/no-browser-flows'
                   },
                   { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
-                  { text: 'JARM(署名付き認可レスポンス)', link: '/ja/concepts/jarm' },
+                  { text: 'JARM（署名付き認可レスポンス）', link: '/ja/concepts/jarm' },
                   { text: 'FAPI 2.0 入門', link: '/ja/concepts/fapi' }
                 ]
               },
@@ -1256,7 +1256,7 @@ export default defineConfig({
                   link: '/ja/concepts/no-browser-flows'
                 },
                 { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
-                { text: 'JARM(署名付き認可レスポンス)', link: '/ja/concepts/jarm' },
+                { text: 'JARM（署名付き認可レスポンス）', link: '/ja/concepts/jarm' },
                 { text: 'FAPI 2.0 入門', link: '/ja/concepts/fapi' }
               ]
             },
@@ -1337,7 +1337,7 @@ export default defineConfig({
                   link: '/ja/concepts/no-browser-flows'
                 },
                 { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
-                { text: 'JARM(署名付き認可レスポンス)', link: '/ja/concepts/jarm' },
+                { text: 'JARM（署名付き認可レスポンス）', link: '/ja/concepts/jarm' },
                 { text: 'FAPI 2.0 入門', link: '/ja/concepts/fapi' }
               ]
             },
@@ -1418,7 +1418,7 @@ export default defineConfig({
                   link: '/ja/concepts/no-browser-flows'
                 },
                 { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
-                { text: 'JARM(署名付き認可レスポンス)', link: '/ja/concepts/jarm' },
+                { text: 'JARM（署名付き認可レスポンス）', link: '/ja/concepts/jarm' },
                 { text: 'FAPI 2.0 入門', link: '/ja/concepts/fapi' }
               ]
             },

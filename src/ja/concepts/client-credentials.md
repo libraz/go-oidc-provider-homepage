@@ -165,10 +165,10 @@ op.WithStaticClients(op.ConfidentialClient{
 [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) は `client_secret_basic` クライアントでの一連の実行例です。
 
 ```sh
-(cd examples/05-client-credentials && go run -tags example .)
+(cd examples/05-client-credentials && GOWORK=off go run -tags example .)
 ```
 
 ## 次に読むもの
 
-- [送信者制約 (DPoP / mTLS)](/ja/concepts/sender-constraint) — サービストークンをクライアント保有鍵に結び付け、盗難トークンを無効化する。
+- [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — サービストークンをクライアント保有鍵に結び付け、盗難トークンを無効化する。
 - [使い方: 本番の client_credentials](/ja/use-cases/client-credentials)。
