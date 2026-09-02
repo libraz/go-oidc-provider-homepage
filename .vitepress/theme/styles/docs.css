@@ -354,7 +354,10 @@ html[lang="ja"] .vp-doc .custom-block li {
   overflow-wrap: anywhere;
 }
 
-/* --- Links --- */
+/* --- Links ---
+   The underline is painted as a repeating background rather than with
+   text-decoration, so it can be dotted at rest and solid on hover. That
+   only works for a link that sits *in* a line of prose. */
 .vp-doc a {
   color: var(--vp-c-brand-1);
   text-decoration: none;
@@ -369,6 +372,19 @@ html[lang="ja"] .vp-doc .custom-block li {
 
 .vp-doc a:hover {
   background-image: linear-gradient(to right, var(--vp-c-brand-1), var(--vp-c-brand-1));
+}
+
+/* A link that carries its own box — an index tile, a table row, an inline
+   chip — is not a line of prose, and the background above would stripe it
+   across the full width of the box, once per wrapped row. Those components
+   opt out here, next to the rule they are an exception to. */
+.vp-doc .faq-index a,
+.vp-doc .faq-index a:hover,
+.vp-doc .dj-group a,
+.vp-doc .dj-group a:hover,
+.vp-doc a.doc-ref,
+.vp-doc a.doc-ref:hover {
+  background-image: none;
 }
 
 .vp-doc h1 a.header-anchor,
