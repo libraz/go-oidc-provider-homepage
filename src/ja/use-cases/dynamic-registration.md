@@ -8,9 +8,9 @@ pageClass: pg-use-cases-dynamic-registration
 
 ## 動的クライアント登録とは
 
-最も素朴な構成では、RP を 1 つ統合するたびに、OP 運用者が `client_id` / `client_secret` / redirect URI / scope などを 設定 に手で書き足します。社内アプリ数個なら問題ありませんが、毎週新しい連携が増えるパブリックなエコシステムにはスケールしません。
+最も素朴な構成では、RP を 1 つ統合するたびに、OP 運用者が `client_id` / `client_secret` / redirect URI / scope などを設定ファイルに手で書き足します。社内アプリ数個なら問題ありませんが、毎週新しい連携が増えるパブリックなエコシステムにはスケールしません。
 
-**動的クライアント登録 (DCR)** は、RP が実行時に自分自身を登録できる JSON API です。RP がメタデータを POST すると、OP は新しい `client_id` と認証情報を返します。乱用を防ぐため、登録は **Initial Access Token (IAT)** で受け付け範囲を制限します。IAT は運用者が事前に発行するトークンで、許可するメタデータ・有効期限・single-use などの制約をかけられます。
+**動的クライアント登録（DCR）** は、RP が実行時に自分自身を登録できる JSON API です。RP がメタデータを POST すると、OP は新しい `client_id` と認証情報を返します。乱用を防ぐため、登録は **Initial Access Token (IAT)** で受け付け範囲を制限します。IAT は運用者が事前に発行するトークンで、許可するメタデータ・有効期限・single-use などの制約をかけられます。
 
 ::: details このページで触れる仕様
 - [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591) — Dynamic Client Registration Protocol
@@ -48,7 +48,7 @@ pageClass: pg-use-cases-dynamic-registration
   <text x="275" y="134" text-anchor="middle" class="d-mono">&lt;iat&gt;</text>
   <line x1="138" y1="179" x2="708" y2="179" class="d-msg-oob"/>
   <polyline points="701,175 708,179 701,183" class="d-msg"/>
-  <text x="420" y="171" text-anchor="middle" class="d-lbl">仕様外の経路で受け渡し <tspan class="d-mono">&lt;iat&gt;</tspan></text>
+  <text x="420" y="171" text-anchor="middle" class="d-lbl halo">out-of-band で受け渡し <tspan class="d-mono">&lt;iat&gt;</tspan></text>
   <line x1="702" y1="246" x2="422" y2="246" class="d-msg"/>
   <polyline points="429,242 422,246 429,250" class="d-msg"/>
   <text x="565" y="208" text-anchor="middle" class="d-mono">POST /register</text>
@@ -129,7 +129,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 })
 ```
 
-`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません(組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む)。未知の値は `op.New` で拒否されます。IAT 経由の登録では、Initial Access Token を提示した場合に `store.InitialAccessToken.AllowedScopes` が優先されます。
+`OpenRegistrationDefaultScopes` は明示的に設定した場合だけ有効です。各エントリは OP の scope カタログに登録済みでなければなりません（組み込みの OIDC 標準 scope 6 つに加えて `WithScope(...)` で追加したものを含む）。未知の値は `op.New` で拒否されます。IAT 経由の登録では、Initial Access Token を提示した場合に `store.InitialAccessToken.AllowedScopes` が優先されます。
 
 ::: warning オープン登録の scope 既定は空です
 `scope` を省略したオープンな POST には、組み込み側が `OpenRegistrationDefaultScopes` を設定しない限り既定 scope は付きません。登録直後のクライアントに `openid` などの基準 scope を要求させたい場合は、このオプションを明示してください。
@@ -137,7 +137,13 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 ## scope の上限と POST / PUT の違い
 
-2 つの HTTP method は、メンバーの省略を意図的に異なる方法で扱います。`POST /register` で `scope` を省略すると、登録経路の既定値が選ばれます。空でない `InitialAccessToken.AllowedScopes` があればそれが優先され、オープン登録では `OpenRegistrationDefaultScopes`（既定は空）が使われます。IAT 経由で上限が無い場合は、特定クライアントに制限された scope を除く OP の public scope カタログが既定値になります。明示した scope は、OP のカタログと、設定されていれば IAT の許可リストの両方に対して検証されます。
+2 つの HTTP method は、メンバーの省略を意図的に異なる方法で扱います。`POST /register` で `scope` を省略すると、登録経路の既定値が選ばれます。
+
+- 空でない `InitialAccessToken.AllowedScopes` があれば、それが優先されます
+- オープン登録では `OpenRegistrationDefaultScopes`（既定は空）が使われます
+- IAT 経由で上限が無い場合は、特定クライアントに制限された scope を除く OP の public scope カタログが既定値になります
+
+明示した scope は、OP のカタログと、設定されていれば IAT の許可リストの両方に対して検証されます。
 
 クライアント作成時、Registration Access Token (RAT) は、そのクライアントを作った IAT の `AllowedScopes` 上限を引き継ぎます。この上限は `store.RegistrationAccessToken.AllowedScopes` に保存され、RAT のローテーションを経ても変わらず、後続の `PUT /register/{client_id}` にも適用されます。管理更新でクライアントの scope を狭めることはできますが、元の IAT 上限を超えて広げることはできません。このフィールドが無かった時期に保存された RAT は上限が空なので、従来どおり制限なしです。現在の SQL アダプタを使う前に `oidc_registration_access_tokens.allowed_scopes` を追加してください（[SQL の migration](/ja/use-cases/sql-store#sql-migration-before-first-request)を参照）。
 
@@ -154,7 +160,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 | `require_auth_time` | `true` のとき、発行される `id_token` には必ず `auth_time` が乗らなければなりません。OP が元の認証時刻を復元できない場合、値を捏造する代わりに `server_error` でトークン発行を失敗させます。 | OIDC Core 1.0 §2 |
 
 ::: tip なぜ `auth_time` 不在で server_error なのか
-`require_auth_time` の違反は実運用ではめったに起こりません — OP がログインフローを自前で実行している限り `auth_time` は記録されます。捏造（例: `iat` で代替）してしまうと、ステップアップ保証を `auth_time` で監査している RP を気付かれずに壊してしまいます。構築時に拒否することで、欠落の原因が発生した地点で表面化させます。
+`require_auth_time` の違反は実運用ではめったに起こりません — OP がログインフローを自前で実行している限り `auth_time` は記録されます。捏造（例: `iat` で代替）してしまうと、ステップアップ保証を `auth_time` で監査している RP を気付かれずに壊してしまいます。構築時の拒否によって、欠落の原因が発生した地点で問題が表面化します。
 :::
 
 ## 譲れないセキュリティの最低ライン
@@ -187,9 +193,9 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 ## 標準メタデータの扱い
 
-パーサは RFC 7591 §2 の寛容な扱いに従います。本 OP がモデル化していない標準メンバーや未知の vendor メンバーは無視し、登録レスポンスにも返しません。たとえば `frontchannel_logout_uri`、`software_id`、`software_version`、`tls_client_certificate_bound_access_tokens`、`backchannel_token_delivery_mode`、`backchannel_client_notification_endpoint`、`backchannel_authentication_request_signing_alg`、`backchannel_user_code_parameter`、`authorization_details_types` は、この DCR エンドポイントを設定しません。
+パーサは RFC 7591 §2 の寛容な扱いに従います。本 OP がモデル化していない標準メンバーや未知の vendor メンバーは無視し、登録レスポンスにも返しません。たとえば `frontchannel_logout_uri`、`software_id`、`software_version`、`backchannel_token_delivery_mode`、`backchannel_client_notification_endpoint`、`backchannel_authentication_request_signing_alg`、`backchannel_user_code_parameter`、`authorization_details_types` は、この DCR エンドポイントを設定しません。`tls_client_certificate_bound_access_tokens: false` は互換性のための例外で、no-op として受理しますが、保存もレスポンスへの反映も行いません。
 
-ただし、OP が提供できないセキュリティ特性や通信路上の形を要求するメンバーまで無視するわけではありません。そのような要求は `invalid_client_metadata` で拒否します。対象には `dpop_bound_access_tokens: true`、`require_pushed_authorization_requests: true`、対象の応答面が出力しない署名アルゴリズム、そして URI の有無にかかわらない `backchannel_logout_session_required: true` が含まれます。`software_statement` は別の明示的な拒否です。RFC 7591 の trust chain 検証を実装していないため、このフィールドを含むリクエストは黙って無視せず `invalid_software_statement` を返します。
+ただし、OP が提供できないセキュリティ特性や通信路上の形を要求するメンバーまで無視するわけではありません。そのような要求は `invalid_client_metadata` で拒否します。対象には `tls_client_certificate_bound_access_tokens: true`、`dpop_bound_access_tokens: true`、`require_pushed_authorization_requests: true`、対象の応答面が出力しない署名アルゴリズム、そして URI の有無にかかわらない `backchannel_logout_session_required: true` が含まれます。`software_statement` は別の明示的な拒否です。RFC 7591 の trust chain 検証を実装していないため、このフィールドを含むリクエストは黙って無視せず `invalid_software_statement` を返します。
 
 ## 登録時に強制している内容
 
@@ -197,9 +203,9 @@ DCR は完全実装とは表記していませんが、対応しない差分は�
 
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
 - `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
-- `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ(`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`)は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール(絶対 URI、`https`、host 必須、userinfo 不可)は通常通り適用されます。
+- `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`）は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール（絶対 URI、`https`、host 必須、userinfo 不可）は通常通り適用されます。
 - `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` は、URI が正しく指定されていても `invalid_client_metadata` で拒否します。この OP は `sid` を安全に配送するための RP ごとの session 系譜を保存できないためです。
-- `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証(OIDC Core §8.1)。取得は 5 秒のタイムアウトと 64 KiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
+- `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証（OIDC Core §8.1）。取得は 5 秒のタイムアウトと 64 KiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
 - `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
 - `request_object_signing_alg` は `RS256` / `PS256` / `ES256` / `EdDSA` に限定されます。
 

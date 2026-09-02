@@ -1,6 +1,6 @@
 ---
 title: Prometheus metrics
-description: Curated v1.1 OIDC business metrics with constant issuer labels on your registry — without the OP mounting /metrics.
+description: Curated OIDC business metrics with constant issuer labels on your registry — without the OP mounting /metrics.
 ---
 
 # Use case — Prometheus metrics
@@ -66,7 +66,7 @@ For `oidc_token_issued_total`, the `grant_type` value is derived from the persis
 
 Two reasons:
 
-1. **Registry ownership** — embedders frequently maintain a single `prometheus.Registry` for their whole process so cardinality and collector-list audits stay in one place. Mounting our own would split that.
-2. **Path / auth ownership** — `/metrics` is often gated by auth or only exposed on a separate listener. We can't predict the embedder's choice; you mount the path.
+1. **Registry ownership** — embedders frequently maintain a single `prometheus.Registry` for their whole process so cardinality and collector-list audits stay in one place. A second registry created by the library would split that.
+2. **Path / auth ownership** — `/metrics` is often gated by auth, or exposed only on a separate listener. The library cannot predict that choice, so mounting the path stays with the embedder.
 
 The same separation holds for tracing: `op.WithLogger` / `op.WithAuditLogger` take a `*slog.Logger`, and OpenTelemetry spans for HTTP server semantics belong to the embedder's `otelhttp.NewMiddleware`. The OP emits no built-in tracing spans, business or request/response lifecycle; instrument additional business stages in the embedder if needed.

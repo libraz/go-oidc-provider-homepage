@@ -84,13 +84,17 @@ op.New(
 )
 ```
 
-Each event is a JSON line with `msg = "<event.name>"`, plus the common attributes (`request_id`, `subject`, `client_id`, `extras`). See the [Audit event catalog](/reference/audit-events) for the full list.
+Each event is a JSON line with an `event` attribute containing `"<event.name>"`; `msg` is the short human-readable message. The line also carries the common attributes (`request_id`, `subject`, `client_id`, `extras`). See the [Audit event catalog](/reference/audit-events) for the full list.
 
 `WithAuditLogger` is synchronous: the handler runs on the request goroutine. It must not block on slow I/O or unbounded queues, and it must be safe for concurrent calls from many requests. Use a bounded, concurrency-safe handoff when the final sink is asynchronous. The catalog contains reserved names as well as events emitted by this library, so do not treat every constant as proof that a signal fired.
 
 ::: tip One stream, multiple sinks
-A single `*slog.Logger` can fan out to file + Loki + Splunk via a multiplexing handler. The OP doesn't care; it just calls `logger.LogAttrs(...)`.
+A single `*slog.Logger` can fan out to file + Loki + Splunk via a multiplexing handler. The OP constructs the `slog.Record` itself and passes it directly to the logger's `Handler().Handle(...)`; the OP does not rebuild the event through `logger.LogAttrs(...)`. This preserves the audit timestamp supplied by `WithClock`.
 :::
+
+### Introspection store faults
+
+An opaque access-token or refresh-token lookup that returns `store.ErrNotFound` is an ordinary inactive result and emits no fault event. Any other lookup error emits `AuditIntrospectionError` (`introspection.error`) at error level with a `store_unavailable` reason. The `/introspect` wire response remains HTTP 200 with `{"active":false}`, so alerting and incident investigation must use the audit stream rather than a 5xx counter.
 
 ## Prometheus metrics
 
@@ -148,14 +152,13 @@ import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 ```
 
-Spans cover the request lifecycle. The library does not currently emit per-endpoint child spans — if you need per-stage traces (e.g. "how long did PKCE verification take inside `/token`") you'll see them only at the HTTP level today.
-
-The OP emits no built-in OpenTelemetry spans, business or request-lifecycle. `otelhttp.NewHandler` (or equivalent middleware) supplies HTTP spans; instrument internal business stages in the embedder if needed. The audit event catalog supplies discrete event records, not tracing spans.
+The spans come from `otelhttp.NewHandler` (or equivalent middleware), not from the OP. The library emits no OpenTelemetry spans of its own, neither request-lifecycle nor business ones. Per-stage traces — "how long did PKCE verification take inside `/token`" — are therefore something the embedder instruments. The audit event catalog gives you discrete event records, not tracing spans.
 
 ## Request IDs
 
 The OP does not extract request IDs from `X-Request-ID` or `Traceparent` headers, and it does not synthesise one itself.
-The audit `Event` struct does carry a `RequestID` field for correlation, but the OP never populates it on its own — request/response correlation is the embedder's responsibility end to end, the same way it already is for the HTTP layer in general (see [Tracing](#tracing) above).
+
+The audit `Event` struct does carry a `RequestID` field for correlation, but the OP never populates it. Correlating a request with its response is the embedder's job end to end, the same way it already is for the HTTP layer in general (see [Tracing](#tracing) above).
 
 Generate a request ID at the edge, stamp it on the response so RP logs can correlate, and use it as the correlation key in whatever logging you wrap around the OP:
 
@@ -188,7 +191,7 @@ A minimum-viable production dashboard surfaces:
 | Active sessions | store query / metric you maintain | drop > 30 % |
 | JWKS request rate | HTTP middleware | tracks RP cache health |
 
-The first three are the highest-signal indicators of production trouble. For `bcl.no_sessions_for_subject`, correlate elevated rates with grant/client state; the configured `posture` is context for logout-trigger and session-snapshot durability, not the cause of an empty RP audience. The last two catch RP-side regressions.
+The first three are the highest-signal indicators of production trouble. When `bcl.no_sessions_for_subject` rises, correlate it with grant and client state. The configured `posture` is context for logout-trigger and session-snapshot durability, not the cause of an empty RP audience. The last two catch RP-side regressions.
 
 ## Rate limiting and abuse signals
 
@@ -204,14 +207,14 @@ What the library does emit is a set of audit events that an abuse pipeline can c
 | `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | The device-code verification page is being walked through user-code guesses. Record-bound helpers use per-record gates; first-entry pages should use `devicecodekit.VerifyUserCodeByAttemptKey` with a shared limiter when deployed across replicas — see [Device Code](/use-cases/device-code) for the verification helper. |
 | `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | The CIBA polling counter has crossed the per-`auth_req_id` threshold. The library denies the request on the wire (`access_denied`) and emits the event so SOC tooling can correlate. |
 | `rate_limit.exceeded` | `op.AuditRateLimitExceeded` | Reserved for embedder-emitted events from your own rate-limit middleware. The library defines the constant so the audit catalog stays consistent across embedders, but does not fire it from internal paths. |
-| `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | Same shape — for embedder middleware to log explicit bypasses (allowlisted IP, internal probe, etc.). |
+| `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | Same shape — for embedder middleware to log explicit bypasses (allow-listed IP, internal probe, etc.). |
 
 The last two are intentionally a vocabulary the library shares with operator-side middleware, not internal events. If your reverse proxy or middleware enforces a budget and lets a request through (or rejects it), emit one of these against the same audit logger so the analytics pipeline sees a single coherent stream.
 
 ::: tip Recommended pattern
 1. **Reverse proxy or edge service enforces a global rate** — for example, 100 requests/second/IP on `/token`, lower on `/par`. This is the actual mechanism that costs an attacker requests.
 2. **Audit pipeline alerts on bursts** of `client_authn.failure` from a single IP, ASN, or `client_id`. This is the high-signal event for "someone is poking the OP." Reserved PKCE and redirect-mismatch names are not currently emitted by the library.
-3. **Per-client allow-lists reduce the attack surface upstream.** `WithCORSOrigins` and the `redirect_uris` registry both work as allowlists — the smaller they are, the less surface a misconfigured or compromised client exposes.
+3. **Per-client allow-lists reduce the attack surface upstream.** `WithCORSOrigins` and the `redirect_uris` registry both work as allow-lists — the smaller they are, the less surface a misconfigured or compromised client exposes.
 :::
 
 ### What the library locks out internally

@@ -34,10 +34,10 @@ CIBA の概念的背景（何で、device flow とどう違い、なぜ `binding
   <text class="ciba-sub" x="519" y="105" text-anchor="middle">2. 通知</text>
   <path class="ciba-flow" d="M560 114 L569 118 L560 122"/>
   <path class="ciba-flow" d="M572 156 H474"/>
-  <text class="ciba-sub" x="523" y="180" text-anchor="middle">3. 承認 / 拒否</text>
+  <text class="ciba-sub" x="521" y="180" text-anchor="middle">3. 承認 / 拒否</text>
   <path class="ciba-flow" d="M482 152 L473 156 L482 160"/>
   <path class="ciba-flow" d="M108 176 C118 260 220 274 296 274"/>
-  <text class="ciba-sub" x="168" y="260" text-anchor="middle">4. /token をポーリング</text>
+  <text class="ciba-sub halo" x="226" y="250" text-anchor="middle">4. /token をポーリング</text>
   <path class="ciba-flow" d="M288 270 L297 274 L288 278"/>
   <path class="ciba-flow" d="M380 248 V200"/>
   <path class="ciba-flow" d="M376 208 L380 199 L384 208"/>
@@ -152,7 +152,7 @@ func (r *myHintResolver) Resolve(ctx context.Context, kind op.HintKind, value st
 
 ## 認証デバイスのコールバック
 
-OP はユーザのスマホへ通知する経路自体は所有しません。そこは組み込み側の通知サービスとユーザのアプリの協働です。ライブラリが提供する接点はサブストアです。ユーザのアプリが応答してきたら、組み込み側のコールバックハンドラが `CIBARequestStore.Approve`（または `Deny`）を **`op.WithStore` に渡したのと同じストア参照** に対して直接呼びます。`provider.Store()` のようなアクセサは存在しません。OP はストアを再公開せず、組み込み側で参照を保持しておく前提です。
+OP はユーザのスマホへ通知する経路自体は所有しません。そこは組み込み側の通知サービスとユーザのアプリの協働です。ライブラリが提供する接点はサブストアです。ユーザのアプリが応答してきたら、組み込み側のコールバックハンドラが `CIBARequestStore.Approve`（または `Deny`）を **`op.WithStore` に渡したのと同じストア参照**に対して直接呼びます。`provider.Store()` のようなアクセサは存在しません。OP はストアを再公開せず、組み込み側で参照を保持しておく前提です。
 
 ```go
 // st は op.WithStore(st) に渡したのと同じストア。組み込み側で
@@ -167,7 +167,7 @@ func handleApproval(w http.ResponseWriter, r *http.Request, st *inmem.Store) {
         // acr は認証デバイスが実際に満たした Authentication Context Class
         // Reference。token endpoint はこの値をそのまま id_token.acr に入れる。
         // 利用デバイスが /bc-authorize で要求した acr_values とは独立していて、
-        // ACR の語彙を持たない配備メントでは "" のままでよい。
+        // ACR の語彙を持たない配備環境では "" のままでよい。
         // authTime はユーザが authentication device 上で認証した壁時計時刻。
         // token endpoint が id_token.auth_time に入れ（ゼロ値は claim を出さない）、
         // `RequireAuthTime` を登録したクライアントはこの値で判定する。
@@ -210,7 +210,7 @@ OP は `binding_message` を検証（trim 後の長さと制御文字チェッ�
 
 利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを resource server に固定できます。エンドポイントは `/auth` / `/token` と同じ判定を適用します:
 
-- 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否されます。
+- 値は絶対 URI でなければなりません（RFC 8707 §2）。相対 URI は `400 invalid_target` で拒否されます。
 - 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます。
 - `resource=` を複数指定すると `400 invalid_target` で拒否されます。CIBA 発行パイプラインは audience を 1 つだけ受け付け、複数値を黙って切り捨てません。
 
@@ -218,9 +218,13 @@ OP は `binding_message` を検証（trim 後の長さと制御文字チェッ�
 `resource=` は絶対 URI で、かつクライアントの `Resources` 許可リストに含まれている必要があります。許可リスト外の値は `invalid_target` で拒否されます。
 :::
 
+## sender-constrained な CIBA request
+
+DPoP または mTLS を使う場合、`/bc-authorize` は DPoP 鍵の thumbprint と mTLS 証明書の thumbprint を record に保存します。`/token` では発行前に、record に存在する binding をすべて再検証します。両方を持つ CIBA request には、一致する DPoP proof と mTLS 証明書の両方が必要で、片方だけでは `auth_req_id` を redeem できません。proof が無い、または一致しない場合は redemption に失敗します。成功時に発行する token の `cnf` には、OP が再検証したすべての binding を反映します。
+
 ## CIBA id_token の `amr` と `acr`
 
-CIBA フロー終端で発行される id_token の `acr` は、認証デバイスが実際に満たした ACR ── 組み込み側のコールバックが `CIBARequestStore.Approve` の `acr` 引数として渡す値 ── をそのまま反映します。要求された `acr_values` から決まるわけではなく、コールバックが `""` を渡した場合は空になります。これは比較可能な ACR 語彙を持たない配備メントで想定される挙動です。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
+CIBA フロー終端で発行される id_token の `acr` は、認証デバイスが実際に満たした ACR ── 組み込み側のコールバックが `CIBARequestStore.Approve` の `acr` 引数として渡す値 ── をそのまま反映します。要求された `acr_values` から決まるわけではなく、コールバックが `""` を渡した場合は空になります。これは比較可能な ACR 語彙を持たない配備環境で想定される挙動です。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
 
 CIBA id_token の `amr` を読む RP は、claim を空 / 不在として扱ってください。現在の CIBA request レコードには、検証済みの認証手段 signal がありません。
 
@@ -233,11 +237,11 @@ CIBA id_token の `amr` を読む RP は、claim を空 / 不在として扱っ�
 - `MaxAccessTokenTTL` = 10 分
 - クライアント認証 = `private_key_jwt`（`client_secret_basic` は拒否）。`feature.MTLS` を構成した場合、mTLS は送信者制約要件を満たせますが、`/token` のクライアント認証方式にはなりません。
 - `RequiresAccessTokenRevocation` = true
-- `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須、request-object 寿命は 60 分上限(FAPI 2.0 Message Signing §5.6)。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な要件に戻ります。
+- `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須、request-object 寿命は 60 分上限（FAPI 2.0 Message Signing §5.6）。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な要件に戻ります。
 - `requested_expiry > 600s` はハードエラー `invalid_request`(FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 の 10 分上限)。プロファイル無効時の素の CIBA は黙って上限へクランプする挙動のまま
-- `/bc-authorize` で発生したあらゆる JAR 失敗(署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…)は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/auth` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
+- `/bc-authorize` で発生したあらゆる JAR 失敗（署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…）は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/auth` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
 
-`op.WithACRValuesSupported(...)` が非空のとき、エンドポイントは要求された `acr_values` の各エントリを公開済みリストに対して検証します。空リストの場合は従来どおり緩い受理(permissive)のままです。
+`op.WithACRValuesSupported(...)` が非空のとき、エンドポイントは要求された `acr_values` の各エントリを公開済みリストに対して検証します。空リストの場合は従来どおり緩い受理（permissive）のままです。
 
 ## Polling 応答
 
@@ -246,13 +250,13 @@ device-code grant と同じ形:
 | 通信路上の応答 | 意味 |
 |---|---|
 | `400 authorization_pending` | ユーザがまだ承認していない。交渉済 interval 後に再 poll |
-| `400 slow_down` | poll が速すぎた。引き上げられた interval に従う(サーバが永続化) |
-| `400 access_denied` | ユーザが拒否、管理者が失効させた、または poll-abuse 上限(`WithCIBAMaxPollViolations`、既定 5)に達してロックアウト。poll を停止 |
-| `400 expired_token` | `auth_req_id` が寿命を超えた(TTL 経過のみ — RFC 6749 §5.2 / CIBA Core §11)。poll を停止 |
+| `400 slow_down` | poll が速すぎた。引き上げられた interval に従う（サーバが永続化） |
+| `400 access_denied` | ユーザが拒否、管理者が失効させた、または poll-abuse 上限（`WithCIBAMaxPollViolations`、既定 5）に達してロックアウト。poll を停止 |
+| `400 expired_token` | `auth_req_id` が寿命を超えた（TTL 経過のみ — RFC 6749 §5.2 / CIBA Core §11）。poll を停止 |
 | `400 invalid_grant` | `auth_req_id` は既に消費済み。grant は消滅しているため、同じハンドルで再試行しないこと |
 | `200 { access_token, ... }` | 承認 |
 
-OP は「交渉済み interval が経過する前に poll した」を `auth_req_id` に対するストライクとして数えます。ストライク数が上限(既定 5)に達すると、その後の poll はすべて `400 access_denied` を返し、`ciba.poll_abuse.lockout` 監査イベントが発火します。`op.WithCIBAMaxPollViolations(n uint8)` でこの上限を上下できます。プロファイル要件や conformance ハーネスが境界を強く検査するケースで余裕を持たせるために使います。`n=0` は本ライブラリの既定にフォールバックし、`n=255` は診断ビルド向けに実質的な無効化となります。
+OP は「交渉済み interval が経過する前に poll した」を `auth_req_id` に対するストライクとして数えます。ストライク数が上限（既定 5）に達すると、その後の poll はすべて `400 access_denied` を返し、`ciba.poll_abuse.lockout` 監査イベントが発火します。`op.WithCIBAMaxPollViolations(n uint8)` でこの上限を上下できます。プロファイル要件や conformance ハーネスが境界を強く検査するケースで余裕を持たせるために使います。`n=0` は本ライブラリの既定にフォールバックし、`n=255` は診断ビルド向けに実質的な無効化となります。
 
 ::: info `/bc-authorize` の単一値パラメータ重複
 `client_id` / `login_hint` / `id_token_hint` / `login_hint_token` / `binding_message` / `requested_expiry` / `acr_values` / `scope` / `user_code` / `client_assertion` のいずれかが 2 回以上現れたリクエストは CIBA Core §13 に従い `400 invalid_request` で拒否します。RFC 8707 の `resource=` だけが正当に複数指定可能です。`/token`、`/end_session`、`/revoke` も対応する単一値パラメータに同じルールを適用します。

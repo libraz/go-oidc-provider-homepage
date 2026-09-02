@@ -11,6 +11,65 @@ grant が長命になると、継続的な支払いマンデートや常設の�
 
 これは、初回認可のあともクライアントが同意のような grant を管理する必要がある場合に使います。特に grant を後から拡張する、またはブラウザセッションとは独立して失効する必要がある場合に有効です。短命な一回限りのサインインフローでは有効にしない方がよいです。クライアントが grant に名前を付ける必要がないなら、通常の認可コード、リフレッシュトークンローテーション、通常のトークン失効の方が単純です。
 
+<svg role="img" aria-labelledby="gm-lifecycle-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="gm-lifecycle-title">grant のライフサイクル。create / replace / merge は認可リクエストに乗って grant の scope と authorization_details を決め、query / revoke は grant management エンドポイントへの操作。grant に紐づくトークンに届くのは revoke だけ。</title>
+
+  <text x="111" y="26" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="11.5">認可リクエストに乗る</text>
+
+  <rect x="16" y="40" width="190" height="40" rx="6"/>
+  <text x="30" y="59" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="12" font-weight="600">create</text>
+  <text x="30" y="73" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">grant_id なし — OP が採番</text>
+
+  <rect x="16" y="92" width="190" height="40" rx="6"/>
+  <text x="30" y="111" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="12" font-weight="600">replace</text>
+  <text x="30" y="125" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">scope := 新リクエストの内容</text>
+
+  <rect x="16" y="144" width="190" height="40" rx="6"/>
+  <text x="30" y="163" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="12" font-weight="600">merge</text>
+  <text x="30" y="177" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">scope := 既存 ∪ 新規</text>
+
+  <path d="M206 60 H240"/>
+  <path d="M206 112 H240"/>
+  <path d="M206 164 H240"/>
+  <path d="M240 60 V164"/>
+  <path d="M240 108 H272"/>
+  <path d="M266 104 L274 108 L266 112"/>
+
+  <rect x="274" y="60" width="212" height="96" rx="8" stroke="var(--vp-c-brand-2)"/>
+  <text x="380" y="88" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">Grant</text>
+  <text x="380" y="108" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="11">grant_id = g-9f3c…</text>
+  <rect x="288" y="118" width="184" height="28" rx="5" fill="var(--vp-c-bg-soft)" stroke="none"/>
+  <text x="380" y="136" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="9.5">scope + authorization_details</text>
+
+  <path d="M380 156 V196"/>
+  <path d="M376 190 L380 199 L384 190"/>
+
+  <rect x="274" y="200" width="212" height="86" rx="8" stroke-dasharray="5 4"/>
+  <text x="380" y="220" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10.5">この grant に紐づくトークン</text>
+  <text x="380" y="240" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="10">JWT アクセストークン</text>
+  <text x="380" y="258" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="10">opaque アクセストークン</text>
+  <text x="380" y="276" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="10">リフレッシュトークン</text>
+
+  <text x="649" y="26" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="11.5">grant management エンドポイント</text>
+
+  <rect x="554" y="40" width="190" height="40" rx="6"/>
+  <text x="568" y="60" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="11">GET …/{grant_id}</text>
+  <text x="568" y="74" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">scope と details を返す</text>
+
+  <rect x="554" y="92" width="190" height="40" rx="6"/>
+  <text x="568" y="112" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-mono)" font-size="11">DELETE …/{grant_id}</text>
+  <text x="568" y="126" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10">204 · grant レコード削除</text>
+
+  <text x="649" y="152" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-base)" font-size="10.5">紐づくトークンすべてに波及</text>
+
+  <path d="M552 60 H520 V90 H492"/>
+  <path d="M498 86 L490 90 L498 94"/>
+  <path d="M552 112 H520 V243 H492"/>
+  <path d="M498 239 L490 243 L498 247"/>
+</svg>
+
+下段の箱に届くのは `revoke` だけです。`create` / `replace` / `merge` は grant が保持する内容を書き換え、`query` はそれを読み戻します。`revoke` は grant レコードを削除したうえで、そこにぶら下がるトークンを失効させます。
+
 ::: warning Experimental — IETF draft を追跡
 Grant Management は公開済みの RFC ではなく IETF draft です。`op.GrantManagementAction` enum と `op.WithGrantManagement` は godoc で `Experimental:` と明記されており、draft 更新によって通信仕様に互換性のない変更が入り得ます。
 :::
@@ -103,7 +162,9 @@ curl -u demo:demo-secret https://op.example.com/oidc/grant_management/g-9f3c...
 
 `DELETE` は指定された `grant_id` だけを削除し、その grant に紐付く artefact へ cascade します。grant の JWT アクセストークンを tombstone / denylist し、grant に束ねられた opaque アクセストークンとリフレッシュトークンを失効させ、grant レコードを削除します。これにより後続の照会は「もう存在しない」と応答します。同じ subject / client が持つ別の grant には影響しません。
 
-OP は `204 No Content` を返し、指定 grant の `grant_management.revoked` 監査イベントを発火します。subject または client の全 grant を失効させたい配備では、grant ID を列挙して各 ID を明示的に削除してください。
+成功時、OP は `204 No Content` を返し、指定 grant の `grant_management.revoked` 監査イベントを発火します。grant が確実に存在しない場合、または別 client の所有である場合は、cascade を試みず `404` を返します。grant store が存在を判断できない障害を返した場合、OP は `500 server_error` を返し、cascade を行いません。cascade の副作用が失敗した場合は、`500 server_error` を返して `grant_management.revoke_failed` を発火し、grant を再試行可能かつ照会可能な状態に残します。失効成功とは記録しません。別リクエストが先に削除したことによる最終 delete の `NotFound` は冪等な成功として扱い、`204` を返します。
+
+`grant_id` を失効単位として扱ってください。subject または client の全 grant を失効させたい配備では、grant ID を列挙して各 ID を明示的に削除してください。
 
 ```sh
 curl -u demo:demo-secret -X DELETE https://op.example.com/oidc/grant_management/g-9f3c...

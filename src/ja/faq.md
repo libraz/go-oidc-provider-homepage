@@ -1,41 +1,50 @@
 ---
 title: FAQ
-description: ライブラリ作者が examples を書きながら / Conformance 検査を回しながら実際にハマった箇所を集めた FAQ。
+description: ライブラリ作者が examples を書き、適合性テストを実行する中で実際にハマった箇所を集めた FAQ。
 outline: 2
 pageClass: pg-faq
 ---
 
 # FAQ
 
-このページは「最初に見るべき場所」のひとつです。下に並んでいる質問は理屈ではなく、メンテナが examples を書いたり Conformance ハーネスを回したりする途中で実際にハマったものばかりです。
+ここに並んでいる質問は、作者が examples を書いたり適合性テストのハーネスを実行したりする過程で実際に詰まったものです。FAQ の体裁を整えるために足した項目はありません。同じところで詰まった場合、ここに書いてある方法が本プロジェクトで実際に使っている方法です。
 
-<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="faq-route-title">FAQ の読み方: まずセットアップ、次に FAPI やトークンなど目的別の領域へ進み、最後にエラーや採用判断を確認する。</title>
-<rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
+<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="faq-route-title">FAQ の読み方: まずセットアップ、次に FAPI やトークンなど目的別の領域へ進み、最後にエラー対応と採用判断を確認する。</title>
+  <rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
   <text class="faq-text" x="117" y="146" text-anchor="middle">まず起動</text>
   <text class="faq-sub" x="117" y="168" text-anchor="middle">必須オプション / issuer</text>
 
   <rect class="faq-box" x="292" y="36" width="176" height="56" rx="8"/>
   <text class="faq-text" x="380" y="70" text-anchor="middle">FAPI / DPoP</text>
   <rect class="faq-box" x="292" y="112" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="146" text-anchor="middle">トークン / storage</text>
+  <text class="faq-text" x="380" y="146" text-anchor="middle">トークン / ストレージ</text>
   <rect class="faq-box" x="292" y="188" width="176" height="56" rx="8"/>
   <text class="faq-text" x="380" y="222" text-anchor="middle">UI / SPA / MFA</text>
 
   <rect class="faq-box" x="566" y="76" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="108" text-anchor="middle">エラー対応</text>
-  <text class="faq-sub" x="643" y="126" text-anchor="middle">よくある失敗</text>
+  <text class="faq-text" x="643" y="102" text-anchor="middle">エラー対応</text>
+  <text class="faq-sub" x="643" y="122" text-anchor="middle">よくある失敗</text>
   <rect class="faq-box" x="566" y="172" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="204" text-anchor="middle">採用判断</text>
-  <text class="faq-sub" x="643" y="222" text-anchor="middle">本番投入 / 報告</text>
+  <text class="faq-text" x="643" y="198" text-anchor="middle">採用判断</text>
+  <text class="faq-sub" x="643" y="218" text-anchor="middle">本番投入 / 報告</text>
 
-  <path class="faq-flow" d="M194 152 C234 106 252 66 288 64"/>
-  <path class="faq-flow" d="M194 152 H288"/>
-  <path class="faq-flow" d="M194 152 C236 190 252 216 288 216"/>
-  <path class="faq-flow" d="M468 112 C510 110 526 108 562 108"/>
-  <path class="faq-flow" d="M554 104 L563 108 L554 112"/>
-  <path class="faq-flow" d="M468 188 C510 198 526 204 562 204"/>
-  <path class="faq-flow" d="M554 200 L563 204 L554 208"/>
+  <path class="faq-flow" d="M194 153 C240 150 250 64 292 64"/>
+  <path class="faq-flow" d="M283 60 L292 64 L283 68"/>
+  <path class="faq-flow" d="M194 153 C240 153 250 140 292 140"/>
+  <path class="faq-flow" d="M283 136 L292 140 L283 144"/>
+  <path class="faq-flow" d="M194 153 C240 156 250 216 292 216"/>
+  <path class="faq-flow" d="M283 212 L292 216 L283 220"/>
+
+  <path class="faq-flow" d="M468 64 C520 62 528 90 566 90"/>
+  <path class="faq-flow" d="M557 86 L566 90 L557 94"/>
+  <path class="faq-flow" d="M468 140 C520 138 528 107 566 107"/>
+  <path class="faq-flow" d="M557 103 L566 107 L557 111"/>
+  <path class="faq-flow" d="M468 216 C520 214 528 124 566 124"/>
+  <path class="faq-flow" d="M557 120 L566 124 L557 128"/>
+
+  <path class="faq-flow" d="M643 138 V172"/>
+  <path class="faq-flow" d="M639 163 L643 172 L647 163"/>
 </svg>
 
 <ul class="faq-index">
@@ -60,7 +69,7 @@ pageClass: pg-faq
 
 ### `op.New(...)` がエラーを返すのはなぜ？
 
-中心的なオプションには「安全なデフォルト」が存在しないためです。ゼロ値で黙って動くのではなく、`op.New` は構築時にエラーを返して止めます。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須で、`WithCookieKeys` は authorization-code grant を有効にする場合（既定の grant セットを含む）に必須です:
+中心的なオプションには「安全な既定値」が存在しないためです。ゼロ値で黙って動くのではなく、`op.New` は構築時にエラーを返して止めます。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須で、`WithCookieKeys` は authorization-code grant を有効にする場合（既定の grant セットを含む）に必須です:
 
 | オプション | これが無いと |
 |---|---|
@@ -103,7 +112,7 @@ handler, err := op.New(
 - 末尾スラッシュ（`https://op/` → 不可）
 - scheme の大文字混在（`HTTPS://op` → 不可）
 - host の大文字混在（`https://OP.example.com` → 不可）
-- デフォルトポート（`https://op:443` → 不可、`http://127.0.0.1:80` → 不可）
+- 既定ポート（`https://op:443` → 不可、`http://127.0.0.1:80` → 不可）
 - fragment（`https://op#x` → 不可）
 - query（`https://op?x=1` → 不可）
 - 非正規 path（`..`、`.`、重複スラッシュ — `path.Clean` で判定）
@@ -125,23 +134,23 @@ RP の検証側でも、片側に正規形でない 1 文字が紛れただけ�
 | feature 有効化 | `feature.PAR` と `feature.JAR` を ON。`feature.MTLS` が明示されていなければ `feature.DPoP` を既定選択 |
 | クライアント認証 | `token_endpoint_auth_methods_supported` を `private_key_jwt` に絞り込み |
 | alg 制約 | 署名 alg を FAPI 部分集合にロック |
-| `redirect_uri` | 完全一致を強制(ワイルドカード不可) |
+| `redirect_uri` | 完全一致を強制（ワイルドカード不可） |
 | PKCE | すべての code 要求で必須 |
 | `state` / `nonce` | すべての authorize 要求でいずれか必須 |
 
 ::: warning プロファイル指定後にこれらと矛盾するオプションを重ねると、`op.New` がエラーを返します。
-プロファイルは意図的に剛直 — 黙って緩めると FAPI 2.0 が買ってくれる監査保証が崩れるためです。
+プロファイルは意図的に剛直にしてあります。黙って緩めると、FAPI 2.0 を選んだことで得られる監査上の保証が崩れるためです。
 :::
 
 ### Baseline と Message Signing — どちらが必要？
+
+Message Signing は Baseline に JARM を加えたものです。authorize 要求と応答そのものについて **非否認性**（non-repudiation）が必要なら Message Signing を選びます。オープンバンキングのような監査連鎖が典型例です。それ以外は Baseline で足ります。
 
 | Baseline | Message Signing |
 |---|---|
 | PAR + JAR + PKCE + DPoP / mTLS | + JARM（署名付き authorization 応答） |
 
-RP 側で **非否認性 (non-repudiation)** — authorize 要求 / 応答の署名による否認防止、オープンバンキングの監査連鎖など — が必要なら Message Signing。それ以外は Baseline で足ります。
-
-### DPoP なしで FAPI 2.0 を回せる？
+### DPoP なしで FAPI 2.0 に対応できる？
 
 可能です。`feature.MTLS` を有効化し、`op.WithMTLSProxy(...)` で proxy からの証明書ヘッダを構成すれば mTLS 送信者バインディングに切り替わります。FAPI 2.0 §3.1.4 は「DPoP **または** mTLS」を要求しますが、FAPI クライアントは `/token` クライアント認証には引き続き `private_key_jwt` を使います。
 
@@ -151,10 +160,10 @@ RP 側で **非否認性 (non-repudiation)** — authorize 要求 / 応答の署
 
 ### リフレッシュトークンのリトライで `invalid_grant` が返る — 既に通信中だったのに
 
-ローテーション後の **猶予期間 (grace period)** に守られているケースです。デフォルトは 60 秒。ローテーションのネットワーク往復が落ちても、猶予期間内に前のリフレッシュトークンを提示すれば、新しいアクセストークンを返します（再ローテーションは発生しません）。期間を過ぎたか、再利用検知で chain が失効しているケースでは `invalid_grant` になります。
+ローテーション後の **猶予期間（grace period）** に守られているケースです。既定は 60 秒です。ローテーションのネットワーク往復が落ちても、猶予期間内に前のリフレッシュトークンを提示すれば、新しいアクセストークンを返します（再ローテーションは発生しません）。期間を過ぎたか、再利用検知で chain が失効しているケースでは `invalid_grant` になります。
 
 ::: details 期間を調整したいとき
-`op.WithRefreshGracePeriod(90 * time.Second)` で延長できます。`op.WithRefreshGracePeriod(0)` で猶予期間を完全に無効化(厳密な single-use)にできます。負値はオプション側で拒否されます。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §2</a>。
+FAPI 以外の profile では、`op.WithRefreshGracePeriod(90 * time.Second)` で延長できます。`profile.FAPI2Baseline` または `profile.FAPI2MessageSigning` では、`0` 秒から `60` 秒まで（60 秒を含む）の明示設定が許容され、`60` 秒を超える値だけが拒否されます。`op.WithRefreshGracePeriod(0)` で猶予期間を完全に無効化（厳密な single-use）にできます。負値はオプション側で拒否されます。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §2</a>。
 :::
 
 ### リフレッシュトークンが返ってこないのはなぜ？
@@ -164,7 +173,7 @@ RP 側で **非否認性 (non-repudiation)** — authorize 要求 / 応答の署
 1. 付与された scope に `openid` が含まれている。
 2. クライアントの `GrantTypes` に `refresh_token` が含まれている。
 
-どちらかが欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、`refresh_token` フィールドは付きません。OIDC Core 1.0 §11 の既定(lax)の解釈では、`offline_access` はリフレッシュトークン受領の必須条件では **ありません** — offline 用の TTL bucket を選び、同意・監査の表示を形づくる役割です。
+どちらかが欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、`refresh_token` フィールドは付きません。OIDC Core 1.0 §11 の既定（lax）の解釈では、`offline_access` はリフレッシュトークン受領の必須条件では **ありません** — offline 用の TTL bucket を選び、同意・監査の表示を形づくる役割です。
 
 ::: details `offline_access` を必須にしたい場合
 OIDC Core 1.0 §11 は狭い解釈も許容しており、その場合は付与 scope に `offline_access` があるときだけリフレッシュトークンを発行します。「同意 UI が約束した範囲」と「監査ログに残る範囲」を初期状態から完全に一致させたいなら `op.WithStrictOfflineAccess()` で opt-in してください。ただしその際は、stay-signed-in を求める RP がすべて明示的に `offline_access` を要求する必要があります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
@@ -215,12 +224,12 @@ op.WithDPoPNonceSource(src)
 | `inmem` | テスト、demo、単一プロセス開発 |
 | `sql`（SQLite / MySQL / Postgres） | 単一の永続バックエンド。最短で本番に乗せられる選択 |
 | `redis`（揮発サブストア専用） | `composite` で `sql` と組み合わせ、hot / cold を分離 |
-| `composite` | hot / cold 分離。「永続バックエンドは 1 つ」を構築時に強制 |
+| `composite` | hot / cold 分離。`TxClusterKinds` は 1 つの比較可能な transactional バックエンドへまとめ、それ以外の `Kind` は分離可能 |
 | `dynamodb` | サブストアごとに 1 テーブルを使う永続バックエンド。`store.Transactional` によりブラウザ認可コードフローも動作する。API は Experimental。 |
 
 <a class="doc-ref" href="/ja/use-cases/sql-store">SQL ストア</a>、<a class="doc-ref" href="/ja/use-cases/dynamodb-store">DynamoDB ストア</a>、<a class="doc-ref" href="/ja/use-cases/hot-cold-redis">Hot / Cold 分離</a> を参照。
 
-### `composite.New` が起動時に設定を拒否する
+### `composite.New` が起動時に設定を拒否するのはなぜ？
 
 トランザクションクラスタの不変条件があるためです — トランザクション系サブストア（clients / codes / リフレッシュトークン / アクセストークン / IATs）は **同じ** バックエンドを共有する必要があります。揮発スライス（sessions / DPoP nonce キャッシュ / JAR `jti` レジストリ）だけが別バックエンドに置けます。`composite.New` は構築時にこれを検証し、トランザクションを 2 つのストアに跨がせる設定を拒否します。
 
@@ -256,9 +265,9 @@ op.WithCORSOrigins("https://app.example.com")
 
 `WithCORSOrigins` を呼ばない場合、登録済み redirect URI から許可リストが自動導出されます。詳細は <a class="doc-ref" href="/ja/use-cases/cors-spa">SPA 向け CORS</a>。
 
-API の CORS 許可リストが redirect URI の origin から導出される場合でも、それによって cross-origin の interaction や end-session ceremony が許可されるわけではありません。これらが受け付けるのは issuer origin と `WithCORSOrigins` に明示的に渡した origin だけです。
+API の CORS 許可リストが redirect URI の origin から導出される場合でも、それによって cross-origin の interaction や end-session ceremony が許可されるわけではありません。これらが受け付けるのは issuer origin と `WithCORSOrigins` に明示的に渡した origin だけで、ceremony origin は issuer と同じ site でなければなりません。実際には cross-site の origin でも preflight と CORS ヘッダまでは通りますが、ブラウザは `__Host-` ceremony cookie（`__Host-oidc_interaction` は `SameSite=Lax`、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf` は `SameSite=Strict`）を送らないため、interaction と end-session のリクエストは `404` になります。ceremony UI は `op.example.com` に対する `login.example.com` のような issuer と同じ site の sibling host に配置してください。
 
-### ライブラリを fork せずに同意画面をカスタマイズしたい
+### ライブラリを fork せずに同意画面をカスタマイズできる？
 
 可能です。主な経路は次の 3 つです。
 
@@ -278,7 +287,7 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 クライアント別ポリシーで `op.RuleACR(level)` を使います。RP が現セッションよりも高い `acr_values` を要求すると、OP は `WWW-Authenticate: error="insufficient_user_authentication"`（RFC 9470）を返します。セッションは authenticator チェーンを通って step-up し、その後再開します。詳細は [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up)。
 
-### リスクベース MFA は？
+### リスクスコアが高いときだけ MFA を挟める？
 
 `op.RuleRisk(...)` が、組み込み側で用意する `RiskAssessor` の評価結果を受け取ります。`RiskOutcome` は明示的な `RiskScore` を持ちます。詳細は [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa)。
 
@@ -300,7 +309,7 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 ### CLI の `127.0.0.1:54312/cb` 形式の redirect_uri が拒否された
 
-デフォルトの redirect-URI マッチはバイト完全一致(OAuth 2.1 / FAPI 2.0)です。ループバックのポートワイルドカード(RFC 8252 §7.3)は **クライアント単位でオプトイン** — 登録済みの `redirect_uris` にループバック URI を含めれば、scheme が `http`、登録済 host がループバック形(`127.0.0.1` / `::1`、登録側オプトインがある場合は文字列 `localhost`)、要求側 host が登録 host と一致し、path / query / fragment が完全一致のときに限り、ポート不一致を許容します。文字列 `localhost` の受理は登録時オプトイン(web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`)が前提です。literal IP のみの厳格な構えを保ちたいデプロイは、両方のオプトインを外したままにしておけば従来どおりの挙動になります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §4</a>。
+既定の redirect-URI マッチはバイト完全一致（OAuth 2.1 / FAPI 2.0）です。ループバックのポートワイルドカード（RFC 8252 §7.3）は **クライアント単位でオプトイン** — 登録済みの `redirect_uris` にループバック URI を含めれば、scheme が `http`、登録済 host がループバック形（`127.0.0.1` / `::1`、登録側オプトインがある場合は文字列 `localhost`）、要求側 host が登録 host と一致し、path / query / fragment が完全一致のときに限り、ポート不一致を許容します。文字列 `localhost` の受理は登録時オプトイン（web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`）が前提です。literal IP のみの厳格な構えを保ちたいデプロイは、両方のオプトインを外したままにしておけば従来どおりの挙動になります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §4</a>。
 
 <div id="observability" class="faq-anchor"></div>
 
@@ -310,7 +319,7 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 ライブラリは `/metrics` を **マウントしません**。`op.WithPrometheus(reg)` は OP が絞り込んで保持するカウンタを、利用者が渡した registry に登録するだけです。
 
-HTTP ルートのマウントはルーター側の責務です — トレーシング(外側で `otelhttp.NewMiddleware` をラップする)も、リクエスト所要時間ヒストグラム(外側でミドルウェアをラップする)も同じ分離方針です。OP は **OIDC 業務系の** カウンタ / スパン / 監査イベントのみを発行し、HTTP ライフサイクルの観測は組み込み側に委ねます。
+HTTP ルートのマウントはルータ側の責務です — トレーシング（外側で `otelhttp.NewMiddleware` をラップする）も、リクエスト所要時間ヒストグラム（外側でミドルウェアをラップする）も同じ分離方針です。OP は **OIDC 業務系の** カウンタ / スパン / 監査イベントのみを発行し、HTTP ライフサイクルの観測は組み込み側に委ねます。
 
 詳細は [`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics)。
 
@@ -340,7 +349,7 @@ HTTP ルートのマウントはルーター側の責務です — トレーシ�
 
 ### OFCS 適合状況に PASSED だけでなく REVIEW も出るのはなぜ？
 
-OFCS は複数の結果を記録します。raw の `FAILED` は通常、suite が期待結果を観測できなかったことを示します。strict verifier がレビュー済みかつ期限内の exclusion と照合した場合だけ、直ちに release blocker にはなりません:
+OFCS は複数の判定を記録し、素通しで合格といえるのは `PASSED` だけです。raw の `FAILED` は suite が期待結果を観測できなかったことを示し、strict verifier がレビュー済みかつ期限内の exclusion と照合できない限りリリースを止めます:
 
 | 判定 | 意味 |
 |---|---|
@@ -354,9 +363,9 @@ OFCS は複数の結果を記録します。raw の `FAILED` は通常、suite �
 
 不可です。本プロジェクトは OpenID Foundation の会員費を支払っておらず、公式認証も取得していません。OFCS のベースラインは仕様適合性の再現可能なスナップショットであって、認証ではありません。詳細は <a class="doc-ref" href="/ja/security/posture">セキュリティ方針</a>を参照してください。
 
-### バージョンを固定すべき?
+### バージョンを固定すべき？
 
-すべきです。本番依存は `go.mod` で固定し、更新前に [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。`op.New` と同梱ストレージアダプターの構成は通常そのまま更新できますが、BYO ストアや他の拡張は現在の移行案内を確認する必要があります。`Experimental:` マーカー付き API は通常のマイナーリリース例外です。
+固定してください。本番の依存は `go.mod` で固定し、更新前に [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を読んでください。`op.New` と同梱ストレージアダプタだけの構成なら通常そのまま更新できます。独自のストアやその他の拡張を組み込んでいる場合は、現在の移行案内を確認してください。`Experimental:` マーカー付き API は通常のマイナーリリース例外です。
 
 <div id="errors" class="faq-anchor"></div>
 
@@ -367,7 +376,7 @@ OFCS は複数の結果を記録します。raw の `FAILED` は通常、suite �
 redirect-URI 完全一致に引っかかっています。よくある原因 3 つ:
 
 1. 末尾スラッシュのドリフト（`/cb` と `/cb/`）。
-2. デフォルトポートが片側だけ含まれる（`https://rp.example.com:443/cb` と `https://rp.example.com/cb`）。
+2. 既定ポートが片側だけ含まれる（`https://rp.example.com:443/cb` と `https://rp.example.com/cb`）。
 3. CLI / ネイティブアプリのループバックで、RFC 8252 §7.3 のオプトインをしていない（前述）。
 
 ### `invalid_client: alg not allowed`
@@ -388,7 +397,7 @@ DPoP proof の公開鍵 thumbprint（RFC 7638）が、アクセストークン�
 
 ### 本番で使ってよい？
 
-<a class="doc-ref" href="/ja/security/posture">セキュリティ方針</a> — 特に「ここに **無い** もの」のセクション — を読んでから判断してください。短くいえば、RP / OP / ユーザを自社管理する内部用途には適合します。第三者監査トレイルや公式認証が出荷条件にあるなら、本ライブラリは選ばないでください。
+RP・OP・ユーザをすべて自社で管理する内部用途であれば、十分に選択肢に入ります。第三者による監査証跡や公式認証が出荷条件にあるなら、本ライブラリは選ばないでください。判断の前に <a class="doc-ref" href="/ja/security/posture">セキュリティ方針</a>、とくに「ここに **無い** もの」の節を読んでください。
 
 ### セキュリティ問題はどう報告する？
 

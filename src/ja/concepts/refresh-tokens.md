@@ -42,45 +42,45 @@ pageClass: pg-concepts-refresh-tokens
 
   <path d="M110,100 H380"/>
   <path d="M373,96 L380,100 L373,104"/>
-  <text class="d-mono" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
+  <text class="d-mono halo" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
 
   <path d="M380,140 H110"/>
   <path d="M117,136 L110,140 L117,144"/>
-  <text class="d-mono" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
+  <text class="d-mono halo" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
 
-  <text class="d-mono rs-fill" x="245" y="166" text-anchor="middle">access_token 有効期限切れ</text>
+  <text class="d-mono rs-fill halo" x="245" y="166" text-anchor="middle">access_token 有効期限切れ</text>
 
   <path d="M110,196 H380"/>
   <path d="M373,192 L380,196 L373,200"/>
-  <text class="d-mono" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
+  <text class="d-mono halo" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
 
   <path class="op-accent" d="M380,211 h16 v12 h-16"/>
   <path class="op-accent" d="M387,215 L380,219 L387,223"/>
-  <text class="d-prose op-fill" x="404" y="208">リフレッシュトークンをローテーション</text>
-  <text class="d-mono" x="404" y="220">rt1 を無効化 · rt2 を発行（同じ連鎖）</text>
+  <text class="d-prose op-fill halo" x="404" y="208">リフレッシュトークンをローテーション</text>
+  <text class="d-mono halo" x="404" y="220">rt1 を無効化 · rt2 を発行（同じ連鎖）</text>
 
   <path d="M380,256 H110"/>
   <path d="M117,252 L110,256 L117,260"/>
-  <text class="d-mono" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
+  <text class="d-mono halo" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
 
   <path d="M110,292 H380"/>
   <path d="M373,288 L380,292 L373,296"/>
-  <text class="d-mono" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
+  <text class="d-mono halo" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
 
   <path d="M380,328 H110"/>
   <path d="M117,324 L110,328 L117,332"/>
-  <text class="d-mono" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
+  <text class="d-mono halo" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
 
-  <text class="d-mono rs-fill" x="515" y="354" text-anchor="middle">攻撃者が rt1 を盗む</text>
+  <text class="d-mono rs-fill halo" x="515" y="354" text-anchor="middle">攻撃者が rt1 を盗む</text>
 
   <path class="rs-stroke" d="M650,384 H380"/>
   <path class="rs-stroke" d="M387,380 L380,384 L387,388"/>
-  <text class="d-mono rs-fill" x="515" y="376" text-anchor="middle">refresh_token=rt1 を再提示（消費済み）</text>
+  <text class="d-mono rs-fill halo" x="515" y="376" text-anchor="middle">refresh_token=rt1 を再提示（消費済み）</text>
 
   <path class="op-accent" d="M380,401 h16 v12 h-16"/>
   <path class="op-accent" d="M387,405 L380,409 L387,413"/>
-  <text class="d-prose op-fill" x="404" y="398">再利用を検知 → 連鎖全体を失効</text>
-  <text class="d-mono" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
+  <text class="d-prose op-fill halo" x="404" y="398">再利用を検知 → 連鎖全体を失効</text>
+  <text class="d-mono halo" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
 </svg>
 
 ::: warning 再利用検知は連鎖全体を無効化
@@ -114,26 +114,30 @@ op.WithRefreshGracePeriod(2 * time.Second)
 :::
 
 ::: tip 既定は 60 秒
-`WithRefreshGracePeriod` を渡さない場合の猶予期間は **60 秒**（`refresh.GraceTTLDefault`）です。`op.WithRefreshGracePeriod(0)` で猶予期間を完全無効化（厳密な single-use）、正の値で猶予期間を明示設定できます。負値は構築時に拒否されます。
+`WithRefreshGracePeriod` を渡さない場合の猶予期間は **60 秒**（`refresh.GraceTTLDefault`）です。`op.WithRefreshGracePeriod(0)` で猶予期間を完全無効化（厳密な single-use）し、0 以上の値で猶予期間を明示設定できます。負値は構築時に拒否されます。
 
 OFCS のリフレッシュトークン回帰テストはローテーションとリトライの間に約 32 秒待つため、それ以下の猶予期間に縮めると適合性が後退します。
 
-`profile.FAPI2Baseline` と `profile.FAPI2MessageSigning` では、明示設定された非ゼロの猶予窓は `op.New` で拒否されます。どちらかの profile を有効にする前に、`WithRefreshGracePeriod` を外すか 0 にしてください。`profile.FAPICIBA` にはこのリフレッシュ猶予の検査は適用されません。
+`profile.FAPI2Baseline` と `profile.FAPI2MessageSigning` では、0 秒から既定の **60 秒まで（60 秒を含む）** の明示設定が許容されます。60 秒を超える猶予期間だけが `op.New` で拒否され、オプションを省略した場合は既定値が使われます。`profile.FAPICIBA` にはこのリフレッシュ猶予の上限検査は適用されず、より長い猶予期間も設定できます。
 
 ```go
-// NG: FAPI Baseline では非ゼロの猶予窓を明示できない
+// NG: FAPI Baseline では 60 秒を超える猶予窓は指定できない
 op.New(
   op.WithProfile(profile.FAPI2Baseline),
-  op.WithRefreshGracePeriod(30*time.Second),
+  op.WithRefreshGracePeriod(61*time.Second),
 )
 
-// OK: FAPI Baseline では未指定、または 0 で厳密 single-use
+// OK: FAPI Baseline では 60 秒（既定値）も許容される
 op.New(
   op.WithProfile(profile.FAPI2Baseline),
-  op.WithRefreshGracePeriod(0),
+  op.WithRefreshGracePeriod(60*time.Second),
 )
 ```
 :::
+
+## ローテーション時に現在のクライアント登録 scope を再検証する
+
+リフレッシュトークンは連鎖の開始時に付与された scope を記録しますが、ローテーションが後から変更されたクライアント登録を迂回することはありません。提示されたトークンを消費する前に、OP は要求された scope とトークンに束縛された scope の積集合を実効 scope として求めます（要求を省略した場合は束縛済み scope を再利用します）。その実効 scope と現在のクライアントの `Scopes` 登録との積集合が実効 scope と一致するかを再検証し、scope ごとの `AllowedClients` ポリシーも検証します。発行対象の scope が現在の登録に含まれなくなっていれば `/token` は `invalid_scope` を返し、提示されたトークンは未消費のまま残ります。これにより、クライアント登録を狭めても、既存の連鎖が削除済み scope を発行し続けることはありません。
 
 ## TTL バケット
 
@@ -151,7 +155,7 @@ op.New(
 1. クライアントの `GrantTypes` に `refresh_token` が含まれている。
 2. 付与された scope に `openid` が含まれている（本ライブラリでリフレッシュトークンは OIDC の構成要素として扱う）。
 
-どちらか一方でも欠けると、トークンエンドポイント (`/token`) は `access_token` + `id_token` を返して成功扱いとなり、**`refresh_token` フィールドは付きません** —「クライアントが `refresh_token` grant を持っていない」場合と同じ振る舞いです。アクセストークンが切れたら、RP は再度ユーザに認証を求めることになります。
+どちらか一方でも欠けると、トークンエンドポイント（`/token`） は `access_token` + `id_token` を返して成功扱いとなり、**`refresh_token` フィールドは付きません** —「クライアントが `refresh_token` grant を持っていない」場合と同じ振る舞いです。アクセストークンが切れたら、RP は再度ユーザに認証を求めることになります。
 
 OIDC Core 1.0 §11 の既定（緩やかな）解釈では、`offline_access` は **発行の判定** ではありません。同意画面の内容とリフレッシュトークンの寿命バケット（`WithRefreshTokenTTL` か `WithRefreshTokenOfflineTTL`）を切り替えるだけです。`offline_access` を発行条件にしたい場合は `op.WithStrictOfflineAccess()` を明示してください — 次のセクションを参照。
 

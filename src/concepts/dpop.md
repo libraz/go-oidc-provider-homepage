@@ -94,11 +94,13 @@ The OP and the RS run the same checklist. The RS additionally verifies that the 
 
 DPoP-bound access tokens must be presented with `Authorization: DPoP <token>`, not `Authorization: Bearer <token>`. The OP enforces this on `/userinfo`: a sender-constrained token under the Bearer scheme is rejected even if the token bytes are otherwise valid, because RFC 9449 §7.1 makes the scheme part of the proof-of-possession contract.
 
+The `DPoP` proof header is single-valued. The OP rejects multiple `DPoP` header values, including an empty first value followed by a valid proof; it does not select a later value or silently fall back to the bearer path. The shared gate applies this rule at `/par`, `/token`, `/device_authorization`, and `/bc-authorize` (CIBA), and proof verification applies it at `/userinfo` as well.
+
 ## Confirmation claim — `cnf.jkt`
 
 The first proof at `/token` pins the binding. The OP computes a SHA-256 thumbprint of the proof's `jwk` (RFC 7638 fixes the canonical fields that go into the digest) and writes it into the issued access token as `cnf.jkt`. Every subsequent request that uses this access token must carry a proof signed by **the same key**, so the RS can recompute the thumbprint and compare.
 
-`cnf` is a JSON object; the *member name* tells the RS what kind of binding was used (RFC 7800). For DPoP the member is `jkt`. mTLS uses `x5t#S256` instead — the two never co-exist on the same token.
+`cnf` is a JSON object; the *member name* tells the RS what kind of binding was used (RFC 7800). For DPoP the member is `jkt`; mTLS uses `x5t#S256`. A token can carry both members. Where both bindings are present, the consuming endpoint must enforce both: the DPoP proof must match `jkt` and the presented certificate must match `x5t#S256`. The library applies this conjunction at `/userinfo`; device-code and CIBA grant binding checks likewise require every recorded method.
 
 ::: details Why a thumbprint and not the raw key?
 The thumbprint is a stable, short identifier that survives JSON re-encoding. RFC 7638 specifies exactly which JWK fields go into the hash and in which order, so a client and a server compute the same digest for the same key without having to agree on whitespace or member ordering. Embedding the raw key would inflate the access token; the thumbprint costs 32 bytes (43 base64url characters).

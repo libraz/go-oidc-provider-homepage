@@ -75,6 +75,8 @@ The default scope is the active chooser group: every session in that browser gro
 
 An `id_token_hint` whose subject does not match the session cookie cannot bypass confirmation. If the session store has a transport failure while the OP is resolving or destroying the session, `/end_session` returns a static HTTP 503 page with no post-logout redirect and leaves both the cookie and the session row intact. An absent or already-expired session is a different, safe-to-continue case.
 
+The confirmation and browser-facing error HTML from `/end_session` carry both `X-Frame-Options: DENY` and a Content-Security-Policy with `frame-ancestors 'none'`, so neither page can be embedded.
+
 For native and public clients, the same RFC 8252 loopback any-port rule used for `redirect_uri` also applies to `post_logout_redirect_uri`: a client may register a fixed loopback URI and return with a different ephemeral port at logout. Host, scheme, and path still have to match the registered shape; only the port varies.
 
 The point is **end the OP's session for this browser**. The RP that initiated the logout already knows about it (it's the one that redirected); other RPs don't, unless the OP also runs Back-Channel Logout.
@@ -108,7 +110,7 @@ The library does **not** ship Front-Channel Logout, and the discovery document d
 
 `/end_session` is not just "delete the cookie." When the embedder has wired `Grants` and `AccessTokens` substores, the library walks every grant the subject holds and revokes the per-grant access-token shadow rows. JWT access tokens become inactive at OP-served boundaries (`/userinfo`, `/introspect`); opaque access tokens become inactive at every RS that introspects.
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 720 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="session-cascade-title">How one session row links to its cookies, and how /end_session cascades to grants, access tokens, and Back-Channel Logout notifications.</title>
 <defs>
 <marker id="sc-arw" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto-start-reverse"><path d="M1.5 1.5 6 4 1.5 6.5" fill="none" stroke="currentColor" stroke-width="1.3"/></marker>
@@ -117,61 +119,59 @@ The library does **not** ship Front-Channel Logout, and the discovery document d
 </defs>
 <text x="24" y="26" class="sc-m" font-size="10.5" letter-spacing="1.6" opacity="0.55">SESSION MODEL</text>
 <text x="24" y="50" class="sc-b" font-size="10.5" opacity="0.6">Browser cookies</text>
-<rect x="24" y="58" width="176" height="24" rx="5"/>
-<text x="34" y="74" class="sc-m" font-size="10">__Host-oidc_session</text>
+<rect x="24" y="58" width="200" height="24" rx="5"/>
+<text x="36" y="74" class="sc-m" font-size="10">__Host-oidc_session</text>
 <g opacity="0.45">
-<rect x="24" y="90" width="176" height="24" rx="5"/>
-<text x="34" y="106" class="sc-m" font-size="10">__Host-oidc_interaction</text>
-<rect x="24" y="122" width="176" height="24" rx="5"/>
-<text x="34" y="138" class="sc-m" font-size="10">__Host-oidc_csrf</text>
-<rect x="24" y="154" width="176" height="24" rx="5"/>
-<text x="34" y="170" class="sc-m" font-size="10">__Host-oidc_locale</text>
+<rect x="24" y="90" width="200" height="24" rx="5"/>
+<text x="36" y="106" class="sc-m" font-size="10">__Host-oidc_interaction</text>
+<rect x="24" y="122" width="200" height="24" rx="5"/>
+<text x="36" y="138" class="sc-m" font-size="10">__Host-oidc_csrf</text>
+<rect x="24" y="154" width="200" height="24" rx="5"/>
+<text x="36" y="170" class="sc-m" font-size="10">__Host-oidc_locale</text>
 </g>
-<path d="M200 70 C 224 70, 226 96, 250 96" fill="none" marker-end="url(#sc-arw)"/>
-<rect x="250" y="52" width="248" height="108" rx="8" class="sc-op" stroke-dasharray="5 4"/>
-<text x="266" y="76" class="sc-m sc-opf" font-size="12.5">SessionStore</text>
-<text x="266" y="94" class="sc-b" font-size="10.5" opacity="0.7">one session row · OP-side state</text>
-<text x="266" y="118" class="sc-m" font-size="10" opacity="0.85">ID · Subject · AuthTime · ACR</text>
-<text x="266" y="136" class="sc-m" font-size="10" opacity="0.85">AMR · ChooserGroupID · timestamps</text>
-<text x="520" y="86" class="sc-b" font-size="10.5">The cookie is only a</text>
-<text x="520" y="104" class="sc-b" font-size="10.5">pointer; the row is the</text>
-<text x="520" y="122" class="sc-b" font-size="10.5">session. Delete the row,</text>
-<text x="520" y="140" class="sc-b" font-size="10.5">not just the cookie.</text>
-<line x1="24" y1="184" x2="696" y2="184" opacity="0.12" stroke-width="1"/>
+<path d="M224 70 C 252 70, 258 96, 286 96" fill="none" marker-end="url(#sc-arw)"/>
+<rect x="290" y="52" width="446" height="108" rx="8" class="sc-op" stroke-dasharray="5 4"/>
+<text x="310" y="76" class="sc-m sc-opf" font-size="12.5">SessionStore</text>
+<text x="310" y="94" class="sc-b" font-size="10.5" opacity="0.7">one session row · OP-side state</text>
+<text x="310" y="120" class="sc-m" font-size="10" opacity="0.85">ID · Subject · AuthTime · ACR</text>
+<text x="310" y="138" class="sc-m" font-size="10" opacity="0.85">AMR · ChooserGroupID · timestamps</text>
+<line x1="24" y1="184" x2="736" y2="184" opacity="0.12" stroke-width="1"/>
 <text x="24" y="210" class="sc-m" font-size="10.5" letter-spacing="1.6" opacity="0.55">END-SESSION CASCADE</text>
-<rect x="24" y="228" width="132" height="34" rx="17" class="sc-op"/>
-<text x="90" y="250" class="sc-m sc-opf" font-size="12" text-anchor="middle">/end_session</text>
-<rect x="186" y="224" width="120" height="42" rx="8" class="sc-op" stroke-dasharray="5 4"/>
-<text x="246" y="242" class="sc-m sc-opf" font-size="11" text-anchor="middle">SessionStore</text>
-<text x="246" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">row deleted</text>
-<rect x="336" y="224" width="118" height="42" rx="8" stroke-dasharray="5 4"/>
-<text x="395" y="242" class="sc-m" font-size="11" text-anchor="middle">Grants</text>
-<text x="395" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">walk grants</text>
-<rect x="484" y="224" width="134" height="42" rx="8" stroke-dasharray="5 4"/>
-<text x="551" y="242" class="sc-m" font-size="11" text-anchor="middle">AccessTokens</text>
-<text x="551" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">flip → revoked</text>
-<line x1="156" y1="245" x2="182" y2="245" marker-end="url(#sc-arw)"/>
-<line x1="306" y1="245" x2="332" y2="245" marker-end="url(#sc-arw)"/>
-<line x1="454" y1="245" x2="480" y2="245" marker-end="url(#sc-arw)"/>
-<path d="M246 266 C 210 296, 180 300, 151 320" fill="none" marker-end="url(#sc-arw)"/>
-<path d="M551 266 C 500 300, 440 302, 386 320" fill="none" class="sc-op" marker-end="url(#sc-arw-op)"/>
-<path d="M551 266 C 560 292, 585 302, 594 320" fill="none" class="sc-rs" marker-end="url(#sc-arw-rs)"/>
-<rect x="24" y="324" width="250" height="66" rx="8"/>
-<text x="38" y="346" class="sc-b" font-size="11.5">Back-Channel Logout</text>
-<text x="38" y="365" class="sc-m" font-size="10">POST logout_token →</text>
-<text x="38" y="382" class="sc-m" font-size="10">each backchannel_logout_uri</text>
-<rect x="296" y="324" width="176" height="66" rx="8" class="sc-op"/>
-<text x="310" y="346" class="sc-b sc-opf" font-size="11">JWT access token</text>
-<text x="310" y="365" class="sc-b" font-size="10" opacity="0.75">OP rejects at</text>
-<text x="310" y="382" class="sc-m sc-opf" font-size="10">/userinfo · /introspect</text>
-<rect x="494" y="324" width="204" height="66" rx="8" class="sc-rs"/>
-<text x="508" y="346" class="sc-b sc-rsf" font-size="11">opaque access token</text>
-<text x="508" y="365" class="sc-b sc-rsf" font-size="10">inactive only after</text>
-<text x="508" y="382" class="sc-b sc-rsf" font-size="10">each RS must introspect</text>
-<text x="149" y="408" class="sc-b" font-size="9.5" text-anchor="middle" opacity="0.65">OP notifies each RP (server-to-server)</text>
-<text x="384" y="408" class="sc-b sc-opf" font-size="9.5" text-anchor="middle">OP revokes directly</text>
-<text x="596" y="408" class="sc-b sc-rsf" font-size="9.5" text-anchor="middle">reach depends on every RS</text>
+<rect x="24" y="228" width="140" height="34" rx="17" class="sc-op"/>
+<text x="94" y="250" class="sc-m sc-opf" font-size="12" text-anchor="middle">/end_session</text>
+<rect x="200" y="224" width="132" height="42" rx="8" class="sc-op" stroke-dasharray="5 4"/>
+<text x="266" y="242" class="sc-m sc-opf" font-size="11" text-anchor="middle">SessionStore</text>
+<text x="266" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">row deleted</text>
+<rect x="368" y="224" width="126" height="42" rx="8" stroke-dasharray="5 4"/>
+<text x="431" y="242" class="sc-m" font-size="11" text-anchor="middle">Grants</text>
+<text x="431" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">walk grants</text>
+<rect x="530" y="224" width="146" height="42" rx="8" stroke-dasharray="5 4"/>
+<text x="603" y="242" class="sc-m" font-size="11" text-anchor="middle">AccessTokens</text>
+<text x="603" y="258" class="sc-b" font-size="10" text-anchor="middle" opacity="0.7">revoked</text>
+<line x1="164" y1="245" x2="196" y2="245" marker-end="url(#sc-arw)"/>
+<line x1="332" y1="245" x2="364" y2="245" marker-end="url(#sc-arw)"/>
+<line x1="494" y1="245" x2="526" y2="245" marker-end="url(#sc-arw)"/>
+<path d="M266 266 C 226 296, 196 300, 156 320" fill="none" marker-end="url(#sc-arw)"/>
+<path d="M603 266 C 550 300, 466 302, 405 320" fill="none" class="sc-op" marker-end="url(#sc-arw-op)"/>
+<path d="M603 266 C 612 292, 622 302, 629 320" fill="none" class="sc-rs" marker-end="url(#sc-arw-rs)"/>
+<rect x="24" y="324" width="264" height="66" rx="8"/>
+<text x="40" y="346" class="sc-b" font-size="11.5">Back-Channel Logout</text>
+<text x="40" y="365" class="sc-m" font-size="10">POST logout_token →</text>
+<text x="40" y="382" class="sc-m" font-size="10">each backchannel_logout_uri</text>
+<rect x="312" y="324" width="186" height="66" rx="8" class="sc-op"/>
+<text x="328" y="346" class="sc-b sc-opf" font-size="11">JWT access token</text>
+<text x="328" y="365" class="sc-b" font-size="10" opacity="0.75">OP rejects at</text>
+<text x="328" y="382" class="sc-m sc-opf" font-size="10">/userinfo · /introspect</text>
+<rect x="522" y="324" width="214" height="66" rx="8" class="sc-rs"/>
+<text x="538" y="346" class="sc-b sc-rsf" font-size="11">opaque access token</text>
+<text x="538" y="365" class="sc-b sc-rsf" font-size="10">inactive only after</text>
+<text x="538" y="382" class="sc-b sc-rsf" font-size="10">each RS introspects</text>
+<text x="156" y="408" class="sc-b halo" font-size="9.5" text-anchor="middle" opacity="0.65">OP notifies each RP (server-to-server)</text>
+<text x="405" y="408" class="sc-b sc-opf halo" font-size="9.5" text-anchor="middle">OP revokes directly</text>
+<text x="629" y="408" class="sc-b sc-rsf halo" font-size="9.5" text-anchor="middle">reach depends on every RS</text>
 </svg>
+
+The cookie is only a pointer — the session is the row in `SessionStore`. Clearing the cookie in the browser leaves that row intact, so the OP has to delete the row itself.
 
 | Wired stores | Cascade behaviour |
 |---|---|
@@ -206,6 +206,7 @@ provider.Shutdown(ctx) // then drain detached fan-out
 | `op.AuditSessionDestroyed` | Session row deleted (logout, eviction, GC). |
 | `op.AuditSessionAlreadyAbsent` | A logout targeted a session that was already absent or expired. |
 | `op.AuditSessionDestroyFailed` | Session deletion hit a store failure; the request is a static 503 and state is preserved. |
+| `op.AuditLogoutClientLookupFailed` | Client registry lookup failed while resolving a logout client; the wire response remains a uniform refusal. A clean missing client emits no event. |
 | `op.AuditLogoutRPInitiated` | **Reserved** — the OP does not emit a separate event for the RP's logout request. |
 | `op.AuditLogoutTokenRevokeFailed` | Logout-token or session cascade revocation hit a store failure. |
 | `op.AuditLogoutBackChannelDelivered` | RP returned 2xx for a `logout_token` POST. |

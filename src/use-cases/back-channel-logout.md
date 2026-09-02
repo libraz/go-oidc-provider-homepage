@@ -30,7 +30,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
 
 ## Architecture
 
-<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 760 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="bcl-arch-title">Back-channel logout sequence: RP A drives /end_session, the OP terminates the session and fans out signed logout tokens to grant-derived RP targets B and C, then redirects RP A.</title>
 
   <path class="life" d="M70 48V372"/>
@@ -61,19 +61,19 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
   <text class="bn" x="70" y="85.5" text-anchor="middle">1</text>
 
   <text class="lb" x="300" y="104" text-anchor="middle">redirect to</text>
-  <text class="lbm m" x="300" y="116" text-anchor="middle">/end_session?id_token_hint=&#8230;</text>
+  <text class="lbm m halo" x="300" y="116" text-anchor="middle">/end_session?id_token_hint=&#8230;</text>
   <path d="M220 124L380 124M373 120L380 124L373 128"/>
   <circle class="bg" cx="220" cy="124" r="8" stroke-width="1.5"/>
   <text class="bn" x="220" y="127.5" text-anchor="middle">2</text>
 
   <rect class="accent" x="326" y="138" width="108" height="26" rx="5"/>
-  <text class="lb" x="380" y="155" text-anchor="middle">terminate session</text>
+  <text class="lb halo" x="380" y="155" text-anchor="middle">terminate session</text>
   <circle class="bg" cx="312" cy="151" r="8" stroke-width="1.5"/>
   <text class="bn" x="312" y="154.5" text-anchor="middle">3</text>
 
   <rect class="frame" x="350" y="176" width="396" height="94" rx="8"/>
-  <text class="fr" x="360" y="193">fan-out to grant-derived RP targets</text>
-  <text class="lbm m" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = signed JWT</text>
+  <text class="fr halo" x="360" y="193">fan-out to grant-derived RP targets</text>
+  <text class="lbm m halo" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = signed JWT</text>
 
   <path class="accent" d="M380 228L540 228M533 224L540 228L533 232"/>
   <circle class="bg" cx="380" cy="228" r="8" stroke-width="1.5"/>
@@ -93,7 +93,7 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
   <circle class="bg" cx="700" cy="320" r="8" stroke-width="1.5"/>
   <text class="bn" x="700" y="323.5" text-anchor="middle">7</text>
 
-  <text class="lb" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
+  <text class="lb halo" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
   <path class="accent" d="M380 356L220 356M227 352L220 356L227 360"/>
   <circle class="bg" cx="380" cy="356" r="8" stroke-width="1.5"/>
   <text class="bn" x="380" y="359.5" text-anchor="middle">8</text>
@@ -173,6 +173,10 @@ Fan-out resolves its audience from **grants**, not from session rows. The coordi
 | Whole detached fan-out | 30 seconds (`DefaultFanOutBudget`) | total wall-clock budget for one logout event |
 
 When the audience page comes back with a `NextCursor`, more clients matched than the cap allows and the coordinator emits an overflow audit event carrying that cursor rather than silently truncating. A single unreachable RP surfaces as a per-target audit event instead of failing the whole fan-out.
+
+Before detached work starts, `/end_session` groups the snapshot by subject, so multiple browser sessions for one subject create one fan-out. The grant query is distinct by client ID, so each eligible client receives at most one Logout Token for that subject; the target cap counts this deduplicated set.
+
+During detached target resolution, a client-registry transport fault is recorded as `op.AuditLogoutBackChannelResolveFailed`, while a clean missing client is skipped without an event. The `/end_session` request's own `id_token_hint` / `client_id` lookup has separate `op.AuditLogoutClientLookupFailed` semantics: the wire refusal is uniform and a clean missing client is silent. See the [audit event catalog](/reference/audit-events).
 
 `op.WithBackchannelFanOutBudget` changes the whole-event budget. It is independent of `op.WithBackchannelLogoutTimeout`, which limits each RP request. When the budget expires, remaining targets are recorded as failed and the detached work converges; `Provider.Shutdown(ctx)` waits for outstanding fan-outs when the process is draining.
 

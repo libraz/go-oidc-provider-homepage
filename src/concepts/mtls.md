@@ -43,7 +43,7 @@ op.WithMTLSRootCAs(pool),
 
 When the OP issues a token to an mTLS-authenticated client, it computes a SHA-256 digest of the DER-encoded certificate (RFC 8705 §3) and writes it into the access token as `cnf.x5t#S256`. Every subsequent request that uses this access token must arrive over a TLS connection presenting the **same** certificate; the resource server hashes the cert it observes and compares against `cnf.x5t#S256`.
 
-`cnf` is shared with DPoP (RFC 7800), but the *member name* differs: DPoP uses `jkt`, mTLS uses `x5t#S256`. A token carries one or the other — never both.
+`cnf` is shared with DPoP (RFC 7800), but the *member name* differs: DPoP uses `jkt`, mTLS uses `x5t#S256`. A token can carry both members. Where both bindings are present, the consuming endpoint must enforce the conjunction: the DPoP proof must match `jkt` and the presented certificate must match `x5t#S256`. The library applies this conjunction at `/userinfo`; device-code and CIBA grant binding checks likewise require every recorded method.
 
 ::: details Why a thumbprint and not the full certificate?
 The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable across re-encoding, cheap to compare, and small enough to fit comfortably in a JWT. SHA-256 is pinned by RFC 8705 §3; no negotiation is allowed.
@@ -59,17 +59,17 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
   <line x1="80" y1="120" x2="740" y2="120" class="d-faint"/>
   <rect x="260" y="28" width="300" height="64" rx="10"/>
   <text x="410" y="53" text-anchor="middle" class="d-label" font-size="15.5" font-weight="600">Client</text>
-  <text x="410" y="77" text-anchor="middle" class="d-sub" font-size="11.5">X.509 client cert</text>
+  <text x="410" y="77" text-anchor="middle" class="d-sub halo" font-size="11.5">X.509 client cert</text>
   <path d="M410 92 L410 138"/>
   <path d="M405 131 L410 138 L415 131"/>
-  <text x="428" y="110" class="d-sub" font-size="10.5">TLS handshake</text>
-  <text x="428" y="125" class="d-sub" font-size="10">presents client cert</text>
+  <text x="428" y="110" class="d-sub halo" font-size="10.5">TLS handshake</text>
+  <text x="428" y="125" class="d-sub halo" font-size="10">presents client cert</text>
   <rect x="210" y="138" width="400" height="92" rx="10"/>
   <text x="410" y="164" text-anchor="middle" class="d-label" font-size="14.5" font-weight="600">TLS-terminating proxy</text>
-  <text x="410" y="188" text-anchor="middle" class="d-sub" font-size="10.5">injects client cert into a header</text>
+  <text x="410" y="188" text-anchor="middle" class="d-sub halo" font-size="10.5">injects client cert into a header</text>
   <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11">X-SSL-Cert: &lt;PEM&gt;</text>
   <line x1="80" y1="262" x2="740" y2="262" stroke-width="1.5" stroke-dasharray="6 6"/>
-  <text x="88" y="256" class="d-sub" font-size="10.5">trust boundary</text>
+  <text x="88" y="256" class="d-sub halo" font-size="10.5">trust boundary</text>
   <path d="M410 230 L410 298"/>
   <path d="M405 291 L410 298 L415 291"/>
   <rect x="260" y="298" width="300" height="64" rx="10"/>
@@ -77,18 +77,18 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
   <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11">RemoteAddr ∈ trustedCIDRs?</text>
   <path d="M560 330 L634 330"/>
   <path d="M627 325 L634 330 L627 335"/>
-  <text x="598" y="322" text-anchor="middle" class="d-sub" font-size="10">out of range</text>
+  <text x="598" y="322" text-anchor="middle" class="d-sub halo" font-size="10">out of range</text>
   <rect x="636" y="304" width="112" height="52" rx="8"/>
   <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10">header ignored</text>
-  <text x="692" y="344" text-anchor="middle" class="d-sub" font-size="10">fail closed</text>
+  <text x="692" y="344" text-anchor="middle" class="d-sub halo" font-size="10">fail closed</text>
   <path d="M410 362 L410 408"/>
   <path d="M405 401 L410 408 L415 401"/>
-  <text x="396" y="380" text-anchor="end" class="d-sub" font-size="10">in range</text>
-  <text x="396" y="395" text-anchor="end" class="d-sub" font-size="10">header authoritative</text>
+  <text x="396" y="380" text-anchor="end" class="d-sub halo" font-size="10">in range</text>
+  <text x="396" y="395" text-anchor="end" class="d-sub halo" font-size="10">header authoritative</text>
   <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
   <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — this library</text>
-  <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="10.5">handshake cert used on direct TLS</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">forwarded client cert selected</text>
+  <text x="410" y="462" text-anchor="middle" class="d-sub halo" font-size="10.5">handshake cert used on direct TLS</text>
+  <text x="410" y="484" text-anchor="middle" class="d-sub halo" font-size="10.5">forwarded client cert selected</text>
   <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">cnf.x5t#S256</text>
 </svg>
 

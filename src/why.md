@@ -9,9 +9,9 @@ pageClass: pg-why
 <div class="why-callout">
 
 ::: info Why this library exists
-This library is a personal project. It distills the author's own pain — accumulated across years of standing up OIDC providers with **OSS libraries in other languages** — into a Go library so the parts that *should* be one switch actually are, and the parts that *should never* be on by default actually aren't.
+This library is a personal project. It comes out of years of standing up OIDC providers with **OSS libraries in other languages**: here the parts that *should* be one switch are one switch, and the parts that *should never* be on by default are not on.
 
-Things that ought to be easy to embed (two-factor, passkeys, risk-based auth, SPA-driven flows, FAPI 2.0, i18n, …) are **first-class building blocks**, while deprecated, unsafe flows kept "for compatibility" elsewhere (Implicit, ROPC, `alg=none`, …) are **not exposed as public options at all**. Details are in the sections below; see [Use cases](/use-cases/) for production-shaped configurations.
+Things that ought to be easy to embed — two-factor, passkeys, risk-based auth, SPA-driven flows, FAPI 2.0, i18n — are **first-class building blocks**. Deprecated, unsafe flows that other stacks keep "for compatibility" (Implicit, ROPC, `alg=none`) are **not exposed as public options at all**. The sections below walk through both halves; [Use cases](/use-cases/) has production-shaped configurations.
 :::
 
 </div>
@@ -26,7 +26,7 @@ You're writing a Go service. You need to **be** an OpenID Connect Provider — i
 
 This page argues option 3 by walking through the things that hurt when you build options 1 or 2.
 
-<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 336" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 144" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="why-responsibility-title">How responsibility is split. The library owns the OIDC and OAuth protocol work; the embedder owns users, screens, storage, and HTTP routing.</title>
   <defs>
     <marker id="why-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -45,17 +45,15 @@ This page argues option 3 by walking through the things that hurt when you build
   <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
   <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">the consuming app</text>
   <text class="p sub" x="666" y="100" text-anchor="middle" font-size="10.5">verifies tokens</text>
-  <path d="M270 72 H306" marker-end="url(#why-arrow)"/>
-  <path d="M556 72 H592" marker-end="url(#why-arrow)"/>
-  <rect class="soft" x="54" y="168" width="650" height="126" rx="8"/>
-  <text class="p" x="92" y="196" font-size="13.5" font-weight="700">Where the line falls</text>
-  <circle cx="98" cy="225" r="4" fill="currentColor"/>
-  <text class="p" x="116" y="230" font-size="11.5">Library: token issuance, signing, PKCE, CSRF, the consent and logout ceremonies</text>
-  <circle cx="98" cy="252" r="4" fill="currentColor"/>
-  <text class="p" x="116" y="257" font-size="11.5">You: user lookup, password verification, screens, storage, mounting on your router</text>
-  <circle cx="98" cy="279" r="4" fill="currentColor"/>
-  <text class="p" x="116" y="284" font-size="11.5">Unsafe legacy modes are not exposed; bundles like FAPI are pinned by a profile</text>
+  <path d="M270 72 H310" marker-end="url(#why-arrow)"/>
+  <path d="M556 72 H596" marker-end="url(#why-arrow)"/>
 </svg>
+
+Where the line falls:
+
+- **The library owns** token issuance, signing, PKCE, CSRF, and the consent and logout ceremonies.
+- **You own** user lookup, password verification, screens, storage, and mounting the handler on your router.
+- **Neither side can switch an unsafe legacy mode back on.** Those modes are not exposed as options at all, and bundles such as FAPI are pinned by a profile.
 
 ## Pain points, answered
 
@@ -87,7 +85,7 @@ The constructor refuses to start if the declared profile and the declared option
 
 Heavyweight IdPs often make user storage part of the product boundary: import users, sync them, accept their profile schema, then route login through their screens. That is a poor fit when the account model is already part of your Go service.
 
-`op.WithStore(s store.Store)` plugs into a small set of substore interfaces (`store.AuthorizationCodeStore`, `store.SessionStore`, `store.UserStore`, …). The library never reads or writes your `users` table directly. Pass an application-owned `store.UserStore` with `op.WithUserStore(...)` when claims should come from your existing table while protocol state stays in the adapter.
+`op.WithStore(s store.Store)` plugs into a small set of substore interfaces (`store.AuthorizationCodeStore`, `store.SessionStore`, `store.UserStore`, …). The library never reads or writes your `users` table directly. When the claims should come from your existing table, pass an application-owned `store.UserStore` to `op.WithUserStore(...)`; the protocol state stays in the adapter.
 
 ```go
 op.New(
@@ -103,7 +101,7 @@ Reference adapters: `inmem`, `sql` (SQLite / MySQL / Postgres), `redis` (volatil
 
 ### "Cookies and CSRF on the consent POST are a minefield"
 
-The risky part is not choosing a cookie library. It is remembering every browser rule that makes an OAuth session cookie hard to steal or replay, and keeping that rule identical across login, consent, and logout.
+The risky part is not choosing a cookie library. It is remembering every browser rule that makes an OAuth session cookie hard to steal or replay, and applying those rules identically across login, consent, and logout.
 
 ::: warning Easy to get one detail wrong
 The `__Host-` prefix, no Domain, Path=`/`, Secure, AES-256-GCM, double-submit CSRF, Origin / Referer check, the right `SameSite` — miss any one and you have a CVE class.
@@ -134,7 +132,7 @@ op.New(
 
 The protocol engine should decide what prompt is next; your frontend should decide how it looks. Those are separate jobs.
 
-`op.WithSPAUI(op.SPAUI{...})` swaps the default HTML pages for a JSON-backed SPA flow and lets the OP mount the shell and static assets. The SPA (React, Vue, Svelte, Angular, …) hits `/interaction/{uid}` for prompts and posts back signed responses while the protocol engine owns the state machine.
+`op.WithSPAUI(op.SPAUI{...})` swaps the default HTML pages for a JSON-backed SPA flow, and lets the OP serve the shell and its static assets. Your SPA — React, Vue, Svelte, Angular — fetches each prompt from `/interaction/{uid}` and posts its response back. The protocol engine keeps the state machine.
 
 ```go
 op.New(
@@ -172,7 +170,8 @@ When a mobile app retries the same refresh request, you want an idempotent repla
 
 Refresh tokens rotate by default. Reuse-detection invalidates the entire chain.
 
-- `op.WithRefreshGracePeriod` — widens the rotation window for racing clients; `FAPI2Baseline` and `FAPI2MessageSigning` reject an explicitly configured non-zero window.
+- `op.WithRefreshGracePeriod` — widens the rotation window for racing clients; `FAPI2Baseline` and `FAPI2MessageSigning` accept explicit values from 0 through 60 seconds (inclusive) and reject only a value above 60 seconds.
+- Refresh rotation rechecks the effective scope against the client's current registration before consuming the presented token, so narrowing a registration takes effect on an existing chain.
 - `op.WithRefreshTokenOfflineTTL` — separates the lifetime of `offline_access` refresh tokens (stay-signed-in) from conventional rotation.
 
 The `token.issued` / `token.refreshed` audit events carry an `offline_access` flag in `extras` so SOC dashboards can split the chains.

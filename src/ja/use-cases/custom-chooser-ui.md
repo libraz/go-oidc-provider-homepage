@@ -24,7 +24,7 @@ pageClass: pg-use-cases-custom-chooser-ui
 | chooser を SPA の中で描画する | `op.WithSPAUI` または `interaction.JSONDriver` |
 | アカウントのグループ化や切替のロジックを変える | テンプレートではなく session store / authenticator 側 |
 
-`WithChooserUI` は意図的に狭い差し込み口です。差し替えるのはテンプレートだけで、テンプレートが任意の subject を選んだり、セッションを発行したり、OP の 状態遷移 を迂回したりする経路ではありません。
+`WithChooserUI` は意図的に狭い差し込み口です。差し替えるのはテンプレートだけで、テンプレートが任意の subject を選んだり、セッションを発行したり、OP の状態遷移を迂回したりする経路ではありません。
 
 ## テンプレートの契約
 
@@ -69,7 +69,7 @@ provider, err := op.New(
 ## Flow
 
 <svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="chooser-flow-title">カスタム選択 UI UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
+<title id="chooser-flow-title">カスタムアカウント選択 UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
 <rect x="30" y="14" width="120" height="36" rx="6"/>
 <rect x="300" y="14" width="120" height="36" rx="6" class="ccui-op"/>
 <rect x="558" y="14" width="144" height="36" rx="6" class="ccui-sec"/>
@@ -98,7 +98,7 @@ provider, err := op.New(
 <polyline points="98,211 90,216 98,221"/>
 <circle class="ccui-op" cx="618" cy="202" r="8"/>
 <text class="ccui-num ccui-opf" x="618" y="206" text-anchor="middle">4</text>
-<text class="ccui-lbl" x="360" y="208" text-anchor="middle">アカウント一覧 + <tspan class="ccui-mono">CSRFToken</tspan> + <tspan class="ccui-mono">StateRef</tspan></text>
+<text class="ccui-lbl halo" x="360" y="208" text-anchor="middle">アカウント一覧 + <tspan class="ccui-mono">CSRFToken</tspan> + <tspan class="ccui-mono">StateRef</tspan></text>
 <line x1="90" y1="260" x2="360" y2="260"/>
 <polyline points="352,255 360,260 352,265"/>
 <circle class="ccui-op" cx="102" cy="246" r="8"/>
@@ -113,7 +113,7 @@ provider, err := op.New(
 <polyline points="368,351 360,356 368,361"/>
 <circle class="ccui-op" cx="372" cy="324" r="8"/>
 <text class="ccui-num ccui-opf" x="372" y="328" text-anchor="middle">7</text>
-<text class="ccui-mono" x="414" y="350" text-anchor="start">Sessions.Switch(group, session_id)</text>
+<text class="ccui-mono halo" x="414" y="350" text-anchor="start">Sessions.Switch(group, session_id)</text>
 <line x1="360" y1="392" x2="90" y2="392" stroke-dasharray="5 4"/>
 <polyline points="98,387 90,392 98,397"/>
 <circle class="ccui-op" cx="348" cy="378" r="8"/>
@@ -136,7 +136,7 @@ provider, err := op.New(
 ## 本番運用メモ
 
 - テンプレートは起動時に一度だけ parse し、リクエストごとに parse しない。
-- CSP は厳しく保つ。テンプレートデータには RP 由来の client 表示名などが入り得るため、`html/template` のエスケープに乗せ、インラインスクリプトを避ける。
+- CSP は厳しく保つ。テンプレートデータには RP 由来のクライアント表示名などが入り得るため、`html/template` のエスケープに乗せ、インラインスクリプトを避ける。
 - `SessionID` は不透明な値として扱う。OP はそれが有効な chooser group に属するかを検証する。
 - 「アカウント追加」リンクは提供された `AddAccountURL` を使う。そうすれば次のログインが既存 chooser group に加わる。
 

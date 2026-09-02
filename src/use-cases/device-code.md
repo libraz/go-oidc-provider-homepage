@@ -8,44 +8,52 @@ pageClass: pg-use-cases-device-code
 
 For the conceptual background — what device flow is, when to pick it, why `slow_down` and `expired_token` exist — read the [Device Code primer](/concepts/device-code) first. This page covers the wiring.
 
-<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="device-code-flow-title">The device-code flow: an input-constrained device shows a code, the user approves it on a second device, and the first device polls the token endpoint.</title>
-<rect class="dc-box" x="32" y="76" width="168" height="86" rx="8"/>
-  <text class="dc-text" x="116" y="110" text-anchor="middle">Input-constrained device</text>
-  <text class="dc-sub" x="116" y="132" text-anchor="middle">TV / CLI / printer</text>
+<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="device-code-flow-title">The device-code flow: an input-constrained device shows a code, the user reads it and approves the request on their own phone or laptop, and the device polls the token endpoint until the OP issues an access token.</title>
+  <line class="dc-life" x1="110" y1="78" x2="110" y2="348"/>
+  <line class="dc-life dc-life-op" x1="380" y1="78" x2="380" y2="348"/>
+  <line class="dc-life" x1="650" y1="78" x2="650" y2="348"/>
 
-  <rect class="dc-op" x="296" y="56" width="168" height="126" rx="8"/>
-  <text class="dc-text" x="380" y="94" text-anchor="middle">OP</text>
-  <text class="dc-sub" x="380" y="116" text-anchor="middle">/device_authorization</text>
-  <text class="dc-sub" x="380" y="136" text-anchor="middle">DeviceCodeStore</text>
-  <text class="dc-sub" x="380" y="156" text-anchor="middle">/token</text>
+  <rect class="dc-box" x="20" y="14" width="180" height="64" rx="8"/>
+  <text class="dc-text" x="110" y="36" text-anchor="middle">Device</text>
+  <text class="dc-sub" x="110" y="54" text-anchor="middle">input-constrained</text>
+  <text class="dc-sub" x="110" y="70" text-anchor="middle">TV / CLI / printer</text>
 
-  <rect class="dc-box" x="560" y="76" width="168" height="86" rx="8"/>
-  <text class="dc-text" x="644" y="110" text-anchor="middle">User's own device</text>
-  <text class="dc-sub" x="644" y="132" text-anchor="middle">phone / laptop</text>
+  <rect class="dc-op" x="290" y="14" width="180" height="64" rx="8"/>
+  <text class="dc-text" x="380" y="36" text-anchor="middle">OP</text>
+  <text class="dc-sub" x="380" y="54" text-anchor="middle">/device_authorization</text>
+  <text class="dc-sub" x="380" y="70" text-anchor="middle">DeviceCodeStore · /token</text>
 
-  <rect class="dc-box" x="32" y="246" width="168" height="58" rx="8"/>
-  <text class="dc-text" x="116" y="280" text-anchor="middle">Displays the code</text>
-  <rect class="dc-box" x="560" y="246" width="168" height="58" rx="8"/>
-  <text class="dc-text" x="644" y="280" text-anchor="middle">Enters it and consents</text>
+  <rect class="dc-box" x="560" y="14" width="180" height="64" rx="8"/>
+  <text class="dc-text" x="650" y="40" text-anchor="middle">User's own device</text>
+  <text class="dc-sub" x="650" y="62" text-anchor="middle">phone / laptop</text>
 
-  <path class="dc-flow" d="M200 104 H292"/>
-  <text class="dc-sub" x="246" y="91" text-anchor="middle">1. start</text>
-  <path class="dc-flow" d="M284 100 L293 104 L284 108"/>
-  <path class="dc-flow" d="M296 146 H204"/>
-  <text class="dc-sub" x="250" y="169" text-anchor="middle">2. device_code / user_code</text>
-  <path class="dc-flow" d="M212 142 L203 146 L212 150"/>
-  <path class="dc-flow" d="M116 162 V242"/>
-  <path class="dc-flow" d="M112 234 L116 243 L120 234"/>
-  <path class="dc-flow" d="M200 275 H556"/>
-  <text class="dc-sub" x="380" y="260" text-anchor="middle">3. go to verification_uri</text>
-  <path class="dc-flow" d="M548 271 L557 275 L548 279"/>
-  <path class="dc-flow" d="M644 246 V166"/>
-  <path class="dc-flow" d="M640 174 L644 165 L648 174"/>
-  <text class="dc-sub" x="676" y="206" text-anchor="middle">4. approve</text>
-  <path class="dc-flow" d="M116 246 C144 202 198 202 292 160"/>
-  <text class="dc-sub" x="218" y="218" text-anchor="middle">5. poll /token</text>
-  <path class="dc-flow" d="M283 157 L293 160 L285 166"/>
+  <path class="dc-flow" d="M110 114 H380"/>
+  <path class="dc-flow" d="M373 110 L380 114 L373 118"/>
+  <text class="dc-sub" x="245" y="106" text-anchor="middle">1. POST /device_authorization</text>
+
+  <path class="dc-flow" d="M380 152 H110"/>
+  <path class="dc-flow" d="M117 148 L110 152 L117 156"/>
+  <text class="dc-sub" x="245" y="144" text-anchor="middle">2. device_code + user_code</text>
+
+  <rect class="dc-box" x="26" y="176" width="168" height="28" rx="6"/>
+  <text class="dc-sub" x="110" y="195" text-anchor="middle">3. shows user_code + URL</text>
+
+  <path class="dc-flow dc-oob" d="M110 232 H650"/>
+  <path class="dc-flow" d="M643 228 L650 232 L643 236"/>
+  <text class="dc-sub halo" x="380" y="224" text-anchor="middle">4. the user reads it off the screen</text>
+
+  <path class="dc-flow" d="M650 270 H380"/>
+  <path class="dc-flow" d="M387 266 L380 270 L387 274"/>
+  <text class="dc-sub" x="515" y="262" text-anchor="middle">5. enters the code and approves</text>
+
+  <path class="dc-flow" d="M110 308 H380"/>
+  <path class="dc-flow" d="M373 304 L380 308 L373 312"/>
+  <text class="dc-sub" x="245" y="300" text-anchor="middle">6. poll /token with device_code</text>
+
+  <path class="dc-flow" d="M380 344 H110"/>
+  <path class="dc-flow" d="M117 340 L110 344 L117 348"/>
+  <text class="dc-sub" x="245" y="336" text-anchor="middle">7. 200 access_token</text>
 </svg>
 
 ::: details `device_code` vs `user_code` — what's the difference?
@@ -216,6 +224,10 @@ Devices may pin the issued access token to a specific resource server by sending
 ::: warning Unregistered resources are rejected
 The OP mints only audiences that appear in the client's registered `Resources`. Embedders must add every device-flow resource server URI to the client seed (or dynamic-registration metadata) before sending it as `resource=`.
 :::
+
+## Sender-constrained device records
+
+When DPoP or mTLS is used, `/device_authorization` records the DPoP key thumbprint and/or mTLS certificate thumbprint. At `/token`, every binding present on the record is checked again before issuing a token. A record carrying both bindings requires both a matching DPoP proof and a matching mTLS certificate; presenting only one is insufficient. A missing or mismatched proof fails redemption. On success, the issued token's `cnf` carries every binding the OP reverified.
 
 ## Polling responses
 

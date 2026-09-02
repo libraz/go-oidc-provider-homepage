@@ -6,7 +6,7 @@ pageClass: pg-concepts-consent
 
 # Consent
 
-**Consent** is the user's explicit "yes, this app may have these scopes." OIDC Core 1.0 §3.1.2.4 leaves the timing conditional ("the OP MUST obtain authorization information from the End-User"), but the default in this library is to show a consent screen the first time a client requests a scope set, and to remember the answer.
+**Consent** is the user's explicit "yes, this app may have these scopes." OIDC Core 1.0 §3.1.2.4 leaves the timing conditional; the spec only requires that the OP "obtain authorization information from the End-User". This library's default is to show a consent screen the first time a client requests a scope set, and to remember the answer.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent), §3.1.2.1 (`prompt`)
@@ -26,7 +26,8 @@ pageClass: pg-concepts-consent
 
 The library evaluates four cases on every authorize flow.
 
-<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 760 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(30,0)">
   <title id="consent-shown-decision-title">Decision tree over grant state: a prompt=consent request, a missing grant, or a requested scope outside the existing grant each show the consent screen; otherwise the existing grant covers the request and the authorization code is minted without a prompt.</title>
   <rect x="24" y="28" width="270" height="48" rx="8"/>
   <rect x="24" y="120" width="270" height="48" rx="8"/>
@@ -67,6 +68,7 @@ The library evaluates four cases on every authorize flow.
   <text class="edge" x="170" y="101">no</text>
   <text class="edge" x="170" y="193">no</text>
   <text class="edge" x="170" y="285">no</text>
+  </g>
 </svg>
 
 | Case | Behaviour |
@@ -83,6 +85,14 @@ The library evaluates four cases on every authorize flow.
 
 The library applies these per OIDC Core 1.0 §3.1.2.1. Combining `prompt=none` with `prompt=login` is rejected as `interaction_required`.
 :::
+
+## Re-checking coverage for the terminal subject
+
+The initial coverage check uses the subject available when authorization starts. `prompt=login`, a stale `max_age`, or an RFC 9470 step-up can run authentication that ends with a different subject; the account chooser can also switch accounts. Before issuing an authorization code, the library rechecks the requested scopes and `authorization_details` against the terminal subject's own grant. If that grant does not cover the request, the earlier subject's grant cannot authorize it: the flow obtains consent for the terminal subject or ends without issuing a code.
+
+## Authentication context on consent-only issuance
+
+When no credential factor runs and the live session still exists, the authorization code and grant preserve that session's `auth_time`, `acr`, and `amr`. Answering the consent prompt does not replace `auth_time`, and an empty factor set does not clear `acr` or `amr`. If the session has expired, was signed out, or switched away and no live context remains, the request is refused with `login_required` rather than receiving an invented authentication context.
 
 ## First-party clients
 

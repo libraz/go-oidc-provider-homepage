@@ -98,7 +98,7 @@ The field names are part of the OP contract. Keep `state_ref`, `csrf_token`, and
 <polyline points="98,211 90,216 98,221"/>
 <circle class="ccui-op" cx="618" cy="202" r="8"/>
 <text class="ccui-num ccui-opf" x="618" y="206" text-anchor="middle">4</text>
-<text class="ccui-lbl" x="360" y="208" text-anchor="middle">account list + <tspan class="ccui-mono">CSRFToken</tspan> + <tspan class="ccui-mono">StateRef</tspan></text>
+<text class="ccui-lbl halo" x="360" y="208" text-anchor="middle">account list + <tspan class="ccui-mono">CSRFToken</tspan> + <tspan class="ccui-mono">StateRef</tspan></text>
 <line x1="90" y1="260" x2="360" y2="260"/>
 <polyline points="352,255 360,260 352,265"/>
 <circle class="ccui-op" cx="102" cy="246" r="8"/>
@@ -113,7 +113,7 @@ The field names are part of the OP contract. Keep `state_ref`, `csrf_token`, and
 <polyline points="368,351 360,356 368,361"/>
 <circle class="ccui-op" cx="372" cy="324" r="8"/>
 <text class="ccui-num ccui-opf" x="372" y="328" text-anchor="middle">7</text>
-<text class="ccui-mono" x="414" y="350" text-anchor="start">Sessions.Switch(group, session_id)</text>
+<text class="ccui-mono halo" x="414" y="350" text-anchor="start">Sessions.Switch(group, session_id)</text>
 <line x1="360" y1="392" x2="90" y2="392" stroke-dasharray="5 4"/>
 <polyline points="98,387 90,392 98,397"/>
 <circle class="ccui-op" cx="348" cy="378" r="8"/>

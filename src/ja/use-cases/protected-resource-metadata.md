@@ -11,6 +11,34 @@ description: OAuth 2.0 Protected Resource Metadata を公開し、resource audie
 
 これは、クライアントが resource identifier から API を発見する構成、または複数の API が同じ OP に戻る機械可読メタデータを持つ構成で使います。すべてのクライアントを手動設定していて、issuer も既に知っているなら、このメタデータは任意です。これを有効にしても、トークン検証やゲートウェイ動作が追加されるわけではありません。
 
+<svg role="img" aria-labelledby="prm-discovery-title" viewBox="0 0 760 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="prm-discovery-title">クライアントがリソース識別子から認可サーバに辿り着くまでの経路。リソースの well-known メタデータを取得し、そこから authorization_servers を読み、その issuer を辿って OP 自身の discovery 文書に到達する。</title>
+
+  <path d="M40 48 V192" opacity="0.4"/>
+
+  <circle cx="40" cy="48" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="51.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">1</text>
+  <text x="66" y="52" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">クライアントがリソース識別子を持つ</text>
+  <text x="744" y="52" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">https://op.example.com/api</text>
+
+  <circle cx="40" cy="96" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="99.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">2</text>
+  <text x="66" y="100" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">そのリソースのメタデータを取得</text>
+  <text x="744" y="100" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">/.well-known/oauth-protected-resource/api</text>
+
+  <circle cx="40" cy="144" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="147.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">3</text>
+  <text x="66" y="148" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">文書が認可サーバを示す</text>
+  <text x="744" y="148" text-anchor="end" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="11">"authorization_servers": ["https://op.example.com"]</text>
+
+  <circle cx="40" cy="192" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="195.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">4</text>
+  <text x="66" y="196" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">その issuer から discovery を辿る</text>
+  <text x="744" y="196" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">/.well-known/openid-configuration</text>
+</svg>
+
+この経路に出てくる文書はどちらも OP が配信します。Bearer トークンの検証はリソースサーバの仕事のままです。
+
 ::: details このページで触れる仕様
 - [RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728) — OAuth 2.0 Protected Resource Metadata（§2 パラメータ、§3 / §3.1 well-known URI、§3.3 `authorization_servers`）
 - [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) — Resource Indicators（`resource` 識別子の形）

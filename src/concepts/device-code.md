@@ -25,8 +25,9 @@ The most familiar example is signing into Netflix on a new TV: the screen displa
 
 ## How the flow runs
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 700 570" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 570" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="device-code-flow-title">Device-authorization sequence: the device requests a device_code and user_code, polls the token endpoint while the user approves on a second screen, then receives an access token.</title>
+  <g transform="translate(30,0)">
 
   <!-- actors -->
   <rect x="12" y="14" width="128" height="40" rx="5"/>
@@ -57,7 +58,7 @@ The most familiar example is signing into Netflix on a new TV: the screen displa
   <path d="M83 134 L76 138 L83 142"/>
 
   <!-- note over device -->
-  <path class="dcf-frame" fill="var(--vp-c-bg)" d="M20 154 H238 L250 166 V196 H20 Z"/>
+  <path class="dcf-frame dcf-nb" d="M20 154 H238 L250 166 V196 H20 Z"/>
   <path class="dcf-frame" d="M238 154 V166 H250"/>
   <text class="dcf-fp dcf-neu" x="30" y="173" font-size="10">Display: open <tspan class="dcf-fm">op.example.com/device</tspan></text>
   <text class="dcf-fp dcf-neu" x="30" y="188" font-size="10">and enter <tspan class="dcf-fm">ABCD-EFGH</tspan></text>
@@ -107,6 +108,7 @@ The most familiar example is signing into Netflix on a new TV: the screen displa
   <text class="dcf-fm dcf-neu" x="213" y="536" font-size="10" text-anchor="middle">200  access_token · id_token? · refresh_token?</text>
   <line class="dcf-ret" x1="350" y1="544" x2="76" y2="544"/>
   <path d="M83 540 L76 544 L83 548"/>
+  </g>
 </svg>
 
 The device never holds the user's password. The user never types anything on the device. The two surfaces meet at the OP through the short `user_code`.

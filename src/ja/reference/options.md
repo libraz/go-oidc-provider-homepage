@@ -17,8 +17,9 @@ pageClass: pg-reference-options
 
 このページは、`op.New` に渡せる公開オプションを並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
-<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 760 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="opt-decision-title">設定の目的（新規 OP / FAPI 切り替え / 単一機能 / grant 制限 / 送信者制約 / トークン形式）を、それを担う op.New オプションに振り分け、該当なしなら下の表へ導く決定木。</title>
+  <g transform="translate(30 0)">
   <rect x="24" y="24" width="300" height="52" rx="6"/>
   <text class="od-b od-t1" x="174" y="54" text-anchor="middle">OP を新規に立ち上げる？</text>
   <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>
@@ -80,11 +81,12 @@ pageClass: pg-reference-options
   <path d="M170 447 L174 454 L178 447"/>
   <text class="od-s od-t2" x="190" y="450">いいえ</text>
   <rect x="24" y="456" width="652" height="48" rx="6"/>
-  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">該当なし — 下の表をセクションごとに参照。</text>
+  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">下の全オプション表</text>
+  </g>
 </svg>
 
 - **これから新規に OP を立ち上げる** → まず [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、そして通常は [`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys) を渡します。`WithCookieKeys` は `authorization_code` grant が有効な場合に必須で、既定 grant 集合では有効です。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
-- **FAPI を採用せず OAuth 2.1 の姿勢を明示したい** → `WithProfile(profile.Baseline)` はすべての authorization-code request に PKCE を要求し、それ以外は OIDC Core の既定を保ちます。FAPI 2.0 には `profile.FAPI2Baseline`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)を使います。これらのプロファイルは mTLS が明示されていなければ DPoP を既定選択します。プロファイルが必要とする grant が組み込まれていない場合、OP はエンドポイントを勝手に mount せず `op.New` が失敗します(`profile.FAPICIBA` は `grant.CIBA` を必要とします)。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile)、[使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
+- **FAPI を採用せず OAuth 2.1 の姿勢を明示したい** → `WithProfile(profile.Baseline)` はすべての authorization-code request に PKCE を要求し、それ以外は OIDC Core の既定を保ちます。FAPI 2.0 には `profile.FAPI2Baseline`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)を使います。これらのプロファイルは mTLS が明示されていなければ DPoP を既定選択します。プロファイルが必要とする grant が組み込まれていない場合、OP はエンドポイントを勝手に mount せず `op.New` が失敗します（`profile.FAPICIBA` は `grant.CIBA` を必要とします）。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile)、[使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
 - **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。public / native client は常に PKCE 必須で、FAPI プロファイル下ではすべての認可コードクライアントに PKCE が必須です。Dynamic Registration、RAR、Grant Management は追加設定が必要なので、それぞれ専用オプションから有効化します。
 - **`/token` で受け付ける grant の集合を絞りたい** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`。`WithDeviceCodeGrant()` / `WithCIBA(...)` / `WithCustomGrant(...)` / `RegisterTokenExchange(...)` は、それぞれ追加で必要なエンドポイントもまとめて公開します。
 - **送信者制約付きのアクセストークンにしたい** → DPoP 系: `WithFeature(feature.DPoP)` + 必要に応じて `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`。mTLS 系: `WithFeature(feature.MTLS)` + 必要に応じて `WithMTLSProxy(headerName, trustedCIDRs)`。詳しくは[ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint)、[DPoP](/ja/concepts/dpop)、[mTLS](/ja/concepts/mtls)、[使い方: DPoP nonce](/ja/use-cases/dpop-nonce)。
@@ -96,9 +98,9 @@ pageClass: pg-reference-options
 - **scope カタログを拡張したい** → discovery に出す scope は `WithScope(op.PublicScope("name", "label"))`、内部用は `WithScope(op.InternalScope("name"))`。[ガイド: scope と claim](/ja/concepts/scopes-and-claims)、[使い方: scope](/ja/use-cases/scopes) を参照。
 - **独自の `grant_type` を生やしたい** → `WithCustomGrant(handler)`。[使い方: custom grant](/ja/use-cases/custom-grant) を参照。
 - **i18n(国際化)対応をしたい** → `WithDefaultLocale(...)`、`WithLocale(bundle)`、`WithPreferredLocaleStore(...)`。[使い方: i18n](/ja/use-cases/i18n) を参照。
-- **id_token / userinfo / JARM / introspection を JWE で暗号化したい** → `WithEncryptionKeyset(...)` と、必要なら既定許可リストを狭める `WithSupportedEncryptionAlgs(algs, encs)`。[使い方: JWE 暗号化](/ja/use-cases/jwe-encryption) を参照。
+- **JWE request object を復号したい** → OP が受け取る JWE の鍵に `WithEncryptionKeyset(...)` を指定し、必要なら `WithSupportedEncryptionAlgs(algs, encs)` で既定の許可リストを狭めます。外向きの JWE 応答は受信側 client の JWKS の鍵で暗号化します。[使い方: JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
 - **SPA クライアント向けに CORS を開けたい** → `WithCORSOrigins(...)`。[使い方: SPA 向け CORS](/ja/use-cases/cors-spa) を参照。
-- **Prometheus メトリクスを出したい** → `WithPrometheus(registry)`。ライブラリは `/metrics` を公開しないため、ハンドラの公開はルーター側で行います。[使い方: Prometheus メトリクス](/ja/use-cases/prometheus) を参照。
+- **Prometheus メトリクスを出したい** → `WithPrometheus(registry)`。ライブラリは `/metrics` を公開しないため、ハンドラの公開はルータ側で行います。[使い方: Prometheus メトリクス](/ja/use-cases/prometheus) を参照。
 - **監査ログをアプリログとは別の出力先に流したい** → `WithAuditLogger(*slog.Logger)`。[Audit イベントカタログ](/ja/reference/audit-events) を参照。
 - **SPA 向けに対話レイヤをまるごと差し替えたい** → `WithInteractionDriver(interaction.Driver)`。[使い方: SPA 向け対話のカスタマイズ](/ja/use-cases/spa-custom-interaction) を参照。
 
@@ -120,8 +122,8 @@ pageClass: pg-reference-options
 | `WithFeature` | `feature.Flag`(1 呼び出しで 1 つ、繰り返し可) | PAR / DPoP / mTLS / JAR / JARM / introspect / revoke を個別に有効化 | 控えめな既定 |
 | `WithGrants` | `...grant.Type`(可変長) | `/token` で受け付ける grant を限定。呼び出せるのは 1 回だけなので、複数の helper から option を合成する場合は渡す前に grant 集合をまとめてください | `authorization_code`、`refresh_token` |
 | `WithScope` | `op.Scope`(1 呼び出しで 1 つ。`op.PublicScope` / `op.InternalScope` コンストラクタを利用) | scope カタログを拡張 | `openid`、`profile`、`email`、`address`、`phone`、`offline_access` |
-| `WithOpenIDScopeOptional` | _(引数なし)_ | OAuth 2.0 単独(`scope` に `openid` を含まない)を許容 | `openid` 必須 |
-| `WithStrictOfflineAccess` | _(引数なし)_ | `refresh_token` の発行を `offline_access` の同意取得時に限定 | 緩い既定(`openid` が付与されれば発行) |
+| `WithOpenIDScopeOptional` | _(引数なし)_ | OAuth 2.0 単独（`scope` に `openid` を含まない）を許容 | `openid` 必須 |
+| `WithStrictOfflineAccess` | _(引数なし)_ | `refresh_token` の発行を `offline_access` の同意取得時に限定 | 緩い既定（`openid` が付与されれば発行） |
 
 ## クライアント / 登録
 
@@ -130,7 +132,7 @@ pageClass: pg-reference-options
 | `WithStaticClients` | `...op.ClientSeed`(`op.PublicClient` / `op.ConfidentialClient` / `op.PrivateKeyJWTClient` を渡す) | 起動時にクライアントレジストリを初期投入 | 空 |
 | `WithHighEntropyClientSecrets` | _(引数なし)_ | OP 全体の client-secret 検証を high-entropy keyed-hash 形式へ切り替える。既存の Argon2 client hash は後から変換できないため、有効化前に全クライアントを再プロビジョニングする | Argon2 互換の client secret |
 | `WithFirstPartyClients` | `...string`(client ID) | ファーストパーティ同意スキップの対象 | なし |
-| `WithDynamicRegistration` | `op.RegistrationOption` | `/register` を公開(RFC 7591 / 7592) | 無効 |
+| `WithDynamicRegistration` | `op.RegistrationOption` | `/register` を公開（RFC 7591 / 7592） | 無効 |
 
 ## 認証 / LoginFlow
 
@@ -138,8 +140,8 @@ pageClass: pg-reference-options
 |---|---|---|---|
 | `WithLoginFlow` | `op.LoginFlow` | `Step` + `Rule` の宣言的 DAG(推奨) | なし |
 | `WithAuthenticators` | `...op.Authenticator`(可変長) | 低レイヤ API(`WithLoginFlow` とは排他) | なし |
-| `WithInteractionDriver` | `interaction.Driver` | 対話レイヤのトランスポート全体を差し替え(HTML ドライバ / SPA ドライバ / 独自実装) | 同梱の HTML ドライバ |
-| `WithInteractions` | `...op.Interaction`(可変長) | ドライバの上に重ねる、資格情報以外の追加画面(T&C、KYC など) | consent のみ |
+| `WithInteractionDriver` | `interaction.Driver` | 対話レイヤのトランスポート全体を差し替え（HTML ドライバ / SPA ドライバ / 独自実装） | 同梱の HTML ドライバ |
+| `WithInteractions` | `...op.Interaction`(可変長) | ドライバの上に重ねる、資格情報以外の追加画面（T&C、KYC など） | consent のみ |
 | `WithCaptchaVerifier` | `op.CaptchaVerifier` | `StepCaptcha` の上流 captcha プロバイダ | なし |
 | `WithRiskAssessor` | `op.RiskAssessor` | risk score の供給元。`WithAuthenticators` では factor 前後、`WithLoginFlow` では flow assessor として chain ごとに 1 回実行される。non-nil な `LoginFlow.Risk` と同時に設定すると `op.New` が失敗する | なし |
 | `WithLoginAttemptObserver` | `op.LoginAttemptObserver` | `RuleAfterFailedAttempts` 用の失敗回数集計 | なし |
@@ -169,6 +171,8 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 
 `WithSPAUI` と `WithConsentUI` は相互排他です。どちらも同意画面の描画を受け持つためです。`WithSPAUI.LoginMount` だけが SPA route になり、`ConsentMount` と `LogoutMount` は route を予約しません。同意画面は login interaction state surface を使い、組み込み logout confirmation は通常の end-session flow に残ります。`WithChooserUI` は `WithSPAUI` と同時指定できますが、SPA モードではアカウント選択も JSON の状態取得を通じて SPA が描画します。そのため chooser テンプレートは使われず、`op.New` が構造化された警告を出します。詳細は [カスタムアカウントチューザ UI](/ja/use-cases/custom-chooser-ui) を参照してください。
 
+ceremony の origin は issuer と same-site でなければなりません。`login.example.com` と `op.example.com` のような issuer の sibling は、ここに列挙すれば利用できますが、完全に別サイトの origin は CORS header を受け取っても interaction / end-session ceremony は動きません。`__Host-` cookie が `SameSite` の制約で送信されず、endpoint が 404 を返すためです。UI は issuer 自身か same-site の sibling host に置いてください。cookie 属性は変更できません。
+
 `WithLocale` は locale tag を小文字・ハイフン区切りの canonical BCP 47 形式にします。`Provider.SetLocaleCookie(w, locale)` と `Provider.ClearLocaleCookie(w)` が公開 cookie seam です。`SetLocaleCookie` は exact match と language-only fallback を解決し、登録済み locale に一致しなければ `op.ErrLocaleNotRegistered` を返します。cookie は `__Host-oidc_locale`、Secure、HttpOnly、SameSite=Lax で、login session とは独立しています。
 
 ## トークン
@@ -180,11 +184,15 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 | `WithAccessTokenRevocationStrategy` | `op.AccessTokenRevocationStrategy`(`RevocationStrategyGrantTombstone` / `RevocationStrategyJTIRegistry` / `RevocationStrategyNone`) | 発行済 JWT アクセストークンの失効ポリシー。既定の `GrantTombstone` は `Store.GrantRevocations()`、`JTIRegistry` は `Store.AccessTokens()` を必須とし、いずれも `op.New` で検査される | grant tombstone |
 | `WithAccessTokenTTL` | `time.Duration` | アクセストークンの寿命 | 5 分 |
 | `WithRefreshTokenTTL` | `time.Duration` | 通常のリフレッシュトークンの寿命 | 30 日 |
-| `WithRefreshTokenOfflineTTL` | `time.Duration` | `offline_access` が付与されたときのリフレッシュトークンの寿命 | `WithRefreshTokenTTL` を継承(ゼロ値で延長しない) |
-| `WithRefreshGracePeriod` | `time.Duration`(0 で無効化、負値は拒否) | ローテーション後の猶予期間 | 60 秒 |
-| `WithDPoPNonceSource` | `op.DPoPNonceSource`(interface) | サーバ供給の DPoP nonce ストア(`op.NewInMemoryDPoPNonceSource` が同梱実装) | なし |
+| `WithRefreshTokenOfflineTTL` | `time.Duration` | `offline_access` が付与されたときのリフレッシュトークンの寿命 | `WithRefreshTokenTTL` を継承（ゼロ値で延長しない） |
+| `WithRefreshGracePeriod` | `time.Duration`(0 で無効化、負値は拒否。FAPI 2.0 profile では 0〜60 秒) | ローテーション後の猶予期間 | 60 秒 |
+| `WithDPoPNonceSource` | `op.DPoPNonceSource`(interface) | サーバ供給の DPoP nonce ストア（`op.NewInMemoryDPoPNonceSource` が同梱実装） | なし |
 
 `WithInMemoryDPoPNonceLogger` は `op.New` ではなく `op.NewInMemoryDPoPNonceSource` に渡す補助オプションです。同梱の in-memory nonce source を使う場合だけ指定します。
+
+`FAPI2Baseline` または `FAPI2MessageSigning` では、リフレッシュの猶予期間に 60 秒の上限があります。0〜60 秒の明示値は受理され、60 秒を超える値は構築時エラーになります。profile が 0 を強制するわけではなく、option を省略すれば既定の 60 秒になります。これらの profile 以外では、負でない duration を指定できます。
+
+`WithAccessTokenFormat` と `WithAccessTokenFormatPerAudience` が制御するのは、組み込み grant path が発行するアクセストークンです。custom grant の `BoundAccessToken` は、どちらの option を指定しても常に RFC 9068 JWT として mint されます。custom grant で opaque 値が必要な場合は、handler 自身で mint して `AccessToken` として返してください。
 
 ## Discovery / エンドポイント
 
@@ -194,7 +202,7 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 | `WithMountPrefix` | `string`(`/` で始める。ルートに置くなら `/`) | issuer 直下にプリフィックスを設けて公開 | `/oidc` |
 | `WithClaimsSupported` | `...string`(可変長) | discovery の `claims_supported` を埋める | 省略 |
 | `WithClaimsParameterSupported` | `bool` | `claims_parameter_supported` を切り替える。`false` の場合、malformed JSON は拒否するが、正しい `claims` payload の投影は抑止して authorize / PAR では無視する | true |
-| `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。FAPI / eIDAS / NIST 800-63 のように特定の ACR 値を扱う配備が広告するために使う | 空(discovery に出ない) |
+| `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。空でない場合、同じ許可リストを `/authorize`、`/par`、CIBA の `/bc-authorize` でも強制する | 空（discovery に出ず、許可リストなし） |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata`(型付きの `service_documentation` / policy / TOS / UI locale / mTLS alias フィールド + `Extra map[string]any`) | OP が所有しない RFC 8414 / OIDC Discovery メタデータを discovery 文書に追加。`UILocalesSupported` は非空時に自動導出された locale list を上書きし、OP 管理フィールドと衝突する `Extra` key は拒否 | なし |
 | `WithPARLifetime` | `time.Duration` | `/par` が発行する `request_uri` の寿命を上書き。失効判定はブラウザが `/authorize` に URI を提示した時点で行い、その後の code 発行では単回使用性だけを強制 | 60 秒 |
 | `WithJWKSRotationActive` | `func() bool` | ローテーション期間中だけ JWKS の `Cache-Control` を短期キャッシュに切り替える述語 | 常に長期キャッシュ |
@@ -213,12 +221,12 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
 | `WithDeviceCodeGrant` | _(引数なし)_ | RFC 8628 device-authorization grant を有効化。`/device_authorization` を公開し `/token` に URN を登録 | 無効 |
-| `WithDeviceVerificationURI` | `string`(絶対 URL) | デバイス画面に表示する verification URI を上書き(既定は `<issuer>/device`) | 自動導出 |
+| `WithDeviceVerificationURI` | `string`(絶対 URL) | デバイス画面に表示する verification URI を上書き（既定は `<issuer>/device`） | 自動導出 |
 | `WithDeviceCodeExpiry` | `time.Duration` | 新規 `device_code` レコードの `expires_in` 寿命を上書き。アクセストークン TTL とは独立 | 10 分 |
 | `WithDeviceCodePollInterval` | `time.Duration` | 広告する poll `interval` を上書き。これより速い poll は `slow_down` | 5 秒 |
 | `WithCIBA` | `...op.CIBAOption` | CIBA poll mode を有効化。`/bc-authorize` を公開し CIBA URN を登録。サブオプション: `WithCIBAHintResolver`(必須)、`WithCIBADefaultExpiresIn`、`WithCIBAMaxExpiresIn`、`WithCIBAPollInterval`、`WithCIBAMaxPollViolations` | 無効 |
 | `WithCustomGrant` | `op.CustomGrantHandler` | 組み込み側が定義する `grant_type` URN を `/token` に登録。custom name の重複と組み込み grant type との collision は構築時に拒否される。handler はアクセストークンをそのまま返すか、`BoundAccessToken` 要求として返して OP に署名させる | なし |
-| `RegisterTokenExchange` | `op.TokenExchangePolicy` | RFC 8693 token-exchange grant を有効化。ポリシーがリクエスト単位で受理可否(admission)を判断し、OP の既定値をさらに狭めることもできる | 無効 |
+| `RegisterTokenExchange` | `op.TokenExchangePolicy` | RFC 8693 token-exchange grant を有効化。ポリシーがリクエスト単位で受理可否（admission）を判断し、OP の既定値をさらに狭めることもできる | 無効 |
 
 `WithDeviceCodeExpiry` と `WithDeviceCodePollInterval` は `WithAccessTokenTTL` から導出されません。アクセストークンを短命にしても、TV / CLI のペアリング手順までユーザがセカンドスクリーンに移る前に失効しないようにするためです。詳細は [使い方: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
 
@@ -234,12 +242,12 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 
 詳細は [Rich authorization requests](/ja/use-cases/authorization-details)、[Grant management](/ja/use-cases/grant-management)、[Protected resource metadata](/ja/use-cases/protected-resource-metadata)、[MFA / ステップアップ](/ja/use-cases/mfa-step-up)。
 
-## 暗号化(JWE)
+## 暗号化（JWE）
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithEncryptionKeyset` | `op.EncryptionKeyset`(RSA 2048 bit 以上 / EC P-256/384/521 の秘密鍵、`use=enc`) | 暗号化用 JWK を公開。inbound JWE request_object と outbound JWE 応答(id_token / userinfo / JARM / introspection)に必要 | なし |
-| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | 既定の許可リスト(`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`)を **狭める** だけ。広げることはできない | 既定の許可リスト全体 |
+| `WithEncryptionKeyset` | `op.EncryptionKeyset`(RSA 2048 bit 以上 / EC P-256/384/521 の秘密鍵、`use=enc`) | OP の inbound 復号用 JWK を公開し、`/authorize` と `/par` の JWE request object を復号。outbound JWE 応答は受信側 client の JWKS を使う | なし |
+| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | 既定の許可リスト（`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`）を **狭める** だけ。広げることはできない | 既定の許可リスト全体 |
 
 詳細は [使い方: JWE 暗号化](/ja/use-cases/jwe-encryption)。
 
@@ -252,21 +260,21 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 | `WithTrustedProxies` | `...string`(CIDR) | `X-Forwarded-*` / `Forwarded` から実クライアント IP を解決 | なし |
 | `WithTrustedProxyHosts` | `...string`(hostname) | trusted proxy CIDR が設定されている場合に、正規の issuer host 以外の `X-Forwarded-Host` 許可リストを追加 | issuer host のみ |
 | `WithAllowLocalhostLoopback` | _(引数なし)_ | 開発 / ネイティブアプリデモ用に RFC 8252 の loopback 緩和へ文字列 `localhost` を追加し、**issuer 自体にも** `localhost` を許可。リテラル `127.0.0.1` / `[::1]` は厳格既定のまま | リテラル loopback のみ |
-| `WithAllowPrivateNetworkJWKS` | _(引数なし)_ | RFC 1918 上の client JWKS を許容(テスト専用) | 拒否 |
-| `WithAllowPrivateNetworkJAR` | _(引数なし)_ | RFC 1918 上の `request_uri` を許容(テスト専用) | 拒否 |
-| `WithAllowPrivateNetworkSector` | _(引数なし)_ | dynamic registration 時の `sector_identifier_uri` が RFC 1918 上にあることを許容(テスト / private RP network 専用) | 拒否 |
+| `WithAllowPrivateNetworkJWKS` | _(引数なし)_ | RFC 1918 上の client JWKS を許容（テスト専用） | 拒否 |
+| `WithAllowPrivateNetworkJAR` | _(引数なし)_ | RFC 1918 上の `request_uri` を許容（テスト専用） | 拒否 |
+| `WithAllowPrivateNetworkSector` | _(引数なし)_ | dynamic registration 時の `sector_identifier_uri` が RFC 1918 上にあることを許容（テスト / private RP network 専用） | 拒否 |
 | `WithJWKSHTTPTransport` | `http.RoundTripper` | JAR と `private_key_jwt` が使う RP 管理 JWKS 取得の transport を差し替える。接続時の SSRF 判定は維持される | システム trust の transport |
 | `WithBackchannelAllowPrivateNetwork` | `bool` | RFC1918、loopback、link-local、ULA の `backchannel_logout_uri` 宛先への配送を明示的に許可。既定 deny は production SSRF 境界なので、明確な network policy がある場合だけ opt in | false（deny） |
 | `WithAllowInsecureBackchannelLogoutForDev` | _(引数なし)_ | dev / CI fixture 用に plain-HTTP loopback の `backchannel_logout_uri` と配送を許容 | 拒否 |
 | `WithBackchannelLogoutHTTPClient` | `*http.Client` | Back-Channel ログアウト用の HTTP クライアント | 既定 |
-| `WithBackchannelLogoutTimeout` | `time.Duration` | RP ごとの 一斉通知 タイムアウト | 5 秒 |
+| `WithBackchannelLogoutTimeout` | `time.Duration` | RP ごとの一斉通知タイムアウト | 5 秒 |
 | `WithBackchannelFanOutBudget` | `time.Duration`（正値） | RP ごとの timeout とは独立した、back-channel logout 1 event 全体の fan-out budget | 30 秒 |
 
 ## 観測
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithLogger` | `*slog.Logger` | 構造化された運用ログ(handler は redaction ミドルウェアで包まれる) | discard |
+| `WithLogger` | `*slog.Logger` | 構造化された運用ログ（handler は redaction ミドルウェアで包まれる） | discard |
 | `WithAuditLogger` | `*slog.Logger` | OIDC domain business event 専用の監査 sink。HTTP access log ではない | `WithLogger` を継承 |
 | `WithPrometheus` | `*prometheus.Registry` | curated な OP counter を呼び出し側 registry に登録（`/metrics` route、HTTP lifecycle metric、health endpoint は mount しない） | なし |
 
@@ -274,8 +282,8 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithSessionDurabilityPosture` | `op.SessionDurabilityPosture` | Back-Channel Logout の監査ログに方針を注釈付け(SOC 用途) | volatile |
-| `WithClock` | `op.Clock` | 時刻ソース(テスト用に注入) | `time.Now` |
+| `WithSessionDurabilityPosture` | `op.SessionDurabilityPosture` | Back-Channel Logout の監査ログに方針を注釈付け（SOC 用途） | volatile |
+| `WithClock` | `op.Clock` | token の有効期限、監査レコードの timestamp、レート制限 window に使う時刻ソース（テスト用に注入） | `time.Now` |
 
 ## ここでは設定**しない**もの
 
@@ -285,7 +293,7 @@ TOTP と email-OTP の `Version` は store が発行する opaque な equality-o
 - **PKCE method** — `S256` のみ。`plain` は構造的に拒否されます。
 - **Cookie scheme** — `__Host-` プリフィックス、AES-256-GCM、double-submit CSRF が常に有効です。[必須オプション § WithCookieKeys](/ja/getting-started/required-options#withcookiekeys) を参照。
 - **乱数源** — `crypto/rand` のみ。`math/rand` は lint で禁止しています。
-- **`/metrics` の公開** — ライブラリではなくルーター側の責務です。[使い方: Prometheus](/ja/use-cases/prometheus) を参照。
+- **`/metrics` の公開** — ライブラリではなくルータ側の責務です。[使い方: Prometheus](/ja/use-cases/prometheus) を参照。
 
 ## このリストの裏取り
 

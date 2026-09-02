@@ -32,10 +32,10 @@ pageClass: pg-use-cases-dpop-nonce
 
 ## フロー
 
-<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="dpop-nonce-flow-title">DPoP nonce ハンドシェイクのシーケンス: OP は最初の proof を use_dpop_nonce と DPoP-Nonce ヘッダで拒否し、クライアントは nonce claim を入れて再試行し、以降の呼び出しは毎回ローテーションされる最新 nonce を運ぶ。</title>
-  <line class="life" x1="130" y1="68" x2="130" y2="472"/>
-  <line class="life op-accent" x1="630" y1="68" x2="630" y2="472"/>
+  <line class="life" x1="130" y1="68" x2="130" y2="442"/>
+  <line class="life op-accent" x1="630" y1="68" x2="630" y2="442"/>
   <rect x="55" y="14" width="150" height="30" rx="5"/>
   <rect class="op-accent" x="555" y="14" width="150" height="30" rx="5"/>
   <text class="d-actor" x="130" y="33" text-anchor="middle">RP / クライアント</text>
@@ -62,17 +62,17 @@ pageClass: pg-use-cases-dpop-nonce
   <text class="d-mono" x="380" y="311" text-anchor="middle">DPoP-Nonce: nonce-2</text>
   <path d="M630,320 H130"/>
   <path d="M137,316 L130,320 L137,324"/>
-  <rect class="note" x="238" y="336" width="284" height="24" rx="4"/>
-  <text class="d-prose" x="380" y="352" text-anchor="middle">以降の呼び出しは最新 nonce を運ぶ</text>
-  <text class="d-mono" x="380" y="386" text-anchor="middle">GET /userinfo · DPoP: &lt;proof&gt;</text>
-  <text class="d-mono" x="380" y="399" text-anchor="middle">nonce = nonce-2</text>
-  <path d="M130,408 H630"/>
-  <path d="M623,404 L630,408 L623,412"/>
-  <text class="d-mono" x="380" y="438" text-anchor="middle">200 · { user claims }</text>
-  <text class="d-mono" x="380" y="451" text-anchor="middle">DPoP-Nonce: nonce-3</text>
-  <path d="M630,460 H130"/>
-  <path d="M137,456 L130,460 L137,464"/>
+  <text class="d-mono" x="380" y="356" text-anchor="middle">GET /userinfo · DPoP: &lt;proof&gt;</text>
+  <text class="d-mono" x="380" y="369" text-anchor="middle">nonce = nonce-2</text>
+  <path d="M130,378 H630"/>
+  <path d="M623,374 L630,378 L623,382"/>
+  <text class="d-mono" x="380" y="408" text-anchor="middle">200 · { user claims }</text>
+  <text class="d-mono" x="380" y="421" text-anchor="middle">DPoP-Nonce: nonce-3</text>
+  <path d="M630,430 H130"/>
+  <path d="M137,426 L130,430 L137,434"/>
 </svg>
+
+このハンドシェイクは最初の 1 回だけです。以降の呼び出しは常に最新の nonce を運びます。OP は応答ごとに `DPoP-Nonce` ヘッダを返し、クライアントはその値を次の proof の `nonce` claim に入れます。
 
 ## 実装
 
@@ -91,7 +91,7 @@ op.New(
 )
 ```
 
-ローテーション間隔（上の `5*time.Minute`）は「現行」nonce が切り替わる頻度です。current と previous の両方が受理されるので、ローテーション境界でリクエストが競合してもハード失敗にはなりません。
+ローテーション間隔（上の `5*time.Minute`）は「現行」nonce が切り替わる頻度です。OP は現行値と直前の値の両方を受理するので、ローテーション境界でリクエストが競合してもハード失敗にはなりません。
 
 ::: warning 複数インスタンス構成
 プロセスローカルな nonce ソースはレプリカを跨げません — インスタンス B はインスタンス A が出した nonce を知りません。本番 HA 構成では、独自 `DPoPNonceSource` の裏に共有ストア（Redis）を置きます。Redis nonce ソースをライブラリに同梱しないのは意図的です。オプション群（TTL、ローテーション周期、ローテーション境界の取りこぼし許容度）が運用ごとに異なりすぎるためです。
@@ -101,13 +101,17 @@ op.New(
 
 | Endpoint | nonce 必須？ | 設定箇所 |
 |---|---|---|
-| `/token` | `DPoPNonceSource` 設定時は常に必須 | `op.WithDPoPNonceSource` |
-| `/userinfo` | `DPoPNonceSource` 設定時は常に必須 | 同上 |
-| `/par` | `DPoPNonceSource` 設定時は常に必須 | 同上 |
+| `/token` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | `op.WithDPoPNonceSource` |
+| `/userinfo` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
+| `/par` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
+| `/device_authorization` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
+| `/bc-authorize`（CIBA） | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
 
 `/par` と `/token` は nonce の発行・要求を対称に行うので、PAR（プッシュ型認可リクエスト）を使う SPA も `/token` と同じ nonce リトライループを `/par` 呼び出しで回すことになります。
 
-FAPI 2.0 Message Signing は nonce を強制、Baseline は許可。ライブラリは仕様に追従するので、プロファイルを切り替えれば既定も切り替わります。
+`DPoP` ヘッダが提示された場合、表中のすべての endpoint はその値を 1 つだけ受け付けます。複数値は、先頭が空で後続に有効な proof がある場合も含め、不正として拒否されます。OP が後続の値だけを選んだり、黙って proof なしの経路として扱ったりすることはありません。
+
+FAPI 2.0 Message Signing は nonce を強制し、Baseline では許可します。ライブラリは仕様に追従するので、プロファイルを切り替えれば既定も切り替わります。
 
 ## 動作確認
 

@@ -21,7 +21,7 @@ Two questions settle almost everything: **where do the OIDC tables live** (one b
 | **Existing database** — you already run a `users` table and migrations | Adapter-owned `oidc_*` tables (renamed to fit), your identity data projected in | [BYO store backend](/use-cases/byo-store) · [BYO user store](/use-cases/byo-userstore) |
 | **Scale / high churn** — you want volatile state off the durable tier | `composite` split: durable SQL + volatile Redis | [Hot/cold split](/use-cases/hot-cold-redis) |
 
-<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 430" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="storage-choice-title">Choosing a storage layout. Greenfield takes one SQL adapter; an existing users table keeps the OIDC tables on the SQL adapter and supplies its own UserStore; splitting off high-churn volatile state routes SQL and Redis through composite.</title>
   <defs>
     <marker id="storage-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -64,10 +64,9 @@ Two questions settle almost everything: **where do the OIDC tables live** (one b
   <text class="t sub" x="615" y="272" text-anchor="middle">durable on SQL</text>
   <text class="t sub" x="615" y="291" text-anchor="middle">volatile on Redis</text>
 
-  <rect class="soft" x="66" y="350" width="628" height="56" rx="8"/>
-  <text class="t" x="380" y="373" text-anchor="middle">Careful: authorization codes and PAR are short-lived but still belong on the durable side</text>
-  <text class="m sub" x="380" y="392" text-anchor="middle">composite.TxClusterKinds must resolve to one backend</text>
 </svg>
+
+The third branch has one trap. Authorization codes and the PAR `request_uri` are short-lived, so they look like volatile state, but they still belong on the durable side: every member of `composite.TxClusterKinds` must resolve to a single backend.
 
 ## Greenfield
 

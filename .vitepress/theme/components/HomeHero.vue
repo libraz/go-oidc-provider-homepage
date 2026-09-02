@@ -16,13 +16,13 @@ const copy = computed(() =>
           { text: 'http.Handler', mono: true },
           { text: ' に組み込める OpenID Connect Provider。' }
         ] as Part[],
-        sub: 'net/http、chi、gin、お好みのルーターで動作。PAR · JAR · DPoP · mTLS · PKCE 内蔵。FAPI 2.0 Baseline / Message Signing をターゲット。',
+        sub: 'net/http、chi、gin など任意のルーターで動作。PAR · JAR · DPoP · mTLS · PKCE を内蔵。FAPI 2.0 Baseline / Message Signing に対応。',
         primary: { text: 'クイックスタート', link: '/ja/getting-started/install' },
         secondaryGh: { text: 'GitHub で見る', link: 'https://github.com/libraz/go-oidc-provider' },
         secondaryWhy: { text: 'go-oidc-provider とは', link: '/ja/why' },
         trust: [
           'FAPI 2.0 BASELINE',
-          'OFCS 210 PASSED / 全271モジュール · 9プラン',
+          'OFCS 210 PASSED / 全 271 モジュール · 9 プラン',
           'APACHE-2.0',
           'GO ≥ 1.25'
         ],

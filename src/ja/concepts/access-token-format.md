@@ -36,7 +36,8 @@ pageClass: pg-concepts-access-token-format
 
 ### JWT（RFC 9068） — RS がローカルで検証
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 684 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 760 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(38,0)">
   <title id="atf-jwt-local-title">JWT アクセストークン: RP が Bearer JWT を提示し、RS はキャッシュした OP の JWKS でローカル検証するため、OP はリクエストの処理経路に入らない。</title>
   <rect x="28" y="38" width="118" height="56" rx="6"/>
   <text class="atf-b atf-t1" x="87" y="70" text-anchor="middle">RP</text>
@@ -45,19 +46,21 @@ pageClass: pg-concepts-access-token-format
   <text class="atf-c atf-t1" x="538" y="78" text-anchor="middle">sig + <tspan class="atf-m">aud</tspan> + <tspan class="atf-m">exp</tspan> をローカル検証</text>
   <line x1="146" y1="66" x2="416" y2="66"/>
   <path d="M409 62 L416 66 L409 70"/>
-  <text class="atf-m atf-t2" x="282" y="54" text-anchor="middle">Bearer JWT</text>
+  <text class="atf-m atf-t2 halo" x="282" y="54" text-anchor="middle">Bearer JWT</text>
   <rect class="atf-sop" x="28" y="118" width="176" height="52" rx="6"/>
   <text class="atf-b atf-op" x="116" y="149" text-anchor="middle">OP <tspan class="atf-m">/jwks</tspan></text>
   <line x1="204" y1="144" x2="414" y2="98" stroke-dasharray="5 4"/>
   <path d="M407 94 L414 98 L407 102"/>
-  <text class="atf-s atf-t2" x="312" y="114" text-anchor="middle">取得してキャッシュ（一度だけ）</text>
+  <text class="atf-s atf-t2 halo" x="312" y="114" text-anchor="middle">取得してキャッシュ（一度だけ）</text>
+  </g>
 </svg>
 
 RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `aud` / `exp` をチェックし、リクエストに応えます。OP は **リクエストの処理経路に入りません**。JWT 自体が claim（`sub`、`scope`、`aud`、`auth_time`、`acr`、`cnf` …）を運ぶので、RS に必要な情報は全て揃っています。
 
 ### Opaque — RS は毎回 OP に問い合わせる
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 720 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 760 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(20,0)">
   <title id="atf-opaque-introspect-title">opaque アクセストークン: RP が Bearer opaque を提示し、RS は毎リクエスト OP の introspection エンドポイントを呼んでトークンを解決する。</title>
   <rect x="28" y="38" width="112" height="52" rx="6"/>
   <text class="atf-b atf-t1" x="84" y="68" text-anchor="middle">RP</text>
@@ -67,13 +70,14 @@ RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `au
   <text class="atf-b atf-op" x="634" y="68" text-anchor="middle">OP</text>
   <line x1="140" y1="64" x2="246" y2="64"/>
   <path d="M239 60 L246 64 L239 68"/>
-  <text class="atf-m atf-t2" x="194" y="54" text-anchor="middle">Bearer opaque</text>
+  <text class="atf-m atf-t2 halo" x="194" y="54" text-anchor="middle">Bearer opaque</text>
   <line x1="360" y1="52" x2="574" y2="52"/>
   <path d="M567 48 L574 52 L567 56"/>
-  <text class="atf-m atf-t2" x="468" y="42" text-anchor="middle">POST /introspect</text>
+  <text class="atf-m atf-t2 halo" x="468" y="42" text-anchor="middle">POST /introspect</text>
   <line x1="576" y1="76" x2="362" y2="76"/>
   <path d="M369 72 L362 76 L369 80"/>
-  <text class="atf-m atf-t2" x="468" y="94" text-anchor="middle">{active, sub, scope, …}</text>
+  <text class="atf-m atf-t2 halo" x="468" y="94" text-anchor="middle">{active, sub, scope, …}</text>
+  </g>
 </svg>
 
 opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 文字にしたランダム識別子です。claim を一切運びません。RS は毎リクエストごとに OP の `/introspect`（RFC 7662）でトークンを解決します（あるいは結果を意図的に短い時間幅だけキャッシュします）。OP は **リクエストの処理経路に入ります**。
@@ -145,7 +149,8 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 
 **JWT 形式:**
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 760 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(20,0)">
   <title id="atf-jwt-revocation-title">JWT の失効到達範囲: end_session による grant tombstone の切り替えは OP の userinfo / introspect では参照されるが、オフライン JWT 検証をする RS では参照されない。</title>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
@@ -163,18 +168,20 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
   <text class="atf-c atf-rs" x="625" y="218" text-anchor="middle">オフライン JWT 検証</text>
   <line x1="404" y1="112" x2="537" y2="47" stroke-dasharray="5 4"/>
   <path d="M530 43 L537 47 L530 51"/>
-  <text class="atf-s atf-t2" x="470" y="72" text-anchor="middle">参照する</text>
+  <text class="atf-s atf-t2 halo" x="470" y="72" text-anchor="middle">参照する</text>
   <line x1="404" y1="124" x2="537" y2="124" stroke-dasharray="5 4"/>
   <path d="M530 120 L537 124 L530 128"/>
-  <text class="atf-s atf-t2" x="468" y="116" text-anchor="middle">参照する</text>
+  <text class="atf-s atf-t2 halo" x="468" y="116" text-anchor="middle">参照する</text>
   <line x1="404" y1="136" x2="532" y2="197" stroke-dasharray="5 4"/>
   <path d="M534 193 L546 205 M546 193 L534 205"/>
-  <text class="atf-s atf-t2" x="458" y="160" text-anchor="middle">参照しない</text>
+  <text class="atf-s atf-t2 halo" x="458" y="160" text-anchor="middle">参照しない</text>
+  </g>
 </svg>
 
 **Opaque 形式:**
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 760 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(20,0)">
   <title id="atf-opaque-revocation-title">opaque の失効到達範囲: end_session による opaque サブストアの切り替えは OP の userinfo / introspect でも、各 RS の introspect 呼び出しでも参照される。</title>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
@@ -192,13 +199,14 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
   <text class="atf-c atf-rs" x="625" y="218" text-anchor="middle"><tspan class="atf-m">/introspect</tspan> 呼び出し</text>
   <line x1="404" y1="112" x2="537" y2="47" stroke-dasharray="5 4"/>
   <path d="M530 43 L537 47 L530 51"/>
-  <text class="atf-s atf-t2" x="470" y="72" text-anchor="middle">参照する</text>
+  <text class="atf-s atf-t2 halo" x="470" y="72" text-anchor="middle">参照する</text>
   <line x1="404" y1="124" x2="537" y2="124" stroke-dasharray="5 4"/>
   <path d="M530 120 L537 124 L530 128"/>
-  <text class="atf-s atf-t2" x="468" y="116" text-anchor="middle">参照する</text>
+  <text class="atf-s atf-t2 halo" x="468" y="116" text-anchor="middle">参照する</text>
   <line x1="404" y1="136" x2="537" y2="199" stroke-dasharray="5 4"/>
   <path d="M530 195 L537 199 L530 203"/>
-  <text class="atf-s atf-t2" x="460" y="160" text-anchor="middle">参照する</text>
+  <text class="atf-s atf-t2 halo" x="460" y="160" text-anchor="middle">参照する</text>
+  </g>
 </svg>
 
 - **JWT 経路。** トークンが OP のエンドポイント（`/userinfo`、`/introspect`、`/revoke`）に到達したときに registry を参照します。そこに来た revoked JWT は即座に拒否されます。**JWKS でオフライン JWT 検証している RS は registry を参照しません** — それが自己完結トークンの存在意義だからです。その RS では revoked JWT が `exp` まで通り続けます。
@@ -284,7 +292,8 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 
 判断は概ね「誰を信頼するか」「RS にどこまで要求できるか」「アクセストークン TTL がどれだけ短いか」で決まります。
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 700 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 760 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(30,0)">
   <title id="atf-choosing-format-title">introspection の要件・アクセストークン TTL・RS の構成から opaque / JWT / per-audience 混成を選ぶ決定木。</title>
   <rect x="24" y="24" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="48" text-anchor="middle">全 RS に毎回</text>
@@ -293,10 +302,10 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
   <text class="atf-b atf-t1" x="591" y="60" text-anchor="middle">Opaque</text>
   <line x1="364" y1="56" x2="514" y2="56"/>
   <path d="M507 52 L514 56 L507 60"/>
-  <text class="atf-s atf-t2" x="440" y="48" text-anchor="middle">はい</text>
+  <text class="atf-s atf-t2 halo" x="440" y="48" text-anchor="middle">はい</text>
   <line x1="194" y1="88" x2="194" y2="132"/>
   <path d="M190 125 L194 132 L198 125"/>
-  <text class="atf-s atf-t2" x="212" y="112" text-anchor="middle">いいえ</text>
+  <text class="atf-s atf-t2 halo" x="212" y="112" text-anchor="middle">いいえ</text>
   <rect x="24" y="136" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="160" text-anchor="middle">AT TTL を短くして</text>
   <text class="atf-c atf-t1" x="194" y="180" text-anchor="middle"><tspan class="atf-m">exp</tspan> までのギャップを許容できる？</text>
@@ -304,10 +313,10 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
   <text class="atf-b atf-t1" x="591" y="172" text-anchor="middle">JWT（既定）</text>
   <line x1="364" y1="168" x2="514" y2="168"/>
   <path d="M507 164 L514 168 L507 172"/>
-  <text class="atf-s atf-t2" x="440" y="160" text-anchor="middle">はい</text>
+  <text class="atf-s atf-t2 halo" x="440" y="160" text-anchor="middle">はい</text>
   <line x1="194" y1="200" x2="194" y2="244"/>
   <path d="M190 237 L194 244 L198 237"/>
-  <text class="atf-s atf-t2" x="212" y="224" text-anchor="middle">いいえ</text>
+  <text class="atf-s atf-t2 halo" x="212" y="224" text-anchor="middle">いいえ</text>
   <rect x="24" y="248" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="272" text-anchor="middle">内部 RS と外部 RS が</text>
   <text class="atf-c atf-t1" x="194" y="292" text-anchor="middle">混在する？</text>
@@ -315,12 +324,13 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
   <text class="atf-b atf-t1" x="591" y="284" text-anchor="middle">per-audience 混成</text>
   <line x1="364" y1="280" x2="500" y2="280"/>
   <path d="M493 276 L500 280 L493 284"/>
-  <text class="atf-s atf-t2" x="440" y="272" text-anchor="middle">はい</text>
+  <text class="atf-s atf-t2 halo" x="440" y="272" text-anchor="middle">はい</text>
   <line x1="194" y1="312" x2="194" y2="336"/>
   <path d="M190 329 L194 336 L198 329"/>
-  <text class="atf-s atf-t2" x="212" y="323" text-anchor="middle">いいえ</text>
+  <text class="atf-s atf-t2 halo" x="212" y="323" text-anchor="middle">いいえ</text>
   <rect x="119" y="338" width="150" height="48" rx="24"/>
   <text class="atf-b atf-t1" x="194" y="366" text-anchor="middle">Opaque</text>
+  </g>
 </svg>
 
 audience ごとの選択は実運用の現実解として有効です。OP に近い内部 RS は opaque で運用してログアウトを即時反映させ、公開向けの RS は JWT で運用して OP を処理経路上の依存にしない、といった切り分けができます。

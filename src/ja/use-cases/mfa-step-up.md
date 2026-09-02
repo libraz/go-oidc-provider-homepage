@@ -1,6 +1,6 @@
 ---
 title: MFA / step-up
-description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up、v1.1 の login/MFA 監査シグナル。
+description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up、login/MFA 監査シグナル。
 pageClass: pg-use-cases-mfa-step-up
 ---
 
@@ -12,7 +12,7 @@ pageClass: pg-use-cases-mfa-step-up
 - **`Rule`** — その factor がこの試行で **必要** かを判定。
 - **`LoginFlow`** — `Primary` ステップと `Rules` の順序付きリスト。
 
-各 step は対応する rule が yes と言ったときだけ走ります。「password 常時、TOTP 常時」が 1 つのフロー、「password 常時、3 回失敗後 captcha、リスク高なら TOTP」が別のフローです。
+各 step は、対応する rule が「必要」と判定したときだけ実行されます。「password 常時、TOTP 常時」が 1 つのフロー、「password 常時、3 回失敗後 captcha、リスク高なら TOTP」が別のフローです。
 
 このページは、ログイン判定が「password を受理したか」だけでは終わらない場合に使います。たとえば必須 MFA、不審な試行への captcha、リスクベースの追加 factor、RP が要求する ACR step-up です。ユーザ名と password だけでよいなら、既定の password primary step と user store のページで足ります。必要になる前に rule を増やすと、テストや復旧の範囲だけが広がります。
 
@@ -29,7 +29,7 @@ pageClass: pg-use-cases-mfa-step-up
 - **MFA**（Multi-Factor Authentication） — 複数の factor（知識・所持・生体）を立て続けに検証してからトークンを発行する仕組み。
 - **Step-up** — RP が、より高い保証水準を必要とする操作のために `acr_values=aalN` を要求する仕組みです。現在のセッションがその水準に達していなければ、OP は追加の factor を実行して保証水準を引き上げたうえで `id_token` を新規発行します。RFC 9470 が定義しています。
 - **AAL（Authenticator Assurance Level）** — NIST が定義する 3 段階の保証水準です。AAL1 ≒ パスワード、AAL2 ≒ パスワード + もう 1 因子、AAL3 ≒ ハードウェアにバインドされた所持証明。多くの OP / RP が `acr` のラベルとして使います。
-- **`amr` claim** — RFC 8176 が標準値（`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt` …）を列挙しているので、RP は実際にどの factor が走ったかを監査できます。
+- **`amr` claim** — RFC 8176 が標準値（`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt` …）を列挙しているので、RP は実際にどの factor が使われたかを監査できます。
 :::
 
 > **ソース:**
@@ -42,7 +42,7 @@ pageClass: pg-use-cases-mfa-step-up
 ## 構成
 
 <svg class="mfa-loginflow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="mfa-loginflow-title">ログインフローの構成: primary パスワード step、どの factor step を走らせるか判定する rule 層、その後のトークン発行。</title>
+  <title id="mfa-loginflow-title">ログインフローの構成: primary パスワード step、どの factor step を実行するか判定する rule 層、その後のトークン発行。</title>
   <rect x="330" y="16" width="140" height="38" rx="6"/>
   <rect x="290" y="78" width="220" height="50" rx="6"/>
   <rect x="17" y="352" width="176" height="42" rx="6"/>
@@ -92,6 +92,8 @@ pageClass: pg-use-cases-mfa-step-up
 
 `LoginFlow` は `Primary` step と `Rules` リストを持つ struct。各 rule は `op.RuleAlways(step)`、`op.RuleAfterFailedAttempts(n, step)`、`op.RuleRisk(threshold, step)`、`op.RuleACR(acr, step)` 等のコンストラクタで作る `Rule` 値です。
 
+`When` が nil の rule は常時実行です。ライブラリは nil を constant-true predicate として扱うため、`op.Rule{Then: step}` のような struct literal も常時 rule になります。factor を条件付きにしたい場合は、明示的な predicate を指定してください。
+
 ## 常時 TOTP
 
 ```go
@@ -131,6 +133,8 @@ op.New(
 ```
 
 `LoginAttemptObserver`（`op.WithLoginAttemptObserver` で渡す）が identifier 毎に失敗回数をカウント。`RuleAfterFailedAttempts` がそのカウントを読みます。
+
+observer は認証試行ごとに 1 つの `op.LoginAttempt` を受け取ります。`Outcome` は `op.AttemptSuccess`、`op.AttemptFailure`、`op.AttemptLocked` のいずれかです。`AttemptLocked` は送信された credential を通常の失敗として検証したのではなく、総当たり対策の gate が試行を終了させたことを示すため、別の outcome として処理してください。
 
 ## リスクベース step-up
 
@@ -195,6 +199,8 @@ w.WriteHeader(http.StatusUnauthorized)
 
 terminal な factor 失敗 — 期限切れまたは消費済みのワンタイムコード、lockout、必須のリセット、再送回数超過 — は `authn.ErrFactorAbort` sentinel にラップされ、authorize endpoint はこれを 500 ではなく **HTTP 400** にマップします。使用済みのコードはサーバ障害ではなくクライアント側の状態だからです。
 
+recovery-code prompt の `AttemptsRemaining` は、失敗した提出をあと何回許容するかという budget です。未使用の recovery code 数ではないため、driver はこの値から残りコード数を推測しないでください。
+
 ## 監査記録
 
 認証フローが発行するのは、実際に解決した factor の結果です。primary factor には `op.AuditLoginSuccess` / `op.AuditLoginFailed`、additional factor には `op.AuditMFASuccess` / `op.AuditMFAFailed` が使われます。cross-factor lockout の CAS 競合で失敗試行がカウントされずに中断された場合は `op.AuditLockoutStalled` です。`op.AuditMFARequired`、`op.AuditStepUpRequired`、`op.AuditStepUpSuccess` は予約されたカタログ定数であり、OP は発行しません。
@@ -226,11 +232,13 @@ terminal な factor 失敗 — 期限切れまたは消費済みのワンタイ�
 WebAuthn の Relying Party ID はドメイン名でなければならず、ブラウザは IP リテラルを RP ID として受け付けません。そのため `http://127.0.0.1` で開発している OP には、対にできる RP ID が存在しません。issuer を `localhost` にした上で [`op.WithAllowLocalhostLoopback()`](/ja/reference/options) を指定してください。このオプションは redirect URI だけでなく issuer にも文字列の `localhost` を許可します。緩和が許されるのは開発マシンの中だけで、本番の RP は https の後ろに置きます。
 
 `op.PrimaryPasskey` に `AAGUIDAllowlist` を設定すると、登録 ceremony は `direct` の attestation conveyance に切り替わります。attestation で裏付けられていない AAGUID と allowlist を突き合わせても何も証明できず、ソフトウェア authenticator が承認済みモデルを名乗るだけで登録できてしまうからです。ユーザエージェントの attestation プロンプトが出るようになり、モデルを特定できない登録は allowlist と照合せずに拒否されます。プロンプトの出ない従来の ceremony を保つには allowlist を空のままにします。
+
+`RequireUserVerification: true` は passkey の登録とログインの両方に適用されます。PIN や biometric などの user-verification gesture が必要で、presence-only の登録や assertion は拒否されます。登録時の credential がログインでも使えるように、`op/passkeykit` に渡す設定と `op.PrimaryPasskey` を共有してください。
 :::
 
-## TOTP factor の登録 (enrolment)
+## TOTP factor の登録（enrolment）
 
-`op.StepTOTP` は組み込み側がすでに永続化済みの `store.TOTPRecord` に対してコードを検証します。これと対になる登録経路は [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit) パッケージにあります。秘密鍵の生成、QR コードとして描画される `otpauth://` プロビジョニング URI、登録を確定する所有証明 (proof-of-possession) ステップを所有しています。
+`op.StepTOTP` は組み込み側がすでに永続化済みの `store.TOTPRecord` に対してコードを検証します。これと対になる登録経路は [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit) パッケージにあります。秘密鍵の生成、QR コードとして描画される `otpauth://` プロビジョニング URI、登録を確定する所有証明（proof-of-possession） ステップを所有しています。
 
 ```go
 import (
@@ -268,6 +276,6 @@ _ = storage.TOTPs().Put(ctx, record)
 
 `totpkit` は意図的に HTTP 面に出てきません。HTML、QR 描画、登録セッションは組み込み側が所有します。`NewEnrolment` と `Confirm` のいずれも、`subject` を GCM の AAD (additional-authenticated-data) としてバインドします。あるユーザの登録 row を抜き出しても、別の subject では replay できません。GCM タグ検証が AAD 不一致で拒否します。検証経路も同じ AAD 形を使うので、両端で同じバインディングが効きます。
 
-デモ / CLI 用途の登録 (端末向け QR 描画、確定済 seed record の生成) には `examples/internal/seedkit` を参照してください。`//go:build example` タグで隔離されているため、QR 描画ライブラリがホストモジュールの `go.sum` に入りません。
+デモ / CLI 用途の登録（端末向け QR 描画、確定済 seed record の生成） には `examples/internal/seedkit` を参照してください。`//go:build example` タグで隔離されているため、QR 描画ライブラリがホストモジュールの `go.sum` に入りません。
 
 > **ソース:** [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — in-process OP+RP デモ。登録から RFC 9470 ACR step-up までを通しで実行します。

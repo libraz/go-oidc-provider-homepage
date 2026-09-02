@@ -83,7 +83,7 @@ If you're new to authentication and authorization, the standards stack looks lik
   <text class="p sub" x="243" y="74" text-anchor="middle" font-size="9.5">receive tokens</text>
   <line x1="200" y1="88" x2="287" y2="88" marker-start="url(#roles-ah)" marker-end="url(#roles-ah)"/>
   <path d="M120 144 C 120 200, 640 200, 640 144" marker-end="url(#roles-ah)"/>
-  <text class="p sub" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> access token</text>
+  <text class="p sub halo" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> access token</text>
 </svg>
 
 The actual login steps (redirect to `/auth`, code exchange, token retrieval) are spelled out in the [authorization code + PKCE flow](#authorization-code-pkce) below. The diagram above is the static "who's responsible for what" view.
@@ -96,7 +96,7 @@ A single piece of software can wear two hats. Your "backend for frontend" might 
 
 OAuth 2.0 is **delegated authorization** — "Alice's app gets permission to read Alice's data on Service X." OAuth 2.0 by itself does not tell the app **who Alice is**; it only hands out an opaque access token.
 
-OpenID Connect (OIDC) is **OAuth 2.0 plus identity** — the OP additionally issues an **ID Token** (a signed JWT) that says "this token was issued for user `sub=alice123`, audience `client_id=myapp`, at this time, and the following claims about her are true." OIDC adds a userinfo endpoint (`/userinfo`), a discovery document, RP-Initiated Logout, and a back-channel logout notification.
+OpenID Connect (OIDC) is **OAuth 2.0 plus identity**. On top of the access token, the OP issues an **ID Token** — a signed JWT that says "this token was issued for user `sub=alice123`, audience `client_id=myapp`, at this time, and the following claims about her are true." OIDC also adds a userinfo endpoint (`/userinfo`), a discovery document, RP-Initiated Logout, and a back-channel logout notification.
 
 ::: details JWT — what's that?
 A **JWT** (JSON Web Token, RFC 7519) is a string of three base64url chunks joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is what lets a receiver verify the issuer cryptographically using a public key.
@@ -133,7 +133,8 @@ A common beginner mistake: sending the ID Token to your API. Don't — ID Tokens
 
 ## The flow you'll see most often: Authorization Code + PKCE {#authorization-code-pkce}
 
-<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 760 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(-2,0)">
   <title id="authcode-title">Authorization Code + PKCE sequence: the browser carries the user between the RP and the OP for login and code exchange, then the RP calls the RS with the access token.</title>
   <defs>
     <marker id="authcode-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -159,51 +160,52 @@ A common beginner mistake: sending the ID Token to your API. Don't — ID Tokens
   <circle cx="24" cy="92" r="10"/>
   <text class="p" x="24" y="96" text-anchor="middle" font-size="10.5">1</text>
   <line x1="70" y1="92" x2="280" y2="92" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="83" font-size="10.5">open app</text>
+  <text class="p halo" x="78" y="83" font-size="10.5">open app</text>
   <circle cx="24" cy="132" r="10"/>
   <text class="p" x="24" y="136" text-anchor="middle" font-size="10.5">2</text>
   <line x1="280" y1="132" x2="70" y2="132" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="110" font-size="10.5">redirect to OP <tspan class="m">/auth</tspan></text>
-  <text class="m" x="78" y="122" font-size="9">client_id, redirect_uri, scope, state, code_challenge</text>
+  <text class="p halo" x="78" y="110" font-size="10.5">redirect to OP <tspan class="m">/auth</tspan></text>
+  <text class="m halo" x="78" y="122" font-size="9">client_id, redirect_uri, scope, state, code_challenge</text>
   <circle cx="24" cy="172" r="10"/>
   <text class="p" x="24" y="176" text-anchor="middle" font-size="10.5">3</text>
   <line x1="70" y1="172" x2="500" y2="172" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="78" y="163" font-size="9.5">GET /auth …</text>
+  <text class="m halo" x="78" y="163" font-size="9.5">GET /auth …</text>
   <circle cx="24" cy="212" r="10"/>
   <text class="p" x="24" y="216" text-anchor="middle" font-size="10.5">4</text>
   <line x1="500" y1="212" x2="70" y2="212" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="203" font-size="10.5">login + consent UI</text>
+  <text class="p halo" x="78" y="203" font-size="10.5">login + consent UI</text>
   <circle cx="24" cy="252" r="10"/>
   <text class="p" x="24" y="256" text-anchor="middle" font-size="10.5">5</text>
   <line x1="70" y1="252" x2="500" y2="252" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="243" font-size="10.5">submit credentials</text>
+  <text class="p halo" x="78" y="243" font-size="10.5">submit credentials</text>
   <circle cx="24" cy="292" r="10"/>
   <text class="p" x="24" y="296" text-anchor="middle" font-size="10.5">6</text>
   <line x1="500" y1="292" x2="70" y2="292" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="270" font-size="10.5">302 redirect to RP <tspan class="m">/callback</tspan></text>
-  <text class="m" x="78" y="282" font-size="9.5">?code=xyz&amp;state=…</text>
+  <text class="p halo" x="78" y="270" font-size="10.5">302 redirect to RP <tspan class="m">/callback</tspan></text>
+  <text class="m halo" x="78" y="282" font-size="9.5">?code=xyz&amp;state=…</text>
   <circle cx="24" cy="332" r="10"/>
   <text class="p" x="24" y="336" text-anchor="middle" font-size="10.5">7</text>
   <line x1="70" y1="332" x2="280" y2="332" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="78" y="323" font-size="9.5">GET /callback?code=xyz</text>
+  <text class="m halo" x="78" y="323" font-size="9.5">GET /callback?code=xyz</text>
   <circle cx="24" cy="372" r="10"/>
   <text class="p" x="24" y="376" text-anchor="middle" font-size="10.5">8</text>
   <line x1="280" y1="372" x2="500" y2="372" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="350" font-size="9.5">POST /token</text>
-  <text class="m" x="288" y="362" font-size="9">code=xyz, code_verifier=…, client auth</text>
+  <text class="m halo" x="288" y="350" font-size="9.5">POST /token</text>
+  <text class="m halo" x="288" y="362" font-size="9">code=xyz, code_verifier=…, client auth</text>
   <circle cx="24" cy="412" r="10"/>
   <text class="p" x="24" y="416" text-anchor="middle" font-size="10.5">9</text>
   <line x1="500" y1="412" x2="280" y2="412" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="403" font-size="9.5">{ access_token, id_token, refresh_token }</text>
+  <text class="m halo" x="288" y="403" font-size="9.5">{ access_token, id_token, refresh_token }</text>
   <circle cx="24" cy="452" r="10"/>
   <text class="p" x="24" y="456" text-anchor="middle" font-size="10.5">10</text>
   <line x1="280" y1="452" x2="700" y2="452" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="430" font-size="9.5">GET /api/…</text>
-  <text class="m" x="288" y="442" font-size="9">Authorization: Bearer &lt;access_token&gt;</text>
+  <text class="m halo" x="288" y="430" font-size="9.5">GET /api/…</text>
+  <text class="m halo" x="288" y="442" font-size="9">Authorization: Bearer &lt;access_token&gt;</text>
   <circle cx="24" cy="492" r="10"/>
   <text class="p" x="24" y="496" text-anchor="middle" font-size="10.5">11</text>
   <line x1="700" y1="492" x2="280" y2="492" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="483" font-size="9.5">200 OK  { data }</text>
+  <text class="m halo" x="288" y="483" font-size="9.5">200 OK  { data }</text>
+  </g>
 </svg>
 
 The "+ PKCE" piece (steps highlighted via `code_challenge`/`code_verifier`) is what stops a malicious app from intercepting the authorization code. [Detailed walk-through](/concepts/authorization-code-pkce).
@@ -236,7 +238,7 @@ A primer with all the acronyms expanded lives at [FAPI 2.0 primer](/concepts/fap
 
 ## Read these next
 
-- [Authorization Code + PKCE flow](/concepts/authorization-code-pkce) — the flow above, with mermaid sequence and a parameter glossary.
+- [Authorization Code + PKCE flow](/concepts/authorization-code-pkce) — the flow above as a full sequence diagram, with a parameter glossary.
 - [Client Credentials](/concepts/client-credentials) — service-to-service, no end user.
 - [Refresh tokens](/concepts/refresh-tokens) — rotation, reuse detection, grace period.
 - [ID Token vs access token vs userinfo](/concepts/tokens) — they look the same, they're not.

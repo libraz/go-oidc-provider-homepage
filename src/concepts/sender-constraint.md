@@ -58,7 +58,8 @@ FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; t
 
 ## Choosing between them
 
-<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 710 490" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 760 490" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(25,0)">
   <title id="sc-choose-tree-title">Decision tree for choosing a sender constraint: browser-driven clients pick DPoP, backend services with a PKI certificate pick mTLS, B2B or regulated estates pick mTLS or both, a heterogeneous fleet enables both, and the default when unsure is DPoP.</title>
   <rect x="60" y="8" width="230" height="36" rx="8"/>
   <text class="t-start" x="175" y="30" text-anchor="middle">Choosing a mechanism</text>
@@ -111,6 +112,7 @@ FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; t
   <path d="M171,417 L175,424 L179,417"/>
   <rect class="op-accent" x="20" y="424" width="310" height="48" rx="8"/>
   <text class="t-out op-fill" x="175" y="453" text-anchor="middle">Not sure &#8594; default to DPoP</text>
+  </g>
 </svg>
 
 The decision usually falls out of the existing infrastructure:

@@ -9,9 +9,10 @@ pageClass: pg-operations-multi-instance
 
 OP はリクエストをまたいでステートレスで、すべてのレプリカが設定済みの `store.Store` 経由で読み書きします。レプリカ 1 から N に増やすということは、論点が「プロセスメモリに何があるか」から「何が共有され、何が揮発で、どの fan-out 挙動が許容できるか」に移る、ということです。
 
-<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 760 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="mi-replica-topology-title">レプリカ構成: ロードバランサが 1 クライアントの /token と /userinfo を N 個の OP レプリカへ round-robin で振り分け、全レプリカが 1 つの永続ストアと 1 つの揮発 Redis 層を共有する。</title>
 <defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g transform="translate(20 0)">
 <rect x="280" y="16" width="160" height="44" rx="6"/>
 <text class="lbl" x="360" y="43">RP / クライアント</text>
 <path d="M360 60 L360 90" marker-end="url(#mi-arrow)"/>
@@ -38,7 +39,7 @@ OP はリクエストをまたいでステートレスで、すべてのレプ�
 <path d="M184 268 L184 294"/>
 <path d="M536 268 L536 294"/>
 <rect class="store" x="24" y="296" width="320" height="132" rx="6"/>
-<text class="lbl" x="184" y="320">永続ストア(共有)</text>
+<text class="lbl" x="184" y="320">永続ストア（共有）</text>
 <text class="mono" x="40" y="348">clients · codes · refresh/access tokens</text>
 <text class="mono" x="40" y="368">grants · IATs · PARs</text>
 <text class="sub" x="184" y="408">全レプリカで 1 バックエンド</text>
@@ -47,11 +48,24 @@ OP はリクエストをまたいでステートレスで、すべてのレプ�
 <text class="mono" x="392" y="348">Sessions · Interactions</text>
 <text class="mono" x="392" y="368">ConsumedJTIs · DPoP nonces</text>
 <text class="sub" x="536" y="408">再起動 / maxmemory で追い出し</text>
+</g>
 </svg>
 
 ## 自動で共有されるもの
 
-`store.Store` に乗っているものは構造的に共有されます。永続サブストア(clients、codes、リフレッシュトークン、アクセストークン、grants、IATs、PARs)は 1 つのバックエンド(SQL または自前の実装)に対して、全レプリカが読み書きします。`composite.PushedAuthRequests` は `composite.TxClusterKinds` の一員なので、splitter は永続アンカー以外への振り分けを拒否します。
+全レプリカから同じ外部バックエンドへ振り分けたデータは、レプリカ間で共有されます。composite ストアでは、`composite.TxClusterKinds` の 7 要素（認可コード、リフレッシュトークン、grant、PAR、JWT アクセストークン登録、opaque アクセストークン、grant 失効 tombstone）を、1 つの比較可能な `store.Transactional` バックエンドに配置する必要があります。次のサブストアはこの cluster の外にあり、別々に振り分けられます。
+
+- clients
+- sessions
+- users
+- IATs / RATs
+- device codes
+- CIBA requests
+- interactions
+- consumed JTIs
+- metadata
+
+ただし本番の複数レプリカでは、レプリカ間の可視性が必要なデータを共有ストレージへ配置してください。
 
 Redis 層に置ける揮発サブストアは `Sessions`、`Interactions`、`ConsumedJTIs`(JAR / DPoP / private_key_jwt の replay set)です。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。DPoP server-nonce ストアはサブストアではなく、`op.WithDPoPNonceSource` 経由で差し込む別の seam です。
 
@@ -71,7 +85,7 @@ device-code の確認でも、レコード状態と試行状態を分けて考�
 |---|---|---|
 | DPoP server nonce | ライブラリ同梱のインメモリ参照実装で済む | 分散ソースが必要 |
 | Session cookie | `WithCookieKeys` で暗号化。鍵が一致する限りレプリカをまたいで共有可能 | 同上 — 全レプリカが同じ cookie 鍵を持つ必要がある |
-| Interaction 状態(`/interaction/{uid}`) | プロセス内メモリでも可 | Redis または sticky session が必要 |
+| Interaction 状態（`/interaction/{uid}`） | プロセス内メモリでも可 | Redis または sticky session が必要 |
 | レートリミット | 上流 / プロセス外 | 上流 / プロセス外 |
 | OFCS conformance harness | 1 OP インスタンスに対して実行する | 1 OP インスタンスに対して実行する — 単一レプリカか LB エンドポイントを指定 |
 
@@ -82,7 +96,7 @@ device-code の確認でも、レコード状態と試行状態を分けて考�
 選択肢は 2 つです:
 
 1. **server-nonce フローを無効化する。** `WithDPoPNonceSource` を渡さない形です。クライアントは server 供給の nonce 無しで進みます。RFC 9449 §8 のハードニングが要らないなら、安全な既定です。
-2. **分散ソースを差し込む。** 共有ストア(Redis、Memcached)に対する `op.DPoPNonceSource` 実装を組み込みます。Redis の nonce source をライブラリが同梱しないのは意図的です。オプションの組み合わせ(TTL、ローテーション周期、取りこぼし許容度)が運用者ごとに違いすぎるためです。
+2. **分散ソースを差し込む。** 共有ストア（Redis、Memcached）に対する `op.DPoPNonceSource` 実装を組み込みます。Redis の nonce source をライブラリが同梱しないのは意図的です。オプションの組み合わせ（TTL、ローテーション周期、取りこぼし許容度）が運用者ごとに違いすぎるためです。
 
 ```go
 // スケッチ — 分散実装を差し込み口の裏に置く形。
@@ -100,21 +114,21 @@ op.WithDPoPNonceSource(&redisNonces{rdb: client})
 
 ## Session 配置
 
-session は永続(SQL)にも揮発(永続化無しの Redis)にも置けます。トレードオフ:
+session は永続（SQL）にも揮発（永続化無しの Redis）にも置けます。トレードオフ:
 
 | 配置 | 利点 | 欠点 |
 |---|---|---|
-| 永続(SQL) | 再起動 / failover 後も browser logout trigger が subject と session snapshot を解決できる。RP の対象は session 一覧ではなく grant から導出する | login のたびに DB 書き込みが発生する |
-| 揮発(Redis) | 書き込みレイテンシが低く、DB のホットな行が無い | 再起動や `maxmemory` の追い出しで snapshot 前に browser logout trigger を失うことがある。snapshot 後の RP 対象も `SessionStore` の行ではなく grant から導出する |
+| 永続（SQL） | 再起動 / failover 後も browser logout trigger が subject と session snapshot を解決できる。RP の対象は session 一覧ではなく grant から導出する | login のたびに DB 書き込みが発生する |
+| 揮発（Redis） | 書き込みレイテンシが低く、DB のホットな行が無い | 再起動や `maxmemory` の追い出しで snapshot 前に browser logout trigger を失うことがある。snapshot 後の RP 対象も `SessionStore` の行ではなく grant から導出する |
 
-`WithSessionDurabilityPosture(...)` で audit イベントに配置を注釈できます(`bcl.no_sessions_for_subject` は session-bearing notice で grant 由来の RP 対象が 0 件だったことを記録します)。ライブラリは配置自体を制約しません。永続配置は再起動 / failover 後の browser logout trigger と fan-out 前の snapshot を保護し、揮発な追い出しは fan-out 開始前に trigger を失わせることがあります。snapshot 後の対象解決は `SessionStore` の行を辿らず grant から行うため、方針注釈は trigger loss と対象 0 件を SOC ダッシュボードで解釈するための文脈になります。
+`WithSessionDurabilityPosture(...)` で audit イベントに配置を注釈できます（`bcl.no_sessions_for_subject` は session-bearing notice で grant 由来の RP 対象が 0 件だったことを記録します）。ライブラリは配置自体を制約しません。永続配置は、再起動や failover をまたいで browser logout trigger と fan-out 前の snapshot を保護します。揮発な配置では、fan-out が始まる前に追い出しで trigger を失うことがあります。snapshot 後の対象解決は `SessionStore` の行を辿らず grant から行うため、方針注釈は trigger loss と対象 0 件を SOC ダッシュボードで解釈するための文脈になります。
 
 ## Interaction 状態
 
 `/interaction/{uid}` の処理は、`uid` cookie に紐付く試行ごとの状態を読み書きします。レプリカが 1 つならプロセスメモリで済みます。N 個なら 2 通りです:
 
 1. **LB で sticky session。** 同じ `uid` cookie のリクエストを常に同じレプリカへ転送します。簡単ですが、ログイン途中でレプリカが落ちるとユーザに汎用エラーが見えます。
-2. **共有 interaction store。** `store.InteractionStore` を Redis 実装にします(または同梱の Redis アダプタを使います)。任意のレプリカが任意のログインを再開できます。本番の既定推奨です。
+2. **共有 interaction store。** `store.InteractionStore` を Redis 実装にします（または同梱の Redis アダプタを使います）。任意のレプリカが任意のログインを再開できます。本番の既定推奨です。
 
 Redis アダプタの `InteractionStore` は揮発適格で、[composite store](/ja/use-cases/hot-cold-redis) の揮発スライスに住みます。
 
@@ -176,11 +190,11 @@ func ready(store *MyComposite) http.HandlerFunc {
 }
 ```
 
-別のパス(`/healthz/ready`)でマウントし、公開ルーターからは外してください。
+別のパス（`/healthz/ready`）でマウントし、公開ルータからは外してください。
 
 ## キャパシティプランニング
 
-コモディティハードウェア上の概算(ピークではなく持続スループット):
+コモディティハードウェア上の概算（ピークではなく持続スループット）:
 
 | エンドポイント | RPS / レプリカ | ボトルネック |
 |---|---|---|
@@ -194,5 +208,5 @@ func ready(store *MyComposite) http.HandlerFunc {
 
 ## マルチインスタンスでも**できないこと**
 
-- **同じトランザクショナルストアに対して、設定の異なる OP を 2 つ稼働させる。** discovery 文書、scope カタログ、alg リスト、grant set はレプリカ間で一致が必須です。差があると、RP から見て drift になります(あるレプリカが発行したトークンを別のレプリカが拒否する、など)。
-- **永続サブストアを 2 つのバックエンドに分割する。** composite store の不変条件は「永続バックエンドは 1 つ」です。トランザクショナル整合性がそれに依存しています。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。
+- **同じトランザクショナルストアに対して、設定の異なる OP を 2 つ稼働させる。** discovery 文書、scope カタログ、alg リスト、grant set はレプリカ間で一致が必須です。差があると、RP から見て drift になります（あるレプリカが発行したトークンを別のレプリカが拒否する、など）。
+- **`composite.TxClusterKinds` を 2 つのバックエンドに分割する。** composite アダプタは、cluster の分割、比較不能な cluster バックエンド、`store.Transactional` を実装しないアンカーを拒否します。cluster 外の永続 `Kind` は、それぞれの整合性・可用性要件を満たす限り別のバックエンドへ配置できます。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。

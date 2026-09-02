@@ -10,12 +10,12 @@ description: scope と claim、OIDC 標準の対応表、カスタム scope 登�
 - **scope** はクライアントが authorize 要求で **要求する** もの。OP が `scopes_supported` で公開している小さな識別子集合の中の 1 つです。
 - **claim** は OP が **返す** key-value のペア — ID トークンの中、アクセストークンの中、`/userinfo` 応答の中など。
 
-scope は要求、claim は応答。scope を grant するから、対応する claim が release されます。
+scope は要求、claim は応答。scope を grant するから、対応する claim が開示されます。
 
 ::: tip 30 秒で頭に入れる相関図
 - scope = 「あなたの email が見たい」 — `scope=openid email`
 - claim = `"email": "alice@example.com"` — 返ってきた値。
-- 1 つの scope が複数の claim を release することがあります。下表の OIDC 標準対応がそのマッピングです。
+- 1 つの scope が複数の claim を開示することがあります。下表の OIDC 標準対応がそのマッピングです。
 :::
 
 ::: details このページで触れる仕様
@@ -47,7 +47,7 @@ GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
 **claim** は OP が署名する（あるいは `/userinfo` の場合は plain で返す）JSON object 内の 1 フィールドです。OIDC Core §5.1 が長いカタログを提供しています。構造的には 2 群に分かれます。
 
 - **要求自体に関する標準 claim** — `iss`、`aud`、`exp`、`iat`、`nbf`、`sub`、`nonce`、`auth_time`、`acr`、`amr`、`azp`。これらはトークンの説明であって、ユーザの説明ではありません。OP は grant された scope に関わらず埋めます。
-- **ユーザ claim** — `name`、`family_name`、`email`、`email_verified`、`phone_number`、`address`、`picture` など。これらはエンドユーザに関するものです。OP は scope grant が許可した場合にのみ release します。
+- **ユーザ claim** — `name`、`family_name`、`email`、`email_verified`、`phone_number`、`address`、`picture` など。これらはエンドユーザに関するものです。OP は scope grant が許可した場合にのみ開示します。
 
 第 1 群はすべてのトークンに乗ります。第 2 群が scope grant の制御対象です。
 
@@ -64,15 +64,80 @@ OIDC Core §5.4 が標準 scope に対応する claim を固定しています�
 | `phone` | `phone_number`、`phone_number_verified` |
 | `offline_access` | （claim なし — リフレッシュトークン発行のためのユーザ向け同意画面と、適用されるリフレッシュトークンの TTL バケットを制御） |
 
-`scope=openid email` の要求は、ユーザ claim カタログから `sub`、`email`、`email_verified` を release します。それ以外は何も release しません。`scope=openid profile email` なら `profile` 群が丸ごと加わります。
+`scope=openid email` の要求は、ユーザ claim カタログから `sub`、`email`、`email_verified` を開示します。それ以外は何も開示しません。`scope=openid profile email` なら `profile` 群が丸ごと加わります。
 
-::: details `offline_access` は claim を release しない
-`offline_access` は OIDC 標準 scope で、「ユーザが不在のときも動き続けたい」というクライアントの意思表明 — つまりリフレッシュトークン発行に対するユーザ向けの consent prompt です。ユーザ claim は何も release しません。本ライブラリでは、結果として発行されるリフレッシュトークンを別の TTL バケット（`op.WithRefreshTokenOfflineTTL`）にルーティングするので、ログイン状態維持の chain は通常の短セッションのリフレッシュより長く保てます。詳細は[リフレッシュトークン](/ja/concepts/refresh-tokens)。
+この対応表だけでは、開示された claim が **どこに載るか** までは分かりません。`sub` とトークン自体を説明する claim は ID トークンに載り、scope が開示するユーザ claim は `/userinfo` から返ります。
+
+<svg role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="scope-claim-map-title">各標準 scope が開示する claim 群と、その届き先。openid が開示する sub は ID トークンに載り、profile・email・address・phone の claim は /userinfo から返る。offline_access は claim を開示しない。</title>
+  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">要求された scope</text>
+  <text x="166" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">開示される claim</text>
+  <text x="560" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">届き先</text>
+  <line x1="24" y1="28" x2="736" y2="28" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+
+  <rect x="560" y="40" width="176" height="104" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="576" y="64" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600">ID トークン</text>
+  <text x="576" y="86" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">iss · aud · exp · iat · sub</text>
+  <text x="576" y="102" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">nonce · auth_time · azp</text>
+  <text x="576" y="118" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">acr · amr · at_hash · sid</text>
+  <text x="576" y="136" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">OP 自身が埋める</text>
+
+  <rect x="24" y="74" width="118" height="34" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="96" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">openid</text>
+  <path d="M142 91 H158 M152 87 L159 91 L152 95" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="96" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">sub</text>
+  <path d="M212 91 H556" stroke-dasharray="5 4" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M549 87 L556 91 L549 95" style="stroke:var(--vp-c-brand-2)"/>
+
+  <line x1="24" y1="162" x2="736" y2="162" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+
+  <rect x="560" y="182" width="176" height="128" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="576" y="206" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px;font-weight:600">/userinfo</text>
+  <text x="576" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">RP がアクセストークンを</text>
+  <text x="576" y="244" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">付けて呼び出すと</text>
+  <text x="576" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">JSON が返る</text>
+  <text x="576" y="284" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">許可された scope の</text>
+  <text x="576" y="300" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">claim だけが載る</text>
+
+  <rect x="24" y="180" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="200" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">profile</text>
+  <path d="M142 195 H158 M152 191 L159 195 L152 199" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="200" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">name · family_name · given_name · …（14 claim）</text>
+
+  <rect x="24" y="218" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="238" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">email</text>
+  <path d="M142 233 H158 M152 229 L159 233 L152 237" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="238" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">email · email_verified</text>
+
+  <rect x="24" y="256" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="276" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">address</text>
+  <path d="M142 271 H158 M152 267 L159 271 L152 275" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="276" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">address</text>
+
+  <rect x="24" y="294" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="314" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">phone</text>
+  <path d="M142 309 H158 M152 305 L159 309 L152 313" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="314" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">phone_number · phone_number_verified</text>
+
+  <path d="M506 192 V312" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M506 252 H556" stroke-dasharray="5 4" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M549 248 L556 252 L549 256" style="stroke:var(--vp-c-brand-2)"/>
+
+  <line x1="24" y1="336" x2="736" y2="336" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+  <rect x="24" y="352" width="140" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="94" y="372" text-anchor="middle" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:11.5px">offline_access</text>
+  <text x="184" y="372" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11px">claim なし — consent prompt とリフレッシュトークンの TTL バケットを決める</text>
+</svg>
+
+ユーザ claim を ID トークンに載せたい RP は、OIDC Core §5.5 の `claims` パラメータで明示的に要求する必要があります。scope を許可しただけでは `/userinfo` 側に載ります。
+
+::: details `offline_access` は claim を開示しない
+`offline_access` は OIDC 標準 scope で、「ユーザが不在のときも動き続けたい」というクライアントの意思表明 — つまりリフレッシュトークン発行に対するユーザ向けの consent prompt です。ユーザ claim は何も開示しません。本ライブラリでは、結果として発行されるリフレッシュトークンを別の TTL バケット（`op.WithRefreshTokenOfflineTTL`）にルーティングするので、ログイン状態維持の chain は通常の短セッションのリフレッシュより長く保てます。詳細は[リフレッシュトークン](/ja/concepts/refresh-tokens)。
 :::
 
 ## カスタム scope
 
-本ライブラリは `op.WithScope` で scope を追加登録できます。各カスタム scope は `op.Scope` 構造体で、通信路上の識別子・consent prompt の表示テキスト・release する claim のリスト・（任意で）どのクライアントが要求できるかを記述します。
+本ライブラリは `op.WithScope` で scope を追加登録できます。各カスタム scope は `op.Scope` 構造体で、通信路上の識別子・consent prompt の表示テキスト・開示する claim のリスト・（任意で）どのクライアントが要求できるかを記述します。
 
 ```go
 op.WithScope(op.PublicScope("read:projects", "プロジェクトの読み取り")),
@@ -108,6 +173,19 @@ i18n ラベル、claim mapping、consent prompt のレンダリングを含む�
 | 「audience ごとに lifetime / 形式 / revocation ポリシーが違いますか？」 | per-audience format で RFC 8707 を使う。 | 管理 API は opaque（即時失効）にしつつ、read API は JWT（水平スケール）を維持。本ライブラリは `op.WithAccessTokenFormatPerAudience` で実現します。 |
 
 scope は **権限の幅** を、resource indicator は **対象 audience** を表現します。1 つの authorize 要求に両方を載せることもできます — `scope=openid read:projects&resource=https://billing.example.com&resource=https://projects.example.com` は OP に「resource ごとに 1 つずつ、grant された scope 集合を持つアクセストークンを 2 つ発行せよ」と要求します。
+
+`resource` パラメータを受け付けるすべてのエンドポイントは、まず同じ正規形に落としてから比較します。
+
+| ルール | 効果 |
+|---|---|
+| 絶対 URI が必須 | scheme と host を欠く値は拒否します。 |
+| scheme と host を小文字化 | `HTTPS://API.example.com` と `https://api.example.com` は同じ resource になります。 |
+| デフォルトポートを除去 | HTTP の `:80` と HTTPS の `:443` は落とし、それ以外のポートは維持します。 |
+| 末尾の `/` を 1 個除去 | `https://api.example.com/` は `https://api.example.com` になります。 |
+| query は維持 | query 文字列も resource の同一性の一部です。 |
+| fragment と userinfo は拒否 | `invalid_target` でリクエストを失敗させます。 |
+
+許可リストとの比較や `WithAccessTokenFormatPerAudience` も同じ正規化を通ります。そのため、authorize、PAR、token、device authorization、CIBA、token exchange の間で同じ resource の比較結果が変わることはありません。
 
 OIDC §5.5 の `claims` パラメータ（scope 単位ではなく特定の claim を細かく要求する）は[使い方: claims request](/ja/use-cases/claims-request)に、per-audience format のトレードオフは[アクセストークン形式](/ja/concepts/access-token-format)にあります。
 

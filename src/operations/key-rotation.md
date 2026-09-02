@@ -1,21 +1,22 @@
 ---
 title: Key rotation
-description: Rotating signing keys and cookie keys without dropping live sessions.
+description: Rotating signing, inbound encryption, and cookie keys without dropping live sessions.
 outline: 2
 pageClass: pg-operations-key-rotation
 ---
 
 # Key rotation
 
-Two distinct keys rotate on different cadences:
+Three distinct key roles rotate on different cadences:
 
-- **Signing keys** (`op.Keyset`) — the ECDSA P-256 private keys used to sign ID tokens, JWT access tokens, JARM, and userinfo JWTs. Public half lives in `/jwks`.
+- **Signing keys** (`op.Keyset`) — the ECDSA P-256 private keys used to sign ID Tokens, JWT access tokens, JARM, and userinfo JWTs. Public half lives in `/jwks`.
 - **Cookie keys** (`op.WithCookieKeys`) — the 32-byte AES-256-GCM keys used to seal session and CSRF cookies.
+- **Inbound encryption keys** (`op.EncryptionKeyset`) — the private keys used to decrypt client-encrypted request objects. Their public halves are published as `use=enc` keys in `/jwks`; they are not outbound encryption keys.
 
-Both are rotated by constructing a new `*Provider` and atomically swapping the handler. The library never mutates the slice in place.
+All three are rotated by constructing a new `*Provider` and atomically swapping the handler. The library never mutates a key slice in place.
 
 <svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="key-rotation-title">The shape of a key rotation: build a new Provider with the new key first in the list, swap the handler, then drop the old key once the cache window has passed.</title>
+  <title id="key-rotation-title">The shape of a signing or cookie key rotation: build a new Provider with the new key first in the list, swap the handler, then drop the old key once the cache window has passed.</title>
 <rect class="rot-box" x="26" y="100" width="128" height="72" rx="8"/>
   <text class="rot-text" x="90" y="130" text-anchor="middle">Generate key</text>
   <text class="rot-sub" x="90" y="152" text-anchor="middle">new kid</text>
@@ -44,8 +45,9 @@ Both are rotated by constructing a new `*Provider` and atomically swapping the h
   <path class="rot-flow" d="M488 132 L497 136 L488 140"/>
   <path class="rot-flow" d="M628 136 H654"/>
   <path class="rot-flow" d="M646 132 L655 136 L646 140"/>
-  <text class="rot-sub" x="620" y="212" text-anchor="middle">wait out the TTL and the JWKS cache window</text>
-  <path class="rot-flow" d="M564 172 C590 214 664 214 697 174"/>
+  <path class="rot-flow" d="M564 172 C580 208 664 208 697 174"/>
+  <path class="rot-flow" d="M692 184 L697 173 L702 184"/>
+  <text class="rot-sub halo" x="600" y="232" text-anchor="middle">wait out the TTL and the JWKS cache window</text>
 </svg>
 
 ## Signing key rotation
@@ -82,7 +84,7 @@ if err != nil { /* retain old provider, alert */ }
 liveHandler.Store(newProv)  // typically an *atomic.Value or sync.Map
 ```
 
-The first entry in the `Keyset` is always the active signer; subsequent entries are advertised in JWKS for verification only. RPs that have a JWKS already cached pick up the new `kid` on their next refresh — see [JWKS endpoint](/operations/jwks) for the cache headers.
+The first entry in the `Keyset` is always the active signer; subsequent live entries are advertised in JWKS for verification only. RPs that have a JWKS already cached pick up the new `kid` on their next refresh — see [JWKS endpoint](/operations/jwks) for the cache headers. The active signing entry must have no `NotAfter` deadline or one in the future; if it has already reached `NotAfter`, `op.New` fails. A past deadline is valid only for a retiring entry that is no longer active.
 
 ### When to drop the retiring key
 
@@ -96,6 +98,30 @@ So the safe minimum is **roughly 1 hour after rotation** (the default 1-hour JWK
 ::: tip Rotation overlap signal
 Pass `op.WithJWKSRotationActive(predicate)` at provider construction — when the predicate returns true, the JWKS response advertises a 5-minute `Cache-Control: public, max-age=300, must-revalidate` instead of the long-cache default (`max-age=3600, stale-while-revalidate=3600`). Hold the predicate true during the overlap window so RP caches refresh promptly. See [JWKS endpoint](/operations/jwks#rotation-cache-control).
 :::
+
+## Inbound encryption key rotation
+
+`op.EncryptionKeyset` is the OP's inbound-only JWE keyset for encrypted request objects at `/authorize` and `/par`. It never supplies an active key for outbound responses: those JWE responses are encrypted to a `use=enc` key from the client's JWKS.
+
+```go
+encKeys := op.EncryptionKeyset{
+    {KeyID: "enc-2026-09", PrivateKey: newEncPriv},
+    {KeyID: "enc-2026-05", PrivateKey: oldEncPriv, NotAfter: oldEncExpiry},
+}
+
+newProv, err := op.New(
+    op.WithIssuer("https://op.example.com"),
+    op.WithStore(myStore),
+    op.WithKeyset(signingKeys),
+    op.WithEncryptionKeyset(encKeys),
+    op.WithCookieKeys(cookieKey),
+    /* ... rest of options ... */
+)
+```
+
+Entries are ordered inbound decryption candidates and are published as `use=enc`. A JWE with `kid` selects its matching live entry. A kidless JWE is filtered to live keys in the same family as its protected `alg`; if more than `op.MaxKidlessEncryptionTrialKeys` (default: 4) remain, decryption is refused rather than truncated. `op.New` warns when a configured family exceeds that limit, so RPs should include `kid`.
+
+Publish the new and retiring entries through the RP JWKS cache window and the longest accepted request-object lifetime. `NotAfter` is a hard cutoff: on or after it, the OP refuses that key and removes its public half from JWKS. Remove the retiring entry after the overlap; outbound response encryption has no OP-side key to rotate.
 
 ## Cookie key rotation
 

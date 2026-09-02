@@ -37,49 +37,53 @@ One nuance the table below makes precise: *volatile-shaped* data and *volatile-t
 
 ## Architecture
 
-<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 0 760 244" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="hcr-arch-title">The composite store adapter routes durable substores to the SQL/MySQL backend and volatile substores to the Redis backend.</title>
   <marker id="hcr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
     <path d="M1 1 L9 5 L1 9" stroke-width="1.6"/>
   </marker>
 
   <!-- op.Provider (the OP — brand accent) -->
-  <rect class="hcr-accent" x="8" y="100" width="132" height="50" rx="6"/>
-  <text class="hcr-m hcr-accent-t" x="74" y="129" text-anchor="middle">op.Provider</text>
+  <rect class="hcr-accent" x="8" y="100" width="130" height="52" rx="6"/>
+  <text class="hcr-m hcr-accent-t" x="73" y="131" text-anchor="middle">op.Provider</text>
 
   <!-- composite splitter -->
-  <rect x="176" y="100" width="144" height="50" rx="6"/>
-  <text class="hcr-m" x="248" y="120" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="248" y="137" text-anchor="middle">composite</text>
+  <rect x="170" y="100" width="140" height="52" rx="6"/>
+  <text class="hcr-m" x="240" y="121" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="240" y="138" text-anchor="middle">composite</text>
 
   <!-- op -> composite -->
-  <path d="M140 125 H172" marker-end="url(#hcr-arrow)"/>
+  <path d="M138 126 H168" marker-end="url(#hcr-arrow)"/>
+
+  <!-- split bus -->
+  <path d="M310 126 H332"/>
+  <path d="M332 54 V198"/>
 
   <!-- durable branch -->
-  <path d="M320 118 C 370 118 384 52 448 52" marker-end="url(#hcr-arrow)"/>
-  <text class="hcr-edge" x="386" y="42" text-anchor="middle">durable substores</text>
-  <rect x="452" y="27" width="132" height="50" rx="6"/>
-  <text class="hcr-m" x="518" y="47" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="518" y="64" text-anchor="middle">sql</text>
-  <path d="M584 52 H615" marker-end="url(#hcr-arrow)"/>
+  <text class="hcr-edge" x="394" y="42" text-anchor="middle">durable substores</text>
+  <path d="M332 54 H458" marker-end="url(#hcr-arrow)"/>
+  <rect x="460" y="28" width="130" height="52" rx="6"/>
+  <text class="hcr-m" x="525" y="49" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="525" y="66" text-anchor="middle">sql</text>
+  <path d="M590 54 H616" marker-end="url(#hcr-arrow)"/>
   <g class="hcr-db">
-    <path d="M620 39 V65 A50 7 0 0 0 720 65 V39"/>
-    <ellipse cx="670" cy="39" rx="50" ry="7"/>
+    <path d="M618 36 V72 A64 8 0 0 0 746 72 V36"/>
+    <ellipse cx="682" cy="36" rx="64" ry="8"/>
   </g>
-  <text class="hcr-t" x="670" y="57" text-anchor="middle">MySQL</text>
+  <text class="hcr-t" x="682" y="62" text-anchor="middle">MySQL</text>
 
   <!-- volatile branch -->
-  <path d="M320 132 C 370 132 384 198 448 198" marker-end="url(#hcr-arrow)"/>
-  <text class="hcr-edge" x="386" y="212" text-anchor="middle">volatile substores</text>
-  <rect x="452" y="173" width="132" height="50" rx="6"/>
-  <text class="hcr-m" x="518" y="193" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="518" y="210" text-anchor="middle">redis</text>
-  <path d="M584 198 H615" marker-end="url(#hcr-arrow)"/>
+  <path d="M332 198 H458" marker-end="url(#hcr-arrow)"/>
+  <text class="hcr-edge" x="394" y="214" text-anchor="middle">volatile substores</text>
+  <rect x="460" y="172" width="130" height="52" rx="6"/>
+  <text class="hcr-m" x="525" y="193" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="525" y="210" text-anchor="middle">redis</text>
+  <path d="M590 198 H616" marker-end="url(#hcr-arrow)"/>
   <g class="hcr-db">
-    <path d="M620 185 V211 A50 7 0 0 0 720 211 V185"/>
-    <ellipse cx="670" cy="185" rx="50" ry="7"/>
+    <path d="M618 180 V216 A64 8 0 0 0 746 216 V180"/>
+    <ellipse cx="682" cy="180" rx="64" ry="8"/>
   </g>
-  <text class="hcr-t" x="670" y="203" text-anchor="middle">Redis</text>
+  <text class="hcr-t" x="682" y="206" text-anchor="middle">Redis</text>
 </svg>
 
 The composite store enforces a transactional-cluster invariant: substores that need to commit atomically together (e.g. `AuthorizationCodeStore` and `RefreshTokenStore`) **must** be on the same backend. The composite constructor refuses configurations that would split a transactional cluster.
@@ -135,6 +139,12 @@ provider, err := op.New(
 )
 ```
 
+## Construction checks and expired writes
+
+`composite.New` validates the closed `Kind` set before it builds routes. If `With` names an unknown integer, `New` returns `composite.ErrInvalidKind`; it does not silently send that value to `WithDefault`. Every valid `Kind` must resolve to an override or default, otherwise construction returns `composite.ErrKindNotRouted`. All members of `composite.TxClusterKinds` must resolve to the same backend, whose dynamic type must be comparable; a value store containing a map, slice, or function is rejected with `composite.ErrBackendNotComparable`, so route such stores through a pointer. The shared transaction anchor must implement `store.Transactional`; otherwise construction returns `composite.ErrTxAnchorNotTx`.
+
+`store.SessionStore.Save` and `store.InteractionStore.Save` may decline an already-expired record when no live record exists, but a past-dated replacement must take effect when a live record does exist: after a successful save, `Find` must not return the previous live record. The Redis adapter removes the old key for an already-expired input; adapters that retain an expired row must still filter it on reads. Treating an expired replacement as a silent no-op can leave an old session or interaction active.
+
 ::: info Static client seeding through composite
 `op.WithStaticClients` accepts a `*composite.Store` directly. The composite deliberately does **not** satisfy `store.ClientRegistry` through a type assertion (a read-only routed `Clients` backend would otherwise be silently coerced into a registry); instead it exposes an optional `ClientRegistry()` accessor that `op.WithStaticClients` probes at wiring time. Embedders therefore do not need to seed against the durable backend before wrapping it in a composite. If the routed `Clients` backend is read-only the probe returns `(nil, false)` and `op.New` rejects the configuration with the same `store.ClientRegistry required` error a directly-supplied read-only store would produce.
 :::
@@ -162,7 +172,7 @@ provider, err := op.New(
 | `ConsumedJTIStore` | volatile (Redis) |
 
 ::: info Why some short-lived substores stay on the durable side
-`PushedAuthRequestStore`, `OpaqueAccessTokenStore`, and `GrantRevocationStore` are part of the transactional cluster (`composite.TxClusterKinds`): each one commits or CAS-updates in the same consistency domain as the auth-code, grant, or refresh-token write that drives it. PAR is the counter-intuitive one — the `request_uri` it holds is short-lived and high-churn, so it *looks* like volatile state, but the OP consumes it inside the authorization-code path, and splitting it onto a separate backend would fracture that domain. The Redis adapter returns `nil` from all three accessors, so the composite splitter cannot route them to a non-transactional backend; embedders who need any of them configure SQL on the durable side. `op.New` refuses to start a PAR-enabled profile whose routed `PushedAuthRequests()` is nil. The default revocation strategy (`RevocationStrategyGrantTombstone`) requires `GrantRevocations()` to be non-nil at `op.New`, so a Redis-only deployment that wants to leave the durable side empty must explicitly pin `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI only — FAPI profiles reject `None`).
+`PushedAuthRequestStore`, `OpaqueAccessTokenStore`, and `GrantRevocationStore` are part of the transactional cluster (`composite.TxClusterKinds`): each one commits or CAS-updates in the same consistency domain as the auth-code, grant, or refresh-token write that drives it. PAR is the counter-intuitive one — the `request_uri` it holds is short-lived and high-churn, so it *looks* like volatile state, but the OP consumes it inside the authorization-code path, and splitting it onto a separate backend would fracture that domain. The Redis adapter returns `nil` from all three accessors, so the composite splitter cannot route them to a non-transactional backend; embedders who need any of them configure SQL on the durable side. `op.New` refuses to start a PAR-enabled profile whose routed `PushedAuthRequests()` is nil. The default revocation strategy (`RevocationStrategyGrantTombstone`) requires `GrantRevocations()` to be non-nil at `op.New`. A Redis-only deployment that wants to leave the durable side empty therefore has to pin `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` explicitly. That escape hatch is non-FAPI only: FAPI profiles reject `None`.
 :::
 
 ::: details Why SessionStore can be either

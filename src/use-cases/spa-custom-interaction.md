@@ -66,7 +66,7 @@ In the lower-level JSON-driver shape, `/authorize` redirects to `/interaction/{u
   <circle class="badge" cx="22" cy="88" r="9"/><text class="num" x="22" y="91.5" text-anchor="middle">1</text>
   <line x1="120" y1="88" x2="650" y2="88"/>
   <path d="M642,84 L650,88 L642,92"/>
-  <text class="mono" x="385" y="82" text-anchor="middle">GET /authorize?...</text>
+  <text class="mono" x="385" y="79" text-anchor="middle">GET /authorize?...</text>
 
   <circle class="badge" cx="22" cy="121" r="9"/><text class="num" x="22" y="124.5" text-anchor="middle">2</text>
   <rect class="note" x="553" y="109" width="194" height="24" rx="4"/>
@@ -75,27 +75,27 @@ In the lower-level JSON-driver shape, `/authorize` redirects to `/interaction/{u
   <circle class="badge" cx="22" cy="154" r="9"/><text class="num" x="22" y="157.5" text-anchor="middle">3</text>
   <line x1="650" y1="154" x2="120" y2="154"/>
   <path d="M128,150 L120,154 L128,158"/>
-  <text x="385" y="148" text-anchor="middle"><tspan class="mono">302 → /login/{uid}</tspan><tspan class="lbl"> (your route)</tspan></text>
+  <text x="385" y="145" text-anchor="middle"><tspan class="mono">302 → /login/{uid}</tspan><tspan class="lbl"> (your route)</tspan></text>
 
   <circle class="badge" cx="22" cy="187" r="9"/><text class="num" x="22" y="190.5" text-anchor="middle">4</text>
   <line x1="120" y1="187" x2="385" y2="187"/>
   <path d="M377,183 L385,187 L377,191"/>
-  <text class="mono" x="252" y="181" text-anchor="middle">GET /login/{uid}</text>
+  <text class="mono" x="252" y="178" text-anchor="middle">GET /login/{uid}</text>
 
   <circle class="badge" cx="22" cy="220" r="9"/><text class="num" x="22" y="223.5" text-anchor="middle">5</text>
   <line x1="385" y1="220" x2="120" y2="220"/>
   <path d="M128,216 L120,220 L128,224"/>
-  <text x="252" y="214" text-anchor="middle"><tspan class="mono">200 index.html</tspan><tspan class="lbl"> (SPA shell)</tspan></text>
+  <text x="252" y="211" text-anchor="middle"><tspan class="mono">200 index.html</tspan><tspan class="lbl"> (SPA shell)</tspan></text>
 
   <circle class="badge" cx="22" cy="253" r="9"/><text class="num" x="22" y="256.5" text-anchor="middle">6</text>
   <line x1="120" y1="253" x2="650" y2="253"/>
   <path d="M642,249 L650,253 L642,257"/>
-  <text class="mono" x="385" y="247" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
+  <text class="mono" x="385" y="244" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
 
   <circle class="badge" cx="22" cy="286" r="9"/><text class="num" x="22" y="289.5" text-anchor="middle">7</text>
   <line x1="650" y1="286" x2="120" y2="286"/>
   <path d="M128,282 L120,286 L128,290"/>
-  <text class="mono" x="385" y="280" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
+  <text class="mono" x="385" y="277" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
 
   <circle class="badge" cx="22" cy="319" r="9"/><text class="num" x="22" y="322.5" text-anchor="middle">8</text>
   <rect class="note" x="42" y="307" width="156" height="24" rx="4"/>
@@ -104,27 +104,27 @@ In the lower-level JSON-driver shape, `/authorize` redirects to `/interaction/{u
   <circle class="badge" cx="22" cy="352" r="9"/><text class="num" x="22" y="355.5" text-anchor="middle">9</text>
   <line x1="120" y1="352" x2="650" y2="352"/>
   <path d="M642,348 L650,352 L642,356"/>
-  <text class="mono" x="385" y="346" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
+  <text class="mono" x="385" y="343" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
 
   <circle class="badge" cx="22" cy="385" r="9"/><text class="num" x="22" y="388.5" text-anchor="middle">10</text>
   <line x1="650" y1="385" x2="120" y2="385"/>
   <path d="M128,381 L120,385 L128,389"/>
-  <text x="385" y="379" text-anchor="middle"><tspan class="mono">200 { type:"consent.scope", … }</tspan><tspan class="lbl"> or </tspan><tspan class="mono">{ type:"redirect", … }</tspan></text>
+  <text x="385" y="376" text-anchor="middle"><tspan class="mono">200 { type:"consent.scope", … }</tspan><tspan class="lbl"> or </tspan><tspan class="mono">{ type:"redirect", … }</tspan></text>
 
   <circle class="badge" cx="22" cy="418" r="9"/><text class="num" x="22" y="421.5" text-anchor="middle">11</text>
   <line x1="120" y1="418" x2="650" y2="418"/>
   <path d="M642,414 L650,418 L642,422"/>
-  <text x="385" y="412" text-anchor="middle"><tspan class="mono">POST /interaction/{uid}</tspan><tspan class="lbl"> (consent values)</tspan></text>
+  <text x="385" y="409" text-anchor="middle"><tspan class="mono">POST /interaction/{uid}</tspan><tspan class="lbl"> (consent values)</tspan></text>
 
   <circle class="badge" cx="22" cy="451" r="9"/><text class="num" x="22" y="454.5" text-anchor="middle">12</text>
   <line x1="650" y1="451" x2="120" y2="451"/>
   <path d="M128,447 L120,451 L128,455"/>
-  <text class="mono" x="385" y="445" text-anchor="middle">200 { type:"redirect", location:"/auth?…&amp;code=…" }</text>
+  <text class="mono" x="385" y="442" text-anchor="middle">200 { type:"redirect", location:"/auth?…&amp;code=…" }</text>
 
   <circle class="badge" cx="22" cy="484" r="9"/><text class="num" x="22" y="487.5" text-anchor="middle">13</text>
   <line x1="120" y1="484" x2="385" y2="484"/>
   <path d="M377,480 L385,484 L377,488"/>
-  <text class="mono" x="252" y="478" text-anchor="middle">window.location.href = location</text>
+  <text class="mono" x="252" y="475" text-anchor="middle">window.location.href = location</text>
 </svg>
 
 The state machine lives on the OP. The SPA fetches the next prompt, posts back the user's answer, and the OP decides what to render next.
@@ -157,7 +157,7 @@ import (
 provider, err := op.New(
   /* required options */
   op.WithInteractionDriver(interaction.JSONDriver{}),
-  op.WithCORSOrigins("https://app.example.com"),
+  op.WithCORSOrigins("https://app.example.com"), // issuer-same-site origin for ceremony UI
 )
 
 mux := http.NewServeMux()
@@ -362,7 +362,9 @@ op.WithCORSOrigins(
 )
 ```
 
-For API CORS, the library also auto-allowlists each registered `redirect_uri`'s origin (so a static client setup doesn't need duplicate CORS config). That derivation does not authorize an origin to POST interaction or end-session state: those ceremony checks allow only the issuer origin and origins explicitly passed to `op.WithCORSOrigins`. See [Use case: CORS for SPA](/use-cases/cors-spa).
+For API CORS, the library also auto-allowlists each registered `redirect_uri`'s origin (so a static client setup doesn't need duplicate CORS config). That derivation does not authorize an origin to POST interaction or end-session state: those ceremony checks allow only the issuer origin and origins explicitly passed to `op.WithCORSOrigins`, and a ceremony origin must be same-site with the issuer. A genuinely cross-site explicit origin may pass preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies, including `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` (`SameSite=Strict`), and `__Host-oidc_logout_csrf` (`SameSite=Strict`); interaction and end-session requests then return `404`. Put ceremony UI on an issuer-sibling host, such as `login.example.com` alongside `op.example.com`. See [Use case: CORS for SPA](/use-cases/cors-spa).
+
+The snippet above serves the SPA shell beside the provider, so `credentials: "same-origin"` is correct. If the shell is hosted on a different (but same-site) origin, point the fetches at the OP's absolute URL and use `credentials: "include"`; a cross-site origin cannot make the cookie-bound ceremony work.
 
 ## Custom consent UI without going full-SPA
 

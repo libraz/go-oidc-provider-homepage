@@ -6,46 +6,54 @@ pageClass: pg-use-cases-device-code
 
 # 使い方 — Device Code（RFC 8628）
 
-device flow の概念的背景（何で、いつ選び、なぜ `slow_down` / `expired_token` が要るか）は [Device Code 入門](/ja/concepts/device-code) を先に読んでください。このページは組み込み手順を扱います。
+device flow がどういうものか、いつ選ぶべきか、なぜ `slow_down` / `expired_token` が要るのか、といった概念的な背景は [Device Code 入門](/ja/concepts/device-code) を先に読んでください。このページは組み込み手順を扱います。
 
-<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="device-code-flow-title">Device Code の流れ: 入力しづらいデバイスがコードを表示し、ユーザが別端末で承認し、デバイスが token をポーリングする。</title>
-<rect class="dc-box" x="32" y="76" width="168" height="86" rx="8"/>
-  <text class="dc-text" x="116" y="110" text-anchor="middle">入力しづらいデバイス</text>
-  <text class="dc-sub" x="116" y="132" text-anchor="middle">TV / CLI / プリンタ</text>
+<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="device-code-flow-title">Device Code の流れ: 入力しづらいデバイスがコードを表示し、ユーザは自分のスマホや PC でそのコードを入力して承認し、デバイスは OP がアクセストークンを発行するまで /token をポーリングする。</title>
+  <line class="dc-life" x1="110" y1="78" x2="110" y2="348"/>
+  <line class="dc-life dc-life-op" x1="380" y1="78" x2="380" y2="348"/>
+  <line class="dc-life" x1="650" y1="78" x2="650" y2="348"/>
 
-  <rect class="dc-op" x="296" y="56" width="168" height="126" rx="8"/>
-  <text class="dc-text" x="380" y="94" text-anchor="middle">OP</text>
-  <text class="dc-sub" x="380" y="116" text-anchor="middle">/device_authorization</text>
-  <text class="dc-sub" x="380" y="136" text-anchor="middle">DeviceCodeStore</text>
-  <text class="dc-sub" x="380" y="156" text-anchor="middle">/token</text>
+  <rect class="dc-box" x="20" y="14" width="180" height="64" rx="8"/>
+  <text class="dc-text" x="110" y="36" text-anchor="middle">デバイス</text>
+  <text class="dc-sub" x="110" y="54" text-anchor="middle">入力しづらい</text>
+  <text class="dc-sub" x="110" y="70" text-anchor="middle">TV / CLI / プリンタ</text>
 
-  <rect class="dc-box" x="560" y="76" width="168" height="86" rx="8"/>
-  <text class="dc-text" x="644" y="110" text-anchor="middle">ユーザの端末</text>
-  <text class="dc-sub" x="644" y="132" text-anchor="middle">スマホ / PC</text>
+  <rect class="dc-op" x="290" y="14" width="180" height="64" rx="8"/>
+  <text class="dc-text" x="380" y="36" text-anchor="middle">OP</text>
+  <text class="dc-sub" x="380" y="54" text-anchor="middle">/device_authorization</text>
+  <text class="dc-sub" x="380" y="70" text-anchor="middle">DeviceCodeStore · /token</text>
 
-  <rect class="dc-box" x="32" y="246" width="168" height="58" rx="8"/>
-  <text class="dc-text" x="116" y="280" text-anchor="middle">コードを表示</text>
-  <rect class="dc-box" x="560" y="246" width="168" height="58" rx="8"/>
-  <text class="dc-text" x="644" y="280" text-anchor="middle">コード入力と同意</text>
+  <rect class="dc-box" x="560" y="14" width="180" height="64" rx="8"/>
+  <text class="dc-text" x="650" y="40" text-anchor="middle">ユーザの端末</text>
+  <text class="dc-sub" x="650" y="62" text-anchor="middle">スマホ / PC</text>
 
-  <path class="dc-flow" d="M200 104 H292"/>
-  <text class="dc-sub" x="246" y="91" text-anchor="middle">1. 開始</text>
-  <path class="dc-flow" d="M284 100 L293 104 L284 108"/>
-  <path class="dc-flow" d="M296 146 H204"/>
-  <text class="dc-sub" x="250" y="169" text-anchor="middle">2. device_code / user_code</text>
-  <path class="dc-flow" d="M212 142 L203 146 L212 150"/>
-  <path class="dc-flow" d="M116 162 V242"/>
-  <path class="dc-flow" d="M112 234 L116 243 L120 234"/>
-  <path class="dc-flow" d="M200 275 H556"/>
-  <text class="dc-sub" x="380" y="260" text-anchor="middle">3. verification_uri へ移動</text>
-  <path class="dc-flow" d="M548 271 L557 275 L548 279"/>
-  <path class="dc-flow" d="M644 246 V166"/>
-  <path class="dc-flow" d="M640 174 L644 165 L648 174"/>
-  <text class="dc-sub" x="676" y="206" text-anchor="middle">4. 承認</text>
-  <path class="dc-flow" d="M116 246 C144 202 198 202 292 160"/>
-  <text class="dc-sub" x="218" y="218" text-anchor="middle">5. /token をポーリング</text>
-  <path class="dc-flow" d="M283 157 L293 160 L285 166"/>
+  <path class="dc-flow" d="M110 114 H380"/>
+  <path class="dc-flow" d="M373 110 L380 114 L373 118"/>
+  <text class="dc-sub" x="245" y="106" text-anchor="middle">1. POST /device_authorization</text>
+
+  <path class="dc-flow" d="M380 152 H110"/>
+  <path class="dc-flow" d="M117 148 L110 152 L117 156"/>
+  <text class="dc-sub" x="245" y="144" text-anchor="middle">2. device_code + user_code</text>
+
+  <rect class="dc-box" x="26" y="176" width="168" height="28" rx="6"/>
+  <text class="dc-sub" x="110" y="195" text-anchor="middle">3. コードと URL を表示</text>
+
+  <path class="dc-flow dc-oob" d="M110 232 H650"/>
+  <path class="dc-flow" d="M643 228 L650 232 L643 236"/>
+  <text class="dc-sub halo" x="380" y="224" text-anchor="middle">4. ユーザが画面のコードを読む</text>
+
+  <path class="dc-flow" d="M650 270 H380"/>
+  <path class="dc-flow" d="M387 266 L380 270 L387 274"/>
+  <text class="dc-sub" x="515" y="262" text-anchor="middle">5. コードを入力して承認</text>
+
+  <path class="dc-flow" d="M110 308 H380"/>
+  <path class="dc-flow" d="M373 304 L380 308 L373 312"/>
+  <text class="dc-sub" x="245" y="300" text-anchor="middle">6. device_code で /token をポーリング</text>
+
+  <path class="dc-flow" d="M380 344 H110"/>
+  <path class="dc-flow" d="M117 340 L110 344 L117 348"/>
+  <text class="dc-sub" x="245" y="336" text-anchor="middle">7. 200 access_token</text>
 </svg>
 
 ::: details `device_code` と `user_code` の違い
@@ -100,7 +108,7 @@ provider, err := op.New(
 device-code サブストア（`store.DeviceCodeStore`）は必須です。in-memory と SQL の両アダプタが同梱しています — SQL アダプタは sqlite / mysql / postgres で `oidc_device_codes` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis のみの構成では composite アダプタで `DeviceCodes` を durable な層（SQL か in-memory）にルーティングしてください。
 
 ::: warning サブストアの存在は op.New で強制
-設定 store が nil 以外な `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じ構成検査が働きます。どちらの経路でもサブストアは必須です。
+構成した store が nil 以外の `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じ構成検査が働きます。どちらの経路でもサブストアは必須です。
 :::
 
 ## verification ページ
@@ -209,15 +217,19 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 
 デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。ハンドラは `/auth` / `/token` と同じ検査を適用します:
 
-- 値は絶対 URI でなければなりません(RFC 8707 §2)。相対 URI は `400 invalid_target` で拒否します。
-- 正規化後の値(scheme + host を小文字化、末尾 `/` 除去)はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
+- 値は絶対 URI でなければなりません（RFC 8707 §2）。相対 URI は `400 invalid_target` で拒否します。
+- 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
 - `resource=` を複数指定すると `400 invalid_target` で拒否されます。発行パイプラインは audience を 1 つだけ受け付けるため、ハンドラは「黙って切り捨てる」入力を受け付けません。
 
 ::: warning 未登録 resource は拒否されます
 OP が audience として発行できるのは、クライアントの `Resources` に登録済みの値だけです。組み込み側は device flow で使うリソースサーバ URI を、`resource=` として送る前にクライアントシードまたは dynamic registration のメタデータへ追加してください。
 :::
 
-## Polling 応答
+## 送信者制約付きの device record
+
+DPoP または mTLS を使う場合、`/device_authorization` は DPoP 鍵の thumbprint と mTLS 証明書の thumbprint を record に保存します。`/token` では発行前に、record に存在する binding をすべて再検証します。両方を持つ record には、一致する DPoP proof と mTLS 証明書の両方が必要で、片方だけでは redeem できません。proof が無い、または一致しない場合は redemption に失敗します。成功時に発行する token の `cnf` には、OP が再検証したすべての binding を反映します。
+
+## ポーリング応答
 
 | 通信路上の応答 | 意味 |
 |---|---|
@@ -227,9 +239,9 @@ OP が audience として発行できるのは、クライアントの `Resource
 | `400 expired_token` | `device_code` が `expires_in` を超えた。ポーリングを停止 |
 | `200 { access_token, ... }` | 承認 — 通常の token 応答として処理 |
 
-## デバイス登録解除(unenroll)時の連鎖失効
+## デバイス登録解除（unenroll）時の連鎖失効
 
-組み込み側がデバイスの authorization を失効させるとき(ユーザがアカウント設定で「この TV を削除」をクリックなど)は、そのレコードから発行されたアクセストークンも同時に失効すべきです。`devicecodekit.Deps.AccessTokens` を渡しておくと `devicecodekit.Revoke` がその連鎖失効まで実行します:
+組み込み側がデバイスの authorization を失効させるとき（ユーザがアカウント設定で「この TV を削除」をクリックなど）は、そのレコードから発行されたアクセストークンも同時に失効すべきです。`devicecodekit.Deps.AccessTokens` を渡しておくと `devicecodekit.Revoke` がその連鎖失効まで実行します:
 
 ::: details cascade revocation とは
 「親」レコード（ここではデバイス authorization）が失効されたとき、そこから発行された「子」の資格情報も同時に失効させる考え方です。device-code では、`GrantID` がそのデバイスコード id を指すアクセストークンが該当します。連鎖失効が無いと、ユーザが「この TV を削除」を押しても、TV のメモリ上のアクセストークンは TTL 満了まで動き続け、失効が静かに不完全になります。本ライブラリは発行するトークンに `GrantID` を付けているため、ヘルパがこの走査を 1 クエリで回せます。

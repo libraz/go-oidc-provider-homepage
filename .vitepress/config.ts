@@ -4,10 +4,10 @@ import { generateLlmsTxt, type LlmsLocale, llmsDevPlugin } from './llms'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
-const docsVersion = '1.1.0'
+const docsVersion = '1.2.0'
 const docsVersionTag = `v${docsVersion}`
 const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
-const releaseNotesUrl = `${changelogUrl}#v110--2026-08-13`
+const releaseNotesUrl = `${changelogUrl}#v120--2026-09-02`
 
 /** Per-locale structured data and social-card copy. */
 type Locale = 'en' | 'ja'
@@ -22,7 +22,7 @@ const softwareApplicationJsonLd = (lang: Locale) => ({
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   description:
     lang === 'ja'
-      ? 'Go 向けの OpenID Connect Provider（認可サーバー）ライブラリ。http.Handler として組み込め、FAPI 2.0 Baseline / Message Signing をターゲットにしています。'
+      ? 'Go 向けの OpenID Connect Provider（認可サーバ）ライブラリ。http.Handler として組み込め、FAPI 2.0 Baseline / Message Signing をターゲットにしています。'
       : 'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
   url: lang === 'ja' ? `${siteUrl}/ja/` : siteUrl,
   downloadUrl: githubUrl,
@@ -31,7 +31,7 @@ const softwareApplicationJsonLd = (lang: Locale) => ({
   license: 'https://opensource.org/licenses/Apache-2.0',
   keywords:
     lang === 'ja'
-      ? 'OpenID Connect, OIDC, OAuth 2.0, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, Go, 認可サーバー'
+      ? 'OpenID Connect, OIDC, OAuth 2.0, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, Go, 認可サーバ'
       : 'OpenID Connect, OIDC, OAuth 2.0, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, Go, Authorization Server'
 })
 
@@ -48,7 +48,7 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
     description:
       'Go の http.Handler として組み込める OIDC Provider ライブラリ。FAPI 2.0 Baseline / Message Signing をターゲットにしています。',
     keywords:
-      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバー, http.Handler'
+      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバ, http.Handler'
   }
 }
 
@@ -97,7 +97,7 @@ const LLMS_LOCALES: LlmsLocale[] = [
     summary:
       'Go の http.Handler に組み込める OpenID Connect Provider（Authorization Server）ライブラリ。PAR・JAR・DPoP・mTLS を備え、FAPI 2.0 Baseline / Message Signing をターゲットとする。',
     intro:
-      'go-oidc-provider は単体で動く製品ではなくライブラリで、既存の Go サービスにマウントし、\nストレージ・ユーザー認証・同意画面はホスト側のアプリケーションに委ねる。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門書としても読める。\n以下は日本語ドキュメントへのリンク一覧。',
+      'go-oidc-provider は単体で動く製品ではなくライブラリで、既存の Go サービスにマウントし、\nストレージ・ユーザ認証・同意画面はホスト側のアプリケーションに委ねる。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門書としても読める。\n以下は日本語ドキュメントへのリンク一覧。',
     overviewHeading: '主要ページ',
     homeText: 'go-oidc-provider トップ',
     alternate: {
@@ -922,7 +922,7 @@ export default defineConfig({
                   { text: 'scope と claim', link: '/ja/concepts/scopes-and-claims' },
                   { text: 'discovery', link: '/ja/concepts/discovery' },
                   {
-                    text: 'JOSE 入門 (JWS / JWE / JWK / JWKS / kid)',
+                    text: 'JOSE 入門（JWS / JWE / JWK / JWKS / kid）',
                     link: '/ja/concepts/jose-basics'
                   }
                 ]
@@ -962,7 +962,7 @@ export default defineConfig({
                 text: '送信者制約トークン',
                 items: [
                   {
-                    text: '送信者制約 (DPoP / mTLS) — 選び方',
+                    text: '送信者制約（DPoP / mTLS） — 選び方',
                     link: '/ja/concepts/sender-constraint'
                   },
                   { text: 'DPoP', link: '/ja/concepts/dpop' },
@@ -975,7 +975,7 @@ export default defineConfig({
                   { text: 'Device Code（RFC 8628）', link: '/ja/concepts/device-code' },
                   { text: 'CIBA', link: '/ja/concepts/ciba' },
                   {
-                    text: 'ブラウザを使わないフロー (CIBA と Device Code)',
+                    text: 'ブラウザを使わないフロー（CIBA と Device Code）',
                     link: '/ja/concepts/no-browser-flows'
                   },
                   { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
@@ -995,7 +995,7 @@ export default defineConfig({
               { text: 'インストール', link: '/ja/getting-started/install' },
               { text: '最小構成 OP', link: '/ja/getting-started/minimal' },
               { text: '必須オプション', link: '/ja/getting-started/required-options' },
-              { text: 'ルーターへのマウント', link: '/ja/getting-started/mount' }
+              { text: 'ルータへのマウント', link: '/ja/getting-started/mount' }
             ]
           },
           {
@@ -1095,7 +1095,7 @@ export default defineConfig({
                 items: [
                   { text: 'MFA / ステップアップ', link: '/ja/use-cases/mfa-step-up' },
                   {
-                    text: '既存ユーザーストアの投影',
+                    text: '既存ユーザストアの投影',
                     link: '/ja/use-cases/byo-userstore'
                   },
                   {
@@ -1146,7 +1146,7 @@ export default defineConfig({
               { text: 'マルチインスタンス展開', link: '/ja/operations/multi-instance' },
               { text: 'observability', link: '/ja/operations/observability' },
               { text: 'バックアップ / DR', link: '/ja/operations/backup' },
-              { text: 'ストレージ保守', link: '/ja/operations/storage-maintenance' }
+              { text: 'ストレージの保守', link: '/ja/operations/storage-maintenance' }
             ]
           },
           {
@@ -1199,7 +1199,7 @@ export default defineConfig({
                 { text: 'scope と claim', link: '/ja/concepts/scopes-and-claims' },
                 { text: 'discovery', link: '/ja/concepts/discovery' },
                 {
-                  text: 'JOSE 入門 (JWS / JWE / JWK / JWKS / kid)',
+                  text: 'JOSE 入門（JWS / JWE / JWK / JWKS / kid）',
                   link: '/ja/concepts/jose-basics'
                 }
               ]
@@ -1239,7 +1239,7 @@ export default defineConfig({
               text: '送信者制約トークン',
               items: [
                 {
-                  text: '送信者制約 (DPoP / mTLS) — 選び方',
+                  text: '送信者制約（DPoP / mTLS） — 選び方',
                   link: '/ja/concepts/sender-constraint'
                 },
                 { text: 'DPoP', link: '/ja/concepts/dpop' },
@@ -1252,7 +1252,7 @@ export default defineConfig({
                 { text: 'Device Code（RFC 8628）', link: '/ja/concepts/device-code' },
                 { text: 'CIBA', link: '/ja/concepts/ciba' },
                 {
-                  text: 'ブラウザを使わないフロー (CIBA と Device Code)',
+                  text: 'ブラウザを使わないフロー（CIBA と Device Code）',
                   link: '/ja/concepts/no-browser-flows'
                 },
                 { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
@@ -1280,7 +1280,7 @@ export default defineConfig({
                 { text: 'scope と claim', link: '/ja/concepts/scopes-and-claims' },
                 { text: 'discovery', link: '/ja/concepts/discovery' },
                 {
-                  text: 'JOSE 入門 (JWS / JWE / JWK / JWKS / kid)',
+                  text: 'JOSE 入門（JWS / JWE / JWK / JWKS / kid）',
                   link: '/ja/concepts/jose-basics'
                 }
               ]
@@ -1320,7 +1320,7 @@ export default defineConfig({
               text: '送信者制約トークン',
               items: [
                 {
-                  text: '送信者制約 (DPoP / mTLS) — 選び方',
+                  text: '送信者制約（DPoP / mTLS） — 選び方',
                   link: '/ja/concepts/sender-constraint'
                 },
                 { text: 'DPoP', link: '/ja/concepts/dpop' },
@@ -1333,7 +1333,7 @@ export default defineConfig({
                 { text: 'Device Code（RFC 8628）', link: '/ja/concepts/device-code' },
                 { text: 'CIBA', link: '/ja/concepts/ciba' },
                 {
-                  text: 'ブラウザを使わないフロー (CIBA と Device Code)',
+                  text: 'ブラウザを使わないフロー（CIBA と Device Code）',
                   link: '/ja/concepts/no-browser-flows'
                 },
                 { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
@@ -1361,7 +1361,7 @@ export default defineConfig({
                 { text: 'scope と claim', link: '/ja/concepts/scopes-and-claims' },
                 { text: 'discovery', link: '/ja/concepts/discovery' },
                 {
-                  text: 'JOSE 入門 (JWS / JWE / JWK / JWKS / kid)',
+                  text: 'JOSE 入門（JWS / JWE / JWK / JWKS / kid）',
                   link: '/ja/concepts/jose-basics'
                 }
               ]
@@ -1401,7 +1401,7 @@ export default defineConfig({
               text: '送信者制約トークン',
               items: [
                 {
-                  text: '送信者制約 (DPoP / mTLS) — 選び方',
+                  text: '送信者制約（DPoP / mTLS） — 選び方',
                   link: '/ja/concepts/sender-constraint'
                 },
                 { text: 'DPoP', link: '/ja/concepts/dpop' },
@@ -1414,7 +1414,7 @@ export default defineConfig({
                 { text: 'Device Code（RFC 8628）', link: '/ja/concepts/device-code' },
                 { text: 'CIBA', link: '/ja/concepts/ciba' },
                 {
-                  text: 'ブラウザを使わないフロー (CIBA と Device Code)',
+                  text: 'ブラウザを使わないフロー（CIBA と Device Code）',
                   link: '/ja/concepts/no-browser-flows'
                 },
                 { text: 'Token Exchange（RFC 8693）', link: '/ja/concepts/token-exchange' },
@@ -1434,7 +1434,7 @@ export default defineConfig({
                 { text: 'インストール', link: '/ja/getting-started/install' },
                 { text: '最小構成 OP', link: '/ja/getting-started/minimal' },
                 { text: '必須オプション', link: '/ja/getting-started/required-options' },
-                { text: 'ルーターへのマウント', link: '/ja/getting-started/mount' }
+                { text: 'ルータへのマウント', link: '/ja/getting-started/mount' }
               ]
             }
           ],
@@ -1527,7 +1527,7 @@ export default defineConfig({
               items: [
                 { text: 'MFA / ステップアップ', link: '/ja/use-cases/mfa-step-up' },
                 {
-                  text: '既存ユーザーストアの投影',
+                  text: '既存ユーザストアの投影',
                   link: '/ja/use-cases/byo-userstore'
                 },
                 { text: 'カスタム authenticator', link: '/ja/use-cases/custom-authenticator' }
@@ -1574,7 +1574,7 @@ export default defineConfig({
                 { text: 'マルチインスタンス展開', link: '/ja/operations/multi-instance' },
                 { text: 'observability', link: '/ja/operations/observability' },
                 { text: 'バックアップ / DR', link: '/ja/operations/backup' },
-                { text: 'ストレージ保守', link: '/ja/operations/storage-maintenance' }
+                { text: 'ストレージの保守', link: '/ja/operations/storage-maintenance' }
               ]
             }
           ],

@@ -89,7 +89,7 @@ The SPA echoes `prompt.csrf_token` into the `X-CSRF-Token` header on submission;
 | Session lookup / consent persistence | yes |
 | Rendering the redirect back to the RP after approval | yes |
 
-The locale bundle path keeps the bundled CSP (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`) and the rendered HTML; the JSON driver path lets your own page set the CSP it needs. For a custom template, set `ConsentUI.ContentSecurityPolicy` rather than trying to add `form-action` for the RP redirect — `form-action` would block successful cross-origin completion.
+Path 1 (locale bundle) keeps the bundled CSP (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`) and the rendered HTML. For Path 2 (custom template), set `ConsentUI.ContentSecurityPolicy` rather than trying to add `form-action` for the RP redirect — `form-action` would block successful cross-origin completion. Path 3 (JSON driver) lets your own page set the CSP it needs.
 
 The POST's Origin / Referer ceremony check is not derived from the client's redirect URI. It accepts the issuer origin and origins explicitly supplied with `op.WithCORSOrigins`; a redirect URI on another origin does not authorize that origin to submit interaction or end-session state.
 

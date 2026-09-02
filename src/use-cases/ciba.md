@@ -34,10 +34,10 @@ For the conceptual background — what CIBA is, how it differs from device flow,
   <text class="ciba-sub" x="519" y="105" text-anchor="middle">2. notify</text>
   <path class="ciba-flow" d="M560 114 L569 118 L560 122"/>
   <path class="ciba-flow" d="M572 156 H474"/>
-  <text class="ciba-sub" x="523" y="180" text-anchor="middle">3. approve / deny</text>
+  <text class="ciba-sub" x="521" y="180" text-anchor="middle">3. approve/deny</text>
   <path class="ciba-flow" d="M482 152 L473 156 L482 160"/>
   <path class="ciba-flow" d="M108 176 C118 260 220 274 296 274"/>
-  <text class="ciba-sub" x="168" y="260" text-anchor="middle">4. poll /token</text>
+  <text class="ciba-sub halo" x="226" y="250" text-anchor="middle">4. poll /token</text>
   <path class="ciba-flow" d="M288 270 L297 274 L288 278"/>
   <path class="ciba-flow" d="M380 248 V200"/>
   <path class="ciba-flow" d="M376 208 L380 199 L384 208"/>
@@ -220,6 +220,10 @@ Consumption devices may pin the issued access token to a resource server by send
 ::: warning `resource=` must be registered
 `resource=` values must be absolute URIs and must appear in the client's registered `Resources` allowlist. Requests outside that allowlist are rejected with `invalid_target`.
 :::
+
+## Sender-constrained CIBA records
+
+When DPoP or mTLS is used, `/bc-authorize` records the DPoP key thumbprint and/or mTLS certificate thumbprint. At `/token`, every binding present on the record is checked again before issuing a token. A CIBA request carrying both bindings requires both a matching DPoP proof and a matching mTLS certificate; presenting only one is insufficient. A missing or mismatched proof means the `auth_req_id` cannot be redeemed. On success, the issued token's `cnf` carries every binding the OP reverified.
 
 ## `amr` and `acr` in the CIBA id_token
 

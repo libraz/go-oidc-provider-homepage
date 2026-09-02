@@ -55,13 +55,13 @@ const rows = computed<Row[]>(() =>
         {
           key: 'CONFORMANCE',
           parts: [
-            { text: 'OFCS 210 PASSED / 全271モジュール · 9プラン · strict release blocker 0' }
+            { text: 'OFCS 210 PASSED / 全 271 モジュール · 9 プラン · strict release blocker 0' }
           ],
           link: '/ja/compliance/ofcs'
         },
         {
           key: 'SPA',
-          parts: [{ text: 'ヘッドレス interaction で React からログインを駆動' }],
+          parts: [{ text: 'ヘッドレスな interaction driver — React 側からログインを進める' }],
           link: '/ja/use-cases/spa-custom-interaction'
         }
       ]

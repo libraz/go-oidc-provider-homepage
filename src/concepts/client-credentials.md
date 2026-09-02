@@ -23,7 +23,8 @@ pageClass: pg-concepts-client-credentials
 - **`private_key_jwt`** — client authentication where the client signs a short-lived JWT with its private key; the OP verifies it against the registered public key. Stronger than a shared secret because the secret never leaves the client.
 :::
 
-<svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 720 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(20,0)">
   <title id="cc-flow-title">Client credentials flow: Service A authenticates to the OP, receives an access token, then presents it as a bearer token to Service B.</title>
   <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
   <text x="90" y="26" text-anchor="middle" font-size="12.5" font-weight="600">Service A</text>
@@ -69,6 +70,7 @@ pageClass: pg-concepts-client-credentials
   <path class="arw c-rs" d="M97 321 L90 326 L97 331"/>
   <circle class="num c-rs" cx="630" cy="326" r="9" fill="var(--vp-c-bg)"/>
   <text class="mono tf-rs" x="630" y="330" text-anchor="middle" font-size="10.5">5</text>
+  </g>
 </svg>
 
 ::: warning Confidential clients only

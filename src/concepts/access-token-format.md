@@ -36,7 +36,8 @@ The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token
 
 ### JWT (RFC 9068) — the RS validates locally
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 684 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 760 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(38,0)">
   <title id="atf-jwt-local-title">JWT access tokens: the RP presents a Bearer JWT that the RS verifies locally against a cached OP JWKS, keeping the OP off the request hot path.</title>
   <rect x="28" y="38" width="118" height="56" rx="6"/>
   <text class="atf-b atf-t1" x="87" y="70" text-anchor="middle">RP</text>
@@ -45,19 +46,21 @@ The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token
   <text class="atf-c atf-t1" x="538" y="78" text-anchor="middle">verifies sig + <tspan class="atf-m">aud</tspan> + <tspan class="atf-m">exp</tspan> locally</text>
   <line x1="146" y1="66" x2="416" y2="66"/>
   <path d="M409 62 L416 66 L409 70"/>
-  <text class="atf-m atf-t2" x="282" y="54" text-anchor="middle">Bearer JWT</text>
+  <text class="atf-m atf-t2 halo" x="282" y="54" text-anchor="middle">Bearer JWT</text>
   <rect class="atf-sop" x="28" y="118" width="176" height="52" rx="6"/>
   <text class="atf-b atf-op" x="116" y="149" text-anchor="middle">OP <tspan class="atf-m">/jwks</tspan></text>
   <line x1="204" y1="144" x2="414" y2="98" stroke-dasharray="5 4"/>
   <path d="M407 94 L414 98 L407 102"/>
-  <text class="atf-s atf-t2" x="312" y="114" text-anchor="middle">fetched &amp; cached (once)</text>
+  <text class="atf-s atf-t2 halo" x="312" y="114" text-anchor="middle">fetched &amp; cached (once)</text>
+  </g>
 </svg>
 
 The RS holds a cached JWKS, validates the JWT signature offline, checks `aud` and `exp`, and serves the request. The OP is **not on the request hot path**. The JWT itself carries the claims (`sub`, `scope`, `aud`, `auth_time`, `acr`, `cnf`, …) so the RS has everything it needs.
 
 ### Opaque — the RS asks the OP every time
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 720 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 760 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(20,0)">
   <title id="atf-opaque-introspect-title">Opaque access tokens: the RP presents a Bearer opaque token and the RS resolves it by calling the OP introspection endpoint on every request.</title>
   <rect x="28" y="38" width="112" height="52" rx="6"/>
   <text class="atf-b atf-t1" x="84" y="68" text-anchor="middle">RP</text>
@@ -67,13 +70,14 @@ The RS holds a cached JWKS, validates the JWT signature offline, checks `aud` an
   <text class="atf-b atf-op" x="634" y="68" text-anchor="middle">OP</text>
   <line x1="140" y1="64" x2="246" y2="64"/>
   <path d="M239 60 L246 64 L239 68"/>
-  <text class="atf-m atf-t2" x="194" y="54" text-anchor="middle">Bearer opaque</text>
+  <text class="atf-m atf-t2 halo" x="194" y="54" text-anchor="middle">Bearer opaque</text>
   <line x1="360" y1="52" x2="574" y2="52"/>
   <path d="M567 48 L574 52 L567 56"/>
-  <text class="atf-m atf-t2" x="468" y="42" text-anchor="middle">POST /introspect</text>
+  <text class="atf-m atf-t2 halo" x="468" y="42" text-anchor="middle">POST /introspect</text>
   <line x1="576" y1="76" x2="362" y2="76"/>
   <path d="M369 72 L362 76 L369 80"/>
-  <text class="atf-m atf-t2" x="468" y="94" text-anchor="middle">{active, sub, scope, …}</text>
+  <text class="atf-m atf-t2 halo" x="468" y="94" text-anchor="middle">{active, sub, scope, …}</text>
+  </g>
 </svg>
 
 The opaque token is a 32-byte random identifier (base64url, 43 characters). It carries no claims. The RS resolves the token by calling the OP's `/introspect` endpoint (RFC 7662) on every request — or caches the result for a short, deliberate window. The OP is **on the request hot path**.
@@ -143,7 +147,8 @@ This is the half of the trade-off most often glossed over.
 
 **JWT format:**
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 760 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(20,0)">
   <title id="atf-jwt-revocation-title">JWT revocation reach: an end_session flip in the grant-tombstone store is consulted at the OP userinfo and introspect endpoints but not by a resource server doing offline JWT verification.</title>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
@@ -161,18 +166,20 @@ This is the half of the trade-off most often glossed over.
   <text class="atf-c atf-rs" x="625" y="218" text-anchor="middle">offline JWT verify</text>
   <line x1="404" y1="112" x2="537" y2="47" stroke-dasharray="5 4"/>
   <path d="M530 43 L537 47 L530 51"/>
-  <text class="atf-s atf-t2" x="470" y="72" text-anchor="middle">consulted by</text>
+  <text class="atf-s atf-t2 halo" x="470" y="72" text-anchor="middle">consulted by</text>
   <line x1="404" y1="124" x2="537" y2="124" stroke-dasharray="5 4"/>
   <path d="M530 120 L537 124 L530 128"/>
-  <text class="atf-s atf-t2" x="468" y="116" text-anchor="middle">consulted by</text>
+  <text class="atf-s atf-t2 halo" x="468" y="116" text-anchor="middle">consulted by</text>
   <line x1="404" y1="136" x2="532" y2="197" stroke-dasharray="5 4"/>
   <path d="M534 193 L546 205 M546 193 L534 205"/>
-  <text class="atf-s atf-t2" x="458" y="160" text-anchor="middle">not consulted by</text>
+  <text class="atf-s atf-t2 halo" x="458" y="160" text-anchor="middle">not consulted by</text>
+  </g>
 </svg>
 
 **Opaque format:**
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 720 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 760 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(20,0)">
   <title id="atf-opaque-revocation-title">Opaque revocation reach: an end_session flip in the opaque store is consulted at the OP userinfo and introspect endpoints and by every resource-server introspect call.</title>
   <rect x="24" y="98" width="150" height="52" rx="6"/>
   <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
@@ -190,13 +197,14 @@ This is the half of the trade-off most often glossed over.
   <text class="atf-c atf-rs" x="625" y="218" text-anchor="middle"><tspan class="atf-m">/introspect</tspan> call</text>
   <line x1="404" y1="112" x2="537" y2="47" stroke-dasharray="5 4"/>
   <path d="M530 43 L537 47 L530 51"/>
-  <text class="atf-s atf-t2" x="470" y="72" text-anchor="middle">consulted by</text>
+  <text class="atf-s atf-t2 halo" x="470" y="72" text-anchor="middle">consulted by</text>
   <line x1="404" y1="124" x2="537" y2="124" stroke-dasharray="5 4"/>
   <path d="M530 120 L537 124 L530 128"/>
-  <text class="atf-s atf-t2" x="468" y="116" text-anchor="middle">consulted by</text>
+  <text class="atf-s atf-t2 halo" x="468" y="116" text-anchor="middle">consulted by</text>
   <line x1="404" y1="136" x2="537" y2="199" stroke-dasharray="5 4"/>
   <path d="M530 195 L537 199 L530 203"/>
-  <text class="atf-s atf-t2" x="460" y="160" text-anchor="middle">consulted by</text>
+  <text class="atf-s atf-t2 halo" x="460" y="160" text-anchor="middle">consulted by</text>
+  </g>
 </svg>
 
 - **JWT path.** The library consults the registry whenever the token reaches an OP-served boundary (`/userinfo`, `/introspect`, `/revoke`). A revoked JWT presented there is rejected immediately. **A resource server that validates the JWT offline against the JWKS does not consult the registry** — because that's the whole point of self-contained tokens. The revoked JWT remains usable at that RS until its `exp` claim elapses.
@@ -213,7 +221,7 @@ After confidential client authentication, every inactive path — an unauthorize
 There is no third option that gives you "stateless RS-side validation" **and** "instant logout cascade through the RS". You have to pick.
 :::
 
-Refresh-token rotation is the related soft handle. The library always issues a new access token on every refresh-token rotation; the JWT form **leaves the prior access token alive until its own `exp`** (so the cascade gap closes within the access-token TTL), while the opaque form calls `RevokeByGrant` against the opaque substore on every rotation, retiring the prior access token as well — **the window in which a leaked refresh token could let an attacker replay the prior access token shrinks to roughly clock skew**.
+Refresh-token rotation is the related adjustment point. Every rotation issues a new access token whichever format is in play; the two formats differ in what happens to the old one. The JWT form **leaves the prior access token alive until its own `exp`**, so the cascade gap closes within the access-token TTL. The opaque form calls `RevokeByGrant` against the opaque substore on every rotation and retires the prior access token too — **the window in which a leaked refresh token lets an attacker replay the prior access token shrinks to roughly clock skew**.
 
 The other cascade source is **authorization-code re-use detection (RFC 6749 §4.1.2)**. The moment a stolen code is presented twice, every access token under its grant is retired — JWT format writes a grant tombstone (or flips registry rows under the opt-in JTI strategy); opaque format flips opaque-store rows. Both propagate with the same visibility shown in the diagrams above. `/end_session` is not the only trigger.
 
@@ -280,7 +288,8 @@ The default `RevocationStrategyGrantTombstone` requires `Store.GrantRevocations(
 
 The decision is mostly about who you trust, what you can ask of the RS, and how short the access-token TTL is.
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 700 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 760 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(30,0)">
   <title id="atf-choosing-format-title">Decision tree for choosing between opaque, JWT, and a per-audience mix based on introspection requirements, access-token TTL, and RS topology.</title>
   <rect x="24" y="24" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="48" text-anchor="middle">Can every RS be required</text>
@@ -289,10 +298,10 @@ The decision is mostly about who you trust, what you can ask of the RS, and how 
   <text class="atf-b atf-t1" x="591" y="60" text-anchor="middle">Opaque</text>
   <line x1="364" y1="56" x2="514" y2="56"/>
   <path d="M507 52 L514 56 L507 60"/>
-  <text class="atf-s atf-t2" x="440" y="48" text-anchor="middle">Yes</text>
+  <text class="atf-s atf-t2 halo" x="440" y="48" text-anchor="middle">Yes</text>
   <line x1="194" y1="88" x2="194" y2="132"/>
   <path d="M190 125 L194 132 L198 125"/>
-  <text class="atf-s atf-t2" x="210" y="112" text-anchor="middle">No</text>
+  <text class="atf-s atf-t2 halo" x="210" y="112" text-anchor="middle">No</text>
   <rect x="24" y="136" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="160" text-anchor="middle">Is the AT TTL short enough that</text>
   <text class="atf-c atf-t1" x="194" y="180" text-anchor="middle">an <tspan class="atf-m">exp</tspan>-bounded gap is acceptable?</text>
@@ -300,10 +309,10 @@ The decision is mostly about who you trust, what you can ask of the RS, and how 
   <text class="atf-b atf-t1" x="591" y="172" text-anchor="middle">JWT (default)</text>
   <line x1="364" y1="168" x2="514" y2="168"/>
   <path d="M507 164 L514 168 L507 172"/>
-  <text class="atf-s atf-t2" x="440" y="160" text-anchor="middle">Yes</text>
+  <text class="atf-s atf-t2 halo" x="440" y="160" text-anchor="middle">Yes</text>
   <line x1="194" y1="200" x2="194" y2="244"/>
   <path d="M190 237 L194 244 L198 237"/>
-  <text class="atf-s atf-t2" x="210" y="224" text-anchor="middle">No</text>
+  <text class="atf-s atf-t2 halo" x="210" y="224" text-anchor="middle">No</text>
   <rect x="24" y="248" width="340" height="64" rx="6"/>
   <text class="atf-c atf-t1" x="194" y="272" text-anchor="middle">Do internal and external</text>
   <text class="atf-c atf-t1" x="194" y="292" text-anchor="middle">RSes coexist?</text>
@@ -311,12 +320,13 @@ The decision is mostly about who you trust, what you can ask of the RS, and how 
   <text class="atf-b atf-t1" x="591" y="284" text-anchor="middle">per-audience mix</text>
   <line x1="364" y1="280" x2="500" y2="280"/>
   <path d="M493 276 L500 280 L493 284"/>
-  <text class="atf-s atf-t2" x="440" y="272" text-anchor="middle">Yes</text>
+  <text class="atf-s atf-t2 halo" x="440" y="272" text-anchor="middle">Yes</text>
   <line x1="194" y1="312" x2="194" y2="336"/>
   <path d="M190 329 L194 336 L198 329"/>
-  <text class="atf-s atf-t2" x="210" y="323" text-anchor="middle">No</text>
+  <text class="atf-s atf-t2 halo" x="210" y="323" text-anchor="middle">No</text>
   <rect x="119" y="338" width="150" height="48" rx="24"/>
   <text class="atf-b atf-t1" x="194" y="366" text-anchor="middle">Opaque</text>
+  </g>
 </svg>
 
 Per-audience selection is the realistic answer for many production shapes: an internal RS that already has cheap network access to the OP runs opaque (so logout reaches it immediately), while a public-facing RS that the OP shouldn't gate runs JWT (so the OP never becomes a hot dependency).

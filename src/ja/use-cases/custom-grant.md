@@ -9,7 +9,7 @@ pageClass: pg-use-cases-custom-grant
 標準カタログにない `grant_type` が必要なシナリオがあります。ベンダ固有の service-token-exchange URN、内部の「外部 assertion から token を発行」パス、レガシ AS から移行中の暫定 shim など。`op.WithCustomGrant(...)` はディスパッチャを fork せずに、組み込み側が定義した URN を `/token` 経由でルーティングするための差し込み口です。
 
 ::: details `grant_type` URN とは
-`grant_type` は `/token` のフォームパラメータで、どの発行パスを実行するか(`authorization_code`、`client_credentials`、`refresh_token` など)を選びます。well-known な値は短い文字列ですが、独自定義のものは `urn:<vendor>:<your-name>` 形式の URN を使い、別ベンダと名前が衝突しないようにします。`urn:ietf:params:oauth:grant-type:device_code` は IETF が認めた例、`urn:example:libraz:service-token-exchange` は組み込み側が自前で発行する例です。
+`grant_type` は `/token` のフォームパラメータで、どの発行パスを実行するか（`authorization_code`、`client_credentials`、`refresh_token` など）を選びます。well-known な値は短い文字列ですが、独自定義のものは `urn:<vendor>:<your-name>` 形式の URN を使い、別ベンダと名前が衝突しないようにします。`urn:ietf:params:oauth:grant-type:device_code` は IETF が認めた例、`urn:example:libraz:service-token-exchange` は組み込み側が自前で発行する例です。
 :::
 
 ::: details 発行パイプラインとは
@@ -35,9 +35,10 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
-  // custom grant は拡張 dispatcher 経路。machine-to-machine の例で
-  // 既定の browser grant を誤って有効にしないよう built-in を明示。
-  op.WithGrants(grant.ClientCredentials),
+  // custom grant は拡張 dispatcher 経路。組み込み grant を明示し、
+  // 下の refresh 例で使う refresh_token も有効にします。
+  // browser grant は有効にしません。
+  op.WithGrants(grant.ClientCredentials, grant.RefreshToken),
 
   op.WithCustomGrant(&serviceTokenHandler{}),
   // op.WithCustomGrant は複数ハンドラを登録するため繰り返し呼べる
@@ -101,7 +102,7 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 
 ハンドラは **OP 署名**（`BoundAccessToken`）と **ハンドラ署名**（`AccessToken`）を選択します — 排他です。
 
-<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 290" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="custom-grant-signing-title">カスタム grant の 2 つの発行形態。BoundAccessToken は OP が署名、標準 claim、cnf、id_token、リフレッシュトークンを管理する。AccessToken はハンドラが署名済み値を返し、cnf や introspection 連携もハンドラ側の責任になる。</title>
   <defs>
     <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -115,7 +116,7 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
   <rect class="accent" x="48" y="134" width="286" height="136" rx="8"/>
   <text class="h accent-text" x="191" y="162" text-anchor="middle">BoundAccessToken を返す</text>
   <text class="t" x="191" y="190" text-anchor="middle">OP が署名鍵を選び JWT を発行</text>
-  <text class="t sub" x="191" y="214" text-anchor="middle">標準 claim / `cnf` / TTL 上限</text>
+  <text class="t sub" x="191" y="214" text-anchor="middle">標準 claim · <tspan class="m">cnf</tspan> · TTL 上限</text>
   <text class="t sub" x="191" y="236" text-anchor="middle">必要なら id_token / refresh も OP 管理</text>
   <text class="m accent-text" x="191" y="258" text-anchor="middle">推奨: 通常はこちら</text>
 
@@ -123,18 +124,17 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
   <text class="h" x="569" y="162" text-anchor="middle">AccessToken を返す</text>
   <text class="t" x="569" y="190" text-anchor="middle">ハンドラが署名済み値を返す</text>
   <text class="t sub" x="569" y="214" text-anchor="middle">外部 KMS / 独自 opaque backend 向け</text>
-  <text class="t sub" x="569" y="236" text-anchor="middle">`cnf` と失効連携は自前責任</text>
+  <text class="t sub" x="569" y="236" text-anchor="middle"><tspan class="m">cnf</tspan> と失効の連携は組み込み側の責任</text>
   <text class="m sub" x="569" y="258" text-anchor="middle">明確な理由がある場合のみ</text>
 
   <path d="M350 72 C330 104 250 112 191 130" marker-end="url(#cg-arrow)"/>
   <path d="M410 72 C430 104 510 112 569 130" marker-end="url(#cg-arrow)"/>
-
-  <rect class="soft" x="102" y="302" width="556" height="34" rx="8"/>
-  <text class="t" x="380" y="324" text-anchor="middle">両方を同時に返すと `server_error`: 発行責任を 1 つに固定する</text>
 </svg>
 
+この 2 形態は排他です。ハンドラが両方を返した場合、OP は `server_error` を返します。発行の責任は必ずどちらか一方に固定されます。
+
 ::: details OP 署名 vs ハンドラ署名 — どちらを選ぶか
-**OP 署名**(`BoundAccessToken`)は、OP が登録済みの keyset から鍵を選んで JWT に署名し、リクエストの検証済み DPoP / mTLS 証明から `cnf` を押印し、予約 claim フィルタのもとで追加 claim をマージしてくれる形です。**ハンドラ署名**(`AccessToken`)は、外部 KMS / HSM で生成済みのトークン(または独自 introspection backend が解釈する opaque token)を持ち込み、OP にそのまま返させる形で、`cnf` を含むすべての責任をハンドラが負います。明確な理由がない限り OP 署名を選んでください。
+**OP 署名**(`BoundAccessToken`)は、OP が登録済みの keyset から鍵を選んで JWT に署名する形です。さらに、リクエストの検証済み DPoP / mTLS 証明から `cnf` を押印し、予約 claim フィルタのもとで追加 claim をマージします。**ハンドラ署名**(`AccessToken`)は、外部 KMS / HSM で生成済みのトークン（または独自 introspection backend が解釈する opaque token）を持ち込み、OP にそのまま返させる形です。`cnf` を含むすべての責任はハンドラが負います。明確な理由がない限り OP 署名を選んでください。
 :::
 
 ### `BoundAccessToken` — OP が署名 + バインド
@@ -144,9 +144,9 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 - アクティブな署名鍵で JWT-shape アクセストークンを署名
 - `iss / sub / aud / exp / iat / jti / scope / client_id` を埋める
 - リクエストが検証済みの証明を提示していれば `cnf.jkt`（DPoP）または `cnf.x5t#S256`（mTLS）を自動で押印。ハンドラがバインディングを自前で通す必要なし
-- `ExtraClaims` をマージ(標準セットとの衝突は `server_error` に集約 — ハンドラのバグが監査ログに浮かび上がるように)
+- `ExtraClaims` をマージ（標準セットとの衝突は `server_error` に集約 — ハンドラのバグが監査ログに浮かび上がるように）
 
-これが多くの組み込み側にとって正しい既定です。FAPI 2.0 §3.1.4 のバインディング契約が追加コストなしで強制されます。
+これが多くの組み込み側にとって正しい既定です。その結果、OP は FAPI 2.0 §3.1.4 のバインディング契約を追加コストなしで強制します。
 
 ### `AccessToken` — ハンドラが署名
 
@@ -161,7 +161,7 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 `ParamPolicy` は `req.Form` 経由でハンドラに渡すパラメータを宣言します:
 
 ::: details ParamPolicy とは
-`/token` のフォームパーサは、認識しないパラメータを拒否することで、行儀の悪いクライアントが余計な入力をハンドラへ持ち込むのを防いでいます。`ParamPolicy` は custom grant がパーサに「この名前は私のものなので通してほしい」と伝える仕組みで、`Allowed` はハンドラが読むフォームキーの一覧、`DupesAllowed` は重複値を許す部分集合(既定は単一値のみ)です。セキュリティ上敏感な名前(`client_secret`、`code_verifier` 等)はどちらにも入れられません — 誤設定で credential 受け口が広がらないよう、構築時点で OP が拒否します。
+`/token` のフォームパーサは、認識しないパラメータを拒否することで、行儀の悪いクライアントが余計な入力をハンドラへ持ち込むのを防いでいます。`ParamPolicy` は custom grant がパーサに「この名前は私のものなので通してほしい」と伝える仕組みで、`Allowed` はハンドラが読むフォームキーの一覧、`DupesAllowed` は重複値を許す部分集合（既定は単一値のみ）です。セキュリティ上敏感な名前（`client_secret`、`code_verifier` 等）はどちらにも入れられません — 誤設定で credential 受け口が広がらないよう、構築時点で OP が拒否します。
 :::
 
 ```go
@@ -176,7 +176,7 @@ op.ParamPolicy{
 }
 ```
 
-セキュリティ上敏感な名前(`grant_type` / `client_id` / `client_secret` / `code` / `code_verifier` / `refresh_token` / `subject_token` / `actor_token` / `password` / `client_assertion` / `client_assertion_type`)を `DupesAllowed` に入れると、構築時に `op.ErrCustomGrantSecretLikeExempt` が出ます。誤設定で credential の取り扱いを劣化させないためです。
+セキュリティ上敏感な名前（`grant_type` / `client_id` / `client_secret` / `code` / `code_verifier` / `refresh_token` / `subject_token` / `actor_token` / `password` / `client_assertion` / `client_assertion_type`）を `DupesAllowed` に入れると、構築時に `op.ErrCustomGrantSecretLikeExempt` が出ます。誤設定で credential の取り扱いを劣化させないためです。
 
 ## ハンドラの前後で OP が強制すること
 
@@ -184,7 +184,7 @@ OP が `Handle` の前後に適用する最低ライン:
 
 - **scope の積集合** — `CustomGrantResponse.Scope` ∩ client の許可 scope。集合外は `invalid_scope`
 - **audience の積集合** — `Audience` の各エントリが client に登録されている resource に一致している必要あり。未知のエントリは `invalid_target`
-- **TTL 上限** — `AccessTokenTTL`(または `BoundAccessToken.TTL`)はグローバルなアクセストークン上限で切り詰められる(超過時は監査警告、負値は拒否)
+- **TTL 上限** — `AccessTokenTTL`(または `BoundAccessToken.TTL`)はグローバルなアクセストークン上限で切り詰められる（超過時は監査警告、負値は拒否）
 - **`openid` scope の自動 id_token** — `Scope` に `openid` を含み `IDToken` が空のとき、OP が `Subject` + `AuthTime` + `ExtraClaims` から id_token を署名（reserved claim filter 適用）
 
 ## リフレッシュトークン
@@ -199,7 +199,24 @@ return op.CustomGrantResponse{
 }, nil
 ```
 
-リフレッシュトークンの資格情報は OP が所有します。OP が値を生成し、`RefreshTokenStore` に永続化し、アクセストークンと同じ grant 識別子を共有させ、同じ DPoP / mTLS 証明にバインドします。そのため、発行されたリフレッシュトークンは通常のローテーション、再利用時の連鎖失効(RFC 9700 §2.2.2)、grant 失効の仕組みに乗ります。発行されるのは、クライアントが `refresh_token` grant に登録されている場合だけです。未登録の場合でもアクセストークン応答は成功し、リフレッシュトークンだけが省略され、`custom_grant.refresh_dropped` が発火します。
+リフレッシュトークンの資格情報は OP が所有します。OP は:
+
+- 値を生成する
+- `RefreshTokenStore` に永続化する
+- アクセストークンと同じ grant 識別子を共有させる
+- 同じ DPoP / mTLS 証明にバインドする
+
+そのため、発行されたリフレッシュトークンは通常のローテーション、再利用時の連鎖失効（RFC 9700 §2.2.2）、grant 失効の仕組みに乗ります。
+
+`IssueRefreshToken` が true の場合、次の 5 つの gate のいずれかに失敗すると、アクセストークン応答は成功したままリフレッシュトークンだけを落とします:
+
+- provider が `refresh_token` grant を提供している（`WithGrants` に `grant.RefreshToken` が必要）
+- client が `refresh_token` grant に登録されている
+- response の subject が空でない
+- response の scope が空でない
+- response の audience が 1 件以下である
+
+落とすたびに理由（`provider_grant_disabled`、`client_not_registered`、`empty_subject`、`empty_scope`、`multiple_resource_audience`）付きの `custom_grant.refresh_dropped` を発火します。リフレッシュトークンを落としても、それ自体でアクセストークンや、他の発行条件を満たす ID Token が失敗することはありません。したがって scope が空でも、無効になるのはリフレッシュトークンだけで、正しい応答は拒否されません。
 
 ::: details リフレッシュトークンの親子関係とは
 OP はリフレッシュトークンごとに親を記録するため、ローテーションはチェーン（`A → B → C`）を作ります。そのうちの 1 本が再利用された場合（RFC 9700 §2.2.2）、OP は子孫すべてを一括で失効させられます。`IssueRefreshToken` は custom grant をこの OP 管理のチェーンに入れるためのフラグです。RFC 6749 §6 ではリフレッシュトークンは authorization server が発行する資格情報なので、ハンドラが値を直接渡す形にはしていません。
@@ -209,7 +226,9 @@ OP はリフレッシュトークンごとに親を記録するため、ロー�
 
 - **ハンドラが指定するリフレッシュトークン値**。OP に発行させたい場合は `IssueRefreshToken: true` を使います
 - **`AccessToken` と `BoundAccessToken` の同時設定**。排他。両方設定すると `server_error`
-- **`ExtraClaims` の reserved claim 衝突**。`iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid`(`BoundAccessToken` では `act` / `cnf` も)は、`TokenExchangePolicy.ExtraClaims` では黙って破棄されます(ポリシー側に上書きさせないため)。一方 `CustomGrantResponse.ExtraClaims` では `server_error`(ハンドラの不具合を監査ログに浮かび上がらせるため)になります
+- **`ExtraClaims` の reserved claim 衝突**。`iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid`(`BoundAccessToken` では `act` / `cnf` も)は、`TokenExchangePolicy.ExtraClaims` では黙って破棄されます（ポリシー側に上書きさせないため）。一方 `CustomGrantResponse.ExtraClaims` では `server_error`(ハンドラの不具合を監査ログに浮かび上がらせるため)になります
+
+クライアントに帰属できる既知の dispatcher 失敗は 4xx の OAuth エラーになります。handler の panic を recover した場合、response 形態の衝突、reserved claim の衝突、OP 管理の token 構築 / 永続化の失敗など、クライアントに帰属できない dispatcher または OP 内部の障害は `invalid_grant` ではなく `500 server_error` になります。クライアントが認証時刻を要求し、custom response が `openid` を要求しているのに `AuthTime` が zero の場合も、自動 ID Token 構築に失敗して `500 server_error` になります。
 
 ## 動かしてみる
 
@@ -223,5 +242,5 @@ OP はリフレッシュトークンごとに親を記録するため、ロー�
 
 ## 続きはこちら
 
-- [Token Exchange の組み込み](/ja/use-cases/token-exchange) — ライブラリ内蔵の custom-grant の親類。dispatch の形は同じですが、OP が把握するポリシーのセマンティクス(act チェーン、cnf の再バインドなど)が追加で乗ります
+- [Token Exchange の組み込み](/ja/use-cases/token-exchange) — ライブラリ内蔵の custom-grant の親類。dispatch の形は同じですが、OP が把握するポリシーのセマンティクス（act チェーン、cnf の再バインドなど）が追加で乗ります
 - [Sender constraint](/ja/concepts/sender-constraint) — `cnf` が何で、なぜ `BoundAccessToken` が代わりに押印してくれるのが重要なのか

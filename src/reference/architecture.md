@@ -33,69 +33,25 @@ internal/                   ← cannot be imported externally (Go visibility)
 
 The boundary is enforced structurally: external code cannot reach into `internal/`. Every embedder-controlled seam (option, store interface, authenticator, audit subscriber) is in `op/` or one of its subpackages.
 
-## Handler graph
+## Routes
 
-`op.New` constructs a `*http.ServeMux` and mounts handlers on the configured paths (defaults shown):
+`op.New` constructs a `*http.ServeMux` and mounts one handler per configured path. The defaults, and the package behind each one:
 
-<div style="display:flex;justify-content:center;margin:1.5rem 0">
+| Path | Handler package | What it serves | Mounted |
+|---|---|---|---|
+| `/.well-known/openid-configuration` | `internal/discovery` | the OP's effective configuration as a discovery document | always |
+| `/jwks` | `internal/jwks` | the public half of the signing keyset (plus `use=enc` keys when configured) | always |
+| `/authorize` | `internal/authorizeendpoint` | request parsing, client and `redirect_uri` validation, the redirect into interaction | always |
+| `/interaction/{uid}` | `internal/authorizeendpoint` + the `op/interaction` driver | the login and consent ceremony, rendered as HTML or served as JSON to an SPA | with `/authorize` |
+| `/par` | `internal/parendpoint` | pushed authorization requests, returning a one-time `request_uri` | `feature.PAR` |
+| `/token` | `internal/tokenendpoint` | client authentication, code and refresh redemption, token issuance | always |
+| `/userinfo` | `internal/userinfo` | claims for the subject behind a presented access token | always |
+| `/revoke` | `internal/revokeendpoint` | RFC 7009 revocation of a refresh or access token | `feature.Revoke` |
+| `/introspect` | `internal/introspectendpoint` | RFC 7662 token state for an authorized resource server | `feature.Introspect` |
+| `/end_session` | `internal/endsession` | RP-initiated logout, including the back-channel fan-out | when a session manager is configured |
+| `/register` | `internal/registrationendpoint` | dynamic client registration and the per-client management routes | `WithDynamicRegistration` |
 
-<svg role="img" aria-labelledby="hg-en-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg">
-<title id="hg-en-title">op.New returns an http.Handler whose ServeMux dispatches each request path to its internal endpoint handler.</title>
-<defs><marker id="hg-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
-<rect class="hg-op" x="24" y="217" width="180" height="60" rx="8"/>
-<text class="hg-t1" x="114" y="240" text-anchor="middle">op.New</text>
-<text class="hg-t2" x="114" y="257" text-anchor="middle">→ http.Handler</text>
-<text class="hg-t3" x="114" y="270" text-anchor="middle">ServeMux</text>
-<path class="hg-line" d="M204 247 H248"/>
-<path class="hg-line" d="M248 37 V457"/>
-<path class="hg-line" d="M248 37 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="20" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="35">/.well-known/openid-configuration</text>
-<text class="hg-pkg" x="292" y="49">discovery</text>
-<path class="hg-line" d="M248 79 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="62" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="77">/jwks</text>
-<text class="hg-pkg" x="292" y="91">internal/jwks</text>
-<path class="hg-line" d="M248 121 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="104" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="119">/authorize</text>
-<text class="hg-pkg" x="292" y="133">internal/authorizeendpoint</text>
-<path class="hg-line" d="M248 163 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="146" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="161">/par</text>
-<text class="hg-pkg" x="292" y="175">internal/parendpoint</text>
-<path class="hg-line" d="M248 205 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="188" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="203">/token</text>
-<text class="hg-pkg" x="292" y="217">internal/tokenendpoint</text>
-<path class="hg-line" d="M248 247 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="230" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="245">/userinfo</text>
-<text class="hg-pkg" x="292" y="259">internal/userinfo</text>
-<path class="hg-line" d="M248 289 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="272" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="287">/revoke</text>
-<text class="hg-pkg" x="292" y="301">internal/revokeendpoint</text>
-<path class="hg-line" d="M248 331 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="314" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="329">/introspect</text>
-<text class="hg-pkg" x="292" y="343">internal/introspectendpoint</text>
-<path class="hg-line" d="M248 373 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="356" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="371">/end_session</text>
-<text class="hg-pkg" x="292" y="385">internal/endsession</text>
-<path class="hg-line" d="M248 415 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="398" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="413">/register</text>
-<text class="hg-pkg" x="292" y="427">internal/registrationendpoint</text>
-<path class="hg-line" d="M248 457 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="440" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="455">/interaction/…</text>
-<text class="hg-drv" x="292" y="469">HTML or SPA UI driver</text>
-</svg>
-</div>
-
-Endpoints gated by features (`PAR`, `Introspect`, `Revoke`, `DynamicRegistration`) are mounted only when the corresponding `feature.*` is enabled or the corresponding option (`WithDynamicRegistration`) is supplied. Back-channel logout is not a mounted, feature-gated endpoint — it is an outbound fan-out triggered from `/end_session` that POSTs a logout token to each RP's registered `backchannel_logout_uri`. The discovery document only advertises endpoints that are actually mounted.
+Back-channel logout has no row of its own because it is not a mounted endpoint. It is an outbound fan-out that `/end_session` triggers: the OP POSTs a logout token to each RP's registered `backchannel_logout_uri`. The discovery document advertises only the endpoints that are actually mounted, so a deployment that leaves `feature.Introspect` off never announces `/introspect`.
 
 ## Cross-cutting middleware
 
@@ -103,7 +59,7 @@ Every handler is wrapped by:
 
 | Layer | Source | Role |
 |---|---|---|
-| **CORS** | `internal/cors` | public CORS for discovery and `/jwks`; strict allowlist for `/userinfo`, `/token`, interaction/session JSON surfaces, and mounted protocol endpoints such as `/par`, `/revoke`, `/introspect`, `/register`, `/bc-authorize`, `/device_authorization`, and `/end_session` |
+| **CORS** | `internal/cors` | public CORS for discovery and `/jwks`; strict allow-list for `/userinfo`, `/token`, interaction/session JSON surfaces, and mounted protocol endpoints such as `/par`, `/revoke`, `/introspect`, `/register`, `/bc-authorize`, `/device_authorization`, and `/end_session` |
 | **Trusted proxy** | `internal/httpx` | resolves real client IP from `X-Forwarded-*` / `Forwarded` based on `WithTrustedProxies` |
 | **Cookie** | `internal/cookie` | `__Host-` prefix, AES-256-GCM, `SameSite=Lax` for session, `Strict` where compatible |
 | **CSRF** | `internal/csrf` | double-submit + Origin / Referer check on the consent / logout POST |
@@ -118,78 +74,79 @@ The most-trodden path. Roughly:
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="seq-en-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="seq-en-title" viewBox="0 0 760 662" xmlns="http://www.w3.org/2000/svg">
 <title id="seq-en-title">Authorize-to-token happy path: the browser drives /authorize and interaction, then the RP redeems the code at /token.</title>
 <defs>
 <marker id="seq-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
 <marker id="seq-ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--vp-c-text-3)"/></marker>
 </defs>
-<line class="seq-ll" x1="70" y1="44" x2="70" y2="645"/>
-<line class="seq-ll" x1="250" y1="44" x2="250" y2="645"/>
-<line class="seq-llop" x1="440" y1="44" x2="440" y2="645"/>
-<line class="seq-llst" x1="630" y1="44" x2="630" y2="645"/>
-<line class="seq-lllf" x1="800" y1="44" x2="800" y2="645"/>
-<rect class="seq-box" x="20" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd" x="70" y="32" text-anchor="middle">RP</text>
-<rect class="seq-box" x="200" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd" x="250" y="32" text-anchor="middle">User agent</text>
-<rect class="seq-boxop" x="390" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd seq-hdop" x="440" y="32" text-anchor="middle">OP</text>
-<rect class="seq-boxst" x="580" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd" x="630" y="32" text-anchor="middle">Store</text>
-<rect class="seq-boxlf" x="750" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd seq-hdlf" x="800" y="32" text-anchor="middle">LoginFlow</text>
-<line class="seq-msg" x1="70" y1="80" x2="250" y2="80" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="75">1</text>
-<text class="seq-lbl" x="91" y="75">redirect to <tspan class="seq-mono">/authorize?…</tspan></text>
-<line class="seq-msg" x1="250" y1="114" x2="440" y2="114" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="109">2</text>
-<text class="seq-lbl" x="271" y="109"><tspan class="seq-mono">GET /authorize</tspan></text>
-<line class="seq-msg" x1="440" y1="148" x2="630" y2="148" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="143">3</text>
-<text class="seq-lbl" x="461" y="143"><tspan class="seq-mono">Clients.GetClient</tspan> / validate <tspan class="seq-mono">redirect_uri</tspan></text>
-<path class="seq-msg" d="M440 174 h30 v14 h-30" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="480" y="170">4</text>
-<text class="seq-lbl" x="492" y="170">PKCE / scope / <tspan class="seq-mono">response_type</tspan> checks</text>
-<line class="seq-msg" x1="440" y1="216" x2="250" y2="216" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="211">5</text>
-<text class="seq-lbl" x="271" y="211">302 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
-<line class="seq-msg" x1="250" y1="250" x2="440" y2="250" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="245">6</text>
-<text class="seq-lbl" x="271" y="245"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (login)</text>
-<line class="seq-msg" x1="440" y1="284" x2="800" y2="284" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="279">7</text>
-<text class="seq-lbl" x="461" y="279"><tspan class="seq-mono">Begin / Continue</tspan> (Step chain)</text>
-<line class="seq-ret" x1="800" y1="318" x2="440" y2="318" marker-end="url(#seq-ahm)"/>
-<text class="seq-num" x="446" y="313">8</text>
-<text class="seq-lbl" x="461" y="313"><tspan class="seq-mono">Result</tspan> (subject + AAL + AMR)</text>
-<line class="seq-msg" x1="440" y1="352" x2="250" y2="352" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="347">9</text>
-<text class="seq-lbl" x="271" y="347">200 consent → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
-<line class="seq-msg" x1="250" y1="386" x2="440" y2="386" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="381">10</text>
-<text class="seq-lbl" x="271" y="381"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (consent)</text>
-<line class="seq-msg" x1="440" y1="420" x2="630" y2="420" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="415">11</text>
-<text class="seq-lbl" x="461" y="415"><tspan class="seq-mono">AuthorizationCodes.Save</tspan> (code + PKCE)</text>
-<line class="seq-msg" x1="440" y1="454" x2="250" y2="454" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="449">12</text>
-<text class="seq-lbl" x="271" y="449">302 → <tspan class="seq-mono">redirect_uri?code=…&amp;state=…&amp;iss=…</tspan></text>
-<line class="seq-msg" x1="250" y1="488" x2="70" y2="488" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="483">13</text>
-<text class="seq-lbl" x="91" y="483">arrives with <tspan class="seq-mono">code</tspan></text>
-<line class="seq-msg" x1="70" y1="522" x2="440" y2="522" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="517">14</text>
-<text class="seq-lbl" x="91" y="517"><tspan class="seq-mono">POST /token</tspan> (<tspan class="seq-mono">grant_type=authorization_code</tspan>)</text>
-<line class="seq-msg" x1="440" y1="556" x2="630" y2="556" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="551">15</text>
-<text class="seq-lbl" x="461" y="551"><tspan class="seq-mono">AuthorizationCodes.Consume</tspan> / verify PKCE / client auth</text>
-<line class="seq-msg" x1="440" y1="590" x2="630" y2="590" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="585">16</text>
-<text class="seq-lbl" x="461" y="585"><tspan class="seq-mono">AccessTokens.Register / RefreshTokens.Save</tspan></text>
-<line class="seq-msg" x1="440" y1="624" x2="70" y2="624" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="619">17</text>
-<text class="seq-lbl" x="91" y="619">200 <tspan class="seq-mono">{ access_token, id_token, refresh_token? }</tspan></text>
+<line class="seq-ll" x1="66" y1="44" x2="66" y2="645"/>
+<line class="seq-ll" x1="220" y1="44" x2="220" y2="645"/>
+<line class="seq-llop" x1="380" y1="44" x2="380" y2="645"/>
+<line class="seq-llst" x1="545" y1="44" x2="545" y2="645"/>
+<line class="seq-lllf" x1="700" y1="44" x2="700" y2="645"/>
+<rect class="seq-box" x="18" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd" x="66" y="32" text-anchor="middle">RP</text>
+<rect class="seq-box" x="172" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd" x="220" y="32" text-anchor="middle">User agent</text>
+<rect class="seq-boxop" x="332" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd seq-hdop" x="380" y="32" text-anchor="middle">OP</text>
+<rect class="seq-boxst" x="497" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd" x="545" y="32" text-anchor="middle">Store</text>
+<rect class="seq-boxlf" x="652" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd seq-hdlf" x="700" y="32" text-anchor="middle">LoginFlow</text>
+<line class="seq-msg" x1="66" y1="80" x2="220" y2="80" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="75">1</text>
+<text class="seq-lbl" x="87" y="75">redirect to <tspan class="seq-mono">/authorize?…</tspan></text>
+<line class="seq-msg" x1="220" y1="114" x2="380" y2="114" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="109">2</text>
+<text class="seq-lbl" x="241" y="109"><tspan class="seq-mono">GET /authorize</tspan></text>
+<line class="seq-msg" x1="380" y1="148" x2="545" y2="148" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="143">3</text>
+<text class="seq-lbl" x="401" y="143"><tspan class="seq-mono">Clients.GetClient</tspan> / validate <tspan class="seq-mono">redirect_uri</tspan></text>
+<path class="seq-msg" d="M380 174 h30 v14 h-30" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="420" y="170">4</text>
+<text class="seq-lbl" x="432" y="170">PKCE / scope / <tspan class="seq-mono">response_type</tspan> checks</text>
+<line class="seq-msg" x1="380" y1="216" x2="220" y2="216" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="211">5</text>
+<text class="seq-lbl" x="241" y="211">302 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
+<line class="seq-msg" x1="220" y1="250" x2="380" y2="250" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="245">6</text>
+<text class="seq-lbl" x="241" y="245"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (login)</text>
+<line class="seq-msg" x1="380" y1="284" x2="700" y2="284" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="279">7</text>
+<text class="seq-lbl" x="401" y="279"><tspan class="seq-mono">Begin / Continue</tspan> (Step chain)</text>
+<line class="seq-ret" x1="700" y1="318" x2="380" y2="318" marker-end="url(#seq-ahm)"/>
+<text class="seq-num halo" x="386" y="313">8</text>
+<text class="seq-lbl" x="401" y="313"><tspan class="seq-mono">Result</tspan> (subject + AAL + AMR)</text>
+<line class="seq-msg" x1="380" y1="352" x2="220" y2="352" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="347">9</text>
+<text class="seq-lbl" x="241" y="347">200 consent → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
+<line class="seq-msg" x1="220" y1="386" x2="380" y2="386" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="381">10</text>
+<text class="seq-lbl" x="241" y="381"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (consent)</text>
+<line class="seq-msg" x1="380" y1="420" x2="545" y2="420" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="415">11</text>
+<text class="seq-lbl" x="401" y="415"><tspan class="seq-mono">AuthorizationCodes.Save</tspan> (code + PKCE)</text>
+<line class="seq-msg" x1="380" y1="454" x2="220" y2="454" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="449">12</text>
+<text class="seq-lbl" x="241" y="449">302 → <tspan class="seq-mono">redirect_uri?code=…&amp;state=…&amp;iss=…</tspan></text>
+<line class="seq-msg" x1="220" y1="488" x2="66" y2="488" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="483">13</text>
+<text class="seq-lbl" x="87" y="483">arrives with <tspan class="seq-mono">code</tspan></text>
+<line class="seq-msg" x1="66" y1="522" x2="380" y2="522" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="517">14</text>
+<text class="seq-lbl" x="87" y="517"><tspan class="seq-mono">POST /token</tspan> (<tspan class="seq-mono">grant_type=authorization_code</tspan>)</text>
+<line class="seq-msg" x1="380" y1="556" x2="545" y2="556" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="551">15</text>
+<text class="seq-lbl" x="401" y="539"><tspan class="seq-mono">AuthorizationCodes.Consume</tspan></text>
+<text class="seq-lbl" x="401" y="551">verify PKCE / client auth</text>
+<line class="seq-msg" x1="380" y1="590" x2="545" y2="590" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="585">16</text>
+<text class="seq-lbl" x="401" y="585"><tspan class="seq-mono">AccessTokens.Register / RefreshTokens.Save</tspan></text>
+<line class="seq-msg" x1="380" y1="624" x2="66" y2="624" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="619">17</text>
+<text class="seq-lbl" x="87" y="619">200 <tspan class="seq-mono">{ access_token, id_token, refresh_token? }</tspan></text>
 </svg>
 </div>
 
@@ -292,7 +249,17 @@ The library never reads or writes the embedder's `users` table directly. It talk
 | `CIBARequests` | OpenID Connect CIBA backchannel-authentication records | durable |
 | `Metadata` | OP-internal key/value state (e.g. the `subject_mode` marker) | durable, may be absent (nil) |
 
-Volatile-eligible substores can live in a Redis tier behind the [`composite`](/use-cases/hot-cold-redis) adapter. The composite store enforces a single durable backend at construction time so a transactional cluster cannot split across two stores.
+Volatile-eligible substores can live in a Redis tier behind the [`composite`](/use-cases/hot-cold-redis) adapter. At construction time, the composite adapter requires every `Kind` to have a route. The seven members of `composite.TxClusterKinds` must all resolve to the same comparable backend, and that backend must implement `store.Transactional`:
+
+- authorization codes
+- refresh tokens
+- grants
+- PARs
+- JWT access-token registrations
+- opaque access tokens
+- grant-revocation tombstones
+
+Other kinds may use separate backends. Invalid kinds, missing routes, a split cluster, a non-comparable cluster backend, and a non-transactional anchor are reported as construction errors.
 
 MFA factor stores (`EmailOTPStore`, `TOTPStore`, `PasskeyStore`, `RecoveryStore`, `AuthnLockoutStore`) are not substores of `store.Store`. They are supplied directly to the matching login-flow values (`StepEmailOTP.Store`, `StepTOTP.Store`, `PrimaryPasskey.Store`, `StepRecoveryCode.Store`, and `WithAuthnLockoutStore`) when the embedder builds the `LoginFlow`. In-memory, SQL, and DynamoDB adapters expose these stores with matching accessors. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) uses the shipped SQL factor stores with the core OP tables in one database; custom backends implement the same contracts themselves.
 
@@ -312,7 +279,7 @@ The discovery handler at `/.well-known/openid-configuration` builds its document
 
 ## Where to read next
 
-- **[Options reference](/reference/options)** — every `op.With*` in one table, with cross-links into the handler graph above.
+- **[Options reference](/reference/options)** — every `op.With*` in one table, with cross-links into the route table above.
 - **[Audit event catalog](/reference/audit-events)** — what fires from each handler at each stage.
 - **[Custom authenticator](/use-cases/custom-authenticator)** — how the orchestrator's pipeline calls into your code.
 - **[Hot/cold storage](/use-cases/hot-cold-redis)** — how the substore tiering interacts with the volatile / durable boundary above.

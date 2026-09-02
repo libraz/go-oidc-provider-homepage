@@ -104,7 +104,7 @@ curl -s http://localhost:8080/.well-known/openid-configuration | jq .scopes_supp
 # ]
 ```
 
-`internal:audit` が含まれない — それが目的です。
+`internal:audit` は含まれません。それが狙いです。
 
 ## いつ使うか
 

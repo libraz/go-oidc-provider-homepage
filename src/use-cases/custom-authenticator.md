@@ -62,7 +62,7 @@ Implementations MUST be safe for concurrent use; the orchestrator dispatches acr
 
 The orchestrator stamps `Prompt.StateRef` after `Begin` or `Continue` returns. An authenticator must not invent or persist a state reference. Put per-attempt state in `interaction.Step.Scratch`; the value is kept server-side and returned through `ContinueInput.Scratch`.
 
-<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 352" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authenticator-flow-title">The state machine of a custom authenticator. LoginFlow calls Begin, the user passes a phone-number prompt and then a code prompt, and returning a Result writes the subject and factor into the session.</title>
   <defs>
     <marker id="auth-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -91,7 +91,7 @@ The orchestrator stamps `Prompt.StateRef` after `Begin` or `Continue` returns. A
   <text class="h" x="380" y="166" text-anchor="middle">1. myorg.sms.collect_phone</text>
   <text class="t sub" x="380" y="185" text-anchor="middle">take the phone number, generate an OTP, and send it</text>
   <path d="M640 92 C640 122 530 132 438 142" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="576" y="126" text-anchor="middle">POST phone</text>
+  <text class="m sub halo" x="576" y="126" text-anchor="middle">POST phone</text>
   <path d="M322 198 C245 214 245 244 322 260" marker-end="url(#auth-flow-arrow)"/>
   <text class="m sub" x="246" y="234" text-anchor="middle">Continue</text>
 
@@ -99,9 +99,11 @@ The orchestrator stamps `Prompt.StateRef` after `Begin` or `Continue` returns. A
   <text class="h" x="380" y="284" text-anchor="middle">2. myorg.sms.collect_code</text>
   <text class="t sub" x="380" y="303" text-anchor="middle">verify the submitted code and, on success, return Result{Subject: ...}</text>
 
-  <path d="M672 288 H720 V338 H40 V63" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="380" y="346" text-anchor="middle">the returned Result writes subject / AAL / AMR into the session</text>
+  <path d="M380 316 V340 H56 V96" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="250" y="330" text-anchor="middle">returns Result</text>
 </svg>
+
+The `Result` returned by the last step closes the ceremony: the orchestrator writes the subject, the AAL, and the AMR value into the session, and the LoginFlow moves on to the next rule.
 
 ## Worked example: SMS OTP
 
@@ -275,7 +277,7 @@ Custom prompts should declare every submitted field in `Prompt.Inputs`. `PromptD
 
 `FieldKind` is limited to `FieldText`, `FieldPassword`, `FieldOTPCode`, `FieldEmail`, and `FieldHidden`. `Required`, `MinLen`, `MaxLen`, and a full-match `Pattern` are enforced before `Continue` runs. If `MaxLen` is zero, the byte limits are 512 for text, 1024 for password, 32 for OTP code, 320 for email, and 16 KiB for hidden fields. Every submission is also capped at 32 KiB across names and values and may contain at most four entries beyond the declared fields. A prompt's `StateRef` expires after 10 minutes and is single-use; a stale or replayed reference is rejected before the authenticator runs.
 
-The built-in MFA prompts use the same contract: TOTP exposes an `AttemptsRemaining` value and an exactly six-digit `code`; email OTP exposes a masked address and `ExpiresAt`, accepts a 254-byte email and a six-digit code, and defaults its code lifetime to five minutes; passkey exposes the WebAuthn challenge and allow-list and caps the assertion response at 16 KiB; recovery codes expose `AttemptsRemaining` and accept 10–32-byte codes. These values are prompt metadata and validation bounds, not a replacement for factor-specific rate limiting.
+The built-in MFA prompts use the same contract: TOTP exposes an `AttemptsRemaining` value and an exactly six-digit `code`; email OTP exposes a masked address and `ExpiresAt`, accepts a 254-byte email and a six-digit code, and defaults its code lifetime to five minutes; passkey exposes the WebAuthn challenge and allow-list and caps the assertion response at 16 KiB; recovery codes expose `AttemptsRemaining` and accept 10–32-byte codes. For both TOTP and recovery prompts, `AttemptsRemaining` is the remaining failed-submission budget, not the number of unconsumed recovery codes. These values are prompt metadata and validation bounds, not a replacement for factor-specific rate limiting.
 
 ## Contract requirements
 

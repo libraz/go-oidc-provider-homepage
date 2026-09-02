@@ -22,10 +22,10 @@ pageClass: pg-use-cases-storage-decision
 |---|---|---|
 | **更地** — スキーマがまだ無い | SQL バックエンド 1 つ、アダプタ所有のテーブル | [SQL ストア](/ja/use-cases/sql-store) |
 | **AWS / DynamoDB** — AWS ネイティブな永続バックエンドを使いたい | サブストアごとに DynamoDB テーブル 1 つ | [DynamoDB ストア](/ja/use-cases/dynamodb-store) |
-| **既存データベース** — すでに `users` テーブルとマイグレーションを運用している | アダプタ所有の `oidc_*` テーブル(命名を合わせて変更)+ ID 情報を投影 | [ストアを自前実装](/ja/use-cases/byo-store) · [ユーザストアを自前実装](/ja/use-cases/byo-userstore) |
+| **既存データベース** — すでに `users` テーブルとマイグレーションを運用している | アダプタ所有の `oidc_*` テーブル（命名を合わせて変更）+ ID 情報を投影 | [ストアを自前実装](/ja/use-cases/byo-store) · [ユーザストアを自前実装](/ja/use-cases/byo-userstore) |
 | **スケール / 高頻度生成** — 揮発状態を永続ストアから外したい | `composite` で分離: 永続 SQL + 揮発 Redis | [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) |
 
-<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 430" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="storage-choice-title">ストレージ構成の選択。新規なら SQL アダプタ 1 つ、既存 users テーブルがあるなら OIDC テーブルだけ SQL アダプタに任せて UserStore を自前実装、高頻度の揮発状態を分離したいなら composite で SQL と Redis に分ける。</title>
   <defs>
     <marker id="storage-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -68,17 +68,16 @@ pageClass: pg-use-cases-storage-decision
   <text class="t sub" x="615" y="272" text-anchor="middle">永続 SQL</text>
   <text class="t sub" x="615" y="291" text-anchor="middle">揮発 Redis</text>
 
-  <rect class="soft" x="66" y="350" width="628" height="56" rx="8"/>
-  <text class="t" x="380" y="373" text-anchor="middle">注意: 短寿命でも、認可コードや PAR は永続側に置く</text>
-  <text class="m sub" x="380" y="392" text-anchor="middle">composite.TxClusterKinds は 1 つのバックエンドにまとめる</text>
 </svg>
+
+3 番目の分岐には落とし穴が 1 つあります。認可コードと PAR の `request_uri` は短寿命なので揮発状態に見えますが、置き場所は永続側です。`composite.TxClusterKinds` のメンバは、すべて同じバックエンドに解決される必要があります。
 
 ## 更地
 
-`sql` アダプタはスキーマ一式を同梱しているので、組み込み側が OIDC テーブルを設計する必要はありません。`New(db, dialect)` が SQLite / MySQL 8.0+ / PostgreSQL 14+ に対して(対応する `SQLite()` / `MySQL()` / `Postgres()` dialect 経由で)ストアを構築し、アダプタが自身の `oidc_*` テーブルを所有します。
+`sql` アダプタはスキーマ一式を同梱しているので、組み込み側が OIDC テーブルを設計する必要はありません。`New(db, dialect)` が SQLite / MySQL 8.0+ / PostgreSQL 14+ に対して（対応する `SQLite()` / `MySQL()` / `Postgres()` dialect 経由で）ストアを構築し、アダプタが自身の `oidc_*` テーブルを所有します。
 
 - **開発 / examples**: 新しい接続に同梱スキーマを適用するために、ストアの `Migrate(ctx)` を呼びます。これはデモとテストのための便宜であり、既存テーブルの更新経路ではありません。
-- **本番**: ストアの `Schema()` を呼ぶと、dialect 固有の DDL を(`WithNaming` の上書きを適用済みの状態で)得られます。この文字列を既存のマイグレーションツールに流し込んでください。DDL をそのまま公開しているのは、アダプタが前提とするスキーマと本番スキーマをレビューで差分比較できるようにするためです。
+- **本番**: ストアの `Schema()` を呼ぶと、dialect 固有の DDL を（`WithNaming` の上書きを適用済みの状態で）得られます。この文字列を既存のマイグレーションツールに流し込んでください。DDL をそのまま公開しているのは、アダプタが前提とするスキーマと本番スキーマをレビューで差分比較できるようにするためです。
 
 既存 DB では、最初のリクエスト前に [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) の追加カラムとインデックスを適用してください。正確な `allowed_scopes`、MFA の `row_version`、retention インデックス名は [SQL ガイド](/ja/use-cases/sql-store#sql-migration-before-first-request)に、ロールアウトと GC の順序は [ストレージの保守](/ja/operations/storage-maintenance)にまとめています。
 
@@ -86,27 +85,27 @@ pageClass: pg-use-cases-storage-decision
 
 データベースもマイグレーションも組み込み側のまま維持します。アダプタがその隣にどう収まるかは、2 つの事実で決まります。
 
-- **アダプタは形が固定されたテーブルを所有します。** `WithNaming` は *物理テーブル名* を変更します(`oidc_clients` を任意の命名規則へ)が、*列は固定* です — アダプタは既知の列集合に対してクエリを組み立てます。未知の論理キーは `New` を失敗させるので、打ち間違いは最初のクエリ時ではなく構築時に表面化します。
-- **本物の `users` テーブルは組み込み側のものです。** アダプタの `oidc_users` テーブル(`subject`、`claims`、`updated_at`、および任意の `username` / `password_hash`)は投影先であって、置き換えではありません。すでに情報量の多い `users` テーブルがあるなら、*組み込み側の* 列を読んで `store.User` を返す `store.UserStore`(パスワードグラントを扱うなら `store.UserPasswordStore` も)を実装してください。ユーザデータをアダプタの形に移行する必要はありません。
+- **アダプタは形が固定されたテーブルを所有します。** `WithNaming` は *物理テーブル名* を変更します（`oidc_clients` を任意の命名規則へ）が、*列は固定* です — アダプタは既知の列集合に対してクエリを組み立てます。未知の論理キーは `New` を失敗させるので、打ち間違いは最初のクエリ時ではなく構築時に表面化します。
+- **本物の `users` テーブルは組み込み側のものです。** アダプタの `oidc_users` テーブル（`subject`、`claims`、`updated_at`、および任意の `username` / `password_hash`）は投影先であって、置き換えではありません。すでに情報量の多い `users` テーブルがあるなら、*組み込み側の* 列を読んで `store.User` を返す `store.UserStore`(パスワードグラントを扱うなら `store.UserPasswordStore` も)を実装してください。ユーザデータをアダプタの形に移行する必要はありません。
 
-つまり「既存テーブルを再利用したい」は 2 つに分かれます: OIDC の **プロトコル** テーブル(認可コード、リフレッシュチェーン、grant など)はアダプタのものなので `WithNaming` で名前を合わせてマイグレーションに作らせ、**ID** 情報は自前実装の `UserStore` の背後に置いたままにします。
+つまり「既存テーブルを再利用したい」は 2 つに分かれます: OIDC の **プロトコル** テーブル（認可コード、リフレッシュチェーン、grant など）はアダプタのものなので `WithNaming` で名前を合わせてマイグレーションに作らせ、**ID** 情報は自前実装の `UserStore` の背後に置いたままにします。
 
 ::: details どのサブストアを自前実装する価値があるか
-どのサブストアも自前実装できますが、組み込み側がほぼ必ず所有するのはユーザの投影(`UserStore` / `UserPasswordStore`)です。ユーザレコードは組み込み側のドメインだからです。プロトコル系サブストア(コード、トークン、grant)は手書きのバックエンドで得をすることはまれなので、そこは `sql` アダプタを使ってください。ゼロからの実装例は [ストアを自前実装](/ja/use-cases/byo-store) を、ID だけを差し替える場合は [ユーザストアを自前実装](/ja/use-cases/byo-userstore) を参照してください。
+どのサブストアも自前実装できますが、組み込み側がほぼ必ず所有するのはユーザの投影（`UserStore` / `UserPasswordStore`）です。ユーザレコードは組み込み側のドメインだからです。プロトコル系サブストア（コード、トークン、grant）は手書きのバックエンドで得をすることはまれなので、そこは `sql` アダプタを使ってください。ゼロからの実装例は [ストアを自前実装](/ja/use-cases/byo-store) を、ID だけを差し替える場合は [ユーザストアを自前実装](/ja/use-cases/byo-userstore) を参照してください。
 :::
 
-## スケールのための分離(Hot/Cold)
+## スケールのための分離（Hot/Cold）
 
 1 つのバックエンドではもう形が合わなくなったとき — 永続行に揮発状態が生む QPS は要らず、揮発行に永続ストアの保証は要らない — `composite` アダプタが各サブストアを永続側か揮発側のバックエンドへルーティングします。標準的な本番構成は、永続側に SQL、揮発側に Redis を置く形です。詳しい手順は [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) のページにあります。
 
 ## Redis に載せてよいもの — ルール
 
-Redis か SQL かの選択は「そのデータが短寿命かどうか」では **ありません**。1 つの不変条件に従います: アトミックに同時コミットしなければならないサブストア(`composite.TxClusterKinds`)は同じバックエンドを共有する必要があるため、永続側に留まります。データの寿命が決めるのは、その残りだけです。
+Redis か SQL かの選択は「そのデータが短寿命かどうか」では **ありません**。1 つの不変条件に従います: アトミックに同時コミットしなければならないサブストア（`composite.TxClusterKinds`）は同じバックエンドを共有する必要があるため、永続側に留まります。データの寿命が決めるのは、その残りだけです。
 
 | バケット | サブストア | 理由 |
 |---|---|---|
-| **永続側(SQL)必須** | `AuthorizationCodeStore`、`RefreshTokenStore`、`GrantStore`、`PushedAuthRequestStore`、`AccessTokenRegistry`、`OpaqueAccessTokenStore`、`GrantRevocationStore` | トランザクションクラスタのメンバー — 1 つの整合性ドメインでコミット / CAS されます。Redis アダプタはこれらに `nil` を返すので、`composite` は永続側の外へルートできません。 |
-| **Redis 向き(揮発)** | `InteractionStore`、`ConsumedJTIStore` | 短寿命・高頻度生成で、単体では失っても差し支えなく、クラスタの *外* にあります。 |
+| **永続側（SQL）必須** | `AuthorizationCodeStore`、`RefreshTokenStore`、`GrantStore`、`PushedAuthRequestStore`、`AccessTokenRegistry`、`OpaqueAccessTokenStore`、`GrantRevocationStore` | トランザクションクラスタのメンバー — 1 つの整合性ドメインでコミット / CAS されます。Redis アダプタはこれらに `nil` を返すので、`composite` は永続側の外へルートできません。 |
+| **Redis 向き（揮発）** | `InteractionStore`、`ConsumedJTIStore` | 短寿命・高頻度生成で、単体では失っても差し支えなく、クラスタの *外* にあります。 |
 | **組み込み側の判断** | `SessionStore` | どちらの保存先にもルートできます。`WithSessionDurabilityPosture` は logout の起点 / session snapshot の耐久性を宣言します。BCL の target は grant 由来で解決され、`bcl.no_sessions_for_subject` は eligible RP target が 0 件だった session 付き logout を記録します。 |
 
 直感に反するメンバーが PAR です: `request_uri` は短寿命で *揮発に見えます* が、OP はこれを認可コードの経路の中で消費するため、クラスタに属し永続側に留まります。サブストア単位の正式な表と、必須バックエンドが `nil` のときの `op.New` のガードレールは [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) のページにあります。

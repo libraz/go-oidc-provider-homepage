@@ -49,7 +49,13 @@ pageClass: pg-use-cases-index
 
 ## リファレンスアプリケーション
 
-番号付きの example は 1 つのオプションを 200 〜 500 行で切り出したものです。[`sample/`](https://github.com/libraz/go-oidc-provider/tree/main/sample) はそれとは別で、example が飛ばしている「アカウントが生まれてから使われるまで」の一連の流れを扱います。アプリケーション側が持つサインアップ、Argon2id によるパスワード保管、アプリケーション自身が実装する [`interaction.Driver`](/ja/use-cases/spa-custom-interaction) を通したログインと同意、アカウント設定画面からの TOTP 登録、そして round-trip を完了する RP までを、`op/storeadapter/composite` で束ねた MySQL + Redis の上で、`docker compose up` 一発で動かせます。
+番号付きの example は 1 つのオプションを 200 〜 500 行で切り出したものです。[`sample/`](https://github.com/libraz/go-oidc-provider/tree/main/sample) はそれとは別で、example が飛ばしている「アカウントが生まれてから使われるまで」の一連の流れを扱います。`op/storeadapter/composite` で束ねた MySQL + Redis の上で動き、`docker compose up` 一発で次の範囲を通しで試せます。
+
+- アプリケーション側が持つサインアップ
+- Argon2id によるパスワード保管
+- アプリケーション自身が実装する [`interaction.Driver`](/ja/use-cases/spa-custom-interaction) を通したログインと同意
+- アカウント設定画面からの TOTP 登録
+- round-trip を完了する RP
 
 ```sh
 docker compose -f sample/compose.yaml up -d --build

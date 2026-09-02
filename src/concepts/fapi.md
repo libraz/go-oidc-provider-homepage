@@ -62,7 +62,7 @@ FAPI 1.0 had two bands. **Read-Only** was for use cases that only retrieved data
 
 FAPI 2.0 has two bands:
 
-<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 390" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="fapi-layers-title">The FAPI 2.0 layers. Baseline pins a safe set of mandates on top of OAuth 2.0 and OIDC, and Message Signing adds signed requests, signed responses, and DPoP nonces so the exchange leaves evidence that cannot be repudiated later.</title>
   <rect class="soft" x="70" y="306" width="620" height="64" rx="8"/>
   <text class="h" x="380" y="332" text-anchor="middle">OAuth 2.0 + OpenID Connect</text>
@@ -83,19 +83,18 @@ FAPI 2.0 has two bands:
   <path d="M380 184 V152"/>
   <path d="M376 152 L380 148 L384 152"/>
 
-  <rect x="34" y="78" width="94" height="44" rx="6"/>
-  <text class="t" x="81" y="96" text-anchor="middle">transport</text>
-  <text class="t sub" x="81" y="113" text-anchor="middle">safety</text>
-  <path d="M128 100 H150"/>
+  <rect x="8" y="78" width="128" height="44" rx="6"/>
+  <text class="t" x="72" y="96" text-anchor="middle">transport</text>
+  <text class="t sub" x="72" y="113" text-anchor="middle">safety</text>
+  <path d="M136 100 H150"/>
 
-  <rect x="632" y="78" width="94" height="44" rx="6"/>
-  <text class="t" x="679" y="96" text-anchor="middle">audit trail</text>
-  <text class="t sub" x="679" y="113" text-anchor="middle">non-repudiation</text>
-  <path d="M632 100 H610"/>
-
-  <rect x="70" y="386" width="620" height="26" rx="6"/>
-  <text class="t sub" x="380" y="404" text-anchor="middle">FAPI is not a separate protocol — it is a profile that pins down how to use OAuth / OIDC safely</text>
+  <rect x="624" y="78" width="128" height="44" rx="6"/>
+  <text class="t" x="688" y="96" text-anchor="middle">audit trail</text>
+  <text class="t sub" x="688" y="113" text-anchor="middle">non-repudiation</text>
+  <path d="M624 100 H610"/>
 </svg>
+
+FAPI is not a separate protocol. It is a profile that pins down how to use OAuth 2.0 and OpenID Connect safely, which is why the diagram stacks it on top of the base specs rather than beside them.
 
 ::: tip Baseline — the floor
 Pushed Authorization Requests (PAR), PKCE, DPoP **or** mTLS sender constraint, ES256 OP signing, FAPI-safe client-side signing algorithms, exact `redirect_uri` matching, and `private_key_jwt` client authentication. This is the floor for any FAPI 2.0 deployment.

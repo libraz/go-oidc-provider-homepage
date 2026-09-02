@@ -34,7 +34,33 @@ RFC 9700 §4.1 closes this off:
 
 > **RFC 9700 §4.1 (paraphrase)** authorization servers MUST compare the `redirect_uri` parameter against the registered URIs using simple string comparison; pattern matching, wildcards, and substring matching MUST NOT be used.
 
-The library implements this literally. Whatever string the client registered is the only string that satisfies that registration. If you registered `https://app.example.com/cb`, the request must use exactly that — not `https://app.example.com/cb/`, not `https://APP.example.com/cb`, not `https://app.example.com/cb?env=prod`.
+The library implements this literally. Whatever string the client registered is the only string that satisfies that registration. If you registered `https://app.example.com/cb`, the request must use exactly that.
+
+<svg role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="redirect-exact-title">Only a byte-for-byte identical redirect_uri matches the registered value. A trailing slash, an added query parameter, a different host case, and a different port all fail.</title>
+  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">REGISTERED</text>
+  <rect x="24" y="28" width="712" height="40" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="44" y="53" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
+  <text x="24" y="98" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">SENT ON THE AUTHORIZE REQUEST</text>
+  <line x1="24" y1="108" x2="736" y2="108" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+  <text x="30" y="132" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✓</text>
+  <text x="56" y="132" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
+  <text x="470" y="132" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">exact match — accepted</text>
+  <text x="30" y="164" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="164" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">/</tspan></text>
+  <text x="470" y="164" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">trailing slash</text>
+  <text x="30" y="196" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="196" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">?env=prod</tspan></text>
+  <text x="470" y="196" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">extra query parameter</text>
+  <text x="30" y="228" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="228" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://<tspan style="fill:var(--vp-c-danger-1);font-weight:700">APP</tspan>.example.com/cb</text>
+  <text x="470" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">host spelled in another case</text>
+  <text x="30" y="260" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="260" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com<tspan style="fill:var(--vp-c-danger-1);font-weight:700">:8443</tspan>/cb</text>
+  <text x="470" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">different port</text>
+</svg>
+
+Every rejected row above differs from the registered string by one or two characters. The OP does not normalise any of them: it compares the two strings and stops. The one exception is the loopback carve-out below, where a native client may vary the port.
 
 ## What this library refuses
 

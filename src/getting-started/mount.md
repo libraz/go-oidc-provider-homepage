@@ -7,6 +7,33 @@ description: Mounting the op.Provider on net/http, chi, gin, and friends.
 
 `op.New` returns a `*op.Provider` whose `ServeHTTP` makes it a standard `http.Handler`. The library does **not** own the listener and does **not** care which router you use.
 
+The provider sits one level below your router, as a sibling of your own handlers. Your middleware still wraps it, and every path outside the ones it claims stays yours.
+
+<svg role="img" aria-labelledby="mount-layers-title" viewBox="0 0 760 296" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="mount-layers-title">The provider handler sits inside your router, alongside your own handlers, with your listener and middleware wrapping both.</title>
+  <rect x="24" y="24" width="712" height="248" rx="10" stroke="var(--vp-c-divider)"/>
+  <text x="48" y="52" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your listener</text>
+  <text x="712" y="52" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">http.ListenAndServe</text>
+
+  <rect x="56" y="64" width="648" height="184" rx="10" stroke="var(--vp-c-divider)"/>
+  <text x="80" y="92" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your middleware</text>
+  <text x="680" y="92" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">otelhttp · promhttp · access log</text>
+
+  <rect x="88" y="104" width="584" height="124" rx="10" stroke="var(--vp-c-divider)"/>
+  <text x="112" y="132" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your router</text>
+  <text x="648" y="132" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">net/http · chi · gin</text>
+
+  <rect x="112" y="140" width="252" height="76" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="238" y="164" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">Your handlers</text>
+  <text x="238" y="184" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/ · /api/* · /healthz</text>
+  <text x="238" y="202" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/metrics · /debug/pprof</text>
+
+  <rect x="396" y="140" width="252" height="76" rx="8" fill="var(--vp-c-brand-soft)" stroke="var(--vp-c-brand-2)"/>
+  <text x="522" y="164" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">op.Provider</text>
+  <text x="522" y="184" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/oidc/* (mount prefix)</text>
+  <text x="522" y="202" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/.well-known/openid-configuration</text>
+</svg>
+
 ## Mount on net/http, chi, or gin
 
 ::: code-group
@@ -72,7 +99,9 @@ The OP is intentionally narrow about what it puts on your router:
 This is deliberate. The OP emits **business** metrics, traces, and audit events through `op.WithPrometheus`, `op.WithLogger`, and `op.WithAuditLogger` into registries / handlers that you own. **HTTP-lifecycle observation is embedder territory** — you wrap the router with `otelhttp` / `promhttp.InstrumentHandler` according to your SRE conventions.
 
 ::: tip TLS / proxies
-The OP expects to run behind a TLS-terminating ingress. Use `op.WithTrustedProxies(cidrs ...)` to whitelist the proxy ranges that provide `X-Forwarded-For`, and `op.WithMTLSProxy(headerName, cidrs)` if you're terminating client TLS at the proxy and forwarding the certificate in a header for RFC 8705 certificate-bound access tokens.
+The OP expects to run behind a TLS-terminating ingress. Use `op.WithTrustedProxies(cidrs ...)` to allow-list the proxy ranges that supply `X-Forwarded-For`.
+
+If the proxy also terminates client TLS and forwards the certificate in a header for RFC 8705 certificate-bound access tokens, add `op.WithMTLSProxy(headerName, cidrs)`.
 :::
 
 ## Next

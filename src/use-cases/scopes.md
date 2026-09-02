@@ -37,7 +37,7 @@ op.WithScope(op.InternalScope("internal:audit")),
 `PublicScope`:
 - Surfaces in `scopes_supported` of the discovery document.
 - Renders on the consent screen with its label.
-- Available to any registered RP that lists it in its seed's `Scopes`.
+- Issues to any registered RP that lists it in its seed's `Scopes`.
 
 `InternalScope`:
 - **Not** in `scopes_supported`.

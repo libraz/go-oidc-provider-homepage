@@ -8,8 +8,8 @@ pageClass: pg-concepts-jose-basics
 
 **JOSE**（JavaScript Object Signing and Encryption）は、JSON 形のトークンに対して署名・暗号化・鍵表現の方法を定める IETF 仕様群の総称です。OIDC 実装は JWS / JWE / JWK / JWKS の 4 つすべてを内部で扱います — 大抵は表に出ませんが、ときどき直接登場します。本ページは、`id_token`、`jwks_uri`、JAR の `request=` パラメータ、`kid` を理解するために押さえておきたい最小限を扱います。
 
-<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jose-map-title">JOSE の対応関係: JWS は署名、JWE は暗号化、JWK は鍵 1 個、JWKS は鍵集合、kid は集合から鍵を選ぶラベル。</title>
+<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jose-map-title">JOSE の対応関係: JWS は署名、JWE は暗号化、JWS ヘッダの kid が /jwks で公開された JWKS の中から JWK を 1 個選ぶ。</title>
 <rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
   <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>
   <text class="jose-sub" x="133" y="110" text-anchor="middle">JWT に署名する</text>
@@ -24,28 +24,34 @@ pageClass: pg-concepts-jose-basics
   <text class="jose-text" x="629" y="88" text-anchor="middle">受信者</text>
   <text class="jose-sub" x="629" y="110" text-anchor="middle">復号して署名検証</text>
 
-  <rect class="jose-box" x="170" y="224" width="178" height="72" rx="8"/>
-  <text class="jose-text" x="259" y="254" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="259" y="274" text-anchor="middle">公開鍵 1 個</text>
-
-  <rect class="jose-box" x="412" y="214" width="178" height="92" rx="8"/>
-  <text class="jose-text" x="501" y="244" text-anchor="middle">JWKS</text>
-  <text class="jose-sub" x="501" y="264" text-anchor="middle">JWK の集合</text>
-  <text class="jose-sub" x="501" y="282" text-anchor="middle">/jwks で公開</text>
-
-  <rect class="jose-main" x="292" y="164" width="178" height="42" rx="8"/>
-  <text class="jose-text" x="381" y="190" text-anchor="middle">kid = 鍵のラベル</text>
-
   <path class="jose-flow" d="M222 98 H288"/>
   <path class="jose-flow" d="M280 94 L289 98 L280 102"/>
   <path class="jose-flow" d="M470 98 H536"/>
   <path class="jose-flow" d="M528 94 L537 98 L528 102"/>
-  <path class="jose-flow" d="M381 206 C372 230 360 250 352 258"/>
-  <path class="jose-flow" d="M360 255 L351 259 L355 250"/>
-  <path class="jose-flow" d="M381 206 C400 234 418 252 408 258"/>
-  <path class="jose-flow" d="M408 249 L409 259 L400 254"/>
-  <path class="jose-flow" d="M348 260 H408"/>
-  <path class="jose-flow" d="M400 256 L409 260 L400 264"/>
+
+  <rect class="jose-box" x="44" y="238" width="212" height="76" rx="8"/>
+  <text class="jose-text" x="150" y="268" text-anchor="middle">JWS ヘッダ</text>
+  <text class="jose-sub" x="150" y="292" text-anchor="middle">"kid": "2024-05"</text>
+
+  <rect class="jose-set" x="306" y="196" width="412" height="140" rx="10"/>
+  <text class="jose-text" x="322" y="224">JWKS</text>
+  <text class="jose-sub" x="380" y="224">JWK の集合。/jwks で公開</text>
+
+  <rect class="jose-match" x="322" y="240" width="120" height="76" rx="6"/>
+  <text class="jose-text" x="382" y="270" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="382" y="292" text-anchor="middle">kid 2024-05</text>
+
+  <rect class="jose-box" x="454" y="240" width="120" height="76" rx="6"/>
+  <text class="jose-text" x="514" y="270" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="514" y="292" text-anchor="middle">kid 2023-11</text>
+
+  <rect class="jose-box" x="586" y="240" width="120" height="76" rx="6"/>
+  <text class="jose-text" x="646" y="270" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="646" y="292" text-anchor="middle">kid 2024-09</text>
+
+  <path class="jose-flow" d="M256 278 H316"/>
+  <path class="jose-flow" d="M308 274 L317 278 L308 282"/>
+  <text class="jose-sub halo" x="286" y="268" text-anchor="middle">選択</text>
 </svg>
 
 ::: details このページで触れる仕様
@@ -113,6 +119,8 @@ OIDC では JWS は次の用途で使われます。
 
 OIDC では JWE は、組み込み側やクライアントが署名の上に機密性を重ねたいときに **外側の暗号化層** として使われます。たとえば、RP の公開鍵で暗号化された `id_token`、暗号化された userinfo 応答、暗号化された introspection 応答、暗号化された authorize 応答（暗号化付き JARM）です。内側のアーティファクトは依然として JWS で、JWE はそれを包んでいるだけです。
 
+OP の `op.WithEncryptionKeyset` は逆方向のための設定です。暗号化された inbound request object を復号する秘密鍵を保持し、その公開側を `use=enc` 鍵として公開します。outbound 暗号化鍵集合ではありません。outbound JWE 応答はクライアントの JWKS から選んだ `use=enc` 鍵で暗号化します。inbound JWE が `kid` を省略した場合、OP は `alg` が要求するファミリの live 鍵だけに候補を絞り、`op.MaxKidlessEncryptionTrialKeys`（既定値 4）を超える候補は試さず拒否します。ファミリが上限を超える場合は `kid` を送ってください。
+
 完全な設定（`op.WithEncryptionKeyset`、`op.WithSupportedEncryptionAlgs`）は [JWE 暗号化の使い方](/ja/use-cases/jwe-encryption) を参照。
 
 ## JWK — JSON Web Key
@@ -153,7 +161,7 @@ OIDC では JWE は、組み込み側やクライアントが署名の上に機�
 }
 ```
 
-OP は公開署名鍵を `jwks_uri`（discovery 文書で告知）に公開します。RP は JWKS を 1 度取得してキャッシュし、ID トークンの署名検証にオフラインで使います。鍵ローテーション中、OP は RP のキャッシュが収束するのに十分な期間、前の鍵を集合に残します — [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
+OP は公開署名鍵を `jwks_uri`（discovery 文書で告知）に公開します。`op.WithEncryptionKeyset` を設定すると、同じ endpoint に inbound 暗号化 request object 用の OP の公開 `use=enc` 鍵も載ります。RP は JWKS を 1 度取得してキャッシュし、署名検証や request object の暗号化に利用します。鍵ローテーション中、OP は RP のキャッシュが収束するのに十分な期間、前の鍵を集合に残します — [運用: 鍵ローテーション](/ja/operations/key-rotation) を参照。
 
 ::: details `jwks_uri` と JWS ヘッダの `jwk` の違い
 - **`jwks_uri`**（discovery のフィールド）は、OP が JWKS を配信する URL。安定でキャッシュ可能、RP は自身の都合で取得します。

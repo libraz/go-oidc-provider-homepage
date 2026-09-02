@@ -42,45 +42,45 @@ Every successful `grant_type=refresh_token` call **rotates** the refresh token: 
 
   <path d="M110,100 H380"/>
   <path d="M373,96 L380,100 L373,104"/>
-  <text class="d-mono" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
+  <text class="d-mono halo" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
 
   <path d="M380,140 H110"/>
   <path d="M117,136 L110,140 L117,144"/>
-  <text class="d-mono" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
+  <text class="d-mono halo" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
 
-  <text class="d-mono rs-fill" x="245" y="166" text-anchor="middle">access_token expires</text>
+  <text class="d-mono rs-fill halo" x="245" y="166" text-anchor="middle">access_token expires</text>
 
   <path d="M110,196 H380"/>
   <path d="M373,192 L380,196 L373,200"/>
-  <text class="d-mono" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
+  <text class="d-mono halo" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
 
   <path class="op-accent" d="M380,211 h16 v12 h-16"/>
   <path class="op-accent" d="M387,215 L380,219 L387,223"/>
-  <text class="d-prose op-fill" x="404" y="208">Rotate refresh token</text>
-  <text class="d-mono" x="404" y="220">invalidate rt1 · mint rt2 (same chain)</text>
+  <text class="d-prose op-fill halo" x="404" y="208">Rotate refresh token</text>
+  <text class="d-mono halo" x="404" y="220">invalidate rt1 · mint rt2 (same chain)</text>
 
   <path d="M380,256 H110"/>
   <path d="M117,252 L110,256 L117,260"/>
-  <text class="d-mono" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
+  <text class="d-mono halo" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
 
   <path d="M110,292 H380"/>
   <path d="M373,288 L380,292 L373,296"/>
-  <text class="d-mono" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
+  <text class="d-mono halo" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
 
   <path d="M380,328 H110"/>
   <path d="M117,324 L110,328 L117,332"/>
-  <text class="d-mono" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
+  <text class="d-mono halo" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
 
-  <text class="d-mono rs-fill" x="515" y="354" text-anchor="middle">attacker steals rt1</text>
+  <text class="d-mono rs-fill halo" x="515" y="354" text-anchor="middle">attacker steals rt1</text>
 
   <path class="rs-stroke" d="M650,384 H380"/>
   <path class="rs-stroke" d="M387,380 L380,384 L387,388"/>
-  <text class="d-mono rs-fill" x="515" y="376" text-anchor="middle">replay refresh_token=rt1 (already consumed)</text>
+  <text class="d-mono rs-fill halo" x="515" y="376" text-anchor="middle">replay refresh_token=rt1 (already consumed)</text>
 
   <path class="op-accent" d="M380,401 h16 v12 h-16"/>
   <path class="op-accent" d="M387,405 L380,409 L387,413"/>
-  <text class="d-prose op-fill" x="404" y="398">Reuse detected → revoke chain</text>
-  <text class="d-mono" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
+  <text class="d-prose op-fill halo" x="404" y="398">Reuse detected → revoke chain</text>
+  <text class="d-mono halo" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
 </svg>
 
 ::: warning Reuse detection invalidates the chain
@@ -112,10 +112,28 @@ The grace period is sometimes called an **acceptance window**: the OP accepts th
 :::
 
 ::: tip Default is 60 seconds
-The default grace period is **60 seconds** (`refresh.GraceTTLDefault`) when `WithRefreshGracePeriod` is not supplied. Pass `op.WithRefreshGracePeriod(0)` to disable grace entirely (strict single-use), or a positive duration to set the window explicitly. Negative values are rejected at construction time. The OFCS refresh-token regression test waits ~32 s between rotation and retry, so any grace below that range will regress conformance.
+The default grace period is **60 seconds** (`refresh.GraceTTLDefault`) when `WithRefreshGracePeriod` is not supplied. Pass `op.WithRefreshGracePeriod(0)` to disable grace entirely (strict single-use), or a non-negative duration to set the window explicitly. Negative values are rejected at construction time. The OFCS refresh-token regression test waits ~32 s between rotation and retry, so any grace below that range will regress conformance.
 
-Under `profile.FAPI2Baseline` and `profile.FAPI2MessageSigning`, an explicitly configured non-zero grace window is rejected at `op.New`. Remove `WithRefreshGracePeriod` or set it to zero before enabling either profile. `profile.FAPICIBA` does not apply this refresh-grace gate.
+Under `profile.FAPI2Baseline` and `profile.FAPI2MessageSigning`, explicitly configured values from zero through the default **60 seconds** (inclusive) are accepted. Only a grace period wider than 60 seconds is rejected at `op.New`; omitting the option keeps the default. `profile.FAPICIBA` does not apply this refresh-grace gate and may use a wider window.
+
+```go
+// Rejected: FAPI Baseline caps an explicit grace period at 60 seconds.
+op.New(
+  op.WithProfile(profile.FAPI2Baseline),
+  op.WithRefreshGracePeriod(61*time.Second),
+)
+
+// Accepted: the 60-second default may be configured explicitly.
+op.New(
+  op.WithProfile(profile.FAPI2Baseline),
+  op.WithRefreshGracePeriod(60*time.Second),
+)
+```
 :::
+
+## Current client registration scopes apply on rotation
+
+A refresh token records the scope granted when its chain started, but rotation does not bypass a later registration change. Before consuming the presented token, the OP derives the effective scope. It intersects the requested scope with the token's bound scope — an omitted request reuses the bound scope — and then re-intersects the result with the client's current `Scopes` registration, checking any per-scope `AllowedClients` policy. Every scope to issue must still be registered; if the re-check would remove one, `/token` returns `invalid_scope` and leaves the presented token unconsumed. This lets an operator narrow a client's registration without allowing an existing chain to keep minting the removed scope.
 
 ## TTL buckets
 

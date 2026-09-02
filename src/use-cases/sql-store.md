@@ -32,33 +32,38 @@ The same applies to the Redis adapter.
 
 ## Architecture
 
-<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 816 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="sql-store-arch-title">op.Provider talks to the storeadapter/sql package over the Store interface, which persists each substore to its own table inside the SQL database.</title>
-  <rect x="12" y="123" width="142" height="54" rx="8" class="arch-op"/>
-  <text x="83" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5" font-weight="600">op.Provider</text>
-  <path d="M154 150 H300"/>
-  <path d="M294 145 l6 5 -6 5"/>
-  <text x="227" y="136" text-anchor="middle" class="lbl" font-size="11.5"><tspan class="mono">Store</tspan> interface</text>
-  <rect x="300" y="123" width="170" height="54" rx="8"/>
-  <text x="385" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5">storeadapter/sql</text>
-  <path d="M470 150 H520"/>
-  <path d="M514 145 l6 5 -6 5"/>
-  <rect x="520" y="20" width="282" height="260" rx="10" class="arch-db"/>
-  <text x="538" y="45" class="mono" font-size="12.5" font-weight="600">SQL DB</text>
-  <path d="M538 58 H784" class="arch-db"/>
-  <text x="538" y="82" dominant-baseline="central" class="mono" font-size="11.5">oidc_authorization_codes</text>
-  <text x="538" y="102" dominant-baseline="central" class="mono" font-size="11.5">oidc_refresh_tokens</text>
-  <text x="538" y="122" dominant-baseline="central" class="mono" font-size="11.5">oidc_clients</text>
-  <text x="538" y="142" dominant-baseline="central" class="mono" font-size="11.5">oidc_sessions</text>
-  <text x="538" y="162" dominant-baseline="central" class="mono" font-size="11.5">oidc_consumed_jtis</text>
-  <text x="538" y="182" dominant-baseline="central" class="mono" font-size="11.5">oidc_access_tokens</text>
-  <text x="538" y="202" dominant-baseline="central" class="mono" font-size="11.5">oidc_opaque_access_tokens</text>
-  <text x="538" y="222" dominant-baseline="central" class="mono" font-size="11.5">oidc_grant_revocations</text>
-  <text x="538" y="242" dominant-baseline="central" class="mono" font-size="11.5">oidc_revoked_jtis</text>
-  <text x="538" y="262" dominant-baseline="central" class="lbl" font-size="11.5" fill="var(--vp-c-text-3)">… and more</text>
+<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 760 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="sql-store-arch-title">op.Provider talks to the storeadapter/sql package over the Store interface, and the adapter persists each substore to its own table inside the SQL database.</title>
+  <rect x="16" y="30" width="180" height="60" rx="8" class="arch-op"/>
+  <text x="106" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5" font-weight="600">op.Provider</text>
+  <path d="M196 60 H298"/>
+  <path d="M292 55 l6 5 -6 5"/>
+  <text x="247" y="48" text-anchor="middle" class="lbl" font-size="11.5"><tspan class="mono">Store</tspan> interface</text>
+  <rect x="300" y="30" width="190" height="60" rx="8"/>
+  <text x="395" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5">storeadapter/sql</text>
+  <path d="M490 60 H578"/>
+  <path d="M572 55 l6 5 -6 5"/>
+  <rect x="580" y="30" width="164" height="60" rx="10" class="arch-db"/>
+  <text x="662" y="55" text-anchor="middle" class="mono" font-size="13.5" font-weight="600">SQL DB</text>
+  <text x="662" y="75" text-anchor="middle" class="lbl" font-size="11" fill="var(--vp-c-text-3)">oidc_* tables</text>
 </svg>
 
-Every substore (`AuthorizationCodeStore`, `RefreshTokenStore`, `ClientStore`, `SessionStore`, etc.) maps to a table.
+Each substore maps to one table. These are the tables the protocol paths touch most:
+
+| Table | What it holds |
+|---|---|
+| `oidc_clients` | Registered client metadata — the backing table for `ClientStore`. |
+| `oidc_authorization_codes` | Authorization codes waiting to be redeemed at `/token`. |
+| `oidc_refresh_tokens` | Refresh-token chains and their rotation state. |
+| `oidc_grants` | The grant a code or refresh token hangs off: client, subject, scope. |
+| `oidc_access_tokens` | JTI registry for issued access tokens, written only under `RevocationStrategyJTIRegistry`. |
+| `oidc_opaque_access_tokens` | Opaque access-token records, written only when an opaque access-token format is configured. |
+| `oidc_grant_revocations` | Grant tombstones for the default `RevocationStrategyGrantTombstone`. |
+| `oidc_revoked_jtis` | Individually revoked token identifiers, alongside the tombstones above. |
+| `oidc_sessions` | Browser login sessions and their chooser groups. |
+| `oidc_consumed_jtis` | The consumed-`jti` replay set for request objects, client assertions, and DPoP proofs. |
+
+The adapter also owns tables for users, interactions, PAR records, device and CIBA requests, dynamic-registration tokens, and the authenticator substores. `Schema()` returns the full dialect-specific DDL.
 
 ::: info New substores
 The SQL adapter bundles tables for the opaque-access-token substore (`oidc_opaque_access_tokens`, populated only when `op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or `op.WithAccessTokenFormatPerAudience(...)` is configured) and for the grant-revocation substore (`oidc_grant_revocations` plus `oidc_revoked_jtis`, the backing store for the default `RevocationStrategyGrantTombstone`). Both are part of the transactional cluster — they commit alongside the grant or refresh write that triggered them, so a half-committed cascade cannot leave a revoked grant next to a still-redeemable token.
@@ -100,7 +105,7 @@ provider, err := op.New(
 ```
 
 ::: tip Migrations
-`*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect, but its `CREATE TABLE IF NOT EXISTS` statements do not alter an existing table. It is suitable for a fresh database or development; an existing installation must apply the additive statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) with the deployment's migration tool rather than relying on `Migrate` alone. SQLite and PostgreSQL can use `Migrate` to reapply their standalone index statements, but missing compatibility columns still require the explicit `ALTER` statements. `Schema()` returns the current DDL as a string for callers that want to review or hand it to that tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
+`*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect, but its `CREATE TABLE IF NOT EXISTS` statements do not alter an existing table. It is suitable for a fresh database or development; an existing installation must apply the additive statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) with the deployment's migration tool rather than relying on `Migrate` alone. SQLite and PostgreSQL can use `Migrate` to reapply their standalone index statements, but missing compatibility columns and the MySQL/MariaDB username-collation change still require explicit `ALTER` statements. `Schema()` returns the current DDL as a string for callers that want to review or hand it to that tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
 :::
 
 ## Before the first request on an existing database {#sql-migration-before-first-request}
@@ -115,13 +120,16 @@ The current retention and client-deletion queries also require these exact index
 | `idx_oidc_grants_client` | `oidc_grants(client_id)` | Client-scoped cascade |
 | `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` | Expired-code retention sweep |
 | `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` | Refresh-history retention sweep |
+| `idx_oidc_refresh_tokens_client` | `oidc_refresh_tokens(client_id)` | Client-deletion cascade |
 | `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` | Access-token retention queries |
+| `idx_oidc_access_tokens_client` | `oidc_access_tokens(client_id)` | Client-deletion cascade |
+| `idx_oidc_opaque_access_tokens_client` | `oidc_opaque_access_tokens(client_id)` | Client-deletion cascade |
 | `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` | Session retention sweep |
 | `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` | PAR retention sweep |
 | `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` | Interaction retention sweep |
 | `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` | Replay-marker retention queries |
 
-SQLite and PostgreSQL can acquire these indexes through `Migrate()` because their DDL uses separate `CREATE INDEX IF NOT EXISTS` statements. MySQL and MariaDB declare them inside `CREATE TABLE`, so an existing table needs explicit `ALTER TABLE ... ADD INDEX` statements. Do not rely on a fresh `v1.sql` run to upgrade an existing database, and do not run old and current MFA writers against the same tables: drain old writers, apply and validate the columns, then start only writers that participate in the opaque version protocol. The [storage-maintenance](/operations/storage-maintenance) page gives the rollout order.
+SQLite and PostgreSQL can acquire these indexes through `Migrate()` because their DDL uses separate `CREATE INDEX IF NOT EXISTS` statements. MySQL and MariaDB declare them inside `CREATE TABLE`, so an existing table needs explicit `ALTER TABLE ... ADD INDEX` statements. Existing MySQL and MariaDB installs also need `oidc_users.username` changed with `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;`; apply it before provisioning usernames that differ only by case, and resolve any existing case-insensitive collisions first. PostgreSQL and SQLite need no equivalent collation change. Do not rely on a fresh `v1.sql` run to upgrade an existing database, and do not run old and current MFA writers against the same tables: drain old writers, apply and validate the columns, then start only writers that participate in the opaque version protocol. The [storage-maintenance](/operations/storage-maintenance) page gives the rollout order.
 
 ## Renaming the tables
 
@@ -136,11 +144,26 @@ storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[strin
 }))
 ```
 
-The map keys are logical record kinds, not physical names. All eighteen are accepted: `clients`, `authorization_codes`, `refresh_tokens`, `access_tokens`, `opaque_access_tokens`, `grant_revocations`, `revoked_jtis`, `grants`, `sessions`, `par_records`, `interactions`, `consumed_jtis`, `users`, `initial_access_tokens`, `registration_access_tokens`, `op_metadata`, `device_codes`, `ciba_requests`. An unknown key makes `oidcsql.New` fail fast, so a typo is caught at construction time rather than at the first query.
+The map keys are logical record kinds, not physical names. `oidcsql.New` accepts these 23 keys:
+
+| Area | Logical keys |
+|---|---|
+| Clients and grants | `clients`, `grants`, `authorization_codes`, `refresh_tokens` |
+| Access tokens | `access_tokens`, `opaque_access_tokens` |
+| Revocation | `grant_revocations`, `revoked_jtis` |
+| Browser-facing state | `sessions`, `interactions` |
+| PAR and replay markers | `par_records`, `consumed_jtis` |
+| Users | `users` |
+| Dynamic registration | `initial_access_tokens`, `registration_access_tokens` |
+| Provider metadata | `op_metadata` |
+| Device flow and CIBA | `device_codes`, `ciba_requests` |
+| Authenticator factors | `totp_secrets`, `passkeys`, `recovery_codes`, `email_otps`, `authn_lockouts` |
+
+An unknown key makes `oidcsql.New` fail fast, so a typo is caught at construction time rather than at the first query.
 
 Every resolved physical table name must be distinct. If two logical stores map to the same table, or an override collides with an unlisted default table name, `oidcsql.New` fails at construction time. The schema rewrite is exact-name based, so overriding `clients` cannot accidentally rewrite `client_secrets`-style substrings in the embedded DDL.
 
-> **Source:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) renames all eighteen tables under an `auth_` prefix and logs them back from `sqlite_master` to prove the rewrite took effect.
+> **Source:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) renames all 23 tables under an `auth_` prefix and logs them back from `sqlite_master` to prove the rewrite took effect.
 
 ::: warning Table names only, not column names
 `WithNaming` rewrites table names. The column layout is fixed — the adapter owns it. If you need custom **column** names too (an existing schema you cannot reshape, encrypted columns, a shared table), implement the `store` interfaces yourself instead of using the bundled adapter. See [Bring your own store backend](/use-cases/byo-store).
@@ -159,6 +182,8 @@ db.SetConnMaxLifetime(30 * time.Minute)
 ```
 
 `charset=utf8mb4` is required so 4-byte UTF-8 (emoji, CJK extensions in display names) round-trips through claim values without truncation.
+
+The DSN's connection collation does not replace the explicit `oidc_users.username` definition. On an existing MySQL or MariaDB database, apply the `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;` migration separately; a case-insensitive collision makes it fail and must be resolved before the change.
 
 ## Username + password credentials
 

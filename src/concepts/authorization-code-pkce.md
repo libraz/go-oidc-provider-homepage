@@ -29,7 +29,8 @@ Public and native clients that omit `code_challenge` are rejected at `/authorize
 
 ## The full sequence
 
-<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 760 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(38,0)">
   <title id="acpkce-seq-title">Authorization Code + PKCE sequence: the browser, Relying Party, OpenID Provider, and Resource Server exchanges from login through PKCE-verified token issuance to a Bearer-token API call.</title>
   <defs>
     <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
@@ -151,6 +152,7 @@ Public and native clients that omit `code_challenge` are rejected at `/authorize
   <text class="num" x="12" y="699" text-anchor="middle">21</text>
   <path class="msg" d="M610 696 H250" marker-end="url(#acp-ah)"/>
   <text class="mono" x="520" y="691" text-anchor="middle">200 { user data }</text>
+  </g>
 </svg>
 
 ## Parameter glossary

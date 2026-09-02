@@ -49,7 +49,13 @@ If you are new to the library, start with [Minimal OP](/use-cases/minimal-op), t
 
 ## The reference application
 
-Each numbered example isolates one option in 200–500 lines. [`sample/`](https://github.com/libraz/go-oidc-provider/tree/main/sample) is the other thing: the arc those examples skip, where an account has to come into existence before it can be used. It covers signup owned by the application, Argon2id password storage, login and consent through an [`interaction.Driver`](/use-cases/spa-custom-interaction) the application implements itself, TOTP enrolment from an account settings page, and a relying party completing the round-trip — on MySQL plus Redis joined by `op/storeadapter/composite`, under one `docker compose up`.
+Each numbered example isolates one option in 200–500 lines. [`sample/`](https://github.com/libraz/go-oidc-provider/tree/main/sample) is the other thing: the arc those examples skip, where an account has to come into existence before it can be used. It runs on MySQL plus Redis joined by `op/storeadapter/composite`, under one `docker compose up`, and covers:
+
+- signup owned by the application
+- Argon2id password storage
+- login and consent through an [`interaction.Driver`](/use-cases/spa-custom-interaction) the application implements itself
+- TOTP enrolment from an account settings page
+- a relying party completing the round-trip
 
 ```sh
 docker compose -f sample/compose.yaml up -d --build

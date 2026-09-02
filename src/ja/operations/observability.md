@@ -12,7 +12,7 @@ pageClass: pg-operations-observability
 | 系統 | 載るもの | OP 側の差し込み口 | 組み込み側の責務 |
 |---|---|---|---|
 | 運用ログ | リクエストエラー、設定の問題、起動時の状態 | `WithLogger(*slog.Logger)` | 構造化ログの送り先 |
-| 監査イベント | 発火するシグナルと予約語([カタログ](/ja/reference/audit-events)) | `WithAuditLogger(*slog.Logger)` | SOC パイプライン |
+| 監査イベント | 発火するシグナルと予約語（[カタログ](/ja/reference/audit-events)） | `WithAuditLogger(*slog.Logger)` | SOC パイプライン |
 | メトリクス | OIDC の業務カウンタ | `WithPrometheus(*prometheus.Registry)` | `/metrics` ルート |
 | トレース | リクエストスパン | 内蔵なし | `http.Handler` を `otelhttp.NewMiddleware` でラップ |
 
@@ -64,14 +64,14 @@ op.New(
 運用ログがカバーする範囲:
 
 - 起動時の設定警告。
-- エンドポイント内部のエラー(典型的には `IsServerError(err)` が一致するもの — [エラーカタログ](/ja/reference/errors) を参照)。
+- エンドポイント内部のエラー（典型的には `IsServerError(err)` が一致するもの — [エラーカタログ](/ja/reference/errors) を参照）。
 - ストアバックエンドの障害。
 
-`WithLogger` を渡さない場合、ライブラリはログを破棄します(`slog.Default()` へのフォールバックはしません)。渡したハンドラは redaction ミドルウェアで自動的にラップされ、OAuth/OIDC のシークレットらしい属性(`access_token`、`refresh_token`、`code`、`code_verifier`、`client_secret`、`state`、`nonce`、`dpop`、`authorization`、`cookie`、`set-cookie` …)はハンドラに到達する前にマスクされます。
+`WithLogger` を渡さない場合、ライブラリはログを破棄します（`slog.Default()` へのフォールバックはしません）。渡したハンドラは redaction ミドルウェアで自動的にラップされ、OAuth/OIDC のシークレットらしい属性（`access_token`、`refresh_token`、`code`、`code_verifier`、`client_secret`、`state`、`nonce`、`dpop`、`authorization`、`cookie`、`set-cookie` …）はハンドラに到達する前にマスクされます。
 
 ## 監査ログ
 
-監査イベントは保管期間・索引・アクセス制御が運用ログとは違うので、独立した出力先(sink)にします:
+監査イベントは保管期間・索引・アクセス制御が運用ログとは違うので、独立した出力先（sink）にします:
 
 ```go
 auditFile, _ := os.OpenFile("/var/log/op/audit.jsonl",
@@ -84,11 +84,15 @@ op.New(
 )
 ```
 
-各イベントは、`msg = "<event.name>"` と共通属性(`request_id`、`subject`、`client_id`、`extras`)を持つ JSON 1 行として記録されます。全イベント名は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。`WithAuditLogger` の handler は同期的に request goroutine 上で実行されます。遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。カタログには OP が発火しない予約語もあるため、すべての定数を発火の証拠として扱わないでください。
+各イベントは、`event` 属性に `"<event.name>"` を持ち、`msg` は人間向けの短いメッセージとして、共通属性（`request_id`、`subject`、`client_id`、`extras`）も持つ JSON 1 行として記録されます。全イベント名は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。`WithAuditLogger` の handler は同期的に request goroutine 上で実行されます。遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。カタログには OP が発火しない予約語もあるため、すべての定数を発火の証拠として扱わないでください。
 
 ::: tip 1 本のストリームを複数の出力先へ
-1 つの `*slog.Logger` を fan-out 用のハンドラに通せば、ファイル + Loki + Splunk に同時に流せます。OP 側は `logger.LogAttrs(...)` を呼ぶだけです。
+1 つの `*slog.Logger` を fan-out 用のハンドラに通せば、ファイル + Loki + Splunk に同時に流せます。OP は自身で `slog.Record` を構築し、logger の `Handler().Handle(...)` に直接渡します。`logger.LogAttrs(...)` でイベントを作り直すことはありません。これにより `WithClock` が供給した監査 timestamp が保たれます。
 :::
+
+### introspection の store 障害
+
+opaque access token または refresh token の lookup が `store.ErrNotFound` を返す場合は通常の inactive 結果であり、障害イベントは発火しません。それ以外の lookup error では、`store_unavailable` reason を付けた error level の `AuditIntrospectionError` (`introspection.error`) を発火します。`/introspect` の通信路上の応答は HTTP 200 と `{"active":false}` のままなので、アラートと調査では 5xx counter ではなく監査ストリームを参照してください。
 
 ## Prometheus メトリクス
 
@@ -107,7 +111,7 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 go http.ListenAndServe("127.0.0.1:9090", mux)
 ```
 
-ライブラリは `/metrics` をマウントしません。ルートと境界は組み込み側が選択します。カウンタは監査カタログと同じ範囲に絞られています(厳選した部分集合。[`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics) を参照)。
+ライブラリは `/metrics` をマウントしません。ルートと境界は組み込み側が選択します。カウンタは監査カタログと同じ範囲に絞られています（厳選した部分集合。[`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics) を参照）。
 
 ### OP が出**さない**メトリクス
 
@@ -134,7 +138,7 @@ instrumented := promhttp.InstrumentHandlerInFlight(inFlight,
 http.Handle("/", instrumented)
 ```
 
-この分離があるため、HTTP 層を差し替え(chi、gin、fiber など) ても、OP 側のメトリクスには手を入れる必要がありません。
+この分離があるため、HTTP 層を差し替え（chi、gin、fiber など）ても、OP 側のメトリクスには手を入れる必要がありません。
 
 ## トレース
 
@@ -146,12 +150,13 @@ import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 http.Handle("/", otelhttp.NewHandler(opHandler, "oidc-op"))
 ```
 
-リクエストのライフサイクルは `otelhttp.NewHandler` などの組み込み側 middleware がスパンにします。OP は業務系・リクエストライフサイクルを含め、OpenTelemetry span を内蔵しません。`/token` 内の PKCE 検証時間など段階別の計装が必要なら組み込み側で追加してください。監査イベントカタログはスパンではなく、離散的なイベント記録を提供します。
+スパンを作るのは `otelhttp.NewHandler` などのミドルウェアであって、OP ではありません。本ライブラリは、リクエストのライフサイクルも業務処理も含め、OpenTelemetry のスパンを一切内蔵しません。`/token` 内の PKCE 検証にどれだけかかったかといった段階別のトレースが必要なら、組み込み側で計装してください。監査イベントカタログが提供するのはスパンではなく、離散的なイベント記録です。
 
 ## リクエスト ID
 
 OP は `X-Request-ID` や `Traceparent` ヘッダからリクエスト ID を抽出することはなく、自ら ID を生成することもありません。
-監査 `Event` 構造体には相関用の `RequestID` フィールドがありますが、OP がこれを自動的に埋めることはなく、リクエストとレスポンスの相関付けは([トレース](#トレース)で HTTP 層全般について述べたのと同じく)組み込み側の責務です。
+
+監査 `Event` 構造体には相関用の `RequestID` フィールドがありますが、OP がこれを自動で埋めることはありません。リクエストとレスポンスの相関付けは、[トレース](#トレース)で HTTP 層全般について述べたのと同じく、組み込み側の責務です。
 
 エッジでリクエスト ID を生成し、レスポンスに刻んで RP のログと相関を取れるようにし、OP の周りで組み込む自前のログでも相関キーとして使ってください:
 
@@ -179,12 +184,12 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 |---|---|---|
 | `grant_type` 別のトークン発行レート | Prometheus カウンタ | ベースライン比 50 % 以上の持続的な低下 |
 | `/token` の 5xx 率 | HTTP ミドルウェアのヒストグラム | 5 分窓で 0.5 % 超 |
-| `refresh.replay_detected` の発生率 | 監査ログ → Loki / ES | 0 超(非ゼロ自体が要調査) |
+| `refresh.replay_detected` の発生率 | 監査ログ → Loki / ES | 0 超（非ゼロ自体が要調査） |
 | `bcl.no_sessions_for_subject` の発生率 | 監査ログ | 発生率の上昇を grant / client 状態と相関し、snapshot の文脈は別途確認 |
 | アクティブセッション数 | ストアのクエリまたは自前メトリクス | 30 % 超の低下 |
 | JWKS リクエスト率 | HTTP ミドルウェア | RP キャッシュの健全性指標 |
 
-最初の 3 つが本番異常の S/N が高い指標です。`bcl.no_sessions_for_subject` の発生率が上昇したら grant / client 状態と相関させ、設定した `posture` は logout trigger と session snapshot の永続性を解釈する文脈として確認します。空の RP audience の原因とみなしてはいけません。残り 2 つは RP 側の regression を捕まえます。
+最初の 3 つが本番異常の S/N が高い指標です。`bcl.no_sessions_for_subject` の発生率が上昇したら、運用者は grant / client 状態と突き合わせて原因を絞り込んでください。設定した `posture` は logout trigger と session snapshot の永続性を読み解くための文脈であり、空の RP audience の原因ではありません。残り 2 つは RP 側の regression を捕まえます。
 
 ## レート制限と濫用シグナル
 
@@ -198,7 +203,7 @@ func requestIDMiddleware(h http.Handler) http.Handler {
 | `redirect_uri.mismatch` | `op.AuditRedirectURIMismatch`（予約語） | カタログ名は予約されています。OP は mismatch を通信路上で返しますが、この監査イベントは発火しません。 |
 | `client_authn.failure` | `op.AuditClientAuthnFailure` | `/token`・`/par`・`/device_authorization`・`/bc-authorize` でのクライアント認証失敗。`/introspect` は別の `op.AuditIntrospectionError` を使い、`/revoke` はどちらも使いません。 |
 | `device_code.verification.user_code_brute_force` | `op.AuditDeviceCodeUserCodeBruteForce` | デバイスコード確認画面で user_code が総当たりされている。レコードに紐付く helper はレコード単位で制限し、最初の手入力画面を複数レプリカで動かす場合は共有 limiter と `devicecodekit.VerifyUserCodeByAttemptKey` を使います — 確認 helper は [Device Code](/ja/use-cases/device-code) を参照。 |
-| `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | CIBA のポーリングカウンタが `auth_req_id` 単位の閾値を超えた。ライブラリはワイヤ応答を `access_denied` で拒否し、SOC ツールが相関できるようイベントを発行します。 |
+| `ciba.poll_abuse.lockout` | `op.AuditCIBAPollAbuseLockout` | CIBA のポーリングカウンタが `auth_req_id` 単位の閾値を超えた。ライブラリは通信路上の応答を `access_denied` で拒否し、SOC ツールが相関できるようイベントを発行します。 |
 | `rate_limit.exceeded` | `op.AuditRateLimitExceeded` | 組み込み側のレート制限ミドルウェアから発火させるための予約イベント。ライブラリは定数だけ定義してカタログの一貫性を保ちますが、内部経路から発火させはしません。 |
 | `rate_limit.bypassed` | `op.AuditRateLimitBypassed` | 同じ趣旨 — 組み込み側ミドルウェアが明示的な bypass（許可リスト済み IP、内部プローブ等）を記録するためのもの。 |
 

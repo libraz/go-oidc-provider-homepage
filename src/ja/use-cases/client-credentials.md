@@ -1,10 +1,10 @@
 ---
-title: サービス間 (client_credentials)
+title: サービス間（client_credentials）
 description: バックエンド間トークン、エンドユーザ無し、同意無し。
 pageClass: pg-use-cases-client-credentials
 ---
 
-# 使い方 — サービス間 (`client_credentials`)
+# 使い方 — サービス間（`client_credentials`）
 
 ## `client_credentials` グラントとは
 
@@ -33,30 +33,30 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 ## アーキテクチャ
 
-<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="12 46 736 116" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="0 0 760 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="cc-svc-flow-title">サービス間 client_credentials フロー: Service A が OP からアクセストークンを取得し、それを付けて Service B を呼び出し、Service B が OP でトークンを検証する。</title>
-  <rect x="20" y="48" width="150" height="68" rx="6"/>
-  <rect class="d-op" x="305" y="48" width="150" height="68" rx="6"/>
-  <rect class="d-rs" x="590" y="48" width="150" height="68" rx="6"/>
-  <text class="d-bt" x="95" y="80" text-anchor="middle">Service A</text>
-  <text class="d-bs" x="95" y="98" text-anchor="middle">confidential クライアント</text>
-  <text class="d-bt d-op-text" x="380" y="80" text-anchor="middle">OP</text>
-  <text class="d-bs d-op-sub" x="380" y="98" text-anchor="middle">認可サーバー</text>
-  <text class="d-bt" x="665" y="80" text-anchor="middle">Service B</text>
-  <text class="d-bs" x="665" y="98" text-anchor="middle">resource server</text>
-  <line x1="176" y1="68" x2="299" y2="68"/>
-  <path d="M293 63 L299 68 L293 73"/>
-  <line x1="299" y1="96" x2="176" y2="96"/>
-  <path d="M182 91 L176 96 L182 101"/>
-  <line x1="584" y1="82" x2="461" y2="82"/>
-  <path d="M467 77 L461 82 L467 87"/>
-  <path d="M95 116 C95 168 665 168 665 116"/>
-  <path d="M660 123 L665 116 L670 123"/>
-  <text class="d-lbl" x="238" y="60" text-anchor="middle">1. <tspan class="d-tok">POST /token</tspan></text>
-  <text class="d-lbl" x="238" y="110" text-anchor="middle">2. <tspan class="d-tok">access_token</tspan></text>
-  <text class="d-lbl" x="522" y="68" text-anchor="middle">4. トークンを検証</text>
-  <text class="d-tok" x="522" y="100" text-anchor="middle" font-size="10">/introspect · /jwks</text>
-  <text class="d-lbl" x="380" y="140" text-anchor="middle">3. <tspan class="d-tok">Authorization: Bearer</tspan></text>
+  <rect class="d-box" x="16" y="40" width="160" height="72" rx="6"/>
+  <rect class="d-op" x="300" y="40" width="160" height="72" rx="6"/>
+  <rect class="d-box" x="584" y="40" width="160" height="72" rx="6"/>
+  <text class="d-bt" x="96" y="72" text-anchor="middle">Service A</text>
+  <text class="d-bs" x="96" y="92" text-anchor="middle">confidential クライアント</text>
+  <text class="d-bt d-op-text" x="380" y="72" text-anchor="middle">OP</text>
+  <text class="d-bs d-op-sub" x="380" y="92" text-anchor="middle">認可サーバ</text>
+  <text class="d-bt" x="664" y="72" text-anchor="middle">Service B</text>
+  <text class="d-bs" x="664" y="92" text-anchor="middle">リソースサーバ</text>
+  <line x1="182" y1="62" x2="294" y2="62"/>
+  <path d="M288 57 L294 62 L288 67"/>
+  <line x1="294" y1="90" x2="182" y2="90"/>
+  <path d="M188 85 L182 90 L188 95"/>
+  <line x1="578" y1="76" x2="466" y2="76"/>
+  <path d="M472 71 L466 76 L472 81"/>
+  <path d="M96 112 C96 176 664 176 664 116"/>
+  <path d="M659 123 L664 116 L669 123"/>
+  <text class="d-lbl" x="238" y="50" text-anchor="middle">1. <tspan class="d-tok">POST /token</tspan></text>
+  <text class="d-lbl" x="238" y="108" text-anchor="middle">2. <tspan class="d-tok">access_token</tspan></text>
+  <text class="d-lbl" x="522" y="62" text-anchor="middle">4. トークンを検証</text>
+  <text class="d-tok" x="522" y="96" text-anchor="middle" font-size="10">/introspect · /jwks</text>
+  <text class="d-lbl" x="380" y="150" text-anchor="middle">3. <tspan class="d-tok">Authorization: Bearer</tspan></text>
 </svg>
 
 `/authorize` 無し、同意無し、`id_token` 無し、リフレッシュトークン無し。
@@ -132,7 +132,7 @@ op.WithStaticClients(op.PrivateKeyJWTClient{
 })
 ```
 
-`PrivateKeyJWTClient` seed は `token_endpoint_auth_method=private_key_jwt` を自動でセットします。この 型付きクライアント定義 には `AuthMethod` フィールドはありません。
+`PrivateKeyJWTClient` seed は `token_endpoint_auth_method=private_key_jwt` を自動でセットします。この型付きクライアント定義には `AuthMethod` フィールドはありません。
 
 これで Service A はトークン要求毎に自分の秘密鍵で JWT assertion に署名:
 
@@ -161,6 +161,6 @@ curl -s -u service-b:<secret> \
   https://op.example.com/oidc/introspect
 ```
 
-::: warning Introspect の呼び出し元には confidential client が必要
-introspection エンドポイントは **呼び出し元**（Service B、resource server）を認証します。public client と `token_endpoint_auth_method=none` の client は `401 invalid_client` になります。Service B を confidential client として登録してください。既定では client は自分が発行を受けた token だけを introspect できます。`https://api.b.example.com` audience の access token を Service B に委譲するには、その resource の `ProtectedResource.IntrospectionClients` に Service B を列挙します。この委譲は refresh token には適用されません。フル実装は [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) を参照してください。
+::: warning Introspect の呼び出し元には confidential クライアントが必要
+introspection エンドポイントは **呼び出し元**（Service B、リソースサーバ）を認証します。public クライアントと `token_endpoint_auth_method=none` のクライアントは `401 invalid_client` になります。Service B を confidential クライアントとして登録してください。既定では、クライアントは自分が発行を受けたトークンだけを検査できます。`https://api.b.example.com` audience のアクセストークンを Service B に委譲するには、その resource の `ProtectedResource.IntrospectionClients` に Service B を列挙します。この委譲はリフレッシュトークンには適用されません。フル実装は [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) を参照してください。
 :::

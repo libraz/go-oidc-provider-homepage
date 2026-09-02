@@ -29,7 +29,9 @@ Every standard the library actively cites in its code, mapped to the package tha
   <text class="rfc-text" x="636" y="248" text-anchor="middle">refused</text>
 
   <path class="rfc-flow" d="M190 140 C234 118 250 84 280 84"/>
+  <path class="rfc-flow" d="M272 80 L281 84 L272 88"/>
   <path class="rfc-flow" d="M190 140 C234 162 250 200 280 200"/>
+  <path class="rfc-flow" d="M272 196 L281 200 L272 204"/>
   <path class="rfc-flow" d="M458 82 C500 66 516 50 556 50"/>
   <path class="rfc-flow" d="M548 46 L557 50 L548 54"/>
   <path class="rfc-flow" d="M458 94 C500 100 516 110 556 110"/>
@@ -90,7 +92,7 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize` (`iss` parameter on the response) |
 | **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill full">full</span> (gated by `op.WithAuthorizationDetailTypes`; validated at `/authorize`, `/par`, `/token`, persisted on the grant, echoed on JWT access tokens and introspection, advertised in discovery) | `internal/authorizationdetails`, `op/authorization_details.go` |
 | **RFC 9449** DPoP | <span class="status-pill full">full</span> incl. §8 nonce flow (gated by `feature.DPoP`) | `internal/dpop`, `op.WithDPoPNonceSource` |
-| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> (OP honours `acr_values` / `max_age` re-authentication via ACR rules; `op.StepUpChallenge` builds the resource-server `WWW-Authenticate` challenge the embedder's RS returns) | `op/rule.go` (`RuleACR`), `op/stepup.go` |
+| **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> (OP honours `acr_values` / `max_age` reauthentication via ACR rules; `op.StepUpChallenge` builds the resource-server `WWW-Authenticate` challenge the embedder's RS returns) | `op/rule.go` (`RuleACR`), `op/stepup.go` |
 | **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill partial">partial</span> (OP-side BCP posture; resource-server and client-side requirements remain with embedders) | whole codebase |
 | **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span> (signed JWT default; JWE-wrapped per client `introspection_encrypted_response_alg` / `_enc` metadata) | `internal/introspectendpoint`, `internal/jose` |
 | **RFC 9728** OAuth 2.0 Protected Resource Metadata | <span class="status-pill full">full</span> (gated by `op.WithProtectedResources`; served at `/.well-known/oauth-protected-resource` with the issuer stamped into `authorization_servers`) | `internal/protectedresource`, `op/protected_resource.go` |

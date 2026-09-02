@@ -1,6 +1,6 @@
 {
   "name": "go-oidc-provider-homepage",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Homepage for go-oidc-provider",
   "type": "module",
   "homepage": "https://go-oidc-provider.libraz.net",

@@ -6,18 +6,18 @@ description: Adding go-oidc-provider to a Go module.
 # Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v1.1.0
+go get github.com/libraz/go-oidc-provider/op@v1.2.0
 ```
 
 If you use the SQL, Redis, or DynamoDB adapter sub-modules, pin them to the same tag:
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v1.1.0
-go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v1.1.0
-go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.1.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@v1.2.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v1.2.0
+go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.2.0
 ```
 
-The module language floor is **Go 1.25+** (the `go.mod` directive is `go 1.25.0`). The release is built and tested with the pinned `toolchain go1.26.5`; use that toolchain or newer when you want the same TLS and dependency security baseline as the project CI.
+The module needs **Go 1.25 or newer** (the `go.mod` directive is `go 1.25.0`). The release itself is built and tested with the pinned `toolchain go1.27.0`. Use that toolchain or newer if you want the same TLS and dependency security baseline the project CI runs on.
 
 ## Modules and sub-modules
 

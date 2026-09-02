@@ -34,42 +34,44 @@ The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/g
 
 The rough flow once a report lands:
 
-<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="disclosure-flow-title">The vulnerability-report pipeline: a report is received, acknowledged, triaged, and either closed as out of scope or fixed, disclosed, released, and published as a GHSA.</title>
-  <!-- boxes -->
-  <rect x="20" y="20" width="230" height="54" rx="8"/>
-  <rect x="20" y="114" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="208" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="320" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="414" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="508" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="602" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="315" y="208" width="205" height="54" rx="8"/>
+  <!-- intake column -->
+  <rect x="60" y="30" width="240" height="62" rx="8"/>
+  <rect x="60" y="122" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="60" y="214" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="60" y="306" width="240" height="62" rx="8"/>
+  <!-- remediation column -->
+  <rect x="460" y="30" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="460" y="122" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="460" y="214" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="460" y="306" width="240" height="62" rx="8" class="op-accent"/>
   <!-- connectors -->
-  <path d="M135 74 L135 114"/><path d="M129 108 L135 114 L141 108"/>
-  <path d="M135 168 L135 208"/><path d="M129 202 L135 208 L141 202"/>
-  <path d="M135 262 L135 320"/><path d="M129 314 L135 320 L141 314"/>
-  <path d="M135 374 L135 414"/><path d="M129 408 L135 414 L141 408"/>
-  <path d="M135 468 L135 508"/><path d="M129 502 L135 508 L141 502"/>
-  <path d="M135 562 L135 602"/><path d="M129 596 L135 602 L141 596"/>
-  <path d="M250 235 L315 235"/><path d="M309 229 L315 235 L309 241"/>
-  <!-- labels -->
-  <text class="d-title" x="135" y="52" text-anchor="middle">Report received</text>
-  <text class="d-title" x="135" y="135" text-anchor="middle">Acknowledge</text>
-  <text class="d-sub" x="135" y="153" text-anchor="middle">when I'm next online</text>
-  <text class="d-title" x="135" y="229" text-anchor="middle">Triage</text>
-  <text class="d-sub" x="135" y="247" text-anchor="middle">reproduce / classify</text>
-  <text class="d-title" x="135" y="341" text-anchor="middle">Fix or mitigation plan</text>
-  <text class="d-sub" x="135" y="359" text-anchor="middle">severity drives priority</text>
-  <text class="d-title" x="135" y="435" text-anchor="middle">Coordinated disclosure</text>
-  <text class="d-sub" x="135" y="453" text-anchor="middle">window</text>
-  <text class="d-title" x="135" y="540" text-anchor="middle">Release patched version</text>
-  <text class="d-title" x="135" y="623" text-anchor="middle">Publish GHSA</text>
-  <text class="d-sub" x="135" y="641" text-anchor="middle">request CVE if applicable</text>
-  <text class="d-title" x="417" y="240" text-anchor="middle">Close with reason</text>
+  <path d="M180 92 L180 122"/><path d="M174 116 L180 122 L186 116"/>
+  <path d="M180 184 L180 214"/><path d="M174 208 L180 214 L186 208"/>
+  <path d="M180 276 L180 306"/><path d="M174 300 L180 306 L186 300"/>
+  <path d="M300 245 H380 V61 H456"/><path d="M450 55 L456 61 L450 67"/>
+  <path d="M580 92 L580 122"/><path d="M574 116 L580 122 L586 116"/>
+  <path d="M580 184 L580 214"/><path d="M574 208 L580 214 L586 208"/>
+  <path d="M580 276 L580 306"/><path d="M574 300 L580 306 L586 300"/>
+  <!-- intake labels -->
+  <text class="d-title" x="180" y="66" text-anchor="middle">Report received</text>
+  <text class="d-title" x="180" y="150" text-anchor="middle">Acknowledge</text>
+  <text class="d-sub" x="180" y="168" text-anchor="middle">when I'm next online</text>
+  <text class="d-title" x="180" y="242" text-anchor="middle">Triage</text>
+  <text class="d-sub" x="180" y="260" text-anchor="middle">reproduce / classify</text>
+  <text class="d-title" x="180" y="342" text-anchor="middle">Close with reason</text>
+  <!-- remediation labels -->
+  <text class="d-title" x="580" y="58" text-anchor="middle">Fix or mitigation plan</text>
+  <text class="d-sub" x="580" y="76" text-anchor="middle">severity drives priority</text>
+  <text class="d-title" x="580" y="150" text-anchor="middle">Coordinated disclosure</text>
+  <text class="d-sub" x="580" y="168" text-anchor="middle">agreed window</text>
+  <text class="d-title" x="580" y="250" text-anchor="middle">Release patched version</text>
+  <text class="d-title" x="580" y="334" text-anchor="middle">Publish GHSA</text>
+  <text class="d-sub" x="580" y="352" text-anchor="middle">request CVE if applicable</text>
   <!-- edge labels -->
-  <text class="d-edge" x="143" y="295" text-anchor="start">confirmed</text>
-  <text class="d-edge" x="282" y="227" text-anchor="middle">out of scope</text>
+  <text class="d-edge halo" x="340" y="237" text-anchor="middle">confirmed</text>
+  <text class="d-edge halo" x="190" y="296" text-anchor="start">out of scope</text>
 </svg>
 
 Realistic timing: acknowledgement usually takes a few days; severe issues get worked on right away, lower-severity ones may wait until I have a weekend free. If a week goes by without a reply, please ping again — it's not rudeness, just a missed notification or a busy stretch.

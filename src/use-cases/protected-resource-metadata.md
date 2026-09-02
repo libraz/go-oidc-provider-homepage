@@ -11,6 +11,34 @@ A client that holds a resource identifier (an API base URL) needs to learn *whic
 
 Use this when clients discover APIs by resource identifier, or when more than one API needs machine-readable metadata that points back to the same OP. If your clients are all manually configured and already know the issuer, this metadata is optional; it will not add token validation or gateway behavior.
 
+<svg role="img" aria-labelledby="prm-discovery-title" viewBox="0 0 760 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="prm-discovery-title">How a client gets from a resource identifier to the authorization server: it fetches the resource's well-known metadata, reads authorization_servers out of it, and follows that issuer to the OP's own discovery document.</title>
+
+  <path d="M40 48 V192" opacity="0.4"/>
+
+  <circle cx="40" cy="48" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="51.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">1</text>
+  <text x="66" y="52" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">The client holds a resource identifier</text>
+  <text x="744" y="52" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">https://op.example.com/api</text>
+
+  <circle cx="40" cy="96" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="99.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">2</text>
+  <text x="66" y="100" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">It fetches that resource's metadata</text>
+  <text x="744" y="100" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">/.well-known/oauth-protected-resource/api</text>
+
+  <circle cx="40" cy="144" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="147.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">3</text>
+  <text x="66" y="148" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">The document names the AS</text>
+  <text x="744" y="148" text-anchor="end" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="11">"authorization_servers": ["https://op.example.com"]</text>
+
+  <circle cx="40" cy="192" r="9" fill="var(--vp-c-bg)"/>
+  <text x="40" y="195.5" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="9.5">4</text>
+  <text x="66" y="196" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="12.5">The client follows that issuer to discovery</text>
+  <text x="744" y="196" text-anchor="end" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="11">/.well-known/openid-configuration</text>
+</svg>
+
+The OP serves both documents in that ladder; validating the bearer token stays with the resource server.
+
 ::: details Specs referenced on this page
 - [RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728) — OAuth 2.0 Protected Resource Metadata (§2 parameters, §3 / §3.1 well-known URI, §3.3 `authorization_servers`)
 - [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) — Resource Indicators (the `resource` identifier form)

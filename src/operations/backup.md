@@ -40,8 +40,11 @@ The OP itself is stateless. Recovery posture is entirely a property of your `sto
   <text class="bkp-sub" x="650" y="252" text-anchor="middle">never roll back</text>
 
   <path class="bkp-flow" d="M190 150 C238 132 260 66 296 66"/>
+  <path class="bkp-flow" d="M288 62 L297 66 L288 70"/>
   <path class="bkp-flow" d="M190 150 H296"/>
+  <path class="bkp-flow" d="M288 146 L297 150 L288 154"/>
   <path class="bkp-flow" d="M190 150 C238 168 260 234 296 234"/>
+  <path class="bkp-flow" d="M288 230 L297 234 L288 238"/>
   <path class="bkp-flow" d="M478 65 H574"/>
   <path class="bkp-flow" d="M566 61 L575 65 L566 69"/>
   <path class="bkp-flow" d="M478 150 H574"/>
@@ -63,7 +66,7 @@ The OP itself is stateless. Recovery posture is entirely a property of your `sto
 | `RATs` (DCR registration-access tokens) | medium | hours | required for the RP to read / update its own metadata |
 | `AuthorizationCodes` | low | n/a | one-shot, ≤ 60 s lifetime; never restore |
 | `PARs` | low | n/a | one-shot, ≤ 90 s lifetime; never restore |
-| `Sessions` | embedder choice | depends on `WithSessionDurabilityPosture` |
+| `Sessions` | embedder choice | — | depends on `WithSessionDurabilityPosture` |
 | `Interactions` | low | n/a | per-attempt; users retry |
 | `ConsumedJTIs` | **must not restore** | — | restoring a `jti` set rolls back replay protection |
 | `Passkeys`, `TOTPs`, `EmailOTPs`, `Recovery` | **critical** | minutes | MFA factor records; loss locks users out |
@@ -108,13 +111,16 @@ The current retention and client-deletion schema also needs these exact indexes 
 | `idx_oidc_grants_client` | `oidc_grants(client_id)` |
 | `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` |
 | `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` |
+| `idx_oidc_refresh_tokens_client` | `oidc_refresh_tokens(client_id)` |
 | `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` |
+| `idx_oidc_access_tokens_client` | `oidc_access_tokens(client_id)` |
+| `idx_oidc_opaque_access_tokens_client` | `oidc_opaque_access_tokens(client_id)` |
 | `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` |
 | `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` |
 | `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` |
 | `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` |
 
-SQLite and PostgreSQL can add the indexes through `Migrate()`; MySQL and MariaDB need explicit `ALTER TABLE ... ADD INDEX` statements for existing tables. Use the dialect-specific statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md), and keep that migration record with the backup/recovery runbook.
+SQLite and PostgreSQL can add the indexes through `Migrate()`; MySQL and MariaDB need explicit `ALTER TABLE ... ADD INDEX` statements for existing tables. Existing MySQL and MariaDB installs also need `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;`; resolve case-insensitive username collisions before applying it. SQLite and PostgreSQL need no equivalent collation change. Use the dialect-specific statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md), and keep that migration record with the backup/recovery runbook.
 
 ### Schedule SQL retention GC
 
@@ -130,6 +136,10 @@ log.Printf("oidc GC removed %d rows", stats.Total())
 ```
 
 The returned `oidcsql.GCStats` counts expired authorization codes, PAR records, interactions, sessions, and refresh-token rotation histories. Refresh history remains while a grant still has a live refresh token; expired sealed retry-response blobs are cleared when eligible even if their row remains, and that blob cleanup is not a row count. A past cutoff leaves a grace period; `time.Now()` reclaims everything already expired. Monitor counts, duration, errors, and table sizes, and run the sweep again after a transient failure. Access-token, opaque-token, grant-revocation, and consumed-JTI stores have their own GC policies; device-code and CIBA rows evict expired records on insert.
+
+### DynamoDB adapter (`storeadapter/dynamodb`)
+
+Back up the durable DynamoDB tables with the account's point-in-time recovery or on-demand backup policy, and record the table definitions and TTL settings used for provisioning. The current refresh-token definition has no `by_handle` global secondary index. Index reconciliation only adds indexes, so an existing table can retain an old `by_handle` index until you explicitly remove it through the normal DynamoDB infrastructure procedure (for example, `UpdateTable`). New writes do not need that index, and a restore or re-provisioning must not add it back.
 
 ### Redis adapter (`storeadapter/redis`)
 

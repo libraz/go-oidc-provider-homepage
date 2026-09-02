@@ -13,34 +13,33 @@ OP は以下を行えます:
 
 両方向とも閉じた許可リストに対して実装しています。
 
-<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jwe-wrap-title">JWE は署名済み JWT を外側から暗号化する。RP はまず JWE を復号し、内側の JWS 署名を検証する。</title>
-<rect class="jwe-box" x="36" y="92" width="156" height="80" rx="8"/>
-  <text class="jwe-text" x="114" y="124" text-anchor="middle">OP</text>
-  <text class="jwe-sub" x="114" y="146" text-anchor="middle">claim を作る</text>
+<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jwe-wrap-title">JWE が JWS を包み込む。OP は claim を JWS に署名し、その JWS を RP の use=enc JWK 宛の JWE の中に暗号化する。RP は外側の JWE を復号してから内側の署名を検証する。</title>
 
-  <rect class="jwe-main" x="256" y="64" width="176" height="54" rx="8"/>
-  <text class="jwe-text" x="344" y="96" text-anchor="middle">内側: JWS</text>
-  <rect class="jwe-box" x="238" y="140" width="212" height="76" rx="8"/>
-  <text class="jwe-text" x="344" y="170" text-anchor="middle">外側: JWE</text>
-  <text class="jwe-sub" x="344" y="192" text-anchor="middle">RP の公開鍵で暗号化</text>
+  <rect class="jwe-box" x="16" y="110" width="140" height="62" rx="8"/>
+  <text class="jwe-text" x="86" y="136" text-anchor="middle">OP</text>
+  <text class="jwe-sub" x="86" y="156" text-anchor="middle">claim を組み立てる</text>
 
-  <rect class="jwe-box" x="568" y="92" width="156" height="80" rx="8"/>
-  <text class="jwe-text" x="646" y="124" text-anchor="middle">RP</text>
-  <text class="jwe-sub" x="646" y="146" text-anchor="middle">復号 → 署名検証</text>
+  <rect class="jwe-box" x="214" y="70" width="250" height="150" rx="10"/>
+  <text class="jwe-text" x="339" y="97" text-anchor="middle">外側: JWE</text>
+  <rect class="jwe-main" x="242" y="110" width="194" height="62" rx="8"/>
+  <text class="jwe-text" x="339" y="147" text-anchor="middle">内側: JWS</text>
+  <text class="jwe-sub" x="339" y="201" text-anchor="middle">RP の公開鍵で暗号化</text>
 
-  <rect class="jwe-box" x="256" y="250" width="176" height="46" rx="8"/>
-  <text class="jwe-text" x="344" y="279" text-anchor="middle">use=enc JWK</text>
+  <rect class="jwe-box" x="604" y="110" width="140" height="62" rx="8"/>
+  <text class="jwe-text" x="674" y="136" text-anchor="middle">RP</text>
+  <text class="jwe-sub" x="674" y="156" text-anchor="middle">復号 → 署名検証</text>
 
-  <path class="jwe-flow" d="M192 132 H234"/>
-  <path class="jwe-flow" d="M226 128 L235 132 L226 136"/>
-  <path class="jwe-flow" d="M432 180 H564"/>
-  <text class="jwe-sub" x="498" y="166" text-anchor="middle">暗号化済み応答</text>
-  <path class="jwe-flow" d="M556 176 L565 180 L556 184"/>
-  <path class="jwe-flow" d="M344 250 V220"/>
-  <path class="jwe-flow" d="M340 228 L344 219 L348 228"/>
-  <path class="jwe-flow" d="M344 118 V136"/>
-  <path class="jwe-flow" d="M340 128 L344 137 L348 128"/>
+  <rect class="jwe-box" x="254" y="250" width="170" height="44" rx="8"/>
+  <text class="jwe-text" x="339" y="278" text-anchor="middle">use=enc JWK</text>
+
+  <path class="jwe-flow" d="M156 141 H211"/>
+  <path class="jwe-flow" d="M205 137 L213 141 L205 145"/>
+  <text class="jwe-sub" x="534" y="126" text-anchor="middle">暗号化済み応答</text>
+  <path class="jwe-flow" d="M464 141 H601"/>
+  <path class="jwe-flow" d="M595 137 L603 141 L595 145"/>
+  <path class="jwe-flow" d="M339 250 V224"/>
+  <path class="jwe-flow" d="M335 230 L339 221 L343 230"/>
 </svg>
 
 ::: details JWS と JWE の違い
@@ -101,7 +100,7 @@ import (
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
-// 1 つ以上の暗号化鍵を生成（または KMS から読み込み）。
+// inbound JWE request object 用の OP 側秘密鍵を 1 つ以上生成（または KMS から読み込み）。
 // 秘密鍵 1 つ以上が必要。複数鍵はローテーション中の重なり期間用。
 st := inmem.New()
 loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
@@ -115,8 +114,8 @@ provider, err := op.New(
   op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithEncryptionKeyset(op.EncryptionKeyset{
-    {KeyID: "enc-2026-05", PrivateKey: rsaKey1},  // 現行
-    {KeyID: "enc-2025-11", PrivateKey: rsaKey2},  // 退役中
+    {KeyID: "enc-2026-05", PrivateKey: rsaKey1},  // 新しい inbound 鍵
+    {KeyID: "enc-2025-11", PrivateKey: rsaKey2},  // 退役中。inbound overlap 用
   }),
 
   // 任意: 広告 alg を狭める
@@ -140,10 +139,10 @@ provider, err := op.New(
 | `Algorithm` | 任意の明示 `alg`（`ECDH-ES+A256KW` 等）。空のとき: RSA → `RSA-OAEP-256`、ECDSA → `ECDH-ES` |
 | `NotAfter` | 任意の退役期限。この時刻以降は厳格に適用され、OP はこの kid 宛の JWE を復号せず、**public 半も JWKS から落とす**。OP がもう受け付けない鍵へ RP を誘導しないため |
 
-keyset の最初の entry が **outbound 暗号化のアクティブ鍵**。後続 entry は JWKS に残り、ローテーション overlap 中に古い kid を持つ RP キャッシュが addressing できるようにします。Inbound 復号は `kid` を最初に matching、kid 不在時はスライス順に全鍵への trial 復号にフォールバック（RFC 7516 §4.1.6）。
+`EncryptionKeyset` は **inbound 専用**です。どの entry も outbound 暗号化のアクティブ鍵にはなりません。outbound JWE 応答はクライアントの JWKS から選んだ `use=enc` 鍵で暗号化します。entry は復号候補の順序で並び、`use=enc` 鍵として公開されます。`kid` があれば OP は一致する live entry を選びます。`kid` がなければ、保護ヘッダの `alg` が要求する鍵ファミリに候補を絞り、スライス順に試します（RFC 7516 §4.1.6）。絞り込み後の候補が `op.MaxKidlessEncryptionTrialKeys`（既定値 4）を超える場合、OP は候補を切り詰めず復号を拒否します。`op.New` はファミリが大きすぎる構成に対して構築時 warning を出します。その上限を超えるファミリを使う場合は、RP に `kid` を必ず含めさせてください。
 
 ::: details ローテーション overlap とは
-RP は JWKS 応答をキャッシュします（数時間オーダーが一般的）。一発で暗号鍵を入れ替えてしまうと、古い `kid` をまだキャッシュしている RP は OP が受け付けない鍵に向けて暗号化することになり、認可が失敗するウィンドウが生じます。対策は「最低 1 キャッシュ寿命の間、新旧 2 鍵を併存させる」ことです。新鍵を outbound のアクティブ鍵にして OP が暗号化に使い、両秘密鍵を inbound の復号で受け付け、キャッシュウィンドウが満了したら古い鍵を取り除きます。署名鍵に同じ考え方を適用したものは [鍵ローテーション](/ja/operations/key-rotation) を参照してください。
+RP は OP の JWKS 応答をキャッシュします（数時間オーダーが一般的）。一発で inbound 暗号化鍵を入れ替えてしまうと、古い `kid` をまだキャッシュしている RP は OP がもう受け付けない鍵に request object を暗号化することになり、認可が失敗するウィンドウが生じます。対策は「最低 1 キャッシュ寿命の間、新旧 2 鍵を併存させる」ことです。新鍵を先頭に置いて kidless inbound JWE で先に試し、両秘密鍵を inbound 復号で受け付け、キャッシュウィンドウと受理対象 request の寿命が満了したら古い鍵を取り除きます。新鍵は outbound 鍵ではなく、応答の暗号化先は常にクライアントの鍵です。Provider の差し替え手順は[鍵ローテーション](/ja/operations/key-rotation)を参照してください。
 :::
 
 ## クライアント別メタデータが出力暗号化を決める
@@ -197,16 +196,13 @@ DCR は `id_token_encrypted_response_alg=RSA-OAEP-256` を `id_token_encrypted_r
 
 ## Discovery 露出
 
-`op.WithEncryptionKeyset` を設定すると、discovery が以下を公開します:
+discovery は `op.WithSupportedEncryptionAlgs` による narrowing 後の、実効的な JWE ポリシーを反映します:
 
-- `jwks_uri` が既存の `use=sig` 素材と並列で `use=enc` JWK を含む（RFC 7517 §4.2）
-- `id_token_encryption_alg_values_supported` / `_enc_values_supported` — 出力
-- `userinfo_encryption_alg_values_supported` / `_enc_values_supported` — 出力（`feature.Userinfo` が常に on のため常時）
-- `request_object_encryption_alg_values_supported` / `_enc_values_supported` — `feature.JAR` 有効時に出力
-- `authorization_encryption_alg_values_supported` / `_enc_values_supported` — `feature.JARM` 有効時に出力
-- `introspection_encryption_alg_values_supported` / `_enc_values_supported` — `feature.Introspect` 有効時に出力
+- `jwks_uri` は既存の `use=sig` 素材と並べて、設定上 usable な `use=enc` JWK を含めます（RFC 7517 §4.2）。公開する `alg` も同じ narrowing を反映します。
+- 出力応答用の `id_token_encryption_*` と `userinfo_encryption_*`、および feature 有効時の `authorization_encryption_*`（JARM）と `introspection_encryption_*` は、実効的な alg/enc リストを広告します。これらはクライアントの鍵への暗号化を表し、`op.WithEncryptionKeyset` には依存しません。
+- `request_object_encryption_alg_values_supported` / `_enc_values_supported` は JAR と `op.WithEncryptionKeyset` の両方が有効な場合だけ出力します。`alg` リストは OP が実際に復号できる鍵ファミリへさらに絞られ、`enc` リストは設定した narrowing に従います。
 
-オプションなしの場合、暗号化関連 discovery キーはすべて空（または不在）になり、復号試行は `invalid_request_object` で失敗します。
+`op.WithEncryptionKeyset` を設定しない場合、request object 暗号化の discovery field は absent になり、inbound の暗号化 request object は `invalid_request_object` で失敗します。一方、feature とクライアントメタデータが整っていれば、outbound 応答暗号化は広告・利用できます。supported alg または enc を明示的に空にすると、JWE negotiation は抑止されます。
 
 ## userinfo 署名 — 常時有効
 

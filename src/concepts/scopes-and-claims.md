@@ -66,6 +66,71 @@ OIDC Core §5.4 fixes the mapping for the standard scopes. The library implement
 
 A request for `scope=openid email` therefore releases `sub`, `email`, and `email_verified` — and nothing else from the user-claim catalogue. A request for `scope=openid profile email` adds the entire `profile` group.
 
+The map alone does not say *where* a released claim shows up. `sub` and the token-describing claims ride in the ID Token; the user claims a scope releases are served from `/userinfo`.
+
+<svg role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="scope-claim-map-title">Each standard scope releases a claim group. The openid scope releases sub, which rides in the ID Token; the profile, email, address and phone claims are served from /userinfo. offline_access releases no claim.</title>
+  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">SCOPE REQUESTED</text>
+  <text x="166" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">CLAIMS RELEASED</text>
+  <text x="560" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.1em">DELIVERED IN</text>
+  <line x1="24" y1="28" x2="736" y2="28" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+
+  <rect x="560" y="40" width="176" height="104" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="576" y="64" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:12.5px;font-weight:600">ID Token</text>
+  <text x="576" y="86" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">iss · aud · exp · iat · sub</text>
+  <text x="576" y="102" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">nonce · auth_time · azp</text>
+  <text x="576" y="118" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:9.5px">acr · amr · at_hash · sid</text>
+  <text x="576" y="136" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">filled in by the OP itself</text>
+
+  <rect x="24" y="74" width="118" height="34" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="96" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">openid</text>
+  <path d="M142 91 H158 M152 87 L159 91 L152 95" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="96" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">sub</text>
+  <path d="M212 91 H556" stroke-dasharray="5 4" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M549 87 L556 91 L549 95" style="stroke:var(--vp-c-brand-2)"/>
+
+  <line x1="24" y1="162" x2="736" y2="162" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+
+  <rect x="560" y="182" width="176" height="128" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="576" y="206" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px;font-weight:600">/userinfo</text>
+  <text x="576" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">the RP calls it with the</text>
+  <text x="576" y="244" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">access token and gets a</text>
+  <text x="576" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">JSON body back</text>
+  <text x="576" y="284" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">only the claims the</text>
+  <text x="576" y="300" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:10px">granted scopes authorise</text>
+
+  <rect x="24" y="180" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="200" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">profile</text>
+  <path d="M142 195 H158 M152 191 L159 195 L152 199" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="200" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">name · family_name · given_name · … (14 claims)</text>
+
+  <rect x="24" y="218" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="238" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">email</text>
+  <path d="M142 233 H158 M152 229 L159 233 L152 237" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="238" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">email · email_verified</text>
+
+  <rect x="24" y="256" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="276" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">address</text>
+  <path d="M142 271 H158 M152 267 L159 271 L152 275" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="276" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">address</text>
+
+  <rect x="24" y="294" width="118" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="83" y="314" text-anchor="middle" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:11.5px">phone</text>
+  <path d="M142 309 H158 M152 305 L159 309 L152 313" style="stroke:var(--vp-c-text-3)"/>
+  <text x="166" y="314" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:10.5px">phone_number · phone_number_verified</text>
+
+  <path d="M506 192 V312" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M506 252 H556" stroke-dasharray="5 4" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M549 248 L556 252 L549 256" style="stroke:var(--vp-c-brand-2)"/>
+
+  <line x1="24" y1="336" x2="736" y2="336" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+  <rect x="24" y="352" width="140" height="30" rx="6" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-divider)"/>
+  <text x="94" y="372" text-anchor="middle" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono);font-size:11.5px">offline_access</text>
+  <text x="184" y="372" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11px">no claim — it drives the refresh-token consent prompt and TTL bucket</text>
+</svg>
+
+An RP that wants a user claim inside the ID Token instead has to ask for it explicitly with the OIDC Core §5.5 `claims` parameter; a scope grant alone puts it at `/userinfo`.
+
 ::: details `offline_access` does not release a claim
 `offline_access` is the OIDC standard scope that signals "the client wants to keep working when the user is not present" — i.e. the user-facing consent prompt for refresh-token issuance. It releases no user claim. In this library it routes the resulting refresh token to a separate TTL bucket (`op.WithRefreshTokenOfflineTTL`) so stay-signed-in chains can outlive everyday short-session refreshes; see [Refresh tokens](/concepts/refresh-tokens).
 :::
@@ -108,6 +173,19 @@ A common modelling question: do you split a permission with a new scope, or with
 | "Is the lifetime/format/revocation policy different per audience?" | Use RFC 8707 with per-audience format. | Admin API gets opaque (immediate revocation) while the read API stays JWT (horizontal scale). The library wires this through `op.WithAccessTokenFormatPerAudience`. |
 
 Scopes describe **breadth of permission**; resource indicators describe **target audience**. A single authorize request can carry both — `scope=openid read:projects&resource=https://billing.example.com&resource=https://projects.example.com` asks the OP to mint two access tokens, one per resource, each carrying the granted scope set.
+
+Every surface that accepts a `resource` parameter reduces it to the same canonical form first:
+
+| Rule | Effect |
+|---|---|
+| Absolute URI required | A value without a scheme and host is rejected. |
+| Scheme and host lowercased | `HTTPS://API.example.com` and `https://api.example.com` are the same resource. |
+| Default port removed | `:80` for HTTP and `:443` for HTTPS drop out; a non-default port is preserved. |
+| One trailing slash removed | `https://api.example.com/` becomes `https://api.example.com`. |
+| Query preserved | The query string is part of the identity of the resource. |
+| Fragment or userinfo rejected | The request fails with `invalid_target`. |
+
+The same normalization runs behind allow-list comparisons and `WithAccessTokenFormatPerAudience`, so one resource cannot compare differently at authorize, PAR, token, device authorization, CIBA, or token exchange.
 
 See [Use case: Claims request](/use-cases/claims-request) for the OIDC §5.5 `claims` parameter, which lets the RP request specific claims independent of scope grouping; see [Access token format](/concepts/access-token-format) for the per-audience format trade-off.
 

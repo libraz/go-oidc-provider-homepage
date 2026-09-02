@@ -34,33 +34,38 @@ Redis アダプタも同様です。
 
 ## アーキテクチャ
 
-<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 816 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="sql-store-arch-title">op.Provider は Store インターフェース越しに storeadapter/sql と会話し、各サブストアが SQL データベース内の専用テーブルへ永続化される。</title>
-  <rect x="12" y="123" width="142" height="54" rx="8" class="arch-op"/>
-  <text x="83" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5" font-weight="600">op.Provider</text>
-  <path d="M154 150 H300"/>
-  <path d="M294 145 l6 5 -6 5"/>
-  <text x="227" y="136" text-anchor="middle" class="lbl" font-size="11.5"><tspan class="mono">Store</tspan> インターフェース</text>
-  <rect x="300" y="123" width="170" height="54" rx="8"/>
-  <text x="385" y="150" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5">storeadapter/sql</text>
-  <path d="M470 150 H520"/>
-  <path d="M514 145 l6 5 -6 5"/>
-  <rect x="520" y="20" width="282" height="260" rx="10" class="arch-db"/>
-  <text x="538" y="45" class="mono" font-size="12.5" font-weight="600">SQL DB</text>
-  <path d="M538 58 H784" class="arch-db"/>
-  <text x="538" y="82" dominant-baseline="central" class="mono" font-size="11.5">oidc_authorization_codes</text>
-  <text x="538" y="102" dominant-baseline="central" class="mono" font-size="11.5">oidc_refresh_tokens</text>
-  <text x="538" y="122" dominant-baseline="central" class="mono" font-size="11.5">oidc_clients</text>
-  <text x="538" y="142" dominant-baseline="central" class="mono" font-size="11.5">oidc_sessions</text>
-  <text x="538" y="162" dominant-baseline="central" class="mono" font-size="11.5">oidc_consumed_jtis</text>
-  <text x="538" y="182" dominant-baseline="central" class="mono" font-size="11.5">oidc_access_tokens</text>
-  <text x="538" y="202" dominant-baseline="central" class="mono" font-size="11.5">oidc_opaque_access_tokens</text>
-  <text x="538" y="222" dominant-baseline="central" class="mono" font-size="11.5">oidc_grant_revocations</text>
-  <text x="538" y="242" dominant-baseline="central" class="mono" font-size="11.5">oidc_revoked_jtis</text>
-  <text x="538" y="262" dominant-baseline="central" class="lbl" font-size="11.5" fill="var(--vp-c-text-3)">… ほか</text>
+<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 760 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="sql-store-arch-title">op.Provider は Store インターフェース越しに storeadapter/sql を呼び、アダプタが各サブストアを SQL データベース内の専用テーブルへ永続化する。</title>
+  <rect x="16" y="30" width="180" height="60" rx="8" class="arch-op"/>
+  <text x="106" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5" font-weight="600">op.Provider</text>
+  <path d="M196 60 H298"/>
+  <path d="M292 55 l6 5 -6 5"/>
+  <text x="247" y="48" text-anchor="middle" class="lbl" font-size="11.5"><tspan class="mono">Store</tspan> インターフェース</text>
+  <rect x="300" y="30" width="190" height="60" rx="8"/>
+  <text x="395" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5">storeadapter/sql</text>
+  <path d="M490 60 H578"/>
+  <path d="M572 55 l6 5 -6 5"/>
+  <rect x="580" y="30" width="164" height="60" rx="10" class="arch-db"/>
+  <text x="662" y="55" text-anchor="middle" class="mono" font-size="13.5" font-weight="600">SQL DB</text>
+  <text x="662" y="75" text-anchor="middle" class="lbl" font-size="11" fill="var(--vp-c-text-3)">oidc_* テーブル</text>
 </svg>
 
-各サブストア（`AuthorizationCodeStore`、`RefreshTokenStore`、`ClientStore`、`SessionStore` など）がテーブルにマップされます。
+サブストアはそれぞれ 1 つのテーブルに対応します。プロトコル処理が最もよく触るのは次のテーブルです。
+
+| テーブル | 保持する内容 |
+|---|---|
+| `oidc_clients` | 登録済みクライアントのメタデータ。`ClientStore` の実体 |
+| `oidc_authorization_codes` | `/token` での引き換えを待っている認可コード |
+| `oidc_refresh_tokens` | リフレッシュトークンの chain とローテーション状態 |
+| `oidc_grants` | 認可コードやリフレッシュトークンがぶら下がる grant。クライアント / subject / scope |
+| `oidc_access_tokens` | 発行済みアクセストークンの JTI レジストリ。`RevocationStrategyJTIRegistry` のときだけ書き込まれる |
+| `oidc_opaque_access_tokens` | opaque 形式のアクセストークン。opaque を設定したときだけ書き込まれる |
+| `oidc_grant_revocations` | 既定の `RevocationStrategyGrantTombstone` が使う grant の tombstone |
+| `oidc_revoked_jtis` | 個別に失効させたトークン識別子。上の tombstone と対になる |
+| `oidc_sessions` | ブラウザのログインセッションと chooser group |
+| `oidc_consumed_jtis` | request object / client assertion / DPoP proof の消費済み `jti` 集合 |
+
+このほかにも、ユーザ、interaction、PAR レコード、デバイスフローと CIBA の要求、動的登録用トークン、認証器サブストアのテーブルをアダプタが所有します。DDL 全体は `Schema()` が dialect ごとに返します。
 
 ::: info 新しいサブストア
 SQL アダプタは以下のテーブルを同梱します:
@@ -70,7 +75,7 @@ SQL アダプタは以下のテーブルを同梱します:
 
 どちらもトランザクションクラスタの一部で、起点となる grant / refresh の書き込みと同時にコミットされます — カスケードが途中で切れて「失効した grant の隣に、まだ引き換え可能なトークンが残る」状況にはなりません。
 
-同梱アダプタを使わずカスタムの `Store` 実装をシップする場合は、`OpaqueAccessTokens()` と `GrantRevocations()` の実装が **必須** です。`OpaqueAccessTokens()` は `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` も `WithAccessTokenFormatPerAudience` も opaque audience を指さない限り `nil` を返してかまいません。`GrantRevocations()` を `nil` にできるのは、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示している場合だけです(非 FAPI 配備専用) — 既定の `RevocationStrategyGrantTombstone` は構築時にこのサブストアを必須とします。それ以外は `op.New` が構成エラーを返します。
+同梱アダプタを使わずカスタムの `Store` 実装をシップする場合は、`OpaqueAccessTokens()` と `GrantRevocations()` の実装が **必須** です。`OpaqueAccessTokens()` は `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` も `WithAccessTokenFormatPerAudience` も opaque audience を指さない限り `nil` を返してかまいません。`GrantRevocations()` を `nil` にできるのは、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示している場合だけです（非 FAPI 配備専用） — 既定の `RevocationStrategyGrantTombstone` は構築時にこのサブストアを必須とします。それ以外は `op.New` が構成エラーを返します。
 :::
 
 ## コード
@@ -107,7 +112,7 @@ provider, err := op.New(
 ```
 
 ::: tip マイグレーション
-`*sql.Store.Migrate(ctx)` はアクティブな dialect 用の同梱スキーマを適用しますが、`CREATE TABLE IF NOT EXISTS` は既存テーブルを変更しません。新しい DB や開発環境には適していますが、既存環境では `Migrate` だけに頼らず、[`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) の追加変更を通常の migration ツールで適用してください。SQLite と PostgreSQL は `Migrate` で独立したインデックス定義を再適用できますが、不足している互換性カラムには明示的な `ALTER` が必要です。`Schema()` は現在の DDL を文字列で返すので、レビューや migration ツールへの投入に利用できます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
+`*sql.Store.Migrate(ctx)` はアクティブな dialect 用の同梱スキーマを適用しますが、`CREATE TABLE IF NOT EXISTS` は既存テーブルを変更しません。新しい DB や開発環境には適していますが、既存環境では `Migrate` だけに頼らず、[`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) の追加変更を通常の migration ツールで適用してください。SQLite と PostgreSQL は `Migrate` で独立したインデックス定義を再適用できますが、不足している互換性カラムと MySQL / MariaDB の username 照合順序変更には明示的な `ALTER` が必要です。`Schema()` は現在の DDL を文字列で返すので、レビューや migration ツールへの投入に利用できます。スキーマファイルは [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema) に embed されています。
 :::
 
 ## 既存 DB で最初のリクエストを受ける前に {#sql-migration-before-first-request}
@@ -122,13 +127,16 @@ provider, err := op.New(
 | `idx_oidc_grants_client` | `oidc_grants(client_id)` | クライアント単位の cascade |
 | `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` | 期限切れ認可コードの sweep |
 | `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` | refresh 履歴の sweep |
+| `idx_oidc_refresh_tokens_client` | `oidc_refresh_tokens(client_id)` | クライアント削除の cascade |
 | `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` | access token の retention query |
+| `idx_oidc_access_tokens_client` | `oidc_access_tokens(client_id)` | クライアント削除の cascade |
+| `idx_oidc_opaque_access_tokens_client` | `oidc_opaque_access_tokens(client_id)` | クライアント削除の cascade |
 | `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` | session の sweep |
 | `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` | PAR の sweep |
 | `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` | interaction の sweep |
 | `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` | replay marker の retention query |
 
-SQLite と PostgreSQL は DDL の `CREATE INDEX IF NOT EXISTS` により `Migrate()` でこれらを追加できます。MySQL と MariaDB は `CREATE TABLE` 内で宣言するため、既存テーブルには `ALTER TABLE ... ADD INDEX` を明示的に適用します。既存 DB の更新を新しい `v1.sql` の実行だけに任せたり、テーブルを drop / 再作成したりしないでください。MFA については旧 writer を停止してからカラムを追加・検証し、opaque version protocol に参加する writer だけを起動します。ロールアウト順序は [ストレージの保守](/ja/operations/storage-maintenance) にまとめています。
+SQLite と PostgreSQL は DDL の `CREATE INDEX IF NOT EXISTS` により `Migrate()` でこれらを追加できます。MySQL と MariaDB は `CREATE TABLE` 内で宣言するため、既存テーブルには `ALTER TABLE ... ADD INDEX` を明示的に適用します。既存の MySQL / MariaDB では `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;` も適用してください。大文字小文字だけが異なる既存 username の衝突を先に解消してから、この `ALTER TABLE` と index の変更を適用します。SQLite と PostgreSQL に同じ照合順序変更は必要ありません。既存 DB の更新を新しい `v1.sql` の実行だけに任せたり、テーブルを drop / 再作成したりしないでください。MFA については旧 writer を停止してからカラムを追加・検証し、opaque version protocol に参加する writer だけを起動します。ロールアウト順序は [ストレージの保守](/ja/operations/storage-maintenance) にまとめています。
 
 ## テーブル名を差し替える
 
@@ -143,14 +151,29 @@ storage, err := oidcsql.New(db, oidcsql.Postgres(), oidcsql.WithNaming(map[strin
 }))
 ```
 
-map のキーは物理名ではなく論理的なレコード種別です。受け付けるキーは 18 個すべてで、`clients`、`authorization_codes`、`refresh_tokens`、`access_tokens`、`opaque_access_tokens`、`grant_revocations`、`revoked_jtis`、`grants`、`sessions`、`par_records`、`interactions`、`consumed_jtis`、`users`、`initial_access_tokens`、`registration_access_tokens`、`op_メタデータ`、`device_codes`、`ciba_requests` です。未知のキーを渡すと `oidcsql.New` が即座にエラーを返すので、タイポは最初のクエリではなく構築時に検出できます。
+map のキーは物理名ではなく論理的なレコード種別です。`oidcsql.New` が受け付けるのは次の 23 個です。
+
+| 区分 | 論理キー |
+|---|---|
+| クライアントと grant | `clients`、`grants`、`authorization_codes`、`refresh_tokens` |
+| アクセストークン | `access_tokens`、`opaque_access_tokens` |
+| 失効 | `grant_revocations`、`revoked_jtis` |
+| ブラウザ側の状態 | `sessions`、`interactions` |
+| PAR と再利用検出マーカ | `par_records`、`consumed_jtis` |
+| ユーザ | `users` |
+| 動的登録 | `initial_access_tokens`、`registration_access_tokens` |
+| OP メタデータ | `op_metadata` |
+| デバイスフローと CIBA | `device_codes`、`ciba_requests` |
+| 認証器の factor | `totp_secrets`、`passkeys`、`recovery_codes`、`email_otps`、`authn_lockouts` |
+
+未知のキーを渡すと `oidcsql.New` が即座にエラーを返すので、タイポは最初のクエリではなく構築時に検出できます。
 
 解決後の物理テーブル名はすべて相互に異なる必要があります。2 つの論理ストアが同じテーブルへ map される場合や、override が未指定の既定テーブル名と衝突する場合、`oidcsql.New` は構築時に失敗します。スキーマ書き換えは exact-name ベースなので、`clients` の override が `client_secrets` のような部分文字列を誤って書き換えることもありません。
 
-> **ソース:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) は 18 テーブルすべてを `auth_` 接頭辞へ差し替え、`sqlite_master` から読み戻して書き換えが効いたことを確認しています。
+> **ソース:** [`examples/25-byo-table-names`](https://github.com/libraz/go-oidc-provider/tree/main/examples/25-byo-table-names) は 23 テーブルすべてを `auth_` 接頭辞へ差し替え、`sqlite_master` から読み戻して書き換えが効いたことを確認しています。
 
 ::: warning 差し替えられるのはテーブル名のみ、カラム名は不可
-`WithNaming` が書き換えるのはテーブル名だけです。カラム構成はアダプタが所有しており固定です。カラム名まで自由にしたい場合(reshape できない既存スキーマ、暗号化カラム、共有テーブルなど)は、同梱アダプタを使わず `store` インターフェースを自分で実装してください。[ストアバックエンドを自前実装する](/ja/use-cases/byo-store)を参照。
+`WithNaming` が書き換えるのはテーブル名だけです。カラム構成はアダプタが所有しており固定です。カラム名まで自由にしたい場合（reshape できない既存スキーマ、暗号化カラム、共有テーブルなど）は、同梱アダプタを使わず `store` インターフェースを自分で実装してください。[ストアバックエンドを自前実装する](/ja/use-cases/byo-store)を参照。
 :::
 
 ## MySQL プールサイズ
@@ -166,6 +189,8 @@ db.SetConnMaxLifetime(30 * time.Minute)
 ```
 
 `charset=utf8mb4` は必須です — 4 バイト UTF-8（絵文字、CJK 拡張）を claim 値で切り詰めずに往復させるためです。
+
+DSN の connection collation は `oidc_users.username` に明示された定義を置き換えません。既存の MySQL / MariaDB では `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;` を別途適用します。この変更は、大文字小文字を区別しない既存 username の衝突があると失敗するため、先に衝突を解消してください。
 
 ## ユーザ名 + password による認証情報
 
@@ -202,7 +227,7 @@ _ = storage.PutUserWithPassword(ctx, &store.User{
 
 `inmem` を検査する同じ contract test suite (`op/store/contract`) が、SQL アダプタに対しても `go test -tags=testcontainers` で testcontainers-go 経由の実 MySQL / Postgres を起動して実行されます。「SQL アダプタは `Store` interface を実装する」というライブラリの主張は、モックではなく実エンジンに対して検証されたものです。
 
-固定しているイメージ(`mysql:8.4`、`postgres:16-alpine`)は、`examples/07-mysql-store` および `examples/09-redis-volatile` の docker-compose スタックが使うエンジンマトリクスと揃えてあるので、アダプタレベルと example レベルの統合検証で同じ組み合わせを共有できます。
+固定しているイメージ（`mysql:8.4`、`postgres:16-alpine`）は、`examples/07-mysql-store` および `examples/09-redis-volatile` の docker-compose スタックが使うエンジンマトリクスと揃えてあるので、アダプタレベルと example レベルの統合検証で同じ組み合わせを共有できます。
 
 ## retention GC をスケジュールする
 

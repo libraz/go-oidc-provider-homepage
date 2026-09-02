@@ -8,7 +8,7 @@ description: 概念ページの推奨順。各ステップは前のステップ�
 このページは `/ja/concepts/` 配下のすべてのページに対する **推奨順** です。各ページは前のステップで扱った内容だけを前提にしているので、上から順に読めば途中で戻る必要はありません。
 
 ::: tip 順番に読む
-OAuth と OIDC が初めての方は、ステップ 1 から順に読んでください。よくつまずくのは仕様が難しいからではなく、「issuer とは」「redirect URI とは」を最初に固める前に、いきなりリフレッシュトークンや DPoP の話に進んでしまうからです。本ページはその順序を整えるためにあります。
+OAuth と OIDC が初めての方は、ステップ 1 から順に読んでください。多くの読者がつまずくのは、「issuer とは」「redirect URI とは」を固める前に、いきなりリフレッシュトークンや DPoP の話へ進んでしまうからです。本ページの順序では、そこを先に固めます。
 :::
 
 ::: details すでに知っている場合は飛ばして OK
@@ -32,7 +32,7 @@ OAuth と OIDC が初めての方は、ステップ 1 から順に読んでく�
 - [クライアントの種類](/ja/concepts/client-types) — `confidential` と `public`、それぞれが対応するクライアント認証方式。
 - [scope と claim](/ja/concepts/scopes-and-claims) — scope が何を許可し、claim が何を運ぶか、`openid`/`profile`/`email` が user-info 応答にどう対応するか。
 - [discovery](/ja/concepts/discovery) — `/.well-known/openid-configuration`、RP がそこから何を読むか、OP が安定させるべき項目は何か。
-- [JOSE 入門 (JWS / JWE / JWK / JWKS / kid)](/ja/concepts/jose-basics) — JWS、JWE、JWK、JWKS、`kid`、そしてどのページにも繰り返し現れるアルゴリズム名。
+- [JOSE 入門（JWS / JWE / JWK / JWKS / kid）](/ja/concepts/jose-basics) — JWS、JWE、JWK、JWKS、`kid`、そしてどのページにも繰り返し現れるアルゴリズム名。
 
 ## ステップ 3: 基本フロー
 
@@ -47,7 +47,7 @@ OAuth と OIDC が初めての方は、ステップ 1 から順に読んでく�
 OP が実際に発行するもの、そしてなぜ「JWT か opaque か」が仕様の選択ではなく運用の選択なのか。
 
 - [ID トークン / アクセストークン](/ja/concepts/tokens) — 2 つのトークン、2 つの audience、2 つの目的。よくある混同源。
-- [アクセストークンの形式（JWT と opaque）](/ja/concepts/access-token-format) — JWT アクセストークン (RFC 9068) を選ぶべき場面、opaque を維持すべき場面、introspection のコスト。
+- [アクセストークンの形式（JWT と opaque）](/ja/concepts/access-token-format) — JWT アクセストークン（RFC 9068） を選ぶべき場面、opaque を維持すべき場面、introspection のコスト。
 
 ## ステップ 5: セッションと同意
 
@@ -58,9 +58,9 @@ OP が実際に発行するもの、そしてなぜ「JWT か opaque か」が�
 
 ## ステップ 6: 送信者制約トークン
 
-bearer token は既定では「持っている人なら誰でも使える」ことを意味します。送信者制約付きトークンはそれを是正します。まず選び方ガイドを読んでください。実際に DPoP や mTLS が必要かどうかをそこで判断できます。
+bearer トークンは「持っている人なら誰でも使える」トークンです。送信者制約付きトークンは、クライアントが保持を証明できる鍵にトークンを結び付けます。まず選び方ガイドを読んでください。DPoP や mTLS がそもそも必要かどうかを、そこで判断できます。
 
-- [送信者制約 (DPoP / mTLS) — 選び方](/ja/concepts/sender-constraint) — 必要になる場面、2 つの方式の選び方。
+- [送信者制約（DPoP / mTLS） — 選び方](/ja/concepts/sender-constraint) — 必要になる場面、2 つの方式の選び方。
 - [DPoP](/ja/concepts/dpop) — リクエストごとに署名された JWT による所持証明。Web に馴染む選択肢。
 - [mTLS](/ja/concepts/mtls) — クライアントの TLS 証明書による所持証明。インフラ側の負担が大きく、一部の FAPI 配備では必須。
 

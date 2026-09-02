@@ -20,7 +20,7 @@ OAuth 2.0 has long left this exemption to the operator's discretion; the upcomin
 :::
 
 ::: details Vocabulary refresher
-- **Third-party vs first-party** — *Third-party* RPs are external apps requesting access to the user's data held by your OP — the consent prompt is the user's veto on that delegation. *First-party* RPs are clients you (the OP operator) own — your own SPA, your own mobile app — the user is already inside your trust boundary, so prompting "do you authorise Acme Corp to read your data" inside Acme Corp's own login flow is just busywork.
+- **Third-party vs first-party** — the axis is ownership of the RP: an app someone else runs against your OP, versus one you ship yourself. Nothing about the protocol changes; what changes is whether the user's veto over the delegation is meaningful.
 - **Consent prompt** — The OIDC-defined screen between login and the redirect-back-with-code where the user explicitly authorises a list of scopes for a particular RP. Skipping it for first-party RPs trades a UX win for an explicit trust-boundary decision: an attacker who manages to get their RP onto the first-party list bypasses the user's veto entirely.
 :::
 

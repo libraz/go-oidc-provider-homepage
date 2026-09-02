@@ -6,7 +6,7 @@ pageClass: pg-compliance-ofcs
 
 # OFCS 適合状況
 
-`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、コミット [`ee4369a`](https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a) の最新リリース run を `cmd/op-demo` インスタンスへ end-to-end で実行した結果です。
+`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、コミット [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a) の最新リリース run を `cmd/op-demo` インスタンスへ end-to-end で実行した結果です。
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
@@ -15,10 +15,10 @@ pageClass: pg-compliance-ofcs
 これは個人開発者が維持するプロジェクトです。OpenID Foundation 会員費は支払っておらず、**形式的な OIDC 認証は取得していません**。本ページの数値は、下に示すプラン集合の再現可能なスナップショットです。これは有償の OpenID Foundation 認証の代替ではなく、そのように引用しないでください。
 :::
 
-<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 780 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ofcs-snapshot-title">OFCS スナップショットの読み方: 4 つの仕様ファミリにまたがる 9 プランを op-demo に対して実行し、各 module は PASSED / REVIEW / SKIPPED / 未判定 / FAILED のいずれか 1 つに分類される。</title>
-  <text class="ofcs-cap" x="126" y="22" text-anchor="middle">テストプラン (9)</text>
-  <text class="ofcs-cap" x="656" y="22" text-anchor="middle">module ごとの結果</text>
+  <text class="ofcs-cap" x="126" y="22" text-anchor="middle">テストプラン（9）</text>
+  <text class="ofcs-cap" x="644" y="22" text-anchor="middle">module ごとの結果</text>
 
   <rect class="ofcs-box" x="28" y="36" width="196" height="60" rx="10"/>
   <text class="ofcs-text" x="126" y="62" text-anchor="middle">OIDC Core 1.0</text>
@@ -37,37 +37,41 @@ pageClass: pg-compliance-ofcs
   <text class="ofcs-text" x="395" y="172" text-anchor="middle">cmd/op-demo</text>
   <text class="ofcs-sub" x="395" y="194" text-anchor="middle">対象 OP インスタンス</text>
 
-  <rect class="ofcs-box" x="560" y="42" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-pass" x="578" y="58" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="69">PASSED</text>
-  <rect class="ofcs-box" x="560" y="100" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-review" x="578" y="116" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="127">REVIEW</text>
-  <rect class="ofcs-box" x="560" y="158" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-skip" x="578" y="174" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="185">SKIPPED</text>
-  <rect class="ofcs-box" x="560" y="216" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-noverdict" x="578" y="232" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="243">未判定</text>
-  <rect class="ofcs-box" x="560" y="274" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-fail" x="578" y="290" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="301">FAILED</text>
+  <rect class="ofcs-box" x="548" y="42" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-pass" x="566" y="58" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="69">PASSED</text>
+  <rect class="ofcs-box" x="548" y="100" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-review" x="566" y="116" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="127">REVIEW</text>
+  <rect class="ofcs-box" x="548" y="158" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-skip" x="566" y="174" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="185">SKIPPED</text>
+  <rect class="ofcs-box" x="548" y="216" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-noverdict" x="566" y="232" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="243">未判定</text>
+  <rect class="ofcs-box" x="548" y="274" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-fail" x="566" y="290" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="301">FAILED</text>
 
   <path class="ofcs-flow" d="M224 66 C264 66 272 152 306 152"/>
+  <path class="ofcs-flow" d="M298 148 L307 152 L298 156"/>
   <path class="ofcs-flow" d="M224 142 C264 142 272 168 306 168"/>
+  <path class="ofcs-flow" d="M298 164 L307 168 L298 172"/>
   <path class="ofcs-flow" d="M224 218 C264 218 272 192 306 192"/>
+  <path class="ofcs-flow" d="M298 188 L307 192 L298 196"/>
   <path class="ofcs-flow" d="M224 294 C264 294 272 208 306 208"/>
+  <path class="ofcs-flow" d="M298 204 L307 208 L298 212"/>
 
-  <path class="ofcs-flow" d="M480 180 C514 180 522 64 556 64"/>
-  <path class="ofcs-flow" d="M480 180 C514 180 522 122 556 122"/>
-  <path class="ofcs-flow" d="M480 180 H556"/>
-  <path class="ofcs-flow" d="M480 180 C514 180 522 238 556 238"/>
-  <path class="ofcs-flow" d="M480 180 C514 180 522 296 556 296"/>
-  <path class="ofcs-flow" d="M548 60 L557 64 L548 68"/>
-  <path class="ofcs-flow" d="M548 118 L557 122 L548 126"/>
-  <path class="ofcs-flow" d="M548 176 L557 180 L548 184"/>
-  <path class="ofcs-flow" d="M548 234 L557 238 L548 242"/>
-  <path class="ofcs-flow" d="M548 292 L557 296 L548 300"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 64 544 64"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 122 544 122"/>
+  <path class="ofcs-flow" d="M480 180 H544"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 238 544 238"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 296 544 296"/>
+  <path class="ofcs-flow" d="M536 60 L545 64 L536 68"/>
+  <path class="ofcs-flow" d="M536 118 L545 122 L536 126"/>
+  <path class="ofcs-flow" d="M536 176 L545 180 L536 184"/>
+  <path class="ofcs-flow" d="M536 234 L545 238 L536 242"/>
+  <path class="ofcs-flow" d="M536 292 L545 296 L536 300"/>
 </svg>
 
 ## この snapshot が検査する範囲
@@ -80,7 +84,7 @@ pageClass: pg-compliance-ofcs
 | `oidcc-formpost-basic-certification-test-plan` | basic プランを `response_mode=form_post` で再実行 | OIDC Core 1.0 — `form_post` |
 | `oidcc-rp-initiated-logout-certification-test-plan` | `/end_session`、`id_token_hint`、`post_logout_redirect_uri` | RP-Initiated Logout 1.0 |
 | `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | RP 起点のログアウトと、登録済みバックチャネル URI への `logout_token` 送達 | Back-Channel Logout 1.0 |
-| `fapi2-security-profile-id2-test-plan` | + PAR、送信者制約付きアクセストークン (DPoP)、厳格 alg list、`redirect_uri` 完全一致 | FAPI 2.0 Baseline |
+| `fapi2-security-profile-id2-test-plan` | + PAR、送信者制約付きアクセストークン（DPoP）、厳格 alg list、`redirect_uri` 完全一致 | FAPI 2.0 Baseline |
 | `fapi2-message-signing-id1-test-plan` | + JAR（署名 authorization request）、JARM（署名 authorization response） | FAPI 2.0 Message Signing |
 | `fapi-ciba-id1-test-plan` | Client-Initiated Backchannel Authentication（poll mode）、mTLS バインドトークン | FAPI-CIBA |
 
@@ -111,8 +115,8 @@ pageClass: pg-compliance-ofcs
   </ul>
   <p class="ofcs-note">FAILED と未判定の module はすべてレビュー済みの release exclusion です — <a href="#failed-6-件の理由">原因は 3 つだけで、未解決の欠陥はありません</a>。</p>
   <div class="ofcs-meta">
-    <span><i>取得日時</i>2026-08-13T06:26:05Z</span>
-    <span><i>リポジトリ SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a">ee4369a</a></span>
+    <span><i>取得日時</i>2026-09-01T13:48:21Z</span>
+    <span><i>リポジトリ SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a">547b8d1</a></span>
     <span><i>OFCS イメージ</i>release-v5.2.1</span>
   </div>
 </div>
@@ -346,7 +350,7 @@ OFCS の各テストプランは、それぞれ特定の仕様プロファイル
 | Discovery (`/.well-known/openid-configuration`) | 既定で有効 | [/ja/concepts/discovery](/ja/concepts/discovery) |
 | JWKS の公開 | 既定で有効 | [/ja/operations/jwks](/ja/operations/jwks) |
 | リフレッシュトークン + ローテーション | 既定で有効、長期 refresh は `offline_access` スコープが必要 | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
-| 標準スコープ (`profile`、`email`、`address`、`phone`) | スコープごとに `op.WithScope(...)` を 1 回ずつ | [/ja/concepts/scopes-and-claims](/ja/concepts/scopes-and-claims) |
+| 標準スコープ（`profile`、`email`、`address`、`phone`） | スコープごとに `op.WithScope(...)` を 1 回ずつ | [/ja/concepts/scopes-and-claims](/ja/concepts/scopes-and-claims) |
 | public / pairwise サブジェクト | pairwise は `op.WithPairwiseSubject(salt)`、適用判定はクライアントの `SubjectType` | [/ja/use-cases/pairwise-subject](/ja/use-cases/pairwise-subject) |
 
 ### `fapi2-security-profile-id2-test-plan` — FAPI 2.0 Baseline
@@ -373,7 +377,7 @@ Message Signing は Baseline に署名認可レスポンスを上乗せします
 | FAPI 2.0 Baseline の全項目（上記） | `op.WithProfile(profile.FAPI2MessageSigning)` | （上記と同じ） |
 | 署名された認可レスポンス（JARM） | プロファイルが `feature.JARM` を有効化 | [/ja/concepts/fapi](/ja/concepts/fapi)（JARM セクション） |
 | token レスポンスの ID トークン署名 | プロファイルが強制 | [/ja/concepts/tokens](/ja/concepts/tokens) |
-| request object 署名 (`PS256` / `ES256`) | プロファイルが強制 | [/ja/concepts/fapi](/ja/concepts/fapi) |
+| request object 署名（`PS256` / `ES256`） | プロファイルが強制 | [/ja/concepts/fapi](/ja/concepts/fapi) |
 
 ### `fapi-ciba-id1-test-plan` — FAPI-CIBA（Client-Initiated Backchannel Authentication）
 
@@ -426,7 +430,7 @@ conformance suite は意図的にこれらの module を人間の判断にゲー
 | `oidcc-backchannel-logout-discovery-endpoint-verification` | `oidcc-backchannel-rp-initiated-logout` | 本 OP は仕様上許容される `backchannel_logout_session_supported: false` を広告するが、この module がそれを認めないため。 |
 | `oidcc-backchannel-rp-initiated-logout` | `oidcc-backchannel-rp-initiated-logout` | 上の module から連鎖。プランがその assertion で中断するため、この module は実行に到達しない。 |
 
-## 現在 未判定 の module — 理由
+## 現在未判定の module — 理由
 
 ハーネスが終端結果まで駆動できなかった 2 module です。いずれも実稼働中の suite に対する単体実行で得た証跡付きで記録しています。
 

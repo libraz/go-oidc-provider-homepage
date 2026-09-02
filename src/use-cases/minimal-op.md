@@ -12,8 +12,9 @@ You want a working Authorization Code + PKCE round-trip end-to-end with the abso
 
 ## Architecture
 
-<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 0 760 274" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="minimal-op-arch-title">A single Go process: a browser drives the rpkit RP, which speaks OIDC to op.New; the OP reads and writes the in-memory store and signs with an ephemeral keyset.</title>
+  <g transform="translate(20,-14)">
   <rect x="150" y="28" width="560" height="246" rx="10" stroke-opacity="0.4"/>
   <text class="d-sub" x="166" y="49">Single process</text>
   <rect x="16" y="122" width="104" height="56" rx="6"/>
@@ -38,6 +39,7 @@ You want a working Authorization Code + PKCE round-trip end-to-end with the abso
   <polyline points="518,133 510,138 518,143"/>
   <path d="M510,162 H540 V222 H560"/>
   <polyline points="552,217 560,222 552,227"/>
+  </g>
 </svg>
 
 The library is one process. The store is in-memory. Keys are generated at boot. The example seeds one demo user (`demo`/`demo`) and registers a public client whose `redirect_uri` points back at the embedded RP.

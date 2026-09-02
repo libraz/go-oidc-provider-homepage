@@ -43,8 +43,9 @@ Both grants exist because the canonical `authorization_code + PKCE` flow assumes
 
 Run through these four questions in order. The first one usually settles it.
 
-<svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 660 480" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="nobrowser-choice-title">Decision tree for choosing between CIBA and Device Code from four sequential questions.</title>
+  <g transform="translate(50,0)">
   <rect class="dtx-q" x="20" y="20" width="320" height="58" rx="6"/>
   <rect class="dtx-q" x="20" y="118" width="320" height="58" rx="6"/>
   <rect class="dtx-q" x="20" y="216" width="320" height="58" rx="6"/>
@@ -76,14 +77,15 @@ Run through these four questions in order. The first one usually settles it.
   <text class="dtx-leaf-op" x="560" y="348" text-anchor="middle">CIBA</text>
   <text class="dtx-leaf" x="190" y="440" text-anchor="middle">Device Code</text>
   <text class="dtx-sub" x="190" y="454" text-anchor="middle">default</text>
-  <text class="dtx-lbl" x="405" y="43" text-anchor="middle">Yes</text>
-  <text class="dtx-lbl" x="405" y="141" text-anchor="middle">Yes</text>
-  <text class="dtx-lbl" x="405" y="239" text-anchor="middle">No</text>
-  <text class="dtx-lbl" x="405" y="337" text-anchor="middle">Yes</text>
+  <text class="dtx-lbl halo" x="405" y="43" text-anchor="middle">Yes</text>
+  <text class="dtx-lbl halo" x="405" y="141" text-anchor="middle">Yes</text>
+  <text class="dtx-lbl halo" x="405" y="239" text-anchor="middle">No</text>
+  <text class="dtx-lbl halo" x="405" y="337" text-anchor="middle">Yes</text>
   <text class="dtx-lbl" x="188" y="102" text-anchor="start">No</text>
   <text class="dtx-lbl" x="188" y="200" text-anchor="start">No</text>
   <text class="dtx-lbl" x="188" y="298" text-anchor="start">Yes</text>
   <text class="dtx-lbl" x="188" y="396" text-anchor="start">No</text>
+  </g>
 </svg>
 
 **1. Does the RP know who the user is *before* the flow starts?**
@@ -112,8 +114,9 @@ If you are still unsure after running the questions: default to **Device Code** 
 
 ### Device Code (RFC 8628)
 
-<svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 720 452" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 760 452" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="dc-seq-title">Device Code (RFC 8628) sequence: the browserless device polls the OP while the user enters the user_code and approves on a separate browser.</title>
+  <g transform="translate(20,0)">
   <line class="dcx-rp dcx-life" x1="115" y1="50" x2="115" y2="446"/>
   <line class="dcx-op dcx-life" x1="360" y1="50" x2="360" y2="446"/>
   <line class="dcx-user dcx-life" x1="605" y1="50" x2="605" y2="446"/>
@@ -131,8 +134,8 @@ If you are still unsure after running the questions: default to **Device Code** 
   <text class="dcx-mono" x="237" y="78" text-anchor="middle"><tspan class="dcx-step">1  </tspan>POST /device_authorization</text>
   <path class="dcx-op" d="M360 124 H115 M122 120 L115 124 L122 128"/>
   <text class="dcx-mono" x="237" y="116" text-anchor="middle"><tspan class="dcx-step">2  </tspan>200 { device_code, user_code, verification_uri }</text>
-  <rect class="dcx-frame" x="40" y="138" width="170" height="36" rx="4"/>
-  <text class="dcx-note" x="125" y="161" text-anchor="middle">Shows <tspan class="dcx-mono">user_code</tspan> + verify URL</text>
+  <rect class="dcx-frame dcx-nb" x="36" y="138" width="188" height="36" rx="4"/>
+  <text class="dcx-note" x="130" y="161" text-anchor="middle">Shows <tspan class="dcx-mono">user_code</tspan> + verify URL</text>
   <text class="dcx-hdr" x="237" y="216" text-anchor="middle">Device polls</text>
   <text class="dcx-hdr" x="482" y="216" text-anchor="middle">User approves</text>
   <path class="dcx-rp" d="M115 246 H360 M353 242 L360 246 L353 250"/>
@@ -148,12 +151,14 @@ If you are still unsure after running the questions: default to **Device Code** 
   <text class="dcx-mono" x="237" y="384" text-anchor="middle"><tspan class="dcx-step">7  </tspan>POST /token <tspan class="dcx-note">(next poll)</tspan></text>
   <path class="dcx-op" d="M360 430 H115 M122 426 L115 430 L122 434"/>
   <text class="dcx-mono" x="237" y="422" text-anchor="middle"><tspan class="dcx-step">8  </tspan>200 { access_token, id_token? }</text>
+  </g>
 </svg>
 
 ### CIBA (Core 1.0, poll mode)
 
-<svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ciba-seq-title">CIBA (OIDC Core 1.0, poll mode) sequence: the RP supplies a login_hint at /bc-authorize, the OP resolves it, the embedder's notification service addresses the user's pre-registered device, and the RP polls until approval.</title>
+  <g transform="translate(20,0)">
   <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
   <line class="cbx-op cbx-life" x1="360" y1="50" x2="360" y2="554"/>
   <line class="cbx-user cbx-life" x1="605" y1="50" x2="605" y2="554"/>
@@ -169,14 +174,14 @@ If you are still unsure after running the questions: default to **Device Code** 
   <text class="cbx-sub" x="605" y="40" text-anchor="middle">pre-registered</text>
   <path class="cbx-rp" d="M115 82 H360 M353 78 L360 82 L353 86"/>
   <text class="cbx-mono" x="237" y="74" text-anchor="middle"><tspan class="cbx-step">1  </tspan>POST /bc-authorize</text>
-  <rect class="cbx-frame" x="35" y="96" width="175" height="40" rx="4"/>
+  <rect class="cbx-frame cbx-nb" x="35" y="96" width="175" height="40" rx="4"/>
   <text class="cbx-mono" x="122" y="112" text-anchor="middle">login_hint=alice</text>
   <text class="cbx-mono" x="122" y="128" text-anchor="middle">binding_message</text>
   <path class="cbx-op" d="M360 158 H398 V184 H367 M367 180 L360 184 L367 188"/>
   <text class="cbx-note" x="406" y="176" text-anchor="start"><tspan class="cbx-step">2  </tspan><tspan class="cbx-mono">HintResolver</tspan> → subject</text>
   <path class="cbx-op" d="M360 210 H605 M598 206 L605 210 L598 214"/>
   <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>embedder notification</text>
-  <rect class="cbx-frame" x="510" y="224" width="190" height="34" rx="4"/>
+  <rect class="cbx-frame cbx-nb" x="510" y="224" width="190" height="34" rx="4"/>
   <text class="cbx-note" x="605" y="245" text-anchor="middle">“Approve $80 at Acme Coffee?”</text>
   <path class="cbx-op" d="M360 286 H115 M122 282 L115 286 L122 290"/>
   <text class="cbx-mono" x="237" y="278" text-anchor="middle"><tspan class="cbx-step">4  </tspan>200 { auth_req_id, expires_in, interval }</text>
@@ -193,6 +198,7 @@ If you are still unsure after running the questions: default to **Device Code** 
   <text class="cbx-mono" x="237" y="492" text-anchor="middle"><tspan class="cbx-step">8  </tspan>POST /token <tspan class="cbx-note">(next poll)</tspan></text>
   <path class="cbx-op" d="M360 538 H115 M122 534 L115 538 L122 542"/>
   <text class="cbx-mono" x="237" y="530" text-anchor="middle"><tspan class="cbx-step">9  </tspan>200 { access_token, id_token, refresh_token? }</text>
+  </g>
 </svg>
 
 The shape is similar enough to map between the two mentally. The decisive difference is the diagonal arrow: in Device Code the user **walks to the OP** with a code in hand; in CIBA the OP **reaches out to a device the user already trusts**.

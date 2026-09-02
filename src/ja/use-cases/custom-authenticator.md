@@ -59,13 +59,13 @@ type Authenticator interface {
 
 実装は並行安全でなければなりません。オーケストレータは複数の goroutine から呼び出します。`BeginInput` には、確定済みなら subject、client ID、基準時刻 `AuthTime`、要求された scope、読み取り専用の client view が入ります。`ContinueInput` には、`interaction.FormSubmission`、同じ `AuthTime`、確定済みの subject、直前の Step が返した不透明な `Scratch` が入ります。
 
-オーケストレータは `Begin` または `Continue` の戻り値に対して `Prompt.StateRef` を設定します。認証器が state reference を生成したり保存したりしてはいけません。試行ごとの状態は `interaction.Step.Scratch` に入れてください。この値はサーバー側に保持され、次の `ContinueInput.Scratch` に渡されます。
+オーケストレータは `Begin` または `Continue` の戻り値に対して `Prompt.StateRef` を設定します。認証器が state reference を生成したり保存したりしてはいけません。試行ごとの状態は `interaction.Step.Scratch` に入れてください。この値はサーバ側に保持され、次の `ContinueInput.Scratch` に渡されます。
 
 ## 状態遷移の全体像
 
 `Authenticator` は、毎回「次に表示する Prompt」または「認証完了を表す Result」のどちらかを返します。SMS OTP のような 2 段階の認証要素では、`Begin` が最初の Prompt を返し、SPA からの送信ごとに `Continue` が次の Prompt か Result を返します。
 
-<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 352" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="authenticator-flow-title">カスタム Authenticator の状態遷移。LoginFlow が Begin を呼び、電話番号入力 Prompt、コード入力 Prompt、Result の順に進み、Result が返ると subject と factor がセッションに反映される。</title>
   <defs>
     <marker id="auth-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -94,7 +94,7 @@ type Authenticator interface {
   <text class="h" x="380" y="166" text-anchor="middle">1. myorg.sms.collect_phone</text>
   <text class="t sub" x="380" y="185" text-anchor="middle">電話番号を受け取り、OTP を生成して送信する</text>
   <path d="M640 92 C640 122 530 132 438 142" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="576" y="126" text-anchor="middle">POST phone</text>
+  <text class="m sub halo" x="576" y="126" text-anchor="middle">POST phone</text>
   <path d="M322 198 C245 214 245 244 322 260" marker-end="url(#auth-flow-arrow)"/>
   <text class="m sub" x="246" y="234" text-anchor="middle">Continue</text>
 
@@ -102,9 +102,11 @@ type Authenticator interface {
   <text class="h" x="380" y="284" text-anchor="middle">2. myorg.sms.collect_code</text>
   <text class="t sub" x="380" y="303" text-anchor="middle">入力コードを検証し、成功なら Result{Subject: ...} を返す</text>
 
-  <path d="M672 288 H720 V338 H40 V63" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="380" y="346" text-anchor="middle">Result が返ると、subject / AAL / AMR がセッションに反映される</text>
+  <path d="M380 316 V340 H56 V96" marker-end="url(#auth-flow-arrow)"/>
+  <text class="m sub" x="250" y="330" text-anchor="middle">returns Result</text>
 </svg>
+
+最後のステップが返す `Result` が認証要素の完了を表します。オーケストレータはこの `Result` から subject、AAL、AMR の値をセッションに書き込み、LoginFlow は次の Rule へ進みます。
 
 ## 実装例: SMS OTP
 
@@ -279,7 +281,7 @@ HTML ドライバ構成では、2 種類の画面を扱うカスタムテンプ�
 
 `FieldKind` は `FieldText`、`FieldPassword`、`FieldOTPCode`、`FieldEmail`、`FieldHidden` に限られます。`Required`、`MinLen`、`MaxLen`、全体一致の `Pattern` は `Continue` の前に検証されます。`MaxLen` が 0 の場合、byte 単位の上限は text が 512、password が 1024、OTP code が 32、email が 320、hidden が 16 KiB です。1 回の submission 全体にも名前と値の合計 32 KiB、宣言した項目を超える追加項目 4 個までという上限があります。Prompt の `StateRef` は 10 分で失効し、1 回しか使えません。古い、または再利用された reference は認証器が呼ばれる前に拒否されます。
 
-組み込み MFA の Prompt も同じ契約を使います。TOTP は `AttemptsRemaining` とちょうど 6 桁の `code` を返します。メール OTP はマスク済みアドレスと `ExpiresAt` を返し、254 byte のメールアドレスと 6 桁の code を受け付け、code の既定有効期間は 5 分です。passkey は WebAuthn の challenge と allow-list を返し、assertion response は 16 KiB までです。recovery code は `AttemptsRemaining` を返し、10〜32 byte を受け付けます。これらは Prompt のメタデータと入力上限であり、要素ごとのレート制限の代わりにはなりません。
+組み込み MFA の Prompt も同じ契約を使います。TOTP は `AttemptsRemaining` とちょうど 6 桁の `code` を返します。メール OTP はマスク済みアドレスと `ExpiresAt` を返し、254 byte のメールアドレスと 6 桁の code を受け付け、code の既定有効期間は 5 分です。passkey は WebAuthn の challenge と allow-list を返し、assertion response は 16 KiB までです。recovery code は `AttemptsRemaining` を返し、10〜32 byte を受け付けます。TOTP と recovery の `AttemptsRemaining` は、未使用の recovery code 数ではなく、失敗した提出をあと何回許容するかを示します。これらは Prompt のメタデータと入力上限であり、要素ごとのレート制限の代わりにはなりません。
 
 ## 契約条件
 

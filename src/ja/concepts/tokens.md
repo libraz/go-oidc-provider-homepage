@@ -45,34 +45,34 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
 | **UserInfo 応答** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
-<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 0 760 244" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行し、RP はアクセストークンをリソースサーバと OP の /userinfo エンドポイントに提示し、/userinfo は claim の JSON を返す図。</title>
-  <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
-  <rect x="272" y="52" width="132" height="156" rx="10"/>
-  <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>
-  <text class="d-h d-op-text" x="90" y="126" text-anchor="middle">OP</text>
-  <text class="d-sub d-op-sub" x="90" y="145" text-anchor="middle">本ライブラリ</text>
-  <text class="d-h d-fill1" x="338" y="126" text-anchor="middle">RP</text>
-  <text class="d-sub" x="338" y="145" text-anchor="middle">クライアント</text>
-  <text class="d-h d-rs-t" x="626" y="126" text-anchor="middle">RS</text>
-  <text class="d-sub" x="626" y="145" text-anchor="middle">リソースサーバ</text>
-  <text class="d-mono-op" x="90" y="228" text-anchor="middle">/userinfo</text>
-  <line class="d-op" x1="156" y1="84" x2="270" y2="84"/>
-  <path class="d-op" d="M272,84 l-7,-4 M272,84 l-7,4"/>
-  <text class="d-txt" x="214" y="76" text-anchor="middle">ID トークン</text>
-  <line class="d-op" x1="156" y1="108" x2="270" y2="108"/>
-  <path class="d-op" d="M272,108 l-7,-4 M272,108 l-7,4"/>
-  <text class="d-mono" x="214" y="100" text-anchor="middle">access_token</text>
-  <line class="d-op" x1="272" y1="152" x2="158" y2="152"/>
-  <path class="d-op" d="M156,152 l7,-4 M156,152 l7,4"/>
-  <text class="d-mono" x="214" y="144" text-anchor="middle">access_token</text>
-  <line class="d-op" x1="156" y1="178" x2="270" y2="178"/>
-  <path class="d-op" d="M272,178 l-7,-4 M272,178 l-7,4"/>
-  <text class="d-txt" x="214" y="192" text-anchor="middle">claim の JSON</text>
-  <line class="d-rs" x1="404" y1="130" x2="558" y2="130"/>
-  <path class="d-rs" d="M560,130 l-7,-4 M560,130 l-7,4"/>
-  <text class="d-mono" x="482" y="122" text-anchor="middle">access_token</text>
-  <text class="d-mono" x="482" y="146" text-anchor="middle">Authorization: Bearer</text>
+  <rect class="d-box d-box-op" x="14" y="44" width="136" height="152" rx="10"/>
+  <rect class="d-box" x="312" y="44" width="136" height="152" rx="10"/>
+  <rect class="d-box d-box-rs" x="610" y="44" width="136" height="152" rx="10"/>
+  <text class="d-h d-op-text" x="82" y="116" text-anchor="middle">OP</text>
+  <text class="d-sub d-op-sub" x="82" y="135" text-anchor="middle">本ライブラリ</text>
+  <text class="d-h d-fill1" x="380" y="116" text-anchor="middle">RP</text>
+  <text class="d-sub" x="380" y="135" text-anchor="middle">クライアント</text>
+  <text class="d-h d-rs-t" x="678" y="116" text-anchor="middle">RS</text>
+  <text class="d-sub" x="678" y="135" text-anchor="middle">リソースサーバ</text>
+  <text class="d-mono-op" x="82" y="220" text-anchor="middle">/userinfo</text>
+  <line class="d-op" x1="150" y1="76" x2="308" y2="76"/>
+  <path class="d-op" d="M312,76 l-7,-4 M312,76 l-7,4"/>
+  <text class="d-txt halo" x="229" y="68" text-anchor="middle">ID トークン</text>
+  <line class="d-op" x1="150" y1="104" x2="308" y2="104"/>
+  <path class="d-op" d="M312,104 l-7,-4 M312,104 l-7,4"/>
+  <text class="d-mono halo" x="229" y="96" text-anchor="middle">access_token</text>
+  <line class="d-op" x1="312" y1="152" x2="154" y2="152"/>
+  <path class="d-op" d="M150,152 l7,-4 M150,152 l7,4"/>
+  <text class="d-mono halo" x="229" y="144" text-anchor="middle">GET /userinfo</text>
+  <line class="d-op" x1="150" y1="180" x2="308" y2="180"/>
+  <path class="d-op" d="M312,180 l-7,-4 M312,180 l-7,4"/>
+  <text class="d-txt halo" x="229" y="194" text-anchor="middle">claim の JSON</text>
+  <line class="d-rs" x1="448" y1="120" x2="606" y2="120"/>
+  <path class="d-rs" d="M610,120 l-7,-4 M610,120 l-7,4"/>
+  <text class="d-mono halo" x="527" y="112" text-anchor="middle">Authorization: Bearer</text>
+  <text class="d-mono halo" x="527" y="136" text-anchor="middle">access_token</text>
 </svg>
 
 ## ID トークン —「誰がログインしたか」
@@ -161,7 +161,7 @@ RS は OP に問い合わせず JWT を検証できますが、その経路で�
 | RS 側の検証 | JWKS でオフライン検証 | リクエスト毎に `/introspect` を呼ぶ |
 | 発行時の OP 側状態 | 既定の grant-tombstone 戦略では行なし。JTI registry を選んだ場合だけ JTI shadow 行を作る | `store.OpaqueAccessTokenStore` にハッシュ化した行 |
 | カスケードの到達範囲 | OP が経由する境界（`/userinfo`、`/introspect`） | RS の全リクエスト |
-| 発行時の監査証跡 | 既定では無し。`RevocationStrategyJTIRegistry` を明示すると発行ごとに 1 行 | 発行ごとに 1 行(自動) |
+| 発行時の監査証跡 | 既定では無し。`RevocationStrategyJTIRegistry` を明示すると発行ごとに 1 行 | 発行ごとに 1 行（自動） |
 | 設定方法 | （既定） | `op.WithAccessTokenFormat(...)` あるいは RFC 8707 の resource 毎に `op.WithAccessTokenFormatPerAudience(...)` |
 
 ::: warning カスケードの及ぶ範囲は形式に依存する
@@ -196,7 +196,7 @@ active な opaque access token の introspection response には、値が存在�
 
 ## RS 側での `/introspect` のキャッシュ戦略
 
-`/introspect`（RFC 7662）への OP の応答は、*その応答を発行した瞬間* についての権威ある回答です。RS 側でこの応答をキャッシュすること自体は仕様上認められており、レイテンシ要件によっては必須ですが、トークンの **失効到達距離** が変わります — 「OP でこのトークンが revoke された」から「この RS が拒否し始める」までの時間が、キャッシュ TTL の分だけ広がります。
+`/introspect`（RFC 7662）への OP の応答は、*その応答を発行した瞬間* についての権威ある回答です。RS 側でこの応答をキャッシュすること自体は仕様上認められており、レイテンシ要件によっては必須です。同時に、トークンの **失効到達距離** も変わります。「OP でこのトークンが失効した」から「この RS が拒否し始める」までの時間が、キャッシュ TTL の分だけ広がるためです。
 
 | キャッシュ戦略 | レイテンシ / OP 負荷 | 失効ギャップ |
 |---|---|---|

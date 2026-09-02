@@ -5,12 +5,39 @@ description: op.New が起動を拒否するオプション — それぞれの�
 
 # 必須オプション
 
-`op.New(...)` は構築時に不完全な設定を拒否します。そのため、安全でない OP が誤ってトラフィックを受け取ることはありません。3 つのオプションは無条件で必須です。`WithCookieKeys` は `authorization_code` grant を有効にしている場合に必須で、この grant は既定で有効です。
+`op.New(...)` は構築時に不完全な設定を拒否します。そのため、安全でない OP が誤ってトラフィックを受け取ることはありません。3 つのオプションは無条件で必須です。`WithCookieKeys` はこれに加えて、`authorization_code` grant を有効にしている場合に必須になります。既定の grant 集合はこの grant を含みます。
+
+<svg role="img" aria-labelledby="required-options-title" viewBox="0 0 760 292" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="required-options-title">常に必須なのは issuer、store、keyset の 3 つ。cookie 鍵は authorization_code grant を有効にしている場合に加えて必須になる。</title>
+  <text x="34" y="32" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">常に必須</text>
+
+  <rect x="34" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="141" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithIssuer</text>
+  <text x="141" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">iss claim・discovery URL</text>
+  <text x="141" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">cookie の適用範囲</text>
+
+  <rect x="272" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="379" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithStore</text>
+  <text x="379" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">認可コード・session・クライアント</text>
+  <text x="379" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">リフレッシュ連鎖・JTI 集合</text>
+
+  <rect x="510" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="617" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithKeyset</text>
+  <text x="617" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ID トークン・JWT AT・JARM の</text>
+  <text x="617" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ES256 署名鍵</text>
+
+  <text x="272" y="170" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">authorization_code grant を有効にする場合に必須</text>
+
+  <rect x="272" y="182" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)" stroke-dasharray="6 5"/>
+  <text x="379" y="210" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithCookieKeys</text>
+  <text x="379" y="232" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">session と CSRF cookie を</text>
+  <text x="379" y="250" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">AES-256-GCM で暗号化</text>
+</svg>
 
 | Option | 必須である理由 |
 |---|---|
 | [`op.WithIssuer`](#withissuer) | JWT の `iss` claim、discovery URL、cookie scope を決める。ここを誤れば下流の検査がすべて誤る。 |
-| [`op.WithStore`](#withstore) | 認可コード、セッション、リフレッシュトークンの連鎖、JTI replay set、クライアントを保持する場所。ストレージ無しでは状態を置く場所がない。 |
+| [`op.WithStore`](#withstore) | 認可コード、セッション、リフレッシュトークンの連鎖、JTI replay set、クライアントの保存先。ストア無しでは状態を置く先が無い。 |
 | [`op.WithKeyset`](#withkeyset) | ID トークン / JWT アクセストークン / JARM の署名鍵。`ES256` 署名を生成できる ECDSA P-256 の `crypto.Signer` 無しには発行を拒否する。 |
 | [`op.WithCookieKeys`](#withcookiekeys) | cookie の内容を AES-256-GCM で暗号化するための 32 バイトのランダム素材。必須になるのは有効な grant に `authorization_code` が含まれる場合のみ（既定の grant 集合は `authorization_code` と `refresh_token`）。この grant を無効にした client_credentials 専用の OP は cookie key 無しでも起動できる。session と CSRF cookie は署名のみではなく暗号化される。 |
 
@@ -84,6 +111,6 @@ cookie は常に `__Host-` prefix（`Domain` 無し、`Path=/`、`Secure`）。�
 
 - `op.WithStaticClients(...)` または `op.WithDynamicRegistration(...)` — どちらか無いとクライアントが認証できない。
 - `op.WithAuthenticators(...)` — OP がユーザを検証する方法を定義。既定は「authenticator 無し」、つまりログインは常に失敗。
-- `op.WithLoginFlow(...)` — authenticator + rule を step-up ポリシー(例: password → TOTP、password → N 失敗後 captcha)に組み合わせる。
+- `op.WithLoginFlow(...)` — authenticator + rule を step-up ポリシー（例: password → TOTP、password → N 失敗後 captcha）に組み合わせる。
 
-本番形の実装は [使い方](/ja/use-cases/) を参照してください。
+本番に近い構成例は [使い方](/ja/use-cases/) を参照してください。

@@ -62,7 +62,7 @@ FAPI 1.0 には区分が 2 つありました。**Read-Only** はデータ取得
 
 FAPI 2.0 は 2 段構成です。
 
-<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 390" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="fapi-layers-title">FAPI 2.0 の層構造。OAuth 2.0 と OIDC の上に Baseline が安全な必須要件を固定し、Message Signing が署名付き要求・署名付き応答・DPoP nonce を追加して後から否認できない証拠を残す。</title>
   <rect class="soft" x="70" y="306" width="620" height="64" rx="8"/>
   <text class="h" x="380" y="332" text-anchor="middle">OAuth 2.0 + OpenID Connect</text>
@@ -83,19 +83,18 @@ FAPI 2.0 は 2 段構成です。
   <path d="M380 184 V152"/>
   <path d="M376 152 L380 148 L384 152"/>
 
-  <rect x="34" y="78" width="94" height="44" rx="6"/>
-  <text class="t" x="81" y="96" text-anchor="middle">通信路</text>
-  <text class="t sub" x="81" y="113" text-anchor="middle">安全性</text>
-  <path d="M128 100 H150"/>
+  <rect x="8" y="78" width="128" height="44" rx="6"/>
+  <text class="t" x="72" y="96" text-anchor="middle">通信路</text>
+  <text class="t sub" x="72" y="113" text-anchor="middle">安全性</text>
+  <path d="M136 100 H150"/>
 
-  <rect x="632" y="78" width="94" height="44" rx="6"/>
-  <text class="t" x="679" y="96" text-anchor="middle">監査証跡</text>
-  <text class="t sub" x="679" y="113" text-anchor="middle">非否認性</text>
-  <path d="M632 100 H610"/>
-
-  <rect x="70" y="386" width="620" height="26" rx="6"/>
-  <text class="t sub" x="380" y="404" text-anchor="middle">FAPI は別仕様ではなく、OAuth / OIDC の安全な使い方を固定するプロファイル</text>
+  <rect x="624" y="78" width="128" height="44" rx="6"/>
+  <text class="t" x="688" y="96" text-anchor="middle">監査証跡</text>
+  <text class="t sub" x="688" y="113" text-anchor="middle">非否認性</text>
+  <path d="M624 100 H610"/>
 </svg>
+
+FAPI は別仕様ではありません。OAuth 2.0 と OpenID Connect の安全な使い方を固定するプロファイルです。図で基盤仕様の横ではなく上に積んでいるのはそのためです。
 
 ::: tip Baseline — 必須要件の最低ライン
 Pushed Authorization Requests（PAR）、PKCE、DPoP **または** mTLS、OP 発行物の ES256 署名、FAPI で許可されるクライアント側署名アルゴリズム、`redirect_uri` の完全一致、`private_key_jwt` / mTLS でのクライアント認証。**どの FAPI 2.0 配備にも求められる最低水準** です。
@@ -162,7 +161,7 @@ Confidential クライアントは token endpoint に対して自身の身元を
 | **`tls_client_auth`** | RFC 8705 §2.1.1 | TLS ハンドシェイクで提示する X.509 証明書 | 構成済みのトラストアンカーに対してチェーン検証し、登録済みの subject DN / SAN と突き合わせ |
 | **`self_signed_tls_client_auth`** | RFC 8705 §2.2 | 自己署名の X.509 証明書 | CA チェーンは辿らず、証明書の公開鍵を登録済み JWKS と突き合わせ |
 
-いずれも `client_secret_basic` の落とし穴(長寿命の共有秘密が一度漏れると、気付かれないまま破綻が続く)を回避します。
+いずれも `client_secret_basic` の落とし穴（長寿命の共有秘密が一度漏れると、気付かれないまま破綻が続く）を回避します。
 
 実装メモ: token endpoint クライアント認証経路として接続されているのは `private_key_jwt` です。mTLS verifier は内部にあり、mTLS によるトークンの結びつけは接続済みですが、`tls_client_auth` / `self_signed_tls_client_auth` は token endpoint の認証方式としては振り分けされません。mTLS は `/token` のクライアント認証方式ではなく、送信者制約として使ってください。
 :::
@@ -175,13 +174,13 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 |---|---|---|---|
 | **OAuth 2.0 (RFC 6749)** | 必須 | 必須 | 必須 |
 | **OIDC Core 1.0** | 必須 | 必須 | 必須 |
-| **PKCE — `S256` のみ (RFC 7636)** | 必須 | 必須 | 対象外（CIBA はフロントチャネルなし）|
+| **PKCE — `S256` のみ（RFC 7636）** | 必須 | 必須 | 対象外（CIBA はフロントチャネルなし）|
 | **PAR (RFC 9126)** | 必須 | 必須 | 対象外（CIBA は `/bc-authorize` に POST）|
 | **JAR (RFC 9101)** — 署名付き request object | 必須（`PS256`、`ES256`、`EdDSA`）| 必須（`PS256`、`ES256`、`EdDSA`）| 必須 |
 | **JARM** — 署名付き authorize 応答 | 任意 | 必須 | 対象外（CIBA はフロントチャネルなし）|
 | **DPoP (RFC 9449) または mTLS (RFC 8705)** | いずれか必須 | いずれか必須 | いずれか必須 |
 | **Resource Indicators (RFC 8707)** | 任意 | 任意 | 任意 |
-| **authorize 応答の `iss` パラメータ (RFC 9207)** | 必須 | 必須 | 対象外（CIBA はフロントチャネルなし）|
+| **authorize 応答の `iss` パラメータ（RFC 9207）** | 必須 | 必須 | 対象外（CIBA はフロントチャネルなし）|
 | **OAuth 2.0 Security BCP (RFC 9700)** | 必須 | 必須 | 必須 |
 | **Token endpoint クライアント認証** | `private_key_jwt`。FAPI 仕様上は `tls_client_auth` / `self_signed_tls_client_auth` も許可されるが、本ライブラリでは mTLS は `/token` クライアント認証ではなく送信者制約として使う | 同左 | 同左 |
 | **`client_secret_basic` / `_post` / `_jwt`** | 禁止 | 禁止 | 禁止 |
@@ -190,9 +189,9 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 | **`RS256`（旧来の RSA-PKCS1v15）**| 禁止 | 禁止 | 禁止 |
 | **`HS256` などの HMAC 系 alg** | 禁止 | 禁止 | 禁止 |
 | **`redirect_uri` 完全一致** | 必須 | 必須 | 対象外（リダイレクトなし）|
-| **リフレッシュトークンのローテーション + 再利用検出 (RFC 9700 §4.14)** | 必須 | 必須 | 必須 |
-| **送信者制約付きアクセストークン (RFC 7800 `cnf`)** | 必須 | 必須 | 必須 |
-| **サーバ側でのアクセストークン失効 (FAPI 2.0 SP §5.3.2.2)** | 必須 | 必須 | 必須 |
+| **リフレッシュトークンのローテーション + 再利用検出（RFC 9700 §4.14）** | 必須 | 必須 | 必須 |
+| **送信者制約付きアクセストークン（RFC 7800 `cnf`）** | 必須 | 必須 | 必須 |
+| **サーバ側でのアクセストークン失効（FAPI 2.0 SP §5.3.2.2）** | 必須 | 必須 | 必須 |
 | **ライブラリでの有効化オプション** | `op.WithProfile(profile.FAPI2Baseline)` | `op.WithProfile(profile.FAPI2MessageSigning)` | `op.WithProfile(profile.FAPICIBA)` |
 
 いくつかの行については本文で補足しておきます。
@@ -207,7 +206,7 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 
 - [RFC 対応一覧](/ja/compliance/rfc-matrix) — FAPI に限定しない、ライブラリ全体の RFC 別実装状況。
 - [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアントと DPoP を組み合わせた構成例。
-- [送信者制約 (DPoP / mTLS)](/ja/concepts/sender-constraint) — バインディングの仕組みを詳しく。
+- [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — バインディングの仕組みを詳しく。
 - [CIBA](/ja/concepts/ciba) — FAPI-CIBA が制約しているバックチャネル処理。
 
 ## `go-oidc-provider` での 1 行有効化
@@ -238,6 +237,6 @@ Message Signing にしたい場合は `profile.FAPI2Baseline` を `profile.FAPI2
 
 ## 続きはこちら
 
-- [送信者制約 (DPoP / mTLS)](/ja/concepts/sender-constraint) — バインディングの仕組みを詳しく。
+- [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — バインディングの仕組みを詳しく。
 - [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアントと DPoP を組み合わせた構成例。
 - [認可コード + PKCE](/ja/concepts/authorization-code-pkce) — FAPI 2.0 が前提にしている処理。

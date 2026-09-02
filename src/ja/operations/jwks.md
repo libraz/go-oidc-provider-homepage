@@ -9,41 +9,46 @@ pageClass: pg-operations-jwks
 
 `/jwks` は OP の署名鍵の公開側を公開します。RP はこれを取得して、ID トークン、JWT アクセストークン、JARM、userinfo JWT を検証します。本ページは OP と RP キャッシュの間の運用契約です。
 
-<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="jwks-cache-title">RP は discovery で jwks_uri を知り、/jwks を取得してキャッシュする。未知の kid を見たら再取得し、ローテーション後の新しい鍵で検証する。</title>
-<rect class="jwks-box" x="36" y="82" width="168" height="78" rx="8"/>
-  <text class="jwks-text" x="120" y="114" text-anchor="middle">RP</text>
-  <text class="jwks-sub" x="120" y="136" text-anchor="middle">トークンを検証</text>
+  <rect class="jwks-box" x="20" y="40" width="150" height="78" rx="8"/>
+  <text class="jwks-text" x="95" y="72" text-anchor="middle">RP</text>
+  <text class="jwks-sub" x="95" y="94" text-anchor="middle">トークンを検証</text>
 
-  <rect class="jwks-main" x="296" y="54" width="168" height="78" rx="8"/>
-  <text class="jwks-text" x="380" y="86" text-anchor="middle">Discovery</text>
-  <text class="jwks-sub" x="380" y="108" text-anchor="middle">jwks_uri を告知</text>
+  <rect class="jwks-main" x="290" y="40" width="180" height="78" rx="8"/>
+  <text class="jwks-text" x="380" y="72" text-anchor="middle">Discovery</text>
+  <text class="jwks-sub" x="380" y="94" text-anchor="middle">jwks_uri を告知</text>
 
-  <rect class="jwks-main" x="296" y="180" width="168" height="78" rx="8"/>
-  <text class="jwks-text" x="380" y="212" text-anchor="middle">/jwks</text>
-  <text class="jwks-sub" x="380" y="234" text-anchor="middle">JWK 集合 + ETag</text>
+  <rect class="jwks-main" x="580" y="40" width="150" height="78" rx="8"/>
+  <text class="jwks-text" x="655" y="72" text-anchor="middle">/jwks</text>
+  <text class="jwks-sub" x="655" y="94" text-anchor="middle">JWK 集合 + ETag</text>
 
-  <rect class="jwks-box" x="556" y="82" width="168" height="78" rx="8"/>
-  <text class="jwks-text" x="640" y="114" text-anchor="middle">RP キャッシュ</text>
-  <text class="jwks-sub" x="640" y="136" text-anchor="middle">kid で鍵を選ぶ</text>
+  <rect class="jwks-box" x="580" y="210" width="150" height="58" rx="8"/>
+  <text class="jwks-text" x="655" y="234" text-anchor="middle">RP キャッシュ</text>
+  <text class="jwks-sub" x="655" y="254" text-anchor="middle">kid で鍵を選ぶ</text>
 
-  <rect class="jwks-box" x="556" y="220" width="168" height="58" rx="8"/>
-  <text class="jwks-text" x="640" y="254" text-anchor="middle">未知の kid</text>
+  <rect class="jwks-box" x="290" y="210" width="180" height="58" rx="8"/>
+  <text class="jwks-text" x="380" y="245" text-anchor="middle">未知の kid</text>
 
-  <path class="jwks-flow" d="M204 104 H292"/>
-  <text class="jwks-sub" x="248" y="91" text-anchor="middle">1. 設定取得</text>
-  <path class="jwks-flow" d="M284 100 L293 104 L284 108"/>
-  <path class="jwks-flow" d="M380 132 V176"/>
-  <text class="jwks-sub" x="430" y="158" text-anchor="middle">2. 鍵取得</text>
-  <path class="jwks-flow" d="M376 168 L380 177 L384 168"/>
-  <path class="jwks-flow" d="M464 218 C520 208 558 174 612 160"/>
-  <text class="jwks-sub" x="548" y="199" text-anchor="middle">3. キャッシュ</text>
-  <path class="jwks-flow" d="M604 158 L613 158 L607 165"/>
-  <path class="jwks-flow" d="M640 160 V216"/>
-  <text class="jwks-sub" x="690" y="194" text-anchor="middle">4. 再取得</text>
-  <path class="jwks-flow" d="M636 208 L640 217 L644 208"/>
-  <path class="jwks-flow" d="M556 249 C476 274 426 260 382 260"/>
-  <path class="jwks-flow" d="M390 256 L381 260 L390 264"/>
+  <path class="jwks-flow" d="M170 79 H286"/>
+  <path class="jwks-flow" d="M278 75 L287 79 L278 83"/>
+  <text class="jwks-sub halo" x="228" y="68" text-anchor="middle">1. 設定取得</text>
+
+  <path class="jwks-flow" d="M470 79 H576"/>
+  <path class="jwks-flow" d="M568 75 L577 79 L568 83"/>
+  <text class="jwks-sub halo" x="523" y="68" text-anchor="middle">2. 鍵取得</text>
+
+  <path class="jwks-flow" d="M690 118 V206"/>
+  <path class="jwks-flow" d="M686 198 L690 207 L694 198"/>
+  <text class="jwks-sub halo" x="698" y="167" text-anchor="start">3. 保存</text>
+
+  <path class="jwks-flow" d="M580 239 H474"/>
+  <path class="jwks-flow" d="M482 235 L473 239 L482 243"/>
+  <text class="jwks-sub halo" x="527" y="228" text-anchor="middle">4. kid 不一致</text>
+
+  <path class="jwks-flow" d="M380 210 V150 H615 V122"/>
+  <path class="jwks-flow" d="M611 130 L615 121 L619 130"/>
+  <text class="jwks-sub halo" x="500" y="140" text-anchor="middle">5. 再取得</text>
 </svg>
 
 ## 何を返すか
@@ -71,10 +76,10 @@ Accept: application/jwk-set+json
 }
 ```
 
-署名鍵のエントリはすべて `alg: "ES256"`、`use: "sig"`、`kty: "EC"`、`crv: "P-256"` です。OP が署名するのは ES256 のみです。`WithEncryptionKeyset` を設定している場合、OP は暗号化鍵の公開鍵 (`use: "enc"`)を署名鍵のあとに追加で告知します。両者が別々にローテーションする仕組みは [鍵ローテーション](/ja/operations/key-rotation) を参照してください。
+署名鍵のエントリはすべて `alg: "ES256"`、`use: "sig"`、`kty: "EC"`、`crv: "P-256"` です。OP が署名するのは ES256 のみです。`WithEncryptionKeyset` を設定している場合、OP は暗号化鍵の公開鍵（`use: "enc"`）を署名鍵のあとに追加で告知します。両者が別々にローテーションする仕組みは [鍵ローテーション](/ja/operations/key-rotation) を参照してください。
 
 ::: info Keyset が ES256 のみである理由
-JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)は OP が **検証**するときの集合です(RP の `private_key_jwt` 署名や JAR request object 署名で意味があります)。OP が **署名**する側の鍵は ES256 のみです。[必須オプション § WithKeyset](/ja/getting-started/required-options#withkeyset) を参照。
+JOSE の許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）は OP が **検証**するときの集合です（RP の `private_key_jwt` 署名や JAR request object 署名で意味があります）。OP が **署名**する側の鍵は ES256 のみです。[必須オプション § WithKeyset](/ja/getting-started/required-options#withkeyset) を参照。
 :::
 
 ## HTTP ヘッダ
@@ -86,7 +91,7 @@ JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)は OP が **検�
 | `ETag` | `"<sha256-hex>"` | シリアライズ後のボディ全体に対する strong validator |
 | `Allow` | `GET, HEAD` | 他のメソッドは 405 |
 
-`HEAD` はボディなしでヘッダ(`ETag`、`Cache-Control` を含む)を返します。適切に実装された RP キャッシュが再検証に使う形です。
+`HEAD` はボディなしでヘッダ（`ETag`、`Cache-Control` を含む）を返します。適切に実装された RP キャッシュが再検証に使う形です。
 
 ### `If-None-Match`
 
@@ -134,9 +139,9 @@ provider, _ := op.New(
 
 適切に実装された RP は次のように動きます:
 
-1. 起動時(または初回検証時)に `/jwks` を 1 回取得します。
+1. 起動時（または初回検証時）に `/jwks` を 1 回取得します。
 2. `Cache-Control` に従ってキャッシュします。`max-age` を超えたら `If-None-Match` で再検証します。
-3. JWS 検証時に未知の `kid` を見たら、キャッシュをバイパスして `/jwks` を再取得します(これがローテーション時に期待される経路です。新しい `kid` が届いて検証がリトライ → 成功)。
+3. JWS 検証時に未知の `kid` を見たら、キャッシュをバイパスして `/jwks` を再取得します（これがローテーション時に期待される経路です。新しい `kid` が届いて検証がリトライ → 成功）。
 4. `kid` が一致しないときに、キャッシュ済みの鍵にフォールバック **しない**でください。フォールバックはローテーションの監査を破壊します。
 
 OP 自身の内部検証パスも同じルールに従います。「未知の kid なら現行鍵を信頼する」のような特例は存在しません。
@@ -167,15 +172,15 @@ op.WithKeyset(op.Keyset{
 OP が要求するのは:
 
 - signer の公開鍵が `*ecdsa.PublicKey` で、`elliptic.P256()` 上にあること。
-- `Sign` が並行安全であること(上のアダプタはすべてこれを満たします)。
+- `Sign` が並行安全であること（上のアダプタはすべてこれを満たします）。
 
-KMS をバックエンドにした署名器は、トークン発行の待ち時間を増やします(典型的には 1 署名あたり 10 〜 50 ms)。容量見積もりに織り込んでください。
+KMS をバックエンドにした署名器は、トークン発行の待ち時間を増やします（典型的には 1 署名あたり 10 〜 50 ms）。容量見積もりに織り込んでください。
 
 ## Discovery 上の `jwks_uri`
 
 discovery 文書は、設定された JWKS パスを、issuer に `WithMountPrefix` を加えた配下の絶対 URL として `jwks_uri` に出します。RP は discovery を 1 回取って `jwks_uri` を辿るので、OP 側でパスをハードコードする必要はありません。
 
-ルーターと衝突するなら `WithEndpoints(op.Endpoints{JWKS: "/keys"})` でパスを上書きできます。discovery 文書も追従します。
+ルータと衝突するなら `WithEndpoints(op.Endpoints{JWKS: "/keys"})` でパスを上書きできます。discovery 文書も追従します。
 
 ## 契約の検証
 

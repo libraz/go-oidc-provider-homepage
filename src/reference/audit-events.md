@@ -1,13 +1,13 @@
 ---
 title: Audit event catalog
-description: The v1.1 audit catalog, distinguishing signals emitted by the OP from reserved vocabulary and documenting each event's extras.
+description: The audit catalog, distinguishing signals emitted by the OP from reserved vocabulary and documenting each event's extras.
 outline: 2
 pageClass: pg-reference-audit-events
 ---
 
 # Audit event catalog
 
-The OP emits structured audit events from a closed catalog defined in `op/audit.go`. The catalog is a vocabulary, not a promise that every constant fires: this page marks the v1.1 signals emitted by the OP and the names reserved for a future implementation or the embedder's account/device plane. Each identifier has shape `<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can pre-aggregate by area without parsing free-form messages.
+The OP emits structured audit events from a closed catalog defined in `op/audit.go`. The catalog is a vocabulary, not a promise that every constant fires: this page marks the signals emitted by the OP and the names reserved for a future implementation or the embedder's account/device plane. Each identifier has shape `<area>.<verb>` (or `<area>.<verb>.<qualifier>`) so SOC dashboards can pre-aggregate by area without parsing free-form messages.
 
 <svg role="img" aria-labelledby="audit-flow-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="audit-flow-title">How audit events flow: each OP code path emits from one closed catalog, and the emission reaches slog, the SOC pipeline, and the Prometheus counters.</title>
@@ -31,8 +31,11 @@ The OP emits structured audit events from a closed catalog defined in `op/audit.
   <text class="aud-text" x="645" y="240" text-anchor="middle">Prometheus</text>
 
   <path class="aud-flow" d="M184 73 C226 80 244 112 278 126"/>
+  <path class="aud-flow" d="M270 122 L279 126 L270 130"/>
   <path class="aud-flow" d="M184 150 H278"/>
+  <path class="aud-flow" d="M270 146 L279 150 L270 154"/>
   <path class="aud-flow" d="M184 227 C226 218 244 178 278 162"/>
+  <path class="aud-flow" d="M270 158 L279 162 L270 166"/>
   <path class="aud-flow" d="M474 126 C514 100 526 68 562 68"/>
   <path class="aud-flow" d="M554 64 L563 68 L554 72"/>
   <path class="aud-flow" d="M474 150 H562"/>
@@ -50,7 +53,7 @@ op.New(
 )
 ```
 
-`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry where the `msg` is the event identifier (e.g. `"token.issued"`) and the attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields. Emission is synchronous on the request goroutine: the handler must not block on slow I/O or an unbounded queue, and it must be safe for concurrent calls.
+`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry. The `event` attribute contains the event identifier (e.g. `"token.issued"`), and `msg` is the short human-readable message. The remaining attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields. Emission is synchronous on the request goroutine: the handler must not block on slow I/O or an unbounded queue, and it must be safe for concurrent calls.
 
 If `WithAuditLogger` is not supplied, audit events fall through to the logger configured by `WithLogger`. If neither logger is supplied, audit emission is discarded.
 
@@ -78,10 +81,11 @@ Every emitted event carries:
 
 | Attribute | Type | Notes |
 |---|---|---|
-| `request_id` | string | per-request identifier (propagated via `X-Request-ID` if set) |
+| `request_id` | string | per-request identifier; the OP does not populate it from HTTP headers automatically |
 | `subject` | string | OIDC `sub` of the affected user; empty for pre-authn events |
 | `client_id` | string | OAuth `client_id`; empty for account-management events |
 | `extras` | group | category-specific fields (see each section) |
+| `time` | timestamp | `slog.Record.Time`; follows `WithClock` (or the system clock when no clock is configured) |
 
 ## Event catalog
 
@@ -89,7 +93,10 @@ The catalog is regrouped by feature area. Each group opens with a short note on 
 
 ### Provider lifecycle
 
-`startup.profile` is the audit-stream anchor for an OP instance. It fires once after `op.New` has validated the configuration and before the provider is returned. Its extras include the declared `profiles`, `features`, and `grants`, plus the resolved PKCE, PAR, nonce, sender-constraint, client-authentication, token-TTL, token-format, JAR, JARM, and introspection policy.
+`startup.profile` is the audit-stream anchor for an OP instance. It fires once after `op.New` has validated the configuration and before the provider is returned. Its extras cover two groups:
+
+- **Declared** — `profiles`, `features`, `grants`.
+- **Resolved policy** — PKCE, PAR, nonce, sender-constraint, client-authentication, token-TTL, token-format, JAR, JARM, introspection.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
@@ -160,7 +167,7 @@ Fire from the authorize-code path and the token endpoint. The replay-detection e
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
-| `AuditCodeIssued` | authorization code minted | info | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
+| `AuditCodeIssued` | authorization code minted; exactly once for each issued code, including interactive and silent paths | info | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditCodeConsumed` | code redeemed at `/token` | info | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditCodeReplayDetected` | code presented twice — chain revoked | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditTokenIssued` | a first refresh token is persisted for a grant (the event is not a counter for every access token) | info | [Concepts: tokens](/concepts/tokens) |
@@ -171,6 +178,8 @@ Fire from the authorize-code path and the token endpoint. The replay-detection e
 | `AuditRefreshChainRevokeFailed` | cascade revoke from a replay observed a substore fault | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 | `AuditRefreshGrantRevokeFailed` | grant-tombstone write failed during refresh-rotation cascade | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 | `AuditRefreshPriorAccessTokenRevokeFailed` | refresh rotation could not revoke the prior access token; extras identify whether retry is possible | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
+
+`code_id` and `completion_id` are irreversible fingerprints of the authorization-code identifier. They are correlation values, not raw authorization codes or internal identifiers. `code.issued` is emitted exactly once for each issued code.
 
 ::: details extras
 - `refresh_origin` — the typed origin recorded on the refresh chain: `authorization_code`, `device_code`, `ciba`, or `custom_grant`; an unknown or missing origin is projected as `unknown` by the metrics bridge. This is the grant that actually minted the refresh chain, not an arbitrary request `grant_type` label.
@@ -194,6 +203,7 @@ The session and logout rows below are emitted by the session manager, `/end_sess
 | `AuditSessionDestroyed` | session deleted (logout, expiry, eviction) | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditSessionAlreadyAbsent` | logout targeted a session already absent or expired | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditSessionDestroyFailed` | session deletion hit a store failure; the request returns static 503 and preserves state | alert | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
+| `AuditLogoutClientLookupFailed` | client-registry lookup failed with a store error while resolving an RP-initiated logout; the wire response remains generic | alert | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditLogoutRPInitiated` | **Reserved** — no separate RP-initiated marker is emitted | info | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditLogoutTokenRevokeFailed` | logout-token or logout cascade revocation hit a store failure | alert | [Concepts: sessions and logout](/concepts/sessions-and-logout) |
 | `AuditLogoutBackChannelDelivered` | Back-Channel logout token delivered to RP | info | [Use case: Back-Channel Logout](/use-cases/back-channel-logout) |
@@ -217,17 +227,25 @@ The OP emits the CORS, DPoP (when the opt-in loose verifier is used), and retire
 | `AuditPKCEViolation` | **Reserved** — PKCE rejection is returned on the wire; no OP audit event is emitted | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditRedirectURIMismatch` | **Reserved** — redirect rejection is returned on the wire; no OP audit event is emitted | warn | [Concepts: redirect URI](/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | **Reserved** — no OP path emits a legacy-algorithm telemetry event | warn | [Concepts: JOSE basics](/concepts/jose-basics) |
-| `AuditCORSPreflightAllowed` | a CORS preflight matched the strict allowlist | info | [Use case: CORS for SPA](/use-cases/cors-spa) |
+| `AuditCORSPreflightAllowed` | a CORS preflight matched the strict allow-list | info | [Use case: CORS for SPA](/use-cases/cors-spa) |
 | `AuditDPoPLooseMethodCaseAdmitted` | **Conditional** — emitted only by a verifier configured with the loose method-case bridge; the standard `op.New` path is strict | info | [Concepts: DPoP](/concepts/dpop) |
 | `AuditKeyRetiredKidPresented` | request presented a kid past the JWKS grace window — verifier rejected | warn | [Operations: key rotation](/operations/key-rotation) |
 
-### Introspection
+### Interaction
 
-Fire from `/introspect` when client authentication or the RFC 7662 §2.2 wire contract rejects. The wire response stays at the canonical error; the audit event surfaces the reason for SOC tooling.
+The OP emits a render-failure signal only when the interaction driver fails before committing a response. If the driver has already committed the response, the OP cannot replace it and emits no duplicate event.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
-| `AuditIntrospectionError` | `/introspect` rejected the inbound client credentials | warn | — |
+| `AuditInteractionRenderFailed` | the interaction driver's render failed before response commitment; the OP serves a generic `server_error` page | alert | [Use case: SPA custom interaction](/use-cases/spa-custom-interaction) |
+
+### Introspection
+
+Fire from `/introspect` when client authentication rejects or an opaque access-token / refresh-token store lookup fails. A clean inactive miss emits no error event. For a non-`NotFound` lookup fault, the audit event surfaces the outage while the RFC 7662 wire response remains HTTP 200 with `{"active":false}`; client-authentication failures retain the canonical error response.
+
+| Event constant | When it fires | Severity hint | Linked doc |
+|---|---|---|---|
+| `AuditIntrospectionError` | `/introspect` rejected inbound client credentials or observed a non-`NotFound` opaque token-store lookup fault | warn / alert | [Operations: observability](/operations/observability) |
 
 ### Client authentication
 
@@ -295,11 +313,11 @@ Fire from `/bc-authorize` and the token-endpoint CIBA grant. `ciba.poll_abuse.lo
 
 ### Token Exchange (RFC 8693)
 
-Fire from the in-tree `RegisterTokenExchange` handler. Every successful exchange emits `requested` + `granted`; rejections emit `requested` + one of the failure-class events. `policy_denied`, `scope_inflation_blocked`, and `audience_blocked` are the policy-decision signals SOC dashboards usually want.
+Fire from the in-tree `RegisterTokenExchange` handler. `requested` is emitted at handler entry, before parsing and structural validation, so structurally rejected attempts are included. Every successful exchange then emits `requested` + `granted`; later rejections emit `requested` + one of the failure-class events. `policy_denied`, `scope_inflation_blocked`, and `audience_blocked` are the policy-decision signals SOC dashboards usually want.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
-| `AuditTokenExchangeRequested` | `/token` accepted an RFC 8693 request and entered the exchange handler | info | [Concepts: token exchange](/concepts/token-exchange) |
+| `AuditTokenExchangeRequested` | `/token` dispatched an RFC 8693 attempt to the exchange handler, before parsing and structural validation | info | [Concepts: token exchange](/concepts/token-exchange) |
 | `AuditTokenExchangeGranted` | exchange admitted; new access token (and optionally refresh) minted | info | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyDenied` | the embedder-supplied `TokenExchangePolicy` returned a deny | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyError` | the policy returned a non-deny error (transient infrastructure failure) | warn | [Use case: token exchange](/use-cases/token-exchange) |
@@ -318,10 +336,12 @@ Fire from the in-tree `RegisterTokenExchange` handler. Every successful exchange
 
 ### Custom Grant
 
+The dispatcher emits `custom_grant.requested` at dispatch entry for every attempt that reaches a registered custom handler, including successes and attempts that fail a gate before the handler runs. An unknown or unregistered `grant_type` returns before custom-grant dispatch and emits no custom-grant audit event. The dispatcher emits one `custom_grant.failed` at the single failure exit; a handler panic is recovered and produces that same one failed event with panic details in `extras`.
+
 | Event | Meaning | Level | See |
 |---|---|---|---|
-| `AuditCustomGrantRequested` (`custom_grant.requested`) | custom `grant_type` entered the dispatcher | info | [Use case: custom grant](/use-cases/custom-grant) |
-| `AuditCustomGrantFailed` (`custom_grant.failed`) | custom grant dispatch or handler failed | warn | [Use case: custom grant](/use-cases/custom-grant) |
+| `AuditCustomGrantRequested` (`custom_grant.requested`) | every dispatch attempt that reaches a registered custom handler, including pre-handler gate failures | info | [Use case: custom grant](/use-cases/custom-grant) |
+| `AuditCustomGrantFailed` (`custom_grant.failed`) | custom grant dispatch or handler failed; emitted once per failed attempt, including a recovered panic | warn | [Use case: custom grant](/use-cases/custom-grant) |
 | `AuditCustomGrantRefreshDropped` (`custom_grant.refresh_dropped`) | handler asked for a refresh token with `IssueRefreshToken`, but the client is not registered for `refresh_token`; the access-token response still succeeds | info | [Use case: custom grant](/use-cases/custom-grant) |
 
 ### Grant management

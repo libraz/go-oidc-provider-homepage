@@ -13,34 +13,33 @@ The OP can:
 
 Both directions use a closed algorithm allow-list.
 
-<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 320" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jwe-wrap-title">JWE encrypts a signed JWT from the outside. The RP decrypts the JWE first, then verifies the JWS signature inside it.</title>
-<rect class="jwe-box" x="36" y="92" width="156" height="80" rx="8"/>
-  <text class="jwe-text" x="114" y="124" text-anchor="middle">OP</text>
-  <text class="jwe-sub" x="114" y="146" text-anchor="middle">assembles the claims</text>
+<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jwe-wrap-title">The JWE encloses the JWS. The OP signs the claims into a JWS, encrypts that JWS inside a JWE addressed to the RP's use=enc JWK, and the RP decrypts the outer JWE before verifying the inner signature.</title>
 
-  <rect class="jwe-main" x="256" y="64" width="176" height="54" rx="8"/>
-  <text class="jwe-text" x="344" y="96" text-anchor="middle">Inner: JWS</text>
-  <rect class="jwe-box" x="238" y="140" width="212" height="76" rx="8"/>
-  <text class="jwe-text" x="344" y="170" text-anchor="middle">Outer: JWE</text>
-  <text class="jwe-sub" x="344" y="192" text-anchor="middle">encrypted to the RP's key</text>
+  <rect class="jwe-box" x="16" y="110" width="140" height="62" rx="8"/>
+  <text class="jwe-text" x="86" y="136" text-anchor="middle">OP</text>
+  <text class="jwe-sub" x="86" y="156" text-anchor="middle">assembles the claims</text>
 
-  <rect class="jwe-box" x="568" y="92" width="156" height="80" rx="8"/>
-  <text class="jwe-text" x="646" y="124" text-anchor="middle">RP</text>
-  <text class="jwe-sub" x="646" y="146" text-anchor="middle">decrypt, then verify</text>
+  <rect class="jwe-box" x="214" y="70" width="250" height="150" rx="10"/>
+  <text class="jwe-text" x="339" y="97" text-anchor="middle">Outer: JWE</text>
+  <rect class="jwe-main" x="242" y="110" width="194" height="62" rx="8"/>
+  <text class="jwe-text" x="339" y="147" text-anchor="middle">Inner: JWS</text>
+  <text class="jwe-sub" x="339" y="201" text-anchor="middle">encrypted to the RP's key</text>
 
-  <rect class="jwe-box" x="256" y="250" width="176" height="46" rx="8"/>
-  <text class="jwe-text" x="344" y="279" text-anchor="middle">use=enc JWK</text>
+  <rect class="jwe-box" x="604" y="110" width="140" height="62" rx="8"/>
+  <text class="jwe-text" x="674" y="136" text-anchor="middle">RP</text>
+  <text class="jwe-sub" x="674" y="156" text-anchor="middle">decrypt, then verify</text>
 
-  <path class="jwe-flow" d="M192 132 H234"/>
-  <path class="jwe-flow" d="M226 128 L235 132 L226 136"/>
-  <path class="jwe-flow" d="M432 180 H564"/>
-  <text class="jwe-sub" x="498" y="166" text-anchor="middle">encrypted response</text>
-  <path class="jwe-flow" d="M556 176 L565 180 L556 184"/>
-  <path class="jwe-flow" d="M344 250 V220"/>
-  <path class="jwe-flow" d="M340 228 L344 219 L348 228"/>
-  <path class="jwe-flow" d="M344 118 V136"/>
-  <path class="jwe-flow" d="M340 128 L344 137 L348 128"/>
+  <rect class="jwe-box" x="254" y="250" width="170" height="44" rx="8"/>
+  <text class="jwe-text" x="339" y="278" text-anchor="middle">use=enc JWK</text>
+
+  <path class="jwe-flow" d="M156 141 H211"/>
+  <path class="jwe-flow" d="M205 137 L213 141 L205 145"/>
+  <text class="jwe-sub" x="534" y="126" text-anchor="middle">encrypted response</text>
+  <path class="jwe-flow" d="M464 141 H601"/>
+  <path class="jwe-flow" d="M595 137 L603 141 L595 145"/>
+  <path class="jwe-flow" d="M339 250 V224"/>
+  <path class="jwe-flow" d="M335 230 L339 221 L343 230"/>
 </svg>
 
 ::: details JWS vs JWE — what's the difference?
@@ -101,7 +100,8 @@ import (
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
-// Generate (or load from KMS) one or more encryption keys.
+// Generate (or load from KMS) one or more OP-side private keys for
+// inbound JWE request objects.
 // At least one private key is required; multiple keys overlap during rotation.
 st := inmem.New()
 loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: st.UserPasswords()}}
@@ -115,8 +115,8 @@ provider, err := op.New(
   op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithEncryptionKeyset(op.EncryptionKeyset{
-    {KeyID: "enc-2026-05", PrivateKey: rsaKey1},  // current
-    {KeyID: "enc-2025-11", PrivateKey: rsaKey2},  // retiring
+    {KeyID: "enc-2026-05", PrivateKey: rsaKey1},  // newest inbound key
+    {KeyID: "enc-2025-11", PrivateKey: rsaKey2},  // retiring; inbound overlap
   }),
 
   // Optional: narrow the advertised algs.
@@ -140,10 +140,10 @@ A key registered in `WithKeyset` (signing, `use=sig`) MUST NOT also appear in `W
 | `Algorithm` | Optional explicit `alg` (e.g. `ECDH-ES+A256KW`). When empty: RSA → `RSA-OAEP-256`, ECDSA → `ECDH-ES`. |
 | `NotAfter` | Optional retirement deadline, enforced as a hard cutoff. On or after it the OP refuses to decrypt JWE addressed to this kid **and drops the public half from JWKS**, so an RP is never pointed at a recipient key the OP will no longer accept. |
 
-The first keyset entry is the **active key for outbound encryption**. Subsequent entries stay in JWKS so RPs whose caches hold the old kid can still address it during a rotation overlap. Inbound decryption matches `kid` first; absent kid falls back to trial decryption against every key in slice order (RFC 7516 §4.1.6).
+`EncryptionKeyset` is **inbound-only**. No entry is an active outbound encryption key: outbound JWE responses are encrypted to a `use=enc` key selected from the client's JWKS. The entries are ordered decryption candidates and are published as `use=enc` keys. With a `kid`, the OP selects the matching live entry. Without a `kid`, it filters live entries to the key family required by the protected `alg` and tries them in slice order (RFC 7516 §4.1.6). If the filtered set exceeds `op.MaxKidlessEncryptionTrialKeys` (default: 4), the OP refuses decryption rather than truncating the set; `op.New` emits a construction warning for an oversized family. Require RPs to include `kid` when a family is larger than that limit.
 
 ::: details Rotation overlap — what's that?
-RPs cache JWKS responses (commonly for a few hours). If you swap the encryption key in one shot, RPs whose caches still hold the old `kid` will encrypt to a key the OP no longer accepts, and you get a window of failed authorizations. The fix is to publish both keys for at least one cache lifetime: the new key is "active for outbound" so the OP encrypts with it, both private halves are accepted for inbound decryption, and once the cache window has elapsed you remove the old one. See [Key rotation](/operations/key-rotation) for the same idea applied to signing keys.
+RPs cache the OP's JWKS responses (commonly for a few hours). If you swap the inbound encryption key in one shot, RPs whose caches still hold the old `kid` will encrypt request objects to a key the OP no longer accepts, and you get a window of failed authorizations. The fix is to publish both keys for at least one cache lifetime: put the new key first so it is tried first for kidless inbound JWE, retain both private halves for inbound decryption, and once the cache window and accepted request lifetime have elapsed remove the old one. The new key is not an outbound key; response encryption always targets the client's key. See [Key rotation](/operations/key-rotation) for the provider replacement procedure.
 :::
 
 ## Per-client metadata gates outbound encryption
@@ -176,16 +176,13 @@ The client also publishes a `jwks` (or `jwks_uri`) with `use=enc` keys; the OP f
 
 ## Discovery exposure
 
-When `op.WithEncryptionKeyset` is set, discovery publishes:
+Discovery reflects the effective JWE policy after `op.WithSupportedEncryptionAlgs` narrowing:
 
-- `jwks_uri` carries `use=enc` JWKs alongside existing `use=sig` material (RFC 7517 §4.2).
-- `id_token_encryption_alg_values_supported` / `_enc_values_supported` — present.
-- `userinfo_encryption_alg_values_supported` / `_enc_values_supported` — present (gated on `feature.Userinfo`, always on).
-- `request_object_encryption_alg_values_supported` / `_enc_values_supported` — present when `feature.JAR` is on.
-- `authorization_encryption_alg_values_supported` / `_enc_values_supported` — present when `feature.JARM` is on.
-- `introspection_encryption_alg_values_supported` / `_enc_values_supported` — present when `feature.Introspect` is on.
+- `jwks_uri` carries the configured usable `use=enc` JWKs alongside existing `use=sig` material (RFC 7517 §4.2), with their published `alg` values reflecting the same narrowing.
+- Outbound response fields — `id_token_encryption_*` and `userinfo_encryption_*`, plus `authorization_encryption_*` (JARM) and `introspection_encryption_*` when those features are enabled — advertise the effective alg/enc lists. They describe encryption to a client's key and do not require `op.WithEncryptionKeyset`.
+- `request_object_encryption_alg_values_supported` / `_enc_values_supported` — present only when JAR and `op.WithEncryptionKeyset` are both enabled. The `alg` list is further narrowed to key families the OP can actually decrypt; the `enc` list follows the configured narrowing.
 
-Without the option, every encryption-related discovery key is empty (or absent) and decryption attempts fail with `invalid_request_object`.
+Without `op.WithEncryptionKeyset`, request-object encryption fields are absent and inbound encrypted request objects fail with `invalid_request_object`; outbound response encryption can still be advertised and used when its feature and client metadata are configured. An explicitly empty supported-alg or enc list suppresses JWE negotiation.
 
 ## userinfo signing — always on
 

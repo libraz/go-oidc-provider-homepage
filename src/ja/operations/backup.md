@@ -40,8 +40,11 @@ OP 自体はステートレスです。復旧方針は完全に `store.Store` �
   <text class="bkp-sub" x="650" y="252" text-anchor="middle">巻き戻さない</text>
 
   <path class="bkp-flow" d="M190 150 C238 132 260 66 296 66"/>
+  <path class="bkp-flow" d="M288 62 L297 66 L288 70"/>
   <path class="bkp-flow" d="M190 150 H296"/>
+  <path class="bkp-flow" d="M288 146 L297 150 L288 154"/>
   <path class="bkp-flow" d="M190 150 C238 168 260 234 296 234"/>
+  <path class="bkp-flow" d="M288 230 L297 234 L288 238"/>
   <path class="bkp-flow" d="M478 65 H574"/>
   <path class="bkp-flow" d="M566 61 L575 65 L566 69"/>
   <path class="bkp-flow" d="M478 150 H574"/>
@@ -63,7 +66,7 @@ OP 自体はステートレスです。復旧方針は完全に `store.Store` �
 | `RATs`(DCR Registration Access Token) | 中 | 数時間 | RP が自分のメタデータを読み書きするのに必要 |
 | `AuthorizationCodes` | 低 | n/a | one-shot で寿命 60 秒以下。復元しないこと |
 | `PARs` | 低 | n/a | one-shot で寿命 90 秒以下。復元しないこと |
-| `Sessions` | 組み込み側の選択 | `WithSessionDurabilityPosture` の方針次第 |
+| `Sessions` | 組み込み側の選択 | — | `WithSessionDurabilityPosture` の方針次第 |
 | `Interactions` | 低 | n/a | 試行ごとの状態。ユーザが自分でリトライする |
 | `ConsumedJTIs` | **復元してはならない** | — | `jti` の集合を復元すると replay 防御が巻き戻る |
 | `Passkeys`、`TOTPs`、`EmailOTPs`、`Recovery` | **最優先** | 数分 | MFA factor のレコード。喪失するとユーザがロックアウトされる |
@@ -81,12 +84,12 @@ OP が上流の状態から再構築するので、バックアップから戻�
 
 ## バックエンドごとのバックアップ機構
 
-### SQL アダプタ(`storeadapter/sql`)
+### SQL アダプタ（`storeadapter/sql`）
 
 DB 標準のバックアップツールがそのまま使えます。選択肢は 2 つです:
 
-- **論理(mysqldump / pg_dump)** — 時点整合の snapshot。snapshot 取得中に書き込みを短時間止められるならこちら。
-- **物理(binlog / WAL streaming)** — 連続レプリケーション。RPO を分単位以下にしたいならこちら。
+- **論理（mysqldump / pg_dump）** — 時点整合の snapshot。snapshot 取得中に書き込みを短時間止められるならこちら。
+- **物理（binlog / WAL streaming）** — 連続レプリケーション。RPO を分単位以下にしたいならこちら。
 
 ライブラリはモードに口を出しません。DB 運用チームがすでに運用しているものを選んでください。
 
@@ -110,13 +113,16 @@ DB 標準のバックアップツールがそのまま使えます。選択肢�
 | `idx_oidc_grants_client` | `oidc_grants(client_id)` |
 | `idx_oidc_authorization_codes_expires` | `oidc_authorization_codes(expires_at)` |
 | `idx_oidc_refresh_tokens_expires` | `oidc_refresh_tokens(expires_at)` |
+| `idx_oidc_refresh_tokens_client` | `oidc_refresh_tokens(client_id)` |
 | `idx_oidc_access_tokens_expires` | `oidc_access_tokens(expires_at)` |
+| `idx_oidc_access_tokens_client` | `oidc_access_tokens(client_id)` |
+| `idx_oidc_opaque_access_tokens_client` | `oidc_opaque_access_tokens(client_id)` |
 | `idx_oidc_sessions_expires` | `oidc_sessions(expires_at)` |
 | `idx_oidc_par_records_expires` | `oidc_par_records(expires_at)` |
 | `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` |
 | `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` |
 
-SQLite と PostgreSQL は `Migrate()` でインデックスを追加できます。MySQL と MariaDB の既存テーブルには `ALTER TABLE ... ADD INDEX` が必要です。dialect ごとの文は [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) を使い、この migration の記録をバックアップ / 復旧 runbook と一緒に保管してください。
+SQLite と PostgreSQL は `Migrate()` でインデックスを追加できます。MySQL と MariaDB の既存テーブルには `ALTER TABLE ... ADD INDEX` が必要です。既存の MySQL / MariaDB では `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;` も適用してください。大文字小文字を区別しない username の衝突を、この変更の前に解消します。SQLite と PostgreSQL に同じ照合順序変更は必要ありません。dialect ごとの文は [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) を使い、この migration の記録をバックアップ / 復旧 runbook と一緒に保管してください。
 
 ### SQL の retention GC をスケジュールする
 
@@ -133,7 +139,11 @@ log.Printf("oidc GC removed %d rows", stats.Total())
 
 返る `oidcsql.GCStats` は、期限切れの認可コード、PAR、interaction、session、refresh token ローテーション履歴の件数を持ちます。grant に有効な refresh token が残る間は履歴を保持し、期限切れの sealed retry-response blob は row 自体が残る場合でも条件を満たせば消去しますが、その blob 消去は row 件数に含めません。過去の cutoff は猶予期間を残し、`time.Now()` はすでに期限切れのものを回収します。件数、所要時間、エラー、テーブルサイズを監視し、一時的な失敗の後は再実行してください。access token、opaque token、grant revocation、ConsumedJTI の各ストアには独自の GC 方針があり、device code と CIBA の row は insert 時に期限切れを排除します。
 
-### Redis アダプタ(`storeadapter/redis`)
+### DynamoDB adapter (`storeadapter/dynamodb`)
+
+DynamoDB の永続テーブルは、アカウントの point-in-time recovery または on-demand backup 方針でバックアップし、プロビジョニングに使ったテーブル定義と TTL 設定も記録します。現在の refresh token 定義には `by_handle` global secondary index がありません。index の reconcile 処理は追加だけを行うため、既存テーブルには古い `by_handle` が残ることがあります。不要なら通常の DynamoDB インフラ手順（たとえば `UpdateTable`）で明示的に削除します。新しい書き込みにこの index は不要なので、復元や再プロビジョニングで復活させないでください。
+
+### Redis アダプタ（`storeadapter/redis`）
 
 同梱アダプタは **揮発サブストアのみ**を Redis に置きます:
 
@@ -163,30 +173,30 @@ log.Printf("oidc GC removed %d rows", stats.Total())
    - バックアップが JWKS cache window より古ければ、RP 側が退役済み鍵で検証を試みる可能性があります。心配なら各 RP から手動で JWKS を refresh(`curl` 等)してもらいます。
 4. バックアップ取得点以降に確立された session は再ログインが必要になる、とユーザに通知します。
 
-### 揮発バックエンド(Redis)の全損
+### 揮発バックエンド（Redis）の全損
 
 1. 新しい Redis を立てます。
 2. OP レプリカを再起動します。
 3. アクティブな session は消えるので、ユーザには再ログインしてもらいます。
 4. Redis の喪失だけで `bcl.no_sessions_for_subject` が増えるわけではありません。`/end_session` は通知前に session を snapshot し、このイベントは session を伴う logout 通知の grant 由来 eligible RP target が 0 件のときだけ発生します。snapshot 前に eviction が起きた場合は back-channel 通知もイベントも発生しません。zero-target イベントがあれば logout の snapshot と grant の状態を調べてください。
 
-### 部分損失(1 サブストアだけ破損)
+### 部分損失（1 サブストアだけ破損）
 
 1. 該当サブストアへの書き込みを停止します。
 2. そのサブストアだけ復元します。
 3. 書き込みを再開します。
 
-トランザクショナルクラスタ不変条件により、認可コード / リフレッシュトークン / grants / PAR / アクセストークン / grant revocation は同じバックエンドを共有しています。クラスタ内の部分復元は SQL レベルの操作(テーブル単位の binlog 復元や PITR)になります。揮発サブストアは独立しているので、`Sessions` を失っても `RefreshTokens` には影響しません。
+トランザクショナルクラスタ不変条件により、認可コード / リフレッシュトークン / grants / PAR / アクセストークン / grant revocation は同じバックエンドを共有しています。クラスタ内の部分復元は SQL レベルの操作（テーブル単位の binlog 復元や PITR）になります。揮発サブストアは独立しているので、`Sessions` を失っても `RefreshTokens` には影響しません。
 
 ## Cookie 鍵の損失
 
-cookie 鍵を失う(HSM 破壊、secret manager 抹消など)と、運用中のすべての暗号化済み cookie が無効になります:
+cookie 鍵を失う（HSM 破壊、secret manager 抹消など）と、運用中のすべての暗号化済み cookie が無効になります:
 
 - 有効だったブラウザ session はすべて失われ、ユーザは再ログインになります。
 - 進行中の consent / interaction フローも失われます。ユーザは最初からやり直しです。
 - リフレッシュトークンには影響しません。cookie 鍵は **session** cookie を封緘するための鍵で、リフレッシュトークンは封緘していません。
 
-cookie 鍵そのものの復旧経路はありません。署名鍵と同じく、独自にバックアップ / レプリケーションを持つサービス(KMS、Vault)に保管する、HSM 級の秘密として扱ってください。
+cookie 鍵そのものの復旧経路はありません。署名鍵と同じく、独自にバックアップ / レプリケーションを持つサービス（KMS、Vault）に保管する、HSM 級の秘密として扱ってください。
 
 ## 署名鍵の損失
 
@@ -196,7 +206,7 @@ cookie 鍵そのものの復旧経路はありません。署名鍵と同じく�
 - 既存の token は、RP がキャッシュしている JWKS から公開鍵を回収できる限り `/jwks` 越しに検証可能です。OP 自身も自分が発行した token を検証するので、鍵の喪失は OP の検証パスに対しても致命的です。
 - リフレッシュトークンは opaque 値としては発行可能ですが、紐付くアクセストークンは署名できません。
 
-緩和策: 署名秘密鍵を、独自にバックアップ / レプリケーションを持つサービス(KMS、Vault)に置き、唯一のコピーをプロセスメモリに置かないでください。ライブラリは `crypto.Signer` を満たすものなら何でも受け取れます。[JWKS § HSM / KMS 連携](/ja/operations/jwks#hsm-kms-連携) を参照。
+緩和策: 署名秘密鍵を、独自にバックアップ / レプリケーションを持つサービス（KMS、Vault）に置き、唯一のコピーをプロセスメモリに置かないでください。ライブラリは `crypto.Signer` を満たすものなら何でも受け取れます。[JWKS § HSM / KMS 連携](/ja/operations/jwks#hsm-kms-連携) を参照。
 
 ## 訓練
 
@@ -205,7 +215,7 @@ cookie 鍵そのものの復旧経路はありません。署名鍵と同じく�
 1. `t0` でバックアップを取得します。
 2. `t0 + 1 分` で 100 個の token を発行します。
 3. バックアップを復元します。
-4. 発行した 100 個の token が検証不能になっていることを確認します (これが正解 — chain が巻き戻っているためです)。
+4. 発行した 100 個の token が検証不能になっていることを確認します（これが正解 — chain が巻き戻っているためです）。
 5. 新規ログイン + token 発行が動くことを確認します。
 
 30 分の訓練 1 回が、書面の runbook より多くの問題を検出します。

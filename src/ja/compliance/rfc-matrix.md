@@ -29,7 +29,9 @@ pageClass: rfc-matrix-page pg-compliance-rfc-matrix
   <text class="rfc-text" x="636" y="248" text-anchor="middle">refused</text>
 
   <path class="rfc-flow" d="M190 140 C234 118 250 84 280 84"/>
+  <path class="rfc-flow" d="M272 80 L281 84 L272 88"/>
   <path class="rfc-flow" d="M190 140 C234 162 250 200 280 200"/>
+  <path class="rfc-flow" d="M272 196 L281 200 L272 204"/>
   <path class="rfc-flow" d="M458 82 C500 66 516 50 556 50"/>
   <path class="rfc-flow" d="M548 46 L557 50 L548 54"/>
   <path class="rfc-flow" d="M458 94 C500 100 516 110 556 110"/>
@@ -162,13 +164,13 @@ OIDC Core や周辺 OAuth 仕様には登場するものの、本ライブラリ
 - **CIBA の push / ping 配信モードは未実装。** Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告するので、クライアント側からこの 2 モードを交渉することはできません。
 - **Custom-grant ハンドラはリフレッシュトークン値を渡せません。** リフレッシュトークンを発行したいハンドラは `CustomGrantResponse.IssueRefreshToken` を立てます。OP が自分の `RefreshTokenStore` で資格情報を生成・永続化するため、親子関係、ローテーション、再利用時の連鎖失効、DPoP / mTLS バインディングが保たれます。クライアントが `refresh_token` grant に登録されていない場合でもアクセストークン応答は成功し、リフレッシュトークンだけが省略され、`custom_grant.refresh_dropped` が記録されます。
 
-## 範囲外(意図的)
+## 範囲外（意図的）
 
 OAuth / OIDC 圏のすべての RFC が OP の責務というわけではありません。以下は意図的に対応していない仕様で、リソースサーバ・クライアント SDK・その他のレイヤが受け持つべき領域です。
 
 | 仕様 | 対応状況 | 備考 |
 |---|---|---|
-| **RFC 9421 — HTTP Message Signatures** | <span class="status-pill out">out</span> | リソースサーバ(API 保護)側の関心事であり、OP の責務ではありません。OP 側の対応する仕組みは、認可リクエスト署名に JAR (RFC 9101)、認可レスポンス署名に JARM、`/token` と `/userinfo` の所持証明に DPoP (RFC 9449) です。RS 側の HTTP 署名は組み込み側で実装してください。 |
+| **RFC 9421 — HTTP Message Signatures** | <span class="status-pill out">out</span> | リソースサーバ（API 保護）側の関心事であり、OP の責務ではありません。OP 側の対応する仕組みは、認可リクエスト署名に JAR (RFC 9101)、認可レスポンス署名に JARM、`/token` と `/userinfo` の所持証明に DPoP (RFC 9449) です。RS 側の HTTP 署名は組み込み側で実装してください。 |
 
 ## 検証方法
 

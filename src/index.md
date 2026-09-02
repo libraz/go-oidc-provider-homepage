@@ -6,16 +6,17 @@ description: Mount an OIDC Provider (Authorization Server) on any Go http.Handle
 pageClass: pg-index
 ---
 
-<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="home-embed-title">go-oidc-provider mounts into an existing Go application as an http.Handler, wiring the OP endpoints to the application's own store, keyset, and logging.</title>
-<rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
+  <rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
   <text class="home-text" x="112" y="124" text-anchor="middle">Your Go app</text>
   <text class="home-sub" x="112" y="146" text-anchor="middle">router / middleware</text>
 
-  <rect class="home-main" x="302" y="78" width="156" height="110" rx="8"/>
-  <text class="home-text" x="380" y="116" text-anchor="middle">OIDC Provider</text>
-  <text class="home-sub" x="380" y="138" text-anchor="middle">http.Handler</text>
-  <text class="home-sub" x="380" y="156" text-anchor="middle">/oidc/auth /oidc/token /oidc/jwks</text>
+  <rect class="home-main" x="286" y="74" width="190" height="118" rx="8"/>
+  <text class="home-text" x="381" y="108" text-anchor="middle">OIDC Provider</text>
+  <text class="home-sub" x="381" y="130" text-anchor="middle">http.Handler</text>
+  <text class="home-sub" x="381" y="152" text-anchor="middle">/oidc/auth /oidc/token</text>
+  <text class="home-sub" x="381" y="170" text-anchor="middle">/oidc/jwks</text>
 
   <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
   <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
@@ -24,20 +25,20 @@ pageClass: pg-index
   <rect class="home-box" x="570" y="190" width="154" height="56" rx="8"/>
   <text class="home-text" x="647" y="224" text-anchor="middle">Logs / audit</text>
 
-  <path class="home-flow" d="M190 134 H298"/>
-  <text class="home-sub" x="244" y="120" text-anchor="middle">Mount</text>
-  <path class="home-flow" d="M290 130 L299 134 L290 138"/>
-  <path class="home-flow" d="M458 116 C504 86 520 62 566 62"/>
-  <path class="home-flow" d="M558 58 L567 62 L558 66"/>
-  <path class="home-flow" d="M458 134 H566"/>
-  <path class="home-flow" d="M558 130 L567 134 L558 138"/>
-  <path class="home-flow" d="M458 152 C504 178 520 218 566 218"/>
-  <path class="home-flow" d="M558 214 L567 218 L558 222"/>
+  <path class="home-flow" d="M190 133 H286"/>
+  <path class="home-flow" d="M277 129 L286 133 L277 137"/>
+  <text class="home-sub halo" x="238" y="137" text-anchor="middle">Mount</text>
+  <path class="home-flow" d="M476 116 C520 96 530 62 570 62"/>
+  <path class="home-flow" d="M561 58 L570 62 L561 66"/>
+  <path class="home-flow" d="M476 140 H570"/>
+  <path class="home-flow" d="M561 136 L570 140 L561 144"/>
+  <path class="home-flow" d="M476 164 C520 184 530 218 570 218"/>
+  <path class="home-flow" d="M561 214 L570 218 L561 222"/>
 </svg>
 
 ## Standard use cases
 
-Five things people most often build with this library. Click through to a working example.
+The five configurations people build most often with this library. Each one links to a runnable example in the upstream repository.
 
 ### 1. Stand up the smallest possible OP
 
@@ -96,7 +97,7 @@ handler, _ := op.New(
 ```
 
 ::: tip Why one switch is enough
-`op.WithProfile(profile.FAPI2Baseline)` activates the profile-required features (`PAR`, `JAR`), intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, selects DPoP unless mTLS was explicitly enabled, and tightens the discovery surface. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
+`op.WithProfile(profile.FAPI2Baseline)` enables the features the profile requires (`PAR`, `JAR`) and intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list. It selects DPoP unless you explicitly enabled mTLS, and tightens the discovery surface to match. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
 :::
 
 ### 3. Issue tokens to backend services (no end user)
@@ -184,11 +185,11 @@ handler, _ := op.New(
 ## Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v1.1.0
+go get github.com/libraz/go-oidc-provider/op@v1.2.0
 ```
 
 ::: info Stable API
-A configuration built with `op.New` and the bundled storage adapters generally upgrades unchanged, while embedders with BYO stores or other extensions should review the current migration guidance in [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md). Symbols marked `Experimental:` in godoc remain the ordinary minor-release exemption.
+A configuration built with `op.New` and the bundled storage adapters generally upgrades unchanged. If you bring your own store or another extension, read the current migration guidance in [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) before upgrading. Symbols marked `Experimental:` in godoc remain the ordinary minor-release exemption.
 :::
 
 ## License & related

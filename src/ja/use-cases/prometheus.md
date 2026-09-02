@@ -1,6 +1,6 @@
 ---
 title: Prometheus メトリクス
-description: issuer を固定ラベルに持つ v1.1 の業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
+description: issuer を固定ラベルに持つ業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
 ---
 
 # 使い方 — Prometheus メトリクス
@@ -69,4 +69,4 @@ Dynamic client の `client_id` は生の label として出しません。label 
 1. **registry の所有権** — 組み込み側はカーディナリティと collector 一覧の監査を 1 か所にまとめるため、プロセス全体で単一の `prometheus.Registry` を維持することが多いものです。ライブラリが自前 registry を作るとそれを分断してしまいます。
 2. **パス / 認証の所有権** — `/metrics` は認証ゲートの背後、あるいは別 listener 専用に置かれることが多く、組み込み側の選択を予測できません。パスのマウントは組み込み側に委ねます。
 
-同じ分離方針はトレーシングにも適用されます。`op.WithLogger` / `op.WithAuditLogger` は `*slog.Logger` を受け取りますが、HTTP サーバセマンティクスの OpenTelemetry スパンは組み込み側の `otelhttp.NewMiddleware` 側に委ねます。OP は業務系・リクエスト／レスポンスのライフサイクルを含め、組み込みの tracing span を発行しません。追加の業務段階を測る場合は組み込み側で計装してください。
+同じ分離方針はトレーシングにも適用されます。`op.WithLogger` / `op.WithAuditLogger` は `*slog.Logger` を受け取りますが、HTTP サーバセマンティクスの OpenTelemetry スパンは組み込み側の `otelhttp.NewMiddleware` 側に委ねます。OP は業務系・リクエスト / レスポンスのライフサイクルを含め、組み込みの tracing span を発行しません。追加の業務段階を測る場合は組み込み側で計装してください。

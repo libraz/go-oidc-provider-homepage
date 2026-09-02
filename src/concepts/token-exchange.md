@@ -55,52 +55,52 @@ Modern threat models prefer delegation — the audit chain is intact, revocation
   <line x1="30" y1="190" x2="730" y2="190" stroke-width="1" stroke-opacity=".12"/>
   <line x1="30" y1="384" x2="730" y2="384" stroke-width="1" stroke-opacity=".12"/>
   <!-- ===== Band 1: plain forwarding ===== -->
-  <text class="tx-band" x="30" y="82">Plain forwarding — no exchange</text>
+  <text class="tx-band halo" x="30" y="82">Plain forwarding — no exchange</text>
   <line x1="86" y1="108" x2="282" y2="108"/>
   <polyline points="276,104 282,108 276,112"/>
-  <text class="tx-mono" x="184" y="100" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
+  <text class="tx-mono halo" x="184" y="100" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
   <line x1="282" y1="142" x2="674" y2="142"/>
   <polyline points="668,138 674,142 668,146"/>
-  <text class="tx-mono" x="478" y="134" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
+  <text class="tx-mono halo" x="478" y="134" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
   <path d="M674,166 h12 v8 h-12"/>
   <polyline points="679,171 674,174 679,177"/>
-  <text class="tx-note" x="666" y="173" text-anchor="end">aud is service-a, not me → reject</text>
+  <text class="tx-note halo" x="666" y="173" text-anchor="end">aud is service-a, not me → reject</text>
   <!-- ===== Band 2: impersonation ===== -->
-  <text class="tx-band" x="30" y="206">Impersonation exchange</text>
+  <text class="tx-band halo" x="30" y="206">Impersonation exchange</text>
   <line x1="86" y1="232" x2="282" y2="232"/>
   <polyline points="276,228 282,232 276,236"/>
-  <text class="tx-mono" x="184" y="224" text-anchor="middle">Bearer sub=alice</text>
+  <text class="tx-mono halo" x="184" y="224" text-anchor="middle">Bearer sub=alice</text>
   <line x1="282" y1="268" x2="478" y2="268"/>
   <polyline points="472,264 478,268 472,272"/>
-  <text class="tx-mono" x="380" y="252" text-anchor="middle">grant_type=token-exchange</text>
-  <text class="tx-mono" x="380" y="262" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+  <text class="tx-mono halo" x="380" y="252" text-anchor="middle">grant_type=token-exchange</text>
+  <text class="tx-mono halo" x="380" y="262" text-anchor="middle">subject_token=&lt;alice&gt;</text>
   <line x1="282" y1="302" x2="478" y2="302"/>
   <polyline points="288,298 282,302 288,306"/>
-  <text class="tx-mono" x="380" y="294" text-anchor="middle">sub=alice, aud=service-b</text>
+  <text class="tx-mono halo" x="380" y="294" text-anchor="middle">sub=alice, aud=service-b</text>
   <line x1="282" y1="336" x2="674" y2="336"/>
   <polyline points="668,332 674,336 668,340"/>
-  <text class="tx-mono" x="478" y="328" text-anchor="middle">Bearer sub=alice</text>
+  <text class="tx-mono halo" x="478" y="328" text-anchor="middle">Bearer sub=alice</text>
   <path d="M674,360 h12 v8 h-12"/>
   <polyline points="679,365 674,368 679,371"/>
-  <text class="tx-note" x="666" y="367" text-anchor="end">alice acted alone — no record of A</text>
+  <text class="tx-note halo" x="666" y="367" text-anchor="end">alice acted alone — no record of A</text>
   <!-- ===== Band 3: delegation ===== -->
-  <text class="tx-band" x="30" y="400">Delegation exchange</text>
+  <text class="tx-band halo" x="30" y="400">Delegation exchange</text>
   <line x1="86" y1="426" x2="282" y2="426"/>
   <polyline points="276,422 282,426 276,430"/>
-  <text class="tx-mono" x="184" y="418" text-anchor="middle">Bearer sub=alice</text>
+  <text class="tx-mono halo" x="184" y="418" text-anchor="middle">Bearer sub=alice</text>
   <line x1="282" y1="462" x2="478" y2="462"/>
   <polyline points="472,458 478,462 472,466"/>
-  <text class="tx-mono" x="380" y="446" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-  <text class="tx-mono" x="380" y="456" text-anchor="middle">+ actor_token=&lt;A&gt;</text>
+  <text class="tx-mono halo" x="380" y="446" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+  <text class="tx-mono halo" x="380" y="456" text-anchor="middle">+ actor_token=&lt;A&gt;</text>
   <line x1="282" y1="496" x2="478" y2="496"/>
   <polyline points="288,492 282,496 288,500"/>
-  <text class="tx-mono" x="380" y="488" text-anchor="middle">sub=alice, act={sub: service-a}</text>
+  <text class="tx-mono halo" x="380" y="488" text-anchor="middle">sub=alice, act={sub: service-a}</text>
   <line x1="282" y1="530" x2="674" y2="530"/>
   <polyline points="668,526 674,530 668,534"/>
-  <text class="tx-mono" x="478" y="522" text-anchor="middle">Bearer sub=alice, act={sub: service-a}</text>
+  <text class="tx-mono halo" x="478" y="522" text-anchor="middle">Bearer sub=alice, act={sub: service-a}</text>
   <path d="M674,554 h12 v8 h-12"/>
   <polyline points="679,559 674,562 679,565"/>
-  <text class="tx-note" x="666" y="561" text-anchor="end">alice via service-a → policy decides</text>
+  <text class="tx-note halo" x="666" y="561" text-anchor="end">alice via service-a → policy decides</text>
 </svg>
 
 The difference shows up in audit trails (Service B knows who actually originated the call) and in policy (Service B can require an actor when the operation is sensitive).
@@ -110,12 +110,18 @@ The difference shows up in audit trails (Service B knows who actually originated
 The library's RFC 8693 handler is opinionated about a few things the spec leaves to deployment policy:
 
 - **`act` chain is built on the OP side**, not handed in by the caller. Whenever `actor_token` differs from `subject_token`, the OP populates `act` from the actor's verified credentials. A caller cannot fabricate an `act` claim.
-- **Audience must be explicit and allow-listed.** RFC 8707 audiences (the `audience` / `resource` parameters) are normalised, and the policy decides which audiences this client may target.
+- **Audience is normalised and allow-listed.** RFC 8707 `audience` / `resource` parameters are normalised before policy evaluation; when both are omitted, the subject token's audience supplies the default. The client must be authorised for every resulting audience.
 - **Scope is intersected**, not unioned. The issued token's scope is the intersection of (requested scope, `subject_token`'s scope, calling client's allow-list). RFC 8693 §3.1 permits scope reduction; the OP forbids inflation.
 - **TTL is capped** by the minimum of (handler request, `subject_token` remaining lifetime, OP global ceiling). A long-lived token cannot be laundered into a longer one.
 - **`cnf` is rebound to the calling actor.** If Service A presents a DPoP proof on the exchange request, the issued token's `cnf.jkt` matches Service A's DPoP key — not the user's, not the subject_token's. Service B verifies the DPoP proof against the new token's `cnf`.
 
 These rules are enforced **before** the embedder-supplied [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) is consulted. The policy can narrow further (deny audiences, deny actor combos) but cannot widen — the OP-computed defaults are a floor.
+
+### Resource and audience normalisation
+
+The OP applies one comparison form to URI-shaped `resource` and `audience` values across token exchange and the other resource-indicator surfaces. A URI value must be absolute and include both a scheme and a host. The OP lowercases the scheme and host, removes the default port (`80` for `http` and `443` for `https`), and removes trailing slashes from the path; path case is preserved. Query text and non-default ports are preserved verbatim. Fragments and userinfo are rejected, so values such as `https://trusted@example.com/api` or `https://api.example.com/api#v1` never match an allow-list entry.
+
+For example, `https://API.Example.com:443/v1/?tenant=acme` compares as `https://api.example.com/v1?tenant=acme`. A request that omits both `audience` and `resource` inherits the subject token's audience after the same normalisation. Logical audience labels that are not URI-shaped, including URNs, remain byte-exact; the OP does not lowercase or otherwise rewrite them.
 
 ## When you actually need it
 

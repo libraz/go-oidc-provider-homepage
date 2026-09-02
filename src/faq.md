@@ -7,11 +7,11 @@ pageClass: pg-faq
 
 # FAQ
 
-This page is the bottom of every section's "where do I look first?" answer. The questions below are not theoretical — every entry maps to something the maintainer hit while building examples or running the conformance harness, so if you are stuck on the same thing, the answer here is the one we use.
+Every question below came out of building the example suite or running the conformance harness. Nothing is here just because a FAQ ought to cover it. If you are stuck on one of them, the answer below is the one the project itself uses.
 
-<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="faq-route-title">How to use this FAQ: start at setup, move into the area you are working in such as FAPI or tokens, then finish at errors and adoption.</title>
-<rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
+<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="faq-route-title">How to use this FAQ: start at setup, move into the area you are working in such as FAPI or tokens, then finish at the error catalogue and the adoption questions.</title>
+  <rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
   <text class="faq-text" x="117" y="146" text-anchor="middle">Boot it first</text>
   <text class="faq-sub" x="117" y="168" text-anchor="middle">required options / issuer</text>
 
@@ -23,19 +23,28 @@ This page is the bottom of every section's "where do I look first?" answer. The 
   <text class="faq-text" x="380" y="222" text-anchor="middle">UI / SPA / MFA</text>
 
   <rect class="faq-box" x="566" y="76" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="108" text-anchor="middle">Errors</text>
-  <text class="faq-sub" x="643" y="126" text-anchor="middle">common failures</text>
+  <text class="faq-text" x="643" y="102" text-anchor="middle">Errors</text>
+  <text class="faq-sub" x="643" y="122" text-anchor="middle">common failures</text>
   <rect class="faq-box" x="566" y="172" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="204" text-anchor="middle">Adoption</text>
-  <text class="faq-sub" x="643" y="222" text-anchor="middle">production / disclosure</text>
+  <text class="faq-text" x="643" y="198" text-anchor="middle">Adoption</text>
+  <text class="faq-sub" x="643" y="218" text-anchor="middle">production / disclosure</text>
 
-  <path class="faq-flow" d="M194 152 C234 106 252 66 288 64"/>
-  <path class="faq-flow" d="M194 152 H288"/>
-  <path class="faq-flow" d="M194 152 C236 190 252 216 288 216"/>
-  <path class="faq-flow" d="M468 112 C510 110 526 108 562 108"/>
-  <path class="faq-flow" d="M554 104 L563 108 L554 112"/>
-  <path class="faq-flow" d="M468 188 C510 198 526 204 562 204"/>
-  <path class="faq-flow" d="M554 200 L563 204 L554 208"/>
+  <path class="faq-flow" d="M194 153 C240 150 250 64 292 64"/>
+  <path class="faq-flow" d="M283 60 L292 64 L283 68"/>
+  <path class="faq-flow" d="M194 153 C240 153 250 140 292 140"/>
+  <path class="faq-flow" d="M283 136 L292 140 L283 144"/>
+  <path class="faq-flow" d="M194 153 C240 156 250 216 292 216"/>
+  <path class="faq-flow" d="M283 212 L292 216 L283 220"/>
+
+  <path class="faq-flow" d="M468 64 C520 62 528 90 566 90"/>
+  <path class="faq-flow" d="M557 86 L566 90 L557 94"/>
+  <path class="faq-flow" d="M468 140 C520 138 528 107 566 107"/>
+  <path class="faq-flow" d="M557 103 L566 107 L557 111"/>
+  <path class="faq-flow" d="M468 216 C520 214 528 124 566 124"/>
+  <path class="faq-flow" d="M557 120 L566 124 L557 128"/>
+
+  <path class="faq-flow" d="M643 138 V172"/>
+  <path class="faq-flow" d="M639 163 L643 172 L647 163"/>
 </svg>
 
 <ul class="faq-index">
@@ -135,11 +144,11 @@ The profile is intentionally rigid — silently relaxing it would break the audi
 
 ### Baseline vs Message Signing — when do I need each?
 
+Message Signing is Baseline plus JARM. Pick it when your RP needs **non-repudiation** of the authorization request and response — an open-banking style audit chain, for example. Otherwise Baseline is enough.
+
 | Baseline | Message Signing |
 |---|---|
 | PAR + JAR + PKCE + DPoP / mTLS | + JARM (signed authorization response) |
-
-If your RP needs **non-repudiation** of the authorization request / response — e.g. open-banking style audit chain — pick Message Signing. Otherwise Baseline is enough.
 
 ### Can I run FAPI 2.0 without DPoP?
 
@@ -154,7 +163,7 @@ Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring
 That's the **rotation grace window**. The default is 60 seconds: if the rotation network round-trip dropped, presenting the previous refresh token within the window mints a fresh access token without rotating again. After the window, or if the chain was already revoked for reuse-detection, you get `invalid_grant`.
 
 ::: details Tune the window
-`op.WithRefreshGracePeriod(90 * time.Second)` widens it. `op.WithRefreshGracePeriod(0)` disables grace entirely (strict single-use); negative values are rejected at the option site. See <a class="doc-ref" href="/security/design-judgments">Design judgments §2</a>.
+For a non-FAPI profile, `op.WithRefreshGracePeriod(90 * time.Second)` widens it. Under `profile.FAPI2Baseline` or `profile.FAPI2MessageSigning`, explicit values from `0` through `60s` (inclusive; the default) are accepted and only a value above `60s` is rejected. `op.WithRefreshGracePeriod(0)` disables grace entirely (strict single-use); negative values are rejected at the option site. See <a class="doc-ref" href="/security/design-judgments">Design judgments §2</a>.
 :::
 
 ### Why didn't I get a refresh token?
@@ -215,7 +224,7 @@ No. The library never reads or writes your `users` table directly. You implement
 | `inmem` | Tests, demos, single-process dev |
 | `sql` (SQLite / MySQL / Postgres) | Single durable backend; easiest production path |
 | `redis` (volatile substores only) | Pair with `sql` via `composite` for hot/cold split |
-| `composite` | Hot/cold; the store enforces "one durable backend" at construction time |
+| `composite` | Hot/cold; all `TxClusterKinds` share one comparable transactional backend, while other kinds may route separately |
 | `dynamodb` | One-table-per-substore durable backend; `store.Transactional` supports the browser authorization-code flow. Experimental API. |
 
 See [/use-cases/sql-store](/use-cases/sql-store), [/use-cases/dynamodb-store](/use-cases/dynamodb-store), and [/use-cases/hot-cold-redis](/use-cases/hot-cold-redis).
@@ -256,9 +265,9 @@ op.WithCORSOrigins("https://app.example.com")
 
 The library auto-derives the allowlist from registered redirect URIs when you don't pass one. See [/use-cases/cors-spa](/use-cases/cors-spa).
 
-The API CORS allowlist may derive redirect-URI origins; that does not authorize cross-origin interaction or end-session ceremonies. Those accept only the issuer origin and origins explicitly passed to `WithCORSOrigins`.
+The API CORS allowlist may derive redirect-URI origins; that does not authorize cross-origin interaction or end-session ceremonies. Those accept only the issuer origin and origins explicitly passed to `WithCORSOrigins`, and a ceremony origin must be same-site with the issuer. A genuinely cross-site explicit origin may pass preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies, including `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` (`SameSite=Strict`), and `__Host-oidc_logout_csrf` (`SameSite=Strict`), so interaction and end-session requests return `404`. Put ceremony UI on an issuer-sibling host, such as `login.example.com` alongside `op.example.com`.
 
-### Can I customise the consent screen without forking the library?
+### Can I customize the consent screen without forking the library?
 
 Yes. There are three supported paths:
 
@@ -278,7 +287,7 @@ The library ships building blocks (`op.PrimaryPassword`, `op.StepTOTP`, `op.Rule
 
 `op.RuleACR(level)` on the per-client policy. When the RP requests a higher `acr_values` than the current session provides, the OP returns `WWW-Authenticate: error="insufficient_user_authentication"` (RFC 9470). The session steps up through your authenticator chain and resumes. [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up).
 
-### Risk-based MFA?
+### Can I trigger MFA only when the risk score is high?
 
 `op.RuleRisk(...)` consumes a `RiskAssessor` you supply. `RiskOutcome` carries an explicit `RiskScore`. See [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa).
 
@@ -338,7 +347,7 @@ Every event carries `request-id`, `subject`, `client-id`, plus an `extras` map f
 
 ### Why does the OFCS status show REVIEW as well as PASSED?
 
-OFCS records several outcomes. A raw `FAILED` normally means the suite did not observe the expected result; it is not automatically a release blocker only when the strict verifier matches it to a reviewed, unexpired exclusion:
+OFCS records several outcomes, and only `PASSED` means "ran clean". A raw `FAILED` means the suite did not observe the expected result, and it blocks the release unless the strict verifier matches it to a reviewed, unexpired exclusion:
 
 | Verdict | What it means |
 |---|---|
@@ -386,7 +395,7 @@ You re-visited `/oidc/auth?request_uri=…` after the authorization code was alr
 
 ### Should I use this in production?
 
-Read <a class="doc-ref" href="/security/posture">Security posture</a> — specifically the "What is **not** here" block — and decide. Short version: fine for internal-only deployments where you control the RP / OP / users; not a fit if you need a paid audit trail or formal certification to ship.
+It is a reasonable fit for internal-only deployments where you control the RP, the OP, and the users. It is not a fit if you need a paid audit trail or a formal certification to ship. Read <a class="doc-ref" href="/security/posture">Security posture</a> — specifically the "What is **not** here" block — before you decide.
 
 ### How do I report a security issue?
 

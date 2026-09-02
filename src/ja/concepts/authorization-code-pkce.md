@@ -29,7 +29,8 @@ pageClass: pg-concepts-authorization-code-pkce
 
 ## 完全なシーケンス
 
-<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 684 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 760 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(38,0)">
   <title id="acpkce-seq-title">認可コード + PKCE のシーケンス: ブラウザ、Relying Party、OpenID Provider、Resource Server の間で、ログインから PKCE 検証付きトークン発行、Bearer トークンでの API 呼び出しまでのやり取りを示す図。</title>
   <defs>
     <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
@@ -151,6 +152,7 @@ pageClass: pg-concepts-authorization-code-pkce
   <text class="num" x="12" y="699" text-anchor="middle">21</text>
   <path class="msg" d="M610 696 H250" marker-end="url(#acp-ah)"/>
   <text class="mono" x="520" y="691" text-anchor="middle">200 { user data }</text>
+  </g>
 </svg>
 
 ## パラメータ用語集
@@ -248,5 +250,5 @@ PKCE はコードを **正規 RP のみが知る秘密** にバインドしま�
 
 ## 次に読むもの
 
-- [送信者制約 (DPoP / mTLS)](/ja/concepts/sender-constraint) — PKCE を「アクセストークンはそれを得たクライアントだけが使える」に格上げする方法。
+- [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — PKCE を「アクセストークンはそれを得たクライアントだけが使える」に格上げする方法。
 - [リフレッシュトークン](/ja/concepts/refresh-tokens) — アクセストークンが期限切れになったら何をするか。

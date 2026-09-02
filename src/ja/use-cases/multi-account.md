@@ -57,11 +57,11 @@ RP-Initiated Logout はデフォルトでこの group を対象にします。`l
   <text class="d-ph" x="10" y="64">1 · 初回ログイン</text>
   <path d="M120 84 H380"/><path d="M374 80 L380 84 L374 88"/>
   <text class="d-lbl" text-anchor="middle" x="250" y="77"><tspan class="d-mono">GET /authorize</tspan>（prompt なし）</text>
-  <rect x="268" y="94" width="224" height="24" rx="5"/>
-  <text class="d-lbl" text-anchor="middle" x="380" y="110">有効セッションなし → ログインフロー実行</text>
+  <rect class="d-act" x="268" y="94" width="224" height="24" rx="5"/>
+  <text class="d-lbl" text-anchor="middle" x="380" y="110">有効セッションなし → ログイン実行</text>
   <path d="M120 138 H380"/><path d="M374 134 L380 138 L374 142"/>
   <text class="d-lbl" text-anchor="middle" x="250" y="131">ログイン — <tspan class="d-mono">alice@acme.com</tspan></text>
-  <rect x="268" y="148" width="224" height="36" rx="5" class="d-op"/>
+  <rect x="268" y="148" width="224" height="36" rx="5" class="d-op d-act"/>
   <text class="d-mono d-acc" text-anchor="middle" x="380" y="164">Sessions.Issue</text>
   <text class="d-lbl" text-anchor="middle" x="380" y="178">新規 chooser group</text>
   <path d="M380 204 H120"/><path d="M126 200 L120 204 L126 208"/>
@@ -73,11 +73,11 @@ RP-Initiated Logout はデフォルトでこの group を対象にします。`l
   <text class="d-ph" x="10" y="252">2 · アカウント追加</text>
   <path d="M120 274 H380"/><path d="M374 270 L380 274 L374 278"/>
   <text class="d-mono" text-anchor="middle" x="250" y="267">GET /authorize?prompt=login</text>
-  <rect x="268" y="284" width="224" height="24" rx="5"/>
+  <rect class="d-act" x="268" y="284" width="224" height="24" rx="5"/>
   <text class="d-lbl" text-anchor="middle" x="380" y="300">有効セッション + <tspan class="d-mono">prompt=login</tspan></text>
   <path d="M120 328 H380"/><path d="M374 324 L380 328 L374 332"/>
   <text class="d-lbl" text-anchor="middle" x="250" y="321">ログイン — <tspan class="d-mono">alice@personal.com</tspan></text>
-  <rect x="268" y="338" width="224" height="36" rx="5" class="d-op"/>
+  <rect x="268" y="338" width="224" height="36" rx="5" class="d-op d-act"/>
   <text class="d-mono d-acc" text-anchor="middle" x="380" y="354">AddAccount</text>
   <text class="d-lbl" text-anchor="middle" x="380" y="368">既存 group に追加</text>
   <path d="M380 394 H120"/><path d="M126 390 L120 394 L126 398"/>
@@ -94,7 +94,7 @@ RP-Initiated Logout はデフォルトでこの group を対象にします。`l
   <path d="M120 528 H380"/><path d="M374 524 L380 528 L374 532"/>
   <text class="d-mono" text-anchor="middle" x="250" y="521">POST /interaction/{uid}</text>
   <text class="d-mono d-sm d-mut" text-anchor="middle" x="250" y="542">{ state_ref, values: { session_id } }</text>
-  <rect x="268" y="552" width="224" height="36" rx="5" class="d-op"/>
+  <rect x="268" y="552" width="224" height="36" rx="5" class="d-op d-act"/>
   <text class="d-mono d-acc" text-anchor="middle" x="380" y="568">Sessions.Switch</text>
   <text class="d-lbl" text-anchor="middle" x="380" y="582">アクティブセッション切替</text>
   <path d="M380 608 H120"/><path d="M126 604 L120 608 L126 612"/>

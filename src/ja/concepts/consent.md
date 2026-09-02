@@ -6,7 +6,7 @@ pageClass: pg-concepts-consent
 
 # 同意
 
-**同意（consent）** とは、ユーザが「このアプリにこの scope を渡してよい」と明示する意思表示です。OIDC Core 1.0 §3.1.2.4 はタイミングを条件付き（"OP MUST obtain authorization information from the End-User"）に留めていますが、本ライブラリのデフォルトは「クライアントが scope 集合を最初に要求したときに同意画面を出し、その回答を覚える」です。
+**同意（consent）** とは、ユーザが「このアプリにこの scope を渡してよい」と明示する意思表示です。OIDC Core 1.0 §3.1.2.4 はタイミングを条件付きに留めており、OP がエンドユーザから認可情報を取得することだけを要求しています。本ライブラリのデフォルトは、クライアントが scope 集合を最初に要求したときに同意画面を出し、その回答を覚えることです。
 
 ::: details このページで触れる仕様
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4（同意）、§3.1.2.1（`prompt`）
@@ -26,7 +26,8 @@ pageClass: pg-concepts-consent
 
 本ライブラリは authorize フローのたびに次の 4 つを評価します。
 
-<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 700 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 760 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(30,0)">
   <title id="consent-shown-decision-title">grant の状態に対する判定木: prompt=consent、grant が無い、要求 scope が既存 grant の範囲外、のいずれかで同意画面を表示し、それ以外は既存 grant が要求をカバーするためプロンプトなしで認可コードを発行する。</title>
   <rect x="24" y="28" width="270" height="48" rx="8"/>
   <rect x="24" y="120" width="270" height="48" rx="8"/>
@@ -67,6 +68,7 @@ pageClass: pg-concepts-consent
   <text class="edge" x="170" y="101">いいえ</text>
   <text class="edge" x="170" y="193">いいえ</text>
   <text class="edge" x="170" y="285">いいえ</text>
+  </g>
 </svg>
 
 | ケース | 挙動 |
@@ -83,6 +85,14 @@ pageClass: pg-concepts-consent
 
 本ライブラリは OIDC Core 1.0 §3.1.2.1 に沿ってこれらを適用します。`prompt=none` と `prompt=login` の併用は `interaction_required` で拒否します。
 :::
+
+## 終端 subject に対する coverage の再確認
+
+最初の coverage 判定は authorize 開始時点で参照できる subject を使います。`prompt=login`、`max_age` の期限切れ、RFC 9470 の step-up では、その後の認証で別の subject に結び付くことがあります。account chooser によるアカウント切替も同様です。認可コードを発行する前に、本ライブラリは要求された scope と `authorization_details` を終端 subject 自身の grant に対してもう一度判定します。その grant が要求をカバーしなければ、最初の subject の grant で認可することはなく、終端 subject に対する同意を取得するか、コードを発行せずにフローを終了します。
+
+## consent-only 発行時の認証コンテキスト
+
+認証 factor を実行せず、live session が残っている場合、認可コードと grant はその session の `auth_time`、`acr`、`amr` を保持します。同意画面への回答時刻で `auth_time` を置き換えたり、空の factor set で `acr` や `amr` を消したりしません。session の期限切れ、別タブでのログアウト、アカウント切替などで live context が残っていない場合は、存在しない認証コンテキストを作らず `login_required` で拒否します。
 
 ## ファーストパーティクライアント
 
@@ -141,6 +151,6 @@ RFC 9396 の `authorization_details` は deep equality でカバー判定しま�
 
 ## 次に読む
 
-- [使い方: ファーストパーティクライアント](/ja/use-cases/first-party) — 操作者側の scope カタログ、`op.WithFirstPartyClients`、監査ポスチャ。
+- [使い方: ファーストパーティクライアント](/ja/use-cases/first-party) — 操作者側の scope カタログ、`op.WithFirstPartyClients`、監査の方針。
 - [使い方: カスタム同意 UI](/ja/use-cases/custom-consent-ui) — `op.ConsentUI` の設定、テンプレート契約、CSRF の扱い。
 - [リファレンス: 監査イベント](/ja/reference/audit-events) — 本ライブラリが発火するすべての監査イベントと付随する extras。

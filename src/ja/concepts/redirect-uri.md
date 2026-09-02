@@ -34,20 +34,33 @@ RFC 9700 §4.1 はこれを閉じています。
 
 > **RFC 9700 §4.1（訳）** authorization server は `redirect_uri` パラメータを登録 URI と単純な文字列比較で照合しなければならない。pattern matching、ワイルドカード、部分一致を使ってはならない。
 
-本ライブラリはこれを文字通り実装します。クライアントが登録した文字列だけが、その登録を満たす唯一の文字列です。`https://app.example.com/cb` を登録したなら、リクエストは正確にそれでなければなりません — `https://app.example.com/cb/` でも、`https://APP.example.com/cb` でも、`https://app.example.com/cb?env=prod` でもありません。
+本ライブラリはこれを文字通り実装します。クライアントが登録した文字列だけが、その登録を満たす唯一の文字列です。`https://app.example.com/cb` を登録したなら、リクエストはこの文字列と 1 バイトも違ってはなりません。
 
-```text
-登録値:
-  https://app.example.com/cb
+<svg role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="redirect-exact-title">登録値と 1 バイトも違わない redirect_uri だけが一致する。末尾のスラッシュ、query パラメータの追加、host の大文字小文字、ポート番号の違いはいずれも不一致になる。</title>
+  <text x="24" y="18" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">登録値</text>
+  <rect x="24" y="28" width="712" height="40" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="44" y="53" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
+  <text x="24" y="98" style="fill:var(--vp-c-text-3);font-family:var(--vp-font-family-base);font-size:10.5px;font-weight:600;letter-spacing:.06em">authorize 要求で送られてきた値</text>
+  <line x1="24" y1="108" x2="736" y2="108" style="stroke:var(--vp-c-divider);stroke-width:1"/>
+  <text x="30" y="132" style="fill:var(--vp-c-brand-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✓</text>
+  <text x="56" y="132" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb</text>
+  <text x="470" y="132" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">完全一致 — 受理</text>
+  <text x="30" y="164" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="164" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">/</tspan></text>
+  <text x="470" y="164" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">末尾のスラッシュ</text>
+  <text x="30" y="196" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="196" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com/cb<tspan style="fill:var(--vp-c-danger-1);font-weight:700">?env=prod</tspan></text>
+  <text x="470" y="196" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">query パラメータの追加</text>
+  <text x="30" y="228" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="228" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://<tspan style="fill:var(--vp-c-danger-1);font-weight:700">APP</tspan>.example.com/cb</text>
+  <text x="470" y="228" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">ホスト名の大文字小文字が違う</text>
+  <text x="30" y="260" style="fill:var(--vp-c-danger-1);font-family:var(--vp-font-family-base);font-size:13px;font-weight:700">✗</text>
+  <text x="56" y="260" style="fill:var(--vp-c-text-1);font-family:var(--vp-font-family-mono);font-size:12.5px">https://app.example.com<tspan style="fill:var(--vp-c-danger-1);font-weight:700">:8443</tspan>/cb</text>
+  <text x="470" y="260" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-base);font-size:11.5px">ポート番号が違う</text>
+</svg>
 
-NG:
-  https://app.example.com/cb/
-  https://APP.example.com/cb
-  https://app.example.com/cb?env=prod
-
-OK:
-  https://app.example.com/cb
-```
+拒否される行はいずれも登録値と 1 〜 2 文字しか違いません。OP はそのどれも正規化しません。2 つの文字列を比較して、それで終わりです。唯一の例外が後述の loopback の緩和で、native client だけがポート番号を変えられます。
 
 ## 本ライブラリが拒否する形
 

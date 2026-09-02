@@ -17,8 +17,9 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 
 This page is a flat reference of the public `op.New` options. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
 
-<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 700 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 760 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="opt-decision-title">Decision tree routing a configuration goal — fresh OP, FAPI switch, single feature, grant restriction, sender-constraint, or token format — to the op.New option that handles it, falling through to the full table.</title>
+  <g transform="translate(30 0)">
   <rect x="24" y="24" width="300" height="52" rx="6"/>
   <text class="od-b od-t1" x="174" y="54" text-anchor="middle">Booting a fresh OP?</text>
   <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>
@@ -80,7 +81,8 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
   <path d="M170 447 L174 454 L178 447"/>
   <text class="od-s od-t2" x="190" y="450">No</text>
   <rect x="24" y="456" width="652" height="48" rx="6"/>
-  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">None match — browse the full option table below by section.</text>
+  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">Full option table below</text>
+  </g>
 </svg>
 
 - **You're booting a fresh OP for the first time** → start with [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), and usually [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). `WithCookieKeys` is required when `authorization_code` is enabled, which is the default grant set. See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
@@ -96,7 +98,7 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
 - **You want to extend the scope catalog** → `WithScope(op.PublicScope("name", "label"))` for OIDC-discovery-visible scopes, `WithScope(op.InternalScope("name"))` for internal-only ones. See [Concepts: scopes and claims](/concepts/scopes-and-claims) and [Use case: scopes](/use-cases/scopes).
 - **You want a custom `grant_type`** → `WithCustomGrant(handler)`. See [Use case: custom grant](/use-cases/custom-grant).
 - **You want internationalization (i18n)** → `WithDefaultLocale(...)`, `WithLocale(bundle)`, `WithPreferredLocaleStore(...)`. See [Use case: i18n](/use-cases/i18n).
-- **You want JWE encryption of id_token / userinfo / JARM / introspection** → `WithEncryptionKeyset(...)` and optionally `WithSupportedEncryptionAlgs(algs, encs)` to narrow the default allow-list. See [Use case: JWE encryption](/use-cases/jwe-encryption).
+- **You want JWE request-object decryption** → `WithEncryptionKeyset(...)` for the OP's inbound JWE keys, and optionally `WithSupportedEncryptionAlgs(algs, encs)` to narrow the default allow-list. Outbound JWE responses use keys from the recipient client's JWKS. See [Use case: JWE encryption](/use-cases/jwe-encryption).
 - **You want CORS for SPA clients** → `WithCORSOrigins(...)`. See [Use case: CORS for SPA](/use-cases/cors-spa).
 - **You want Prometheus metrics** → `WithPrometheus(registry)`. The library does not mount `/metrics`; expose the registry from your own router. See [Use case: Prometheus metrics](/use-cases/prometheus).
 - **You want audit logging on a separate sink from app logs** → `WithAuditLogger(*slog.Logger)`. See [Audit event catalog](/reference/audit-events).
@@ -151,7 +153,7 @@ Leaving `WithAuthnLockoutStore` unset disables cross-factor tracking, so only th
 
 Authentication-factor records are intentionally outside `store.Store`. `StepTOTP`, `PrimaryPasskey`, `StepRecoveryCode`, and `StepEmailOTP` receive their own stores because enrollment schema, encryption keys, and account-recovery policy belong to the embedding application. In-memory, SQL, and DynamoDB adapters expose the matching accessors. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) uses the shipped SQL adapter's factor stores alongside the core OP tables; implement the factor-store contracts yourself only for another backend.
 
-Two factor-store contracts matter for durability-sensitive deployments. `store.EmailOTPStore.Get` must keep records readable until `EmailOTPRecord.RetainUntil`, not merely until the code's `ExpiresAt`, so resend caps and brute-force counters survive an expired code. `store.RecoveryStore.Consume` must compare the presented code hash with the currently stored slot and reject stale hashes, so regenerated recovery batches revoke old leaked codes instead of burning a slot in the new batch. TOTP and email-OTP `Version` values are opaque, store-issued equality tokens for compare-and-swap; do not infer ordering or manufacture them. A stale CAS returns the consumed/stale error. `PasskeyStore.Put` must atomically refuse a duplicate credential ID when it names a different subject; it must never move that credential between subjects.
+Two factor-store contracts matter for durability-sensitive deployments. `store.EmailOTPStore.Get` must keep records readable until `EmailOTPRecord.RetainUntil`, not merely until the code's `ExpiresAt`, so resend caps and brute-force counters survive an expired code. `store.RecoveryStore.Consume` must compare the presented code hash with the currently stored slot and reject stale hashes, so regenerated recovery batches revoke old leaked codes instead of burning a slot in the new batch. TOTP and email-OTP `Version` values are opaque, store-issued equality tokens for compare-and-swap; do not infer ordering or manufacture them. A stale CAS returns the consumed/stale error. `PasskeyStore.Put` must atomically refuse a duplicate credential ID when it names a different subject; `PasskeyStore.Put` must never move that credential between subjects.
 
 ## UI
 
@@ -160,12 +162,14 @@ Two factor-store contracts matter for durability-sensitive deployments. `store.E
 | `WithSPAUI` | `op.SPAUI` (struct: `LoginMount` / `ConsentMount` / `LogoutMount` / `StaticDir`) | mounts the SPA shell and static asset tree while the OP serves the JSON interaction state surface. Only `LoginMount` is a route; `ConsentMount` and `LogoutMount` are retained for compatibility, validated as paths, and inert/deprecated. | off |
 | `WithConsentUI` | `op.ConsentUI` (wraps a `*html/template.Template`) | renders consent with an embedder-supplied HTML template; OP still owns state, CSRF, and persistence | bundled template |
 | `WithChooserUI` | `op.ChooserUI` (wraps a `*html/template.Template`) | renders `prompt=select_account` with an embedder-supplied HTML template | bundled template |
-| `WithCORSOrigins` | `...string` | explicit origins added to the API CORS allowlist. Redirect-URI origins may be derived for API CORS, but interaction and end-session ceremony checks allow only the issuer origin plus these explicit origins. | derived for API routes; issuer-only for ceremonies |
+| `WithCORSOrigins` | `...string` | explicit origins added to the API CORS allow-list. Redirect-URI origins may be derived for API CORS, but interaction and end-session ceremony checks allow only the issuer origin plus these explicit origins. | derived for API routes; issuer-only for ceremonies |
 | `WithDefaultLocale` | `op.Locale` (BCP 47 tag) | canonicalized BCP 47 default UI locale when the request carries no `ui_locales`; an unregistered default fails `op.New` | `"en"` |
 | `WithLocale` | `op.LocaleBundle` (one per call; repeatable) | registers a per-locale message bundle for the bundled HTML driver | English + Japanese seed |
 | `WithPreferredLocaleStore` | `op.PreferredLocaleStore` | per-user locale override consulted at the head of the §L.2 chain | none |
 
 `WithSPAUI` is mutually exclusive with `WithConsentUI`: both own the consent rendering surface. `WithSPAUI.LoginMount` is the only SPA route; `ConsentMount` and `LogoutMount` no longer reserve routes. Consent uses the login interaction state surface, and built-in logout confirmation remains in the normal end-session flow. `WithChooserUI` may be configured alongside `WithSPAUI`, but SPA mode owns the chooser through the JSON state envelope; the chooser template is ignored and `op.New` emits a structured warning. See [Custom chooser UI](/use-cases/custom-chooser-ui).
+
+Ceremony origins must be same-site with the issuer. An issuer sibling such as `login.example.com` next to `op.example.com` is supported when it is listed here. A genuinely cross-site origin receives CORS headers without a working interaction or end-session ceremony: the `__Host-` cookies are `SameSite`-protected, so the browser withholds them and the endpoint returns 404. Host the UI on the issuer or a same-site sibling; the cookie attributes are not configurable.
 
 `WithLocale` canonicalizes locale tags to lowercase, hyphen-separated BCP 47 form. `Provider.SetLocaleCookie(w, locale)` and `Provider.ClearLocaleCookie(w)` are the public cookie seams; `SetLocaleCookie` resolves exact and language-only matches and returns `op.ErrLocaleNotRegistered` when no registered locale matches. The cookie is `__Host-oidc_locale`, secure, HttpOnly, SameSite=Lax, and independent of the login session.
 
@@ -179,10 +183,14 @@ Two factor-store contracts matter for durability-sensitive deployments. `store.E
 | `WithAccessTokenTTL` | `time.Duration` | access token lifetime | 5 min |
 | `WithRefreshTokenTTL` | `time.Duration` | refresh token lifetime (non-offline) | 30 days |
 | `WithRefreshTokenOfflineTTL` | `time.Duration` | refresh token lifetime when `offline_access` granted | inherits `WithRefreshTokenTTL` (zero value defers) |
-| `WithRefreshGracePeriod` | `time.Duration` (zero disables; negative rejected) | rotation grace window | 60 s |
+| `WithRefreshGracePeriod` | `time.Duration` (zero disables; negative rejected; FAPI 2.0 profiles accept 0–60 s) | rotation grace window | 60 s |
 | `WithDPoPNonceSource` | `op.DPoPNonceSource` (interface) | server-supplied DPoP nonce store (`op.NewInMemoryDPoPNonceSource` provides one) | none |
 
 `WithInMemoryDPoPNonceLogger` is a helper option for `op.NewInMemoryDPoPNonceSource`, not an `op.New` option. Use it only when you use the bundled in-memory nonce source.
+
+With `FAPI2Baseline` or `FAPI2MessageSigning`, the refresh-grace window is capped at 60 seconds: an explicit value from 0 through 60 seconds is accepted, while a wider value is a construction error. The profile does not force zero; omitting the option still resolves to the 60-second default. Without those profiles, the option accepts any non-negative duration.
+
+`WithAccessTokenFormat` and `WithAccessTokenFormatPerAudience` govern the access tokens issued by the built-in grant paths. A custom grant's `BoundAccessToken` is always minted as an RFC 9068 JWT, regardless of either option; a custom grant that needs an opaque value must mint it itself and return it as `AccessToken`.
 
 ## Discovery & endpoints
 
@@ -192,7 +200,7 @@ Two factor-store contracts matter for durability-sensitive deployments. `store.E
 | `WithMountPrefix` | `string` (must start with `/`; pass `/` for root) | embeds an issuer-relative path prefix | `/oidc` |
 | `WithClaimsSupported` | `...string` (variadic) | populates `claims_supported` in discovery | omitted |
 | `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported`; `false` rejects malformed JSON but suppresses the claims projection and ignores valid `claims` payloads at authorize / PAR | true |
-| `WithACRValuesSupported` | `...string` (variadic) | publishes `acr_values_supported`; FAPI / eIDAS / NIST 800-63 deployments use this to advertise honored ACR values | empty (omitted from discovery) |
+| `WithACRValuesSupported` | `...string` (variadic) | publishes `acr_values_supported`; when non-empty, the same allow-list is enforced on `/authorize`, `/par`, and CIBA `/bc-authorize` | empty (omitted from discovery; no allow-list) |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata` (typed `service_documentation`, policy / TOS / UI locale / mTLS alias fields plus `Extra map[string]any`) | injects RFC 8414 / OIDC Discovery metadata not owned by the OP; `UILocalesSupported` overrides the auto-derived locale list when non-empty, and `Extra` keys that collide with OP-controlled fields are rejected | none |
 | `WithPARLifetime` | `time.Duration` | overrides the lifetime of `request_uri` values issued by `/par`; expiry is checked when the browser presents the URI at `/authorize`, while later code emission remains single-use | 60 s |
 | `WithJWKSRotationActive` | `func() bool` | predicate that flips JWKS `Cache-Control` to short-cache during a rotation window | always long-cache |
@@ -236,7 +244,7 @@ See [Rich authorization requests](/use-cases/authorization-details), [Grant mana
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithEncryptionKeyset` | `op.EncryptionKeyset` (RSA ≥ 2048 / EC P-256/384/521 private keys, `use=enc`) | publishes encryption JWKs; required for inbound JWE request objects and outbound JWE responses (id_token / userinfo / JARM / introspection) | none |
+| `WithEncryptionKeyset` | `op.EncryptionKeyset` (RSA ≥ 2048 / EC P-256/384/521 private keys, `use=enc`) | publishes the OP's inbound-decryption JWKs and decrypts JWE request objects on `/authorize` and `/par`; outbound JWE responses use the recipient client's JWKS | none |
 | `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | narrows the default allow-list (`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`); cannot extend it | full allow-list |
 
 See [Use case: JWE encryption](/use-cases/jwe-encryption).
@@ -248,7 +256,7 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 | `WithMTLSRootCAs` | `*x509.CertPool` | optional public trust pool for OP-side validation of direct or forwarded client certificates; nil is rejected | unset (terminator validates) |
 | `WithMTLSProxy` | `(headerName string, trustedCIDRs []string)` | header-based mTLS termination at edge. The forwarded certificate is authoritative only for requests from the trusted CIDRs; `op.MTLSProxy` / `op.MTLSProxyConfig` are the public projection seams. | none |
 | `WithTrustedProxies` | `...string` (CIDRs) | resolves `X-Forwarded-*` / `Forwarded` to real client IP | none |
-| `WithTrustedProxyHosts` | `...string` (hostnames) | extends the `X-Forwarded-Host` allowlist beyond the canonical issuer host when trusted proxy CIDRs are configured | issuer host only |
+| `WithTrustedProxyHosts` | `...string` (hostnames) | extends the `X-Forwarded-Host` allow-list beyond the canonical issuer host when trusted proxy CIDRs are configured | issuer host only |
 | `WithAllowLocalhostLoopback` | _(no args)_ | admits textual `localhost` in the RFC 8252 loopback carve-out for dev / native-app demos, **and in the issuer itself**; literal `127.0.0.1` / `[::1]` remain the strict defaults | strict literal loopback only |
 | `WithAllowPrivateNetworkJWKS` | _(no args)_ | permits client JWKS hosted on RFC 1918 (test only) | denied |
 | `WithAllowPrivateNetworkJAR` | _(no args)_ | permits `request_uri` hosted on RFC 1918 (test only) | denied |
@@ -273,7 +281,7 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 | Option | Value | Section | Default |
 |---|---|---|---|
 | `WithSessionDurabilityPosture` | `op.SessionDurabilityPosture` | annotates back-channel logout audit events for SOC | volatile |
-| `WithClock` | `op.Clock` | time source (test injection) | `time.Now` |
+| `WithClock` | `op.Clock` | time source for token expiry, audit record timestamps, and rate-limit windows (test injection) | `time.Now` |
 
 ## What you do *not* configure here
 

@@ -10,7 +10,7 @@ pageClass: pg-use-cases-back-channel-logout
 
 ユーザは「Acme でサインイン」ボタンを介して、同じ OP に紐づく複数の RP にサインインしているのが普通です。あるアプリ（RP A）で **ログアウト** をクリックしても、他の RP B / RP C はそれぞれローカル cookie を保持したままなので、「アプリ A ではログアウトしたのにアプリ B ではログイン状態のまま」というズレが残ります。
 
-**バックチャネルログアウト** は、このズレを OP 側から閉じる 一斉通知 機構です。各 RP は OP に対してサーバサイドのコールバック URL を事前登録しておきます。セッション終了時、OP は **subject の grant から導出した対象 RP それぞれに、署名済み `logout_token` を直接 POST** します（ブラウザを経由しない＝バックチャネル）。RP はトークンを検証してローカル cookie を破棄します。
+**バックチャネルログアウト** は、このズレを OP 側から閉じる一斉通知機構です。各 RP は OP に対してサーバサイドのコールバック URL を事前登録しておきます。セッション終了時、OP は **subject の grant から導出した対象 RP それぞれに、署名済み `logout_token` を直接 POST** します（ブラウザを経由しない＝バックチャネル）。RP はトークンを検証してローカル cookie を破棄します。
 
 対になる仕組みとして *フロントチャネルログアウト* もありますが、こちらは `<iframe>` とサードパーティ cookie に依存しており、現代のブラウザでは段階的に動かなくなりつつあります。バックチャネル方式が現実的な選択肢です。
 
@@ -30,7 +30,7 @@ pageClass: pg-use-cases-back-channel-logout
 
 ## アーキテクチャ
 
-<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 764 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 760 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="bcl-arch-title">バックチャネルログアウトのシーケンス: RP A が /end_session を起動し、OP がセッションを終了して grant 由来の RP 対象 B と C に署名済み logout token を一斉通知したうえで RP A へリダイレクトする。</title>
 
   <path class="life" d="M70 48V372"/>
@@ -61,19 +61,19 @@ pageClass: pg-use-cases-back-channel-logout
   <text class="bn" x="70" y="85.5" text-anchor="middle">1</text>
 
   <text class="lb" x="300" y="104" text-anchor="middle">リダイレクト先</text>
-  <text class="lbm m" x="300" y="116" text-anchor="middle">/end_session?id_token_hint=&#8230;</text>
+  <text class="lbm m halo" x="300" y="116" text-anchor="middle">/end_session?id_token_hint=&#8230;</text>
   <path d="M220 124L380 124M373 120L380 124L373 128"/>
   <circle class="bg" cx="220" cy="124" r="8" stroke-width="1.5"/>
   <text class="bn" x="220" y="127.5" text-anchor="middle">2</text>
 
   <rect class="accent" x="326" y="138" width="108" height="26" rx="5"/>
-  <text class="lb" x="380" y="155" text-anchor="middle">セッション終了</text>
+  <text class="lb halo" x="380" y="155" text-anchor="middle">セッション終了</text>
   <circle class="bg" cx="312" cy="151" r="8" stroke-width="1.5"/>
   <text class="bn" x="312" y="154.5" text-anchor="middle">3</text>
 
   <rect class="frame" x="350" y="176" width="396" height="94" rx="8"/>
-  <text class="fr" x="360" y="193">grant 由来の RP 対象へ一斉通知</text>
-  <text class="lbm m" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = 署名 JWT</text>
+  <text class="fr halo" x="360" y="193">grant 由来の RP 対象へ一斉通知</text>
+  <text class="lbm m halo" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = 署名 JWT</text>
 
   <path class="accent" d="M380 228L540 228M533 224L540 228L533 232"/>
   <circle class="bg" cx="380" cy="228" r="8" stroke-width="1.5"/>
@@ -93,7 +93,7 @@ pageClass: pg-use-cases-back-channel-logout
   <circle class="bg" cx="700" cy="320" r="8" stroke-width="1.5"/>
   <text class="bn" x="700" y="323.5" text-anchor="middle">7</text>
 
-  <text class="lb" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
+  <text class="lb halo" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
   <path class="accent" d="M380 356L220 356M227 352L220 356L227 360"/>
   <circle class="bg" cx="380" cy="356" r="8" stroke-width="1.5"/>
   <text class="bn" x="380" y="359.5" text-anchor="middle">8</text>
@@ -106,7 +106,7 @@ OP は RP 毎に `logout_token` に署名して RP の `backchannel_logout_uri` 
 | `iss` | OP issuer |
 | `aud` | RP の `client_id` |
 | `iat`、`jti` | 発行時刻 + replay nonce |
-| `sub` | 終了したセッションの subject。`sid` は発行されません([後述](#backchannel-target-resolution)) |
+| `sub` | 終了したセッションの subject。`sid` は発行されません（[後述](#backchannel-target-resolution)） |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
 RP は署名と `aud` を検証し、ローカルセッションを破棄したうえで 200 を返します。
@@ -191,6 +191,10 @@ op.WithBackchannelAllowPrivateNetwork(true)
 
 通知先ページに `NextCursor` が付いて返った場合、上限を超える client が該当したということです。coordinator は黙って切り捨てず、その cursor を載せた overflow の監査イベントを出します。到達できない RP が 1 つあっても、一斉通知全体は失敗せず、その RP 個別の監査イベントとして現れます。
 
+detached 処理を開始する前に `/end_session` は snapshot を subject 単位でまとめるため、1 つの subject に複数のブラウザ session があっても fan-out は 1 回です。grant の問い合わせ結果も client ID 単位で重複排除されるため、対象 client ごとにその subject の Logout Token は最大 1 通だけ送られます。通知先の上限が数えるのも、この重複排除後の集合です。
+
+detached の通知先解決中に client registry への transport 障害が起きた場合は `op.AuditLogoutBackChannelResolveFailed` として記録し、正常な「client が存在しない」結果はイベントなしでスキップします。`/end_session` 自身の `id_token_hint` / `client_id` lookup には別の `op.AuditLogoutClientLookupFailed` があり、通信路上は一律の拒否、正常な「client が存在しない」結果はイベントなしです。詳細は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。
+
 `op.WithBackchannelFanOutBudget` はイベント全体の予算を変更します。各 RP のリクエストを制限する `op.WithBackchannelLogoutTimeout` とは独立しています。予算が切れると残りの通知先も失敗として記録され、detached 処理は収束します。プロセス終了時は `Provider.Shutdown(ctx)` が実行中の fan-out を待ちます。
 
 ::: tip `backchannel_logout_session_supported` は `false`
@@ -209,4 +213,4 @@ subject に grant 由来の対象 RP がない場合（すべての grant が失
 
 ## フロントチャネルログアウト（別の機構）
 
-OIDC Front-Channel Logout 1.0（ブラウザ側 iframe 一斉通知）は別仕様で、ライブラリは意図的に実装していません。Back-channel が配備可能な選択です — 第三者 cookie に依存せず、origin を跨いで動作し、一斉通知 時にユーザのブラウザが開いている必要もありません。
+OIDC Front-Channel Logout 1.0（ブラウザ側 iframe 一斉通知）は別仕様で、ライブラリは意図的に実装していません。Back-channel が配備可能な選択です — 第三者 cookie に依存せず、origin を跨いで動作し、一斉通知時にユーザのブラウザが開いている必要もありません。

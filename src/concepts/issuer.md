@@ -5,7 +5,14 @@ description: What the issuer URL is, why one canonical form matters, and what th
 
 # Issuer
 
-An **issuer** is the OP's identity URL. It appears in the `iss` claim of every token the OP signs, in the `issuer` field of `/.well-known/openid-configuration`, in the `iss` of every JWKS entry's parent metadata, and — depending on profile — in the `aud` of the `client_assertion` a confidential client signs to authenticate. It is the single string that ties a token, a signing key, and a discovery document back to the same OP.
+An **issuer** is the OP's identity URL. The same string appears in several places at once:
+
+- the `iss` claim of every token the OP signs,
+- the `issuer` field of `/.well-known/openid-configuration`,
+- the `iss` of every JWKS entry's parent metadata,
+- and — depending on the profile — the `aud` of the `client_assertion` a confidential client signs to authenticate.
+
+It is the single string that ties a token, a signing key, and a discovery document back to the same OP.
 
 ::: tip Mental model in 30 seconds
 - The issuer is **a URL**, not just a hostname. `https://login.example.com` is an issuer; `login.example.com` is not.

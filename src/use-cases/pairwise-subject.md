@@ -99,8 +99,9 @@ Where `sector_identifier` is:
 
 A client with multiple redirect-URI hosts and no `sector_identifier_uri` produces an unresolvable sector — the issuance fails with `server_error`. Operators MUST require `sector_identifier_uri` for clients that fan out across hosts.
 
-<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="pairwise-sub-fanout-title">One internal_user_id deriving a distinct pairwise sub for each of two RP sectors, where the sector is resolved from each client's sector_identifier_uri.</title>
+<g transform="translate(24,0)">
 <text class="d-cap" x="8" y="18">Pairwise sub fan-out</text>
 <text class="d-sub" x="8" y="34">one internal_user_id → a distinct sub per sector</text>
 <rect x="16" y="136" width="150" height="50" rx="8"/>
@@ -126,18 +127,19 @@ A client with multiple redirect-URI hosts and no `sector_identifier_uri` produce
 <path class="d-flow" d="M479 107 L486 112 L479 117"/>
 <path class="d-flow" d="M426 214 H486"/>
 <path class="d-flow" d="M479 209 L486 214 L479 219"/>
-<rect x="486" y="74" width="210" height="76" rx="8"/>
-<text class="d-lbl" x="500" y="94" font-weight="600">RP A</text>
-<text class="d-mono d-muted" x="500" y="112">sector_identifier_uri</text>
-<text class="d-mono" x="500" y="129">→ a.example.com</text>
-<text class="d-mono" x="500" y="146">sub = 7bQ…Xa</text>
-<rect x="486" y="178" width="210" height="76" rx="8"/>
-<text class="d-lbl" x="500" y="198" font-weight="600">RP B</text>
-<text class="d-mono d-muted" x="500" y="216">sector_identifier_uri</text>
-<text class="d-mono" x="500" y="233">→ b.example.com</text>
-<text class="d-mono" x="500" y="250">sub = k9P…Zb</text>
-<text class="d-mono d-op-t" x="591" y="168" text-anchor="middle">sub_A ≠ sub_B</text>
+<rect x="486" y="68" width="210" height="88" rx="8"/>
+<text class="d-lbl" x="500" y="88" font-weight="600">RP A</text>
+<text class="d-mono d-muted" x="500" y="107">sector_identifier_uri</text>
+<text class="d-mono" x="500" y="125">→ a.example.com</text>
+<text class="d-mono" x="500" y="143">sub = 7bQ…Xa</text>
+<rect x="486" y="170" width="210" height="88" rx="8"/>
+<text class="d-lbl" x="500" y="190" font-weight="600">RP B</text>
+<text class="d-mono d-muted" x="500" y="209">sector_identifier_uri</text>
+<text class="d-mono" x="500" y="227">→ b.example.com</text>
+<text class="d-mono" x="500" y="245">sub = k9P…Zb</text>
+<text class="d-mono d-op-t halo" x="591" y="167" text-anchor="middle">sub_A ≠ sub_B</text>
 <text class="d-mono" x="356" y="282" text-anchor="middle">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
+</g>
 </svg>
 
 ### `sector_identifier_uri` resolution

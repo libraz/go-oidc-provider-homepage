@@ -33,7 +33,9 @@ This page enumerates both.
   <text class="err-text" x="643" y="232" text-anchor="middle">HTML error page</text>
 
   <path class="err-flow" d="M202 94 C242 94 258 108 296 116"/>
+  <path class="err-flow" d="M288 112 L297 116 L288 120"/>
   <path class="err-flow" d="M202 210 C252 200 268 158 296 138"/>
+  <path class="err-flow" d="M288 134 L297 138 L288 142"/>
   <path class="err-flow" d="M460 112 C500 84 516 62 554 62"/>
   <path class="err-flow" d="M546 58 L555 62 L546 66"/>
   <path class="err-flow" d="M460 124 H554"/>
@@ -132,6 +134,8 @@ JSON. RFC 6749 §5.2 + RFC 9449 (DPoP).
 
 `401 invalid_client` carries `WWW-Authenticate: Basic realm="oidc"` — the realm is a fixed literal, not the issuer URL — when the client authenticated via HTTP Basic; `/userinfo`'s own 401s use a separate `Bearer realm="userinfo"` challenge, per RFC 6749 §5.2.
 
+Custom-grant dispatch keeps client-attributable failures in the 4xx catalog: an unsupported grant, a client grant-type restriction, malformed or duplicate parameters, and scope or audience policy failures map to `unsupported_grant_type`, `unauthorized_client`, `invalid_request`, `invalid_scope`, or `invalid_target`. An un-attributed dispatcher or OP issuance failure — including a handler panic, conflicting access-token forms, reserved-claim collisions, invalid token data, or a backing-store failure — returns `500 server_error`. A handler-provided `*op.Error` is preserved; another handler error defaults to `400 invalid_grant`.
+
 ## UserInfo endpoint (`/userinfo`)
 
 Bearer-token validation. RFC 6750 §3.1 + RFC 9449.
@@ -151,10 +155,11 @@ RFC 7662 / RFC 7009. Same client-auth code set as `/token`.
 |---|---|---|
 | `invalid_request` | 400 | missing `token` parameter |
 | `invalid_client` | 401 | client auth failed |
-| `unsupported_token_type` | 400 | `/revoke` only — token type not revocable |
 | `server_error` | 500 | internal failure |
 
-Failed client authentication at `/introspect` is also visible as `op.AuditIntrospectionError`; the wire response remains the generic `invalid_client`. `/revoke` follows the RFC 7009 response contract and does not use that introspection-specific audit name.
+`/revoke` supports both RFC 7009 token types, `access_token` and `refresh_token`, and never emits `unsupported_token_type`. An unknown or absent `token_type_hint` is handled as a search hint rather than a wire error; an unrecognized token still follows RFC 7009's idempotent HTTP 200 success contract.
+
+Failed client authentication at `/introspect` is also visible as `op.AuditIntrospectionError`; the wire response remains the generic `invalid_client`. A non-`NotFound` lookup fault in the opaque access-token or refresh-token store is audited with the same event. It still returns HTTP 200 with `{"active":false}` rather than `server_error`. A normal inactive miss emits no fault event. `/revoke` follows the RFC 7009 response contract and does not use that introspection-specific audit name.
 
 ## PAR endpoint (`/par`)
 

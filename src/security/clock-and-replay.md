@@ -32,7 +32,7 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | Refresh token (rotation grace) | acceptance of the just-rotated previous token | `refresh.GraceTTLDefault = 60 s` (configurable via `op.WithRefreshGracePeriod`) | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 | DPoP proof — `iat` window | symmetric tolerance around server time | 60 s | [/concepts/dpop](/concepts/dpop) |
 | DPoP proof — `jti` cache | dedup against replay | approximately 120 s | [/concepts/dpop](/concepts/dpop) |
-| JAR (RFC 9101) request object — `jti` cache | dedup against replay | OP-side cache evicted at the request object's own `exp` | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
+| JAR (RFC 9101) request object — `jti` cache | dedup against replay | server-bounded expiry: `max(exp, now + max-age)`, capped at `now + max(max-age, maxLifetime)`, then clock skew | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
 | JAR — future skew | `nbf` / `iat` tolerance | `jar.DefaultMaxFutureSkew = 60 s` | [/security/design-judgments#dj-6](/security/design-judgments#dj-6) |
 | PAR (RFC 9126) `request_uri` lifetime | one-time, short-lived | `parendpoint.DefaultTTL = 60 s` | [/concepts/fapi](/concepts/fapi) |
 | Back-Channel Logout token | OP signs once, RP dedups | OP does not enforce a `jti` cache; RP-side responsibility | [/use-cases/back-channel-logout](/use-cases/back-channel-logout) |
@@ -41,17 +41,17 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | Refresh token (absolute lifetime) | `exp` from issuance | `timex.RefreshTokenTTLDefault = 30 days` | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 | `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
 
-The constants in the "Default window" column are the source of truth for the current core. The table intentionally does not turn every application-configurable TTL into a promise: `With*` options and active profiles can narrow or replace many defaults. Recheck the linked source and tests when upgrading the core.
+The constants in the "Default window" column are the source of truth for the current core. For JAR, the request object's `exp` does not control retention by itself: the verifier's maximum lifetime ceiling (when configured) and its `max-age` floor bound the marker, with clock skew added. The table intentionally does not turn every application-configurable TTL into a promise: `With*` options and active profiles can narrow or replace many defaults. Recheck the linked source and tests when upgrading the core.
 
 The same selected windows, drawn to scale on a logarithmic time axis, show the broad shape: replay and clock windows cluster around a minute, token lifetimes step up to minutes, and the refresh token's absolute lifetime reaches 30 days.
 
-<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 752 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 760 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="clock-replay-window-scale-title">Logarithmic comparison of every clock and replay window go-oidc-provider enforces, from the 60-second replay band to the 30-day refresh-token lifetime.</title>
 <line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
-<line class="d-grid" x1="374.9" y1="58" x2="374.9" y2="362"/>
-<line class="d-grid" x1="449.6" y1="58" x2="449.6" y2="362"/>
-<line class="d-grid" x1="582.1" y1="58" x2="582.1" y2="362"/>
-<line class="d-grid" x1="724" y1="58" x2="724" y2="362"/>
+<line class="d-grid" x1="369.8" y1="58" x2="369.8" y2="362"/>
+<line class="d-grid" x1="440.5" y1="58" x2="440.5" y2="362"/>
+<line class="d-grid" x1="565.8" y1="58" x2="565.8" y2="362"/>
+<line class="d-grid" x1="700" y1="58" x2="700" y2="362"/>
 <line class="d-axis" x1="250" y1="362" x2="724" y2="362"/>
 <line class="d-lane" x1="250" y1="70" x2="724" y2="70"/>
 <line class="d-lane" x1="250" y1="101" x2="724" y2="101"/>
@@ -69,10 +69,10 @@ The same selected windows, drawn to scale on a logarithmic time axis, show the b
 <circle class="d-op-fill" cx="278.9" cy="163" r="4.5"/>
 <circle class="d-op-fill" cx="278.9" cy="194" r="4.5"/>
 <rect class="d-op-store" x="274.4" y="220.5" width="9" height="9" rx="1"/>
-<rect class="d-op-store" x="303.3" y="251.5" width="9" height="9" rx="1"/>
-<circle class="d-op-fill" cx="346" cy="287" r="4.5"/>
-<circle class="d-op-fill" cx="374.9" cy="318" r="4.5"/>
-<circle class="d-op-fill" cx="724" cy="349" r="4.5"/>
+<rect class="d-op-store" x="301.8" y="251.5" width="9" height="9" rx="1"/>
+<circle class="d-op-fill" cx="342.4" cy="287" r="4.5"/>
+<circle class="d-op-fill" cx="369.8" cy="318" r="4.5"/>
+<circle class="d-op-fill" cx="700" cy="349" r="4.5"/>
 <text class="d-cap" x="8" y="18">Clock and replay windows, to scale</text>
 <text class="d-sub" x="8" y="34">logarithmic axis — window length after issuance</text>
 <circle class="d-op-fill" cx="470" cy="14" r="4.5"/>
@@ -87,7 +87,7 @@ The same selected windows, drawn to scale on a logarithmic time axis, show the b
 <text class="d-lbl" x="238" y="228.5" text-anchor="end"><tspan class="d-mono">client_assertion</tspan></text>
 <text class="d-lbl" x="238" y="259.5" text-anchor="end">DPoP proof — <tspan class="d-mono">jti</tspan> cache</text>
 <text class="d-lbl" x="238" y="290.5" text-anchor="end">Access token</text>
-<text class="d-lbl" x="238" y="321.5" text-anchor="end">ID token</text>
+<text class="d-lbl" x="238" y="321.5" text-anchor="end">ID Token</text>
 <text class="d-lbl" x="238" y="352.5" text-anchor="end">Refresh token — absolute</text>
 <text class="d-val" x="289" y="73.5">60 s</text>
 <text class="d-val" x="289" y="104.5">60 s</text>
@@ -95,24 +95,24 @@ The same selected windows, drawn to scale on a logarithmic time axis, show the b
 <text class="d-val" x="289" y="166.5">±60 s</text>
 <text class="d-val" x="289" y="197.5">60 s</text>
 <text class="d-val" x="289" y="228.5">±60 s</text>
-<text class="d-val" x="318" y="259.5">≈120 s</text>
-<text class="d-val" x="356" y="290.5">5 min · FAPI 10 min</text>
-<text class="d-val" x="385" y="321.5">10 min</text>
-<text class="d-val" x="715" y="352.5" text-anchor="end">30 days</text>
+<text class="d-val" x="316" y="259.5">≈120 s</text>
+<text class="d-val" x="352" y="290.5">5 min · FAPI 10 min</text>
+<text class="d-val" x="380" y="321.5">10 min</text>
+<text class="d-val" x="691" y="352.5" text-anchor="end">30 days</text>
 <text class="d-tick" x="278.9" y="375" text-anchor="middle">1 min</text>
-<text class="d-tick" x="374.9" y="375" text-anchor="middle">10 min</text>
-<text class="d-tick" x="449.6" y="375" text-anchor="middle">1 h</text>
-<text class="d-tick" x="582.1" y="375" text-anchor="middle">1 day</text>
-<text class="d-tick" x="724" y="375" text-anchor="middle">30 days</text>
+<text class="d-tick" x="369.8" y="375" text-anchor="middle">10 min</text>
+<text class="d-tick" x="440.5" y="375" text-anchor="middle">1 h</text>
+<text class="d-tick" x="565.8" y="375" text-anchor="middle">1 day</text>
+<text class="d-tick" x="700" y="375" text-anchor="middle">30 days</text>
 </svg>
 
 ## Reauthentication freshness
 
-`prompt=login` and a violated `max_age` are freshness requirements, not display hints. At `/authorize` entry, `prompt=login` sets the reauthentication flag unconditionally; `max_age` compares the request's integer seconds with the session's recorded `auth_time`, and `max_age=0` always requires a new factor. The existing browser session or consent grant cannot satisfy either requirement. The interaction state carries the decision to the authenticator orchestrator, whose terminal guard rejects a factor-less result with `ErrReauthNotPerformed`; a completed factor stamps a new `auth_time` on the resulting session and grant.
+`prompt=login` and a violated `max_age` are freshness requirements, not display hints. At `/authorize` entry, `prompt=login` sets the reauthentication flag unconditionally. `max_age` compares the request's non-negative integer seconds with the session's recorded `auth_time`, and `max_age=0` always requires a new factor. The comparison stays in integer-second arithmetic instead of converting an untrusted value to `time.Duration`, so very large values cannot wrap and reverse the freshness decision. The existing browser session or consent grant cannot satisfy a violated freshness requirement. The interaction state carries the decision to the authenticator orchestrator, whose terminal guard rejects a factor-less result with `ErrReauthNotPerformed`; a completed factor stamps a new `auth_time` on the resulting session and grant.
 
 ## JWT `jti` and clock tolerance
 
-The in-library JWT access-token verifier applies `tokens.DefaultLeeway = 30 s` symmetrically to `exp` and `iat` when no verifier-specific leeway is configured. `RequireJTI` is enabled for the OP's non-`None` access-token revocation strategies, because the registry or denylist cannot answer a revocation query without a token identifier; `RevocationStrategyNone` does not require it. This is separate from DPoP/JAR/client-assertion replay retention: there is no universal 30-second `jti` cache for every JWT use.
+The in-library JWT access-token verifier applies `tokens.DefaultLeeway = 30 s` symmetrically to `exp` and `iat` when no verifier-specific leeway is configured. `RequireJTI` is enabled for the OP's non-`None` access-token revocation strategies, because the registry or deny-list cannot answer a revocation query without a token identifier; `RevocationStrategyNone` does not require it. This is separate from DPoP/JAR/client-assertion replay retention: there is no universal 30-second `jti` cache for every JWT use.
 
 ## Passkey challenge retirement
 
@@ -120,7 +120,17 @@ Each passkey registration or login attempt mints a fresh WebAuthn challenge and 
 
 ## Remote JWKS bounds
 
-Relying-party JWKS fetched from a registered `jwks_uri` is bounded by a five-second total fetch timeout, a five-minute maximum positive-cache TTL, a 64 KiB response body, 64 declared keys, and 64 distinct URL loads in flight across the process. Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cache cardinality is capped at 256 positive/negative URL entries, and a negative fetch result is cached for five seconds. These are core safety limits, not a guarantee that a deployment's upstream JWKS will remain available; allow a key rotation strategy that works within them.
+Relying-party JWKS fetched from a registered `jwks_uri` is bounded on five axes:
+
+| Bound | Value |
+|---|---|
+| total fetch timeout | 5 s |
+| maximum positive-cache TTL | 5 min |
+| response body | 64 KiB |
+| declared keys | 64 |
+| distinct URL loads in flight, process-wide | 64 |
+
+Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cache cardinality is capped at 256 positive/negative URL entries, and a negative fetch result is cached for five seconds. These are core safety limits, not a guarantee that a deployment's upstream JWKS will remain available; allow a key rotation strategy that works within them.
 
 ## What "replay" means here
 
@@ -128,7 +138,7 @@ Relying-party JWKS fetched from a registered `jwks_uri` is bounded by a five-sec
 
 **Token replay** — the same bearer-shaped credential is presented twice. Authorization codes are *consumed* on first use (the row is marked spent in `AuthorizationCodeStore`). Refresh tokens *rotate* on every redemption and reuse-detection cascades a revoke when the previous token is presented after the grace window closes. DPoP proofs are *deduped* by `jti`: the nonce gate runs first, then the accepted proof is committed to `ConsumedJTIStore`, so a second proof carrying the same `jti` returns `ErrProofReplayed` once the first proof has passed the gate.
 
-**Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: once `/authorize` consumes the URN it is gone from `PushedAuthRequestStore`. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore, scoped to `jar:<clientID>:<jti>` keys and evicted at the request object's own `exp`.
+**Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: once `/authorize` consumes the URN it is gone from `PushedAuthRequestStore`. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore. Markers use `jar:<clientID>:<jti>` keys and follow the server-bounded expiry calculation: the request's `exp` is subject to the verifier's `max-age` floor and maximum-lifetime ceiling, plus clock skew.
 
 **Logout replay** — the same `logout_token` is POSTed to the RP a second time. Back-Channel Logout 1.0 §2.6 places the dedup responsibility on the *RP*, not the OP: the OP signs and delivers once, and each RP is expected to track recently-seen logout-token `jti` values for its own purposes. The OP does not maintain a logout-token replay cache because the relevant boundary is the RP.
 
@@ -140,7 +150,7 @@ Read these three together as the model: the artifact's *use* defines the defense
 
 For multi-instance deployments, the substore must be shared across instances or every instance must be sticky-routed for the lifetime of a given `jti`. Backing it with the in-memory implementation across multiple replicas defeats the defense — replica A and replica B will each accept the same proof exactly once. A fast shared cache (Redis, Memcached) is the typical choice; the deployment guidance in [/operations/multi-instance](/operations/multi-instance) discusses the volatile / durable split that this implies.
 
-`ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed"). A total cache flush reopens replay only until each artifact's own acceptance boundary: the DPoP marker is retained through the proof's allowable `iat` range, while JAR and client assertions retain markers through their bounded expiry calculation. Token lifetimes and browser interaction state are separate budgets and are intentionally longer.
+`ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed"). A total cache flush reopens replay only until each artifact's own acceptance boundary. The DPoP marker is retained through the proof's allowable `iat` range. JAR markers retain through the server-bounded `exp` / `max-age` / maximum-lifetime calculation (plus skew), and client assertions use their own bounded expiry. Token lifetimes and browser interaction state are separate budgets and are intentionally longer.
 
 The other deployment knob is the wall clock itself. Every replica runs the same OP code with the same defaults; if their clocks disagree by more than the relevant window, the replicas will disagree about whether a given artifact is fresh. NTP discipline across the whole fleet is part of the security posture, not a "nice to have".
 

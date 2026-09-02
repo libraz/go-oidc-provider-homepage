@@ -48,7 +48,7 @@ In the simplest setup, you (the OP operator) hand-register every RP that integra
   <text x="275" y="134" text-anchor="middle" class="d-mono">&lt;iat&gt;</text>
   <line x1="138" y1="179" x2="708" y2="179" class="d-msg-oob"/>
   <polyline points="701,175 708,179 701,183" class="d-msg"/>
-  <text x="420" y="171" text-anchor="middle" class="d-lbl">out-of-band handoff <tspan class="d-mono">&lt;iat&gt;</tspan></text>
+  <text x="420" y="171" text-anchor="middle" class="d-lbl halo">out-of-band handoff <tspan class="d-mono">&lt;iat&gt;</tspan></text>
   <line x1="702" y1="246" x2="422" y2="246" class="d-msg"/>
   <polyline points="429,242 422,246 429,250" class="d-msg"/>
   <text x="565" y="208" text-anchor="middle" class="d-mono">POST /register</text>
@@ -137,7 +137,13 @@ An open POST that omits `scope` receives no default scopes unless the embedder s
 
 ## Scope ceilings and POST versus PUT
 
-The two HTTP methods intentionally have different omission semantics. On `POST /register`, an omitted `scope` receives the registration-path default: a non-empty `InitialAccessToken.AllowedScopes` list wins; an open registration uses `OpenRegistrationDefaultScopes` (empty by default); an IAT-bound registration without an IAT ceiling falls back to the OP's public scope catalog, excluding scopes restricted to specific clients. An explicitly supplied scope is always checked against the OP catalog and, when present, the IAT allow-list.
+The two HTTP methods intentionally have different omission semantics. On `POST /register`, an omitted `scope` receives the registration-path default:
+
+- a non-empty `InitialAccessToken.AllowedScopes` list wins
+- an open registration uses `OpenRegistrationDefaultScopes` (empty by default)
+- an IAT-bound registration without an IAT ceiling falls back to the OP's public scope catalog, excluding scopes restricted to specific clients
+
+An explicitly supplied scope is always checked against the OP catalog and, when present, the IAT allow-list.
 
 The registration access token (RAT) inherits the IAT's `AllowedScopes` ceiling when the client is created. The ceiling is stored in `store.RegistrationAccessToken.AllowedScopes`, survives every RAT rotation, and is applied to every subsequent `PUT /register/{client_id}`. A management update can narrow the client's scopes but can never widen them past the original IAT ceiling. RATs persisted before this field existed have an empty ceiling and therefore remain unrestricted; SQL installations must add `oidc_registration_access_tokens.allowed_scopes` before using the current adapter (see [SQL migrations](/use-cases/sql-store#sql-migration-before-first-request)).
 
@@ -167,9 +173,9 @@ Native clients (`application_type=native`) follow OIDC Registration §2 and addi
 
 ## Standard metadata tolerance
 
-The parser follows RFC 7591 §2's tolerance rule. A standard member that this OP does not model, or an unknown vendor member, is ignored and is not echoed in the registration response. For example, `frontchannel_logout_uri`, `software_id`, `software_version`, `tls_client_certificate_bound_access_tokens`, `backchannel_token_delivery_mode`, `backchannel_client_notification_endpoint`, `backchannel_authentication_request_signing_alg`, `backchannel_user_code_parameter`, and `authorization_details_types` do not configure this DCR endpoint.
+The parser follows RFC 7591 §2's tolerance rule. A standard member that this OP does not model, or an unknown vendor member, is ignored and is not echoed in the registration response. For example, `frontchannel_logout_uri`, `software_id`, `software_version`, `backchannel_token_delivery_mode`, `backchannel_client_notification_endpoint`, `backchannel_authentication_request_signing_alg`, `backchannel_user_code_parameter`, and `authorization_details_types` do not configure this DCR endpoint. `tls_client_certificate_bound_access_tokens: false` is a compatibility case: it is accepted as a no-op and is not persisted or echoed.
 
-That tolerance does not apply when a member asks the OP to promise a security property or wire shape it cannot provide. The endpoint rejects such a request with `invalid_client_metadata`, including `dpop_bound_access_tokens: true`, `require_pushed_authorization_requests: true`, a response-signing algorithm the relevant surface does not emit, and `backchannel_logout_session_required: true` whether or not `backchannel_logout_uri` is present. `software_statement` is a separate explicit refusal: because RFC 7591 trust-chain verification is not implemented, a request carrying it returns `invalid_software_statement` rather than silently dropping it.
+That tolerance does not apply when a member asks the OP to promise a security property or wire shape it cannot provide. The endpoint rejects such a request with `invalid_client_metadata`, including `tls_client_certificate_bound_access_tokens: true`, `dpop_bound_access_tokens: true`, `require_pushed_authorization_requests: true`, a response-signing algorithm the relevant surface does not emit, and `backchannel_logout_session_required: true` whether or not `backchannel_logout_uri` is present. `software_statement` is a separate explicit refusal: because RFC 7591 trust-chain verification is not implemented, a request carrying it returns `invalid_software_statement` rather than silently dropping it.
 
 ## What registration enforces today
 

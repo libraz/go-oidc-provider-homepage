@@ -43,7 +43,7 @@ op.WithMTLSRootCAs(pool),
 
 OP は mTLS 認証されたクライアントにトークンを発行する際、DER エンコードした証明書の SHA-256 ハッシュ値（RFC 8705 §3）を計算し、アクセストークンに `cnf.x5t#S256` として書き込みます。以後このアクセストークンを使うリクエストは **同じ証明書** で TLS 接続を確立する必要があり、リソースサーバは観測した証明書をハッシュして `cnf.x5t#S256` と比較します。
 
-`cnf` 自体は DPoP と共通の仕組み(RFC 7800)ですが、**メンバ名** が異なります — DPoP は `jkt`、mTLS は `x5t#S256`。1 つのトークンはどちらか一方だけを持ち、両方が同居することはありません。
+`cnf` 自体は DPoP と共通の仕組み（RFC 7800）ですが、**メンバ名** が異なります — DPoP は `jkt`、mTLS は `x5t#S256`。1 つのトークンに両方のメンバを持たせることもできます。両方の結び付きがある場合、利用側 endpoint は conjunction（AND）として検証します。つまり DPoP proof は `jkt` に、提示証明書は `x5t#S256` に一致しなければなりません。本ライブラリは `/userinfo` でこの conjunction を適用し、device-code と CIBA の grant binding でも記録されたすべての方式を要求します。
 
 ::: details なぜ証明書全体ではなく thumbprint なのか
 DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は再エンコードを跨いでも安定し、比較も安価で、JWT 内に十分収まる短さです。SHA-256 は RFC 8705 §3 が固定で指定しており、交渉の余地はありません。
@@ -59,17 +59,17 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
   <line x1="80" y1="120" x2="740" y2="120" class="d-faint"/>
   <rect x="260" y="28" width="300" height="64" rx="10"/>
   <text x="410" y="53" text-anchor="middle" class="d-label" font-size="15.5" font-weight="600">クライアント</text>
-  <text x="410" y="77" text-anchor="middle" class="d-sub" font-size="11.5">X.509 クライアント証明書</text>
+  <text x="410" y="77" text-anchor="middle" class="d-sub halo" font-size="11.5">X.509 クライアント証明書</text>
   <path d="M410 92 L410 138"/>
   <path d="M405 131 L410 138 L415 131"/>
-  <text x="428" y="110" class="d-sub" font-size="10.5">TLS ハンドシェイク</text>
-  <text x="428" y="125" class="d-sub" font-size="10">クライアント証明書を提示</text>
+  <text x="428" y="110" class="d-sub halo" font-size="10.5">TLS ハンドシェイク</text>
+  <text x="428" y="125" class="d-sub halo" font-size="10">クライアント証明書を提示</text>
   <rect x="210" y="138" width="400" height="92" rx="10"/>
   <text x="410" y="164" text-anchor="middle" class="d-label" font-size="14.5" font-weight="600">TLS 終端プロキシ</text>
-  <text x="410" y="188" text-anchor="middle" class="d-sub" font-size="10.5">クライアント証明書をヘッダに載せる</text>
+  <text x="410" y="188" text-anchor="middle" class="d-sub halo" font-size="10.5">クライアント証明書をヘッダに載せる</text>
   <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11">X-SSL-Cert: &lt;PEM&gt;</text>
   <line x1="80" y1="262" x2="740" y2="262" stroke-width="1.5" stroke-dasharray="6 6"/>
-  <text x="88" y="256" class="d-sub" font-size="10.5">信頼境界</text>
+  <text x="88" y="256" class="d-sub halo" font-size="10.5">信頼境界</text>
   <path d="M410 230 L410 298"/>
   <path d="M405 291 L410 298 L415 291"/>
   <rect x="260" y="298" width="300" height="64" rx="10"/>
@@ -77,18 +77,18 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
   <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11">RemoteAddr ∈ trustedCIDRs?</text>
   <path d="M560 330 L634 330"/>
   <path d="M627 325 L634 330 L627 335"/>
-  <text x="598" y="322" text-anchor="middle" class="d-sub" font-size="10">範囲外</text>
+  <text x="598" y="322" text-anchor="middle" class="d-sub halo" font-size="10">範囲外</text>
   <rect x="636" y="304" width="112" height="52" rx="8"/>
   <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10">ヘッダを無視</text>
-  <text x="692" y="344" text-anchor="middle" class="d-sub" font-size="10">fail closed</text>
+  <text x="692" y="344" text-anchor="middle" class="d-sub halo" font-size="10">fail closed</text>
   <path d="M410 362 L410 408"/>
   <path d="M405 401 L410 408 L415 401"/>
-  <text x="396" y="380" text-anchor="end" class="d-sub" font-size="10">範囲内</text>
-  <text x="396" y="395" text-anchor="end" class="d-sub" font-size="10">ヘッダが正本</text>
+  <text x="396" y="380" text-anchor="end" class="d-sub halo" font-size="10">範囲内</text>
+  <text x="396" y="395" text-anchor="end" class="d-sub halo" font-size="10">ヘッダが正本</text>
   <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
   <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — 本ライブラリ</text>
-  <text x="410" y="462" text-anchor="middle" class="d-sub" font-size="10.5">直接 TLS 終端時はハンドシェイク証明書</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub" font-size="10.5">前送りされた証明書を選択</text>
+  <text x="410" y="462" text-anchor="middle" class="d-sub halo" font-size="10.5">直接 TLS 終端時はハンドシェイク証明書</text>
+  <text x="410" y="484" text-anchor="middle" class="d-sub halo" font-size="10.5">前送りされた証明書を選択</text>
   <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">cnf.x5t#S256</text>
 </svg>
 
@@ -100,7 +100,7 @@ OP は **どのヘッダから読むか** と **どの IP 範囲がそのヘッ�
 op.WithMTLSProxy("X-SSL-Cert", []string{"10.0.0.0/8"})
 ```
 
-引数はいずれも必須です(`op/options_fapi_proxy.go`):
+引数はいずれも必須です（`op/options_fapi_proxy.go`）:
 
 - `headerName` が空文字なら設定エラー。ヘッダパスを無効化したい場合はオプション自体を渡さないでください。
 - `trustedCIDRs` が空 slice なら構築時に拒否されます。設定ミスで許可リストが黙って広がる経路を塞ぐためです。
@@ -126,7 +126,7 @@ op.New(
 )
 ```
 
-OP が自前で TLS を終端する環境(テスト、シングルテナント on-prem 等)では、`WithMTLSProxy` 行は省略可能です — ライブラリは `http.Request.TLS.PeerCertificates` から直接証明書を読みます。OP 自身にもチェーン再検証をさせる場合は、CA を追加した `x509.NewCertPool()` と `WithMTLSRootCAs` を渡してください。
+OP が自前で TLS を終端する環境（テスト、シングルテナント on-prem 等）では、`WithMTLSProxy` 行は省略可能です — ライブラリは `http.Request.TLS.PeerCertificates` から直接証明書を読みます。OP 自身にもチェーン再検証をさせる場合は、CA を追加した `x509.NewCertPool()` と `WithMTLSRootCAs` を渡してください。
 
 `op.WithProfile(profile.FAPI2Baseline)` は `[DPoP, MTLS]` に対する `RequiredAnyOf` を課します。どちらも明示しなければ、プロファイルは DPoP を既定メンバーとして選びます。mTLS の送信者制約を使う構成では `feature.MTLS` を明示してください。その場合は mTLS が制約を満たすため DPoP 既定は追加されません。クライアントの token endpoint 認証には `private_key_jwt` を使います。
 

@@ -18,7 +18,7 @@ pageClass: pg-use-cases-client-onboarding
 ## 全体像 — 5 つのパターン
 
 <svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側(静的登録)から通信路上に信頼を置かない側(仕様外の経路を使う CLI)まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
+<title id="onbo-spectrum-title">5 つのクライアントオンボーディングパターンを、運用者が完全に統制する側（静的登録）から通信路上に信頼を置かない側（仕様外の経路を使う CLI）まで信頼スペクトル上に並べた図。中央の 2 つは通信路上の token で認可される。</title>
 <g>
 <rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
 <circle class="badge" cx="34" cy="30" r="11"/>
@@ -100,7 +100,7 @@ pageClass: pg-use-cases-client-onboarding
 <text class="lbl muted" x="428" y="214" text-anchor="middle" font-size="8.5">信頼は通信路上の token</text>
 </svg>
 
-| パターン | 信頼の起点 | メタデータ を書く主体 | 向いている場面 |
+| パターン | 信頼の起点 | メタデータを書く主体 | 向いている場面 |
 |---|---|---|---|
 | 静的登録 | 運用者の設定 | 配備時に運用者 | 内部アプリの固定的な一覧 |
 | IaC / GitOps プロビジョニング | 運用者の CI パイプライン | パイプラインが `store.ClientRegistry` 経由で書く | RP 定義をソース管理に置く構成 |
@@ -146,9 +146,9 @@ provider, err := op.New(
 
 シードの射影は、DCR が `POST /register` の段階で適用しているのと同じ redirect URI 形式のルールを `op.New` の時点で適用します。形式に違反するシードは構築時に失敗するので、ランタイムまで漏れ出すことはありません。`ConfidentialClient.Secret` は `op.HashClientSecret`（argon2id）でハッシュしてからストアに到達するため、平文がストアに永続化されることはありません。
 
-永続バックエンドが相手の場合、シードは `store.StaticClientReconciler` を通じて**ひとつの原子的かつ冪等なバッチ**として適用されます。存在しないレコードは挿入し、内容が同じレコードはそのままにし、保存済みレコードと食い違う場合や動的登録されたクライアントと衝突する場合は `ErrConflict` で失敗します。この突き合わせは他のすべての失敗しうる構築処理の後に走るため、無関係な理由で起動が失敗したときにロスタの一部だけが書き込まれることはありません。シードを変えずに OP を再起動するのは、書き直しではなく no-op になります。
+永続バックエンドが相手の場合、シードは `store.StaticClientReconciler` を通じて**ひとつの原子的かつ冪等なバッチ**として適用されます。存在しないレコードは挿入し、内容が同じレコードはそのままにし、保存済みレコードと食い違う場合や動的登録されたクライアントと衝突する場合は `ErrConflict` で失敗します。この突き合わせは他のすべての失敗しうる構築処理の後に走るため、無関係な理由で起動が失敗したときに一覧の一部だけが書き込まれることはありません。シードを変えずに OP を再起動するのは、書き直しではなく no-op になります。
 
-このパターンが向くのは、RP の数が少なく、OP と同じチームが運用していて、変更が他の 設定 と同じ配備パイプラインを通る構成です。
+このパターンが向くのは、RP の数が少なく、OP と同じチームが運用していて、変更が他の設定と同じ配備パイプラインを通る構成です。
 
 ## 2. IaC / GitOps プロビジョニング
 
@@ -206,13 +206,13 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 })
 ```
 
-`iat.Value` は 仕様外の経路で RP に渡します。TTL は短く、`MaxUses: 1` を維持してください。IAT が漏洩してもリプレイされないようにするためです。RP は 201 応答で `registration_access_token`（RAT）を受け取り、自分の登録に対する RFC 7592 の read / update / delete だけに使います。RFC 7592 §2 はクライアント A の RAT がクライアント B の操作を承認してはならないことを明示しています。詳細（バリデータが適用するセキュリティ最低ラインや、往復するメタデータ項目）は [動的クライアント登録](/ja/use-cases/dynamic-registration) を参照してください。
+`iat.Value` は仕様外の経路で RP に渡します。TTL は短く、`MaxUses: 1` を維持してください。IAT が漏洩してもリプレイされないようにするためです。RP は 201 応答で `registration_access_token`（RAT）を受け取り、自分の登録に対する RFC 7592 の read / update / delete だけに使います。RFC 7592 §2 はクライアント A の RAT がクライアント B の操作を承認してはならないことを明示しています。詳細（バリデータが適用するセキュリティ最低ラインや、往復するメタデータ項目）は [動的クライアント登録](/ja/use-cases/dynamic-registration) を参照してください。
 
 ## 4. scope で保護した管理 API
 
 これは vendor SaaS 系のプロバイダが「管理 API」として同梱していることが多いパターンで、本ライブラリが意図的に同梱していないパターンでもあります。形は決まっています。特権を持つ「管理用クライアント」が `client.read` / `client.write` のような scope（必要なら `tenant=acme` のような claim も）を持つアクセストークンを取得します。組み込み側が用意した HTTP ハンドラがその AT を検証して scope と tenant 境界を解釈し、最終的に `store.ClientRegistry` を呼び出します。
 
-管理用クライアントは `/introspect` を呼び出すため confidential でなければなりません。最小の M2M provider では `op.WithGrants(grant.ClientCredentials)` で client-credentials grant を有効にし、browser 用の `LoginFlow` は設定しません。browser 対応 provider なら authorization-code grant と login flow を明示的に配線します。`/introspect` は通常この管理用クライアント自身の認証情報で認証します。別 client が発行した access token をハンドラが検査する必要がある場合は、対象 resource の `ProtectedResource.IntrospectionClients` に管理用クライアントを追加してください。refresh token は client 間で委譲されません。
+管理用クライアントは `/introspect` を呼び出すため confidential でなければなりません。最小の M2M provider では `op.WithGrants(grant.ClientCredentials)` で client-credentials grant を有効にし、browser 用の `LoginFlow` は設定しません。browser 対応 provider なら authorization-code grant と login flow を明示的に配線します。`/introspect` は通常この管理用クライアント自身の認証情報で認証します。別のクライアントが発行したアクセストークンをハンドラが検査する必要がある場合は、対象 resource の `ProtectedResource.IntrospectionClients` に管理用クライアントを追加してください。リフレッシュトークンはクライアント間で委譲されません。
 
 ```go
 // 1. 管理用クライアントの静的シード。

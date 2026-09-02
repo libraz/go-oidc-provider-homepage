@@ -5,11 +5,38 @@ description: The options op.New refuses to start without — and why each one ma
 
 # Required options
 
-`op.New(...)` rejects partial configurations at construction time, so an unsafe OP cannot accidentally take traffic. Three options are unconditionally required; `WithCookieKeys` is required whenever the `authorization_code` grant is enabled, which is the default:
+`op.New(...)` rejects partial configurations at construction time, so an unsafe OP cannot accidentally take traffic. Three options are unconditionally required. `WithCookieKeys` joins them whenever the `authorization_code` grant is enabled — and the default grant set enables it.
+
+<svg role="img" aria-labelledby="required-options-title" viewBox="0 0 760 292" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="required-options-title">Three options are always required — issuer, store, and keyset. Cookie keys are required in addition whenever the authorization_code grant is enabled.</title>
+  <text x="34" y="32" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">Always required</text>
+
+  <rect x="34" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="141" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithIssuer</text>
+  <text x="141" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">iss claim · discovery URL</text>
+  <text x="141" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">cookie scope</text>
+
+  <rect x="272" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="379" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithStore</text>
+  <text x="379" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">codes · sessions · clients</text>
+  <text x="379" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">refresh chains · JTI sets</text>
+
+  <rect x="510" y="44" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="617" y="72" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithKeyset</text>
+  <text x="617" y="94" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ES256 signing keys for</text>
+  <text x="617" y="112" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">ID Token · JWT AT · JARM</text>
+
+  <text x="272" y="170" font-family="var(--vp-font-family-base)" font-size="12.5" font-weight="600" fill="var(--vp-c-text-2)" stroke="none">Required with the authorization_code grant</text>
+
+  <rect x="272" y="182" width="214" height="86" rx="8" fill="var(--vp-c-bg-soft)" stroke-dasharray="6 5"/>
+  <text x="379" y="210" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="13" fill="var(--vp-c-text-1)" stroke="none">op.WithCookieKeys</text>
+  <text x="379" y="232" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">AES-256-GCM sealing of</text>
+  <text x="379" y="250" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="11.5" fill="var(--vp-c-text-2)" stroke="none">session + CSRF cookies</text>
+</svg>
 
 | Option | Why it's required |
 |---|---|
-| [`op.WithIssuer`](#withissuer) | Defines the JWT `iss` claim, the discovery URL, and the cookie scope. Wrong here, every downstream check is wrong. |
+| [`op.WithIssuer`](#withissuer) | Defines the JWT `iss` claim, the discovery URL, and the cookie scope. Get this wrong and every downstream check is wrong. |
 | [`op.WithStore`](#withstore) | Where authcodes, sessions, refresh chains, JTI replay sets, and clients live. The library is storage-agnostic; without a store it has nowhere to put state. |
 | [`op.WithKeyset`](#withkeyset) | The signing keys for ID tokens / JWT access tokens / JARM. The library refuses to mint tokens without an ECDSA P-256 `crypto.Signer` that can produce `ES256` signatures. |
 | [`op.WithCookieKeys`](#withcookiekeys) | 32 bytes of random material used as an AES-256-GCM key for cookie payloads. Required only when the enabled grants include `authorization_code` (the default grant set is `authorization_code` + `refresh_token`); a client-credentials-only OP with that grant disabled can boot without it. Session and CSRF cookies are encrypted, not just signed. |

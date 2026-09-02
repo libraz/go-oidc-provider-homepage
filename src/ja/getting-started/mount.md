@@ -1,11 +1,38 @@
 ---
-title: ルーターへの組み込み
+title: ルータへのマウント
 description: net/http、chi、gin 等で op.Provider を使う方法。
 ---
 
-# ルーターへの組み込み
+# ルータへのマウント
 
 `op.New` は `*op.Provider` を返します。`*op.Provider` は `ServeHTTP` メソッドを持つため、標準の `http.Handler` として扱えます。ライブラリは listener を **所有せず**、どのルータを使うかにも **依存しません**。
+
+OP は組み込み側のルータの 1 段下、自前のハンドラと並ぶ位置に入ります。ミドルウェアは OP も含めて外側から包み、OP が受け持つパス以外はすべて組み込み側のものです。
+
+<svg role="img" aria-labelledby="mount-layers-title" viewBox="0 0 760 296" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="mount-layers-title">OP のハンドラは組み込み側のルータの内側、自前のハンドラと並ぶ位置に入る。listener とミドルウェアは両方を外側から包む。</title>
+  <rect x="24" y="24" width="712" height="248" rx="10" stroke="var(--vp-c-divider)"/>
+  <text x="48" y="52" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">自前の listener</text>
+  <text x="712" y="52" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">http.ListenAndServe</text>
+
+  <rect x="56" y="64" width="648" height="184" rx="10" stroke="var(--vp-c-divider)"/>
+  <text x="80" y="92" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">自前のミドルウェア</text>
+  <text x="680" y="92" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">otelhttp · promhttp · access log</text>
+
+  <rect x="88" y="104" width="584" height="124" rx="10" stroke="var(--vp-c-divider)"/>
+  <text x="112" y="132" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">自前のルータ</text>
+  <text x="648" y="132" text-anchor="end" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-3)" stroke="none">net/http · chi · gin</text>
+
+  <rect x="112" y="140" width="252" height="76" rx="8" fill="var(--vp-c-bg-soft)"/>
+  <text x="238" y="164" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">自前のハンドラ</text>
+  <text x="238" y="184" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/ · /api/* · /healthz</text>
+  <text x="238" y="202" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/metrics · /debug/pprof</text>
+
+  <rect x="396" y="140" width="252" height="76" rx="8" fill="var(--vp-c-brand-soft)" stroke="var(--vp-c-brand-2)"/>
+  <text x="522" y="164" text-anchor="middle" font-family="var(--vp-font-family-base)" font-size="13" font-weight="600" fill="var(--vp-c-text-1)" stroke="none">op.Provider</text>
+  <text x="522" y="184" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/oidc/* (mount prefix)</text>
+  <text x="522" y="202" text-anchor="middle" font-family="var(--vp-font-family-mono)" font-size="11" fill="var(--vp-c-text-2)" stroke="none">/.well-known/openid-configuration</text>
+</svg>
 
 ## net/http、chi、gin で使う
 
@@ -54,11 +81,11 @@ op.New(
 )
 ```
 
-空フィールドは既定を維持します。既定は OIDC Core 1.0 慣習に従い `/auth`、`/token`、`/userinfo`、`/end_session`、`/jwks` を置き、オプションで有効化されたプロトコル面として `/par`、`/introspect`、`/revoke`、`/register`、`/device_authorization`、`/bc-authorize`、`/grant_management` などを加えます。
+空フィールドは既定値を維持します。既定は OIDC Core 1.0 の慣習に従い `/auth`、`/token`、`/userinfo`、`/end_session`、`/jwks` です。ここに、オプションで有効化したプロトコルエンドポイント（`/par`、`/introspect`、`/revoke`、`/register`、`/device_authorization`、`/bc-authorize`、`/grant_management` など）が加わります。
 
 ## OP が公開 **しない** もの
 
-OP がルータに公開するものは意図的に絞られています。
+OP が組み込み側のルータに載せるものは、意図的に絞ってあります。
 
 | OP が公開する | OP が公開しない |
 |---|---|

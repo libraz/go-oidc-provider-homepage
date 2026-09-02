@@ -26,35 +26,35 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 > Conformance ≠ Security. An OFCS-passing OP can still be exploitable (alg confusion, PKCE downgrade, redirect_uri partial match, timing attacks on secret compare). The next sections describe how each class is closed structurally rather than by runtime checks alone.
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="0 0 760 124" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="posture-five-properties-title">The five separate properties behind "is this safe?" — conformance, correctness, security, supply-chain, and operational assurance, read in order.</title>
-  <rect x="0" y="16" width="124" height="84" rx="6"/>
-  <rect x="149" y="16" width="124" height="84" rx="6"/>
-  <rect x="298" y="16" width="124" height="84" rx="6"/>
-  <rect x="447" y="16" width="124" height="84" rx="6"/>
-  <rect x="596" y="16" width="124" height="84" rx="6"/>
-  <path class="op-fp-flow" d="M127 58 H143 M139 54 L144 58 L139 62"/>
-  <path class="op-fp-flow" d="M276 58 H292 M288 54 L293 58 L288 62"/>
-  <path class="op-fp-flow" d="M425 58 H442 M438 54 L443 58 L438 62"/>
-  <path class="op-fp-flow" d="M574 58 H591 M587 54 L592 58 L587 62"/>
-  <text class="op-fp-num" x="62" y="38" text-anchor="middle" stroke="none">1</text>
-  <text class="op-fp-title" x="62" y="59" text-anchor="middle" fill="currentColor" stroke="none">Conformance</text>
-  <text class="op-fp-mono" x="62" y="80" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
-  <text class="op-fp-num" x="211" y="38" text-anchor="middle" stroke="none">2</text>
-  <text class="op-fp-title" x="211" y="59" text-anchor="middle" fill="currentColor" stroke="none">Correctness</text>
-  <text class="op-fp-prose" x="211" y="80" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
-  <text class="op-fp-num" x="360" y="38" text-anchor="middle" stroke="none">3</text>
-  <text class="op-fp-title" x="360" y="59" text-anchor="middle" fill="currentColor" stroke="none">Security</text>
-  <text class="op-fp-prose" x="360" y="76" text-anchor="middle" fill="currentColor" stroke="none">structural</text>
-  <text class="op-fp-prose" x="360" y="89" text-anchor="middle" fill="currentColor" stroke="none">defenses</text>
-  <text class="op-fp-num" x="509" y="38" text-anchor="middle" stroke="none">4</text>
-  <text class="op-fp-title" x="509" y="59" text-anchor="middle" fill="currentColor" stroke="none">Supply-chain</text>
-  <text class="op-fp-mono" x="509" y="76" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
-  <text class="op-fp-mono" x="509" y="89" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
-  <text class="op-fp-num" x="658" y="38" text-anchor="middle" stroke="none">5</text>
-  <text class="op-fp-title" x="658" y="59" text-anchor="middle" fill="currentColor" stroke="none">Operational</text>
-  <text class="op-fp-mono" x="658" y="76" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
-  <text class="op-fp-mono" x="658" y="89" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
+  <rect x="7" y="18" width="130" height="84" rx="6"/>
+  <rect x="161" y="18" width="130" height="84" rx="6"/>
+  <rect x="315" y="18" width="130" height="84" rx="6"/>
+  <rect x="469" y="18" width="130" height="84" rx="6"/>
+  <rect x="623" y="18" width="130" height="84" rx="6"/>
+  <path class="op-fp-flow" d="M139 60 H158 M153 56 L158 60 L153 64"/>
+  <path class="op-fp-flow" d="M293 60 H312 M307 56 L312 60 L307 64"/>
+  <path class="op-fp-flow" d="M447 60 H466 M461 56 L466 60 L461 64"/>
+  <path class="op-fp-flow" d="M601 60 H620 M615 56 L620 60 L615 64"/>
+  <text class="op-fp-num" x="72" y="40" text-anchor="middle" stroke="none">1</text>
+  <text class="op-fp-title" x="72" y="61" text-anchor="middle" fill="currentColor" stroke="none">Conformance</text>
+  <text class="op-fp-mono" x="72" y="82" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
+  <text class="op-fp-num" x="226" y="40" text-anchor="middle" stroke="none">2</text>
+  <text class="op-fp-title" x="226" y="61" text-anchor="middle" fill="currentColor" stroke="none">Correctness</text>
+  <text class="op-fp-prose" x="226" y="82" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
+  <text class="op-fp-num" x="380" y="40" text-anchor="middle" stroke="none">3</text>
+  <text class="op-fp-title" x="380" y="61" text-anchor="middle" fill="currentColor" stroke="none">Security</text>
+  <text class="op-fp-prose" x="380" y="78" text-anchor="middle" fill="currentColor" stroke="none">structural</text>
+  <text class="op-fp-prose" x="380" y="91" text-anchor="middle" fill="currentColor" stroke="none">defenses</text>
+  <text class="op-fp-num" x="534" y="40" text-anchor="middle" stroke="none">4</text>
+  <text class="op-fp-title" x="534" y="61" text-anchor="middle" fill="currentColor" stroke="none">Supply-chain</text>
+  <text class="op-fp-mono" x="534" y="78" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
+  <text class="op-fp-mono" x="534" y="91" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
+  <text class="op-fp-num" x="688" y="40" text-anchor="middle" stroke="none">5</text>
+  <text class="op-fp-title" x="688" y="61" text-anchor="middle" fill="currentColor" stroke="none">Operational</text>
+  <text class="op-fp-mono" x="688" y="78" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
+  <text class="op-fp-mono" x="688" y="91" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
 </svg>
 
 ## Structural defenses (what the codebase enforces by shape)
@@ -85,7 +85,7 @@ A repository-wide rule bans `math/rand`. The lint configuration backs it up. Eve
 
 ### 4. `time.Now()` is funnelled through `internal/timex/`
 
-Direct `time.Now()` calls are blocked by the `forbidigo` lint, so every wall-clock read flows through `internal/timex.Clock`. The single canonical site is `internal/timex.systemClock.Now()`, with one documented carve-out in `op/storeadapter/redis` — a sub-module that cannot import `internal/timex`; embedders override its fallback with `WithClock`. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
+Direct `time.Now()` calls are blocked by the `forbidigo` lint, so every wall-clock read flows through `internal/timex.Clock`. The single canonical site is `internal/timex.systemClock.Now()`, with one documented carve-out in `op/storeadapter/redis` — a sub-module that cannot import `internal/timex`; embedders override that sub-module's fallback with `WithClock`. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
 
 ### 5. Errors go through a typed catalog
 

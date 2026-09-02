@@ -34,10 +34,10 @@ pageClass: pg-concepts-oauth2-oidc-primer
 - **`sub`** — Subject。当該 OP におけるユーザの不透明な識別子。
 - **`aud`** — Audience。トークンの宛先。
 - **`iss`** — Issuer。トークンに署名した OP。
-- **`scope`** — 半角スペース区切りの権限リスト(`openid profile email` など)。
+- **`scope`** — 半角スペース区切りの権限リスト（`openid profile email` など）。
 - **`acr`**(Authentication Context Class Reference) — 認証手段が提供した保証水準。step-up で使われます。
-- **`amr`**(Authentication Methods References) — 実際に使った認証要素を表す RFC 8176 の値(`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt`)。
-- **`cnf`** — confirmation。トークンが結びついている鍵(DPoP の `jkt` thumbprint または mTLS の `x5t#S256`)。
+- **`amr`**(Authentication Methods References) — 実際に使った認証要素を表す RFC 8176 の値（`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt`）。
+- **`cnf`** — confirmation。トークンが結びついている鍵（DPoP の `jkt` thumbprint または mTLS の `x5t#S256`）。
 :::
 
 ::: details このページで触れる仕様
@@ -83,7 +83,7 @@ pageClass: pg-concepts-oauth2-oidc-primer
   <text class="p sub" x="243" y="74" text-anchor="middle" font-size="9.5">トークンを受領</text>
   <line x1="200" y1="88" x2="287" y2="88" marker-start="url(#roles-ah)" marker-end="url(#roles-ah)"/>
   <path d="M120 144 C 120 200, 640 200, 640 144" marker-end="url(#roles-ah)"/>
-  <text class="p sub" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> アクセストークン</text>
+  <text class="p sub halo" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> アクセストークン</text>
 </svg>
 
 ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE](#authorization-code-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
@@ -96,9 +96,9 @@ pageClass: pg-concepts-oauth2-oidc-primer
 
 OAuth 2.0 は **認可の委任** を担う規格です — 「Alice のアプリが、サービス X 上の Alice のデータを読む許可をもらう」。OAuth 2.0 単独では、アプリ側に **Alice が誰なのか** は伝わりません。あくまで不透明なアクセストークンを渡すだけです。
 
-OpenID Connect（OIDC）は **OAuth 2.0 + 認証結果** を扱う規格です。OP は加えて **ID トークン**（署名付き JWT）を発行し、「このトークンはユーザ `sub=alice123`、audience `client_id=myapp` 向けに、この時刻に発行された。Alice について次の claim が真である」と表明します。
+OpenID Connect（OIDC）は **OAuth 2.0 + 認証結果** を扱う規格です。OP はアクセストークンに加えて **ID トークン**（署名付き JWT）を発行し、「このトークンはユーザ `sub=alice123`、audience `client_id=myapp` 向けに、この時刻に発行された。Alice について次の claim が真である」と表明します。
 
-OIDC はさらに userinfo エンドポイント (`/userinfo`)、discovery、RP-Initiated Logout、Back-Channel Logout 通知も追加します。
+OIDC はさらに userinfo エンドポイント（`/userinfo`）、discovery、RP-Initiated Logout、Back-Channel Logout 通知も追加します。
 
 ::: details JWT とは
 **JWT**（JSON Web Token、RFC 7519）は `header.payload.signature` の 3 つを `.` で繋いだ base64url 文字列です。header と payload は JSON で、signature は受け手が公開鍵で発行者を暗号学的に検証するための部分です。
@@ -149,7 +149,8 @@ Authorization: Bearer eyJ...access_token...
 
 ## 最もよく見かける処理: 認可コード + PKCE {#authorization-code-pkce}
 
-<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 772 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 760 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(-2,0)">
   <title id="authcode-title">認可コード + PKCE のシーケンス: ブラウザがユーザを RP と OP の間で運んでログインと code 交換を行い、その後 RP が access token で RS を呼び出す。</title>
   <defs>
     <marker id="authcode-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -175,51 +176,52 @@ Authorization: Bearer eyJ...access_token...
   <circle cx="24" cy="92" r="10"/>
   <text class="p" x="24" y="96" text-anchor="middle" font-size="10.5">1</text>
   <line x1="70" y1="92" x2="280" y2="92" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="83" font-size="10.5">アプリを開く</text>
+  <text class="p halo" x="78" y="83" font-size="10.5">アプリを開く</text>
   <circle cx="24" cy="132" r="10"/>
   <text class="p" x="24" y="136" text-anchor="middle" font-size="10.5">2</text>
   <line x1="280" y1="132" x2="70" y2="132" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="110" font-size="10.5">OP <tspan class="m">/auth</tspan> にリダイレクト</text>
-  <text class="m" x="78" y="122" font-size="9">client_id, redirect_uri, scope, state, code_challenge</text>
+  <text class="p halo" x="78" y="110" font-size="10.5">OP <tspan class="m">/auth</tspan> にリダイレクト</text>
+  <text class="m halo" x="78" y="122" font-size="9">client_id, redirect_uri, scope, state, code_challenge</text>
   <circle cx="24" cy="172" r="10"/>
   <text class="p" x="24" y="176" text-anchor="middle" font-size="10.5">3</text>
   <line x1="70" y1="172" x2="500" y2="172" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="78" y="163" font-size="9.5">GET /auth …</text>
+  <text class="m halo" x="78" y="163" font-size="9.5">GET /auth …</text>
   <circle cx="24" cy="212" r="10"/>
   <text class="p" x="24" y="216" text-anchor="middle" font-size="10.5">4</text>
   <line x1="500" y1="212" x2="70" y2="212" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="203" font-size="10.5">ログイン + 同意 UI</text>
+  <text class="p halo" x="78" y="203" font-size="10.5">ログイン + 同意 UI</text>
   <circle cx="24" cy="252" r="10"/>
   <text class="p" x="24" y="256" text-anchor="middle" font-size="10.5">5</text>
   <line x1="70" y1="252" x2="500" y2="252" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="243" font-size="10.5">認証情報を送信</text>
+  <text class="p halo" x="78" y="243" font-size="10.5">認証情報を送信</text>
   <circle cx="24" cy="292" r="10"/>
   <text class="p" x="24" y="296" text-anchor="middle" font-size="10.5">6</text>
   <line x1="500" y1="292" x2="70" y2="292" marker-end="url(#authcode-ah)"/>
-  <text class="p" x="78" y="270" font-size="10.5">302 で RP <tspan class="m">/callback</tspan> へ</text>
-  <text class="m" x="78" y="282" font-size="9.5">?code=xyz&amp;state=…</text>
+  <text class="p halo" x="78" y="270" font-size="10.5">302 で RP <tspan class="m">/callback</tspan> へ</text>
+  <text class="m halo" x="78" y="282" font-size="9.5">?code=xyz&amp;state=…</text>
   <circle cx="24" cy="332" r="10"/>
   <text class="p" x="24" y="336" text-anchor="middle" font-size="10.5">7</text>
   <line x1="70" y1="332" x2="280" y2="332" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="78" y="323" font-size="9.5">GET /callback?code=xyz</text>
+  <text class="m halo" x="78" y="323" font-size="9.5">GET /callback?code=xyz</text>
   <circle cx="24" cy="372" r="10"/>
   <text class="p" x="24" y="376" text-anchor="middle" font-size="10.5">8</text>
   <line x1="280" y1="372" x2="500" y2="372" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="350" font-size="9.5">POST /token</text>
-  <text class="m" x="288" y="362" font-size="9">code=xyz, code_verifier=…, client auth</text>
+  <text class="m halo" x="288" y="350" font-size="9.5">POST /token</text>
+  <text class="m halo" x="288" y="362" font-size="9">code=xyz, code_verifier=…, client auth</text>
   <circle cx="24" cy="412" r="10"/>
   <text class="p" x="24" y="416" text-anchor="middle" font-size="10.5">9</text>
   <line x1="500" y1="412" x2="280" y2="412" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="403" font-size="9.5">{ access_token, id_token, refresh_token }</text>
+  <text class="m halo" x="288" y="403" font-size="9.5">{ access_token, id_token, refresh_token }</text>
   <circle cx="24" cy="452" r="10"/>
   <text class="p" x="24" y="456" text-anchor="middle" font-size="10.5">10</text>
   <line x1="280" y1="452" x2="700" y2="452" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="430" font-size="9.5">GET /api/…</text>
-  <text class="m" x="288" y="442" font-size="9">Authorization: Bearer &lt;access_token&gt;</text>
+  <text class="m halo" x="288" y="430" font-size="9.5">GET /api/…</text>
+  <text class="m halo" x="288" y="442" font-size="9">Authorization: Bearer &lt;access_token&gt;</text>
   <circle cx="24" cy="492" r="10"/>
   <text class="p" x="24" y="496" text-anchor="middle" font-size="10.5">11</text>
   <line x1="700" y1="492" x2="280" y2="492" marker-end="url(#authcode-ah)"/>
-  <text class="m" x="288" y="483" font-size="9.5">200 OK  { data }</text>
+  <text class="m halo" x="288" y="483" font-size="9.5">200 OK  { data }</text>
+  </g>
 </svg>
 
 「+ PKCE」（`code_challenge` / `code_verifier` で示される部分）は、悪意あるアプリが認可コードを横取りすることを防ぐ仕組みです。詳しくは [認可コードフロー + PKCE](/ja/concepts/authorization-code-pkce) で扱います。

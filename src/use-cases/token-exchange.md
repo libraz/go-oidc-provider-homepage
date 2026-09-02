@@ -16,7 +16,7 @@ For the conceptual background — impersonation vs delegation, what `act` record
 RFC 8693 §4.1 defines the `act` claim as a record of "who acted on whose behalf". On the issued token, `act.sub` is the actor's subject; if the actor was itself the result of a previous exchange, its `act` is nested inside, producing a chain (`alice → service-a → service-b`). Resource servers walk `act` to check whole-chain authorisation: "transfers may be initiated by alice via service-a, but not by bob via service-a". The OP enforces a depth ceiling so a malicious chain cannot grow unboundedly.
 :::
 
-<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 420" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 324" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="token-exchange-flow-title">Token exchange end to end. service-a presents Alice's subject_token together with its own actor_token, and the OP validates both, intersects the scopes, canonicalises the audience, builds the act chain, rebinds cnf, and runs the policy before issuing a token for service-b.</title>
   <defs>
     <marker id="tx-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -64,10 +64,9 @@ RFC 8693 §4.1 defines the `act` claim as a record of "who acted on whose behalf
   <text class="m sub" x="253" y="190" text-anchor="middle">POST</text>
   <text class="m sub" x="546" y="114" text-anchor="middle">200</text>
 
-  <rect class="soft" x="78" y="326" width="604" height="56" rx="8"/>
-  <text class="t" x="380" y="350" text-anchor="middle">Important: the issued token's `cnf` binds to service-a's key, not to Alice's</text>
-  <text class="m sub" x="380" y="370" text-anchor="middle">it uses the calling actor's verified DPoP / mTLS proof, not subject_token.cnf</text>
 </svg>
+
+The `cnf` on the issued token binds to service-a's key, not to Alice's. The OP takes it from the verified DPoP or mTLS proof presented by the calling actor, never from `subject_token.cnf`.
 
 ## Enabling the grant
 
@@ -84,9 +83,9 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
-  // Token exchange is an extension grant; select at least one built-in
-  // grant explicitly. This example also serves machine-to-machine clients.
-  op.WithGrants(grant.ClientCredentials),
+  // Token exchange is an extension grant; select built-in grants explicitly.
+  // RefreshToken is needed when the policy opts into refresh issuance.
+  op.WithGrants(grant.ClientCredentials, grant.RefreshToken),
   op.RegisterTokenExchange(myPolicy),
   // ...
 )
@@ -139,7 +138,7 @@ func (p *myPolicy) Allow(ctx context.Context, req op.TokenExchangeRequest) (*op.
 | `GrantedScope` | When non-empty, **replaces** the provider-computed set. MUST be a subset of `req.RequestedScope`; broader values yield `invalid_scope`. |
 | `GrantedAudience` | When non-empty, replaces the provider-computed set. MUST be a subset of `req.RequestedAudience`; broader values yield `invalid_target`. |
 | `GrantedTTL` | When non-zero, narrows the issued access-token lifetime below the provider-computed cap. A value greater than the cap is silently truncated with an audit warning. Negative is rejected. |
-| `IssueIDToken` | `*bool` override. Default = true when `subject_token` was an id_token, false otherwise. |
+| `IssueIDToken` | `*bool` override. Default = true when `subject_token` was an id_token, false otherwise. An explicit false suppresses the ID Token even when `openid` remains in the granted scope. |
 | `IssueRefreshToken` | `*bool` override. Default = nil = no refresh token. To opt in, set `op.PtrBool(true)` — the pointer shape exists so embedders cannot conflate "unset" with "false". |
 | `ExtraClaims` | Merged into the id_token. Reserved-claim filter applies: `iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid / act / cnf` are dropped silently so the policy cannot rewrite the act chain, hijack `sub`, or forge `cnf`. |
 
@@ -159,7 +158,7 @@ The subset rule is enforced again after the policy decision is applied. A policy
 These are not negotiable — the policy can narrow but never widen:
 
 - **`act` chain construction**: whenever the actor differs from the subject, the OP populates the issued token's `act` claim from the actor's verified credentials. The caller cannot fabricate an `act`.
-- **Audience normalisation**: RFC 8707 §2 lowercase-scheme + lowercase-host + trailing-slash strip. Default-fill from `subject_token.audience` when the request omits the parameter.
+- **Resource/audience normalisation**: URI-shaped values must be absolute with a scheme and host. RFC 8707 §2 lowercases the scheme and host, removes the default port (`http:80` / `https:443`), and strips one trailing slash; fragments and userinfo are rejected, while query text is preserved. Opaque labels and URNs are compared verbatim. Default-fill from `subject_token.audience` when the request omits the parameter. For example, `https://api.example.com:443/v1/` becomes `https://api.example.com/v1`.
 - **Scope intersection**: requested ∩ subject_token.scope ∩ client allow-list. Empty result = `invalid_scope`.
 - **TTL ceiling**: min(`GrantedTTL`, `subject_token` remaining, OP global cap).
 - **`cnf` rebinding**: the issued token's `cnf` (DPoP `jkt` or mTLS `x5t#S256`) is the **calling** actor's verified proof, not the subject's.
@@ -216,11 +215,11 @@ Service B verifies the DPoP proof against `cnf.jkt`, sees `act.sub`, and applies
 
 By default, a token-exchange request does **not** issue a refresh token. RFC 8693 §2.2.1 makes the response parameter OPTIONAL because chained delegations should not silently extend their reach past the subject_token's lifetime.
 
-To opt in, the policy returns `IssueRefreshToken: op.PtrBool(true)`. The pointer shape (rather than a plain bool) prevents accidental opt-in from struct zero values. The OP mints and persists the refresh token through its own `RefreshTokenStore`, sharing the issued access token's grant identity and DPoP / mTLS binding. Issuance fires the `token_exchange.refresh_issued` audit event for SOC visibility.
+To opt in, the policy returns `IssueRefreshToken: op.PtrBool(true)`. The pointer shape (rather than a plain bool) prevents accidental opt-in from struct zero values. This records issuance intent; the shared custom-grant path honours it only when the provider serves `refresh_token`, the client is registered for that grant, the response has a non-empty subject and scope, and it names at most one audience. A failed gate leaves the access-token response successful, omits the refresh token, and emits `custom_grant.refresh_dropped` with the reason. When the gates pass, the OP mints and persists the refresh token through its own `RefreshTokenStore`, sharing the issued access token's grant identity and DPoP / mTLS binding. The exchange handler emits `token_exchange.refresh_issued` when it requests issuance; use `token.issued` to confirm that the chain root was actually persisted.
 
 ## Audit signal pairing
 
-Every successful exchange emits two audit events: `token_exchange.requested` (entered the handler) + `token_exchange.granted` (issued). Rejections emit `requested` plus one of the failure-class events:
+Every exchange attempt emits `token_exchange.requested` at handler entry, before parsing and structural validation. Successful exchanges then emit `token_exchange.granted` (issued); rejections emit `requested` plus one of the failure-class events, including for structurally unusable requests:
 
 - `policy_denied` / `policy_error` — your policy returned an error
 - `scope_inflation_blocked` — request asked for scope outside the intersection

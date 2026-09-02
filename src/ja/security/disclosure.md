@@ -7,7 +7,7 @@ pageClass: pg-security-disclosure
 # 脆弱性報告 / CVE
 
 ::: warning 個人開発のセキュリティ運用について
-go-oidc-provider は本業の合間に個人で維持しているプロジェクトです。脆弱性対応は **best-effort** で行います。報告は必ず人が読みますが、対応までの時間はメンテナの可処分時間に左右され、数日から数週間まで幅があります(SLA はありません)。契約上の応答時間が要件となる用途には向かないため、採用検討の前に必要要件と本プロジェクトの体制を突き合わせてください。
+go-oidc-provider は本業の合間に個人で維持しているプロジェクトです。脆弱性対応は **best-effort** で行います。報告は必ず人が読みますが、対応までの時間はメンテナの可処分時間に左右され、数日から数週間まで幅があります（SLA はありません）。契約上の応答時間が要件となる用途には向かないため、採用検討の前に必要要件と本プロジェクトの体制を突き合わせてください。
 :::
 
 ## 脆弱性の報告方法
@@ -34,41 +34,44 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 報告を受領してからのおおまかな流れです。
 
-<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 536 672" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="disclosure-flow-title">脆弱性報告の処理フロー: 報告を受領し、受領確認と triage を経て、スコープ外ならクローズ、有効なら修正・協調開示・リリースを経て GHSA を公開する流れ。</title>
-  <!-- boxes -->
-  <rect x="20" y="20" width="230" height="54" rx="8"/>
-  <rect x="20" y="114" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="208" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="320" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="414" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="508" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="20" y="602" width="230" height="54" rx="8" class="op-accent"/>
-  <rect x="315" y="208" width="205" height="54" rx="8"/>
+  <!-- 受付側 -->
+  <rect x="60" y="30" width="240" height="62" rx="8"/>
+  <rect x="60" y="122" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="60" y="214" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="60" y="306" width="240" height="62" rx="8"/>
+  <!-- 修正側 -->
+  <rect x="460" y="30" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="460" y="122" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="460" y="214" width="240" height="62" rx="8" class="op-accent"/>
+  <rect x="460" y="306" width="240" height="62" rx="8" class="op-accent"/>
   <!-- connectors -->
-  <path d="M135 74 L135 114"/><path d="M129 108 L135 114 L141 108"/>
-  <path d="M135 168 L135 208"/><path d="M129 202 L135 208 L141 202"/>
-  <path d="M135 262 L135 320"/><path d="M129 314 L135 320 L141 314"/>
-  <path d="M135 374 L135 414"/><path d="M129 408 L135 414 L141 408"/>
-  <path d="M135 468 L135 508"/><path d="M129 502 L135 508 L141 502"/>
-  <path d="M135 562 L135 602"/><path d="M129 596 L135 602 L141 596"/>
-  <path d="M250 235 L315 235"/><path d="M309 229 L315 235 L309 241"/>
-  <!-- labels -->
-  <text class="d-title" x="135" y="52" text-anchor="middle">報告受領</text>
-  <text class="d-title" x="135" y="135" text-anchor="middle">受領確認</text>
-  <text class="d-sub" x="135" y="153" text-anchor="middle">オンラインに戻り次第</text>
-  <text class="d-title" x="135" y="229" text-anchor="middle">triage</text>
-  <text class="d-sub" x="135" y="247" text-anchor="middle">再現 / 分類</text>
-  <text class="d-title" x="135" y="341" text-anchor="middle">修正計画 or 緩和策</text>
-  <text class="d-sub" x="135" y="359" text-anchor="middle">重大度に応じて優先</text>
-  <text class="d-title" x="135" y="446" text-anchor="middle">協調開示の調整期間</text>
-  <text class="d-title" x="135" y="540" text-anchor="middle">修正版リリース</text>
-  <text class="d-title" x="135" y="623" text-anchor="middle">GHSA 公開</text>
-  <text class="d-sub" x="135" y="641" text-anchor="middle">該当時は CVE 申請</text>
-  <text class="d-title" x="417" y="240" text-anchor="middle">理由を添えてクローズ</text>
+  <path d="M180 92 L180 122"/><path d="M174 116 L180 122 L186 116"/>
+  <path d="M180 184 L180 214"/><path d="M174 208 L180 214 L186 208"/>
+  <path d="M180 276 L180 306"/><path d="M174 300 L180 306 L186 300"/>
+  <path d="M300 245 H380 V61 H456"/><path d="M450 55 L456 61 L450 67"/>
+  <path d="M580 92 L580 122"/><path d="M574 116 L580 122 L586 116"/>
+  <path d="M580 184 L580 214"/><path d="M574 208 L580 214 L586 208"/>
+  <path d="M580 276 L580 306"/><path d="M574 300 L580 306 L586 300"/>
+  <!-- 受付側ラベル -->
+  <text class="d-title" x="180" y="66" text-anchor="middle">報告受領</text>
+  <text class="d-title" x="180" y="150" text-anchor="middle">受領確認</text>
+  <text class="d-sub" x="180" y="168" text-anchor="middle">オンラインに戻り次第</text>
+  <text class="d-title" x="180" y="242" text-anchor="middle">triage</text>
+  <text class="d-sub" x="180" y="260" text-anchor="middle">再現 / 分類</text>
+  <text class="d-title" x="180" y="342" text-anchor="middle">理由を添えてクローズ</text>
+  <!-- 修正側ラベル -->
+  <text class="d-title" x="580" y="58" text-anchor="middle">修正計画 or 緩和策</text>
+  <text class="d-sub" x="580" y="76" text-anchor="middle">重大度に応じて優先</text>
+  <text class="d-title" x="580" y="150" text-anchor="middle">協調開示</text>
+  <text class="d-sub" x="580" y="168" text-anchor="middle">合意した調整期間</text>
+  <text class="d-title" x="580" y="250" text-anchor="middle">修正版リリース</text>
+  <text class="d-title" x="580" y="334" text-anchor="middle">GHSA 公開</text>
+  <text class="d-sub" x="580" y="352" text-anchor="middle">該当時は CVE 申請</text>
   <!-- edge labels -->
-  <text class="d-edge" x="143" y="295" text-anchor="start">有効と確認</text>
-  <text class="d-edge" x="282" y="227" text-anchor="middle">スコープ外</text>
+  <text class="d-edge halo" x="340" y="237" text-anchor="middle">有効と確認</text>
+  <text class="d-edge halo" x="190" y="296" text-anchor="start">スコープ外</text>
 </svg>
 
 現実的な目安として、受領確認には通常数日かかります。重大な問題はすぐに着手しますが、軽微なものは余暇が確保できる週末まで持ち越すこともあります。1 週間返信がない場合は遠慮なく再度連絡してください。無視しているわけではなく、通知の取りこぼしか単に手が回らない時期である可能性が高いです。

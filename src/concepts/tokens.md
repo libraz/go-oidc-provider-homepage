@@ -45,34 +45,34 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 | **Access token** | JWT by default (RFC 9068); opaque when configured — see below | The RS identifier | RP → RS via `Authorization: Bearer` | Minutes | The RS, to authorize an API call. |
 | **UserInfo response** | JSON | n/a (RP's `client_id` implied) | RP → OP `/userinfo` (with access token) → RP | Per-request | The RP, to get fresh claims. |
 
-<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="6 40 700 208" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 0 760 244" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="tokens-flow-title">The OP issues an ID Token and an access token to the RP; the RP presents the access token to the resource server and to the OP's /userinfo endpoint, which returns claims JSON.</title>
-  <rect class="d-op" x="24" y="52" width="132" height="156" rx="10"/>
-  <rect x="272" y="52" width="132" height="156" rx="10"/>
-  <rect class="d-rs" x="560" y="52" width="132" height="156" rx="10"/>
-  <text class="d-h d-op-text" x="90" y="126" text-anchor="middle">OP</text>
-  <text class="d-sub d-op-sub" x="90" y="145" text-anchor="middle">this library</text>
-  <text class="d-h d-fill1" x="338" y="126" text-anchor="middle">RP</text>
-  <text class="d-sub" x="338" y="145" text-anchor="middle">client app</text>
-  <text class="d-h d-rs-t" x="626" y="126" text-anchor="middle">RS</text>
-  <text class="d-sub" x="626" y="145" text-anchor="middle">resource server</text>
-  <text class="d-mono-op" x="90" y="228" text-anchor="middle">/userinfo</text>
-  <line class="d-op" x1="156" y1="84" x2="270" y2="84"/>
-  <path class="d-op" d="M272,84 l-7,-4 M272,84 l-7,4"/>
-  <text class="d-txt" x="214" y="76" text-anchor="middle">ID Token</text>
-  <line class="d-op" x1="156" y1="108" x2="270" y2="108"/>
-  <path class="d-op" d="M272,108 l-7,-4 M272,108 l-7,4"/>
-  <text class="d-mono" x="214" y="100" text-anchor="middle">access_token</text>
-  <line class="d-op" x1="272" y1="152" x2="158" y2="152"/>
-  <path class="d-op" d="M156,152 l7,-4 M156,152 l7,4"/>
-  <text class="d-mono" x="214" y="144" text-anchor="middle">access_token</text>
-  <line class="d-op" x1="156" y1="178" x2="270" y2="178"/>
-  <path class="d-op" d="M272,178 l-7,-4 M272,178 l-7,4"/>
-  <text class="d-txt" x="214" y="192" text-anchor="middle">claims JSON</text>
-  <line class="d-rs" x1="404" y1="130" x2="558" y2="130"/>
-  <path class="d-rs" d="M560,130 l-7,-4 M560,130 l-7,4"/>
-  <text class="d-mono" x="482" y="122" text-anchor="middle">access_token</text>
-  <text class="d-mono" x="482" y="146" text-anchor="middle">Authorization: Bearer</text>
+  <rect class="d-box d-box-op" x="14" y="44" width="136" height="152" rx="10"/>
+  <rect class="d-box" x="312" y="44" width="136" height="152" rx="10"/>
+  <rect class="d-box d-box-rs" x="610" y="44" width="136" height="152" rx="10"/>
+  <text class="d-h d-op-text" x="82" y="116" text-anchor="middle">OP</text>
+  <text class="d-sub d-op-sub" x="82" y="135" text-anchor="middle">this library</text>
+  <text class="d-h d-fill1" x="380" y="116" text-anchor="middle">RP</text>
+  <text class="d-sub" x="380" y="135" text-anchor="middle">client app</text>
+  <text class="d-h d-rs-t" x="678" y="116" text-anchor="middle">RS</text>
+  <text class="d-sub" x="678" y="135" text-anchor="middle">resource server</text>
+  <text class="d-mono-op" x="82" y="220" text-anchor="middle">/userinfo</text>
+  <line class="d-op" x1="150" y1="76" x2="308" y2="76"/>
+  <path class="d-op" d="M312,76 l-7,-4 M312,76 l-7,4"/>
+  <text class="d-txt halo" x="229" y="68" text-anchor="middle">ID Token</text>
+  <line class="d-op" x1="150" y1="104" x2="308" y2="104"/>
+  <path class="d-op" d="M312,104 l-7,-4 M312,104 l-7,4"/>
+  <text class="d-mono halo" x="229" y="96" text-anchor="middle">access_token</text>
+  <line class="d-op" x1="312" y1="152" x2="154" y2="152"/>
+  <path class="d-op" d="M150,152 l7,-4 M150,152 l7,4"/>
+  <text class="d-mono halo" x="229" y="144" text-anchor="middle">GET /userinfo</text>
+  <line class="d-op" x1="150" y1="180" x2="308" y2="180"/>
+  <path class="d-op" d="M312,180 l-7,-4 M312,180 l-7,4"/>
+  <text class="d-txt halo" x="229" y="194" text-anchor="middle">claims JSON</text>
+  <line class="d-rs" x1="448" y1="120" x2="606" y2="120"/>
+  <path class="d-rs" d="M610,120 l-7,-4 M610,120 l-7,4"/>
+  <text class="d-mono halo" x="527" y="112" text-anchor="middle">Authorization: Bearer</text>
+  <text class="d-mono halo" x="527" y="136" text-anchor="middle">access_token</text>
 </svg>
 
 ## ID Token — "who logged in"
@@ -182,7 +182,7 @@ The access token's `aud` is **not** the `client_id`; it's the resource server's 
 
 ## Caching `/introspect` responses on the resource server
 
-The OP's response to `/introspect` (RFC 7662) is authoritative *at the moment it is issued*. Caching that response on the resource server is supported by the spec and is sometimes necessary for latency, but it changes the **revocation reach** of the token — the time between "this token was revoked at the OP" and "this RS will refuse it" widens to the cache TTL.
+The OP's response to `/introspect` (RFC 7662) is authoritative *at the moment it is issued*. Caching that response on the resource server is supported by the spec, and is sometimes necessary for latency. It also changes the **revocation reach** of the token: the gap between "this token was revoked at the OP" and "this RS will refuse it" widens to the cache TTL.
 
 | Caching strategy | Latency / OP load | Revocation gap |
 |---|---|---|

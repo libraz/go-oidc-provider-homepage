@@ -8,9 +8,9 @@ pageClass: pg-getting-started-minimal
 
 The shortest path to a running OP. `op.New` returns an error if `WithIssuer`, `WithStore`, or `WithKeyset` is missing. `WithCookieKeys` is required too whenever the `authorization_code` grant is enabled, which it is by default (along with `refresh_token`) — so for this minimal, default-grants config all four are effectively mandatory.
 
-<svg role="img" aria-labelledby="minimal-options-title" viewBox="0 0 760 270" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="minimal-options-title" viewBox="0 0 760 282" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="minimal-options-title">The four pieces a minimal OP needs: issuer, store, keyset, and cookie keys go into op.New, which returns an HTTP handler.</title>
-<rect class="min-box" x="34" y="34" width="150" height="58" rx="8"/>
+  <rect class="min-box" x="34" y="34" width="150" height="58" rx="8"/>
   <text class="min-text" x="109" y="68" text-anchor="middle">Issuer</text>
   <rect class="min-box" x="34" y="112" width="150" height="58" rx="8"/>
   <text class="min-text" x="109" y="146" text-anchor="middle">Store</text>
@@ -27,13 +27,16 @@ The shortest path to a running OP. `op.New` returns an error if `WithIssuer`, `W
   <text class="min-text" x="650" y="154" text-anchor="middle">HTTP handler</text>
   <text class="min-sub" x="650" y="176" text-anchor="middle">ListenAndServe</text>
 
-  <path class="min-flow" d="M184 63 C230 64 252 118 282 148"/>
-  <path class="min-flow" d="M184 141 H282"/>
-  <path class="min-flow" d="M184 219 C230 214 252 184 282 172"/>
-  <path class="min-flow" d="M371 92 V118"/>
-  <path class="min-flow" d="M367 110 L371 119 L375 110"/>
-  <path class="min-flow" d="M456 160 H570"/>
-  <path class="min-flow" d="M562 156 L571 160 L562 164"/>
+  <path class="min-flow" d="M184 63 C232 63 246 140 286 140"/>
+  <path class="min-flow" d="M277 136 L286 140 L277 144"/>
+  <path class="min-flow" d="M184 141 C232 141 246 160 286 160"/>
+  <path class="min-flow" d="M277 156 L286 160 L277 164"/>
+  <path class="min-flow" d="M184 219 C232 219 246 180 286 180"/>
+  <path class="min-flow" d="M277 176 L286 180 L277 184"/>
+  <path class="min-flow" d="M371 92 V122"/>
+  <path class="min-flow" d="M367 113 L371 122 L375 113"/>
+  <path class="min-flow" d="M456 160 H574"/>
+  <path class="min-flow" d="M565 156 L574 160 L565 164"/>
 </svg>
 
 ::: code-group

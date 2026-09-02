@@ -35,10 +35,10 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
-  // The custom grant is an extension dispatcher path. Select at least
-  // one built-in grant explicitly so the default browser grants are not
-  // enabled accidentally for this machine-to-machine example.
-  op.WithGrants(grant.ClientCredentials),
+  // The custom grant is an extension dispatcher path. Select built-in
+  // grants explicitly; refresh_token is required by the refresh example
+  // below, while browser grants remain disabled.
+  op.WithGrants(grant.ClientCredentials, grant.RefreshToken),
 
   op.WithCustomGrant(&serviceTokenHandler{}),
   // op.WithCustomGrant can be called repeatedly to register multiple handlers.
@@ -102,7 +102,7 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 
 The handler chooses between **OP-signed** (`BoundAccessToken`) and **handler-signed** (`AccessToken`) — they are mutually exclusive.
 
-<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 290" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="custom-grant-signing-title">The two issuance shapes a custom grant can return. With BoundAccessToken the OP owns signing, standard claims, cnf, the ID token, and the refresh token. With AccessToken the handler returns an already-signed value and takes on cnf and introspection wiring itself.</title>
   <defs>
     <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -116,7 +116,7 @@ The handler chooses between **OP-signed** (`BoundAccessToken`) and **handler-sig
   <rect class="accent" x="48" y="134" width="286" height="136" rx="8"/>
   <text class="h accent-text" x="191" y="162" text-anchor="middle">return BoundAccessToken</text>
   <text class="t" x="191" y="190" text-anchor="middle">the OP picks the key and mints the JWT</text>
-  <text class="t sub" x="191" y="214" text-anchor="middle">standard claims / `cnf` / TTL ceiling</text>
+  <text class="t sub" x="191" y="214" text-anchor="middle">standard claims · <tspan class="m">cnf</tspan> · TTL ceiling</text>
   <text class="t sub" x="191" y="236" text-anchor="middle">id_token and refresh stay OP-managed</text>
   <text class="m accent-text" x="191" y="258" text-anchor="middle">the default choice</text>
 
@@ -124,18 +124,17 @@ The handler chooses between **OP-signed** (`BoundAccessToken`) and **handler-sig
   <text class="h" x="569" y="162" text-anchor="middle">return AccessToken</text>
   <text class="t" x="569" y="190" text-anchor="middle">the handler returns a signed value</text>
   <text class="t sub" x="569" y="214" text-anchor="middle">for an external KMS or opaque backend</text>
-  <text class="t sub" x="569" y="236" text-anchor="middle">`cnf` and revocation are yours</text>
+  <text class="t sub" x="569" y="236" text-anchor="middle"><tspan class="m">cnf</tspan> and revocation are yours</text>
   <text class="m sub" x="569" y="258" text-anchor="middle">only with a concrete reason</text>
 
   <path d="M350 72 C330 104 250 112 191 130" marker-end="url(#cg-arrow)"/>
   <path d="M410 72 C430 104 510 112 569 130" marker-end="url(#cg-arrow)"/>
-
-  <rect class="soft" x="102" y="302" width="556" height="34" rx="8"/>
-  <text class="t" x="380" y="324" text-anchor="middle">returning both is a `server_error`: exactly one party owns issuance</text>
 </svg>
 
+The two shapes are mutually exclusive. A handler that returns both yields `server_error`, because exactly one party owns issuance.
+
 ::: details OP-signed vs handler-signed — what's the trade-off?
-**OP-signed** (`BoundAccessToken`) means the OP picks a key from its registered keyset and signs the JWT for you, stamps `cnf` from the verified DPoP / mTLS proof on the request, and merges your extra claims under the reserved-claim filter. **Handler-signed** (`AccessToken`) means you bring an already-formed token (typically from an external KMS / HSM, or an opaque token your introspection backend understands) and the OP echoes it verbatim; you own everything, including `cnf` if the token needs to be sender-bound. Pick OP-signed unless you have a hard reason not to.
+**OP-signed** (`BoundAccessToken`) means the OP picks a key from its registered keyset and signs the JWT for you. It also stamps `cnf` from the verified DPoP / mTLS proof on the request, and merges your extra claims under the reserved-claim filter. **Handler-signed** (`AccessToken`) means you bring an already-formed token — typically from an external KMS / HSM, or an opaque token your introspection backend understands — and the OP echoes it verbatim. You own everything from there, including `cnf` if the token needs to be sender-bound. Pick OP-signed unless you have a hard reason not to.
 :::
 
 ### `BoundAccessToken` — OP signs and binds
@@ -147,7 +146,7 @@ When the handler does not have an out-of-band signing key, hand back a `BoundAcc
 - Stamps `cnf.jkt` (DPoP) or `cnf.x5t#S256` (mTLS) automatically when the request presented a verified proof — the handler does not need to thread the binding through itself.
 - Merges `ExtraClaims` (collisions with the standard set yield `server_error` so the bug surfaces in audit).
 
-This is the right default for most embedders. FAPI 2.0 §3.1.4 binding contract is enforced for free.
+This is the right default for most embedders. As a result, the OP enforces FAPI 2.0 §3.1.4's binding contract for free.
 
 ### `AccessToken` — handler signs
 
@@ -200,7 +199,24 @@ return op.CustomGrantResponse{
 }, nil
 ```
 
-The OP owns the refresh-token credential: it generates the value, persists it through `RefreshTokenStore`, shares the access token's grant identity, and binds it to the same DPoP / mTLS proof. That means the issued refresh token uses the normal rotation, replay cascade (RFC 9700 §2.2.2), and revocation machinery. Issuance is honoured only when the client is registered for the `refresh_token` grant; otherwise the access-token response still succeeds, the refresh token is omitted, and `custom_grant.refresh_dropped` is emitted.
+The OP owns the refresh-token credential:
+
+- generates the value
+- persists it through `RefreshTokenStore`
+- shares the access token's grant identity
+- binds it to the same DPoP / mTLS proof
+
+That means the issued refresh token uses the normal rotation, replay cascade (RFC 9700 §2.2.2), and revocation machinery.
+
+When `IssueRefreshToken` is true, the refresh token is dropped (while the access-token response still succeeds) if any of these five gates fails:
+
+- The provider must serve the `refresh_token` grant (`grant.RefreshToken` in `WithGrants`).
+- The client must be registered for the `refresh_token` grant.
+- The response must have a non-empty subject.
+- The response scope must be non-empty.
+- The response must contain at most one audience.
+
+Each drop emits `custom_grant.refresh_dropped` with the policy reason (`provider_grant_disabled`, `client_not_registered`, `empty_subject`, `empty_scope`, or `multiple_resource_audience`). Dropping the refresh token does not by itself fail the access token or an otherwise eligible ID token; an empty scope therefore suppresses only the refresh token and does not reject an otherwise valid response.
 
 ::: details Refresh-token lineage — what's that?
 The OP records each refresh token's parent so a rotation produces a chain (`A → B → C`); when one of those tokens is replayed (RFC 9700 §2.2.2), the OP can revoke every descendant in one shot. `IssueRefreshToken` keeps custom grants inside that OP-owned chain. A handler cannot provide a refresh-token value directly because RFC 6749 §6 treats the refresh token as an authorization-server-issued credential.
@@ -211,6 +227,8 @@ The OP records each refresh token's parent so a rotation produces a chain (`A �
 - **Handler-supplied refresh-token values**. Use `IssueRefreshToken: true` when the OP should mint one.
 - **Both `AccessToken` and `BoundAccessToken`**. Mutually exclusive — setting both yields `server_error`.
 - **Reserved-claim collisions** in `ExtraClaims`. `iss / sub / aud / iat / exp / auth_time / nonce / acr / amr / azp / at_hash / c_hash / sid` (and `act` / `cnf` for `BoundAccessToken`) are dropped silently for `TokenExchangePolicy.ExtraClaims` (so the policy cannot rewrite them) but yield `server_error` for `CustomGrantResponse.ExtraClaims` (so handler bugs surface in the audit record).
+
+Known client-attributable dispatch failures use a 4xx OAuth error. A dispatcher failure, or any OP-internal failure the OP cannot attribute to the client — including a recovered handler panic, a response-shape conflict, a reserved-claim collision, or an OP-owned token construction / storage failure — returns `500 server_error`, never `invalid_grant`. If a client requires authentication time and the custom response requests `openid` without a non-zero `AuthTime`, automatic ID-token construction also returns `500 server_error`.
 
 ## See it run
 

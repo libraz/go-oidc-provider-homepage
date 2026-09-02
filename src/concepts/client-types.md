@@ -77,7 +77,8 @@ The decision tree traces each client shape down to the `token_endpoint_auth_meth
 
 <figure style="margin:1.6rem 0;text-align:center">
 
-<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 720 268" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 760 268" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(20,0)">
 <title id="authmethod-decision-title">Decision tree from client shape — public, confidential, or FAPI-grade — down to the token_endpoint_auth_method value the OP enforces.</title>
 <rect x="260" y="12" width="200" height="44" rx="6"/>
 <text class="dt-title" x="360" y="32" text-anchor="middle">Client shape</text>
@@ -108,6 +109,7 @@ The decision tree traces each client shape down to the `token_endpoint_auth_meth
 <rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
 <text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
 <text class="dt-note" x="600" y="200" text-anchor="middle">+ DPoP / mTLS sender constraint</text>
+</g>
 </svg>
 </figure>
 

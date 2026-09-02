@@ -6,16 +6,17 @@ description: 既存の Go アプリに http.Handler として OIDC Provider（Au
 pageClass: pg-index
 ---
 
-<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="home-embed-title">go-oidc-provider は既存の Go アプリに http.Handler として組み込み、OP エンドポイント、ストア、ログ、鍵をアプリ側の運用基盤に接続する。</title>
-<rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
+  <rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
   <text class="home-text" x="112" y="124" text-anchor="middle">既存 Go アプリ</text>
   <text class="home-sub" x="112" y="146" text-anchor="middle">router / middleware</text>
 
-  <rect class="home-main" x="302" y="78" width="156" height="110" rx="8"/>
-  <text class="home-text" x="380" y="116" text-anchor="middle">OIDC Provider</text>
-  <text class="home-sub" x="380" y="138" text-anchor="middle">http.Handler</text>
-  <text class="home-sub" x="380" y="156" text-anchor="middle">/oidc/auth /oidc/token /oidc/jwks</text>
+  <rect class="home-main" x="286" y="74" width="190" height="118" rx="8"/>
+  <text class="home-text" x="381" y="108" text-anchor="middle">OIDC Provider</text>
+  <text class="home-sub" x="381" y="130" text-anchor="middle">http.Handler</text>
+  <text class="home-sub" x="381" y="152" text-anchor="middle">/oidc/auth /oidc/token</text>
+  <text class="home-sub" x="381" y="170" text-anchor="middle">/oidc/jwks</text>
 
   <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
   <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
@@ -24,20 +25,20 @@ pageClass: pg-index
   <rect class="home-box" x="570" y="190" width="154" height="56" rx="8"/>
   <text class="home-text" x="647" y="224" text-anchor="middle">ログ / 監査</text>
 
-  <path class="home-flow" d="M190 134 H298"/>
-  <text class="home-sub" x="244" y="120" text-anchor="middle">Mount</text>
-  <path class="home-flow" d="M290 130 L299 134 L290 138"/>
-  <path class="home-flow" d="M458 116 C504 86 520 62 566 62"/>
-  <path class="home-flow" d="M558 58 L567 62 L558 66"/>
-  <path class="home-flow" d="M458 134 H566"/>
-  <path class="home-flow" d="M558 130 L567 134 L558 138"/>
-  <path class="home-flow" d="M458 152 C504 178 520 218 566 218"/>
-  <path class="home-flow" d="M558 214 L567 218 L558 222"/>
+  <path class="home-flow" d="M190 133 H286"/>
+  <path class="home-flow" d="M277 129 L286 133 L277 137"/>
+  <text class="home-sub halo" x="238" y="137" text-anchor="middle">マウント</text>
+  <path class="home-flow" d="M476 116 C520 96 530 62 570 62"/>
+  <path class="home-flow" d="M561 58 L570 62 L561 66"/>
+  <path class="home-flow" d="M476 140 H570"/>
+  <path class="home-flow" d="M561 136 L570 140 L561 144"/>
+  <path class="home-flow" d="M476 164 C520 184 530 218 570 218"/>
+  <path class="home-flow" d="M561 214 L570 218 L561 222"/>
 </svg>
 
 ## 代表的な使い方
 
-このライブラリでよく作る構成を 5 つ挙げます。どれも動作する例があります。
+本ライブラリでよく作る構成を 5 つ挙げます。いずれもリポジトリに動作する実例があります。
 
 ### 1. 最小構成の OP を立ち上げる
 
@@ -96,7 +97,7 @@ handler, _ := op.New(
 ```
 
 ::: tip プロファイル 1 行で済む理由
-`op.WithProfile(profile.FAPI2Baseline)` だけで、プロファイルが必須とする機能（`PAR`、`JAR`）の有効化、`token_endpoint_auth_methods_supported` の FAPI 許可リストへの絞り込み、mTLS が明示されていない場合の DPoP 既定選択、discovery 文書の調整までまとめて行います。詳細は [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)。
+`op.WithProfile(profile.FAPI2Baseline)` は、プロファイルが必須とする機能（`PAR`、`JAR`）を有効化し、`token_endpoint_auth_methods_supported` を FAPI 許可リストに絞り込みます。mTLS を明示していない場合は DPoP を既定で選び、discovery 文書もそれに合わせて調整します。詳細は [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
 :::
 
 ### 3. バックエンド向けトークンを発行する（エンドユーザなし）
@@ -140,7 +141,7 @@ handler, _ := op.New(
 ```
 
 ::: info UI オプション
-`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は、OP 側で SPA の入口を公開する構成、独自の同意テンプレート、独自のアカウント選択テンプレートを扱うためのオプションです。SPA の配信を自前のルーターで行いたい場合は `interaction.JSONDriver` も使えます。詳細は [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) と [使い方: SPA](/ja/use-cases/spa-custom-interaction) を参照してください。
+`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は、OP 側で SPA の入口を公開する構成、独自の同意テンプレート、独自のアカウント選択テンプレートを扱うためのオプションです。SPA の配信を自前のルータで行いたい場合は `interaction.JSONDriver` も使えます。詳細は [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) と [使い方: SPA](/ja/use-cases/spa-custom-interaction) を参照してください。
 :::
 
 ### 5. 永続ストアと揮発ストアを分離する
@@ -184,13 +185,13 @@ handler, _ := op.New(
 ## インストール
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v1.1.0
+go get github.com/libraz/go-oidc-provider/op@v1.2.0
 ```
 
 ::: info 安定 API
-`op.New` と同梱ストレージアダプターで構成した場合は通常そのまま更新できますが、BYO ストアや他の拡張を組み込んでいる場合は、更新前に [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) の移行案内を確認してください。godoc が `Experimental:` で始まる symbol は通常のマイナーリリース例外で、変更される可能性があります。
+`op.New` と同梱ストレージアダプタだけで構成した場合は、通常そのまま更新できます。独自のストアやその他の拡張を組み込んでいる場合は、更新前に [`CHANGELOG.md`](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) の移行案内を確認してください。godoc が `Experimental:` で始まる symbol は通常のマイナーリリース例外で、変更される可能性があります。
 :::
 
-## ライセンス
+## ライセンスと関連情報
 
 Apache-2.0。ソースは [`libraz/go-oidc-provider`](https://github.com/libraz/go-oidc-provider)。脆弱性報告は [SECURITY.md](https://github.com/libraz/go-oidc-provider/blob/main/SECURITY.md) を参照してください。

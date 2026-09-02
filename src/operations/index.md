@@ -16,6 +16,7 @@ The library deliberately stays out of HTTP-lifecycle and infra concerns: there i
 | [Multi-instance deployment](/operations/multi-instance) | running more than one OP replica — DPoP nonce sharing, session placement, sticky vs round-robin |
 | [Observability](/operations/observability) | logging (`*slog.Logger`), tracing (`otelhttp` middleware), Prometheus, request-IDs |
 | [Backup & disaster recovery](/operations/backup) | what to back up, what to skip, RPO targets per substore |
+| [Storage maintenance](/operations/storage-maintenance) | applying SQL schema changes in order, scheduling retention GC, watching the sweep |
 
 ## Out of scope (and why)
 
@@ -24,7 +25,7 @@ The library deliberately stays out of HTTP-lifecycle and infra concerns: there i
 | `/metrics` HTTP route | your router's job; the library exposes counters via `WithPrometheus(reg)` and lets you mount `/metrics` where it fits your auth boundary |
 | HTTP request-duration histograms | belongs in HTTP middleware (`otelhttp`, `prometheus/promhttp`); the OP only emits OIDC-business counters |
 | Tracing instrumentation inside endpoint handlers | the public surface is an `http.Handler`; wrap with `otelhttp.NewMiddleware` once at the seam |
-| Rate limiting | upstream — Cloudflare, Envoy, or a Go middleware of your choice. The OP defines the `rate_limit.exceeded` audit-event constant as shared vocabulary for that middleware to emit; it does not fire the event itself, nor does it implement the limiter |
+| Rate limiting | upstream — Cloudflare, Envoy, or a Go middleware of your choice. The OP defines the `rate_limit.exceeded` audit-event constant as shared vocabulary for that middleware to emit; the OP does not fire the event itself, nor does it implement the limiter |
 | Health checks | embedder territory; the OP has no opinion about liveness vs readiness for your stack |
 | Background workers | the OP is stateless across requests; no internal goroutines for cleanup. TTL-based eviction is the store's responsibility |
 
@@ -45,3 +46,4 @@ If you've never run the OP in production, read these in order:
 2. [Multi-instance deployment](/operations/multi-instance) — required reading before scaling past one replica.
 3. [Observability](/operations/observability) — wire logging / metrics / tracing on day one rather than after an incident.
 4. [Backup & DR](/operations/backup) — at least set the RPO targets before you go live.
+5. [Storage maintenance](/operations/storage-maintenance) — before you apply the first schema change to a live database.

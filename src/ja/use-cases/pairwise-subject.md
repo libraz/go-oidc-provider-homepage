@@ -75,7 +75,7 @@ sub = base64url( HMAC-SHA256(salt, sector_identifier || internal_user_id) )
 ```
 
 ::: details HMAC-SHA256 による導出とは
-HMAC は鍵付きハッシュで、秘密鍵（ここでは salt）と入力（ここでは sector + user id）を受け取り、固定長の出力を返します。ベースとなるハッシュは SHA-256 です。pairwise にとって重要な性質は 2 つあります。(1) 同じ入力からは常に同じ出力が得られるので、プロセスを再起動しても sector A における Alice の `sub` は同じ値になる、(2) salt が無ければ、攻撃者が発行済の sub を多数観測しても元の user id を逆算できない。OP は 256-bit の出力を base64url で符号化し、JWT の `sub` 文字列スロットに収めます。
+HMAC は鍵付きハッシュで、秘密鍵（ここでは salt）と入力（ここでは sector + user id）を受け取り、固定長の出力を返します。ベースとなるハッシュは SHA-256 です。pairwise にとって重要な性質は 2 つあります。（1） 同じ入力からは常に同じ出力が得られるので、プロセスを再起動しても sector A における Alice の `sub` は同じ値になる、（2） salt が無ければ、攻撃者が発行済の sub を多数観測しても元の user id を逆算できない。OP は 256-bit の出力を base64url で符号化し、JWT の `sub` 文字列スロットに収めます。
 :::
 
 ::: details salt とは
@@ -99,9 +99,10 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 
 複数 redirect-URI ホストを持ち `sector_identifier_uri` を持たないクライアントは sector を解決できず、issuance が `server_error` で失敗します。複数ホストへ 一斉通知 するクライアントには `sector_identifier_uri` を必須にしてください。
 
-<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 712 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <title id="pairwise-sub-fanout-title">1 つの internal_user_id が 2 つの RP sector それぞれに異なる pairwise sub を導出する図。sector は各クライアントの sector_identifier_uri から解決されます。</title>
-<text class="d-cap" x="8" y="18">pairwise sub の 一斉通知</text>
+<g transform="translate(24,0)">
+<text class="d-cap" x="8" y="18">pairwise sub の派生</text>
 <text class="d-sub" x="8" y="34">1 つの internal_user_id → sector ごとに異なる sub</text>
 <rect x="16" y="136" width="150" height="50" rx="8"/>
 <text class="d-lbl" x="91" y="158" text-anchor="middle" font-weight="600">同一ユーザ</text>
@@ -126,31 +127,32 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 <path class="d-flow" d="M479 107 L486 112 L479 117"/>
 <path class="d-flow" d="M426 214 H486"/>
 <path class="d-flow" d="M479 209 L486 214 L479 219"/>
-<rect x="486" y="74" width="210" height="76" rx="8"/>
-<text class="d-lbl" x="500" y="94" font-weight="600">RP A</text>
-<text class="d-mono d-muted" x="500" y="112">sector_identifier_uri</text>
-<text class="d-mono" x="500" y="129">→ a.example.com</text>
-<text class="d-mono" x="500" y="146">sub = 7bQ…Xa</text>
-<rect x="486" y="178" width="210" height="76" rx="8"/>
-<text class="d-lbl" x="500" y="198" font-weight="600">RP B</text>
-<text class="d-mono d-muted" x="500" y="216">sector_identifier_uri</text>
-<text class="d-mono" x="500" y="233">→ b.example.com</text>
-<text class="d-mono" x="500" y="250">sub = k9P…Zb</text>
-<text class="d-mono d-op-t" x="591" y="168" text-anchor="middle">sub_A ≠ sub_B</text>
+<rect x="486" y="68" width="210" height="88" rx="8"/>
+<text class="d-lbl" x="500" y="88" font-weight="600">RP A</text>
+<text class="d-mono d-muted" x="500" y="107">sector_identifier_uri</text>
+<text class="d-mono" x="500" y="125">→ a.example.com</text>
+<text class="d-mono" x="500" y="143">sub = 7bQ…Xa</text>
+<rect x="486" y="170" width="210" height="88" rx="8"/>
+<text class="d-lbl" x="500" y="190" font-weight="600">RP B</text>
+<text class="d-mono d-muted" x="500" y="209">sector_identifier_uri</text>
+<text class="d-mono" x="500" y="227">→ b.example.com</text>
+<text class="d-mono" x="500" y="245">sub = k9P…Zb</text>
+<text class="d-mono d-op-t halo" x="591" y="167" text-anchor="middle">sub_A ≠ sub_B</text>
 <text class="d-mono" x="356" y="282" text-anchor="middle">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
+</g>
 </svg>
 
 ### `sector_identifier_uri` 解決
 
-クライアントが `sector_identifier_uri` を登録すると、OP がそれを取得し(HTTPS のみ、RFC 1918 / loopback / link-local は拒否、リダイレクト先を再検証、body サイズと timeout に上限、24 時間の成功キャッシュ)、クライアントの全 redirect URI が文書にリストされていることを確認します。文書は単一の JSON 配列である必要があり、末尾に余分な byte があれば拒否されます。リモート文書の内容が正当に更新された場合、resolver は古い cache entry を退避し、次の成功 fetch で OP 再起動なしに回復します。これにより sector が公開済みの manifest に紐付き、OP が監査できる形になります。
+クライアントが `sector_identifier_uri` を登録すると、OP がそれを取得し（HTTPS のみ、RFC 1918 / loopback / link-local は拒否、リダイレクト先を再検証、body サイズと timeout に上限、24 時間の成功キャッシュ）、クライアントの全 redirect URI が文書にリストされていることを確認します。文書は単一の JSON 配列である必要があり、末尾に余分な byte があれば拒否されます。リモート文書の内容が正当に更新された場合、resolver は古い cache entry を退避し、次の成功 fetch で OP 再起動なしに回復します。これにより sector が公開済みの manifest に紐付き、OP が監査できる形になります。
 
 ## 途中切替は拒否
 
-非空の grant store が存在する状態で subject 戦略を切り替えると、本ライブラリは起動を拒否します。`public` から `pairwise` への(またはその逆の)切替を salt 対応の移行なしで行うと、過去発行の grant がすべて気付かれずに鍵替えされ、refresh-token rotation のたびに新しい `sub` で再発行され、JWT introspection が元のトークンと異なる識別子を返すことになります。
+非空の grant store が存在する状態で subject 戦略を切り替えると、本ライブラリは起動を拒否します。`public` から `pairwise` への（またはその逆の）切替を salt 対応の移行なしで行うと、過去発行の grant がすべて気付かれずに鍵替えされ、refresh-token rotation のたびに新しい `sub` で再発行され、JWT introspection が元のトークンと異なる識別子を返すことになります。
 
-構築時の subject-mode 不変性検査は、メタデータ サブストアの `__op_init` センチネル(構築が成功するたびに書き込まれる)も参照します。そのため subject-mode マーカが手動で消去(cleanup、TRUNCATE)された store を再利用しても、次の `op.New` 呼び出しで non-public への切替が拒否されます。
+構築時の subject-mode 不変性検査は、メタデータ サブストアの `__op_init` センチネル（構築が成功するたびに書き込まれる）も参照します。そのため subject-mode マーカが手動で消去（cleanup、TRUNCATE）された store を再利用しても、次の `op.New` 呼び出しで non-public への切替が拒否されます。
 
-本当に移行が必要な場合は、メンテナンスウィンドウを取り、発行済みの grant をすべて移行(自前の subject-mapping テーブルで再マッピング)してから、新しい戦略で OP を起動してください。
+本当に移行が必要な場合は、メンテナンスウィンドウを取り、発行済みの grant をすべて移行（自前の subject-mapping テーブルで再マッピング）してから、新しい戦略で OP を起動してください。
 
 ## DCR 経由のクライアント単位有効化
 

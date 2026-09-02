@@ -34,6 +34,36 @@ Public and native clients still require PKCE even without `profile.Baseline`; th
 
 A profile constrains its two neighbouring declaration axes differently, and the asymmetry is deliberate.
 
+<svg role="img" aria-labelledby="profile-axes-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="profile-axes-title">A declared profile fills in the feature flags it needs, but never adds a grant: a grant the profile requires and the deployment did not declare fails op.New instead.</title>
+
+  <rect x="260" y="16" width="240" height="44" rx="8" stroke="var(--vp-c-brand-2)"/>
+  <text x="380" y="43" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="12.5">op.WithProfile(…)</text>
+
+  <path d="M380 60 V82"/>
+  <path d="M192 82 H568"/>
+  <path d="M192 82 V108"/>
+  <path d="M188 102 L192 111 L196 102"/>
+  <path d="M568 82 V108"/>
+  <path d="M564 102 L568 111 L572 102"/>
+
+  <rect x="24" y="114" width="336" height="130" rx="8"/>
+  <text x="192" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">Features</text>
+  <text x="192" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">feature.PAR, feature.JAR, feature.JARM, …</text>
+  <path d="M44 178 H340" opacity="0.35"/>
+  <text x="192" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">Policy the profile is entitled to decide.</text>
+  <text x="192" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">not declared → the profile switches it on</text>
+
+  <rect x="400" y="114" width="336" height="130" rx="8"/>
+  <text x="568" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">Grants</text>
+  <text x="568" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">grant.AuthorizationCode, grant.CIBA, …</text>
+  <path d="M420 178 H716" opacity="0.35"/>
+  <text x="568" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">Only the embedder can supply the collaborators.</text>
+  <text x="568" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">not declared → op.New fails</text>
+</svg>
+
+Either way, the resolved policy is recorded in the `startup.profile` audit event, so the configuration the OP actually booted with is readable from the audit trail rather than inferred from the option list.
+
 **Missing features are switched on for you.** A feature flag such as PAR or JAR is policy the profile is entitled to decide, so declaring `profile.FAPI2Baseline` enables what it needs without a second option.
 
 **A missing grant fails `op.New` instead.** Activating a grant drags in collaborators only the embedder can supply, so the library will not mount an endpoint the deployment never asked to serve. `profile.FAPICIBA` is the case that bites: the profile's entire subject matter is the `/bc-authorize` ceremony, but that endpoint is mounted from the grant set. Without the check, a deployment could declare the profile, have JAR and DPoP switched on for it, and still answer 404 to every backchannel-authentication request.

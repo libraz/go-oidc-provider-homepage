@@ -5,7 +5,7 @@ description: RFC 9396 authorization_details を登録・検証し、新規 detai
 
 # 使い方 — Rich authorization requests（RFC 9396）
 
-scope は粗い単位です。`scope=payments` は *このクライアントは送金してよい* を表しますが、*IBAN X から IBAN Y へ €40 を一度だけ動かす* までは表せません。[RFC 9396](https://datatracker.ietf.org/doc/html/rfc9396)（Rich Authorization Requests、通称 RAR）は `authorization_details` パラメータを追加します。これは型付きオブジェクトの JSON 配列で、クライアントは要求内容を細かく記述でき、OP はその内容を grant に束ね、その grant から発行されるトークンへ引き継げます。
+scope は粗い単位です。`scope=payments` は *このクライアントは送金してよい* を表しますが、*IBAN X から IBAN Y へ €40 を一度だけ動かす* までは表せません。[RFC 9396](https://datatracker.ietf.org/doc/html/rfc9396)（Rich Authorization Requests、通称 RAR）は `authorization_details` パラメータを追加します。型付きオブジェクトの JSON 配列で、クライアントは要求内容を細かく記述でき、OP はその内容を grant に束ね、その grant から発行されるトークンへ引き継げます。
 
 本ライブラリは `authorization_details` を `/auth`、`/par`、`/token` で受理し、各要素を登録済みの type で検証し、許可済みの内容を grant に永続化し、JWT アクセストークン（RFC 9068 §2.2.3）と introspection（RFC 9396 §9）に反映します。`/oidc` に mount した場合の認可 endpoint は `/oidc/auth` です。
 
@@ -19,7 +19,7 @@ RAR は、リソースサーバが金額、口座、location、action、datatype
 
 ::: details 用語の補足
 - **`authorization_details`** — JSON 配列。各要素は `type` 文字列に加えて、type 固有のメンバ（`actions`、`locations`、`datatypes` など、その type が定義するもの）を持つオブジェクト。
-- **`type`** — RFC 9396 §2 の識別子（例: `payment_initiation`）。OP は事前に教えられた type だけを受理し、未知の type は拒否します。
+- **`type`** — RFC 9396 §2 の識別子（例: `payment_initiation`）。OP はあらかじめ登録した type だけを受理し、未知の type は拒否します。
 - **validator** — 構造的なチェックは OP が担います。`type` を超えた各メンバの *意味* は、type ごとの validator で組み込み側が強制します。
 :::
 
@@ -29,9 +29,43 @@ RAR は、リソースサーバが金額、口座、location、action、datatype
 
 validator なしで登録された type は、その type 配下で任意の中身を受理してしまいます。そのため nil の `Validate` は `op.New` で拒否され、OP は起動しません。
 
+<svg role="img" aria-labelledby="rar-shape-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="rar-shape-title">authorization_details 要素 1 件の形: OP は配列の形と type メンバーを確認し、登録された validator がそれ以外のメンバーを確認する。許可された配列はトークン応答、JWT アクセストークン、introspection に反映される。</title>
+
+  <rect x="24" y="24" width="340" height="140" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
+  <text x="44" y="52" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">[{</text>
+  <text x="60" y="74" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">"type": "payment_initiation",</text>
+  <text x="60" y="100" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">"actions": ["initiate"],</text>
+  <text x="60" y="122" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">"amount": "40.00"</text>
+  <text x="44" y="148" fill="currentColor" font-size="11.5" style="font-family:var(--vp-font-family-mono)">}]</text>
+
+  <path d="M364 70 H396" style="stroke:var(--vp-c-brand-2)"/>
+  <text x="404" y="74" font-size="11" style="fill:var(--vp-c-brand-2)">OP: 配列の形と登録済み type</text>
+
+  <path d="M364 111 H384 M384 96 V126 M384 96 H392 M384 126 H392" style="stroke:var(--vp-c-text-3)"/>
+  <text x="404" y="115" font-size="11" style="fill:var(--vp-c-text-2)">組み込み側の Validate: それ以外のメンバー</text>
+
+  <path d="M194 164 V182 M134 182 H626 M134 182 V198 M380 182 V198 M626 182 V198" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M129 193 L134 200 L139 193" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M375 193 L380 200 L385 193" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M621 193 L626 200 L631 193" style="stroke:var(--vp-c-brand-2)"/>
+
+  <rect x="34" y="204" width="200" height="54" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="134" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--vp-c-brand-2)">トークン応答</text>
+  <text x="134" y="247" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">許可された内容をそのまま返す</text>
+
+  <rect x="280" y="204" width="200" height="54" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="380" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--vp-c-brand-2)">JWT アクセストークン</text>
+  <text x="380" y="247" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">RFC 9068 §2.2.3</text>
+
+  <rect x="526" y="204" width="200" height="54" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="626" y="228" text-anchor="middle" font-size="12.5" font-weight="600" style="fill:var(--vp-c-brand-2)">introspection</text>
+  <text x="626" y="247" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2)">RFC 9396 §9</text>
+</svg>
+
 ## 設定
 
-受理する type を `op.WithAuthorizationDetailTypes` で登録します。これにより RAR feature が暗黙に有効になり、`authorization_details` が 3 つのエンドポイントで受理可能になり、許可済みの内容が永続化・反映され、discovery が `authorization_details_types_supported` を公開します。`op.WithFeature(feature.RAR)` だけでは、受理する type と validator が無いため実用的な設定になりません。
+受理する type を `op.WithAuthorizationDetailTypes` で登録します。type を登録すると RAR feature が暗黙に有効になり、`authorization_details` が 3 つのエンドポイントで受理可能になり、許可済みの内容が永続化・反映され、discovery が `authorization_details_types_supported` を公開します。`op.WithFeature(feature.RAR)` だけでは、受理する type と validator が無いため実用的な設定になりません。
 
 ```go
 import (
@@ -104,7 +138,7 @@ curl -G --data-urlencode "authorization_details=$DETAILS" \
 }
 ```
 
-JWT アクセストークンは同じ配列を `authorization_details` claim として保持し（RFC 9068 §2.2.3）、トークンを introspect すると introspection レスポンスにもそれが返ります（RFC 9396 §9）。そのためリソースサーバは、JWT を自分でパースしても OP に問い合わせても、許可済みの内容に到達できます。
+JWT アクセストークンは同じ配列を `authorization_details` claim として保持し（RFC 9068 §2.2.3）、トークンを introspect すると introspection レスポンスにもその配列が返ります（RFC 9396 §9）。そのためリソースサーバは、JWT を自分でパースしても OP に問い合わせても、許可済みの内容に到達できます。
 
 ## 再同意と detail の適用範囲
 

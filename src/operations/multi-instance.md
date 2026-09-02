@@ -9,9 +9,10 @@ pageClass: pg-operations-multi-instance
 
 The OP is stateless across HTTP requests; every replica reads and writes through the configured `store.Store`. Going from one replica to N shifts the conversation from "what's in process memory" to "what's shared, what's volatile, and what fan-out behaviour is acceptable".
 
-<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 720 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 760 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
 <title id="mi-replica-topology-title">Replica topology: a load balancer round-robins one client's /token and /userinfo across N OP replicas, all sharing one durable store and one volatile Redis tier.</title>
 <defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<g transform="translate(20 0)">
 <rect x="280" y="16" width="160" height="44" rx="6"/>
 <text class="lbl" x="360" y="43">RP / client</text>
 <path d="M360 60 L360 90" marker-end="url(#mi-arrow)"/>
@@ -47,11 +48,24 @@ The OP is stateless across HTTP requests; every replica reads and writes through
 <text class="mono" x="392" y="348">Sessions · Interactions</text>
 <text class="mono" x="392" y="368">ConsumedJTIs · DPoP nonces</text>
 <text class="sub" x="536" y="408">evicted on restart / maxmemory</text>
+</g>
 </svg>
 
 ## What's shared automatically
 
-Anything that lives in your `store.Store` is shared by construction. The durable substores (clients, codes, refresh tokens, access tokens, grants, IATs, PARs) hit a single backend (SQL or your own implementation) across every replica — `composite.PushedAuthRequests` is part of `composite.TxClusterKinds`, so the splitter refuses to route it off the durable anchor.
+Anything routed to the same external backend from every replica is shared. In a composite store, the seven `composite.TxClusterKinds` members — authorization codes, refresh tokens, grants, PARs, JWT access-token registrations, opaque access tokens, and grant-revocation tombstones — must use one comparable `store.Transactional` backend. These substores sit outside that cluster and may be routed separately:
+
+- clients
+- sessions
+- users
+- IATs / RATs
+- device codes
+- CIBA requests
+- interactions
+- consumed JTIs
+- metadata
+
+Production replicas must still use shared placement wherever cross-replica visibility is required.
 
 Volatile substores eligible for a Redis tier are `Sessions`, `Interactions`, and `ConsumedJTIs` (the JAR / DPoP / private_key_jwt replay set) — see [Hot/cold split](/use-cases/hot-cold-redis). The DPoP server-nonce store is a separate seam wired through `op.WithDPoPNonceSource`, not a substore.
 
@@ -107,7 +121,7 @@ Sessions can live durably (SQL) or volatile (Redis without persistence). The tra
 | Durable (SQL) | survives restart / failover, so the browser logout trigger can still resolve its subject and session snapshot; RP targets come from grants, not a session list | every login round-trips your DB write |
 | Volatile (Redis) | low write latency; no DB hot row | eviction on restart / `maxmemory` can lose the browser logout trigger before the snapshot; once a snapshot exists, RP targets still come from grants, not `SessionStore` rows |
 
-Use `WithSessionDurabilityPosture(...)` to annotate the choice in audit events (`bcl.no_sessions_for_subject` records a session-bearing notice with zero grant-derived RP targets). The library does not constrain placement; durable placement protects the browser logout trigger and pre-fan-out snapshot across restart/failover, while volatile eviction can lose that trigger before fan-out starts. Once a snapshot exists, target resolution is grant-derived rather than a walk of `SessionStore` rows; the posture gives SOC dashboards context for trigger loss versus a no-target outcome.
+Use `WithSessionDurabilityPosture(...)` to annotate the choice in audit events (`bcl.no_sessions_for_subject` records a session-bearing notice with zero grant-derived RP targets). The library does not constrain placement. Durable placement protects the browser logout trigger and the pre-fan-out snapshot across restart and failover. Volatile eviction can lose that trigger before the fan-out starts. Once a snapshot exists, target resolution is grant-derived rather than a walk of `SessionStore` rows; the posture gives SOC dashboards context for trigger loss versus a no-target outcome.
 
 ## Interaction state
 
@@ -195,4 +209,4 @@ Numbers are illustrative — your bottleneck is almost always the durable store,
 ## What you can't do with multiple instances
 
 - **Run two OPs against one transactional store with different configurations.** The discovery document, scope catalog, alg list, and grant set must agree across replicas. Differences cause RP-visible drift (a token a replica issues another rejects).
-- **Split the durable substores across two backends.** The composite store's invariant is "one durable backend"; transactional integrity depends on it. See [Hot/cold split](/use-cases/hot-cold-redis).
+- **Split `composite.TxClusterKinds` across two backends.** The composite adapter rejects a split cluster, a non-comparable cluster backend, or an anchor that does not implement `store.Transactional`. Durable kinds outside that cluster may be routed separately when their own consistency and availability requirements are met. See [Hot/cold split](/use-cases/hot-cold-redis).

@@ -8,7 +8,7 @@ pageClass: pg-compliance-ofcs-reproduce
 
 This page is the operator's runbook. It complements [OFCS conformance status](/compliance/ofcs), which records *what* the suite saw on the latest run; this page covers *how* to reproduce it on your own machine and *which library options* each OFCS plan exercises.
 
-The status page summarizes the latest release run at core commit [`ee4369a`](https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a). Its JSON snapshot is a local, gitignored release artifact; use this runbook to generate a fresh snapshot for your own environment.
+The status page summarizes the latest release run at core commit [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a), captured at `2026-09-01T13:48:21Z`. Its JSON snapshot is a local, gitignored release artifact; use this runbook to generate a fresh snapshot for your own environment.
 
 If you are looking for the latest PASS/REVIEW/SKIPPED/WARNING counts, start at [OFCS conformance status](/compliance/ofcs). If you want to understand which `op.With...` options to wire into your own OP so the same OFCS plans pass against it, you are in the right place.
 
@@ -45,8 +45,8 @@ The numbers on this site are reproducible snapshots — this page tells you how 
   <path class="repro-flow" d="M312 124 L321 128 L312 132"/>
   <path class="repro-flow" d="M448 128 H470"/>
   <path class="repro-flow" d="M462 124 L471 128 L462 132"/>
-  <path class="repro-flow" d="M598 118 C620 100 622 84 620 80"/>
-  <path class="repro-flow" d="M612 80 L621 78 L618 87"/>
+  <path class="repro-flow" d="M598 128 H611 V79 H620"/>
+  <path class="repro-flow" d="M612 75 L621 79 L612 83"/>
   <path class="repro-flow" d="M680 108 V144"/>
   <path class="repro-flow" d="M676 136 L680 145 L684 136"/>
 </svg>
@@ -55,7 +55,7 @@ The numbers on this site are reproducible snapshots — this page tells you how 
 
 - **Docker** with Compose v2 (the harness invokes `docker compose`, not `docker-compose`).
 - **OpenSSL** for cert generation (`scripts/conformance.sh certs`).
-- **Go 1.25+**; use the toolchain version pinned in `go.mod` for the same release environment.
+- **Go 1.25+**; the release uses the `go1.27.0` toolchain pinned in `go.mod`.
 - `curl` and `python3` for the seed-plans / drive scripts.
 
 The OFCS image is pulled from the OpenID Foundation registry at the tag pinned in [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml). You do not need a separate OFCS checkout or `mvn install` step.

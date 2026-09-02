@@ -8,8 +8,8 @@ pageClass: pg-concepts-jose-basics
 
 **JOSE** (JavaScript Object Signing and Encryption) is the umbrella term for a family of IETF specs that define how to sign, encrypt, and represent keys for JSON-shaped tokens. Any OIDC implementation deals with all four pieces — JWS, JWE, JWK, JWKS — usually under the surface, occasionally directly. This page is the minimum a reader needs to understand `id_token`, `jwks_uri`, the JAR `request=` parameter, and `kid`.
 
-<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jose-map-title">How the JOSE pieces relate: JWS signs, JWE encrypts, a JWK is one key, a JWKS is a set of them, and kid is the label that picks one out of the set.</title>
+<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title id="jose-map-title">How the JOSE pieces relate: JWS signs, JWE encrypts, and the kid in a JWS header selects one JWK out of the JWKS published at /jwks.</title>
 <rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
   <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>
   <text class="jose-sub" x="133" y="110" text-anchor="middle">signs a JWT</text>
@@ -24,28 +24,34 @@ pageClass: pg-concepts-jose-basics
   <text class="jose-text" x="629" y="88" text-anchor="middle">Recipient</text>
   <text class="jose-sub" x="629" y="110" text-anchor="middle">decrypts, then verifies</text>
 
-  <rect class="jose-box" x="170" y="224" width="178" height="72" rx="8"/>
-  <text class="jose-text" x="259" y="254" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="259" y="274" text-anchor="middle">one public key</text>
-
-  <rect class="jose-box" x="412" y="214" width="178" height="92" rx="8"/>
-  <text class="jose-text" x="501" y="244" text-anchor="middle">JWKS</text>
-  <text class="jose-sub" x="501" y="264" text-anchor="middle">a set of JWKs</text>
-  <text class="jose-sub" x="501" y="282" text-anchor="middle">published at /jwks</text>
-
-  <rect class="jose-main" x="292" y="164" width="178" height="42" rx="8"/>
-  <text class="jose-text" x="381" y="190" text-anchor="middle">kid = key label</text>
-
   <path class="jose-flow" d="M222 98 H288"/>
   <path class="jose-flow" d="M280 94 L289 98 L280 102"/>
   <path class="jose-flow" d="M470 98 H536"/>
   <path class="jose-flow" d="M528 94 L537 98 L528 102"/>
-  <path class="jose-flow" d="M381 206 C372 230 360 250 352 258"/>
-  <path class="jose-flow" d="M360 255 L351 259 L355 250"/>
-  <path class="jose-flow" d="M381 206 C400 234 418 252 408 258"/>
-  <path class="jose-flow" d="M408 249 L409 259 L400 254"/>
-  <path class="jose-flow" d="M348 260 H408"/>
-  <path class="jose-flow" d="M400 256 L409 260 L400 264"/>
+
+  <rect class="jose-box" x="44" y="238" width="212" height="76" rx="8"/>
+  <text class="jose-text" x="150" y="268" text-anchor="middle">JWS header</text>
+  <text class="jose-sub" x="150" y="292" text-anchor="middle">"kid": "2024-05"</text>
+
+  <rect class="jose-set" x="306" y="196" width="412" height="140" rx="10"/>
+  <text class="jose-text" x="322" y="224">JWKS</text>
+  <text class="jose-sub" x="380" y="224">a set of JWKs, published at /jwks</text>
+
+  <rect class="jose-match" x="322" y="240" width="120" height="76" rx="6"/>
+  <text class="jose-text" x="382" y="270" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="382" y="292" text-anchor="middle">kid 2024-05</text>
+
+  <rect class="jose-box" x="454" y="240" width="120" height="76" rx="6"/>
+  <text class="jose-text" x="514" y="270" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="514" y="292" text-anchor="middle">kid 2023-11</text>
+
+  <rect class="jose-box" x="586" y="240" width="120" height="76" rx="6"/>
+  <text class="jose-text" x="646" y="270" text-anchor="middle">JWK</text>
+  <text class="jose-sub" x="646" y="292" text-anchor="middle">kid 2024-09</text>
+
+  <path class="jose-flow" d="M256 278 H316"/>
+  <path class="jose-flow" d="M308 274 L317 278 L308 282"/>
+  <text class="jose-sub halo" x="286" y="268" text-anchor="middle">selects</text>
 </svg>
 
 ::: details Specs referenced on this page
@@ -113,6 +119,8 @@ The header carries two algorithm names:
 
 In OIDC, JWE is used as an **outer envelope** when the embedder or the client wants confidentiality on top of signature: `id_token` encrypted with the RP's public key, an encrypted userinfo response, an encrypted introspection response, an encrypted authorize response (JARM-with-encryption). The inner artefact is still a JWS — the JWE just wraps it.
 
+The OP's `op.WithEncryptionKeyset` is for the other direction: it holds private keys for decrypting inbound encrypted request objects and publishes their public halves as `use=enc` keys. It is not an outbound encryption keyset; outbound JWE responses use a `use=enc` key selected from the client's JWKS. If an inbound JWE omits `kid`, the OP filters live keys to the family required by `alg` and refuses to try more than `op.MaxKidlessEncryptionTrialKeys` (default: 4) candidates. Send `kid` when a family is larger than that limit.
+
 See [JWE encryption use case](/use-cases/jwe-encryption) for the complete wiring (`op.WithEncryptionKeyset`, `op.WithSupportedEncryptionAlgs`).
 
 ## JWK — JSON Web Key
@@ -153,7 +161,7 @@ A **JWKS** is just a JSON array of JWKs:
 }
 ```
 
-The OP publishes its public signing keys at `jwks_uri` (advertised in the discovery document). RPs fetch the JWKS once, cache it, and use it to verify ID Token signatures offline. During key rotation the OP keeps the previous key in the set for a window long enough that RP caches converge — see [Operations: key rotation](/operations/key-rotation).
+The OP publishes its public signing keys at `jwks_uri` (advertised in the discovery document). When `op.WithEncryptionKeyset` is configured, the same endpoint also publishes the OP's public `use=enc` keys for inbound encrypted request objects. RPs fetch the JWKS once, cache it, and use the relevant keys to verify signatures or encrypt request objects. During key rotation the OP keeps previous keys in the set for a window long enough that RP caches converge — see [Operations: key rotation](/operations/key-rotation).
 
 ::: details `jwks_uri` vs the `jwk` JWS header — what's the difference?
 - **`jwks_uri`** (discovery field) is the URL the OP serves its JWKS at. Stable, cacheable, the RP fetches it on its own schedule.

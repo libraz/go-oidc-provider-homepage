@@ -94,7 +94,8 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 
 <figure style="margin:1.6rem 0;text-align:center">
 
-<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 720 268" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 760 268" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(20,0)">
 <title id="authmethod-decision-title">クライアントの構造（public / confidential / FAPI grade）から OP が強制する token_endpoint_auth_method の値までを辿る決定木。</title>
 <rect x="260" y="12" width="200" height="44" rx="6"/>
 <text class="dt-title" x="360" y="32" text-anchor="middle">クライアントの構造</text>
@@ -125,6 +126,7 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 <rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
 <text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
 <text class="dt-note" x="600" y="200" text-anchor="middle">+ DPoP / mTLS sender constraint</text>
+</g>
 </svg>
 </figure>
 

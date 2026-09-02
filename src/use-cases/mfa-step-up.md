@@ -1,6 +1,6 @@
 ---
 title: MFA / step-up
-description: Compose authenticators and rules — TOTP always, captcha after N failures, and ACR step-up on demand with v1.1 login/MFA audit signals.
+description: Compose authenticators and rules — TOTP always, captcha after N failures, and ACR step-up on demand with login/MFA audit signals.
 pageClass: pg-use-cases-mfa-step-up
 ---
 
@@ -87,6 +87,8 @@ Use this page when the login decision depends on more than "password accepted": 
 
 `LoginFlow` is a struct with a `Primary` step and a list of `Rules`. Each rule is a `Rule` value built from a constructor like `op.RuleAlways(step)`, `op.RuleAfterFailedAttempts(n, step)`, `op.RuleRisk(threshold, step)`, or `op.RuleACR(acr, step)`.
 
+A rule whose `When` is nil is an always-on rule: the library treats it as a constant-true predicate. This includes a bare struct literal such as `op.Rule{Then: step}`; use an explicit predicate when a factor must be conditional.
+
 ## Always TOTP
 
 ```go
@@ -128,6 +130,8 @@ op.New(
 ```
 
 The `LoginAttemptObserver` (passed via `op.WithLoginAttemptObserver`) counts failures per identifier. `RuleAfterFailedAttempts` reads that count.
+
+The observer receives one `op.LoginAttempt` per authentication attempt. Its `Outcome` is one of `op.AttemptSuccess`, `op.AttemptFailure`, or `op.AttemptLocked`. `AttemptLocked` means the brute-force gate ended the attempt, rather than the submitted credential being evaluated as an ordinary failure, so consumers should handle it as a separate outcome.
 
 ## Risk-based step-up
 
@@ -192,6 +196,8 @@ The one-time factors — email-OTP (`op.StepEmailOTP`), TOTP (`op.StepTOTP`), an
 
 Terminal factor failures — an expired or already-consumed one-time code, lockout, a required reset, too many resends — are wrapped in the `authn.ErrFactorAbort` sentinel, which the authorize endpoint maps to **HTTP 400**, not 500: a spent code is a client-side condition, not a server fault.
 
+The `AttemptsRemaining` value on the recovery-code prompt is the remaining failed-submission budget. It is not a count of unconsumed recovery codes, and a driver must not use it to infer how many recovery codes remain.
+
 ## Audit trail
 
 The authentication flow emits actual factor outcomes from the `op.Audit*` catalog: the primary factor uses `op.AuditLoginSuccess` / `op.AuditLoginFailed`, and an additional factor uses `op.AuditMFASuccess` / `op.AuditMFAFailed`. `op.AuditLockoutStalled` reports repeated cross-factor lockout CAS contention that abandoned a failed attempt without counting it. `op.AuditMFARequired`, `op.AuditStepUpRequired`, and `op.AuditStepUpSuccess` are reserved catalog constants; the OP does not emit them.
@@ -223,6 +229,8 @@ For account-management flows, use the companion packages rather than constructin
 A WebAuthn Relying Party ID must be a domain name, and browsers reject an IP literal for it — so an OP developing against `http://127.0.0.1` has no valid RP ID to pair with. Bind the issuer to `localhost` and opt in with [`op.WithAllowLocalhostLoopback()`](/reference/options), which admits the textual host in the issuer as well as in redirect URIs. The carve-out is for a developer machine and nowhere else; production RPs belong behind https.
 
 Setting `AAGUIDAllowlist` on `op.PrimaryPasskey` also switches the registration ceremony to `direct` attestation conveyance, because an allowlist compared against an unattested AAGUID proves nothing — a software authenticator could register by naming an approved model. Expect a user-agent attestation prompt, and a registration that cannot identify the model is refused rather than matched. Leave the allowlist empty to keep the prompt-free ceremony.
+
+`RequireUserVerification: true` applies to both passkey registration and login. The authenticator must perform a user-verification gesture such as a PIN or biometric; a presence-only registration or assertion is refused. Keep this setting in the shared `op.PrimaryPasskey` configuration used by `op/passkeykit`, so a credential accepted during enrolment remains usable at login.
 :::
 
 ## Enrolling a TOTP factor

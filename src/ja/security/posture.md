@@ -24,36 +24,36 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 | 4 | **サプライチェーン** — 依存が安全である | CI で `govulncheck`、depguard、サードパーティ目録 |
 | 5 | **運用** — 時間が経っても安全である | SECURITY.md による報告経路、GitHub Security Advisories |
 
-> 適合性 ≠ セキュリティ です。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
+> 適合性 ≠ セキュリティです。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="-2 -2 724 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="0 0 760 124" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="posture-five-properties-title">「これは安全か？」を支える 5 つの独立した性質 — 適合性・正しさ・セキュリティ・サプライチェーン・運用の保証を順に並べた図。</title>
-  <rect x="0" y="16" width="124" height="84" rx="6"/>
-  <rect x="149" y="16" width="124" height="84" rx="6"/>
-  <rect x="298" y="16" width="124" height="84" rx="6"/>
-  <rect x="447" y="16" width="124" height="84" rx="6"/>
-  <rect x="596" y="16" width="124" height="84" rx="6"/>
-  <path class="op-fp-flow" d="M127 58 H143 M139 54 L144 58 L139 62"/>
-  <path class="op-fp-flow" d="M276 58 H292 M288 54 L293 58 L288 62"/>
-  <path class="op-fp-flow" d="M425 58 H442 M438 54 L443 58 L438 62"/>
-  <path class="op-fp-flow" d="M574 58 H591 M587 54 L592 58 L587 62"/>
-  <text class="op-fp-num" x="62" y="38" text-anchor="middle" stroke="none">1</text>
-  <text class="op-fp-title" x="62" y="59" text-anchor="middle" fill="currentColor" stroke="none">適合性</text>
-  <text class="op-fp-mono" x="62" y="80" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
-  <text class="op-fp-num" x="211" y="38" text-anchor="middle" stroke="none">2</text>
-  <text class="op-fp-title" x="211" y="59" text-anchor="middle" fill="currentColor" stroke="none">正しさ</text>
-  <text class="op-fp-prose" x="211" y="80" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
-  <text class="op-fp-num" x="360" y="38" text-anchor="middle" stroke="none">3</text>
-  <text class="op-fp-title" x="360" y="59" text-anchor="middle" fill="currentColor" stroke="none">セキュリティ</text>
-  <text class="op-fp-prose" x="360" y="80" text-anchor="middle" fill="currentColor" stroke="none">構造的防御</text>
-  <text class="op-fp-num" x="509" y="38" text-anchor="middle" stroke="none">4</text>
-  <text class="op-fp-title" x="509" y="59" text-anchor="middle" fill="currentColor" stroke="none">サプライチェーン</text>
-  <text class="op-fp-mono" x="509" y="76" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
-  <text class="op-fp-mono" x="509" y="89" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
-  <text class="op-fp-num" x="658" y="38" text-anchor="middle" stroke="none">5</text>
-  <text class="op-fp-title" x="658" y="59" text-anchor="middle" fill="currentColor" stroke="none">運用</text>
-  <text class="op-fp-mono" x="658" y="76" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
-  <text class="op-fp-mono" x="658" y="89" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
+  <rect x="7" y="18" width="130" height="84" rx="6"/>
+  <rect x="161" y="18" width="130" height="84" rx="6"/>
+  <rect x="315" y="18" width="130" height="84" rx="6"/>
+  <rect x="469" y="18" width="130" height="84" rx="6"/>
+  <rect x="623" y="18" width="130" height="84" rx="6"/>
+  <path class="op-fp-flow" d="M139 60 H158 M153 56 L158 60 L153 64"/>
+  <path class="op-fp-flow" d="M293 60 H312 M307 56 L312 60 L307 64"/>
+  <path class="op-fp-flow" d="M447 60 H466 M461 56 L466 60 L461 64"/>
+  <path class="op-fp-flow" d="M601 60 H620 M615 56 L620 60 L615 64"/>
+  <text class="op-fp-num" x="72" y="40" text-anchor="middle" stroke="none">1</text>
+  <text class="op-fp-title" x="72" y="61" text-anchor="middle" fill="currentColor" stroke="none">適合性</text>
+  <text class="op-fp-mono" x="72" y="82" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
+  <text class="op-fp-num" x="226" y="40" text-anchor="middle" stroke="none">2</text>
+  <text class="op-fp-title" x="226" y="61" text-anchor="middle" fill="currentColor" stroke="none">正しさ</text>
+  <text class="op-fp-prose" x="226" y="82" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
+  <text class="op-fp-num" x="380" y="40" text-anchor="middle" stroke="none">3</text>
+  <text class="op-fp-title" x="380" y="61" text-anchor="middle" fill="currentColor" stroke="none">セキュリティ</text>
+  <text class="op-fp-prose" x="380" y="82" text-anchor="middle" fill="currentColor" stroke="none">構造的防御</text>
+  <text class="op-fp-num" x="534" y="40" text-anchor="middle" stroke="none">4</text>
+  <text class="op-fp-title" x="534" y="61" text-anchor="middle" fill="currentColor" stroke="none">サプライチェーン</text>
+  <text class="op-fp-mono" x="534" y="78" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
+  <text class="op-fp-mono" x="534" y="91" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
+  <text class="op-fp-num" x="688" y="40" text-anchor="middle" stroke="none">5</text>
+  <text class="op-fp-title" x="688" y="61" text-anchor="middle" fill="currentColor" stroke="none">運用</text>
+  <text class="op-fp-mono" x="688" y="78" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
+  <text class="op-fp-mono" x="688" y="91" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
 </svg>
 
 ## 構造的防御（コードの形そのもので強制している箇所）
@@ -76,7 +76,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 |---|---|
 | JWT ライブラリが `alg=none` を受理 | `Algorithm(s)` は不明値・空文字を拒否 |
 | 公開鍵経路で `HS256` を受理 | `HS*` は型に存在しない |
-| 配置ごとの alg「フィーチャーフラグ」 | depguard の `jose-isolation` ルールで `go-jose/v4` を直接 import できるパッケージを 許可リストで固定。新規呼び出し元は明示的に追加する必要がある |
+| 配置ごとの alg「フィーチャーフラグ」 | depguard の `jose-isolation` ルールで `go-jose/v4` を直接 import できるパッケージを許可リストで固定。新規呼び出し元は明示的に追加する必要がある |
 
 ### 3. `crypto/rand` のみ — `math/rand` 禁止
 
@@ -104,18 +104,18 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 |---|---|---|
 | `__Host-` cookie、AES-256-GCM、double-submit CSRF、Origin/Referer チェック | `internal/cookie`、`internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
 | public / native の authorization-code client、および FAPI プロファイル下の全 authorization-code client に PKCE 必須。`plain` は拒否 | `internal/authorize`、`internal/pkce` | RFC 7636、RFC 9700 |
-| リフレッシュトークンのローテーション + 再利用検知(chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14 |
-| 送信者制約付きトークン(DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`) | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
+| リフレッシュトークンのローテーション + 再利用検知（chain revoke） | `internal/grants/refresh` | RFC 9700 §4.14 |
+| 送信者制約付きトークン（DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`） | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
 | 認可応答に `iss` を付与 | `internal/authorize` | RFC 9207 |
-| `redirect_uri` 完全一致(既定で完全一致) | `internal/authorize` | OAuth 2.1、RFC 8252 |
+| `redirect_uri` 完全一致（既定で完全一致） | `internal/authorize` | OAuth 2.1、RFC 8252 |
 | ループバック redirect の制約強化 | `internal/registrationendpoint`、`internal/authorize` | RFC 8252 |
 | 外向き HTTP fetch の制約（許可 scheme、body 上限、Accept、timeout、redirect、cache）を JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout 配送に適用。dial 段階で loopback / link-local / RFC 1918 / IPv6 ULA を拒否し、`BaseTransport` が `*http.Transport` 以外なら URL ゲートでフォールバック | `internal/securefetch`、`internal/netsec` | OWASP SSRF、OIDC Back-Channel Logout 1.0 |
-| OP 側の request_object replay 対策(`jti`) | `internal/jar` | RFC 9101 §10.8 |
+| OP 側の request_object replay 対策（`jti`） | `internal/jar` | RFC 9101 §10.8 |
 | 各検証経路でのアルゴリズム許可リスト | `internal/jose` | RFC 8725 |
-| Issuer 正規化(末尾スラッシュなどの揺れを防ぐ) | `op/options_validate.go` | RFC 9207 |
-| Resource indicator の正規化(scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否)を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の 許可リストに適用 | `internal/resourceindicator` | RFC 8707 §2 |
-| `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否(RFC 8707 の `resource=` のみ例外)。認証情報を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
-| Argon2id パラメータを OWASP Password Storage Cheat Sheet のベースライン(memory ≥ 19 MiB、time ≥ 2)で強制(`client_secret`、エンドユーザパスワード、リカバリコード)。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet |
+| Issuer 正規化（末尾スラッシュなどの揺れを防ぐ） | `op/options_validate.go` | RFC 9207 |
+| Resource indicator の正規化（scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否）を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の許可リストに適用 | `internal/resourceindicator` | RFC 8707 §2 |
+| `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否（RFC 8707 の `resource=` のみ例外）。認証情報を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
+| Argon2id パラメータを OWASP Password Storage Cheat Sheet のベースライン（memory ≥ 19 MiB、time ≥ 2）で強制（`client_secret`、エンドユーザパスワード、リカバリコード）。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet |
 | DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
 | 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 | クライアント検証鍵（`client_assertion`、JAR request object）を OP の鍵 shape 最低水準に保持: RSA は 2048 bit 以上、EC 曲線は宣言された `alg` と一致 | `internal/clientauth`、`internal/jar`、`internal/jose`（`AssertAlgKeyShape`） | RFC 7518 §3.3、RFC 8725 §3.2 |

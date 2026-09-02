@@ -6,7 +6,7 @@ pageClass: pg-compliance-ofcs
 
 # OFCS conformance status
 
-`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the baseline below is the latest release run at commit [`ee4369a`](https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a), executed end-to-end against a `cmd/op-demo` instance.
+`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the baseline below is the latest release run at commit [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a), executed end-to-end against a `cmd/op-demo` instance.
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
@@ -15,10 +15,10 @@ pageClass: pg-compliance-ofcs
 This is a personal project maintained by an individual developer. No OpenID Foundation membership fee is paid and **no formal OIDC certification** is held. The numbers on this page are reproducible snapshots from the plan set shown below. They are not a substitute for a paid OpenID Foundation certification and should not be cited as one.
 :::
 
-<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 780 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="ofcs-snapshot-title">How to read the OFCS snapshot: nine plans in four spec families run against op-demo, and every module lands in exactly one of five outcomes — PASSED, REVIEW, SKIPPED, no verdict, or FAILED.</title>
   <text class="ofcs-cap" x="126" y="22" text-anchor="middle">TEST PLANS (9)</text>
-  <text class="ofcs-cap" x="656" y="22" text-anchor="middle">OUTCOME PER MODULE</text>
+  <text class="ofcs-cap" x="644" y="22" text-anchor="middle">OUTCOME PER MODULE</text>
 
   <rect class="ofcs-box" x="28" y="36" width="196" height="60" rx="10"/>
   <text class="ofcs-text" x="126" y="62" text-anchor="middle">OIDC Core 1.0</text>
@@ -37,37 +37,41 @@ This is a personal project maintained by an individual developer. No OpenID Foun
   <text class="ofcs-text" x="395" y="172" text-anchor="middle">cmd/op-demo</text>
   <text class="ofcs-sub" x="395" y="194" text-anchor="middle">the OP under test</text>
 
-  <rect class="ofcs-box" x="560" y="42" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-pass" x="578" y="58" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="69">PASSED</text>
-  <rect class="ofcs-box" x="560" y="100" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-review" x="578" y="116" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="127">REVIEW</text>
-  <rect class="ofcs-box" x="560" y="158" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-skip" x="578" y="174" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="185">SKIPPED</text>
-  <rect class="ofcs-box" x="560" y="216" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-noverdict" x="578" y="232" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="243">No verdict</text>
-  <rect class="ofcs-box" x="560" y="274" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-fail" x="578" y="290" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="602" y="301">FAILED</text>
+  <rect class="ofcs-box" x="548" y="42" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-pass" x="566" y="58" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="69">PASSED</text>
+  <rect class="ofcs-box" x="548" y="100" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-review" x="566" y="116" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="127">REVIEW</text>
+  <rect class="ofcs-box" x="548" y="158" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-skip" x="566" y="174" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="185">SKIPPED</text>
+  <rect class="ofcs-box" x="548" y="216" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-noverdict" x="566" y="232" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="243">No verdict</text>
+  <rect class="ofcs-box" x="548" y="274" width="192" height="44" rx="8"/>
+  <rect class="ofcs-sw ofcs-sw-fail" x="566" y="290" width="12" height="12" rx="3"/>
+  <text class="ofcs-text" x="590" y="301">FAILED</text>
 
   <path class="ofcs-flow" d="M224 66 C264 66 272 152 306 152"/>
+  <path class="ofcs-flow" d="M298 148 L307 152 L298 156"/>
   <path class="ofcs-flow" d="M224 142 C264 142 272 168 306 168"/>
+  <path class="ofcs-flow" d="M298 164 L307 168 L298 172"/>
   <path class="ofcs-flow" d="M224 218 C264 218 272 192 306 192"/>
+  <path class="ofcs-flow" d="M298 188 L307 192 L298 196"/>
   <path class="ofcs-flow" d="M224 294 C264 294 272 208 306 208"/>
+  <path class="ofcs-flow" d="M298 204 L307 208 L298 212"/>
 
-  <path class="ofcs-flow" d="M480 180 C514 180 522 64 556 64"/>
-  <path class="ofcs-flow" d="M480 180 C514 180 522 122 556 122"/>
-  <path class="ofcs-flow" d="M480 180 H556"/>
-  <path class="ofcs-flow" d="M480 180 C514 180 522 238 556 238"/>
-  <path class="ofcs-flow" d="M480 180 C514 180 522 296 556 296"/>
-  <path class="ofcs-flow" d="M548 60 L557 64 L548 68"/>
-  <path class="ofcs-flow" d="M548 118 L557 122 L548 126"/>
-  <path class="ofcs-flow" d="M548 176 L557 180 L548 184"/>
-  <path class="ofcs-flow" d="M548 234 L557 238 L548 242"/>
-  <path class="ofcs-flow" d="M548 292 L557 296 L548 300"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 64 544 64"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 122 544 122"/>
+  <path class="ofcs-flow" d="M480 180 H544"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 238 544 238"/>
+  <path class="ofcs-flow" d="M480 180 C506 180 516 296 544 296"/>
+  <path class="ofcs-flow" d="M536 60 L545 64 L536 68"/>
+  <path class="ofcs-flow" d="M536 118 L545 122 L536 126"/>
+  <path class="ofcs-flow" d="M536 176 L545 180 L536 184"/>
+  <path class="ofcs-flow" d="M536 234 L545 238 L536 242"/>
+  <path class="ofcs-flow" d="M536 292 L545 296 L536 300"/>
 </svg>
 
 ## What this snapshot exercises
@@ -111,8 +115,8 @@ This is a personal project maintained by an individual developer. No OpenID Foun
   </ul>
   <p class="ofcs-note">Every FAILED and no-verdict module is a reviewed release exclusion — <a href="#why-six-modules-failed">three causes, none of them an unresolved defect</a>.</p>
   <div class="ofcs-meta">
-    <span><i>Captured</i>2026-08-13T06:26:05Z</span>
-    <span><i>Repository SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/ee4369a11f4237f5d4e046dcbac1391879181a0a">ee4369a</a></span>
+    <span><i>Captured</i>2026-09-01T13:48:21Z</span>
+    <span><i>Repository SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a">547b8d1</a></span>
     <span><i>OFCS image</i>release-v5.2.1</span>
   </div>
 </div>

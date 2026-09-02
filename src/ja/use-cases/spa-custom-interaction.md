@@ -7,7 +7,7 @@ pageClass: pg-use-cases-spa-custom-interaction
 # 使い方 — SPA / 対話画面のカスタマイズ
 
 ::: info `op.WithSPAUI` と低レベル JSON ドライバ
-`op.WithSPAUI` は、SPA の入口、静的アセット、画面状態 JSON を OP 側でまとめて公開します。自前のルーターで SPA を配信し、画面状態 JSON だけ OP に任せたい場合は `op.WithInteractionDriver(interaction.JSONDriver{})` を直接使います。
+`op.WithSPAUI` は、SPA の入口、静的アセット、画面状態 JSON を OP 側でまとめて公開します。自前のルータで SPA を配信し、画面状態 JSON だけ OP に任せたい場合は `op.WithInteractionDriver(interaction.JSONDriver{})` を直接使います。
 :::
 
 ## 「対話画面」レイヤとは何か
@@ -25,7 +25,7 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 :::
 
 ::: details 用語の補足
-- **対話画面レイヤ** — RP の `/authorize` リダイレクトと OP からのコード付きリダイレクトバックの間に挟まる一連の処理(ログイン / 任意の MFA ステップアップ / 任意の同意 / 任意のアカウント選択)。通信路上のパラメータは仕様で定まっていますが、*この中間ページをどう描画するか* は定まっていません。ここが差し替え口です。
+- **対話画面レイヤ** — RP の `/authorize` リダイレクトと OP からのコード付きリダイレクトバックの間に挟まる一連の処理（ログイン / 任意の MFA ステップアップ / 任意の同意 / 任意のアカウント選択）。通信路上のパラメータは仕様で定まっていますが、*この中間ページをどう描画するか* は定まっていません。ここが差し替え口です。
 - **JSON ドライバ** — 画面を HTML ではなく JSON で返す差し替え口です。状態遷移は OP 側に残ります。SPA は `{ type: "login" | "consent.scope" | ... }` を取得して回答を送り返し、OP が次を決めます。
 - **CSP（Content Security Policy）** — ページが読み込んでよいリソース種別をブラウザに伝えるレスポンスヘッダ（`Content-Security-Policy: default-src 'none'; ...`）。OP のエラーページは `<script>`、inline イベントハンドラ、任意 URL スキームを禁じる厳格なポリシーで描画されるので、悪意ある `error_description` が XSS に化けることはありません。
 :::
@@ -37,15 +37,15 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 
 ## アーキテクチャ
 
-低レベル JSON ドライバでは、OP は interaction の状態機械を `/interaction/{uid}` に出し、各画面を JSON で返します。SPA の入口や静的アセットは、自前のルーターで好きなパスから配信します。`op.WithSPAUI` では、OP が SPA 向けの一式を公開します。`LoginMount/{uid}` が SPA の入口、`LoginMount/state/{uid}` が画面状態 JSON、`StaticDir` 設定時は `LoginMount/assets/{path...}` が静的アセットです。route に影響する field は `LoginMount` だけで、`ConsentMount` と `LogoutMount` は互換性のため残る inert / deprecated field であり、route を作りません。
+低レベル JSON ドライバでは、OP は interaction の状態機械を `/interaction/{uid}` に出し、各画面を JSON で返します。SPA の入口や静的アセットは、自前のルータで好きなパスから配信します。`op.WithSPAUI` では、OP が SPA 向けの一式を公開します。`LoginMount/{uid}` が SPA の入口、`LoginMount/state/{uid}` が画面状態 JSON、`StaticDir` 設定時は `LoginMount/assets/{path...}` が静的アセットです。route に影響する field は `LoginMount` だけで、`ConsentMount` と `LogoutMount` は互換性のため残る inert / deprecated field であり、route を作りません。
 
 | Method | Path | 役割 |
 |---|---|---|
 | `GET` | `/interaction/{uid}`(JSON ドライバ) | 現在の画面状態を JSON で返す |
 | `POST` | `/interaction/{uid}`(JSON ドライバ) | ユーザのフォーム送信を受ける |
 | `DELETE` | `/interaction/{uid}`(JSON ドライバ) | 進行中の interaction をキャンセル |
-| `GET` | _自前のルート_ | SPA の入口(自前バンドルの `index.html`) |
-| `GET` | _自前のルート_ | 静的アセット(自前バンドル) |
+| `GET` | _自前のルート_ | SPA の入口（自前バンドルの `index.html`） |
+| `GET` | _自前のルート_ | 静的アセット（自前バンドル） |
 
 `op.WithSPAUI(op.SPAUI{LoginMount: "/login", StaticDir: "./web/static"})` の場合、同じ状態取得 API は `/login/state/{uid}` に移動し、`/login/{uid}` が SPA の入口を返します。
 
@@ -62,14 +62,14 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
   <text class="actor" x="120" y="41" text-anchor="middle">ユーザのブラウザ</text>
   <rect x="310" y="16" width="150" height="40" rx="5"/>
   <text class="actor" x="385" y="34" text-anchor="middle">SPA バンドル</text>
-  <text class="sub" x="385" y="48" text-anchor="middle">自前のコード・自前のルーター</text>
+  <text class="sub" x="385" y="48" text-anchor="middle">自前のコード・自前のルータ</text>
   <rect class="op-accent" x="575" y="16" width="150" height="40" rx="5"/>
   <text class="actor op-text" x="650" y="41" text-anchor="middle">OP</text>
 
   <circle class="badge" cx="22" cy="88" r="9"/><text class="num" x="22" y="91.5" text-anchor="middle">1</text>
   <line x1="120" y1="88" x2="650" y2="88"/>
   <path d="M642,84 L650,88 L642,92"/>
-  <text class="mono" x="385" y="82" text-anchor="middle">GET /authorize?...</text>
+  <text class="mono" x="385" y="79" text-anchor="middle">GET /authorize?...</text>
 
   <circle class="badge" cx="22" cy="121" r="9"/><text class="num" x="22" y="124.5" text-anchor="middle">2</text>
   <rect class="note" x="553" y="109" width="194" height="24" rx="4"/>
@@ -78,27 +78,27 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
   <circle class="badge" cx="22" cy="154" r="9"/><text class="num" x="22" y="157.5" text-anchor="middle">3</text>
   <line x1="650" y1="154" x2="120" y2="154"/>
   <path d="M128,150 L120,154 L128,158"/>
-  <text x="385" y="148" text-anchor="middle"><tspan class="mono">302 → /login/{uid}</tspan><tspan class="lbl">(自前のルート)</tspan></text>
+  <text x="385" y="145" text-anchor="middle"><tspan class="mono">302 → /login/{uid}</tspan><tspan class="lbl">(自前のルート)</tspan></text>
 
   <circle class="badge" cx="22" cy="187" r="9"/><text class="num" x="22" y="190.5" text-anchor="middle">4</text>
   <line x1="120" y1="187" x2="385" y2="187"/>
   <path d="M377,183 L385,187 L377,191"/>
-  <text class="mono" x="252" y="181" text-anchor="middle">GET /login/{uid}</text>
+  <text class="mono" x="252" y="178" text-anchor="middle">GET /login/{uid}</text>
 
   <circle class="badge" cx="22" cy="220" r="9"/><text class="num" x="22" y="223.5" text-anchor="middle">5</text>
   <line x1="385" y1="220" x2="120" y2="220"/>
   <path d="M128,216 L120,220 L128,224"/>
-  <text x="252" y="214" text-anchor="middle"><tspan class="mono">200 index.html</tspan><tspan class="lbl"> (SPA 入口)</tspan></text>
+  <text x="252" y="211" text-anchor="middle"><tspan class="mono">200 index.html</tspan><tspan class="lbl"> (SPA 入口)</tspan></text>
 
   <circle class="badge" cx="22" cy="253" r="9"/><text class="num" x="22" y="256.5" text-anchor="middle">6</text>
   <line x1="120" y1="253" x2="650" y2="253"/>
   <path d="M642,249 L650,253 L642,257"/>
-  <text class="mono" x="385" y="247" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
+  <text class="mono" x="385" y="244" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
 
   <circle class="badge" cx="22" cy="286" r="9"/><text class="num" x="22" y="289.5" text-anchor="middle">7</text>
   <line x1="650" y1="286" x2="120" y2="286"/>
   <path d="M128,282 L120,286 L128,290"/>
-  <text class="mono" x="385" y="280" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
+  <text class="mono" x="385" y="277" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
 
   <circle class="badge" cx="22" cy="319" r="9"/><text class="num" x="22" y="322.5" text-anchor="middle">8</text>
   <rect class="note" x="42" y="307" width="156" height="24" rx="4"/>
@@ -107,34 +107,34 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
   <circle class="badge" cx="22" cy="352" r="9"/><text class="num" x="22" y="355.5" text-anchor="middle">9</text>
   <line x1="120" y1="352" x2="650" y2="352"/>
   <path d="M642,348 L650,352 L642,356"/>
-  <text class="mono" x="385" y="346" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
+  <text class="mono" x="385" y="343" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
 
   <circle class="badge" cx="22" cy="385" r="9"/><text class="num" x="22" y="388.5" text-anchor="middle">10</text>
   <line x1="650" y1="385" x2="120" y2="385"/>
   <path d="M128,381 L120,385 L128,389"/>
-  <text x="385" y="379" text-anchor="middle"><tspan class="mono">200 { type:"consent.scope", … }</tspan><tspan class="lbl"> または </tspan><tspan class="mono">{ type:"redirect", … }</tspan></text>
+  <text x="385" y="376" text-anchor="middle"><tspan class="mono">200 { type:"consent.scope", … }</tspan><tspan class="lbl"> または </tspan><tspan class="mono">{ type:"redirect", … }</tspan></text>
 
   <circle class="badge" cx="22" cy="418" r="9"/><text class="num" x="22" y="421.5" text-anchor="middle">11</text>
   <line x1="120" y1="418" x2="650" y2="418"/>
   <path d="M642,414 L650,418 L642,422"/>
-  <text x="385" y="412" text-anchor="middle"><tspan class="mono">POST /interaction/{uid}</tspan><tspan class="lbl">(consent の値)</tspan></text>
+  <text x="385" y="409" text-anchor="middle"><tspan class="mono">POST /interaction/{uid}</tspan><tspan class="lbl">(consent の値)</tspan></text>
 
   <circle class="badge" cx="22" cy="451" r="9"/><text class="num" x="22" y="454.5" text-anchor="middle">12</text>
   <line x1="650" y1="451" x2="120" y2="451"/>
   <path d="M128,447 L120,451 L128,455"/>
-  <text class="mono" x="385" y="445" text-anchor="middle">200 { type:"redirect", location:"/auth?…&amp;code=…" }</text>
+  <text class="mono" x="385" y="442" text-anchor="middle">200 { type:"redirect", location:"/auth?…&amp;code=…" }</text>
 
   <circle class="badge" cx="22" cy="484" r="9"/><text class="num" x="22" y="487.5" text-anchor="middle">13</text>
   <line x1="120" y1="484" x2="385" y2="484"/>
   <path d="M377,480 L385,484 L377,488"/>
-  <text class="mono" x="252" y="478" text-anchor="middle">window.location.href = location</text>
+  <text class="mono" x="252" y="475" text-anchor="middle">window.location.href = location</text>
 </svg>
 
 状態遷移は OP が所有します。SPA は次の画面状態を取得し、ユーザの回答を送り返すだけです。OP が次に何を出すかを決めます。
 
 ## コード
 
-### JSON ドライバへの差し替え(最小変更)
+### JSON ドライバへの差し替え（最小変更）
 
 ```go
 import "github.com/libraz/go-oidc-provider/op/interaction"
@@ -147,7 +147,7 @@ provider, err := op.New(
 
 これですべての interaction ページが JSON を返すようになり、SPA は画面状態を取得して回答を POST で送り返します。
 
-### SPA の組み立て(フレームワーク非依存)
+### SPA の組み立て（フレームワーク非依存）
 
 ```go
 import (
@@ -160,7 +160,7 @@ import (
 provider, err := op.New(
   /* 必須オプション */
   op.WithInteractionDriver(interaction.JSONDriver{}),
-  op.WithCORSOrigins("https://app.example.com"),
+  op.WithCORSOrigins("https://app.example.com"), // ceremony 用の issuer-same-site origin
 )
 
 mux := http.NewServeMux()
@@ -173,7 +173,7 @@ mux.Handle("/", provider)
 OP が `/interaction/{uid}` に画面状態 JSON を返し、`/login/...` に置いた SPA バンドルが `fetch` でそれを取得します。フレームワークは構成に合うものを選んでください。Go 側の書き方はどれでも同じです。
 
 ::: info SPA の入口へのリダイレクト先
-低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。先に SPA を読み込ませてから、SPA が `Accept: application/json` で `/interaction/{uid}` を呼ぶ構成にしたい場合は、SPA が想定するパス(例: `/login/{uid}`)で SPA の入口を配信し、そこから `/interaction/{uid}` を直接 fetch させる構成にしてください。`op.WithSPAUI` では OP がこのリダイレクトを行い、状態取得エンドポイントは `LoginMount/state/{uid}` になります。
+低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。先に SPA を読み込ませてから、SPA が `Accept: application/json` で `/interaction/{uid}` を呼ぶ構成にしたい場合は、SPA が想定するパス（例: `/login/{uid}`）で SPA の入口を配信し、そこから `/interaction/{uid}` を直接 fetch させる構成にしてください。`op.WithSPAUI` では OP がこのリダイレクトを行い、状態取得エンドポイントは `LoginMount/state/{uid}` になります。
 :::
 
 ::: info `op.WithSPAUI`
@@ -326,7 +326,7 @@ async function onSubmit() {
 :::
 
 ::: info `X-CSRF-Token` を送る理由
-OP がセッション開始時に `__Host-oidc_csrf` cookie を発行し、各プロンプト応答にその cookie 値を `csrf_token` として echo します。SPA の責務は、`prompt.csrf_token` を読んで送信時の `X-CSRF-Token` ヘッダーに乗せるだけ — OP がヘッダー値と cookie 値を照合します（double-submit cookie パターン）。SPA は token を生成・検証・保存しません。cookie は `HttpOnly` のままで構いません。
+OP がセッション開始時に `__Host-oidc_csrf` cookie を発行し、各プロンプト応答にその cookie 値を `csrf_token` として echo します。SPA の責務は、`prompt.csrf_token` を読んで送信時の `X-CSRF-Token` ヘッダに乗せるだけ — OP がヘッダ値と cookie 値を照合します（double-submit cookie パターン）。SPA は token を生成・検証・保存しません。cookie は `HttpOnly` のままで構いません。
 :::
 
 ## SPA-safe エラー描画
@@ -365,10 +365,12 @@ op.WithCORSOrigins(
 )
 ```
 
-API CORS では、ライブラリは登録済み `redirect_uri` の origin を RP ごとの許可リストへ自動で追加します（static クライアント設定なら CORS 設定の重複不要）。ただし、その導出だけで interaction や end-session state の POST 送信元が認可されるわけではありません。ceremony check は issuer origin と `op.WithCORSOrigins` で明示した origin だけを許可します。詳細は [SPA 向け CORS](/ja/use-cases/cors-spa) を参照してください。
+API CORS では、ライブラリは登録済み `redirect_uri` の origin を RP ごとの許可リストへ自動で追加します（static クライアント設定なら CORS 設定の重複不要）。ただし、その導出だけで interaction や end-session state の POST 送信元が認可されるわけではありません。ceremony check は issuer origin と `op.WithCORSOrigins` で明示した origin だけを許可し、ceremony origin は issuer と same-site でなければなりません。明示された origin が本当に cross-site でも preflight と CORS ヘッダまでは通りますが、ブラウザは `__Host-` ceremony cookie（`__Host-oidc_interaction` は `SameSite=Lax`、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf` は `SameSite=Strict`）を送らないため、interaction と end-session のリクエストは `404` になります。ceremony UI は `op.example.com` に対する `login.example.com` のような issuer と同じ site の sibling host に配置してください。詳細は [SPA 向け CORS](/ja/use-cases/cors-spa) を参照してください。
+
+上のスニペットは provider の隣で SPA の入口を配信するため、`credentials: "same-origin"` が正しい設定です。入口を別 origin（ただし same-site）で配信する場合は、fetch 先を OP の絶対 URL にし、`credentials: "include"` を使ってください。cross-site の origin では cookie に束縛された ceremony を動かせません。
 
 ## フル SPA 化せず、文言だけ差し替えたい
 
-同意画面の文言だけを差し替えたい(翻訳コピー、ブランドトーン)場合は、`op.WithLocale` で seed bundle にキー単位で重ねるのが最短です。同梱 HTML ドライバはそれをそのまま描画するので、CSP / CSRF scheme もそのまま維持できます。詳細は [カスタム同意 UI](/ja/use-cases/custom-consent-ui) と [i18n / ロケール解決](/ja/use-cases/i18n) を参照してください。
+同意画面の文言だけを差し替えたい（翻訳コピー、ブランドトーン）場合は、`op.WithLocale` で seed bundle にキー単位で重ねるのが最短です。同梱 HTML ドライバはそれをそのまま描画するので、CSP / CSRF scheme もそのまま維持できます。詳細は [カスタム同意 UI](/ja/use-cases/custom-consent-ui) と [i18n / ロケール解決](/ja/use-cases/i18n) を参照してください。
 
 `op.WithConsentUI` は、interaction transport 全体を SPA に寄せずに同意画面 template だけを差し替えるサーバ描画の経路です。markup を完全にクライアント側で持ちたい場合は、上記の JSON ドライバ経路を使います。

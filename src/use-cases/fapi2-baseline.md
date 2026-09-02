@@ -8,7 +8,7 @@ pageClass: pg-use-cases-fapi2-baseline
 
 ## What is FAPI 2.0?
 
-**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused — for example, FAPI rejects `RS256` signatures in favour of `ES256`/`PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and forces RPs to send their authorize requests through PAR + JAR instead of as plain query strings (this library signs id_tokens with `ES256` only, so the anti-`RS256` clause is satisfied by construction).
+**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused. FAPI rejects `RS256` signatures in favour of `ES256` / `PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and makes RPs send their authorize requests through PAR + JAR rather than as plain query strings. This library signs id_tokens with `ES256` only, so the anti-`RS256` clause is satisfied by construction.
 
 The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). FAPI 2.0 Baseline is the entry-level profile; FAPI 2.0 Message Signing adds JARM + DPoP nonce + RS-side proof signing.
 
@@ -41,8 +41,9 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 
 ## Architecture
 
-<svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 720 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 760 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline sequence: the RP pushes the authorization request to /par, the OP returns a request_uri, and after /auth and /token the OP issues DPoP-bound tokens signed with ES256.</title>
+  <g transform="translate(20,0)">
   <line class="life" x1="150" y1="68" x2="150" y2="448"/>
   <line class="life op-accent" x1="570" y1="68" x2="570" y2="448"/>
   <rect x="75" y="14" width="150" height="30" rx="5"/>
@@ -51,34 +52,35 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
   <text class="d-actor op-fill" x="570" y="33" text-anchor="middle">OP</text>
   <text class="d-cap" x="150" y="58" text-anchor="middle">private_key_jwt + DPoP</text>
   <text class="d-cap op-fill" x="570" y="58" text-anchor="middle">this library</text>
-  <text class="d-prose" x="360" y="98" text-anchor="middle">1 · POST /par</text>
-  <text class="d-mono" x="360" y="110" text-anchor="middle">client_assertion=&lt;private_key_jwt&gt; · code_challenge=S256</text>
+  <text class="d-prose halo" x="360" y="98" text-anchor="middle">1 · POST /par</text>
+  <text class="d-mono halo" x="360" y="110" text-anchor="middle">client_assertion=&lt;private_key_jwt&gt; · code_challenge=S256</text>
   <line x1="150" y1="118" x2="570" y2="118"/>
   <path d="M563,114 L570,118 L563,122"/>
-  <text class="d-mono" x="360" y="150" text-anchor="middle">2 · 201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
+  <text class="d-mono halo" x="360" y="150" text-anchor="middle">2 · 201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
   <line x1="570" y1="158" x2="150" y2="158"/>
   <path d="M157,154 L150,158 L157,162"/>
-  <text class="d-mono" x="360" y="190" text-anchor="middle">3 · GET /auth?request_uri=urn:…&amp;client_id</text>
+  <text class="d-mono halo" x="360" y="190" text-anchor="middle">3 · GET /auth?request_uri=urn:…&amp;client_id</text>
   <line x1="150" y1="198" x2="570" y2="198"/>
   <path d="M563,194 L570,198 L563,202"/>
   <path class="op-accent" d="M570,224 h-16 v28 h16"/>
   <path class="op-accent" d="M563,246 L570,250 L563,254"/>
-  <text class="d-prose op-fill" x="544" y="234" text-anchor="end">4 · ES256 id_token signing</text>
-  <text class="d-mono" x="544" y="248" text-anchor="end">redirect_uri exact match</text>
-  <text class="d-prose" x="360" y="290" text-anchor="middle">5 · login + consent (interaction-driven)</text>
+  <text class="d-prose op-fill halo" x="544" y="234" text-anchor="end">4 · ES256 id_token signing</text>
+  <text class="d-mono halo" x="544" y="248" text-anchor="end">redirect_uri exact match</text>
+  <text class="d-prose halo" x="360" y="290" text-anchor="middle">5 · login + consent (interaction-driven)</text>
   <line x1="570" y1="298" x2="150" y2="298"/>
   <path d="M157,294 L150,298 L157,302"/>
-  <text class="d-mono" x="360" y="326" text-anchor="middle">6 · 302 redirect_uri?code=…&amp;state=…</text>
+  <text class="d-mono halo" x="360" y="326" text-anchor="middle">6 · 302 redirect_uri?code=…&amp;state=…</text>
   <line x1="570" y1="334" x2="150" y2="334"/>
   <path d="M157,330 L150,334 L157,338"/>
-  <text class="d-prose" x="360" y="364" text-anchor="middle">7 · POST /token · DPoP: &lt;proof&gt;</text>
-  <text class="d-mono" x="360" y="376" text-anchor="middle">code + code_verifier + client_assertion</text>
+  <text class="d-prose halo" x="360" y="364" text-anchor="middle">7 · POST /token · DPoP: &lt;proof&gt;</text>
+  <text class="d-mono halo" x="360" y="376" text-anchor="middle">code + code_verifier + client_assertion</text>
   <line x1="150" y1="384" x2="570" y2="384"/>
   <path d="M563,380 L570,384 L563,388"/>
-  <text class="d-prose" x="360" y="414" text-anchor="middle">8 · 200</text>
-  <text class="d-mono" x="360" y="426" text-anchor="middle">access_token (DPoP-bound) · id_token (ES256) · refresh_token</text>
+  <text class="d-prose halo" x="360" y="414" text-anchor="middle">8 · 200</text>
+  <text class="d-mono halo" x="360" y="426" text-anchor="middle">access_token (DPoP-bound) · id_token (ES256) · refresh_token</text>
   <line x1="570" y1="434" x2="150" y2="434"/>
   <path d="M157,430 L150,434 L157,438"/>
+  </g>
 </svg>
 
 ## Code (excerpts from [`examples/03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2))

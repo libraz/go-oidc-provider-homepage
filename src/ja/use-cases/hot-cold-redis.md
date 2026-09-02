@@ -15,7 +15,7 @@ OP が抱える状態は、性質が大きく異なる 2 種類に分かれま�
 
 両方を同じバックエンドに乗せるのは無駄です — 永続ストアに hot 由来の QPS は必要ありませんし、揮発ストアに cold が要求する耐久性は必要ありません。composite アダプタは両者を分離します。
 
-下の表が正確にする一点があります: *揮発的な性質* のデータと *揮発側への配置* は別の軸です。短寿命の状態の多く(JTI 再利用防止セット、インタラクション状態)は揮発側にルートされますが、PAR の `request_uri` はそうではありません — 単体では失っても差し支えない一方、OP はこれをアトミックな認可コードの経路の中で消費するため、トランザクションクラスタに属し、永続側にルートされます。データの性質は保存先を示唆しますが、クラスタの不変条件がそれを上書きします。
+下の表が正確にする一点があります: *揮発的な性質* のデータと *揮発側への配置* は別の軸です。短寿命の状態の多く（JTI 再利用防止セット、インタラクション状態）は揮発側にルートされますが、PAR の `request_uri` はそうではありません — 単体では失っても差し支えない一方、OP はこれをアトミックな認可コードの経路の中で消費するため、トランザクションクラスタに属し、永続側にルートされます。データの性質は保存先を示唆しますが、クラスタの不変条件がそれを上書きします。
 
 ::: details このページで触れる仕様
 - [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126) — Pushed Authorization Requests（PAR — `request_uri` は揮発状態）
@@ -39,49 +39,53 @@ OP が抱える状態は、性質が大きく異なる 2 種類に分かれま�
 
 ## アーキテクチャ
 
-<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 14 728 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 0 760 244" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="hcr-arch-title">composite ストアアダプタが永続サブストアを SQL/MySQL バックエンドに、揮発サブストアを Redis バックエンドにルーティングする図。</title>
   <marker id="hcr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
     <path d="M1 1 L9 5 L1 9" stroke-width="1.6"/>
   </marker>
 
   <!-- op.Provider (the OP — brand accent) -->
-  <rect class="hcr-accent" x="8" y="100" width="132" height="50" rx="6"/>
-  <text class="hcr-m hcr-accent-t" x="74" y="129" text-anchor="middle">op.Provider</text>
+  <rect class="hcr-accent" x="8" y="100" width="130" height="52" rx="6"/>
+  <text class="hcr-m hcr-accent-t" x="73" y="131" text-anchor="middle">op.Provider</text>
 
   <!-- composite splitter -->
-  <rect x="176" y="100" width="144" height="50" rx="6"/>
-  <text class="hcr-m" x="248" y="120" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="248" y="137" text-anchor="middle">composite</text>
+  <rect x="170" y="100" width="140" height="52" rx="6"/>
+  <text class="hcr-m" x="240" y="121" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="240" y="138" text-anchor="middle">composite</text>
 
   <!-- op -> composite -->
-  <path d="M140 125 H172" marker-end="url(#hcr-arrow)"/>
+  <path d="M138 126 H168" marker-end="url(#hcr-arrow)"/>
+
+  <!-- split bus -->
+  <path d="M310 126 H332"/>
+  <path d="M332 54 V198"/>
 
   <!-- durable branch -->
-  <path d="M320 118 C 370 118 384 52 448 52" marker-end="url(#hcr-arrow)"/>
-  <text class="hcr-edge" x="386" y="42" text-anchor="middle">永続サブストア</text>
-  <rect x="452" y="27" width="132" height="50" rx="6"/>
-  <text class="hcr-m" x="518" y="47" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="518" y="64" text-anchor="middle">sql</text>
-  <path d="M584 52 H615" marker-end="url(#hcr-arrow)"/>
+  <text class="hcr-edge" x="394" y="42" text-anchor="middle">永続サブストア</text>
+  <path d="M332 54 H458" marker-end="url(#hcr-arrow)"/>
+  <rect x="460" y="28" width="130" height="52" rx="6"/>
+  <text class="hcr-m" x="525" y="49" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="525" y="66" text-anchor="middle">sql</text>
+  <path d="M590 54 H616" marker-end="url(#hcr-arrow)"/>
   <g class="hcr-db">
-    <path d="M620 39 V65 A50 7 0 0 0 720 65 V39"/>
-    <ellipse cx="670" cy="39" rx="50" ry="7"/>
+    <path d="M618 36 V72 A64 8 0 0 0 746 72 V36"/>
+    <ellipse cx="682" cy="36" rx="64" ry="8"/>
   </g>
-  <text class="hcr-t" x="670" y="57" text-anchor="middle">MySQL</text>
+  <text class="hcr-t" x="682" y="62" text-anchor="middle">MySQL</text>
 
   <!-- volatile branch -->
-  <path d="M320 132 C 370 132 384 198 448 198" marker-end="url(#hcr-arrow)"/>
-  <text class="hcr-edge" x="386" y="212" text-anchor="middle">揮発サブストア</text>
-  <rect x="452" y="173" width="132" height="50" rx="6"/>
-  <text class="hcr-m" x="518" y="193" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="518" y="210" text-anchor="middle">redis</text>
-  <path d="M584 198 H615" marker-end="url(#hcr-arrow)"/>
+  <path d="M332 198 H458" marker-end="url(#hcr-arrow)"/>
+  <text class="hcr-edge" x="394" y="214" text-anchor="middle">揮発サブストア</text>
+  <rect x="460" y="172" width="130" height="52" rx="6"/>
+  <text class="hcr-m" x="525" y="193" text-anchor="middle">storeadapter/</text>
+  <text class="hcr-m" x="525" y="210" text-anchor="middle">redis</text>
+  <path d="M590 198 H616" marker-end="url(#hcr-arrow)"/>
   <g class="hcr-db">
-    <path d="M620 185 V211 A50 7 0 0 0 720 211 V185"/>
-    <ellipse cx="670" cy="185" rx="50" ry="7"/>
+    <path d="M618 180 V216 A64 8 0 0 0 746 216 V180"/>
+    <ellipse cx="682" cy="180" rx="64" ry="8"/>
   </g>
-  <text class="hcr-t" x="670" y="203" text-anchor="middle">Redis</text>
+  <text class="hcr-t" x="682" y="206" text-anchor="middle">Redis</text>
 </svg>
 
 composite ストアはトランザクションクラスタの不変条件を強制します。一緒にアトミックコミットが必要なサブストア（例: `AuthorizationCodeStore` と `RefreshTokenStore`）は **同じバックエンドに置く必要があります**。composite コンストラクタは、このクラスタを分割する設定を拒否します。
@@ -137,6 +141,12 @@ provider, err := op.New(
 )
 ```
 
+## 構築時の検証と期限切れ write
+
+`composite.New` は route を構築する前に閉じた `Kind` の集合を検証します。`With` に未知の integer を渡すと `New` は `composite.ErrInvalidKind` を返し、その値を `WithDefault` に黙って流しません。有効なすべての `Kind` は override または default に解決できなければならず、解決できない場合は `composite.ErrKindNotRouted` を返します。`composite.TxClusterKinds` の全メンバーは同じ backend に解決し、その動的型は comparable でなければなりません。map、slice、function を含む value store は `composite.ErrBackendNotComparable` で拒否されるため、そのような store は pointer 経由で route してください。共有する transaction anchor は `store.Transactional` を実装する必要があり、そうでなければ `composite.ErrTxAnchorNotTx` を返します。
+
+`store.SessionStore.Save` と `store.InteractionStore.Save` は、有効な record がない場合はすでに期限切れの record を保存しないこともできます。ただし有効な record がある場合、過去の時刻を持つ replacement も反映しなければなりません。Save 成功後の `Find` が以前の有効な record を返してはいけません。Redis adapter はすでに期限切れの input なら古い key を削除し、期限切れ row を残す adapter も read 時に除外します。期限切れの replacement を黙って no-op にすると、古い session や interaction が有効なまま残ります。
+
 ::: info composite を介した静的クライアントのシード
 `op.WithStaticClients` は `*composite.Store` を直接受け取れるので、組み込み側は composite で包む前に durable バックエンドへ直接シードする必要はありません。
 
@@ -153,22 +163,22 @@ composite は意図的に `store.ClientRegistry` を型アサーションでは�
 
 | サブストア | 保存先 |
 |---|---|
-| `ClientStore` | 永続(SQL) |
-| `UserStore` | 永続(SQL) |
-| `AuthorizationCodeStore` | 永続(SQL — 短寿命だがトランザクションクラスタ内) |
-| `RefreshTokenStore` | 永続(SQL) |
-| `AccessTokenRegistry` | 永続(SQL — `RevocationStrategyJTIRegistry` を選んだときだけ書き込まれる) |
-| `OpaqueAccessTokenStore` | 永続(SQL — opaque アクセストークン形式を有効にしたときだけ書き込まれる) |
-| `GrantRevocationStore` | 永続(SQL — 既定の grant-tombstone 失効戦略を支えるストア) |
-| `PushedAuthRequestStore` | 永続(SQL — `request_uri` は短寿命だがトランザクションクラスタ内) |
+| `ClientStore` | 永続（SQL） |
+| `UserStore` | 永続（SQL） |
+| `AuthorizationCodeStore` | 永続（SQL — 短寿命だがトランザクションクラスタ内） |
+| `RefreshTokenStore` | 永続（SQL） |
+| `AccessTokenRegistry` | 永続（SQL — `RevocationStrategyJTIRegistry` を選んだときだけ書き込まれる） |
+| `OpaqueAccessTokenStore` | 永続（SQL — opaque アクセストークン形式を有効にしたときだけ書き込まれる） |
+| `GrantRevocationStore` | 永続（SQL — 既定の grant-tombstone 失効戦略を支えるストア） |
+| `PushedAuthRequestStore` | 永続（SQL — `request_uri` は短寿命だがトランザクションクラスタ内） |
 | `SessionStore` | `composite.With(composite.Sessions, ...)` でどちらの保存先にもルートできる。`WithSessionDurabilityPosture`(既定 `SessionDurabilityVolatile`) では logout の起点と session snapshot の耐久性を宣言し、BCL の target 自体は grant 由来で解決する |
-| `InteractionStore` | 揮発(Redis) |
-| `ConsumedJTIStore` | 揮発(Redis) |
+| `InteractionStore` | 揮発（Redis） |
+| `ConsumedJTIStore` | 揮発（Redis） |
 
 ::: info 短寿命でも永続側に残るサブストアがある理由
-`PushedAuthRequestStore`、`OpaqueAccessTokenStore`、`GrantRevocationStore` はトランザクションクラスタ(`composite.TxClusterKinds`)の一部で、起点となる認可コード / grant / refresh の書き込みと同じ整合性ドメインでコミット / CAS 更新が行われます。PAR は直感に反する例です — 保持する `request_uri` は短寿命で入れ替わりが激しく、一見すると揮発状態に見えますが、OP はこれを認可コード発行の経路の中で消費するため、別バックエンドに分けるとその整合性ドメインが割れてしまいます。Redis アダプタは三つのアクセサすべてから `nil` を返すので、composite アダプタはこれらを非トランザクションのバックエンドに振り分けることができません。
+`PushedAuthRequestStore`、`OpaqueAccessTokenStore`、`GrantRevocationStore` はトランザクションクラスタ（`composite.TxClusterKinds`）の一部で、起点となる認可コード / grant / refresh の書き込みと同じ整合性ドメインでコミット / CAS 更新が行われます。PAR は直感に反する例です — 保持する `request_uri` は短寿命で入れ替わりが激しく、一見すると揮発状態に見えますが、OP はこれを認可コード発行の経路の中で消費するため、別バックエンドに分けるとその整合性ドメインが割れてしまいます。Redis アダプタは三つのアクセサすべてから `nil` を返すので、composite アダプタはこれらを非トランザクションのバックエンドに振り分けることができません。
 
-これらのサブストアが必要な組み込み側は永続側に SQL を配置してください。PAR を有効にしたプロファイルで、ルートされた `PushedAuthRequests()` が nil の場合、`op.New` は起動を拒否します。既定の失効戦略(`RevocationStrategyGrantTombstone`)は `GrantRevocations()` が nil 以外であることを `op.New` で強制するため、永続側を空にしたい Redis 専用構成は `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示する必要があります(非 FAPI 限定 — FAPI プロファイルは `None` を拒否します)。
+これらのサブストアが必要な組み込み側は永続側に SQL を配置してください。PAR を有効にしたプロファイルで、ルートされた `PushedAuthRequests()` が nil の場合、`op.New` は起動を拒否します。既定の失効戦略（`RevocationStrategyGrantTombstone`）は `GrantRevocations()` が nil 以外であることを `op.New` で強制するため、永続側を空にしたい Redis 専用構成は `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` を明示する必要があります（非 FAPI 限定 — FAPI プロファイルは `None` を拒否します）。
 :::
 
 ::: details SessionStore がどちらにもなる理由

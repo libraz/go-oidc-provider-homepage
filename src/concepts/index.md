@@ -8,7 +8,7 @@ description: A recommended reading order for the concept pages. Each step builds
 This page is the **recommended reading order** for everything under `/concepts/`. The pages are arranged so each one only assumes what the earlier steps have already covered. If you read top-to-bottom you should not need to backtrack.
 
 ::: tip Read in order
-If you are new to OAuth and OIDC, start at Step 1 and walk down. It is easy to get lost not because the standards are hard, but because docs jump straight into refresh tokens or DPoP without first nailing down what an "issuer" or a "redirect URI" actually is. We try to fix that here.
+If you are new to OAuth and OIDC, start at Step 1 and walk down. Most readers get lost because the docs jump straight to refresh tokens or DPoP before pinning down what an "issuer" or a "redirect URI" actually is. This order pins those down first.
 :::
 
 ::: details Skip ahead if you already know X
@@ -58,7 +58,7 @@ Once tokens are issued, the user has a session at the OP and a record of what th
 
 ## Step 6 — Sender-constrained tokens
 
-Bearer tokens by default mean "whoever holds it can use it". Sender-constrained tokens fix that. Read the selection guide first; it tells you whether you actually need DPoP or mTLS for your deployment.
+A bearer token means "whoever holds it can use it". A sender-constrained token binds the token to a key the client has to prove it still holds. Read the selection guide first: it tells you whether your deployment needs DPoP or mTLS at all.
 
 - [Sender constraint (DPoP / mTLS) — selection guide](/concepts/sender-constraint) — when you need it, and how to choose between the two.
 - [DPoP](/concepts/dpop) — proof-of-possession via a per-request signed JWT. The web-friendly choice.

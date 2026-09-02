@@ -33,69 +33,25 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 境界は構造的に強制されています。外部コードは `internal/` に届きません。組み込み側が制御する差し込み口（オプション、store interface、authenticator、audit subscriber）はすべて `op/` 配下にあります。
 
-## ハンドラグラフ
+## ルート一覧
 
-`op.New` は `*http.ServeMux` を構築し、設定されたパスにハンドラを登録します(下図は既定):
+`op.New` は `*http.ServeMux` を構築し、設定されたパスごとにハンドラを 1 つ登録します。既定のパスと、その裏にあるパッケージは次のとおりです。
 
-<div style="display:flex;justify-content:center;margin:1.5rem 0">
+| パス | ハンドラのパッケージ | 何を返すか | 公開条件 |
+|---|---|---|---|
+| `/.well-known/openid-configuration` | `internal/discovery` | OP の実効設定を discovery 文書として返す | 常時 |
+| `/jwks` | `internal/jwks` | 署名鍵セットの公開側（設定時は `use=enc` 鍵も） | 常時 |
+| `/authorize` | `internal/authorizeendpoint` | リクエストの解析、クライアントと `redirect_uri` の検証、interaction へのリダイレクト | 常時 |
+| `/interaction/{uid}` | `internal/authorizeendpoint` + `op/interaction` ドライバ | ログインと同意の ceremony。HTML で描画するか、SPA へ JSON で返す | `/authorize` と同時 |
+| `/par` | `internal/parendpoint` | pushed authorization request を受け取り、一度限りの `request_uri` を返す | `feature.PAR` |
+| `/token` | `internal/tokenendpoint` | クライアント認証、認可コードとリフレッシュトークンの引き換え、トークン発行 | 常時 |
+| `/userinfo` | `internal/userinfo` | 提示されたアクセストークンが指す subject の claim | 常時 |
+| `/revoke` | `internal/revokeendpoint` | RFC 7009 によるリフレッシュトークン / アクセストークンの失効 | `feature.Revoke` |
+| `/introspect` | `internal/introspectendpoint` | RFC 7662 によるトークン状態を、認可済みのリソースサーバへ返す | `feature.Introspect` |
+| `/end_session` | `internal/endsession` | RP 起点のログアウト。バックチャネルの一斉通知もここから | session manager を設定したとき |
+| `/register` | `internal/registrationendpoint` | 動的クライアント登録と、クライアントごとの管理ルート | `WithDynamicRegistration` |
 
-<svg role="img" aria-labelledby="hg-ja-title" viewBox="0 0 656 492" xmlns="http://www.w3.org/2000/svg">
-<title id="hg-ja-title">op.New が返す http.Handler は、ServeMux が各リクエストパスを対応する内部エンドポイントハンドラへ振り分けます。</title>
-<defs><marker id="hg-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker></defs>
-<rect class="hg-op" x="24" y="217" width="180" height="60" rx="8"/>
-<text class="hg-t1" x="114" y="240" text-anchor="middle">op.New</text>
-<text class="hg-t2" x="114" y="257" text-anchor="middle">→ http.Handler</text>
-<text class="hg-t3" x="114" y="270" text-anchor="middle">ServeMux</text>
-<path class="hg-line" d="M204 247 H248"/>
-<path class="hg-line" d="M248 37 V457"/>
-<path class="hg-line" d="M248 37 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="20" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="35">/.well-known/openid-configuration</text>
-<text class="hg-pkg" x="292" y="49">discovery</text>
-<path class="hg-line" d="M248 79 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="62" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="77">/jwks</text>
-<text class="hg-pkg" x="292" y="91">internal/jwks</text>
-<path class="hg-line" d="M248 121 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="104" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="119">/authorize</text>
-<text class="hg-pkg" x="292" y="133">internal/authorizeendpoint</text>
-<path class="hg-line" d="M248 163 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="146" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="161">/par</text>
-<text class="hg-pkg" x="292" y="175">internal/parendpoint</text>
-<path class="hg-line" d="M248 205 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="188" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="203">/token</text>
-<text class="hg-pkg" x="292" y="217">internal/tokenendpoint</text>
-<path class="hg-line" d="M248 247 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="230" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="245">/userinfo</text>
-<text class="hg-pkg" x="292" y="259">internal/userinfo</text>
-<path class="hg-line" d="M248 289 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="272" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="287">/revoke</text>
-<text class="hg-pkg" x="292" y="301">internal/revokeendpoint</text>
-<path class="hg-line" d="M248 331 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="314" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="329">/introspect</text>
-<text class="hg-pkg" x="292" y="343">internal/introspectendpoint</text>
-<path class="hg-line" d="M248 373 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="356" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="371">/end_session</text>
-<text class="hg-pkg" x="292" y="385">internal/endsession</text>
-<path class="hg-line" d="M248 415 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="398" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="413">/register</text>
-<text class="hg-pkg" x="292" y="427">internal/registrationendpoint</text>
-<path class="hg-line" d="M248 457 H278" marker-end="url(#hg-arrow)"/>
-<rect class="hg-box" x="280" y="440" width="348" height="34" rx="6"/>
-<text class="hg-path" x="292" y="455">/interaction/…</text>
-<text class="hg-drv" x="292" y="469">HTML または SPA UI ドライバ</text>
-</svg>
-</div>
-
-`feature.*`（`PAR`、`Introspect`、`Revoke`、`DynamicRegistration`）で制御されるエンドポイントは、対応する feature が有効になっているか、対応するオプション（`WithDynamicRegistration` など）が渡されたときだけ公開されます。バックチャネルログアウトは feature-gated エンドポイントではなく、`/end_session` から発火する送信専用の一斉通知です（各 RP に登録された `backchannel_logout_uri` へ logout token を POST します）。discovery 文書も、実際に公開されたエンドポイントだけを広告します。
+バックチャネルログアウトに行がないのは、公開されるエンドポイントではないからです。`/end_session` から発火する送信専用の一斉通知であり、OP が各 RP の登録済み `backchannel_logout_uri` へ logout token を POST します。discovery 文書は実際に公開されたエンドポイントだけを広告するので、`feature.Introspect` を有効にしていない構成では `/introspect` を一切告知しません。
 
 ## クロスカットなミドルウェア
 
@@ -118,78 +74,79 @@ origin の集合は意図的に分かれています。API の CORS は明示的
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 870 662" xmlns="http://www.w3.org/2000/svg">
+<svg role="img" aria-labelledby="seq-ja-title" viewBox="0 0 760 662" xmlns="http://www.w3.org/2000/svg">
 <title id="seq-ja-title">authorize から token までの正常系: ブラウザが /authorize と interaction を進め、RP が /token で code を引き換えます。</title>
 <defs>
 <marker id="seq-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
 <marker id="seq-ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--vp-c-text-3)"/></marker>
 </defs>
-<line class="seq-ll" x1="70" y1="44" x2="70" y2="645"/>
-<line class="seq-ll" x1="250" y1="44" x2="250" y2="645"/>
-<line class="seq-llop" x1="440" y1="44" x2="440" y2="645"/>
-<line class="seq-llst" x1="630" y1="44" x2="630" y2="645"/>
-<line class="seq-lllf" x1="800" y1="44" x2="800" y2="645"/>
-<rect class="seq-box" x="20" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd" x="70" y="32" text-anchor="middle">RP</text>
-<rect class="seq-box" x="200" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd" x="250" y="32" text-anchor="middle">ユーザエージェント</text>
-<rect class="seq-boxop" x="390" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd seq-hdop" x="440" y="32" text-anchor="middle">OP</text>
-<rect class="seq-boxst" x="580" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd" x="630" y="32" text-anchor="middle">Store</text>
-<rect class="seq-boxlf" x="750" y="10" width="100" height="34" rx="6"/>
-<text class="seq-hd seq-hdlf" x="800" y="32" text-anchor="middle">LoginFlow</text>
-<line class="seq-msg" x1="70" y1="80" x2="250" y2="80" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="75">1</text>
-<text class="seq-lbl" x="91" y="75">リダイレクト → <tspan class="seq-mono">/authorize?…</tspan></text>
-<line class="seq-msg" x1="250" y1="114" x2="440" y2="114" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="109">2</text>
-<text class="seq-lbl" x="271" y="109"><tspan class="seq-mono">GET /authorize</tspan></text>
-<line class="seq-msg" x1="440" y1="148" x2="630" y2="148" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="143">3</text>
-<text class="seq-lbl" x="461" y="143"><tspan class="seq-mono">Clients.GetClient</tspan> / <tspan class="seq-mono">redirect_uri</tspan> 検証</text>
-<path class="seq-msg" d="M440 174 h30 v14 h-30" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="480" y="170">4</text>
-<text class="seq-lbl" x="492" y="170">PKCE / scope / <tspan class="seq-mono">response_type</tspan> チェック</text>
-<line class="seq-msg" x1="440" y1="216" x2="250" y2="216" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="211">5</text>
-<text class="seq-lbl" x="271" y="211">302 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
-<line class="seq-msg" x1="250" y1="250" x2="440" y2="250" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="245">6</text>
-<text class="seq-lbl" x="271" y="245"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (ログイン)</text>
-<line class="seq-msg" x1="440" y1="284" x2="800" y2="284" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="279">7</text>
-<text class="seq-lbl" x="461" y="279"><tspan class="seq-mono">Begin / Continue</tspan> (Step chain)</text>
-<line class="seq-ret" x1="800" y1="318" x2="440" y2="318" marker-end="url(#seq-ahm)"/>
-<text class="seq-num" x="446" y="313">8</text>
-<text class="seq-lbl" x="461" y="313"><tspan class="seq-mono">Result</tspan> (subject + AAL + AMR)</text>
-<line class="seq-msg" x1="440" y1="352" x2="250" y2="352" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="347">9</text>
-<text class="seq-lbl" x="271" y="347">200 同意画面 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
-<line class="seq-msg" x1="250" y1="386" x2="440" y2="386" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="381">10</text>
-<text class="seq-lbl" x="271" y="381"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (同意)</text>
-<line class="seq-msg" x1="440" y1="420" x2="630" y2="420" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="415">11</text>
-<text class="seq-lbl" x="461" y="415"><tspan class="seq-mono">AuthorizationCodes.Save</tspan> (code + PKCE)</text>
-<line class="seq-msg" x1="440" y1="454" x2="250" y2="454" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="256" y="449">12</text>
-<text class="seq-lbl" x="271" y="449">302 → <tspan class="seq-mono">redirect_uri?code=…&amp;state=…&amp;iss=…</tspan></text>
-<line class="seq-msg" x1="250" y1="488" x2="70" y2="488" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="483">13</text>
-<text class="seq-lbl" x="91" y="483"><tspan class="seq-mono">code</tspan> 付きで到達</text>
-<line class="seq-msg" x1="70" y1="522" x2="440" y2="522" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="517">14</text>
-<text class="seq-lbl" x="91" y="517"><tspan class="seq-mono">POST /token</tspan> (<tspan class="seq-mono">grant_type=authorization_code</tspan>)</text>
-<line class="seq-msg" x1="440" y1="556" x2="630" y2="556" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="551">15</text>
-<text class="seq-lbl" x="461" y="551"><tspan class="seq-mono">AuthorizationCodes.Consume</tspan> / PKCE 検証 / クライアント認証</text>
-<line class="seq-msg" x1="440" y1="590" x2="630" y2="590" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="446" y="585">16</text>
-<text class="seq-lbl" x="461" y="585"><tspan class="seq-mono">AccessTokens.Register / RefreshTokens.Save</tspan></text>
-<line class="seq-msg" x1="440" y1="624" x2="70" y2="624" marker-end="url(#seq-ah)"/>
-<text class="seq-num" x="76" y="619">17</text>
-<text class="seq-lbl" x="91" y="619">200 <tspan class="seq-mono">{ access_token, id_token, refresh_token? }</tspan></text>
+<line class="seq-ll" x1="66" y1="44" x2="66" y2="645"/>
+<line class="seq-ll" x1="220" y1="44" x2="220" y2="645"/>
+<line class="seq-llop" x1="380" y1="44" x2="380" y2="645"/>
+<line class="seq-llst" x1="545" y1="44" x2="545" y2="645"/>
+<line class="seq-lllf" x1="700" y1="44" x2="700" y2="645"/>
+<rect class="seq-box" x="18" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd" x="66" y="32" text-anchor="middle">RP</text>
+<rect class="seq-box" x="172" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd" x="220" y="32" text-anchor="middle">ブラウザ</text>
+<rect class="seq-boxop" x="332" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd seq-hdop" x="380" y="32" text-anchor="middle">OP</text>
+<rect class="seq-boxst" x="497" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd" x="545" y="32" text-anchor="middle">ストア</text>
+<rect class="seq-boxlf" x="652" y="10" width="96" height="34" rx="6"/>
+<text class="seq-hd seq-hdlf" x="700" y="32" text-anchor="middle">LoginFlow</text>
+<line class="seq-msg" x1="66" y1="80" x2="220" y2="80" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="75">1</text>
+<text class="seq-lbl" x="87" y="75">リダイレクト → <tspan class="seq-mono">/authorize?…</tspan></text>
+<line class="seq-msg" x1="220" y1="114" x2="380" y2="114" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="109">2</text>
+<text class="seq-lbl" x="241" y="109"><tspan class="seq-mono">GET /authorize</tspan></text>
+<line class="seq-msg" x1="380" y1="148" x2="545" y2="148" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="143">3</text>
+<text class="seq-lbl" x="401" y="143"><tspan class="seq-mono">Clients.GetClient</tspan> / <tspan class="seq-mono">redirect_uri</tspan> 検証</text>
+<path class="seq-msg" d="M380 174 h30 v14 h-30" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="420" y="170">4</text>
+<text class="seq-lbl" x="432" y="170">PKCE / scope / <tspan class="seq-mono">response_type</tspan> チェック</text>
+<line class="seq-msg" x1="380" y1="216" x2="220" y2="216" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="211">5</text>
+<text class="seq-lbl" x="241" y="211">302 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
+<line class="seq-msg" x1="220" y1="250" x2="380" y2="250" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="245">6</text>
+<text class="seq-lbl" x="241" y="245"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (ログイン)</text>
+<line class="seq-msg" x1="380" y1="284" x2="700" y2="284" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="279">7</text>
+<text class="seq-lbl" x="401" y="279"><tspan class="seq-mono">Begin / Continue</tspan> (Step chain)</text>
+<line class="seq-ret" x1="700" y1="318" x2="380" y2="318" marker-end="url(#seq-ahm)"/>
+<text class="seq-num halo" x="386" y="313">8</text>
+<text class="seq-lbl" x="401" y="313"><tspan class="seq-mono">Result</tspan> (subject + AAL + AMR)</text>
+<line class="seq-msg" x1="380" y1="352" x2="220" y2="352" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="347">9</text>
+<text class="seq-lbl" x="241" y="347">200 同意画面 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
+<line class="seq-msg" x1="220" y1="386" x2="380" y2="386" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="381">10</text>
+<text class="seq-lbl" x="241" y="381"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (同意)</text>
+<line class="seq-msg" x1="380" y1="420" x2="545" y2="420" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="415">11</text>
+<text class="seq-lbl" x="401" y="415"><tspan class="seq-mono">AuthorizationCodes.Save</tspan> (code + PKCE)</text>
+<line class="seq-msg" x1="380" y1="454" x2="220" y2="454" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="226" y="449">12</text>
+<text class="seq-lbl" x="241" y="449">302 → <tspan class="seq-mono">redirect_uri?code=…&amp;state=…&amp;iss=…</tspan></text>
+<line class="seq-msg" x1="220" y1="488" x2="66" y2="488" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="483">13</text>
+<text class="seq-lbl" x="87" y="483"><tspan class="seq-mono">code</tspan> 付きで到達</text>
+<line class="seq-msg" x1="66" y1="522" x2="380" y2="522" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="517">14</text>
+<text class="seq-lbl" x="87" y="517"><tspan class="seq-mono">POST /token</tspan> (<tspan class="seq-mono">grant_type=authorization_code</tspan>)</text>
+<line class="seq-msg" x1="380" y1="556" x2="545" y2="556" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="551">15</text>
+<text class="seq-lbl" x="401" y="539"><tspan class="seq-mono">AuthorizationCodes.Consume</tspan></text>
+<text class="seq-lbl" x="401" y="551">PKCE 検証 / クライアント認証</text>
+<line class="seq-msg" x1="380" y1="590" x2="545" y2="590" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="386" y="585">16</text>
+<text class="seq-lbl" x="401" y="585"><tspan class="seq-mono">AccessTokens.Register / RefreshTokens.Save</tspan></text>
+<line class="seq-msg" x1="380" y1="624" x2="66" y2="624" marker-end="url(#seq-ah)"/>
+<text class="seq-num halo" x="72" y="619">17</text>
+<text class="seq-lbl" x="87" y="619">200 <tspan class="seq-mono">{ access_token, id_token, refresh_token? }</tspan></text>
 </svg>
 </div>
 
@@ -290,11 +247,21 @@ internal/authn/CompiledLoginFlow
 | `IATs` / `RATs` | DCR の Initial / Registration Access Token | 永続 |
 | `DeviceCodes` | RFC 8628 のデバイス認可レコード | 永続 |
 | `CIBARequests` | OpenID Connect CIBA の backchannel authentication レコード | 永続 |
-| `Metadata` | OP 内部の key/value 状態(例: `subject_mode` マーカー) | 永続(未対応バックエンドは nil 可) |
+| `Metadata` | OP 内部の key/value 状態（例: `subject_mode` マーカー） | 永続（未対応バックエンドは nil 可） |
 
-「揮発に置いてもよい」サブストアは [`composite`](/ja/use-cases/hot-cold-redis) アダプタ越しに Redis 層へ置けます。composite は構築時に「永続バックエンドは 1 つ」を強制するので、トランザクション対象のサブストアが 2 つのストアに分裂することはありません。
+「揮発に置いてもよい」サブストアは [`composite`](/ja/use-cases/hot-cold-redis) アダプタ越しに Redis 層へ置けます。composite アダプタは構築時に、すべての `Kind` に振り分け先があることを要求します。`composite.TxClusterKinds` の 7 要素は、すべて同じ比較可能なバックエンドに解決され、そのバックエンドが `store.Transactional` を実装していなければなりません。
 
-MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`RecoveryStore`、`AuthnLockoutStore`)は `store.Store` のサブストアではありません。`LoginFlow` を組み立てる際に、対応する login-flow 値(`StepEmailOTP.Store`、`StepTOTP.Store`、`PrimaryPasskey.Store`、`StepRecoveryCode.Store`、`WithAuthnLockoutStore`)へ直接渡します。in-memory、SQL、DynamoDB adapter は同じ名前の accessor でこれらを公開します。[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) は、同梱 SQL factor store と OP のコアテーブルを 1 つの DB で使う例です。自前バックエンドでは同じ契約を実装します。
+- 認可コード
+- リフレッシュトークン
+- grant
+- PAR
+- JWT アクセストークン登録
+- opaque アクセストークン
+- grant 失効 tombstone
+
+それ以外の `Kind` は別のバックエンドに配置できます。無効な `Kind`、未設定の振り分け先、cluster の分割、比較不能な cluster バックエンド、非トランザクショナルなアンカーは、いずれも構築エラーになります。
+
+MFA factor のストア（`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`RecoveryStore`、`AuthnLockoutStore`）は `store.Store` のサブストアではありません。`LoginFlow` を組み立てる際に、対応する login-flow 値（`StepEmailOTP.Store`、`StepTOTP.Store`、`PrimaryPasskey.Store`、`StepRecoveryCode.Store`、`WithAuthnLockoutStore`）へ直接渡します。in-memory、SQL、DynamoDB adapter は同じ名前の accessor でこれらを公開します。[`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) は、同梱 SQL factor store と OP のコアテーブルを 1 つの DB で使う例です。自前バックエンドでは同じ契約を実装します。
 
 詳細は [hot/cold ストレージ](/ja/use-cases/hot-cold-redis) を参照してください。
 
@@ -307,12 +274,12 @@ MFA factor のストア(`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`Recove
 - **`scopes_supported`** は組み込みの scope と `WithScope` で登録された scope の和集合です。
 - **`ui_locales_supported`** は runtime locale resolver（seed bundle + `WithLocale` 追加分）から自動導出されます。`WithDiscoveryMetadata(...).UILocalesSupported` に非空の明示リストを渡した場合だけ、それが優先されます。
 - **`code_challenge_methods_supported`** は常に `["S256"]` です。`plain` は構造的に存在しません。
-- **`request_object_signing_alg_values_supported`** は JOSE の許可リスト(`RS256`、`PS256`、`ES256`、`EdDSA`)です。
-- **`dpop_signing_alg_values_supported`** はそれより狭い集合 (`ES256`、`EdDSA`、`PS256`)です。理由は [FAQ § DPoP discovery](/ja/faq#dpop-sender-constraint) を参照。
+- **`request_object_signing_alg_values_supported`** は JOSE の許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）です。
+- **`dpop_signing_alg_values_supported`** はそれより狭い集合（`ES256`、`EdDSA`、`PS256`）です。理由は [FAQ § DPoP discovery](/ja/faq#dpop-sender-constraint) を参照。
 
 ## 次に読む
 
-- **[Options 索引](/ja/reference/options)** — すべての `op.With*` を 1 ページに。上のハンドラグラフへのクロスリンク付き。
+- **[Options 索引](/ja/reference/options)** — すべての `op.With*` を 1 ページに。上のルート一覧へのクロスリンク付き。
 - **[Audit イベントカタログ](/ja/reference/audit-events)** — 各ハンドラ、各段階で何が発火するか。
 - **[カスタム authenticator](/ja/use-cases/custom-authenticator)** — オーケストレータのパイプラインがどこで自前コードを呼ぶか。
 - **[hot / cold ストレージ](/ja/use-cases/hot-cold-redis)** — サブストアの tier 分けと、揮発 / 永続の境界の関係。

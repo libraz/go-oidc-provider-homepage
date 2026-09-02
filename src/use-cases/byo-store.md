@@ -9,6 +9,44 @@ The bundled [SQL adapter](/use-cases/sql-store) lets you rename tables with `Wit
 
 Choose this path only when the SQL adapter cannot represent your persistence boundary. It gives maximum control, but it also makes you responsible for bearer-secret hashing, sentinel errors, concurrency, and transactions. If default columns are acceptable, use the SQL adapter; if only user lookup is custom, replace only the user store.
 
+The split is not negotiable in one direction and fully open in the other. The library fixes what each operation must *mean*; your backend decides how the bytes are stored.
+
+| What the library fixes | What you choose |
+|---|---|
+| Which substores must be non-nil | Every table and column name |
+| Which extensions `op.New` verifies | SQL, key-value, or no database at all |
+| The sentinel error for each failure mode | Encryption, sharding, tenancy |
+| Single-winner transitions and atomicity | How a transaction is implemented |
+| Hash-on-store for bearer secrets | How a digest is computed and peppered |
+
+`op.WithStore` is the seam between the two columns:
+
+<svg role="img" aria-labelledby="byo-store-seam-title" viewBox="0 0 760 152" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="byo-store-seam-title">The op.WithStore seam: the library holds the meaning of each operation, the backend holds the representation, and only the store.* Go structs and the sentinel errors cross between them.</title>
+
+  <path d="M380 26 V140" style="stroke:var(--vp-c-divider);stroke-width:1.5;stroke-dasharray:6 5"/>
+  <text x="380" y="18" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">op.WithStore</text>
+
+  <rect x="20" y="40" width="240" height="84" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="140" y="72" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2)">the library</text>
+  <text x="140" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">meaning</text>
+
+  <rect x="500" y="40" width="240" height="84" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
+  <text x="620" y="72" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">your backend</text>
+  <text x="620" y="94" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">representation</text>
+
+  <path d="M264 70 H496"/>
+  <path d="M272 66 L264 70 L272 74"/>
+  <path d="M488 66 L496 70 L488 74"/>
+  <path d="M496 100 H264"/>
+  <path d="M272 96 L264 100 L272 104"/>
+
+  <text class="halo" x="380" y="74" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono)">store.*</text>
+  <text class="halo" x="380" y="104" text-anchor="middle" font-size="10.5" style="fill:var(--vp-c-text-2);font-family:var(--vp-font-family-mono)">store.Err*</text>
+</svg>
+
+Only the `store.*` Go structs and the sentinel errors cross that seam. Everything on your side of it — names, engine, encoding — is invisible to the OP.
+
 > **Source:** [`examples/26-byo-store-from-scratch`](https://github.com/libraz/go-oidc-provider/tree/main/examples/26-byo-store-from-scratch) — a complete `store.Store` over SQLite with a hand-rolled `vault_*` schema, driven through a real browser login round-trip in CI.
 
 ## What you implement
@@ -66,13 +104,15 @@ These stay optional, and the OP degrades rather than refusing to start:
 
 The current `store` interfaces make several security-sensitive read-modify-write rules explicit. They are backend contracts, not hints to approximate:
 
-- `store.TOTPRecord.Version` and `store.EmailOTPRecord.Version` are non-zero, store-issued opaque tokens after persistence. They are **equality-only**: do not increment them, compare their order, reuse one after delete/recreate, or expose them in the JSON document. `Put` assigns a fresh token without mutating the caller's record; `CompareAndSwap` carries the token read by the caller and assigns a fresh successor. A stale or malformed snapshot returns `store.ErrAlreadyConsumed`.
+- `store.TOTPRecord.Version` and `store.EmailOTPRecord.Version` are non-zero, store-issued opaque tokens after persistence. They are **equality-only**: do not increment them, compare their order, reuse one after delete/recreate, or expose them in the JSON document. `Put` assigns a fresh token without mutating the caller's record; `CompareAndSwap` requires `next.Version == previous.Version`, carries the token read by the caller, compares the stored record field-for-field (including `Version`), and assigns a fresh successor without mutating either input. A stale or malformed snapshot returns `store.ErrAlreadyConsumed`.
 - `store.CIBARequestStore.Approve` is an atomic Pending → Approved transition. If a deferred record already has a non-empty `Subject`, a different subject returns `store.ErrConflict` and leaves the record untouched; an empty subject may be populated exactly once. Approving a missing or expired record returns `store.ErrNotFound`, and approving a record that is no longer Pending returns `store.ErrConflict`. `Consume` separately performs the Approved → Consumed single-use transition, returning `store.ErrAlreadyConsumed` for a consumed record and `store.ErrConflict` for Pending or Denied.
 - CIBA is outside the aggregate's `store.Transactional` cluster; `Approve` and `Consume` must provide their own atomic transitions rather than approximating them with a read followed by a write.
-- `store.InteractionStoreCAS` compares `RawState` byte-for-byte. Preserve the bytes exactly and make `CompareAndSwap` / `DeleteIfUnchanged` atomic; re-encoding JSON or normalizing whitespace changes the version and causes a legitimate completion to lose with `store.ErrConflict`.
+- `store.InteractionStoreCAS` compares `RawState` byte-for-byte. Preserve the bytes exactly and make `CompareAndSwap` / `DeleteIfUnchanged` atomic; re-encoding JSON or normalizing whitespace changes the version and causes a legitimate completion to lose with `store.ErrConflict`. A replacement whose `RawState` and other fields are identical is still a successful apply; do not infer a conflict from an affected-row count of zero.
 - `store.GrantStore.Save` amends an existing grant. Lock the row through the transaction, use serializable isolation, or reject a stale basis with `store.ErrConflict`; an unlocked read followed by an unconditional save can silently drop a concurrent consent update.
 
 The SQL adapter stores these version tokens in `oidc_totp_secrets.row_version` and `oidc_email_otps.row_version`; see [the SQL migration order](/use-cases/sql-store#sql-migration-before-first-request) before starting a version-aware writer. The [contract suite](https://github.com/libraz/go-oidc-provider/tree/main/op/store/contract) is the executable reference for each sentinel and transition.
+
+The contract harness's `contract.TOTPFactory` returns a `contract.TOTPBackend`, whose `Store` field carries the `store.TOTPStore`; it does not return a bare `store.TOTPStore`. Its optional `Diverge` hook can mutate a stored record out of band while keeping `Version` unchanged, so the backend must enforce the full-record compare-and-swap rule.
 
 Those SQL names are adapter-specific. A BYO backend may choose different columns or a non-SQL representation, but its registration-token store still has to persist `RegistrationAccessToken.AllowedScopes`, and its MFA stores still need equivalent opaque compare-and-swap state before the first request.
 
@@ -99,8 +139,11 @@ The substore godoc is normative. A backend that compiles but ignores these does 
 
 1. **Hash-on-store.** `AuthorizationCode.ID`, `RefreshToken.ID`, and `PushedAuthRequest.URI` are opaque bearer secrets: possession alone redeems them. Hash the presented value (SHA-256, ideally HMAC'd with a server-side pepper) before persisting, store only the digest, and on `Find` / `Consume` hash the presented value to look the digest up, comparing in constant time. The example uses SHA-256 without a pepper to stay self-contained, matching the in-memory reference; production backends SHOULD add the pepper.
 2. **Sentinel errors.** Return `store.ErrNotFound`, `store.ErrAlreadyExists`, `store.ErrAlreadyConsumed`, `store.ErrConflict`, and `store.ErrTxRequired` exactly where the method godoc says (map `sql.ErrNoRows` → `ErrNotFound`; a second `Consume` → `ErrAlreadyConsumed`). Callers switch on these with `errors.Is`; returning a different error for a listed failure mode breaks the contract even though it compiles.
-3. **Atomicity.** Exchanging a code, rotating a refresh token, and consuming a PAR each cross several record kinds. The library relies on each substore's `Save` / `Consume` being individually atomic, and a backend serving the browser authorization-code flow MUST implement `store.Transactional` so multi-substore writes share one underlying transaction (see [Capabilities the constructor requires](#capabilities-the-constructor-requires)). The example implements it the same way the bundled adapter does: substores take a small `querier` interface that both `*sql.DB` and `*sql.Tx` satisfy, and `BeginTx` hands out cluster substores bound to one `*sql.Tx`.
-4. **PAR expiry belongs to `Find`, not `Consume`.** `PushedAuthRequestStore.Find` is the presentation-time expiry gate when the browser brings `request_uri` to `/authorize`. `Consume` enforces single-use only and must not reject solely because `ExpiresAt` passed after presentation; otherwise a long login / MFA / consent interaction could fail at code emission after the OP had already accepted the request.
+3. **Atomicity and single-winner transitions.** Exchanging a code, rotating a refresh token, and consuming a PAR each cross several record kinds. The library relies on each substore's `Save` / `Consume` being individually atomic, and a backend serving the browser authorization-code flow MUST implement `store.Transactional` so multi-substore writes share one underlying transaction (see [Capabilities the constructor requires](#capabilities-the-constructor-requires)). For every valid live single-use or conditional transition, exactly one concurrent caller may succeed and losers must receive the documented sentinel; an idempotent replacement whose complete record is unchanged is still a success. A backend must not infer a conflict from an affected-row count of zero. Single-use `Consume` / TOTP `Accept` must persist the consumed or progress state before returning nil, and Email OTP `Consume` must persist a non-zero `ConsumedAt` even when its input `ConsumedAt` was zero. The example implements transactions the same way the bundled adapter does: substores take a small `querier` interface that both `*sql.DB` and `*sql.Tx` satisfy, and `BeginTx` hands out cluster substores bound to one `*sql.Tx`.
+4. **Authorization-code expiry precedes consumed-state checks.** `AuthorizationCodeStore.Consume` must return `store.ErrNotFound` when a code is both expired and already consumed; expiry wins. A live consumed code returns `store.ErrAlreadyConsumed` (and SHOULD return the record when available so the caller can recover its `GrantID` for the RFC 6749 §4.1.2 replay cascade). That `ErrAlreadyConsumed` result is replay evidence and triggers the cascade; expiry alone must remain an ordinary invalid-grant failure. A successful consume returns a non-zero `ConsumedAt`.
+5. **Refresh rotation preserves replay evidence.** `RefreshTokenStore.Consume` applies the same expiry-first rule: an expired-and-consumed row returns `store.ErrNotFound`, while a live replay returns `store.ErrAlreadyConsumed` together with the record so the OP can recover the chain root. A rotation save must atomically refuse a parent marked `Revoked` with `store.ErrAlreadyConsumed`, without leaving a redeemable child. A parent that is absent—possibly because retention already collected it—does not prove revocation, so the child is kept. `SaveRotationWithRetry` follows the same parent rule.
+6. **Session, interaction, and device-code records have narrow lifecycle contracts.** `SessionStore.Touch` changes only `ExpiresAt` and `UpdatedAt`, preserves every other field and secondary index, and treats an unchanged replacement as success. A past-dated `SessionStore.Save` or `InteractionStore.Save` may omit the expired record, but it must remove or supersede a live record with the same ID rather than silently leaving it active. `DeviceCodeStore.FindByUserCode` returns the matching public state with `ID` blank so a user code cannot disclose the redeemable `device_code` credential.
+7. **PAR expiry belongs to `Find`, not `Consume`.** `PushedAuthRequestStore.Find` is the presentation-time expiry gate when the browser brings `request_uri` to `/authorize`. `Consume` enforces single-use only and must not reject solely because `ExpiresAt` passed after presentation; otherwise a long login / MFA / consent interaction could fail at code emission after the OP had already accepted the request.
 
 ## Which approach fits
 

@@ -7,7 +7,7 @@ pageClass: pg-reference-errors
 
 # エラーカタログ
 
-OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf` の文字列が通信路上に漏れることはなく、すべての `error` は `op.Error` (構築時 / 設定エラー)か、エンドポイント内部のコード定数(リクエスト処理エラー)から構築されます。
+OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf` の文字列が通信路上に漏れることはなく、すべての `error` は `op.Error` (構築時 / 設定エラー)か、エンドポイント内部のコード定数（リクエスト処理エラー）から構築されます。
 
 このページは両方を網羅した一覧です。
 
@@ -33,7 +33,9 @@ OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf
   <text class="err-text" x="643" y="232" text-anchor="middle">HTML エラー</text>
 
   <path class="err-flow" d="M202 94 C242 94 258 108 296 116"/>
+  <path class="err-flow" d="M288 112 L297 116 L288 120"/>
   <path class="err-flow" d="M202 210 C252 200 268 158 296 138"/>
+  <path class="err-flow" d="M288 134 L297 138 L288 142"/>
   <path class="err-flow" d="M460 112 C500 84 516 62 554 62"/>
   <path class="err-flow" d="M546 58 L555 62 L546 66"/>
   <path class="err-flow" d="M460 124 H554"/>
@@ -56,9 +58,9 @@ OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf
 - **`error`** は、下のカタログのいずれかです。機械可読で、ローカライズはせず、ラップもしません。
 - **`error_description`** は運用者向けの短いヒントです。トークン、ユーザの生入力、スタックトレースを含みません。
 
-ブラウザ向けエンドポイント(`/authorize`、`/end_session`)では、同じコードが以下のいずれかに現れます:
+ブラウザ向けエンドポイント（`/authorize`、`/end_session`）では、同じコードが以下のいずれかに現れます:
 
-- `redirect_uri` と `state` を検証できた場合は、redirect 上の `error` パラメータ(query / fragment)。
+- `redirect_uri` と `state` を検証できた場合は、redirect 上の `error` パラメータ（query / fragment）。
 - 安全な redirect 先が無い場合は、HTML エラーページの DOM (`<div id="op-error" data-code="..." data-description="...">`)。
 
 ## プログラム的に判別する
@@ -72,9 +74,9 @@ if op.IsClientError(err) { /* 4xx 系 */ }
 if op.IsServerError(err) { /* 5xx 系 */ }
 ```
 
-sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性で判定します。同じ OAuth コードを共有する別の sentinel が存在し得るため(たとえば、複数の `configuration_error`)、両者が同じ意味になるとは限りません。
+sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性で判定します。同じ OAuth コードを共有する別の sentinel が存在し得るため（たとえば、複数の `configuration_error`）、両者が同じ意味になるとは限りません。
 
-## 構築時エラー(`op.New`)
+## 構築時エラー（`op.New`）
 
 コンストラクタが返します。OP は起動しません。
 
@@ -89,10 +91,10 @@ sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性
 | `op.ErrDynamicRegistrationDisabled` | `configuration_error` | `WithDynamicRegistration` 無しで `Provider.IssueInitialAccessToken` を呼んだ |
 
 ::: tip 他の設定エラー
-プロファイルとオプションの衝突(たとえば `WithProfile(FAPI2Baseline)` と `WithAccessTokenFormat(Opaque)` の併用)は `*op.Error` を返し、`Code = configuration_error`、description に衝突したオプション名が入ります。これらは事前定義された sentinel ではないので、`op.IsServerError` を使うか、`.Code` を直接見て判別してください。
+プロファイルとオプションの衝突（たとえば `WithProfile(FAPI2Baseline)` と `WithAccessTokenFormat(Opaque)` の併用）は `*op.Error` を返し、`Code = configuration_error`、description に衝突したオプション名が入ります。これらは事前定義された sentinel ではないので、`op.IsServerError` を使うか、`.Code` を直接見て判別してください。
 :::
 
-## Authorize エンドポイント(`/authorize`)
+## Authorize エンドポイント（`/authorize`）
 
 ブラウザ経由のエンドポイントです。`redirect_uri` を検証できれば redirect で、できなければ HTML エラーページでユーザに到達します。
 
@@ -102,7 +104,7 @@ sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性
 | `invalid_request_object` | RFC 9101 §6.1 | JAR JWS の検証失敗、alg 非許可、有効期限切れ |
 | `invalid_request_uri` | RFC 9101 §6.1 / RFC 9126 §2.2 | PAR の `request_uri` がすでに消費済み、または期限切れ |
 | `invalid_scope` | OIDC Core §3.1.2.6 | 要求された scope がカタログに存在しない |
-| `unsupported_response_type` | OIDC Core §3.1.2.6 | `response_type` が `code` 以外(Implicit / Hybrid は拒否) |
+| `unsupported_response_type` | OIDC Core §3.1.2.6 | `response_type` が `code` 以外（Implicit / Hybrid は拒否） |
 | `unsupported_response_mode` | OAuth 2.1 | 未対応の `response_mode` |
 | `login_required` | OIDC Core §3.1.2.6 | `prompt=none` だがアクティブセッションが無い |
 | `consent_required` | OIDC Core §3.1.2.6 | `prompt=none` だが consent が無い |
@@ -115,7 +117,7 @@ sentinel 比較は Go の `errors.Is` の既定どおり、ポインタ同一性
 `invalid_request: redirect_uri does not match a registered URI` は、authorize エラーのうち**唯一** redirect させずに返すケースです。URL 自体が信頼できないので、ユーザは HTML エラーページに到達します。[FAQ § よくあるエラー](/ja/faq#common-errors) を参照。
 :::
 
-## Token エンドポイント(`/token`)
+## Token エンドポイント（`/token`）
 
 JSON 応答です。RFC 6749 §5.2 + RFC 9449(DPoP)。
 
@@ -123,16 +125,18 @@ JSON 応答です。RFC 6749 §5.2 + RFC 9449(DPoP)。
 |---|---|---|
 | `invalid_request` | 400 | grant の body の不正、パラメータ欠落 |
 | `invalid_grant` | 400 | code の有効期限切れ / 消費済み、リフレッシュトークンがローテーション猶予を超過、PKCE verifier 不一致 |
-| `invalid_client` | 401 | クライアント認証失敗(クレデンシャル無し、secret 違い、`private_key_jwt` 不正) |
+| `invalid_client` | 401 | クライアント認証失敗（クレデンシャル無し、secret 違い、`private_key_jwt` 不正） |
 | `unauthorized_client` | 400 | このクライアントは当該 grant を許可されていない |
 | `unsupported_grant_type` | 400 | `WithGrants` で有効化されていない grant |
 | `invalid_scope` | 400 | refresh が元より広い scope を要求している |
 | `use_dpop_nonce` | 400 | DPoP §8 のサーバ nonce が必要。クライアントは `DPoP-Nonce` を載せて再送する |
 | `server_error` | 500 | 内部障害 |
 
-`401 invalid_client` は、クライアントが HTTP Basic で認証した場合に `WWW-Authenticate: Basic realm="oidc"` を載せます(realm は issuer URL ではなく固定文字列です)。`/userinfo` 自身の 401 は別系統で、`Bearer realm="userinfo"` を載せます(RFC 6749 §5.2)。
+`401 invalid_client` は、クライアントが HTTP Basic で認証した場合に `WWW-Authenticate: Basic realm="oidc"` を載せます（realm は issuer URL ではなく固定文字列です）。`/userinfo` 自身の 401 は別系統で、`Bearer realm="userinfo"` を載せます（RFC 6749 §5.2）。
 
-## UserInfo エンドポイント(`/userinfo`)
+custom grant の dispatcher は、クライアントに帰属できる失敗を 4xx のカタログに残します。未対応 grant、クライアントの grant-type 制限、パラメータの不正または重複、scope / audience policy の失敗は、それぞれ `unsupported_grant_type`、`unauthorized_client`、`invalid_request`、`invalid_scope`、`invalid_target` になります。handler の panic、access token 形態の衝突、reserved claim の衝突、不正な token データ、OP の発行処理または backing store の障害など、dispatcher がクライアントに帰属できない障害は `500 server_error` になります。handler が返した `*op.Error` は保持され、それ以外の handler error は既定で `400 invalid_grant` になります。
+
+## UserInfo エンドポイント（`/userinfo`）
 
 bearer 検証を行います。RFC 6750 §3.1 + RFC 9449。
 
@@ -141,7 +145,7 @@ bearer 検証を行います。RFC 6750 §3.1 + RFC 9449。
 | `invalid_token` | 401 | bearer 欠落、期限切れ、失効済み、alg 不一致 |
 | `invalid_dpop_proof` | 401 | DPoP proof JWS の不正、再送、`cnf.jkt` 不一致 |
 | `use_dpop_nonce` | 401 | DPoP §8 のサーバ nonce が必要 |
-| `invalid_request` | 400 | bearer リクエストが不正(トークン多重指定、誤ったチャネルなど)。リクエストボディがサイズ上限を超えた場合は 413 |
+| `invalid_request` | 400 | bearer リクエストが不正（トークン多重指定、誤ったチャネルなど）。リクエストボディがサイズ上限を超えた場合は 413 |
 
 ## Introspection / Revocation(`/introspect`、`/revoke`)
 
@@ -151,12 +155,13 @@ RFC 7662 / RFC 7009。`/token` と同じクライアント認証コードの集�
 |---|---|---|
 | `invalid_request` | 400 | `token` パラメータ欠落 |
 | `invalid_client` | 401 | クライアント認証失敗 |
-| `unsupported_token_type` | 400 | `/revoke` のみ — 失効不可なトークンタイプ |
 | `server_error` | 500 | 内部障害 |
 
-`/introspect` でクライアント認証に失敗すると、wire では一般的な `invalid_client` のまま、`op.AuditIntrospectionError` として監査にも現れます。`/revoke` はこの introspection 固有の監査名を使いません。
+`/revoke` は RFC 7009 の 2 つのトークンタイプ `access_token` と `refresh_token` をサポートしており、`unsupported_token_type` は発火しません。未知または空の `token_type_hint` は wire error ではなく検索ヒントとして扱われます。認識できないトークンでも、RFC 7009 の冪等な HTTP 200 成功契約に従います。
 
-## PAR エンドポイント(`/par`)
+`/introspect` でクライアント認証に失敗すると、wire では一般的な `invalid_client` のまま、`op.AuditIntrospectionError` として監査にも現れます。opaque access token / refresh token の store が `NotFound` 以外の障害を返した場合も同じイベントを発火しますが、通信路上は `server_error` ではなく HTTP 200 と `{"active":false}` を返します。通常の inactive miss では障害イベントを発火しません。`/revoke` はこの introspection 固有の監査名を使いません。
+
+## PAR エンドポイント（`/par`）
 
 RFC 9126。
 
@@ -174,8 +179,8 @@ RFC 7591 / RFC 7592。
 |---|---|---|
 | `invalid_request` | 400 | 必須メタデータの欠落 |
 | `invalid_token` | 401 | IAT / RAT bearer の欠落 / 期限切れ |
-| `invalid_client_metadata` | 400 | メタデータがポリシーに反する(たとえば、未対応の `response_types`) |
-| `invalid_redirect_uri` | 400 | redirect URI の形式が拒否対象(loopback ワイルドカード、fragment など) |
+| `invalid_client_metadata` | 400 | メタデータがポリシーに反する（たとえば、未対応の `response_types`） |
+| `invalid_redirect_uri` | 400 | redirect URI の形式が拒否対象（loopback ワイルドカード、fragment など） |
 | `invalid_software_statement` | 400 | software statement の JWS 検証失敗 |
 | `server_error` | 500 | 内部障害 |
 

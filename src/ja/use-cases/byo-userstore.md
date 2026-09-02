@@ -7,6 +7,43 @@ description: アプリケーション所有の users テーブルを移行せず
 
 既に users、members、employees、accounts などのテーブルがあり、その形が OP 同梱の `oidc_users` テーブルと一致しない場合でも、そのテーブルを正本として使えます。OP に必要なのは、subject を解決し、許可された claim を返し、パスワードログインを使う場合は `store.UserPasswordStore` の契約に沿ってパスワードハッシュを読める投影です。
 
+境界は OAuth レコードとエンドユーザレコードの間にあります。前者は本ライブラリが持ち、後者は組み込み側が持ちます。OP はこの境界をまたいで 3 つの読み取りメソッドを呼びます。
+
+<svg role="img" aria-labelledby="byo-userstore-seam-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="byo-userstore-seam-title">2 つの責務の境界: 本ライブラリは OAuth / OIDC レコードを同梱ストアで持ち、組み込み側はエンドユーザの行を持ち、OP は FindBySubject、FindByUsername、ReadPasswordHash で境界をまたいで読む。</title>
+
+  <path d="M380 26 V268" style="stroke:var(--vp-c-divider);stroke-width:1.5;stroke-dasharray:6 5"/>
+  <text x="380" y="16" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">op.WithUserStore</text>
+
+  <rect x="20" y="28" width="280" height="88" rx="8" style="fill:var(--vp-c-brand-soft);stroke:var(--vp-c-brand-2)"/>
+  <text x="160" y="56" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--vp-c-brand-2)">ライブラリが持つ</text>
+  <text x="160" y="80" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">clients · codes · refresh tokens · grants</text>
+  <text x="160" y="100" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">sessions · PAR · IAT · RAT · access tokens</text>
+
+  <rect x="460" y="28" width="280" height="88" rx="8" style="fill:var(--vp-c-bg-soft);stroke:var(--vp-c-text-3)"/>
+  <text x="600" y="56" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">組み込み側が持つ</text>
+  <text x="600" y="80" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">members: member_id · email_address</text>
+  <text x="600" y="100" text-anchor="middle" font-size="11" style="fill:var(--vp-c-text-2)">password_phc · full_name · locale_pref</text>
+
+  <text x="300" y="156" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">ID トークンと /userinfo の claim</text>
+  <path d="M310 152 H450" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M444 147 L450 152 L444 157" style="stroke:var(--vp-c-brand-2)"/>
+  <text x="380" y="142" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindBySubject</text>
+  <text x="460" y="156" font-size="11" style="fill:var(--vp-c-text-2)">member の行を読む</text>
+
+  <text x="300" y="202" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">ログイン識別子から subject へ</text>
+  <path d="M310 198 H450" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M444 193 L450 198 L444 203" style="stroke:var(--vp-c-brand-2)"/>
+  <text x="380" y="188" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">FindByUsername</text>
+  <text x="460" y="202" font-size="11" style="fill:var(--vp-c-text-2)">email_address で照合</text>
+
+  <text x="300" y="248" text-anchor="end" font-size="11" style="fill:var(--vp-c-text-2)">op.PrimaryPassword</text>
+  <path d="M310 244 H450" style="stroke:var(--vp-c-brand-2)"/>
+  <path d="M444 239 L450 244 L444 249" style="stroke:var(--vp-c-brand-2)"/>
+  <text x="380" y="234" text-anchor="middle" font-size="11" style="fill:var(--vp-c-brand-2);font-family:var(--vp-font-family-mono)">ReadPasswordHash</text>
+  <text x="460" y="248" font-size="11" style="fill:var(--vp-c-text-2)">password_phc を返す</text>
+</svg>
+
 > **ソース:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
 
 ## 構成
@@ -47,6 +84,20 @@ provider, err := op.New(
 
 カラム名は自由です。この例では `member_id`、`email_address`、`password_phc`、`full_name`、`locale_pref`、`tenant_id` を `store.User.Subject` と `store.User.Claims` へ投影しています。
 
+## アプリケーション側の再認証
+
+パスワード変更や二要素目の登録を行うアカウント管理画面では、変更前にユーザを再認証してください。保存済みハッシュを `ReadPasswordHash` で読み、`op.VerifyPassword(hash, plain)` に渡します。アプリケーション側で PHC 形式を parse しないでください。このヘルパは有効な PHC Argon2id ハッシュを受け付けます。パスワードが違う場合、レコードが壊れている場合、検証器の上限外のパラメータの場合は、いずれも `false` を返します。
+
+```go
+hash, err := members.ReadPasswordHash(ctx, subject)
+if err != nil || !op.VerifyPassword(hash, submittedPassword) {
+    // 未知、壊れたハッシュ、誤ったパスワードで同じ汎用応答を返す。
+    return ErrReauthenticationFailed
+}
+```
+
+`op.VerifyPassword` が行うのは比較だけです。OP の総当たり対策は OP の認証フローにだけ適用され、組み込み側が所有するパスワード変更や factor 登録の endpoint には適用されません。呼び出し側で rate limit または lockout を実装してください。
+
 ## claim の開示
 
 `store.User.Claims` に値を入れても、それだけで全 RP に出るわけではありません。OP は scope と claims request によるフィルタを引き続き適用します。この例は member 行から独自の `tenant` claim を読みますが、それを許可する scope がないため demo RP には返りません。
@@ -67,7 +118,7 @@ provider, err := op.New(
 
 この例は OP を `:8080`、ペアの RP を `:9090` で起動します。`demo@example.test` / `demo` でログインすると、RP の `/me` ページで開示された ID トークン claim を確認できます。
 
-## 次に読む
+## 続きはこちら
 
 - [SQL ストア](/ja/use-cases/sql-store) — OIDC レコードに使う同梱 SQL アダプタ。
 - [MFA / ステップアップ](/ja/use-cases/mfa-step-up) — 組み込みパスワード、TOTP、captcha、ステップアップの接続。

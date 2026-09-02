@@ -30,7 +30,7 @@ pageClass: pg-concepts-sender-constraint
 構造的な解は、バイト列だけでは不十分にすることです。送信者制約は、すべてのリクエストを正規クライアントが保有する鍵に紐付けることでこれを達成します。漏洩自体は依然として起きますが、漏洩が API 侵害に繋がらなくなります。
 
 ::: tip 送信者制約と TLS の違い
-TLS は通信路上のトークンを保護します。一度アプリ層(OP、RS、ロギング middleware、デバッグエンドポイント)に届いた Bearer トークンは平文で、それらの場所のいずれかから漏れる可能性が残ります。送信者制約は、トークンを通信路の外でも使い回されにくくします。
+TLS は通信路上のトークンを保護します。一度アプリ層（OP、RS、ロギング middleware、デバッグエンドポイント）に届いた Bearer トークンは平文で、それらの場所のいずれかから漏れる可能性が残ります。送信者制約は、トークンを通信路の外でも使い回されにくくします。
 :::
 
 ## 本ライブラリの 2 つの結び付け方式
@@ -44,21 +44,22 @@ TLS は通信路上のトークンを保護します。一度アプリ層(OP、R
 | 観点 | DPoP | mTLS |
 |---|---|---|
 | 仕様 | RFC 9449 | RFC 8705 |
-| 鍵媒体 | クライアントが保持する秘密鍵(署名できる任意の機器) | クライアント TLS 証明書(PKI 発行 / 自己署名) |
-| ブラウザ対応 | 可(SPA、モバイル、JWT を署名できるあらゆる主体) | 弱 — ブラウザはクライアント証明書を実用的に提示できない |
-| リクエスト毎の追加成果物 | アプリ側で署名する新しい JWS proof | なし(TLS 層で結び付け) |
+| 鍵媒体 | クライアントが保持する秘密鍵（署名できる任意の機器） | クライアント TLS 証明書（PKI 発行 / 自己署名） |
+| ブラウザ対応 | 可（SPA、モバイル、JWT を署名できるあらゆる主体） | 弱 — ブラウザはクライアント証明書を実用的に提示できない |
+| リクエスト毎の追加成果物 | アプリ側で署名する新しい JWS proof | なし（TLS 層で結び付け） |
 | プロキシ / TLS 終端への依存 | なし — 通常の HTTPS で動く | 終端側が証明書をヘッダで前送りする必要あり |
 | `cnf` メンバ | `cnf.jkt`(JWK thumbprint) | `cnf.x5t#S256`(X.509 thumbprint) |
-| リフレッシュトークン結び付けの既定 | 公開クライアントは結び付ける、confidential クライアントは結び付けない([設計判断 #15](/ja/security/design-judgments#dj-15)) | アクセストークンは証明書に結び付け可能。mTLS は token endpoint のクライアント認証方式としては使いません |
+| リフレッシュトークン結び付けの既定 | 公開クライアントは結び付ける、confidential クライアントは結び付けない（[設計判断 #15](/ja/security/design-judgments#dj-15)） | アクセストークンは証明書に結び付け可能。mTLS は token endpoint のクライアント認証方式としては使いません |
 | 結び付けを越えた replay 防御 | `jti` キャッシュ、`iat` 窓、任意のサーバ nonce | TLS セッション再利用 + 証明書 thumbprint 照合 |
 | FAPI 2.0 Baseline 受理 | 可 | 可 |
-| FAPI 2.0 Message Signing | 可(§8 / §9 nonce 併用) | 可 |
+| FAPI 2.0 Message Signing | 可（§8 / §9 nonce 併用） | 可 |
 
 FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトークンを要求し、本ライブラリはトークンバインディングとして両方を受理します。`op.WithProfile(profile.FAPI2Baseline)` は `[feature.DPoP, feature.MTLS]` に対する `RequiredAnyOf` を課します。どちらも有効化されていなければ構築時に `feature.DPoP` を既定メンバーとして選びます。`feature.MTLS` を明示している場合はそれで制約を満たすため、DPoP は追加されません。mTLS を送信者制約として使う場合でも token endpoint のクライアント認証には `private_key_jwt` を使ってください。
 
 ## 使い分けの指針
 
-<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 710 490" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 760 490" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(25,0)">
   <title id="sc-choose-tree-title">送信者制約を選ぶための決定木。ブラウザ中心のクライアントは DPoP、PKI 証明書を持つバックエンドは mTLS、B2B や規制環境は mTLS または両方、異種混在環境は両方を有効化し、迷ったら既定は DPoP。</title>
   <rect x="60" y="8" width="230" height="36" rx="8"/>
   <text class="t-start" x="175" y="30" text-anchor="middle">送信者制約の選び方</text>
@@ -111,6 +112,7 @@ FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトー�
   <path d="M171,417 L175,424 L179,417"/>
   <rect class="op-accent" x="20" y="424" width="310" height="48" rx="8"/>
   <text class="t-out op-fill" x="175" y="453" text-anchor="middle">迷ったら DPoP を既定に</text>
+  </g>
 </svg>
 
 選択は、既存インフラから自然に決まることが多いです:
@@ -119,14 +121,14 @@ FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトー�
 - **ファーストパーティ API(両端を自分で制御) →** DPoP。運用負荷が低く、PKI が不要です。
 - **内部 CA を運用済みのバックエンドサービス →** mTLS。既存 PKI を再利用でき、新しい鍵管理面を増やしません。
 - **B2B サービスメッシュ、オープンバンキング、規制環境 →** mTLS。多くのケースで規制側がネットワーク層で既に mTLS を要求しており、RFC 8705 はその上にトークンの結び付けを重ねるだけで済みます。
-- **異種混在環境(SPA + バックエンド) →** 両方を有効化。OP が discovery で両方を出し、クライアントごとに使えるほうを選びます。
+- **異種混在環境（SPA + バックエンド） →** 両方を有効化。OP が discovery で両方を出し、クライアントごとに使えるほうを選びます。
 
 迷ったら DPoP を既定にしてください。前提となるインフラが少なく、どのクライアント環境でも動きます。
 
 ## さらに読む
 
 - [DPoP (RFC 9449)](/ja/concepts/dpop) — proof の構造、リプレイ防御、`cnf.jkt`、サーバ nonce、公開 / confidential クライアントでのリフレッシュトークン結び付けの差。
-- [mTLS (RFC 8705)](/ja/concepts/mtls) — サブモード(`tls_client_auth` と `self_signed_tls_client_auth`)、`cnf.x5t#S256`、リバースプロキシ構成。
+- [mTLS (RFC 8705)](/ja/concepts/mtls) — サブモード（`tls_client_auth` と `self_signed_tls_client_auth`）、`cnf.x5t#S256`、リバースプロキシ構成。
 
 ## 次に読む
 

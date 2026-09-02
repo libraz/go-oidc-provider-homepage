@@ -12,8 +12,9 @@ pageClass: pg-use-cases-minimal-op
 
 ## アーキテクチャ
 
-<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 12 720 266" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 0 760 274" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
   <title id="minimal-op-arch-title">単一の Go プロセス: ブラウザが rpkit RP を操作し、RP が op.New に OIDC で接続、OP は in-memory ストアを読み書きし、揮発鍵で署名します。</title>
+  <g transform="translate(20,-14)">
   <rect x="150" y="28" width="560" height="246" rx="10" stroke-opacity="0.4"/>
   <text class="d-sub" x="166" y="49">単一プロセス</text>
   <rect x="16" y="122" width="104" height="56" rx="6"/>
@@ -38,6 +39,7 @@ pageClass: pg-use-cases-minimal-op
   <polyline points="518,133 510,138 518,143"/>
   <path d="M510,162 H540 V222 H560"/>
   <polyline points="552,217 560,222 552,227"/>
+  </g>
 </svg>
 
 プロセスは 1 つ、ストアは in-memory、鍵は起動時に生成します。例ではデモユーザ（`demo`/`demo`）1 件を seed し、`redirect_uri` を埋め込み RP に向けた public client を登録しています。

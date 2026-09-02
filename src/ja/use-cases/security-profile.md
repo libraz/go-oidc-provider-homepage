@@ -34,6 +34,36 @@ public / native client は `profile.Baseline` を指定しなくても PKCE 必�
 
 プロファイルは隣り合う 2 つの宣言軸を別々に扱います。この非対称は意図したものです。
 
+<svg role="img" aria-labelledby="profile-axes-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <title id="profile-axes-title">宣言したプロファイルは必要な feature flag を補うが、grant は補わない。プロファイルが要求する grant を配備側が宣言していない場合は op.New が失敗する。</title>
+
+  <rect x="260" y="16" width="240" height="44" rx="8" stroke="var(--vp-c-brand-2)"/>
+  <text x="380" y="43" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-mono)" font-size="12.5">op.WithProfile(…)</text>
+
+  <path d="M380 60 V82"/>
+  <path d="M192 82 H568"/>
+  <path d="M192 82 V108"/>
+  <path d="M188 102 L192 111 L196 102"/>
+  <path d="M568 82 V108"/>
+  <path d="M564 102 L568 111 L572 102"/>
+
+  <rect x="24" y="114" width="336" height="130" rx="8"/>
+  <text x="192" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">feature</text>
+  <text x="192" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">feature.PAR, feature.JAR, feature.JARM, …</text>
+  <path d="M44 178 H340" opacity="0.35"/>
+  <text x="192" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">プロファイルが決めてよいポリシー</text>
+  <text x="192" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">未宣言 → プロファイルが有効化</text>
+
+  <rect x="400" y="114" width="336" height="130" rx="8"/>
+  <text x="568" y="140" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="13.5" font-weight="600">grant</text>
+  <text x="568" y="162" text-anchor="middle" fill="var(--vp-c-text-2)" font-family="var(--vp-font-family-mono)" font-size="10.5">grant.AuthorizationCode, grant.CIBA, …</text>
+  <path d="M420 178 H716" opacity="0.35"/>
+  <text x="568" y="202" text-anchor="middle" fill="var(--vp-c-text-1)" font-family="var(--vp-font-family-base)" font-size="11.5">協力者を用意できるのは組み込み側だけ</text>
+  <text x="568" y="226" text-anchor="middle" fill="var(--vp-c-brand-2)" font-family="var(--vp-font-family-base)" font-size="11.5">未宣言 → op.New が失敗</text>
+</svg>
+
+どちらの場合も、解決後のポリシーは `startup.profile` 監査イベントに記録されます。OP が実際にどの設定で起動したかは、オプションの並びから推測するのではなく監査証跡から読み取れます。
+
 **足りない feature は自動で有効になります。** PAR や JAR のような feature flag は、プロファイルが決めてよいポリシーだからです。`profile.FAPI2Baseline` を宣言すれば、必要な feature はオプションを追加しなくても有効になります。
 
 **足りない grant は `op.New` を失敗させます。** grant を有効化すると、組み込み側にしか用意できない協力者が芋づる式に必要になるため、本ライブラリは配備側が求めていないエンドポイントを勝手に mount しません。実際に問題になるのは `profile.FAPICIBA` です。このプロファイルの主題は `/bc-authorize` のやり取りそのものですが、そのエンドポイントを mount するのは grant の集合です。この検査が無ければ、プロファイルを宣言して JAR と DPoP が有効になった OP が、backchannel authentication request のすべてに 404 を返す、という状態が成立してしまいます。

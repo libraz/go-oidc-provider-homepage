@@ -25,8 +25,9 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 
 ## フローの動き方
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 700 570" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 570" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <title id="device-code-flow-title">デバイス認可のシーケンス: デバイスが device_code と user_code を要求し、ユーザが別画面で承認する間トークンエンドポイントを poll し、最後にアクセストークンを受け取る。</title>
+  <g transform="translate(30,0)">
 
   <!-- actors -->
   <rect x="12" y="14" width="128" height="40" rx="5"/>
@@ -57,7 +58,7 @@ device-authorization grant — 通称「device code」「device flow」 — は�
   <path d="M83 134 L76 138 L83 142"/>
 
   <!-- note over device -->
-  <path class="dcf-frame" fill="var(--vp-c-bg)" d="M20 154 H238 L250 166 V196 H20 Z"/>
+  <path class="dcf-frame dcf-nb" d="M20 154 H238 L250 166 V196 H20 Z"/>
   <path class="dcf-frame" d="M238 154 V166 H250"/>
   <text class="dcf-fp dcf-neu" x="30" y="173" font-size="10">画面に表示 <tspan class="dcf-fm">op.example.com/device</tspan></text>
   <text class="dcf-fp dcf-neu" x="30" y="188" font-size="10">を開き <tspan class="dcf-fm">ABCD-EFGH</tspan> を入力</text>
@@ -107,13 +108,14 @@ device-authorization grant — 通称「device code」「device flow」 — は�
   <text class="dcf-fm dcf-neu" x="213" y="536" font-size="10" text-anchor="middle">200  access_token · id_token? · refresh_token?</text>
   <line class="dcf-ret" x1="350" y1="544" x2="76" y2="544"/>
   <path d="M83 540 L76 544 L83 548"/>
+  </g>
 </svg>
 
 デバイス側はパスワードを一切持ちません。ユーザもデバイスには何も打ちません。2 つの面が短い `user_code` を介して OP で合流します。
 
 ## Polling 応答
 
-トークンエンドポイント (`/token`) は poll ごとに以下のいずれかを返します:
+トークンエンドポイント（`/token`） は poll ごとに以下のいずれかを返します:
 
 | 応答 | 意味 | デバイスのふるまい |
 |---|---|---|
@@ -150,5 +152,5 @@ example は役割別ファイルに分割されています（`op.go` で OP の
 
 ## 続きはこちら
 
-- [使い方: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCodeByAttemptKey`、検証ページの契約、デバイス登録解除(unenroll)時に発行済みトークンを連鎖失効させる手順。
+- [使い方: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCodeByAttemptKey`、検証ページの契約、デバイス登録解除（unenroll）時に発行済みトークンを連鎖失効させる手順。
 - [CIBA 入門](/ja/concepts/ciba) — 「ユーザが別チャネルにいる」の概念的な兄弟。コード表示を使わない方式。

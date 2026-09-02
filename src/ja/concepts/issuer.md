@@ -5,7 +5,14 @@ description: issuer URL とは何か、なぜひとつの正規形であるこ�
 
 # Issuer
 
-**issuer**（発行者）は OP の identity URL です。OP が署名するすべてのトークンの `iss` claim、`/.well-known/openid-configuration` の `issuer` フィールド、JWKS メタデータの帰属、さらにプロファイルによっては confidential client が署名する `client_assertion` の `aud` にまで現れます。トークン・署名鍵・discovery 文書を「同じ OP に属する」と紐付ける、ただひとつの文字列です。
+**issuer**（発行者）は OP の identity URL です。同じ文字列が、次のいくつもの場所に同時に現れます。
+
+- OP が署名するすべてのトークンの `iss` claim
+- `/.well-known/openid-configuration` の `issuer` フィールド
+- JWKS メタデータの帰属
+- プロファイルによっては、confidential client が署名する `client_assertion` の `aud`
+
+トークン・署名鍵・discovery 文書を「同じ OP に属する」と紐付ける、ただひとつの文字列です。
 
 ::: tip 30 秒で頭に入れる相関図
 - issuer は **URL** であって、ホスト名ではありません。`https://login.example.com` が issuer であり、`login.example.com` は issuer ではありません。
@@ -24,7 +31,7 @@ description: issuer URL とは何か、なぜひとつの正規形であるこ�
 
 ## なぜ正規形が重要か
 
-OIDC Discovery 1.0 §4 は、issuer 識別子の host と path の**あいだ**に `/.well-known/openid-configuration` を挿入して configuration URL を導出すると規定しています(path を持たない一般的な issuer では、単純な連結と同じ結果になります)。RFC 9207 はさらに、認可応答に同じ `iss` をエコーすることで「混同（mix-up）攻撃」を防ぐよう要求します — 誤って配送された code が別の AS に対して使われないようにするためです。どちらのチェックも、OP と全 RP が **ひとつの** 正規表記で合意していることに依存しています。
+OIDC Discovery 1.0 §4 は、issuer 識別子の host と path の**あいだ**に `/.well-known/openid-configuration` を挿入して configuration URL を導出すると規定しています（path を持たない一般的な issuer では、単純な連結と同じ結果になります）。RFC 9207 はさらに、認可応答に同じ `iss` をエコーすることで「混同（mix-up）攻撃」を防ぐよう要求します — 誤って配送された code が別の AS に対して使われないようにするためです。どちらのチェックも、OP と全 RP が **ひとつの** 正規表記で合意していることに依存しています。
 
 実際のデプロイでは、よく似ているが等価でない URI が並ぶことが多いです。
 
