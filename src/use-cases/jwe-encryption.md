@@ -22,19 +22,19 @@ Both directions use a closed algorithm allow-list.
     <text class="fg-xs" x="56" y="116">assembles the claims</text>
     <text class="fg-xs" x="56" y="134">and signs them</text>
     <path class="fg-edge fg-edge--accent" d="M240,114 H286" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="290" y="42" width="360" height="144" rx="10"/>
+    <rect class="fg-box fg-box--accent" x="290" y="42" width="342" height="144" rx="10"/>
     <text class="fg-lbl fg-accent" x="310" y="66">outer · JWE</text>
     <text class="fg-xs" x="310" y="86">encrypted to the RP's use=enc JWK</text>
-    <rect class="fg-box fg-box--sub" x="310" y="100" width="320" height="70" rx="8"/>
+    <rect class="fg-box fg-box--sub" x="310" y="100" width="302" height="70" rx="8"/>
     <text class="fg-lbl" x="330" y="124">inner · JWS</text>
     <text class="fg-xs" x="330" y="144">the signed claims — unchanged,</text>
     <text class="fg-xs" x="330" y="160">and unreadable until the outer layer is off</text>
-    <path class="fg-edge fg-edge--accent" d="M654,114 H700" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="677" y="107" text-anchor="middle">on the wire</text>
-    <rect class="fg-box" x="704" y="66" width="220" height="96" rx="8"/>
-    <text class="fg-t2" x="724" y="94">RP</text>
-    <text class="fg-xs" x="724" y="116">decrypt the outer JWE,</text>
-    <text class="fg-xs" x="724" y="134">then verify the inner JWS</text>
+    <path class="fg-edge fg-edge--accent" d="M636,114 H696" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="666" y="107" text-anchor="middle">on the wire</text>
+    <rect class="fg-box" x="700" y="66" width="224" height="96" rx="8"/>
+    <text class="fg-t2" x="720" y="94">RP</text>
+    <text class="fg-xs" x="720" y="116">decrypt the outer JWE,</text>
+    <text class="fg-xs" x="720" y="134">then verify the inner JWS</text>
     <text class="fg-xs" x="36" y="216">signing proves who issued it; encrypting decides who can read it — the two answer different questions and both are needed here</text>
   </svg>
   <figcaption class="fig-note">The order matters in both directions. Signing first means the signature covers the claims and not the ciphertext; decrypting first means the RP never verifies a signature over something it could not read.</figcaption>

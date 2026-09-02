@@ -32,15 +32,15 @@ This page covers the CORS layer. PKCE itself is covered in [Authorization Code +
     <text class="fg-xs" x="370" y="94">enforces the same-origin policy</text>
     <text class="fg-xs" x="370" y="112">and runs the preflight itself</text>
     <text class="fg-xs fg-warn" x="370" y="136">it decides what the SPA may read</text>
-    <path class="fg-edge" d="M584,76 H660" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="622" y="69" text-anchor="middle">OPTIONS + Origin</text>
-    <path class="fg-edge fg-edge--accent" d="M660,110 H584" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="622" y="128" text-anchor="middle">Allow-Origin</text>
-    <rect class="fg-box fg-box--accent" x="664" y="46" width="260" height="104" rx="8"/>
-    <text class="fg-t2 fg-accent" x="684" y="72">OP</text>
-    <text class="fg-xs" x="684" y="94">checks the origin against its allow-list</text>
-    <text class="fg-xs" x="684" y="112">and answers, or does not</text>
-    <text class="fg-mxs" x="684" y="136">then: the real request · PKCE · Bearer</text>
+    <path class="fg-edge" d="M584,76 H676" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="630" y="69" text-anchor="middle">OPTIONS + Origin</text>
+    <path class="fg-edge fg-edge--accent" d="M676,110 H584" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="630" y="128" text-anchor="middle">Allow-Origin</text>
+    <rect class="fg-box fg-box--accent" x="680" y="46" width="244" height="104" rx="8"/>
+    <text class="fg-t2 fg-accent" x="700" y="72">OP</text>
+    <text class="fg-xs" x="700" y="94">checks the origin against its allow-list</text>
+    <text class="fg-xs" x="700" y="112">and answers, or does not</text>
+    <text class="fg-mxs" x="700" y="136">then: the real request · PKCE · Bearer</text>
   </svg>
   <figcaption class="fig-note">The allow-list is not an authentication check and was never meant to be one. It only decides whether a page at that origin is allowed to read the answer — the token still has to stand on its own.</figcaption>
 </figure>

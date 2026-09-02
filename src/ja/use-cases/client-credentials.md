@@ -35,30 +35,35 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 <figure class="fig">
   <div class="fig-head">サービス間通信、ユーザは登場しない</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-cc-title" viewBox="0 0 960 196" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-cc-title" viewBox="0 0 960 216" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-cc-title">Service A が自分自身として OP に認証してアクセストークンを受け取り、それを付けて Service B を呼び出します。Service B は introspection か公開鍵集合のいずれかでそのトークンを検証します。</title>
-    <rect class="fg-box" x="36" y="56" width="230" height="76" rx="8"/>
-    <text class="fg-t2" x="56" y="82">Service A</text>
-    <text class="fg-xs" x="56" y="104">confidential クライアント</text>
-    <text class="fg-xs" x="56" y="120">実際に資格情報を保持する</text>
-    <path class="fg-edge" d="M270,80 H346" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="308" y="73" text-anchor="middle">1 · POST /token</text>
-    <path class="fg-edge fg-edge--accent" d="M346,112 H270" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="308" y="130" text-anchor="middle">2 · access_token</text>
-    <rect class="fg-box fg-box--accent" x="350" y="56" width="230" height="76" rx="8"/>
-    <text class="fg-t2 fg-accent" x="370" y="82">OP</text>
-    <text class="fg-xs" x="370" y="104">認可サーバー</text>
-    <text class="fg-mxs" x="370" y="120">/token · /introspect · /jwks</text>
-    <path class="fg-edge fg-edge--muted" d="M694,132 V158 H466 V136" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="580" y="152" text-anchor="middle">4 · トークンを検証する — /introspect か、/jwks で自前に</text>
-    <path class="fg-edge" d="M270,94 H660" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="620" y="88" text-anchor="middle">3 · Authorization: Bearer &lt;token&gt;</text>
-    <rect class="fg-box" x="664" y="56" width="260" height="76" rx="8"/>
-    <text class="fg-t2" x="684" y="82">Service B</text>
-    <text class="fg-xs" x="684" y="104">リソースサーバ</text>
-    <text class="fg-xs" x="684" y="120">Service A の資格情報は一切見ない</text>
+    <rect class="fg-box" x="36" y="36" width="210" height="90" rx="8"/>
+    <text class="fg-t2" x="56" y="64">Service A</text>
+    <text class="fg-xs" x="56" y="88">confidential クライアント</text>
+    <text class="fg-xs" x="56" y="106">実際に資格情報を保持する</text>
+    <rect class="fg-box fg-box--accent" x="380" y="36" width="200" height="90" rx="8"/>
+    <text class="fg-t2 fg-accent" x="400" y="64">OP</text>
+    <text class="fg-xs" x="400" y="88">認可サーバー</text>
+    <text class="fg-mxs" x="400" y="106">/token · /introspect · /jwks</text>
+    <rect class="fg-box" x="714" y="36" width="210" height="90" rx="8"/>
+    <text class="fg-t2" x="734" y="64">Service B</text>
+    <text class="fg-xs" x="734" y="88">リソースサーバ</text>
+    <text class="fg-xs" x="734" y="106">A の資格情報は一切見ない</text>
+    <!-- 1 · A が OP にトークンを要求する -->
+    <path class="fg-edge" d="M250,66 H376" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="313" y="59" text-anchor="middle">1 · POST /token</text>
+    <!-- 2 · OP が応答する -->
+    <path class="fg-edge fg-edge--accent" d="M376,100 H250" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="313" y="93" text-anchor="middle">2 · access_token</text>
+    <!-- 4 · B が受け取ったトークンを検証する -->
+    <path class="fg-edge fg-edge--muted" d="M710,83 H584" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="647" y="76" text-anchor="middle">4 · 検証する</text>
+    <text class="fg-mxs" x="647" y="99" text-anchor="middle">/introspect · /jwks</text>
+    <!-- 3 · A が B を直接呼ぶ。OP は関与しないので下を回す -->
+    <path class="fg-edge" d="M141,130 V172 H819 V130" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="480" y="165" text-anchor="middle">3 · Authorization: Bearer &lt;token&gt;</text>
   </svg>
-  <figcaption class="fig-note">手順 3 が OP の前を横切っているのは、この通信に OP が関与しないからです。トークンについて OP に問い合わせるか自分で署名を検証するかは、手順 4 で Service B が決めます。その選択がアクセストークン形式のページの主題です。</figcaption>
+  <figcaption class="fig-note">手順 3 を OP の中ではなく外側に回しているのは、この経路に OP がまったく関与しないからです。トークンについて問い合わせるか自分で署名を検証するかは手順 4 で Service B が決めます。その選択がアクセストークン形式のページの主題です。</figcaption>
 </figure>
 
 `/authorize` 無し、同意無し、`id_token` 無し、リフレッシュトークン無し。

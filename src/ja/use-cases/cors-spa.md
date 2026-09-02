@@ -32,15 +32,15 @@ pageClass: pg-use-cases-cors-spa
     <text class="fg-xs" x="370" y="94">same-origin policy を強制し</text>
     <text class="fg-xs" x="370" y="112">preflight を自分で送る</text>
     <text class="fg-xs fg-warn" x="370" y="136">SPA が何を読めるかを決めるのはここ</text>
-    <path class="fg-edge" d="M584,76 H660" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="622" y="69" text-anchor="middle">OPTIONS + Origin</text>
-    <path class="fg-edge fg-edge--accent" d="M660,110 H584" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="622" y="128" text-anchor="middle">Allow-Origin</text>
-    <rect class="fg-box fg-box--accent" x="664" y="46" width="260" height="104" rx="8"/>
-    <text class="fg-t2 fg-accent" x="684" y="72">OP</text>
-    <text class="fg-xs" x="684" y="94">オリジンを許可リストと照合し</text>
-    <text class="fg-xs" x="684" y="112">許可するかどうかを応答する</text>
-    <text class="fg-mxs" x="684" y="136">その後: 本リクエスト · PKCE · Bearer</text>
+    <path class="fg-edge" d="M584,76 H676" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="630" y="69" text-anchor="middle">OPTIONS + Origin</text>
+    <path class="fg-edge fg-edge--accent" d="M676,110 H584" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="630" y="128" text-anchor="middle">Allow-Origin</text>
+    <rect class="fg-box fg-box--accent" x="680" y="46" width="244" height="104" rx="8"/>
+    <text class="fg-t2 fg-accent" x="700" y="72">OP</text>
+    <text class="fg-xs" x="700" y="94">オリジンを許可リストと照合し</text>
+    <text class="fg-xs" x="700" y="112">許可するかどうかを応答する</text>
+    <text class="fg-mxs" x="700" y="136">その後: 本リクエスト · PKCE · Bearer</text>
   </svg>
   <figcaption class="fig-note">許可リストは認証の検査ではありませんし、そのつもりで作られてもいません。決めているのは、そのオリジンのページが応答を読んでよいかどうかだけで、トークン自体は単独で成立している必要があります。</figcaption>
 </figure>

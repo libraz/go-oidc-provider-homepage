@@ -22,19 +22,19 @@ OP は以下を行えます:
     <text class="fg-xs" x="56" y="116">claim を組み立て、</text>
     <text class="fg-xs" x="56" y="134">署名する</text>
     <path class="fg-edge fg-edge--accent" d="M240,114 H286" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="290" y="42" width="360" height="144" rx="10"/>
+    <rect class="fg-box fg-box--accent" x="290" y="42" width="342" height="144" rx="10"/>
     <text class="fg-lbl fg-accent" x="310" y="66">外側 · JWE</text>
     <text class="fg-xs" x="310" y="86">RP の use=enc JWK 宛に暗号化する</text>
-    <rect class="fg-box fg-box--sub" x="310" y="100" width="320" height="70" rx="8"/>
+    <rect class="fg-box fg-box--sub" x="310" y="100" width="302" height="70" rx="8"/>
     <text class="fg-lbl" x="330" y="124">内側 · JWS</text>
     <text class="fg-xs" x="330" y="144">署名された claim — 内容はそのまま、</text>
     <text class="fg-xs" x="330" y="160">外側を外すまで読めない</text>
-    <path class="fg-edge fg-edge--accent" d="M654,114 H700" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="677" y="107" text-anchor="middle">通信路上</text>
-    <rect class="fg-box" x="704" y="66" width="220" height="96" rx="8"/>
-    <text class="fg-t2" x="724" y="94">RP</text>
-    <text class="fg-xs" x="724" y="116">外側の JWE を復号し、</text>
-    <text class="fg-xs" x="724" y="134">続けて内側の JWS を検証する</text>
+    <path class="fg-edge fg-edge--accent" d="M636,114 H696" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="666" y="107" text-anchor="middle">通信路上</text>
+    <rect class="fg-box" x="700" y="66" width="224" height="96" rx="8"/>
+    <text class="fg-t2" x="720" y="94">RP</text>
+    <text class="fg-xs" x="720" y="116">外側の JWE を復号し、</text>
+    <text class="fg-xs" x="720" y="134">続けて内側の JWS を検証する</text>
     <text class="fg-xs" x="36" y="216">署名は誰が発行したかを示し、暗号化は誰が読めるかを決めます。答えている問いが違うため、ここでは両方が必要です</text>
   </svg>
   <figcaption class="fig-note">順序はどちらの向きでも重要です。先に署名するから署名の対象が暗号文ではなく claim になり、先に復号するから RP は読めなかったものに対して署名検証をせずに済みます。</figcaption>

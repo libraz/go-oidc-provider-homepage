@@ -69,9 +69,10 @@ if err := storage.CreateTables(ctx); err != nil {
   <div class="fig-head">2 つの item を 1 回のトランザクションで書く</div>
   <svg class="fig-svg" role="img" aria-labelledby="uc-ddb-title" viewBox="0 0 960 234" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-ddb-title">1 回の Save が、デバイスレコードと user_code の予約 item を同じ TransactWriteItems で書き込みます。user_code による参照は、まず予約 item を strongly consistent read で読み、そこからデバイスレコードを解決します。</title>
-    <rect class="fg-box fg-box--accent" x="36" y="36" width="240" height="64" rx="8"/>
+    <rect class="fg-box fg-box--accent" x="36" y="36" width="240" height="76" rx="8"/>
     <text class="fg-t2 fg-accent" x="56" y="62">Save</text>
-    <text class="fg-xs" x="56" y="84">1 回の TransactWriteItems — 両方書くか、どちらも書かないか</text>
+    <text class="fg-xs" x="56" y="84">1 回の TransactWriteItems で書く</text>
+    <text class="fg-xs" x="56" y="102">両方書くか、どちらも書かないか</text>
     <path class="fg-leader" d="M280,68 H310 M310,56 V126"/>
     <path class="fg-edge fg-edge--accent" d="M310,56 H336" marker-end="url(#fg-ac)"/>
     <path class="fg-edge fg-edge--accent" d="M310,126 H336" marker-end="url(#fg-ac)"/>
