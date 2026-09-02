@@ -26,28 +26,33 @@ Go でサービスを書いていると、自前で OpenID Connect Provider を�
 
 このページでは選択肢 3 を、選択肢 1 や 2 でつまずきやすい点と比べながら説明します。
 
-<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 144" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="why-responsibility-title">go-oidc-provider の責務分担。ライブラリは OIDC と OAuth のプロトコル処理を担当し、組み込み側はユーザ、画面、保存先、HTTP ルーティングを担当する。</title>
-  <defs>
-    <marker id="why-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="24" y="28" width="246" height="88" rx="8"/>
-  <text class="p" x="147" y="58" text-anchor="middle" font-size="15.5" font-weight="700">組み込み側</text>
-  <text class="p sub" x="147" y="82" text-anchor="middle" font-size="11.5">ユーザ / UI / 保存先</text>
-  <text class="m sub" x="147" y="100" text-anchor="middle" font-size="10.5">Authenticator · Store · Templates</text>
-  <rect class="op" x="310" y="28" width="246" height="88" rx="8"/>
-  <text class="p opf" x="433" y="58" text-anchor="middle" font-size="15.5" font-weight="700">go-oidc-provider</text>
-  <text class="p sub" x="433" y="82" text-anchor="middle" font-size="11.5">OIDC / OAuth の手続き</text>
-  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/oidc/auth · /oidc/token · /oidc/jwks</text>
-  <rect x="596" y="28" width="140" height="88" rx="8"/>
-  <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
-  <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">利用アプリ</text>
-  <text class="p sub" x="666" y="100" text-anchor="middle" font-size="10.5">トークンを検証</text>
-  <path d="M270 72 H310" marker-end="url(#why-arrow)"/>
-  <path d="M556 72 H596" marker-end="url(#why-arrow)"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">どこを誰が持つか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="why-split-title" viewBox="0 0 960 164" xmlns="http://www.w3.org/2000/svg">
+    <title id="why-split-title">責務の分担を示した図。組み込み側がユーザ・画面・保存先を持ち、ライブラリが OIDC と OAuth の手続きを担い、利用側のアプリはトークンを検証するだけです。</title>
+    <text class="fg-lbl" x="40" y="26">組み込み側が持つ</text>
+    <text class="fg-lbl fg-accent" x="344" y="26">ライブラリが持つ</text>
+    <text class="fg-lbl" x="648" y="26">利用側が持つ</text>
+    <rect class="fg-box" x="36" y="38" width="280" height="104" rx="8"/>
+    <text class="fg-t" x="56" y="66">組み込み側のアプリ</text>
+    <text class="fg-xs" x="56" y="88">ユーザ · 画面 · 保存先</text>
+    <line class="fg-rule" x1="56" y1="102" x2="296" y2="102"/>
+    <text class="fg-mxs" x="56" y="126">Authenticator · Store · Templates</text>
+    <path class="fg-edge" d="M320,88 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="340" y="38" width="280" height="104" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="66">go-oidc-provider</text>
+    <text class="fg-xs" x="360" y="88">OIDC / OAuth の手続き</text>
+    <line class="fg-rule" x1="360" y1="102" x2="600" y2="102"/>
+    <text class="fg-mxs" x="360" y="126">/authorize · /token · /jwks</text>
+    <path class="fg-edge" d="M624,88 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="644" y="38" width="280" height="104" rx="8"/>
+    <text class="fg-t" x="664" y="66">RP / API</text>
+    <text class="fg-xs" x="664" y="88">利用するアプリケーション</text>
+    <line class="fg-rule" x1="664" y1="102" x2="904" y2="102"/>
+    <text class="fg-mxs" x="664" y="126">渡されたトークンを検証する</text>
+  </svg>
+  <figcaption class="fig-note">本ライブラリはユーザテーブルもログイン画面もデータベースも要求しません。要求するのはインタフェースです。移行を強いる製品と、組み込むライブラリの違いはここにあります。</figcaption>
+</figure>
 
 境界の引き方は次の 3 点です。
 

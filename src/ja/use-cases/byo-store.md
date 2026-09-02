@@ -22,29 +22,29 @@ pageClass: pg-use-cases-byo-store
 
 この 2 列を分ける境界が `op.WithStore` です。
 
-<svg role="img" aria-labelledby="byo-store-seam-title" viewBox="0 0 760 152" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="byo-store-seam-title">op.WithStore の境界。各操作の意味は本ライブラリが持ち、その表現は自前のバックエンドが持つ。境界を越えるのは store.* Go 構造体と sentinel エラーだけ。</title>
-
-  <path class="bs-seam" d="M380 26 V140"/>
-  <text class="bs-seam-name" x="380" y="18" text-anchor="middle">op.WithStore</text>
-
-  <rect class="bs-lib" x="20" y="40" width="240" height="84" rx="8"/>
-  <text class="bs-lib-title" x="140" y="72" text-anchor="middle">本ライブラリ</text>
-  <text class="bs-role" x="140" y="94" text-anchor="middle">意味</text>
-
-  <rect class="bs-app" x="500" y="40" width="240" height="84" rx="8"/>
-  <text class="bs-app-title" x="620" y="72" text-anchor="middle">自前のバックエンド</text>
-  <text class="bs-role" x="620" y="94" text-anchor="middle">表現</text>
-
-  <path d="M264 70 H496"/>
-  <path d="M272 66 L264 70 L272 74"/>
-  <path d="M488 66 L496 70 L488 74"/>
-  <path d="M496 100 H264"/>
-  <path d="M272 96 L264 100 L272 104"/>
-
-  <text class="halo bs-wire" x="380" y="74" text-anchor="middle">store.*</text>
-  <text class="halo bs-wire" x="380" y="104" text-anchor="middle">store.Err*</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">ストアの境界を越えるもの</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-byostore-title" viewBox="0 0 960 176" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-byostore-title">各ストア操作が何を保証しなければならないかは本ライブラリが持ち、それを実際にどう保存するかは自前のバックエンドが持ちます。境界を越えるのは store パッケージの Go 構造体と sentinel エラーだけです。</title>
+    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="480" y1="26" x2="480" y2="160"/>
+    <text class="fg-lbl fg-accent" x="480" y="18" text-anchor="middle">op.WithStore</text>
+    <rect class="fg-box" x="36" y="40" width="404" height="104" rx="8"/>
+    <text class="fg-t2" x="56" y="66">本ライブラリ</text>
+    <text class="fg-lbl fg-accent" x="56" y="86">意味</text>
+    <text class="fg-xs" x="56" y="110">「この認可コードを消費する」が何を保証すべきか</text>
+    <text class="fg-xs" x="56" y="128">どのエラーがどの結果を表すか</text>
+    <rect class="fg-box" x="520" y="40" width="404" height="104" rx="8"/>
+    <text class="fg-t2" x="540" y="66">自前のバックエンド</text>
+    <text class="fg-lbl" x="540" y="86">表現</text>
+    <text class="fg-xs" x="540" y="110">行、item、キー、TTL — 都合のよい形で</text>
+    <text class="fg-xs" x="540" y="128">既に運用しているデータベースに合わせる</text>
+    <path class="fg-edge" d="M444,76 H516" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="480" y="69" text-anchor="middle">store.*</text>
+    <path class="fg-edge fg-edge--accent" d="M516,120 H444" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="480" y="113" text-anchor="middle">store.Err*</text>
+  </svg>
+  <figcaption class="fig-note">越えるのはこれだけです。だからアダプタはレビューできます。間違えうる論点はすべて表現の側にあり、そのどれにもインタフェースの契約が答えを与えているからです。</figcaption>
+</figure>
 
 この境界を越えるのは `store.*` Go 構造体と sentinel エラーだけです。境界の向こう側にあるもの（名前、エンジン、エンコーディング）は OP からは一切見えません。
 

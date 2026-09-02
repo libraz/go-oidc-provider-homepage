@@ -25,50 +25,44 @@ pageClass: pg-use-cases-storage-decision
 | **既存データベース** — すでに `users` テーブルとマイグレーションを運用している | アダプタ所有の `oidc_*` テーブル（命名を合わせて変更）+ ID 情報を投影 | [ストアを自前実装](/ja/use-cases/byo-store) · [ユーザストアを自前実装](/ja/use-cases/byo-userstore) |
 | **スケール / 高頻度生成** — 揮発状態を永続ストアから外したい | `composite` で分離: 永続 SQL + 揮発 Redis | [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) |
 
-<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="storage-choice-title">ストレージ構成の選択。新規なら SQL アダプタ 1 つ、既存 users テーブルがあるなら OIDC テーブルだけ SQL アダプタに任せて UserStore を自前実装、高頻度の揮発状態を分離したいなら composite で SQL と Redis に分ける。</title>
-  <defs>
-    <marker id="storage-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="250" y="18" width="260" height="52" rx="8"/>
-  <text class="h" x="380" y="40" text-anchor="middle">どこに状態を置くか</text>
-  <text class="t sub" x="380" y="58" text-anchor="middle">まず 3 つの入口から選ぶ</text>
-
-  <path d="M380 70 V100" marker-end="url(#storage-arrow)"/>
-  <rect x="40" y="102" width="210" height="74" rx="8"/>
-  <text class="h" x="145" y="130" text-anchor="middle">更地</text>
-  <text class="t sub" x="145" y="151" text-anchor="middle">スキーマがまだ無い</text>
-
-  <rect x="274" y="102" width="212" height="74" rx="8"/>
-  <text class="h" x="380" y="130" text-anchor="middle">既存 DB あり</text>
-  <text class="t sub" x="380" y="151" text-anchor="middle">users テーブルを運用済み</text>
-
-  <rect x="510" y="102" width="210" height="74" rx="8"/>
-  <text class="h" x="615" y="130" text-anchor="middle">高頻度状態を分離</text>
-  <text class="t sub" x="615" y="151" text-anchor="middle">Redis を使いたい</text>
-
-  <path d="M145 176 V218" marker-end="url(#storage-arrow)"/>
-  <path d="M380 176 V218" marker-end="url(#storage-arrow)"/>
-  <path d="M615 176 V218" marker-end="url(#storage-arrow)"/>
-
-  <rect class="accent" x="40" y="220" width="210" height="92" rx="8"/>
-  <text class="h accent-text" x="145" y="248" text-anchor="middle">SQL アダプタ 1 つ</text>
-  <text class="t sub" x="145" y="272" text-anchor="middle">OIDC テーブルを</text>
-  <text class="t sub" x="145" y="291" text-anchor="middle">アダプタに任せる</text>
-
-  <rect class="accent" x="274" y="220" width="212" height="92" rx="8"/>
-  <text class="h accent-text" x="380" y="248" text-anchor="middle">SQL + UserStore</text>
-  <text class="t sub" x="380" y="272" text-anchor="middle">プロトコル状態は SQL</text>
-  <text class="t sub" x="380" y="291" text-anchor="middle">ID 情報は既存 DB</text>
-
-  <rect class="accent" x="510" y="220" width="210" height="92" rx="8"/>
-  <text class="h accent-text" x="615" y="248" text-anchor="middle">composite</text>
-  <text class="t sub" x="615" y="272" text-anchor="middle">永続 SQL</text>
-  <text class="t sub" x="615" y="291" text-anchor="middle">揮発 Redis</text>
-
-</svg>
+<figure class="fig">
+  <div class="fig-head">既にあるものから選ぶ 3 つの入口</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-storage-decision-title" viewBox="0 0 960 296" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-storage-decision-title">ストレージ構成の選び方。新規なら SQL アダプタ 1 つで済みます。既存の users テーブルがあるなら、OIDC のテーブルだけ SQL アダプタに任せて UserStore は自前で用意します。書き換えの激しい状態を SQL から外したいなら、composite アダプタで両方のバックエンドを束ねます。</title>
+    <rect class="fg-box fg-box--accent" x="36" y="24" width="888" height="52" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="48">状態をどこに置くか</text>
+    <text class="fg-xs" x="56" y="68">答えは、OP の好みではなく、その環境で既に運用しているものから決まります</text>
+    <path class="fg-leader" d="M480,80 V94 M184,94 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M184,94 V108" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M480,94 V108" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M792,94 V108" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="36" y="112" width="296" height="164" rx="8"/>
+    <text class="fg-t2" x="56" y="140">更地から始める</text>
+    <text class="fg-xs" x="56" y="160">自前のスキーマがまだ無い</text>
+    <line class="fg-rule" x1="56" y1="176" x2="312" y2="176"/>
+    <text class="fg-m fg-accent" x="56" y="202">SQL アダプタ 1 つ</text>
+    <text class="fg-xs" x="56" y="224">users を含む OIDC のテーブルを</text>
+    <text class="fg-xs" x="56" y="240">アダプタに任せる</text>
+    <text class="fg-xs fg-ok" x="56" y="264">作るものが最も少ない</text>
+    <rect class="fg-box" x="348" y="112" width="296" height="164" rx="8"/>
+    <text class="fg-t2" x="368" y="140">既存のデータベースがある</text>
+    <text class="fg-xs" x="368" y="160">users テーブルを既に運用している</text>
+    <line class="fg-rule" x1="368" y1="176" x2="624" y2="176"/>
+    <text class="fg-m fg-accent" x="368" y="202">SQL + 自前の UserStore</text>
+    <text class="fg-xs" x="368" y="224">プロトコル状態はアダプタに、</text>
+    <text class="fg-xs" x="368" y="240">ID 情報は今ある場所のまま</text>
+    <text class="fg-xs" x="368" y="264">ユーザデータの移行が不要</text>
+    <rect class="fg-box" x="660" y="112" width="264" height="164" rx="8"/>
+    <text class="fg-t2" x="680" y="140">高頻度の状態を分離する</text>
+    <text class="fg-xs" x="680" y="160">熱い部分に Redis を使いたい</text>
+    <line class="fg-rule" x1="680" y1="176" x2="904" y2="176"/>
+    <text class="fg-m fg-accent" x="680" y="202">composite</text>
+    <text class="fg-xs" x="680" y="224">永続サブストアは SQL、</text>
+    <text class="fg-xs" x="680" y="240">揮発サブストアは Redis</text>
+    <text class="fg-xs fg-warn" x="680" y="264">運用するバックエンドが 2 つになる</text>
+  </svg>
+  <figcaption class="fig-note">これらは入口であって、行き着く先ではありません。左から始めて後で右へ移るのは設定変更で済みます。振り分けはサブストアの分割位置にあり、その上の層は何も知る必要がありません。</figcaption>
+</figure>
 
 3 番目の分岐には落とし穴が 1 つあります。認可コードと PAR の `request_uri` は短寿命なので揮発状態に見えますが、置き場所は永続側です。`composite.TxClusterKinds` のメンバは、すべて同じバックエンドに解決される必要があります。
 

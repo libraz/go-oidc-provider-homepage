@@ -8,51 +8,46 @@ pageClass: pg-concepts-jose-basics
 
 **JOSE**（JavaScript Object Signing and Encryption）は、JSON 形のトークンに対して署名・暗号化・鍵表現の方法を定める IETF 仕様群の総称です。OIDC 実装は JWS / JWE / JWK / JWKS の 4 つすべてを内部で扱います — 大抵は表に出ませんが、ときどき直接登場します。本ページは、`id_token`、`jwks_uri`、JAR の `request=` パラメータ、`kid` を理解するために押さえておきたい最小限を扱います。
 
-<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jose-map-title">JOSE の対応関係: JWS は署名、JWE は暗号化、JWS ヘッダの kid が /jwks で公開された JWKS の中から JWK を 1 個選ぶ。</title>
-<rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
-  <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>
-  <text class="jose-sub" x="133" y="110" text-anchor="middle">JWT に署名する</text>
-  <text class="jose-sub" x="133" y="128" text-anchor="middle">header.payload.signature</text>
-
-  <rect class="jose-box" x="292" y="54" width="178" height="88" rx="8"/>
-  <text class="jose-text" x="381" y="88" text-anchor="middle">JWE</text>
-  <text class="jose-sub" x="381" y="110" text-anchor="middle">署名済み JWT を包む</text>
-  <text class="jose-sub" x="381" y="128" text-anchor="middle">暗号化された外枠</text>
-
-  <rect class="jose-box" x="540" y="54" width="178" height="88" rx="8"/>
-  <text class="jose-text" x="629" y="88" text-anchor="middle">受信者</text>
-  <text class="jose-sub" x="629" y="110" text-anchor="middle">復号して署名検証</text>
-
-  <path class="jose-flow" d="M222 98 H288"/>
-  <path class="jose-flow" d="M280 94 L289 98 L280 102"/>
-  <path class="jose-flow" d="M470 98 H536"/>
-  <path class="jose-flow" d="M528 94 L537 98 L528 102"/>
-
-  <rect class="jose-box" x="44" y="238" width="212" height="76" rx="8"/>
-  <text class="jose-text" x="150" y="268" text-anchor="middle">JWS ヘッダ</text>
-  <text class="jose-sub" x="150" y="292" text-anchor="middle">"kid": "2024-05"</text>
-
-  <rect class="jose-set" x="306" y="196" width="412" height="140" rx="10"/>
-  <text class="jose-text" x="322" y="224">JWKS</text>
-  <text class="jose-sub" x="380" y="224">JWK の集合。/jwks で公開</text>
-
-  <rect class="jose-match" x="322" y="240" width="120" height="76" rx="6"/>
-  <text class="jose-text" x="382" y="270" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="382" y="292" text-anchor="middle">kid 2024-05</text>
-
-  <rect class="jose-box" x="454" y="240" width="120" height="76" rx="6"/>
-  <text class="jose-text" x="514" y="270" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="514" y="292" text-anchor="middle">kid 2023-11</text>
-
-  <rect class="jose-box" x="586" y="240" width="120" height="76" rx="6"/>
-  <text class="jose-text" x="646" y="270" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="646" y="292" text-anchor="middle">kid 2024-09</text>
-
-  <path class="jose-flow" d="M256 278 H316"/>
-  <path class="jose-flow" d="M308 274 L317 278 L308 282"/>
-  <text class="jose-sub halo" x="286" y="268" text-anchor="middle">選択</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">JOSE の各要素のつながり</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jose-map-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+    <title id="jose-map-title">JWS が JWT に署名し、JWE が署名済み JWT を暗号化された外枠で包み、受信者は復号してから署名を検証します。これとは別に、JWS ヘッダの kid が、OP が jwks エンドポイントで公開する JWKS の中から JWK を 1 つ選びます。</title>
+    <text class="fg-lbl" x="40" y="26">トークンを作る</text>
+    <rect class="fg-box" x="36" y="38" width="280" height="86" rx="8"/>
+    <text class="fg-t" x="56" y="64">JWS</text>
+    <text class="fg-xs" x="56" y="84">JWT に署名する — 中身は誰でも読める</text>
+    <text class="fg-mxs" x="56" y="108">header.payload.signature</text>
+    <path class="fg-edge" d="M320,81 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="340" y="38" width="280" height="86" rx="8"/>
+    <text class="fg-t" x="360" y="64">JWE</text>
+    <text class="fg-xs" x="360" y="84">署名済み JWT を包む — 中身は読めない</text>
+    <text class="fg-mxs" x="360" y="108">暗号化された外枠</text>
+    <path class="fg-edge" d="M624,81 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="644" y="38" width="280" height="86" rx="8"/>
+    <text class="fg-t" x="664" y="64">受信者</text>
+    <text class="fg-xs" x="664" y="84">まず外枠を復号し、</text>
+    <text class="fg-xs" x="664" y="102">続けて内側の署名を検証する</text>
+    <text class="fg-lbl" x="40" y="164">正しい鍵を見つける</text>
+    <rect class="fg-box fg-box--accent" x="36" y="176" width="280" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="202">JWS ヘッダ</text>
+    <text class="fg-mxs" x="56" y="226">"alg": "RS256", "kid": "2024-05"</text>
+    <path class="fg-edge fg-edge--accent" d="M320,212 H420" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="370" y="205" text-anchor="middle">選択</text>
+    <rect class="fg-box" x="424" y="160" width="500" height="160" rx="8"/>
+    <text class="fg-t2" x="444" y="184">JWKS</text>
+    <text class="fg-xs" x="512" y="184">JWK の集合。/jwks で公開される</text>
+    <rect class="fg-box fg-box--accent" x="444" y="196" width="460" height="34" rx="6"/>
+    <text class="fg-mxs" x="460" y="217">JWK · kid 2024-05</text>
+    <text class="fg-xs" x="700" y="217">現行の署名鍵</text>
+    <rect class="fg-box fg-box--muted" x="444" y="238" width="460" height="34" rx="6"/>
+    <text class="fg-mxs" x="460" y="259">JWK · kid 2023-11</text>
+    <text class="fg-xs" x="700" y="259">退役済み。旧トークンの検証には使う</text>
+    <rect class="fg-box fg-box--muted" x="444" y="280" width="460" height="34" rx="6"/>
+    <text class="fg-mxs" x="460" y="301">JWK · kid 2024-09</text>
+    <text class="fg-xs" x="700" y="301">次の鍵。先んじて公開しておく</text>
+  </svg>
+  <figcaption class="fig-note">3 つの鍵が同時に載っていることに意味があります。昨日この集合を取得した検証側が、今日署名されたトークンも去年署名されたトークンも、切り替え日を設けずに検証できます。</figcaption>
+</figure>
 
 ::: details このページで触れる仕様
 - [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515) — JSON Web Signature（JWS）

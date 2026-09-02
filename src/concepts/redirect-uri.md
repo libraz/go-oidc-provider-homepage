@@ -37,29 +37,44 @@ RFC 9700 §4.1 closes this off:
 
 The library implements this literally. Whatever string the client registered is the only string that satisfies that registration. If you registered `https://app.example.com/cb`, the request must use exactly that.
 
-<svg role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="redirect-exact-title">Only a byte-for-byte identical redirect_uri matches the registered value. A trailing slash, an added query parameter, a different host case, and a different port all fail.</title>
-  <text class="ru-cap" x="24" y="18">REGISTERED</text>
-  <rect class="ru-registered" x="24" y="28" width="712" height="40" rx="8"/>
-  <text class="ru-registered-uri" x="44" y="53">https://app.example.com/cb</text>
-  <text class="ru-cap" x="24" y="98">SENT ON THE AUTHORIZE REQUEST</text>
-  <line class="ru-rule" x1="24" y1="108" x2="736" y2="108"/>
-  <text class="ru-ok" x="30" y="132">✓</text>
-  <text class="ru-uri" x="56" y="132">https://app.example.com/cb</text>
-  <text class="ru-why" x="470" y="132">exact match — accepted</text>
-  <text class="ru-no" x="30" y="164">✗</text>
-  <text class="ru-uri" x="56" y="164">https://app.example.com/cb<tspan class="ru-diff">/</tspan></text>
-  <text class="ru-why" x="470" y="164">trailing slash</text>
-  <text class="ru-no" x="30" y="196">✗</text>
-  <text class="ru-uri" x="56" y="196">https://app.example.com/cb<tspan class="ru-diff">?env=prod</tspan></text>
-  <text class="ru-why" x="470" y="196">extra query parameter</text>
-  <text class="ru-no" x="30" y="228">✗</text>
-  <text class="ru-uri" x="56" y="228">https://<tspan class="ru-diff">APP</tspan>.example.com/cb</text>
-  <text class="ru-why" x="470" y="228">host spelled in another case</text>
-  <text class="ru-no" x="30" y="260">✗</text>
-  <text class="ru-uri" x="56" y="260">https://app.example.com<tspan class="ru-diff">:8443</tspan>/cb</text>
-  <text class="ru-why" x="470" y="260">different port</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">What "exact match" rejects</div>
+  <svg class="fig-svg" role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 960 348" xmlns="http://www.w3.org/2000/svg">
+    <title id="redirect-exact-title">Only a byte-for-byte identical redirect_uri matches the registered value. A trailing slash, an added query parameter, a differently cased host, and a different port are each rejected.</title>
+    <text class="fg-lbl" x="40" y="28">registered on the client</text>
+    <rect class="fg-box fg-box--accent" x="36" y="38" width="440" height="36" rx="6"/>
+    <text class="fg-m" x="54" y="61">https://app.example.com/cb</text>
+    <text class="fg-lbl" x="72" y="106">value sent on the authorize request</text>
+    <text class="fg-lbl" x="612" y="106">result</text>
+    <line class="fg-rule--strong fg-rule" x1="36" y1="118" x2="924" y2="118"/>
+    <!-- accepted -->
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M44,136 l4,5 l8,-10"/>
+    <text class="fg-m" x="72" y="143">https://app.example.com/cb</text>
+    <text class="fg-xs fg-ok" x="612" y="143">accepted — every byte identical</text>
+    <line class="fg-rule" x1="36" y1="158" x2="924" y2="158"/>
+    <!-- trailing slash -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,177 l10,10 M54,177 l-10,10"/>
+    <text class="fg-m" x="72" y="183">https://app.example.com/cb<tspan class="fg-danger">/</tspan></text>
+    <text class="fg-xs" x="612" y="183">a trailing slash is a different path</text>
+    <line class="fg-rule" x1="36" y1="198" x2="924" y2="198"/>
+    <!-- extra query -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,217 l10,10 M54,217 l-10,10"/>
+    <text class="fg-m" x="72" y="223">https://app.example.com/cb<tspan class="fg-danger">?env=prod</tspan></text>
+    <text class="fg-xs" x="612" y="223">extra query parameters are not merged in</text>
+    <line class="fg-rule" x1="36" y1="238" x2="924" y2="238"/>
+    <!-- host case -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,257 l10,10 M54,257 l-10,10"/>
+    <text class="fg-m" x="72" y="263">https://<tspan class="fg-danger">APP</tspan>.example.com/cb</text>
+    <text class="fg-xs" x="612" y="263">the comparison never case-folds the host</text>
+    <line class="fg-rule" x1="36" y1="278" x2="924" y2="278"/>
+    <!-- port -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,297 l10,10 M54,297 l-10,10"/>
+    <text class="fg-m" x="72" y="303">https://app.example.com<tspan class="fg-danger">:8443</tspan>/cb</text>
+    <text class="fg-xs" x="612" y="303">a different port is a different origin</text>
+    <line class="fg-rule" x1="36" y1="318" x2="924" y2="318"/>
+  </svg>
+  <figcaption class="fig-note">None of these are normalised before the comparison, and that is deliberate: every normalisation rule is a rule an attacker can aim a lookalike URI at. A string comparison has no such surface.</figcaption>
+</figure>
 
 Every rejected row above differs from the registered string by one or two characters. The OP does not normalise any of them: it compares the two strings and stops. The one exception is the loopback carve-out below, where a native client may vary the port.
 

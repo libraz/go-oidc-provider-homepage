@@ -35,33 +35,30 @@ Public and native clients still require PKCE even without `profile.Baseline`; th
 
 A profile constrains its two neighbouring declaration axes differently, and the asymmetry is deliberate.
 
-<svg role="img" aria-labelledby="profile-axes-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="profile-axes-title">A declared profile fills in the feature flags it needs, but never adds a grant: a grant the profile requires and the deployment did not declare fails op.New instead.</title>
-
-  <rect class="sp-option" x="260" y="16" width="240" height="44" rx="8"/>
-  <text class="sp-option-name" x="380" y="43" text-anchor="middle">op.WithProfile(…)</text>
-
-  <path d="M380 60 V82"/>
-  <path d="M192 82 H568"/>
-  <path d="M192 82 V108"/>
-  <path d="M188 102 L192 111 L196 102"/>
-  <path d="M568 82 V108"/>
-  <path d="M564 102 L568 111 L572 102"/>
-
-  <rect x="24" y="114" width="336" height="130" rx="8"/>
-  <text class="sp-axis" x="192" y="140" text-anchor="middle">Features</text>
-  <text class="sp-axis-example" x="192" y="162" text-anchor="middle">feature.PAR, feature.JAR, feature.JARM, …</text>
-  <path class="sp-divider" d="M44 178 H340"/>
-  <text class="sp-claim" x="192" y="202" text-anchor="middle">Policy the profile is entitled to decide.</text>
-  <text class="sp-outcome" x="192" y="226" text-anchor="middle">not declared → the profile switches it on</text>
-
-  <rect x="400" y="114" width="336" height="130" rx="8"/>
-  <text class="sp-axis" x="568" y="140" text-anchor="middle">Grants</text>
-  <text class="sp-axis-example" x="568" y="162" text-anchor="middle">grant.AuthorizationCode, grant.CIBA, …</text>
-  <path class="sp-divider" d="M420 178 H716"/>
-  <text class="sp-claim" x="568" y="202" text-anchor="middle">Only the embedder can supply the collaborators.</text>
-  <text class="sp-outcome" x="568" y="226" text-anchor="middle">not declared → op.New fails</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">A profile supplies features, never grants</div>
+  <svg class="fig-svg" role="img" aria-labelledby="profile-supply-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
+    <title id="profile-supply-title">Declaring a profile switches on the feature flags it needs. It never adds a grant: a grant the profile requires and the deployment did not declare makes op.New fail instead of quietly enabling it.</title>
+    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="44" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="52" text-anchor="middle">op.WithProfile(…)</text>
+    <path class="fg-leader" d="M480,72 V88 M253,88 H707"/>
+    <path class="fg-edge fg-edge--ok" d="M253,88 V106" marker-end="url(#fg-ao)"/>
+    <path class="fg-edge fg-edge--danger" d="M707,88 V106" marker-end="url(#fg-ad)"/>
+    <rect class="fg-box fg-box--ok" x="36" y="110" width="434" height="108" rx="8"/>
+    <text class="fg-t2" x="56" y="138">Features — supplied</text>
+    <text class="fg-mxs" x="56" y="160">feature.PAR · feature.JAR · feature.JARM · …</text>
+    <line class="fg-rule" x1="56" y1="172" x2="450" y2="172"/>
+    <text class="fg-xs" x="56" y="192">policy the profile is entitled to decide on its own</text>
+    <text class="fg-xs fg-ok" x="56" y="208">not declared → the profile switches it on</text>
+    <rect class="fg-box fg-box--danger" x="490" y="110" width="434" height="108" rx="8"/>
+    <text class="fg-t2" x="510" y="138">Grants — never supplied</text>
+    <text class="fg-mxs" x="510" y="160">grant.AuthorizationCode · grant.CIBA · …</text>
+    <line class="fg-rule" x1="510" y1="172" x2="904" y2="172"/>
+    <text class="fg-xs" x="510" y="192">only the embedder can supply the collaborators they need</text>
+    <text class="fg-xs fg-danger" x="510" y="208">not declared → op.New fails</text>
+  </svg>
+  <figcaption class="fig-note">The asymmetry is deliberate. A feature is a rule the profile can enforce on its own; a grant needs an authenticator, a store, sometimes a notification channel — things only you can provide, so silently enabling one would produce an OP that answers requests it cannot complete.</figcaption>
+</figure>
 
 Either way, the resolved policy is recorded in the `startup.profile` audit event, so the configuration the OP actually booted with is readable from the audit trail rather than inferred from the option list.
 

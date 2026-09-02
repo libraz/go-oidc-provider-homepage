@@ -69,66 +69,64 @@ OIDC Core §5.4 が標準 scope に対応する claim を固定しています�
 
 この対応表だけでは、開示された claim が **どこに載るか** までは分かりません。`sub` とトークン自体を説明する claim は ID トークンに載り、scope が開示するユーザ claim は `/userinfo` から返ります。
 
-<svg role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="scope-claim-map-title">各標準 scope が開示する claim 群と、その届き先。openid が開示する sub は ID トークンに載り、profile・email・address・phone の claim は /userinfo から返る。offline_access は claim を開示しない。</title>
-  <text class="sc-cap" x="24" y="18">要求された scope</text>
-  <text class="sc-cap" x="166" y="18">開示される claim</text>
-  <text class="sc-cap" x="560" y="18">届き先</text>
-  <line class="sc-rule" x1="24" y1="28" x2="736" y2="28"/>
-
-  <rect class="sc-dest" x="560" y="40" width="176" height="104" rx="8"/>
-  <text class="sc-dest-title" x="576" y="64">ID トークン</text>
-  <text class="sc-dest-claims" x="576" y="86">iss · aud · exp · iat · sub</text>
-  <text class="sc-dest-claims" x="576" y="102">nonce · auth_time · azp</text>
-  <text class="sc-dest-claims" x="576" y="118">acr · amr · at_hash · sid</text>
-  <text class="sc-note" x="576" y="136">OP 自身が埋める</text>
-
-  <rect class="sc-scope" x="24" y="74" width="118" height="34" rx="6"/>
-  <text class="sc-name" x="83" y="96" text-anchor="middle">openid</text>
-  <path class="sc-link" d="M142 91 H158 M152 87 L159 91 L152 95"/>
-  <text class="sc-name" x="166" y="96">sub</text>
-  <path class="sc-route sc-route-dashed" d="M212 91 H556"/>
-  <path class="sc-route" d="M549 87 L556 91 L549 95"/>
-
-  <line class="sc-rule" x1="24" y1="162" x2="736" y2="162"/>
-
-  <rect class="sc-dest" x="560" y="182" width="176" height="128" rx="8"/>
-  <text class="sc-dest-path" x="576" y="206">/userinfo</text>
-  <text class="sc-note" x="576" y="228">RP がアクセストークンを</text>
-  <text class="sc-note" x="576" y="244">付けて呼び出すと</text>
-  <text class="sc-note" x="576" y="260">JSON が返る</text>
-  <text class="sc-note" x="576" y="284">許可された scope の</text>
-  <text class="sc-note" x="576" y="300">claim だけが載る</text>
-
-  <rect class="sc-scope" x="24" y="180" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="200" text-anchor="middle">profile</text>
-  <path class="sc-link" d="M142 195 H158 M152 191 L159 195 L152 199"/>
-  <text class="sc-claims" x="166" y="200">name · family_name · given_name · …（14 claim）</text>
-
-  <rect class="sc-scope" x="24" y="218" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="238" text-anchor="middle">email</text>
-  <path class="sc-link" d="M142 233 H158 M152 229 L159 233 L152 237"/>
-  <text class="sc-claims" x="166" y="238">email · email_verified</text>
-
-  <rect class="sc-scope" x="24" y="256" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="276" text-anchor="middle">address</text>
-  <path class="sc-link" d="M142 271 H158 M152 267 L159 271 L152 275"/>
-  <text class="sc-claims" x="166" y="276">address</text>
-
-  <rect class="sc-scope" x="24" y="294" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="314" text-anchor="middle">phone</text>
-  <path class="sc-link" d="M142 309 H158 M152 305 L159 309 L152 313"/>
-  <text class="sc-claims" x="166" y="314">phone_number · phone_number_verified</text>
-
-  <path class="sc-route" d="M506 192 V312"/>
-  <path class="sc-route sc-route-dashed" d="M506 252 H556"/>
-  <path class="sc-route" d="M549 248 L556 252 L549 256"/>
-
-  <line class="sc-rule" x1="24" y1="336" x2="736" y2="336"/>
-  <rect class="sc-scope" x="24" y="352" width="140" height="30" rx="6"/>
-  <text class="sc-name-muted" x="94" y="372" text-anchor="middle">offline_access</text>
-  <text class="sc-aside" x="184" y="372">claim なし — consent prompt とリフレッシュトークンの TTL バケットを決める</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">要求した scope → 開示される claim → 届き先</div>
+  <svg class="fig-svg" role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
+    <title id="scope-claim-map-title">各標準 scope が開示する claim 群と、その届き先を示した図。openid が開示する sub は ID トークンに載り、profile・email・address・phone の claim は userinfo エンドポイントから返ります。offline_access は claim を開示しません。</title>
+    <text class="fg-lbl" x="40" y="26">要求した scope</text>
+    <text class="fg-lbl" x="228" y="26">開示される claim</text>
+    <text class="fg-lbl" x="664" y="26">届き先</text>
+    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <!-- openid -->
+    <rect class="fg-box fg-box--accent" x="36" y="52" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="71">openid</text>
+    <text class="fg-m" x="232" y="71">sub</text>
+    <line class="fg-rule" x1="36" y1="96" x2="620" y2="96"/>
+    <!-- profile -->
+    <rect class="fg-box" x="36" y="106" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="125">profile</text>
+    <text class="fg-m" x="232" y="125">name · family_name · given_name · …（14 claim）</text>
+    <line class="fg-rule" x1="36" y1="150" x2="620" y2="150"/>
+    <!-- email -->
+    <rect class="fg-box" x="36" y="160" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="179">email</text>
+    <text class="fg-m" x="232" y="179">email · email_verified</text>
+    <line class="fg-rule" x1="36" y1="204" x2="620" y2="204"/>
+    <!-- address -->
+    <rect class="fg-box" x="36" y="214" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="233">address</text>
+    <text class="fg-m" x="232" y="233">address</text>
+    <line class="fg-rule" x1="36" y1="258" x2="620" y2="258"/>
+    <!-- phone -->
+    <rect class="fg-box" x="36" y="268" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="287">phone</text>
+    <text class="fg-m" x="232" y="287">phone_number · phone_number_verified</text>
+    <line class="fg-rule" x1="36" y1="312" x2="924" y2="312"/>
+    <!-- offline_access -->
+    <rect class="fg-box fg-box--muted" x="36" y="322" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="341">offline_access</text>
+    <text class="fg-xs" x="232" y="341">claim は開示しない — 同意画面とリフレッシュトークンの TTL バケットを決める</text>
+    <!-- ID トークン -->
+    <rect class="fg-box fg-box--accent" x="660" y="44" width="264" height="98" rx="8"/>
+    <text class="fg-t fg-accent" x="678" y="68">ID トークン</text>
+    <text class="fg-mxs" x="678" y="88">iss · aud · exp · iat · sub</text>
+    <text class="fg-mxs" x="678" y="102">nonce · auth_time · azp</text>
+    <text class="fg-mxs" x="678" y="116">acr · amr · at_hash · sid</text>
+    <text class="fg-xs" x="678" y="134">OP 自身が埋める</text>
+    <path class="fg-edge fg-edge--accent" d="M624,68 H656" marker-end="url(#fg-ac)"/>
+    <!-- userinfo -->
+    <rect class="fg-box" x="660" y="158" width="264" height="130" rx="8"/>
+    <text class="fg-m" x="678" y="182">/userinfo</text>
+    <text class="fg-xs" x="678" y="202">RP がアクセストークンを付けて</text>
+    <text class="fg-xs" x="678" y="216">呼び出すと JSON が返る</text>
+    <line class="fg-rule" x1="678" y1="232" x2="906" y2="232"/>
+    <text class="fg-xs" x="678" y="252">許可された scope が認めた</text>
+    <text class="fg-xs" x="678" y="266">claim だけが載る</text>
+    <path class="fg-leader" d="M628,120 H640 V240 H628"/>
+    <path class="fg-edge" d="M640,196 H656" marker-end="url(#fg-a)"/>
+  </svg>
+  <figcaption class="fig-note">scope は要求であって保証ではありません。OP が許可するのは、クライアントが登録した範囲・ユーザが同意した範囲・claim ソースが実際に返せる値の重なりです。この表に載っている claim でも応答に含まれないことがあります。</figcaption>
+</figure>
 
 ユーザ claim を ID トークンに載せたい RP は、OIDC Core §5.5 の `claims` パラメータで明示的に要求する必要があります。scope を許可しただけでは `/userinfo` 側に載ります。
 

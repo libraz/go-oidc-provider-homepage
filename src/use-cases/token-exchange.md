@@ -16,55 +16,47 @@ For the conceptual background — impersonation vs delegation, what `act` record
 RFC 8693 §4.1 defines the `act` claim as a record of "who acted on whose behalf". On the issued token, `act.sub` is the actor's subject; if the actor was itself the result of a previous exchange, its `act` is nested inside, producing a chain (`alice → service-a → service-b`). Resource servers walk `act` to check whole-chain authorisation: "transfers may be initiated by alice via service-a, but not by bob via service-a". The OP enforces a depth ceiling so a malicious chain cannot grow unboundedly.
 :::
 
-<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 324" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="token-exchange-flow-title">Token exchange end to end. service-a presents Alice's subject_token together with its own actor_token, and the OP validates both, intersects the scopes, canonicalises the audience, builds the act chain, rebinds cnf, and runs the policy before issuing a token for service-b.</title>
-  <defs>
-    <marker id="tx-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="30" y="44" width="190" height="76" rx="8"/>
-  <text class="h" x="125" y="72" text-anchor="middle">subject_token</text>
-  <text class="t sub" x="125" y="94" text-anchor="middle">Alice's access token</text>
-  <text class="m sub" x="125" y="112" text-anchor="middle">sub=alice · scope=profile write</text>
-
-  <rect x="30" y="164" width="190" height="76" rx="8"/>
-  <text class="h" x="125" y="192" text-anchor="middle">actor_token</text>
-  <text class="t sub" x="125" y="214" text-anchor="middle">service-a's own token</text>
-  <text class="m sub" x="125" y="232" text-anchor="middle">sub=service-a</text>
-
-  <rect class="accent" x="292" y="34" width="220" height="260" rx="8"/>
-  <text class="h accent-text" x="402" y="64" text-anchor="middle">OP /token</text>
-  <text class="m sub" x="402" y="84" text-anchor="middle">grant_type=token-exchange</text>
-  <rect class="soft" x="318" y="106" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="126" text-anchor="middle">1. validate input tokens</text>
-  <rect class="soft" x="318" y="146" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="166" text-anchor="middle">2. intersect scopes</text>
-  <rect class="soft" x="318" y="186" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="206" text-anchor="middle">3. canonicalise audience</text>
-  <rect class="soft" x="318" y="226" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="246" text-anchor="middle">4. rebuild act / cnf</text>
-  <rect class="soft" x="318" y="266" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="286" text-anchor="middle">5. Policy.Allow</text>
-
-  <rect x="580" y="82" width="150" height="88" rx="8"/>
-  <text class="h" x="655" y="112" text-anchor="middle">Issued token</text>
-  <text class="m sub" x="655" y="134" text-anchor="middle">aud=service-b</text>
-  <text class="m sub" x="655" y="152" text-anchor="middle">act.sub=service-a</text>
-
-  <rect x="580" y="218" width="150" height="72" rx="8"/>
-  <text class="h" x="655" y="248" text-anchor="middle">service-b</text>
-  <text class="t sub" x="655" y="270" text-anchor="middle">verifies act and cnf</text>
-
-  <path d="M220 82 H288" marker-end="url(#tx-arrow)"/>
-  <path d="M220 202 H288" marker-end="url(#tx-arrow)"/>
-  <path d="M512 126 H576" marker-end="url(#tx-arrow)"/>
-  <path d="M655 170 V214" marker-end="url(#tx-arrow)"/>
-  <text class="m sub" x="253" y="70" text-anchor="middle">POST</text>
-  <text class="m sub" x="253" y="190" text-anchor="middle">POST</text>
-  <text class="m sub" x="546" y="114" text-anchor="middle">200</text>
-
-</svg>
+<figure class="fig">
+  <div class="fig-head">Two tokens in, one token out</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-tx-title" viewBox="0 0 960 322" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-tx-title">Token exchange end to end. Service A presents Alice's token as the subject and its own token as the actor. The OP validates both, intersects the scopes, canonicalises the audience, rebuilds the act chain and the confirmation claim, and runs the policy before issuing a token addressed to Service B.</title>
+    <text class="fg-lbl" x="40" y="26">what goes in</text>
+    <rect class="fg-box" x="36" y="38" width="248" height="76" rx="8"/>
+    <text class="fg-t2" x="54" y="62">subject_token</text>
+    <text class="fg-xs" x="54" y="82">Alice's access token</text>
+    <text class="fg-mxs" x="54" y="102">sub=alice · scope=profile write</text>
+    <rect class="fg-box" x="36" y="126" width="248" height="76" rx="8"/>
+    <text class="fg-t2" x="54" y="150">actor_token</text>
+    <text class="fg-xs" x="54" y="170">service-a's own token</text>
+    <text class="fg-mxs" x="54" y="190">sub=service-a</text>
+    <path class="fg-leader" d="M288,76 H316 M288,164 H316 M316,76 V164"/>
+    <path class="fg-edge fg-edge--accent" d="M316,120 H346" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="350" y="38" width="290" height="228" rx="8"/>
+    <text class="fg-m fg-accent" x="370" y="64">OP /token</text>
+    <text class="fg-mxs" x="370" y="82">grant_type=…:token-exchange</text>
+    <line class="fg-rule" x1="370" y1="94" x2="620" y2="94"/>
+    <text class="fg-xs" x="370" y="118">1 · validate both input tokens</text>
+    <text class="fg-xs" x="370" y="146">2 · intersect the scopes</text>
+    <text class="fg-xs" x="370" y="174">3 · canonicalise the audience</text>
+    <text class="fg-xs" x="370" y="202">4 · rebuild act and cnf</text>
+    <text class="fg-xs" x="370" y="230">5 · run Policy.Allow</text>
+    <text class="fg-xs fg-warn" x="370" y="254">any step may refuse — nothing is widened</text>
+    <text class="fg-lbl" x="688" y="26">what comes out</text>
+    <path class="fg-edge fg-edge--accent" d="M644,80 H676" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="680" y="38" width="244" height="84" rx="8"/>
+    <text class="fg-t2 fg-accent" x="698" y="62">The issued token</text>
+    <text class="fg-mxs" x="698" y="84">aud=service-b</text>
+    <text class="fg-mxs" x="698" y="104">act.sub=service-a</text>
+    <path class="fg-edge" d="M802,126 V158" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="680" y="162" width="244" height="84" rx="8"/>
+    <text class="fg-t2" x="698" y="186">service-b</text>
+    <text class="fg-xs" x="698" y="208">verifies act and cnf before</text>
+    <text class="fg-xs" x="698" y="224">deciding what alice-via-a may do</text>
+    <text class="fg-xs" x="36" y="292">The exchange only ever narrows: the scopes are an intersection, the audience is a single service, and the actor is recorded rather than</text>
+    <text class="fg-xs" x="36" y="308">dropped. There is no shape of request that comes back with more authority than the subject token already carried.</text>
+  </svg>
+  <figcaption class="fig-note">Step 5 is where your policy lives. Everything above it is mechanical — the OP will not decide on its own whether service A is allowed to act for Alice against service B.</figcaption>
+</figure>
 
 The `cnf` on the issued token binds to service-a's key, not to Alice's. The OP takes it from the verified DPoP or mTLS proof presented by the calling actor, never from `subject_token.cnf`.
 

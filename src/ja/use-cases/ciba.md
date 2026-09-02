@@ -8,40 +8,46 @@ pageClass: pg-use-cases-ciba
 
 CIBA の概念的背景（何で、device flow とどう違い、なぜ `binding_message` が重要か）は [CIBA 入門](/ja/concepts/ciba) を先に読んでください。このページは組み込み手順を扱います。
 
-<svg role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ciba-poll-title">CIBA ポーリング方式の流れ: 利用デバイスが bc-authorize を呼び、OP が認証デバイスへ承認依頼を届け、利用デバイスが token をポーリングする。</title>
-<rect class="ciba-box" x="28" y="94" width="160" height="82" rx="8"/>
-  <text class="ciba-text" x="108" y="126" text-anchor="middle">利用デバイス</text>
-  <text class="ciba-sub" x="108" y="148" text-anchor="middle">POS / 共有端末</text>
-
-  <rect class="ciba-op" x="290" y="74" width="180" height="122" rx="8"/>
-  <text class="ciba-text" x="380" y="112" text-anchor="middle">OP</text>
-  <text class="ciba-sub" x="380" y="134" text-anchor="middle">/bc-authorize</text>
-  <text class="ciba-sub" x="380" y="154" text-anchor="middle">CIBARequestStore</text>
-  <text class="ciba-sub" x="380" y="174" text-anchor="middle">/token</text>
-
-  <rect class="ciba-box" x="572" y="94" width="160" height="82" rx="8"/>
-  <text class="ciba-text" x="652" y="126" text-anchor="middle">認証デバイス</text>
-  <text class="ciba-sub" x="652" y="148" text-anchor="middle">スマホアプリ</text>
-
-  <rect class="ciba-box" x="300" y="248" width="160" height="52" rx="8"/>
-  <text class="ciba-text" x="380" y="280" text-anchor="middle">トークン発行</text>
-
-  <path class="ciba-flow" d="M188 118 H286"/>
-  <text class="ciba-sub" x="237" y="105" text-anchor="middle">1. 承認要求</text>
-  <path class="ciba-flow" d="M278 114 L287 118 L278 122"/>
-  <path class="ciba-flow" d="M470 118 H568"/>
-  <text class="ciba-sub" x="519" y="105" text-anchor="middle">2. 通知</text>
-  <path class="ciba-flow" d="M560 114 L569 118 L560 122"/>
-  <path class="ciba-flow" d="M572 156 H474"/>
-  <text class="ciba-sub" x="521" y="180" text-anchor="middle">3. 承認 / 拒否</text>
-  <path class="ciba-flow" d="M482 152 L473 156 L482 160"/>
-  <path class="ciba-flow" d="M108 176 C118 260 220 274 296 274"/>
-  <text class="ciba-sub halo" x="226" y="250" text-anchor="middle">4. /token をポーリング</text>
-  <path class="ciba-flow" d="M288 270 L297 274 L288 278"/>
-  <path class="ciba-flow" d="M380 248 V200"/>
-  <path class="ciba-flow" d="M376 208 L380 199 L384 208"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">3 者の関係と、あいだにあるもの</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-ciba-title" viewBox="0 0 960 262" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-ciba-title">利用デバイスが OP に認可の開始を依頼し、組み込み側の通知サービスが登録済みのスマホへ届け、ユーザがそこで承認し、利用デバイスは判定が出るまでトークンエンドポイントを poll します。</title>
+    <rect class="fg-box" x="36" y="84" width="220" height="80" rx="8"/>
+    <text class="fg-t2" x="146" y="114" text-anchor="middle">利用デバイス</text>
+    <text class="fg-xs" x="146" y="136" text-anchor="middle">POS · 共用端末</text>
+    <text class="fg-xs" x="146" y="152" text-anchor="middle">ユーザが信頼できる画面が無い</text>
+    <rect class="fg-box fg-box--accent" x="320" y="54" width="320" height="140" rx="8"/>
+    <text class="fg-t fg-accent" x="480" y="82" text-anchor="middle">OP</text>
+    <line class="fg-rule" x1="340" y1="94" x2="620" y2="94"/>
+    <text class="fg-mxs" x="340" y="120">/bc-authorize</text>
+    <text class="fg-xs" x="470" y="120">リクエストを開始する</text>
+    <text class="fg-mxs" x="340" y="146">CIBARequestStore</text>
+    <text class="fg-xs" x="490" y="146">判定が出るまで保持する</text>
+    <text class="fg-mxs" x="340" y="172">/token</text>
+    <text class="fg-xs" x="470" y="172">poll に応答する</text>
+    <rect class="fg-box" x="704" y="84" width="220" height="80" rx="8"/>
+    <text class="fg-t2" x="814" y="114" text-anchor="middle">認証デバイス</text>
+    <text class="fg-xs" x="814" y="136" text-anchor="middle">ユーザのスマホアプリ</text>
+    <text class="fg-xs" x="814" y="152" text-anchor="middle">事前に登録済み</text>
+    <path class="fg-edge" d="M260,104 H316" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="288" cy="90" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="93" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M644,104 H700" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="672" cy="90" r="8.5"/>
+    <text class="fg-badge-t" x="672" y="93" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M700,144 H648" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="672" cy="158" r="8.5"/>
+    <text class="fg-badge-t" x="672" y="161" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--muted" d="M260,144 H316" marker-end="url(#fg-am)"/>
+    <circle class="fg-badge" cx="288" cy="158" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="161" text-anchor="middle">4</text>
+    <text class="fg-xs" x="36" y="216">1 · 端末が OP に認可の開始を依頼する</text>
+    <text class="fg-xs" x="36" y="234">2 · 組み込み側の通知サービスが登録済みのスマホへ届ける</text>
+    <text class="fg-xs" x="500" y="216">3 · ユーザが別チャネルで承認または拒否する</text>
+    <text class="fg-xs" x="500" y="234">4 · 端末は判定が出るまで /token を poll する</text>
+  </svg>
+  <figcaption class="fig-note">用意が必要なのは手順 2 です。リクエストの保持と poll への応答は本ライブラリが担いますが、そのスマホに通知を届けるのは組み込み側の通知サービスの仕事で、OP の仕事ではありません。</figcaption>
+</figure>
 
 ::: details 実装されている poll 配信
 CIBA は poll、ping、push の 3 配信モードを定義していますが、本ライブラリが実装するのは **poll** だけです。利用デバイスが応答を受け取るまで `/token` を繰り返しポーリングします。discovery も `poll` だけを広告するため、クライアントは未実装のモードを交渉できません。

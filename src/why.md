@@ -26,28 +26,33 @@ You're writing a Go service. You need to **be** an OpenID Connect Provider — i
 
 This page argues option 3 by walking through the things that hurt when you build options 1 or 2.
 
-<svg class="why-split" role="img" aria-labelledby="why-responsibility-title" viewBox="0 0 760 144" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="why-responsibility-title">How responsibility is split. The library owns the OIDC and OAuth protocol work; the embedder owns users, screens, storage, and HTTP routing.</title>
-  <defs>
-    <marker id="why-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="24" y="28" width="246" height="88" rx="8"/>
-  <text class="p" x="147" y="58" text-anchor="middle" font-size="15.5" font-weight="700">Your application</text>
-  <text class="p sub" x="147" y="82" text-anchor="middle" font-size="11.5">users / UI / storage</text>
-  <text class="m sub" x="147" y="100" text-anchor="middle" font-size="10.5">Authenticator · Store · Templates</text>
-  <rect class="op" x="310" y="28" width="246" height="88" rx="8"/>
-  <text class="p opf" x="433" y="58" text-anchor="middle" font-size="15.5" font-weight="700">go-oidc-provider</text>
-  <text class="p sub" x="433" y="82" text-anchor="middle" font-size="11.5">the OIDC / OAuth ceremony</text>
-  <text class="m sub" x="433" y="100" text-anchor="middle" font-size="10.5">/oidc/auth · /oidc/token · /oidc/jwks</text>
-  <rect x="596" y="28" width="140" height="88" rx="8"/>
-  <text class="p" x="666" y="58" text-anchor="middle" font-size="15.5" font-weight="700">RP / API</text>
-  <text class="p sub" x="666" y="82" text-anchor="middle" font-size="11.5">the consuming app</text>
-  <text class="p sub" x="666" y="100" text-anchor="middle" font-size="10.5">verifies tokens</text>
-  <path d="M270 72 H310" marker-end="url(#why-arrow)"/>
-  <path d="M556 72 H596" marker-end="url(#why-arrow)"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Who owns what</div>
+  <svg class="fig-svg" role="img" aria-labelledby="why-split-title" viewBox="0 0 960 164" xmlns="http://www.w3.org/2000/svg">
+    <title id="why-split-title">The split of responsibility. Your application owns users, screens and storage; the library owns the OIDC and OAuth ceremony; the consuming app only verifies tokens.</title>
+    <text class="fg-lbl" x="40" y="26">you own this</text>
+    <text class="fg-lbl fg-accent" x="344" y="26">the library owns this</text>
+    <text class="fg-lbl" x="648" y="26">someone else owns this</text>
+    <rect class="fg-box" x="36" y="38" width="280" height="104" rx="8"/>
+    <text class="fg-t" x="56" y="66">Your application</text>
+    <text class="fg-xs" x="56" y="88">users · screens · storage</text>
+    <line class="fg-rule" x1="56" y1="102" x2="296" y2="102"/>
+    <text class="fg-mxs" x="56" y="126">Authenticator · Store · Templates</text>
+    <path class="fg-edge" d="M320,88 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="340" y="38" width="280" height="104" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="66">go-oidc-provider</text>
+    <text class="fg-xs" x="360" y="88">the OIDC / OAuth ceremony</text>
+    <line class="fg-rule" x1="360" y1="102" x2="600" y2="102"/>
+    <text class="fg-mxs" x="360" y="126">/authorize · /token · /jwks</text>
+    <path class="fg-edge" d="M624,88 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="644" y="38" width="280" height="104" rx="8"/>
+    <text class="fg-t" x="664" y="66">RP / API</text>
+    <text class="fg-xs" x="664" y="88">the consuming application</text>
+    <line class="fg-rule" x1="664" y1="102" x2="904" y2="102"/>
+    <text class="fg-mxs" x="664" y="126">verifies the tokens it is given</text>
+  </svg>
+  <figcaption class="fig-note">The library never asks for your user table, your login screen, or your database. It asks for interfaces, which is the difference between a library and a product you have to migrate onto.</figcaption>
+</figure>
 
 Where the line falls:
 

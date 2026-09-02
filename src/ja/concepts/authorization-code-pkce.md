@@ -29,131 +29,142 @@ pageClass: pg-concepts-authorization-code-pkce
 
 ## 完全なシーケンス
 
-<svg role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 760 712" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(38,0)">
-  <title id="acpkce-seq-title">認可コード + PKCE のシーケンス: ブラウザ、Relying Party、OpenID Provider、Resource Server の間で、ログインから PKCE 検証付きトークン発行、Bearer トークンでの API 呼び出しまでのやり取りを示す図。</title>
-  <defs>
-    <marker id="acp-ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" stroke="currentColor" stroke-width="1.4"/></marker>
-    <marker id="acp-ahb" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1 1 L5.5 3.5 L1 6" fill="none" class="op-accent" stroke-width="1.4"/></marker>
-  </defs>
-  <!-- lifelines -->
-  <line class="lane" x1="70" y1="54" x2="70" y2="706"/>
-  <line class="lane" x1="250" y1="54" x2="250" y2="706"/>
-  <line class="lane lane-op" x1="430" y1="54" x2="430" y2="706"/>
-  <line class="lane lane-rs" x1="610" y1="54" x2="610" y2="706"/>
-  <!-- actor headers -->
-  <rect class="box" x="20" y="14" width="100" height="40" rx="6"/>
-  <text class="actor" x="70" y="31" text-anchor="middle">ユーザ</text>
-  <text class="asub" x="70" y="45" text-anchor="middle">ブラウザ</text>
-  <rect class="box" x="200" y="14" width="100" height="40" rx="6"/>
-  <text class="actor" x="250" y="31" text-anchor="middle">Relying Party</text>
-  <text class="asub" x="250" y="45" text-anchor="middle">web アプリ</text>
-  <rect class="box box-op" x="380" y="14" width="100" height="40" rx="6"/>
-  <text class="actor actor-op" x="430" y="31" text-anchor="middle">OpenID Provider</text>
-  <text class="asub" x="430" y="45" text-anchor="middle">go-oidc-provider</text>
-  <rect class="box box-rs" x="560" y="14" width="100" height="40" rx="6"/>
-  <text class="actor actor-rs" x="610" y="31" text-anchor="middle">Resource Server</text>
-  <text class="asub" x="610" y="45" text-anchor="middle">API サーバ</text>
-  <!-- PKCE note over RP -->
-  <rect class="notebox" x="128" y="62" width="244" height="32" rx="5"/>
-  <text class="note" x="250" y="76" text-anchor="middle">RP が PKCE ペアを生成</text>
-  <text class="notemono" x="250" y="89" text-anchor="middle">code_challenge = SHA-256(code_verifier)</text>
-  <!-- 1 -->
-  <text class="num" x="12" y="119" text-anchor="middle">1</text>
-  <path class="msg" d="M70 116 H250" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="160" y="111" text-anchor="middle">アプリを開く</text>
-  <!-- 2 -->
-  <text class="num" x="12" y="148" text-anchor="middle">2</text>
-  <path class="msg" d="M250 145 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="160" y="127" text-anchor="middle">302 → OP</text>
-  <text class="mono" x="160" y="138" text-anchor="middle">/authorize · S256 · state · nonce</text>
-  <!-- 3 -->
-  <text class="num" x="12" y="177" text-anchor="middle">3</text>
-  <path class="msg" d="M70 174 H430" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="158" y="169" text-anchor="middle">GET /authorize</text>
-  <!-- 4 -->
-  <text class="num" x="12" y="206" text-anchor="middle">4</text>
-  <path class="self op-accent" d="M430 196 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
-  <text class="lbl" x="474" y="200">リクエスト検証</text>
-  <text class="mono" x="474" y="211">redirect_uri 完全一致</text>
-  <!-- 5 -->
-  <text class="num" x="12" y="235" text-anchor="middle">5</text>
-  <path class="msg" d="M430 232 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="158" y="227" text-anchor="middle">200 ログイン画面</text>
-  <!-- 6 -->
-  <text class="num" x="12" y="264" text-anchor="middle">6</text>
-  <path class="msg" d="M70 261 H430" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="158" y="256" text-anchor="middle">POST 認証情報</text>
-  <!-- 7 -->
-  <text class="num" x="12" y="293" text-anchor="middle">7</text>
-  <path class="self op-accent" d="M430 283 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
-  <text class="lbl" x="474" y="287">ユーザ認証</text>
-  <text class="sub" x="474" y="298">password / passkey</text>
-  <!-- 8 -->
-  <text class="num" x="12" y="322" text-anchor="middle">8</text>
-  <path class="msg" d="M430 319 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="158" y="314" text-anchor="middle">200 同意画面</text>
-  <!-- 9 -->
-  <text class="num" x="12" y="351" text-anchor="middle">9</text>
-  <path class="msg" d="M70 348 H430" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="158" y="343" text-anchor="middle">POST 同意</text>
-  <!-- 10 -->
-  <text class="num" x="12" y="380" text-anchor="middle">10</text>
-  <path class="msg" d="M430 377 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="158" y="359" text-anchor="middle">302 → redirect_uri</text>
-  <text class="mono" x="158" y="370" text-anchor="middle">code &amp; state</text>
-  <!-- 11 -->
-  <text class="num" x="12" y="409" text-anchor="middle">11</text>
-  <path class="msg" d="M70 406 H250" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="160" y="401" text-anchor="middle">GET /callback?code&amp;state</text>
-  <!-- 12 -->
-  <text class="num" x="12" y="438" text-anchor="middle">12</text>
-  <path class="self" d="M250 428 h32 v14 h-32" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="294" y="438">state を検証</text>
-  <!-- 13 -->
-  <text class="num" x="12" y="467" text-anchor="middle">13</text>
-  <path class="msg" d="M250 464 H430" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="340" y="448" text-anchor="middle">POST /token</text>
-  <text class="mono" x="340" y="458" text-anchor="middle">code · code_verifier · client auth</text>
-  <!-- 14 -->
-  <text class="num" x="12" y="496" text-anchor="middle">14</text>
-  <path class="self op-accent" d="M430 486 h32 v14 h-32" marker-end="url(#acp-ahb)"/>
-  <text class="lbl" x="474" y="490">PKCE 検証</text>
-  <text class="mono" x="474" y="501">SHA-256(verifier) == challenge</text>
-  <!-- 15 -->
-  <text class="num" x="12" y="525" text-anchor="middle">15</text>
-  <path class="msg" d="M430 522 H250" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="340" y="507" text-anchor="middle">200 OK</text>
-  <text class="mono" x="340" y="517" text-anchor="middle">access_token · id_token · refresh_token</text>
-  <!-- 16 -->
-  <text class="num" x="12" y="554" text-anchor="middle">16</text>
-  <path class="self" d="M250 544 h32 v14 h-32" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="294" y="548">ID Token 検証</text>
-  <text class="mono" x="294" y="559">iss · aud · exp · nonce</text>
-  <!-- 17 -->
-  <text class="num" x="12" y="583" text-anchor="middle">17</text>
-  <path class="msg" d="M250 580 H70" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="158" y="575" text-anchor="middle">session cookie 設定</text>
-  <!-- 18 -->
-  <text class="num" x="12" y="612" text-anchor="middle">18</text>
-  <path class="msg" d="M70 609 H250" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="160" y="604" text-anchor="middle">GET /api/me</text>
-  <!-- 19 -->
-  <text class="num" x="12" y="641" text-anchor="middle">19</text>
-  <path class="msg" d="M250 638 H610" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="520" y="623" text-anchor="middle">GET /api/me</text>
-  <text class="mono" x="520" y="633" text-anchor="middle">Authorization: Bearer …</text>
-  <!-- 20 -->
-  <text class="num" x="12" y="670" text-anchor="middle">20</text>
-  <path class="msg" d="M610 667 H430" marker-end="url(#acp-ah)"/>
-  <text class="lbl" x="520" y="652" text-anchor="middle">(任意)</text>
-  <text class="mono" x="520" y="662" text-anchor="middle">introspect · JWT 自己検証</text>
-  <!-- 21 -->
-  <text class="num" x="12" y="699" text-anchor="middle">21</text>
-  <path class="msg" d="M610 696 H250" marker-end="url(#acp-ah)"/>
-  <text class="mono" x="520" y="691" text-anchor="middle">200 { user data }</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">認可コードフロー + PKCE — ブラウザから API まで</div>
+  <svg class="fig-svg" role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 960 924" xmlns="http://www.w3.org/2000/svg">
+    <title id="acpkce-seq-title">認可コードフローと PKCE を 4 つの段階で示した図。RP が組み立てる認可リクエスト、OP が実行する認証と同意、PKCE の verifier を検証するトークン交換、その後のリソースアクセスの順に並んでいます。</title>
+    <!-- 段階の帯 -->
+    <rect class="fg-group" x="30" y="68" width="916" height="164" rx="8"/>
+    <rect class="fg-group" x="30" y="240" width="916" height="246" rx="8"/>
+    <rect class="fg-group" x="30" y="494" width="916" height="258" rx="8"/>
+    <rect class="fg-group" x="30" y="760" width="916" height="152" rx="8"/>
+    <text class="fg-lbl" x="42" y="86">1 · 認可リクエスト</text>
+    <text class="fg-lbl" x="42" y="258">2 · 認証と同意</text>
+    <text class="fg-lbl" x="42" y="512">3 · トークン交換</text>
+    <text class="fg-lbl" x="42" y="778">4 · リソースアクセス</text>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="110" y1="62" x2="110" y2="912"/>
+    <line class="fg-life" x1="330" y1="62" x2="330" y2="912"/>
+    <line class="fg-life fg-life--accent" x1="570" y1="62" x2="570" y2="912"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="912"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="34" y="16" width="152" height="42" rx="6"/>
+    <text class="fg-t" x="110" y="35" text-anchor="middle">ユーザ</text>
+    <text class="fg-xs" x="110" y="49" text-anchor="middle">ブラウザ</text>
+    <rect class="fg-box" x="254" y="16" width="152" height="42" rx="6"/>
+    <text class="fg-t" x="330" y="35" text-anchor="middle">Relying Party</text>
+    <text class="fg-xs" x="330" y="49" text-anchor="middle">web アプリ</text>
+    <rect class="fg-box fg-box--accent" x="490" y="16" width="160" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="570" y="35" text-anchor="middle">OpenID Provider</text>
+    <text class="fg-mxs" x="570" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="754" y="16" width="152" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">Resource Server</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">API サーバ</text>
+    <!-- 段階 1 -->
+    <rect class="fg-box fg-box--sub" x="236" y="94" width="320" height="36" rx="6"/>
+    <text class="fg-t2" x="396" y="110" text-anchor="middle">RP が PKCE ペアを生成</text>
+    <text class="fg-mxs" x="396" y="123" text-anchor="middle">code_challenge = S256(code_verifier)</text>
+    <circle class="fg-badge" cx="15" cy="152" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="155" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M110,152 H330" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="220" y="146" text-anchor="middle">アプリを開く</text>
+    <circle class="fg-badge" cx="15" cy="192" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="195" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M330,192 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="220" y="172" text-anchor="middle">302 で OP へ</text>
+    <text class="fg-mxs" x="220" y="185" text-anchor="middle">/authorize · code_challenge · state · nonce</text>
+    <circle class="fg-badge" cx="15" cy="220" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="223" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M110,220 H570" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="400" y="214" text-anchor="middle">GET /authorize</text>
+    <!-- 段階 2 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="274" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="277" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M570,266 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="612" y="270">リクエストを検証</text>
+    <text class="fg-mxs" x="612" y="283">redirect_uri 完全一致 · client_id · S256</text>
+    <circle class="fg-badge" cx="15" cy="308" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="311" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M570,308 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-halo" x="400" y="302" text-anchor="middle">200 ログイン画面</text>
+    <circle class="fg-badge" cx="15" cy="338" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="341" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M110,338 H570" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="400" y="332" text-anchor="middle">POST 認証情報</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="364" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="367" text-anchor="middle">7</text>
+    <path class="fg-edge fg-edge--accent" d="M570,356 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="612" y="360">ユーザを認証</text>
+    <text class="fg-xs" x="612" y="373">password · passkey · ステップアップ MFA</text>
+    <circle class="fg-badge" cx="15" cy="398" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="401" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M570,398 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-halo" x="400" y="392" text-anchor="middle">200 同意画面</text>
+    <circle class="fg-badge" cx="15" cy="428" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="431" text-anchor="middle">9</text>
+    <path class="fg-edge" d="M110,428 H570" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="400" y="422" text-anchor="middle">POST 同意</text>
+    <circle class="fg-badge" cx="15" cy="468" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="471" text-anchor="middle">10</text>
+    <path class="fg-edge" d="M570,468 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-halo" x="400" y="448" text-anchor="middle">302 で redirect_uri へ</text>
+    <text class="fg-mxs fg-halo" x="400" y="461" text-anchor="middle">code · state</text>
+    <!-- 段階 3 -->
+    <circle class="fg-badge" cx="15" cy="536" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="539" text-anchor="middle">11</text>
+    <path class="fg-edge" d="M110,536 H330" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="220" y="530" text-anchor="middle">GET /callback?code&amp;state</text>
+    <circle class="fg-badge" cx="15" cy="564" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="567" text-anchor="middle">12</text>
+    <path class="fg-edge" d="M330,556 h30 v16 h-30" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="372" y="560">state を検証</text>
+    <text class="fg-xs" x="372" y="573">手順 2 で保存した値と一致すること</text>
+    <circle class="fg-badge" cx="15" cy="608" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="611" text-anchor="middle">13</text>
+    <path class="fg-edge" d="M330,608 H570" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="450" y="588" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="450" y="601" text-anchor="middle">code · code_verifier · client auth</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="636" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="639" text-anchor="middle">14</text>
+    <path class="fg-edge fg-edge--accent" d="M570,628 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="612" y="632">PKCE を検証</text>
+    <text class="fg-mxs" x="612" y="645">S256(code_verifier) == code_challenge</text>
+    <circle class="fg-badge" cx="15" cy="680" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="683" text-anchor="middle">15</text>
+    <path class="fg-edge" d="M570,680 H330" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="450" y="660" text-anchor="middle">200 OK</text>
+    <text class="fg-mxs" x="450" y="673" text-anchor="middle">access_token · id_token · refresh_token</text>
+    <circle class="fg-badge" cx="15" cy="708" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="711" text-anchor="middle">16</text>
+    <path class="fg-edge" d="M330,700 h30 v16 h-30" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="372" y="704">ID Token を検証</text>
+    <text class="fg-mxs" x="372" y="717">iss · aud · exp · nonce</text>
+    <circle class="fg-badge" cx="15" cy="740" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="743" text-anchor="middle">17</text>
+    <path class="fg-edge" d="M330,740 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="220" y="734" text-anchor="middle">session cookie を設定</text>
+    <!-- 段階 4 -->
+    <circle class="fg-badge" cx="15" cy="802" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="805" text-anchor="middle">18</text>
+    <path class="fg-edge" d="M110,802 H330" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="220" y="796" text-anchor="middle">GET /api/me</text>
+    <circle class="fg-badge" cx="15" cy="842" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="845" text-anchor="middle">19</text>
+    <path class="fg-edge" d="M330,842 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="580" y="822" text-anchor="middle">GET /api/me</text>
+    <text class="fg-mxs fg-halo" x="580" y="835" text-anchor="middle">Authorization: Bearer …</text>
+    <circle class="fg-badge" cx="15" cy="874" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="877" text-anchor="middle">20</text>
+    <path class="fg-edge fg-edge--muted" d="M830,874 H570" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="700" y="856" text-anchor="middle">任意</text>
+    <text class="fg-mxs" x="700" y="868" text-anchor="middle">introspect · または JWT を自己検証</text>
+    <circle class="fg-badge" cx="15" cy="902" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="905" text-anchor="middle">21</text>
+    <path class="fg-edge" d="M830,902 H330" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="580" y="896" text-anchor="middle">200 { user data }</text>
+  </svg>
+  <figcaption class="fig-note">OP が単独で処理するのは手順 4・7・14 だけで、残りはすべて二者間のやり取りです。PKCE の効果は手順 14 に現れます。<code>/token</code> に提示された認可コードは、手順 2 で送った challenge に対応する verifier を持つ相手にしか通りません。</figcaption>
+</figure>
 
 ## パラメータ用語集
 

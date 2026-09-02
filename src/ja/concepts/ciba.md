@@ -32,66 +32,85 @@ CIBA は [device flow](/ja/concepts/device-code) とは別の形の問題を解�
 
 ## フローの動き方（poll mode）
 
-<svg role="img" aria-labelledby="ciba-poll-flow-title" viewBox="0 0 760 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="ciba-poll-flow-title">CIBA poll モードのシーケンス図。POS 端末が /bc-authorize を呼び、OP が hint を解決し、組み込み側の通知サービスがスタッフのスマホへ要求を届け、POS はユーザが承認するまで /token を poll してトークンが発行される。</title>
-<line class="ciba-life" x1="93" y1="50" x2="93" y2="446"/>
-<line class="ciba-life ciba-accent" x1="430" y1="50" x2="430" y2="446"/>
-<line class="ciba-life ciba-sec" x1="680" y1="50" x2="680" y2="446"/>
-<rect x="18" y="10" width="150" height="40" rx="6"/>
-<rect class="ciba-accent" x="352" y="10" width="156" height="40" rx="6"/>
-<rect class="ciba-sec" x="605" y="10" width="150" height="40" rx="6"/>
-<text class="ciba-tx halo ciba-fb" x="93" y="28" text-anchor="middle" font-size="11" font-weight="600">利用デバイス</text>
-<text class="ciba-tx halo ciba-fb ciba-muted" x="93" y="42" text-anchor="middle" font-size="10">（POS 端末）</text>
-<text class="ciba-tx halo ciba-fb ciba-accent-f" x="430" y="28" text-anchor="middle" font-size="11" font-weight="600">OP</text>
-<text class="ciba-tx halo ciba-fm ciba-accent-f ciba-muted" x="430" y="42" text-anchor="middle" font-size="10">go-oidc-provider</text>
-<text class="ciba-tx halo ciba-fb ciba-sec-f" x="680" y="28" text-anchor="middle" font-size="11" font-weight="600">認証デバイス</text>
-<text class="ciba-tx halo ciba-fb ciba-muted" x="680" y="42" text-anchor="middle" font-size="10">（スタッフのスマホ）</text>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="100" font-size="9.5">1</text>
-<text class="ciba-tx halo ciba-fm" x="261" y="71" text-anchor="middle" font-size="10.5">POST /bc-authorize</text>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="261" y="84" text-anchor="middle" font-size="10">login_hint=alice · scope=openid · binding_message</text>
-<line x1="93" y1="97" x2="430" y2="97"/>
-<polyline points="423,93 430,97 423,101"/>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="118" font-size="9.5">2</text>
-<path class="ciba-accent" d="M430 108 H462 V122 H430"/>
-<polyline class="ciba-accent" points="437,118 430,122 437,126"/>
-<text class="ciba-tx halo ciba-fm ciba-accent-f" x="470" y="116" font-size="10.5">HintResolver → sub=alice123</text>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="173" font-size="9.5">3</text>
-<text class="ciba-tx halo ciba-fb" x="555" y="147" text-anchor="middle" font-size="10.5">embedder notification</text>
-<text class="ciba-tx halo ciba-fb ciba-sec-f" x="555" y="160" text-anchor="middle" font-size="10">Acme Coffee で 800 円を承認?</text>
-<line class="ciba-accent" x1="430" y1="170" x2="680" y2="170"/>
-<polyline class="ciba-accent" points="673,166 680,170 673,174"/>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="207" font-size="9.5">4</text>
-<text class="ciba-tx halo ciba-fm" x="261" y="192" text-anchor="middle" font-size="10.5">200 · { auth_req_id, expires_in: 600, interval: 5 }</text>
-<line class="ciba-accent" x1="430" y1="204" x2="93" y2="204"/>
-<polyline class="ciba-accent" points="100,200 93,204 100,208"/>
-<rect class="ciba-frag" x="30" y="216" width="710" height="156" rx="4"/>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="40" y="230" font-size="9.5" font-weight="600">par</text>
-<rect class="ciba-frag" x="46" y="234" width="430" height="74" rx="4"/>
-<text class="ciba-tx halo ciba-fb ciba-muted" x="54" y="247" font-size="9.5">loop · interval 秒ごとに poll</text>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="277" font-size="9.5">5</text>
-<text class="ciba-tx halo ciba-fm" x="261" y="262" text-anchor="middle" font-size="10.5">POST /token · grant_type=…:ciba · auth_req_id</text>
-<line x1="93" y1="274" x2="430" y2="274"/>
-<polyline points="423,270 430,274 423,278"/>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="301" font-size="9.5">6</text>
-<text class="ciba-tx halo ciba-fm" x="261" y="288" text-anchor="middle" font-size="10.5">400 · { error: authorization_pending }</text>
-<line class="ciba-accent" x1="430" y1="298" x2="93" y2="298"/>
-<polyline class="ciba-accent" points="100,294 93,298 100,302"/>
-<line class="ciba-frag" x1="30" y1="320" x2="740" y2="320"/>
-<text class="ciba-tx halo ciba-fb ciba-muted" x="555" y="333" text-anchor="middle" font-size="10">ユーザがスマホで承認</text>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="361" font-size="9.5">7</text>
-<text class="ciba-tx halo ciba-fm" x="555" y="346" text-anchor="middle" font-size="10.5">approve(auth_req_id, sub=alice123)</text>
-<line class="ciba-sec" x1="680" y1="358" x2="430" y2="358"/>
-<polyline class="ciba-sec" points="437,354 430,358 437,362"/>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="411" font-size="9.5">8</text>
-<text class="ciba-tx halo ciba-fm" x="278" y="396" text-anchor="end" font-size="10.5">POST /token</text>
-<text class="ciba-tx halo ciba-fb ciba-muted" x="284" y="396" font-size="10">（次の poll）</text>
-<line x1="93" y1="408" x2="430" y2="408"/>
-<polyline points="423,404 430,408 423,412"/>
-<text class="ciba-tx halo ciba-fm ciba-muted" x="8" y="439" font-size="9.5">9</text>
-<text class="ciba-tx halo ciba-fm" x="261" y="424" text-anchor="middle" font-size="10.5">200 · { access_token, id_token, refresh_token? }</text>
-<line class="ciba-accent" x1="430" y1="436" x2="93" y2="436"/>
-<polyline class="ciba-accent" points="100,432 93,436 100,440"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">CIBA の poll モード</div>
+  <svg class="fig-svg" role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg">
+    <title id="ciba-poll-title">CIBA の poll モードを示した図。POS 端末が backchannel authentication エンドポイントを呼び、OP が login hint を subject に解決し、組み込み側の通知サービスがスタッフのスマホへ届け、端末はユーザが承認するまでトークンエンドポイントを poll します。</title>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="524"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="524"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="524"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="50" y="16" width="200" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">利用デバイス</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">POS 端末</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="730" y="16" width="200" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">認証デバイス</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">スタッフのスマホ</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="96" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="99" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,96 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="325" y="76" text-anchor="middle">POST /bc-authorize</text>
+    <text class="fg-mxs" x="325" y="89" text-anchor="middle">login_hint=alice · scope=openid · binding_message</text>
+    <!-- 2 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="126" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="129" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,118 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="542" y="122">hint を subject に解決する</text>
+    <text class="fg-mxs" x="542" y="135">HintResolver → sub=alice123</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="184" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="187" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M500,184 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="665" y="164" text-anchor="middle">組み込み側の通知サービスが届ける</text>
+    <text class="fg-mxs" x="665" y="177" text-anchor="middle">「Acme Coffee で 800 円を承認?」</text>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="15" cy="216" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="219" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M500,216 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="210" text-anchor="middle">200 · { auth_req_id, expires_in: 600, interval: 5 }</text>
+    <!-- par フラグメント -->
+    <rect class="fg-frame" x="44" y="242" width="896" height="196" rx="8"/>
+    <rect class="fg-box fg-box--muted" x="44" y="242" width="52" height="18" rx="4"/>
+    <text class="fg-tab" x="56" y="255">par</text>
+    <line class="fg-rule fg-rule--dashed" x1="44" y1="362" x2="940" y2="362"/>
+    <!-- loop フラグメント -->
+    <rect class="fg-frame" x="64" y="272" width="600" height="80" rx="6"/>
+    <rect class="fg-box fg-box--muted" x="64" y="272" width="176" height="18" rx="4"/>
+    <text class="fg-tab" x="76" y="285">loop · interval 秒ごと</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="308" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="311" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M150,308 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="325" y="302" text-anchor="middle">POST /token · grant_type=…:ciba · auth_req_id</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="338" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="341" text-anchor="middle">6</text>
+    <path class="fg-edge fg-edge--muted" d="M500,338 H150" marker-end="url(#fg-am)"/>
+    <text class="fg-mxs fg-halo" x="325" y="332" text-anchor="middle">400 · { error: authorization_pending }</text>
+    <!-- 7 -->
+    <text class="fg-xs" x="76" y="386">その間、別チャネルでユーザがスマホ上で承認する</text>
+    <circle class="fg-badge" cx="15" cy="416" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="419" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M830,416 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="410" text-anchor="middle">approve(auth_req_id, sub=alice123)</text>
+    <!-- 8 -->
+    <circle class="fg-badge" cx="15" cy="472" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="475" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M150,472 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="466" text-anchor="middle">POST /token — 次の poll</text>
+    <!-- 9 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="510" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="513" text-anchor="middle">9</text>
+    <path class="fg-edge fg-edge--accent" d="M500,510 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="504" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+  </svg>
+  <figcaption class="fig-note">端末とスマホは互いに通信しません。両者が触れるのは OP だけです。<code>binding_message</code> が重要なのはそのためで、端末の前にいる人とスマホを持つ人が突き合わせられる唯一の文字列がこれです。</figcaption>
+</figure>
 
 利用デバイスはユーザの credential を持ちません。ユーザは利用デバイスに何も打ちません。認証デバイス — ユーザが銀行アプリにサインイン済みなのですでに認証されている — だけが consent を行使する場所になります。
 

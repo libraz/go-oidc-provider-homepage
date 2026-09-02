@@ -37,54 +37,39 @@ One nuance the table below makes precise: *volatile-shaped* data and *volatile-t
 
 ## Architecture
 
-<svg role="img" aria-labelledby="hcr-arch-title" viewBox="0 0 760 244" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="hcr-arch-title">The composite store adapter routes durable substores to the SQL/MySQL backend and volatile substores to the Redis backend.</title>
-  <marker id="hcr-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-    <path d="M1 1 L9 5 L1 9" stroke-width="1.6"/>
-  </marker>
-
-  <!-- op.Provider (the OP — brand accent) -->
-  <rect class="hcr-accent" x="8" y="100" width="130" height="52" rx="6"/>
-  <text class="hcr-m hcr-accent-t" x="73" y="131" text-anchor="middle">op.Provider</text>
-
-  <!-- composite splitter -->
-  <rect x="170" y="100" width="140" height="52" rx="6"/>
-  <text class="hcr-m" x="240" y="121" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="240" y="138" text-anchor="middle">composite</text>
-
-  <!-- op -> composite -->
-  <path d="M138 126 H168" marker-end="url(#hcr-arrow)"/>
-
-  <!-- split bus -->
-  <path d="M310 126 H332"/>
-  <path d="M332 54 V198"/>
-
-  <!-- durable branch -->
-  <text class="hcr-edge" x="394" y="42" text-anchor="middle">durable substores</text>
-  <path d="M332 54 H458" marker-end="url(#hcr-arrow)"/>
-  <rect x="460" y="28" width="130" height="52" rx="6"/>
-  <text class="hcr-m" x="525" y="49" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="525" y="66" text-anchor="middle">sql</text>
-  <path d="M590 54 H616" marker-end="url(#hcr-arrow)"/>
-  <g class="hcr-db">
-    <path d="M618 36 V72 A64 8 0 0 0 746 72 V36"/>
-    <ellipse cx="682" cy="36" rx="64" ry="8"/>
-  </g>
-  <text class="hcr-t" x="682" y="62" text-anchor="middle">MySQL</text>
-
-  <!-- volatile branch -->
-  <path d="M332 198 H458" marker-end="url(#hcr-arrow)"/>
-  <text class="hcr-edge" x="394" y="214" text-anchor="middle">volatile substores</text>
-  <rect x="460" y="172" width="130" height="52" rx="6"/>
-  <text class="hcr-m" x="525" y="193" text-anchor="middle">storeadapter/</text>
-  <text class="hcr-m" x="525" y="210" text-anchor="middle">redis</text>
-  <path d="M590 198 H616" marker-end="url(#hcr-arrow)"/>
-  <g class="hcr-db">
-    <path d="M618 180 V216 A64 8 0 0 0 746 216 V180"/>
-    <ellipse cx="682" cy="180" rx="64" ry="8"/>
-  </g>
-  <text class="hcr-t" x="682" y="206" text-anchor="middle">Redis</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">One store interface, two backends behind it</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-hotcold-title" viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-hotcold-title">The composite adapter routes each substore to a backend: the durable ones to SQL, the high-churn volatile ones to Redis. The provider sees a single store either way.</title>
+    <text class="fg-lbl" x="596" y="30">durable substores</text>
+    <text class="fg-lbl" x="596" y="228">volatile substores</text>
+    <rect class="fg-box" x="36" y="90" width="210" height="64" rx="8"/>
+    <text class="fg-t2" x="56" y="116">op.Provider</text>
+    <text class="fg-xs" x="56" y="138">sees one store</text>
+    <path class="fg-edge" d="M250,122 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="300" y="90" width="220" height="64" rx="8"/>
+    <text class="fg-m fg-accent" x="320" y="116">composite</text>
+    <text class="fg-xs" x="320" y="138">routes each substore</text>
+    <path class="fg-leader" d="M524,122 H556 M556,64 V180"/>
+    <path class="fg-edge fg-edge--thin" d="M556,64 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M556,180 H592" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="596" y="40" width="154" height="48" rx="6"/>
+    <text class="fg-mxs" x="612" y="60">storeadapter/</text>
+    <text class="fg-mxs" x="612" y="76">sql</text>
+    <path class="fg-edge fg-edge--thin" d="M754,64 H790" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="794" y="40" width="130" height="48" rx="6"/>
+    <text class="fg-t2" x="812" y="60">MySQL</text>
+    <text class="fg-xs" x="812" y="78">survives a restart</text>
+    <rect class="fg-box" x="596" y="156" width="154" height="48" rx="6"/>
+    <text class="fg-mxs" x="612" y="176">storeadapter/</text>
+    <text class="fg-mxs" x="612" y="192">redis</text>
+    <path class="fg-edge fg-edge--thin" d="M754,180 H790" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="794" y="156" width="130" height="48" rx="6"/>
+    <text class="fg-t2" x="812" y="176">Redis</text>
+    <text class="fg-xs" x="812" y="194">expected to lose rows</text>
+  </svg>
+  <figcaption class="fig-note">The split follows what each substore costs when it disappears. Sessions and nonce caches can be rebuilt by asking the user to sign in again; a grant cannot.</figcaption>
+</figure>
 
 The composite store enforces a transactional-cluster invariant: substores that need to commit atomically together (e.g. `AuthorizationCodeStore` and `RefreshTokenStore`) **must** be on the same backend. The composite constructor refuses configurations that would split a transactional cluster.
 

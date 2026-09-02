@@ -102,34 +102,35 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 
 ハンドラは **OP 署名**（`BoundAccessToken`）と **ハンドラ署名**（`AccessToken`）を選択します — 排他です。
 
-<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 290" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="custom-grant-signing-title">カスタム grant の 2 つの発行形態。BoundAccessToken は OP が署名、標準 claim、cnf、id_token、リフレッシュトークンを管理する。AccessToken はハンドラが署名済み値を返し、cnf や introspection 連携もハンドラ側の責任になる。</title>
-  <defs>
-    <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="280" y="20" width="200" height="52" rx="8"/>
-  <text class="h" x="380" y="43" text-anchor="middle">CustomGrantHandler</text>
-  <text class="m sub" x="380" y="61" text-anchor="middle">Handle(ctx, req)</text>
-
-  <rect class="accent" x="48" y="134" width="286" height="136" rx="8"/>
-  <text class="h accent-text" x="191" y="162" text-anchor="middle">BoundAccessToken を返す</text>
-  <text class="t" x="191" y="190" text-anchor="middle">OP が署名鍵を選び JWT を発行</text>
-  <text class="t sub" x="191" y="214" text-anchor="middle">標準 claim · <tspan class="m">cnf</tspan> · TTL 上限</text>
-  <text class="t sub" x="191" y="236" text-anchor="middle">必要なら id_token / refresh も OP 管理</text>
-  <text class="m accent-text" x="191" y="258" text-anchor="middle">推奨: 通常はこちら</text>
-
-  <rect x="426" y="134" width="286" height="136" rx="8"/>
-  <text class="h" x="569" y="162" text-anchor="middle">AccessToken を返す</text>
-  <text class="t" x="569" y="190" text-anchor="middle">ハンドラが署名済み値を返す</text>
-  <text class="t sub" x="569" y="214" text-anchor="middle">外部 KMS / 独自 opaque backend 向け</text>
-  <text class="t sub" x="569" y="236" text-anchor="middle"><tspan class="m">cnf</tspan> と失効の連携は組み込み側の責任</text>
-  <text class="m sub" x="569" y="258" text-anchor="middle">明確な理由がある場合のみ</text>
-
-  <path d="M350 72 C330 104 250 112 191 130" marker-end="url(#cg-arrow)"/>
-  <path d="M410 72 C430 104 510 112 569 130" marker-end="url(#cg-arrow)"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">カスタム grant が返せる 2 つの形</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-customgrant-title" viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-customgrant-title">カスタム grant のハンドラは BoundAccessToken を返すこともでき、その場合は署名鍵・標準 claim・cnf・ID トークン・リフレッシュトークンを OP が管理します。署名済みのアクセストークンを返すこともでき、その場合は cnf と失効の連携がハンドラ側の責任になります。</title>
+    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="52" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="48" text-anchor="middle">CustomGrantHandler</text>
+    <text class="fg-mxs" x="480" y="66" text-anchor="middle">Handle(ctx, req)</text>
+    <path class="fg-leader" d="M480,80 V96 M253,96 H707"/>
+    <path class="fg-edge fg-edge--accent" d="M253,96 V116" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--muted" d="M707,96 V116" marker-end="url(#fg-am)"/>
+    <rect class="fg-box fg-box--accent" x="36" y="120" width="434" height="146" rx="8"/>
+    <text class="fg-m fg-accent" x="56" y="146">BoundAccessToken を返す</text>
+    <text class="fg-lbl fg-accent" x="56" y="166">通常はこちら</text>
+    <line class="fg-rule" x1="56" y1="178" x2="450" y2="178"/>
+    <text class="fg-xs" x="56" y="198">OP が署名鍵を選び、JWT を発行する</text>
+    <text class="fg-xs" x="56" y="216">標準 claim · cnf · TTL の上限</text>
+    <text class="fg-xs" x="56" y="234">ID トークンとリフレッシュトークンも OP 管理のまま</text>
+    <text class="fg-xs fg-ok" x="56" y="254">失効まわりに自前の実装は要らない</text>
+    <rect class="fg-box" x="490" y="120" width="434" height="146" rx="8"/>
+    <text class="fg-m" x="510" y="146">AccessToken を返す</text>
+    <text class="fg-lbl fg-warn" x="510" y="166">明確な理由がある場合のみ</text>
+    <line class="fg-rule" x1="510" y1="178" x2="904" y2="178"/>
+    <text class="fg-xs" x="510" y="198">ハンドラが署名済みの値を返す</text>
+    <text class="fg-xs" x="510" y="216">外部 KMS や独自の opaque backend 向け</text>
+    <text class="fg-xs" x="510" y="234">cnf と introspection の連携は組み込み側の責任</text>
+    <text class="fg-xs fg-warn" x="510" y="254">失効をどこまで届かせるかも同様</text>
+  </svg>
+  <figcaption class="fig-note">右の形は、署名鍵が本当に OP の手元に無い場合のためにあります。それ以外の理由で選ぶと、4 つの責務がライブラリからハンドラ側へ移り、しかもそのどれもが気付きにくい形で誤りやすい部分です。</figcaption>
+</figure>
 
 この 2 形態は排他です。ハンドラが両方を返した場合、OP は `server_error` を返します。発行の責任は必ずどちらか一方に固定されます。
 

@@ -26,50 +26,50 @@ pageClass: pg-concepts-consent
 
 The library evaluates four cases on every authorize flow.
 
-<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 760 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(30,0)">
-  <title id="consent-shown-decision-title">Decision tree over grant state: a prompt=consent request, a missing grant, or a requested scope outside the existing grant each show the consent screen; otherwise the existing grant covers the request and the authorization code is minted without a prompt.</title>
-  <rect x="24" y="28" width="270" height="48" rx="8"/>
-  <rect x="24" y="120" width="270" height="48" rx="8"/>
-  <rect x="24" y="212" width="270" height="48" rx="8"/>
-  <rect x="24" y="304" width="270" height="48" rx="8" class="accent"/>
-  <rect x="470" y="28" width="210" height="48" rx="8"/>
-  <rect x="470" y="120" width="210" height="48" rx="8"/>
-  <rect x="470" y="212" width="210" height="48" rx="8"/>
-  <text class="lbl" x="159" y="47" text-anchor="middle">Request carries</text>
-  <text x="159" y="64" text-anchor="middle"><tspan class="mono">prompt=consent</tspan><tspan class="lbl">?</tspan></text>
-  <text class="lbl" x="159" y="139" text-anchor="middle">No existing grant for</text>
-  <text x="159" y="156" text-anchor="middle"><tspan class="mono">(subject, client_id)</tspan><tspan class="lbl">?</tspan></text>
-  <text class="lbl" x="159" y="231" text-anchor="middle">Requested scope outside</text>
-  <text class="lbl" x="159" y="248" text-anchor="middle">the existing grant?</text>
-  <text class="lbl" x="159" y="323" text-anchor="middle">Existing grant covers request</text>
-  <text class="sub" x="159" y="340" text-anchor="middle">&#8594; skip, mint authorization code</text>
-  <text class="lbl" x="575" y="47" text-anchor="middle">Forced re-prompt</text>
-  <text class="sub" x="575" y="64" text-anchor="middle">&#8594; show consent</text>
-  <text class="lbl" x="575" y="139" text-anchor="middle">First-time grant</text>
-  <text class="sub" x="575" y="156" text-anchor="middle">&#8594; show consent</text>
-  <text class="lbl" x="575" y="231" text-anchor="middle">Scope delta</text>
-  <text class="sub" x="575" y="248" text-anchor="middle">&#8594; show consent</text>
-  <path d="M294 52 H464"/>
-  <path d="M464 48 L470 52 L464 56"/>
-  <path d="M294 144 H464"/>
-  <path d="M464 140 L470 144 L464 148"/>
-  <path d="M294 236 H464"/>
-  <path d="M464 232 L470 236 L464 240"/>
-  <path d="M159 76 V114"/>
-  <path d="M155 114 L159 120 L163 114"/>
-  <path d="M159 168 V206"/>
-  <path d="M155 206 L159 212 L163 206"/>
-  <path d="M159 260 V298"/>
-  <path d="M155 298 L159 304 L163 298"/>
-  <text class="edge" x="382" y="46" text-anchor="middle">yes</text>
-  <text class="edge" x="382" y="138" text-anchor="middle">yes</text>
-  <text class="edge" x="382" y="230" text-anchor="middle">yes</text>
-  <text class="edge" x="170" y="101">no</text>
-  <text class="edge" x="170" y="193">no</text>
-  <text class="edge" x="170" y="285">no</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">When the consent screen is shown</div>
+  <svg class="fig-svg" role="img" aria-labelledby="consent-decision-title" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg">
+    <title id="consent-decision-title">Three gates decide whether consent is shown: an explicit prompt=consent, no existing grant for this subject and client, or a requested scope outside the existing grant. If none of them fires, the existing grant already covers the request and the authorization code is minted without a prompt.</title>
+    <!-- gate 1 -->
+    <rect class="fg-box" x="36" y="30" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="58">the request carries</text>
+    <text class="fg-m" x="56" y="76">prompt=consent</text>
+    <path class="fg-edge" d="M434,63 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="56" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--warn" x="530" y="34" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="58">Forced re-prompt</text>
+    <text class="fg-xs" x="550" y="76">show consent, even for a grant that already covers this</text>
+    <path class="fg-edge" d="M233,100 V126" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="118">no</text>
+    <!-- gate 2 -->
+    <rect class="fg-box" x="36" y="130" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="158">no existing grant for</text>
+    <text class="fg-m" x="56" y="176">(subject, client_id)</text>
+    <path class="fg-edge" d="M434,163 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="156" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--warn" x="530" y="134" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="158">First-time grant</text>
+    <text class="fg-xs" x="550" y="176">show consent and record what the user agreed to</text>
+    <path class="fg-edge" d="M233,200 V226" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="218">no</text>
+    <!-- gate 3 -->
+    <rect class="fg-box" x="36" y="230" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="258">a requested scope falls outside</text>
+    <text class="fg-s" x="56" y="276">the existing grant</text>
+    <path class="fg-edge" d="M434,263 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="256" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--warn" x="530" y="234" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="258">Scope delta</text>
+    <text class="fg-xs" x="550" y="276">show consent for the difference, not for the whole set</text>
+    <path class="fg-edge" d="M233,300 V326" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="318">no</text>
+    <!-- outcome -->
+    <rect class="fg-box fg-box--accent" x="36" y="330" width="888" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="354">The existing grant already covers the request</text>
+    <text class="fg-xs" x="56" y="372">no prompt — the OP mints the authorization code and redirects straight back</text>
+  </svg>
+  <figcaption class="fig-note">Only the third gate looks at scope. That is why adding one scope to an existing integration re-prompts every user: the request no longer fits the grant they gave, and the OP will not widen a grant it was never asked about.</figcaption>
+</figure>
 
 | Case | Behaviour |
 |---|---|

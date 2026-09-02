@@ -35,33 +35,30 @@ public / native client は `profile.Baseline` を指定しなくても PKCE 必�
 
 プロファイルは隣り合う 2 つの宣言軸を別々に扱います。この非対称は意図したものです。
 
-<svg role="img" aria-labelledby="profile-axes-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="profile-axes-title">宣言したプロファイルは必要な feature flag を補うが、grant は補わない。プロファイルが要求する grant を配備側が宣言していない場合は op.New が失敗する。</title>
-
-  <rect class="sp-option" x="260" y="16" width="240" height="44" rx="8"/>
-  <text class="sp-option-name" x="380" y="43" text-anchor="middle">op.WithProfile(…)</text>
-
-  <path d="M380 60 V82"/>
-  <path d="M192 82 H568"/>
-  <path d="M192 82 V108"/>
-  <path d="M188 102 L192 111 L196 102"/>
-  <path d="M568 82 V108"/>
-  <path d="M564 102 L568 111 L572 102"/>
-
-  <rect x="24" y="114" width="336" height="130" rx="8"/>
-  <text class="sp-axis" x="192" y="140" text-anchor="middle">feature</text>
-  <text class="sp-axis-example" x="192" y="162" text-anchor="middle">feature.PAR, feature.JAR, feature.JARM, …</text>
-  <path class="sp-divider" d="M44 178 H340"/>
-  <text class="sp-claim" x="192" y="202" text-anchor="middle">プロファイルが決めてよいポリシー</text>
-  <text class="sp-outcome" x="192" y="226" text-anchor="middle">未宣言 → プロファイルが有効化</text>
-
-  <rect x="400" y="114" width="336" height="130" rx="8"/>
-  <text class="sp-axis" x="568" y="140" text-anchor="middle">grant</text>
-  <text class="sp-axis-example" x="568" y="162" text-anchor="middle">grant.AuthorizationCode, grant.CIBA, …</text>
-  <path class="sp-divider" d="M420 178 H716"/>
-  <text class="sp-claim" x="568" y="202" text-anchor="middle">協力者を用意できるのは組み込み側だけ</text>
-  <text class="sp-outcome" x="568" y="226" text-anchor="middle">未宣言 → op.New が失敗</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">プロファイルは feature を補うが、grant は補わない</div>
+  <svg class="fig-svg" role="img" aria-labelledby="profile-supply-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
+    <title id="profile-supply-title">プロファイルを宣言すると、それが必要とする feature flag が有効になります。一方で grant は補われません。プロファイルが要求する grant を配備側が宣言していない場合、黙って有効化するのではなく op.New が失敗します。</title>
+    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="44" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="52" text-anchor="middle">op.WithProfile(…)</text>
+    <path class="fg-leader" d="M480,72 V88 M253,88 H707"/>
+    <path class="fg-edge fg-edge--ok" d="M253,88 V106" marker-end="url(#fg-ao)"/>
+    <path class="fg-edge fg-edge--danger" d="M707,88 V106" marker-end="url(#fg-ad)"/>
+    <rect class="fg-box fg-box--ok" x="36" y="110" width="434" height="108" rx="8"/>
+    <text class="fg-t2" x="56" y="138">feature — 補われる</text>
+    <text class="fg-mxs" x="56" y="160">feature.PAR · feature.JAR · feature.JARM · …</text>
+    <line class="fg-rule" x1="56" y1="172" x2="450" y2="172"/>
+    <text class="fg-xs" x="56" y="192">プロファイルが単独で決めてよいポリシー</text>
+    <text class="fg-xs fg-ok" x="56" y="208">未宣言 → プロファイルが有効化する</text>
+    <rect class="fg-box fg-box--danger" x="490" y="110" width="434" height="108" rx="8"/>
+    <text class="fg-t2" x="510" y="138">grant — 補われない</text>
+    <text class="fg-mxs" x="510" y="160">grant.AuthorizationCode · grant.CIBA · …</text>
+    <line class="fg-rule" x1="510" y1="172" x2="904" y2="172"/>
+    <text class="fg-xs" x="510" y="192">必要な協力者を用意できるのは組み込み側だけ</text>
+    <text class="fg-xs fg-danger" x="510" y="208">未宣言 → op.New が失敗する</text>
+  </svg>
+  <figcaption class="fig-note">この非対称は意図したものです。feature はプロファイルが単独で強制できる規則ですが、grant には認証器やストア、場合によっては通知チャネルが要ります。用意できるのは組み込み側だけなので、黙って有効化すれば、受け付けたリクエストを完了できない OP ができあがります。</figcaption>
+</figure>
 
 どちらの場合も、解決後のポリシーは `startup.profile` 監査イベントに記録されます。OP が実際にどの設定で起動したかは、オプションの並びから推測するのではなく監査証跡から読み取れます。
 

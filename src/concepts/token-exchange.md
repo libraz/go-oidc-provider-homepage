@@ -30,78 +30,67 @@ Modern threat models prefer delegation — the audit chain is intact, revocation
 
 ## Impersonation vs Delegation, side by side
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="tx-imp-del-title">Three ways Service A can call Service B on Alice's behalf — plain forwarding is rejected, impersonation drops the actor, delegation records the act chain.</title>
-  <!-- actor headers -->
-  <rect x="34" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl" x="86" y="33" text-anchor="middle">Frontend</text>
-  <text class="tx-sub" x="86" y="46" text-anchor="middle">browser</text>
-  <rect x="230" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl" x="282" y="33" text-anchor="middle">Service A</text>
-  <text class="tx-sub" x="282" y="46" text-anchor="middle">intermediary</text>
-  <rect class="tx-acc" x="426" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl tx-acc-f" x="478" y="33" text-anchor="middle">OP</text>
-  <text class="tx-sub" x="478" y="46" text-anchor="middle">authz server</text>
-  <rect class="tx-rs" x="622" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl tx-rs-f" x="674" y="33" text-anchor="middle">Service B</text>
-  <text class="tx-sub" x="674" y="46" text-anchor="middle">resource</text>
-  <!-- lifelines -->
-  <line x1="86" y1="56" x2="86" y2="574" stroke-width="1.5" stroke-opacity=".28"/>
-  <line x1="282" y1="56" x2="282" y2="574" stroke-width="1.5" stroke-opacity=".28"/>
-  <line class="tx-acc" x1="478" y1="56" x2="478" y2="574" stroke-width="1.5" stroke-opacity=".3"/>
-  <line class="tx-rs" x1="674" y1="56" x2="674" y2="574" stroke-width="1.5" stroke-opacity=".3"/>
-  <!-- band separators -->
-  <line x1="30" y1="66" x2="730" y2="66" stroke-width="1" stroke-opacity=".12"/>
-  <line x1="30" y1="190" x2="730" y2="190" stroke-width="1" stroke-opacity=".12"/>
-  <line x1="30" y1="384" x2="730" y2="384" stroke-width="1" stroke-opacity=".12"/>
-  <!-- ===== Band 1: plain forwarding ===== -->
-  <text class="tx-band halo" x="30" y="82">Plain forwarding — no exchange</text>
-  <line x1="86" y1="108" x2="282" y2="108"/>
-  <polyline points="276,104 282,108 276,112"/>
-  <text class="tx-mono halo" x="184" y="100" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
-  <line x1="282" y1="142" x2="674" y2="142"/>
-  <polyline points="668,138 674,142 668,146"/>
-  <text class="tx-mono halo" x="478" y="134" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
-  <path d="M674,166 h12 v8 h-12"/>
-  <polyline points="679,171 674,174 679,177"/>
-  <text class="tx-note halo" x="666" y="173" text-anchor="end">aud is service-a, not me → reject</text>
-  <!-- ===== Band 2: impersonation ===== -->
-  <text class="tx-band halo" x="30" y="206">Impersonation exchange</text>
-  <line x1="86" y1="232" x2="282" y2="232"/>
-  <polyline points="276,228 282,232 276,236"/>
-  <text class="tx-mono halo" x="184" y="224" text-anchor="middle">Bearer sub=alice</text>
-  <line x1="282" y1="268" x2="478" y2="268"/>
-  <polyline points="472,264 478,268 472,272"/>
-  <text class="tx-mono halo" x="380" y="252" text-anchor="middle">grant_type=token-exchange</text>
-  <text class="tx-mono halo" x="380" y="262" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-  <line x1="282" y1="302" x2="478" y2="302"/>
-  <polyline points="288,298 282,302 288,306"/>
-  <text class="tx-mono halo" x="380" y="294" text-anchor="middle">sub=alice, aud=service-b</text>
-  <line x1="282" y1="336" x2="674" y2="336"/>
-  <polyline points="668,332 674,336 668,340"/>
-  <text class="tx-mono halo" x="478" y="328" text-anchor="middle">Bearer sub=alice</text>
-  <path d="M674,360 h12 v8 h-12"/>
-  <polyline points="679,365 674,368 679,371"/>
-  <text class="tx-note halo" x="666" y="367" text-anchor="end">alice acted alone — no record of A</text>
-  <!-- ===== Band 3: delegation ===== -->
-  <text class="tx-band halo" x="30" y="400">Delegation exchange</text>
-  <line x1="86" y1="426" x2="282" y2="426"/>
-  <polyline points="276,422 282,426 276,430"/>
-  <text class="tx-mono halo" x="184" y="418" text-anchor="middle">Bearer sub=alice</text>
-  <line x1="282" y1="462" x2="478" y2="462"/>
-  <polyline points="472,458 478,462 472,466"/>
-  <text class="tx-mono halo" x="380" y="446" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-  <text class="tx-mono halo" x="380" y="456" text-anchor="middle">+ actor_token=&lt;A&gt;</text>
-  <line x1="282" y1="496" x2="478" y2="496"/>
-  <polyline points="288,492 282,496 288,500"/>
-  <text class="tx-mono halo" x="380" y="488" text-anchor="middle">sub=alice, act={sub: service-a}</text>
-  <line x1="282" y1="530" x2="674" y2="530"/>
-  <polyline points="668,526 674,530 668,534"/>
-  <text class="tx-mono halo" x="478" y="522" text-anchor="middle">Bearer sub=alice, act={sub: service-a}</text>
-  <path d="M674,554 h12 v8 h-12"/>
-  <polyline points="679,559 674,562 679,565"/>
-  <text class="tx-note halo" x="666" y="561" text-anchor="end">alice via service-a → policy decides</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Forwarding, impersonation, delegation</div>
+  <svg class="fig-svg" role="img" aria-labelledby="tx-modes-title" viewBox="0 0 960 606" xmlns="http://www.w3.org/2000/svg">
+    <title id="tx-modes-title">Three ways an intermediary service can call a downstream service on the user's behalf. Forwarding the original token fails because the audience is wrong. An impersonation exchange produces a token that names only the user. A delegation exchange produces a token that names the user and records the intermediary in an act claim.</title>
+    <!-- bands -->
+    <rect class="fg-group" x="30" y="70" width="916" height="126" rx="8"/>
+    <rect class="fg-group" x="30" y="206" width="916" height="180" rx="8"/>
+    <rect class="fg-group" x="30" y="396" width="916" height="196" rx="8"/>
+    <text class="fg-lbl fg-danger" x="42" y="88">plain forwarding — no exchange</text>
+    <text class="fg-lbl" x="42" y="224">impersonation exchange</text>
+    <text class="fg-lbl fg-accent" x="42" y="414">delegation exchange</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="110" y1="62" x2="110" y2="592"/>
+    <line class="fg-life" x1="370" y1="62" x2="370" y2="592"/>
+    <line class="fg-life fg-life--accent" x1="620" y1="62" x2="620" y2="592"/>
+    <line class="fg-life" x1="860" y1="62" x2="860" y2="592"/>
+    <!-- actors -->
+    <rect class="fg-box" x="35" y="16" width="150" height="42" rx="6"/>
+    <text class="fg-t" x="110" y="35" text-anchor="middle">Frontend</text>
+    <text class="fg-xs" x="110" y="49" text-anchor="middle">browser</text>
+    <rect class="fg-box" x="295" y="16" width="150" height="42" rx="6"/>
+    <text class="fg-t" x="370" y="35" text-anchor="middle">Service A</text>
+    <text class="fg-xs" x="370" y="49" text-anchor="middle">intermediary</text>
+    <rect class="fg-box fg-box--accent" x="540" y="16" width="160" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="620" y="35" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="620" y="49" text-anchor="middle">authorization server</text>
+    <rect class="fg-box" x="785" y="16" width="150" height="42" rx="6"/>
+    <text class="fg-t" x="860" y="35" text-anchor="middle">Service B</text>
+    <text class="fg-xs" x="860" y="49" text-anchor="middle">the resource</text>
+    <!-- forwarding -->
+    <path class="fg-edge" d="M110,112 H370" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="240" y="106" text-anchor="middle">Bearer sub=alice · aud=service-a</text>
+    <path class="fg-edge fg-edge--danger" d="M370,152 H860" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs fg-halo" x="615" y="146" text-anchor="middle">the same token, forwarded unchanged</text>
+    <path class="fg-edge fg-edge--danger" d="M860,172 h-28 v16 h28" marker-end="url(#fg-ad)"/>
+    <text class="fg-xs fg-danger" x="820" y="184" text-anchor="end">aud is service-a, not me → 401</text>
+    <!-- impersonation -->
+    <path class="fg-edge" d="M110,250 H370" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="240" y="244" text-anchor="middle">Bearer sub=alice</text>
+    <path class="fg-edge" d="M370,290 H620" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="495" y="270" text-anchor="middle">grant_type=…:token-exchange</text>
+    <text class="fg-mxs" x="495" y="283" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M620,320 H370" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="495" y="314" text-anchor="middle">sub=alice · aud=service-b</text>
+    <path class="fg-edge" d="M370,356 H860" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="615" y="350" text-anchor="middle">Bearer sub=alice</text>
+    <text class="fg-xs fg-warn" x="860" y="378" text-anchor="end">as far as B can tell, alice acted alone</text>
+    <!-- delegation -->
+    <path class="fg-edge" d="M110,440 H370" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="240" y="434" text-anchor="middle">Bearer sub=alice</text>
+    <path class="fg-edge" d="M370,482 H620" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="495" y="462" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <text class="fg-mxs" x="495" y="475" text-anchor="middle">actor_token=&lt;service-a&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M620,514 H370" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="495" y="508" text-anchor="middle">sub=alice · act={ sub: service-a }</text>
+    <path class="fg-edge" d="M370,552 H860" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="615" y="546" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
+    <text class="fg-xs fg-ok" x="860" y="576" text-anchor="end">B sees alice via service-a — its policy decides</text>
+  </svg>
+  <figcaption class="fig-note">The only structural difference between the second and third case is <code>actor_token</code>. It costs one parameter and it is the difference between an audit log that says "alice did this" and one that says "alice did this, through service A".</figcaption>
+</figure>
 
 The difference shows up in audit trails (Service B knows who actually originated the call) and in policy (Service B can require an actor when the operation is sensitive).
 

@@ -10,40 +10,35 @@ pageClass: pg-use-cases-byo-userstore
 
 境界は OAuth レコードとエンドユーザレコードの間にあります。前者は本ライブラリが持ち、後者は組み込み側が持ちます。OP はこの境界をまたいで 3 つの読み取りメソッドを呼びます。
 
-<svg role="img" aria-labelledby="byo-userstore-seam-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="byo-userstore-seam-title">2 つの責務の境界: 本ライブラリは OAuth / OIDC レコードを同梱ストアで持ち、組み込み側はエンドユーザの行を持ち、OP は FindBySubject、FindByUsername、ReadPasswordHash で境界をまたいで読む。</title>
-
-  <path class="bu-seam" d="M380 26 V268"/>
-  <text class="bu-call" x="380" y="16" text-anchor="middle">op.WithUserStore</text>
-
-  <rect class="bu-lib" x="20" y="28" width="280" height="88" rx="8"/>
-  <text class="bu-lib-title" x="160" y="56" text-anchor="middle">ライブラリが持つ</text>
-  <text class="bu-note" x="160" y="80" text-anchor="middle">clients · codes · refresh tokens · grants</text>
-  <text class="bu-note" x="160" y="100" text-anchor="middle">sessions · PAR · IAT · RAT · access tokens</text>
-
-  <rect class="bu-app" x="460" y="28" width="280" height="88" rx="8"/>
-  <text class="bu-app-title" x="600" y="56" text-anchor="middle">組み込み側が持つ</text>
-  <text class="bu-note" x="600" y="80" text-anchor="middle">members: member_id · email_address</text>
-  <text class="bu-note" x="600" y="100" text-anchor="middle">password_phc · full_name · locale_pref</text>
-
-  <text class="bu-note" x="300" y="156" text-anchor="end">ID トークンと /userinfo の claim</text>
-  <path class="bu-flow" d="M310 152 H450"/>
-  <path class="bu-flow" d="M444 147 L450 152 L444 157"/>
-  <text class="bu-call" x="380" y="142" text-anchor="middle">FindBySubject</text>
-  <text class="bu-note" x="460" y="156">member の行を読む</text>
-
-  <text class="bu-note" x="300" y="202" text-anchor="end">ログイン識別子から subject へ</text>
-  <path class="bu-flow" d="M310 198 H450"/>
-  <path class="bu-flow" d="M444 193 L450 198 L444 203"/>
-  <text class="bu-call" x="380" y="188" text-anchor="middle">FindByUsername</text>
-  <text class="bu-note" x="460" y="202">email_address で照合</text>
-
-  <text class="bu-note" x="300" y="248" text-anchor="end">op.PrimaryPassword</text>
-  <path class="bu-flow" d="M310 244 H450"/>
-  <path class="bu-flow" d="M444 239 L450 244 L444 249"/>
-  <text class="bu-call" x="380" y="234" text-anchor="middle">ReadPasswordHash</text>
-  <text class="bu-note" x="460" y="248">password_phc を返す</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">プロトコルのレコードはこちら、人のデータは向こう</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-byouserstore-title" viewBox="0 0 960 286" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-byouserstore-title">本ライブラリは OAuth / OIDC のレコードを自身のストアで持ち、組み込み側はエンドユーザの行を今ある場所のまま持ちます。OP が境界をまたぐのは 3 つの読み取り呼び出しだけです。</title>
+    <text class="fg-lbl fg-accent" x="480" y="18" text-anchor="middle">op.WithUserStore</text>
+    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="480" y1="26" x2="480" y2="270"/>
+    <rect class="fg-box" x="36" y="34" width="404" height="106" rx="8"/>
+    <text class="fg-t2" x="56" y="60">ライブラリが持つ</text>
+    <text class="fg-mxs" x="56" y="84">clients · 認可コード · refresh token · grants</text>
+    <text class="fg-mxs" x="56" y="104">sessions · PAR · IAT · RAT · access token</text>
+    <text class="fg-xs" x="56" y="128">プロトコルが要求するから存在する情報のすべて</text>
+    <rect class="fg-box" x="520" y="34" width="404" height="106" rx="8"/>
+    <text class="fg-t2" x="540" y="60">組み込み側が持つ</text>
+    <text class="fg-mxs" x="540" y="84">members: member_id · email_address</text>
+    <text class="fg-mxs" x="540" y="104">password_phc · full_name · locale_pref</text>
+    <text class="fg-xs" x="540" y="128">OIDC を入れる前から製品にあった行</text>
+    <text class="fg-lbl" x="36" y="172">境界を越える 3 つの呼び出し</text>
+    <rect class="fg-box fg-box--accent" x="36" y="182" width="888" height="34" rx="6"/>
+    <text class="fg-m fg-accent" x="56" y="204">FindBySubject</text>
+    <text class="fg-xs" x="240" y="204">subject に対応する member の行を読む — ID トークンと /userinfo の claim の出どころ</text>
+    <rect class="fg-box fg-box--accent" x="36" y="220" width="888" height="26" rx="6"/>
+    <text class="fg-m fg-accent" x="56" y="238">FindByUsername</text>
+    <text class="fg-xs" x="240" y="238">ログイン識別子を subject に変換する — ここでは email_address と照合する</text>
+    <rect class="fg-box fg-box--accent" x="36" y="250" width="888" height="26" rx="6"/>
+    <text class="fg-m fg-accent" x="56" y="268">ReadPasswordHash</text>
+    <text class="fg-xs" x="240" y="268">op.PrimaryPassword が検証するために password_phc を返す — ハッシュは組み込み側から出ない</text>
+  </svg>
+  <figcaption class="fig-note">3 つとも読み取りです。ライブラリが member の行を書き込むことも、作り出すこともありません。スキーマの形を指定することもなく、必要なのはこの 3 つの問いに答えられることだけです。</figcaption>
+</figure>
 
 > **ソース:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
 

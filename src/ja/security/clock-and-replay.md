@@ -45,66 +45,72 @@ type Clock interface {
 
 表中の代表的な猶予を対数時間軸で実スケールに並べると、リプレイと時計の窓は 1 分前後に集まり、トークンの寿命は数分、リフレッシュトークンの絶対寿命は 30 日に達することが分かります。
 
-<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 760 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<title id="clock-replay-window-scale-title">go-oidc-provider が適用する時刻・リプレイ猶予を、60 秒のリプレイ帯から 30 日のリフレッシュトークン寿命まで対数軸で並べた比較図。</title>
-<line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
-<line class="d-grid" x1="369.8" y1="58" x2="369.8" y2="362"/>
-<line class="d-grid" x1="440.5" y1="58" x2="440.5" y2="362"/>
-<line class="d-grid" x1="565.8" y1="58" x2="565.8" y2="362"/>
-<line class="d-grid" x1="700" y1="58" x2="700" y2="362"/>
-<line class="d-axis" x1="250" y1="362" x2="724" y2="362"/>
-<line class="d-lane" x1="250" y1="70" x2="724" y2="70"/>
-<line class="d-lane" x1="250" y1="101" x2="724" y2="101"/>
-<line class="d-lane" x1="250" y1="132" x2="724" y2="132"/>
-<line class="d-lane" x1="250" y1="163" x2="724" y2="163"/>
-<line class="d-lane" x1="250" y1="194" x2="724" y2="194"/>
-<line class="d-lane" x1="250" y1="225" x2="724" y2="225"/>
-<line class="d-lane" x1="250" y1="256" x2="724" y2="256"/>
-<line class="d-lane" x1="250" y1="287" x2="724" y2="287"/>
-<line class="d-lane" x1="250" y1="318" x2="724" y2="318"/>
-<line class="d-lane" x1="250" y1="349" x2="724" y2="349"/>
-<rect class="d-op-store" x="274.4" y="65.5" width="9" height="9" rx="1"/>
-<rect class="d-op-store" x="274.4" y="96.5" width="9" height="9" rx="1"/>
-<circle class="d-op-fill" cx="278.9" cy="132" r="4.5"/>
-<circle class="d-op-fill" cx="278.9" cy="163" r="4.5"/>
-<circle class="d-op-fill" cx="278.9" cy="194" r="4.5"/>
-<rect class="d-op-store" x="274.4" y="220.5" width="9" height="9" rx="1"/>
-<rect class="d-op-store" x="301.8" y="251.5" width="9" height="9" rx="1"/>
-<circle class="d-op-fill" cx="342.4" cy="287" r="4.5"/>
-<circle class="d-op-fill" cx="369.8" cy="318" r="4.5"/>
-<circle class="d-op-fill" cx="700" cy="349" r="4.5"/>
-<text class="d-cap" x="8" y="18">各猶予を対数軸で比較</text>
-<text class="d-sub" x="8" y="34">発行時点からの猶予の長さ（対数時間軸）</text>
-<circle class="d-op-fill" cx="470" cy="14" r="4.5"/>
-<text class="d-leg" x="480" y="18">clock / TTL の新鮮性</text>
-<rect class="d-op-store" x="465.5" y="29.5" width="9" height="9" rx="1"/>
-<text class="d-leg" x="480" y="37">ストア上のリプレイ重複検出</text>
-<text class="d-lbl" x="238" y="73.5" text-anchor="end">認可コード</text>
-<text class="d-lbl" x="238" y="104.5" text-anchor="end">PAR <tspan class="d-mono">request_uri</tspan></text>
-<text class="d-lbl" x="238" y="135.5" text-anchor="end">リフレッシュトークン — 猶予</text>
-<text class="d-lbl" x="238" y="166.5" text-anchor="end">DPoP proof — <tspan class="d-mono">iat</tspan></text>
-<text class="d-lbl" x="238" y="197.5" text-anchor="end">JAR — 未来側ずれ</text>
-<text class="d-lbl" x="238" y="228.5" text-anchor="end"><tspan class="d-mono">client_assertion</tspan></text>
-<text class="d-lbl" x="238" y="259.5" text-anchor="end">DPoP proof — <tspan class="d-mono">jti</tspan> キャッシュ</text>
-<text class="d-lbl" x="238" y="290.5" text-anchor="end">アクセストークン</text>
-<text class="d-lbl" x="238" y="321.5" text-anchor="end">ID トークン</text>
-<text class="d-lbl" x="238" y="352.5" text-anchor="end">リフレッシュトークン — 絶対寿命</text>
-<text class="d-val" x="289" y="73.5">60 s</text>
-<text class="d-val" x="289" y="104.5">60 s</text>
-<text class="d-val" x="289" y="135.5">60 s</text>
-<text class="d-val" x="289" y="166.5">±60 s</text>
-<text class="d-val" x="289" y="197.5">60 s</text>
-<text class="d-val" x="289" y="228.5">±60 s</text>
-<text class="d-val" x="316" y="259.5">約 120 秒</text>
-<text class="d-val" x="352" y="290.5">5 分 · FAPI 10 分</text>
-<text class="d-val" x="380" y="321.5">10 分</text>
-<text class="d-val" x="691" y="352.5" text-anchor="end">30 日</text>
-<text class="d-tick" x="278.9" y="375" text-anchor="middle">1 分</text>
-<text class="d-tick" x="369.8" y="375" text-anchor="middle">10 分</text>
-<text class="d-tick" x="440.5" y="375" text-anchor="middle">1 時間</text>
-<text class="d-tick" x="565.8" y="375" text-anchor="middle">1 日</text>
-<text class="d-tick" x="700" y="375" text-anchor="middle">30 日</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">時刻とリプレイの猶予を、同じ尺度で並べる</div>
+  <svg class="fig-svg" role="img" aria-labelledby="clock-windows-title" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg">
+    <title id="clock-windows-title">本ライブラリが適用する時刻・リプレイの猶予を、60 秒のリプレイ帯から 30 日のリフレッシュトークン絶対寿命まで対数軸で比較した図。塗りつぶしの円は clock / TTL の新鮮性検査、白抜きの四角はストア上のリプレイ重複検出です。</title>
+    <text class="fg-lbl" x="36" y="24">発行時点からの猶予の長さ · 対数軸</text>
+    <circle class="fg-dot--accent" cx="560" cy="20" r="4.5"/>
+    <text class="fg-xs" x="572" y="24">clock / TTL の新鮮性</text>
+    <rect class="fg-dot--hollow" x="712" y="15.5" width="9" height="9" rx="1"/>
+    <text class="fg-xs" x="729" y="24">ストア上のリプレイ重複検出</text>
+    <!-- 桁ごとのグリッド -->
+    <line class="fg-rule fg-rule--dashed" x1="340" y1="60" x2="340" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="461" y1="60" x2="461" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="555" y1="60" x2="555" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="721" y1="60" x2="721" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="900" y1="60" x2="900" y2="360"/>
+    <!-- 各行 -->
+    <line class="fg-rule" x1="340" y1="76" x2="900" y2="76"/>
+    <text class="fg-s" x="300" y="80" text-anchor="end">認可コード</text>
+    <rect class="fg-dot--hollow" x="335.5" y="71.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="356" y="80">60 s</text>
+    <line class="fg-rule" x1="340" y1="106" x2="900" y2="106"/>
+    <text class="fg-s" x="300" y="110" text-anchor="end">PAR の request_uri</text>
+    <rect class="fg-dot--hollow" x="335.5" y="101.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="356" y="110">60 s</text>
+    <line class="fg-rule" x1="340" y1="136" x2="900" y2="136"/>
+    <text class="fg-s" x="300" y="140" text-anchor="end">リフレッシュトークン — 猶予</text>
+    <circle class="fg-dot--accent" cx="340" cy="136" r="4.5"/>
+    <text class="fg-mxs" x="356" y="140">60 s</text>
+    <line class="fg-rule" x1="340" y1="166" x2="900" y2="166"/>
+    <text class="fg-s" x="300" y="170" text-anchor="end">DPoP proof — iat</text>
+    <circle class="fg-dot--accent" cx="340" cy="166" r="4.5"/>
+    <text class="fg-mxs" x="356" y="170">±60 s</text>
+    <line class="fg-rule" x1="340" y1="196" x2="900" y2="196"/>
+    <text class="fg-s" x="300" y="200" text-anchor="end">JAR — 未来側のずれ</text>
+    <circle class="fg-dot--accent" cx="340" cy="196" r="4.5"/>
+    <text class="fg-mxs" x="356" y="200">60 s</text>
+    <line class="fg-rule" x1="340" y1="226" x2="900" y2="226"/>
+    <text class="fg-s" x="300" y="230" text-anchor="end">client_assertion</text>
+    <rect class="fg-dot--hollow" x="335.5" y="221.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="356" y="230">±60 s</text>
+    <line class="fg-rule" x1="340" y1="256" x2="900" y2="256"/>
+    <text class="fg-s" x="300" y="260" text-anchor="end">DPoP proof — jti キャッシュ</text>
+    <rect class="fg-dot--hollow" x="371.5" y="251.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="392" y="260">約 120 s</text>
+    <line class="fg-rule" x1="340" y1="286" x2="900" y2="286"/>
+    <text class="fg-s" x="300" y="290" text-anchor="end">アクセストークン</text>
+    <circle class="fg-dot--accent" cx="424" cy="286" r="4.5"/>
+    <text class="fg-mxs" x="440" y="290">5 分 · FAPI は 10 分</text>
+    <line class="fg-rule" x1="340" y1="316" x2="900" y2="316"/>
+    <text class="fg-s" x="300" y="320" text-anchor="end">ID トークン</text>
+    <circle class="fg-dot--accent" cx="461" cy="316" r="4.5"/>
+    <text class="fg-mxs" x="477" y="320">10 分</text>
+    <line class="fg-rule" x1="340" y1="346" x2="900" y2="346"/>
+    <text class="fg-s" x="300" y="350" text-anchor="end">リフレッシュトークン — 絶対寿命</text>
+    <circle class="fg-dot--accent" cx="900" cy="346" r="4.5"/>
+    <text class="fg-mxs" x="888" y="350" text-anchor="end">30 日</text>
+    <!-- 軸 -->
+    <line class="fg-rule fg-rule--strong" x1="320" y1="366" x2="912" y2="366"/>
+    <text class="fg-mxs" x="340" y="384" text-anchor="middle">1 分</text>
+    <text class="fg-mxs" x="461" y="384" text-anchor="middle">10 分</text>
+    <text class="fg-mxs" x="555" y="384" text-anchor="middle">1 時間</text>
+    <text class="fg-mxs" x="721" y="384" text-anchor="middle">1 日</text>
+    <text class="fg-mxs" x="900" y="384" text-anchor="middle">30 日</text>
+  </svg>
+  <figcaption class="fig-note">10 行のうち 6 行が左端の目盛に集まっています。これは意図した配置です。攻撃者が再送しうるものはすべて秒単位で測り、日単位で測るのは、失われるとユーザが気付くものだけです。</figcaption>
+</figure>
 
 ## 再認証の freshness
 

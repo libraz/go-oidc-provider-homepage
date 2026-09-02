@@ -16,40 +16,48 @@ If you are looking for the latest PASS/REVIEW/SKIPPED/WARNING counts, start at [
 The numbers on this site are reproducible snapshots — this page tells you how to reproduce them. They are not a substitute for paid OpenID Foundation certification. Run the suite locally to verify your own embedder configuration; do not cite local PASS counts as certification.
 :::
 
-<svg role="img" aria-labelledby="ofcs-reproduce-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ofcs-reproduce-title">Reproducing an OFCS run: generate certificates, start OFCS and op-demo, seed the plans, capture a baseline, and diff it.</title>
-<rect class="repro-box" x="24" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="86" y="122" text-anchor="middle">Generate certs</text>
-  <text class="repro-sub" x="86" y="144" text-anchor="middle">certs</text>
-
-  <rect class="repro-box" x="174" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="236" y="122" text-anchor="middle">Start OFCS</text>
-  <text class="repro-sub" x="236" y="144" text-anchor="middle">docker compose</text>
-
-  <rect class="repro-main" x="324" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="386" y="122" text-anchor="middle">Start op-demo</text>
-  <text class="repro-sub" x="386" y="144" text-anchor="middle">pick a profile</text>
-
-  <rect class="repro-box" x="474" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="536" y="122" text-anchor="middle">Seed plans</text>
-  <text class="repro-sub" x="536" y="144" text-anchor="middle">seed-plans</text>
-
-  <rect class="repro-box" x="624" y="50" width="112" height="58" rx="8"/>
-  <text class="repro-text" x="680" y="84" text-anchor="middle">Run</text>
-  <rect class="repro-box" x="624" y="148" width="112" height="58" rx="8"/>
-  <text class="repro-text" x="680" y="182" text-anchor="middle">Diff</text>
-
-  <path class="repro-flow" d="M148 128 H170"/>
-  <path class="repro-flow" d="M162 124 L171 128 L162 132"/>
-  <path class="repro-flow" d="M298 128 H320"/>
-  <path class="repro-flow" d="M312 124 L321 128 L312 132"/>
-  <path class="repro-flow" d="M448 128 H470"/>
-  <path class="repro-flow" d="M462 124 L471 128 L462 132"/>
-  <path class="repro-flow" d="M598 128 H611 V79 H620"/>
-  <path class="repro-flow" d="M612 75 L621 79 L612 83"/>
-  <path class="repro-flow" d="M680 108 V144"/>
-  <path class="repro-flow" d="M676 136 L680 145 L684 136"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Reproducing a run, end to end</div>
+  <svg class="fig-svg" role="img" aria-labelledby="ofcs-repro-title" viewBox="0 0 960 148" xmlns="http://www.w3.org/2000/svg">
+    <title id="ofcs-repro-title">Six steps reproduce a conformance run: generate the certificates, start the conformance suite, start the demo OP on the profile under test, seed the plans, run them, and diff the result against the recorded baseline.</title>
+    <rect class="fg-box" x="36" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="54" cy="60" r="9"/>
+    <text class="fg-badge-t" x="54" y="63" text-anchor="middle">1</text>
+    <text class="fg-t2" x="52" y="90">Generate certs</text>
+    <text class="fg-mxs" x="52" y="110">make certs</text>
+    <path class="fg-edge fg-edge--thin" d="M178,82 H186" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="190" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="208" cy="60" r="9"/>
+    <text class="fg-badge-t" x="208" y="63" text-anchor="middle">2</text>
+    <text class="fg-t2" x="206" y="90">Start OFCS</text>
+    <text class="fg-mxs" x="206" y="110">docker compose</text>
+    <path class="fg-edge fg-edge--thin" d="M332,82 H340" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="344" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="362" cy="60" r="9"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="362" y="63" text-anchor="middle">3</text>
+    <text class="fg-t2 fg-accent" x="360" y="90">Start op-demo</text>
+    <text class="fg-xs" x="360" y="110">on the profile under test</text>
+    <path class="fg-edge fg-edge--thin" d="M486,82 H494" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="498" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="516" cy="60" r="9"/>
+    <text class="fg-badge-t" x="516" y="63" text-anchor="middle">4</text>
+    <text class="fg-t2" x="514" y="90">Seed the plans</text>
+    <text class="fg-mxs" x="514" y="110">seed-plans</text>
+    <path class="fg-edge fg-edge--thin" d="M640,82 H648" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="652" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="670" cy="60" r="9"/>
+    <text class="fg-badge-t" x="670" y="63" text-anchor="middle">5</text>
+    <text class="fg-t2" x="668" y="90">Run</text>
+    <text class="fg-xs" x="668" y="110">all nine, unattended</text>
+    <path class="fg-edge fg-edge--thin" d="M794,82 H802" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="806" y="40" width="118" height="84" rx="8"/>
+    <circle class="fg-badge" cx="824" cy="60" r="9"/>
+    <text class="fg-badge-t" x="824" y="63" text-anchor="middle">6</text>
+    <text class="fg-t2" x="822" y="90">Diff</text>
+    <text class="fg-xs" x="822" y="110">against the baseline</text>
+  </svg>
+  <figcaption class="fig-note">Step 6 is what makes the run worth keeping. A raw pass count drifts silently; a diff against a recorded baseline names the module that changed.</figcaption>
+</figure>
 
 ## Prerequisites
 

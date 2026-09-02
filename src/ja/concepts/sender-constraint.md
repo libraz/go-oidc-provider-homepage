@@ -58,62 +58,61 @@ FAPI 2.0 Baseline は **どちらか一方** での送信者制約付きトー�
 
 ## 使い分けの指針
 
-<svg class="sc-tree" role="img" aria-labelledby="sc-choose-tree-title" viewBox="0 0 760 490" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(25,0)">
-  <title id="sc-choose-tree-title">送信者制約を選ぶための決定木。ブラウザ中心のクライアントは DPoP、PKI 証明書を持つバックエンドは mTLS、B2B や規制環境は mTLS または両方、異種混在環境は両方を有効化し、迷ったら既定は DPoP。</title>
-  <rect x="60" y="8" width="230" height="36" rx="8"/>
-  <text class="t-start" x="175" y="30" text-anchor="middle">送信者制約の選び方</text>
-  <line x1="175" y1="44" x2="175" y2="64"/>
-  <path d="M171,57 L175,64 L179,57"/>
-  <rect x="20" y="64" width="310" height="54" rx="8"/>
-  <text class="t-q" x="175" y="87" text-anchor="middle">ブラウザ中心のクライアント?</text>
-  <text class="t-sub" x="175" y="104" text-anchor="middle">SPA / モバイル / public クライアント</text>
-  <line x1="330" y1="91" x2="440" y2="91"/>
-  <path d="M433,87 L440,91 L433,95"/>
-  <text class="t-edge" x="385" y="85" text-anchor="middle">はい</text>
-  <rect class="op-accent" x="440" y="67" width="250" height="48" rx="8"/>
-  <text class="t-out op-fill" x="565" y="88" text-anchor="middle">DPoP</text>
-  <text class="t-mono op-fill" x="565" y="104" text-anchor="middle">cnf.jkt</text>
-  <line x1="175" y1="118" x2="175" y2="154"/>
-  <path d="M171,147 L175,154 L179,147"/>
-  <text class="t-edge" x="188" y="139" text-anchor="start">いいえ</text>
-  <rect x="20" y="154" width="310" height="54" rx="8"/>
-  <text class="t-q" x="175" y="177" text-anchor="middle">PKI 証明書を持つバックエンド?</text>
-  <text class="t-sub" x="175" y="194" text-anchor="middle">内部 CA を運用している</text>
-  <line x1="330" y1="181" x2="440" y2="181"/>
-  <path d="M433,177 L440,181 L433,185"/>
-  <text class="t-edge" x="385" y="175" text-anchor="middle">はい</text>
-  <rect class="rs-stroke" x="440" y="157" width="250" height="48" rx="8"/>
-  <text class="t-out rs-fill" x="565" y="178" text-anchor="middle">mTLS</text>
-  <text class="t-mono rs-fill" x="565" y="194" text-anchor="middle">cnf.x5t#S256</text>
-  <line x1="175" y1="208" x2="175" y2="244"/>
-  <path d="M171,237 L175,244 L179,237"/>
-  <rect x="20" y="244" width="310" height="54" rx="8"/>
-  <text class="t-q" x="175" y="267" text-anchor="middle">B2B・オープンバンキング・規制環境?</text>
-  <text class="t-sub" x="175" y="284" text-anchor="middle">ネットワーク層が既に要求</text>
-  <line x1="330" y1="271" x2="440" y2="271"/>
-  <path d="M433,267 L440,271 L433,275"/>
-  <text class="t-edge" x="385" y="265" text-anchor="middle">はい</text>
-  <rect class="rs-stroke" x="440" y="247" width="250" height="48" rx="8"/>
-  <text class="t-out rs-fill" x="565" y="268" text-anchor="middle">mTLS(または両方)</text>
-  <text class="t-sub" x="565" y="284" text-anchor="middle">規制が要求</text>
-  <line x1="175" y1="298" x2="175" y2="334"/>
-  <path d="M171,327 L175,334 L179,327"/>
-  <rect x="20" y="334" width="310" height="54" rx="8"/>
-  <text class="t-q" x="175" y="357" text-anchor="middle">異種混在環境?</text>
-  <text class="t-sub" x="175" y="374" text-anchor="middle">SPA とバックエンドが混在</text>
-  <line x1="330" y1="361" x2="440" y2="361"/>
-  <path d="M433,357 L440,361 L433,365"/>
-  <text class="t-edge" x="385" y="355" text-anchor="middle">はい</text>
-  <rect x="440" y="337" width="250" height="48" rx="8"/>
-  <text class="t-out" x="565" y="358" text-anchor="middle">両方</text>
-  <text class="t-sub" x="565" y="374" text-anchor="middle">各クライアントが選択</text>
-  <line x1="175" y1="388" x2="175" y2="424"/>
-  <path d="M171,417 L175,424 L179,417"/>
-  <rect class="op-accent" x="20" y="424" width="310" height="48" rx="8"/>
-  <text class="t-out op-fill" x="175" y="453" text-anchor="middle">迷ったら DPoP を既定に</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">送信者制約の選び方</div>
+  <svg class="fig-svg" role="img" aria-labelledby="sc-choice-title" viewBox="0 0 960 466" xmlns="http://www.w3.org/2000/svg">
+    <title id="sc-choice-title">送信者制約を選ぶための判定木。ブラウザ中心のクライアントは DPoP、すでに PKI 証明書を持つバックエンドは mTLS、B2B や規制環境は mTLS または両方、混在環境は両方を有効化し、どれにも当てはまらない場合の既定は DPoP です。</title>
+    <!-- 1 -->
+    <rect class="fg-box" x="36" y="24" width="394" height="62" rx="8"/>
+    <text class="fg-s" x="56" y="50">ブラウザ中心のクライアントか?</text>
+    <text class="fg-xs" x="56" y="70">SPA · モバイルアプリ · public クライアント全般</text>
+    <path class="fg-edge" d="M434,55 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="48" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="530" y="24" width="394" height="62" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="50">DPoP</text>
+    <text class="fg-mxs" x="550" y="70">cnf.jkt — クライアントが自分で生成して保持する鍵</text>
+    <path class="fg-edge" d="M233,90 V112" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="106">いいえ</text>
+    <!-- 2 -->
+    <rect class="fg-box" x="36" y="116" width="394" height="62" rx="8"/>
+    <text class="fg-s" x="56" y="142">バックエンドがすでに PKI 証明書を持っているか?</text>
+    <text class="fg-xs" x="56" y="162">内部 CA を運用し、各サービスに発行している</text>
+    <path class="fg-edge" d="M434,147 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="140" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="530" y="116" width="394" height="62" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="142">mTLS</text>
+    <text class="fg-mxs" x="550" y="162">cnf.x5t#S256 — 既に発行している証明書をそのまま使う</text>
+    <path class="fg-edge" d="M233,182 V204" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="198">いいえ</text>
+    <!-- 3 -->
+    <rect class="fg-box" x="36" y="208" width="394" height="62" rx="8"/>
+    <text class="fg-s" x="56" y="234">B2B・オープンバンキング・規制対象か?</text>
+    <text class="fg-xs" x="56" y="254">ネットワーク層がすでにクライアント証明書を要求している</text>
+    <path class="fg-edge" d="M434,239 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="232" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="208" width="394" height="62" rx="8"/>
+    <text class="fg-t2" x="550" y="234">mTLS、または両方</text>
+    <text class="fg-xs" x="550" y="254">多くの場合、規制側が選択肢を決めている</text>
+    <path class="fg-edge" d="M233,274 V296" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="290">いいえ</text>
+    <!-- 4 -->
+    <rect class="fg-box" x="36" y="300" width="394" height="62" rx="8"/>
+    <text class="fg-s" x="56" y="326">混在環境か?</text>
+    <text class="fg-xs" x="56" y="346">SPA とバックエンドサービスが両方ある</text>
+    <path class="fg-edge" d="M434,331 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="324" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="300" width="394" height="62" rx="8"/>
+    <text class="fg-t2" x="550" y="326">両方を有効化する</text>
+    <text class="fg-xs" x="550" y="346">登録時に各クライアントがどちらかを選ぶ</text>
+    <path class="fg-edge" d="M233,366 V388" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="382">いいえ</text>
+    <!-- 既定 -->
+    <rect class="fg-box fg-box--accent" x="36" y="392" width="888" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="416">迷ったら DPoP から始める</text>
+    <text class="fg-xs" x="56" y="436">ネットワークにも PKI にも何も要求せず、あとから mTLS へ移すこともできます</text>
+  </svg>
+  <figcaption class="fig-note">どちらの方式も行き着く先は同じで、リソースサーバが照合する <code>cnf</code> claim です。問題は、全クライアントに現実的に配れる資格情報がどちらかという点だけです。自前で生成できる鍵か、誰かが発行して更新し続ける証明書か。</figcaption>
+</figure>
 
 選択は、既存インフラから自然に決まることが多いです:
 

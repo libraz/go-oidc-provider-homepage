@@ -17,73 +17,82 @@ Click the option name for the deep-dive page. The "Section" column tells you whi
 
 This page is a flat reference of the public `op.New` options. With 70+ options the table can be hard to scan when you arrive with a specific goal in mind. Use the decision tree below to find the relevant area, then jump into the matching section of the table.
 
-<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 760 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="opt-decision-title">Decision tree routing a configuration goal — fresh OP, FAPI switch, single feature, grant restriction, sender-constraint, or token format — to the op.New option that handles it, falling through to the full table.</title>
-  <g transform="translate(30 0)">
-  <rect x="24" y="24" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="54" text-anchor="middle">Booting a fresh OP?</text>
-  <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>
-  <text class="od-b od-op" x="553" y="55" text-anchor="middle">Required options</text>
-  <line x1="324" y1="50" x2="426" y2="50"/>
-  <path d="M419 46 L426 50 L419 54"/>
-  <text class="od-s od-t2" x="376" y="42" text-anchor="middle">Yes</text>
-  <line x1="174" y1="76" x2="174" y2="94"/>
-  <path d="M170 87 L174 94 L178 87"/>
-  <text class="od-s od-t2" x="190" y="90">No</text>
-  <rect x="24" y="96" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="126" text-anchor="middle">Enable FAPI 2.0 in one switch?</text>
-  <rect class="od-sop" x="430" y="100" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="126" text-anchor="middle">WithProfile(...)</text>
-  <line x1="324" y1="122" x2="426" y2="122"/>
-  <path d="M419 118 L426 122 L419 126"/>
-  <text class="od-s od-t2" x="376" y="114" text-anchor="middle">Yes</text>
-  <line x1="174" y1="148" x2="174" y2="166"/>
-  <path d="M170 159 L174 166 L178 159"/>
-  <text class="od-s od-t2" x="190" y="162">No</text>
-  <rect x="24" y="168" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="198" text-anchor="middle">Just one feature, no profile?</text>
-  <rect class="od-sop" x="430" y="172" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="198" text-anchor="middle">WithFeature(...)</text>
-  <line x1="324" y1="194" x2="426" y2="194"/>
-  <path d="M419 190 L426 194 L419 198"/>
-  <text class="od-s od-t2" x="376" y="186" text-anchor="middle">Yes</text>
-  <line x1="174" y1="220" x2="174" y2="238"/>
-  <path d="M170 231 L174 238 L178 231"/>
-  <text class="od-s od-t2" x="190" y="234">No</text>
-  <rect x="24" y="240" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="270" text-anchor="middle">Restrict grants at <tspan class="od-m">/token</tspan>?</text>
-  <rect class="od-sop" x="430" y="244" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="270" text-anchor="middle">WithGrants(...)</text>
-  <line x1="324" y1="266" x2="426" y2="266"/>
-  <path d="M419 262 L426 266 L419 270"/>
-  <text class="od-s od-t2" x="376" y="258" text-anchor="middle">Yes</text>
-  <line x1="174" y1="292" x2="174" y2="310"/>
-  <path d="M170 303 L174 310 L178 303"/>
-  <text class="od-s od-t2" x="190" y="306">No</text>
-  <rect x="24" y="312" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="342" text-anchor="middle">Sender-constrained access tokens?</text>
-  <rect class="od-sop" x="430" y="316" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="342" text-anchor="middle">WithFeature(DPoP|MTLS)</text>
-  <line x1="324" y1="338" x2="426" y2="338"/>
-  <path d="M419 334 L426 338 L419 342"/>
-  <text class="od-s od-t2" x="376" y="330" text-anchor="middle">Yes</text>
-  <line x1="174" y1="364" x2="174" y2="382"/>
-  <path d="M170 375 L174 382 L178 375"/>
-  <text class="od-s od-t2" x="190" y="378">No</text>
-  <rect x="24" y="384" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="414" text-anchor="middle">JWT vs opaque access tokens?</text>
-  <rect class="od-sop" x="430" y="388" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="414" text-anchor="middle">WithAccessTokenFormat(...)</text>
-  <line x1="324" y1="410" x2="426" y2="410"/>
-  <path d="M419 406 L426 410 L419 414"/>
-  <text class="od-s od-t2" x="376" y="402" text-anchor="middle">Yes</text>
-  <line x1="174" y1="436" x2="174" y2="454"/>
-  <path d="M170 447 L174 454 L178 447"/>
-  <text class="od-s od-t2" x="190" y="450">No</text>
-  <rect x="24" y="456" width="652" height="48" rx="6"/>
-  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">Full option table below</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Which option do you actually need?</div>
+  <svg class="fig-svg" role="img" aria-labelledby="options-decision-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
+    <title id="options-decision-title">A decision tree that routes a configuration goal — booting a fresh OP, switching on FAPI, enabling one feature, restricting grants, adding a sender constraint, or choosing a token format — to the op.New option that handles it, and falls through to the full option table.</title>
+    <!-- 1 -->
+    <rect class="fg-box" x="36" y="24" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="50">Booting a fresh OP</text>
+    <text class="fg-xs" x="56" y="70">nothing works yet</text>
+    <path class="fg-edge" d="M434,53 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="46" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--accent" x="530" y="24" width="394" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="48">The required options</text>
+    <text class="fg-xs" x="550" y="70">issuer · store · keyset, plus cookie keys with the code grant</text>
+    <path class="fg-edge" d="M233,86 V104" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="100">no</text>
+    <!-- 2 -->
+    <rect class="fg-box" x="36" y="108" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="134">Turning on FAPI 2.0 in one switch</text>
+    <text class="fg-xs" x="56" y="154">you want the whole profile, not pieces of it</text>
+    <path class="fg-edge" d="M434,137 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="130" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--accent" x="530" y="108" width="394" height="58" rx="8"/>
+    <text class="fg-m fg-accent" x="550" y="134">op.WithProfile(…)</text>
+    <text class="fg-xs" x="550" y="154">pins every mandate the profile requires at once</text>
+    <path class="fg-edge" d="M233,170 V188" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="184">no</text>
+    <!-- 3 -->
+    <rect class="fg-box" x="36" y="192" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="218">One feature, without a profile</text>
+    <text class="fg-xs" x="56" y="238">PAR, JAR, JARM, grant management, and so on</text>
+    <path class="fg-edge" d="M434,221 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="214" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="530" y="192" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="218">op.WithFeature(…)</text>
+    <text class="fg-xs" x="550" y="238">one capability, switched on by itself</text>
+    <path class="fg-edge" d="M233,254 V272" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="268">no</text>
+    <!-- 4 -->
+    <rect class="fg-box" x="36" y="276" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="302">Restricting which grants /token accepts</text>
+    <text class="fg-xs" x="56" y="322">an OP that should never issue by client credentials, say</text>
+    <path class="fg-edge" d="M434,305 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="298" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="530" y="276" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="302">op.WithGrants(…)</text>
+    <text class="fg-xs" x="550" y="322">anything not listed is refused at the endpoint</text>
+    <path class="fg-edge" d="M233,338 V356" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="352">no</text>
+    <!-- 5 -->
+    <rect class="fg-box" x="36" y="360" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="386">Sender-constrained access tokens</text>
+    <text class="fg-xs" x="56" y="406">a leaked token should be useless on its own</text>
+    <path class="fg-edge" d="M434,389 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="382" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="530" y="360" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="386">op.WithFeature(DPoP) · op.WithFeature(MTLS)</text>
+    <text class="fg-xs" x="550" y="406">either, or both — the client picks at registration</text>
+    <path class="fg-edge" d="M233,422 V440" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="436">no</text>
+    <!-- 6 -->
+    <rect class="fg-box" x="36" y="444" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="470">Choosing between JWT and opaque</text>
+    <text class="fg-xs" x="56" y="490">it is a per-audience decision</text>
+    <path class="fg-edge" d="M434,473 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="466" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="530" y="444" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="470">op.WithAccessTokenFormat(…)</text>
+    <text class="fg-xs" x="550" y="490">and the trade-off is revocation reach against latency</text>
+    <path class="fg-edge" d="M233,506 V524" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="520">no</text>
+    <!-- fallthrough -->
+    <rect class="fg-box fg-box--muted" x="36" y="528" width="888" height="34" rx="8"/>
+    <text class="fg-t2" x="56" y="550">None of these — the full option table is below</text>
+  </svg>
+  <figcaption class="fig-note">Reading top to bottom is also the order to configure in. A profile pins several of the later answers on its own, so setting it first saves you from choosing them one at a time and then finding they conflict.</figcaption>
+</figure>
 
 - **You're booting a fresh OP for the first time** → start with [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), and usually [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). `WithCookieKeys` is required when `authorization_code` is enabled, which is the default grant set. See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
 - **You want to declare OAuth 2.1 posture without adopting FAPI** → `WithProfile(profile.Baseline)` requires PKCE on every authorization-code request and otherwise keeps the OIDC Core defaults. For FAPI 2.0, use `profile.FAPI2Baseline` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`); these profiles auto-select DPoP unless you explicitly enable mTLS. A profile that needs a grant you did not wire fails `op.New` rather than mounting the endpoint for you — `profile.FAPICIBA` requires `grant.CIBA`. See [Declaring a security profile](/use-cases/security-profile), [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).

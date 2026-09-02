@@ -69,66 +69,64 @@ A request for `scope=openid email` therefore releases `sub`, `email`, and `email
 
 The map alone does not say *where* a released claim shows up. `sub` and the token-describing claims ride in the ID Token; the user claims a scope releases are served from `/userinfo`.
 
-<svg role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="scope-claim-map-title">Each standard scope releases a claim group. The openid scope releases sub, which rides in the ID Token; the profile, email, address and phone claims are served from /userinfo. offline_access releases no claim.</title>
-  <text class="sc-cap" x="24" y="18">SCOPE REQUESTED</text>
-  <text class="sc-cap" x="166" y="18">CLAIMS RELEASED</text>
-  <text class="sc-cap" x="560" y="18">DELIVERED IN</text>
-  <line class="sc-rule" x1="24" y1="28" x2="736" y2="28"/>
-
-  <rect class="sc-dest" x="560" y="40" width="176" height="104" rx="8"/>
-  <text class="sc-dest-title" x="576" y="64">ID Token</text>
-  <text class="sc-dest-claims" x="576" y="86">iss · aud · exp · iat · sub</text>
-  <text class="sc-dest-claims" x="576" y="102">nonce · auth_time · azp</text>
-  <text class="sc-dest-claims" x="576" y="118">acr · amr · at_hash · sid</text>
-  <text class="sc-note" x="576" y="136">filled in by the OP itself</text>
-
-  <rect class="sc-scope" x="24" y="74" width="118" height="34" rx="6"/>
-  <text class="sc-name" x="83" y="96" text-anchor="middle">openid</text>
-  <path class="sc-link" d="M142 91 H158 M152 87 L159 91 L152 95"/>
-  <text class="sc-name" x="166" y="96">sub</text>
-  <path class="sc-route sc-route-dashed" d="M212 91 H556"/>
-  <path class="sc-route" d="M549 87 L556 91 L549 95"/>
-
-  <line class="sc-rule" x1="24" y1="162" x2="736" y2="162"/>
-
-  <rect class="sc-dest" x="560" y="182" width="176" height="128" rx="8"/>
-  <text class="sc-dest-path" x="576" y="206">/userinfo</text>
-  <text class="sc-note" x="576" y="228">the RP calls it with the</text>
-  <text class="sc-note" x="576" y="244">access token and gets a</text>
-  <text class="sc-note" x="576" y="260">JSON body back</text>
-  <text class="sc-note" x="576" y="284">only the claims the</text>
-  <text class="sc-note" x="576" y="300">granted scopes authorise</text>
-
-  <rect class="sc-scope" x="24" y="180" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="200" text-anchor="middle">profile</text>
-  <path class="sc-link" d="M142 195 H158 M152 191 L159 195 L152 199"/>
-  <text class="sc-claims" x="166" y="200">name · family_name · given_name · … (14 claims)</text>
-
-  <rect class="sc-scope" x="24" y="218" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="238" text-anchor="middle">email</text>
-  <path class="sc-link" d="M142 233 H158 M152 229 L159 233 L152 237"/>
-  <text class="sc-claims" x="166" y="238">email · email_verified</text>
-
-  <rect class="sc-scope" x="24" y="256" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="276" text-anchor="middle">address</text>
-  <path class="sc-link" d="M142 271 H158 M152 267 L159 271 L152 275"/>
-  <text class="sc-claims" x="166" y="276">address</text>
-
-  <rect class="sc-scope" x="24" y="294" width="118" height="30" rx="6"/>
-  <text class="sc-name" x="83" y="314" text-anchor="middle">phone</text>
-  <path class="sc-link" d="M142 309 H158 M152 305 L159 309 L152 313"/>
-  <text class="sc-claims" x="166" y="314">phone_number · phone_number_verified</text>
-
-  <path class="sc-route" d="M506 192 V312"/>
-  <path class="sc-route sc-route-dashed" d="M506 252 H556"/>
-  <path class="sc-route" d="M549 248 L556 252 L549 256"/>
-
-  <line class="sc-rule" x1="24" y1="336" x2="736" y2="336"/>
-  <rect class="sc-scope" x="24" y="352" width="140" height="30" rx="6"/>
-  <text class="sc-name-muted" x="94" y="372" text-anchor="middle">offline_access</text>
-  <text class="sc-aside" x="184" y="372">no claim — it drives the refresh-token consent prompt and TTL bucket</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Scope requested → claims released → where they arrive</div>
+  <svg class="fig-svg" role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
+    <title id="scope-claim-map-title">Each standard scope releases a group of claims. The openid scope releases sub, which rides in the ID token; profile, email, address and phone are served from the userinfo endpoint. offline_access releases no claim at all.</title>
+    <text class="fg-lbl" x="40" y="26">scope requested</text>
+    <text class="fg-lbl" x="228" y="26">claims released</text>
+    <text class="fg-lbl" x="664" y="26">delivered in</text>
+    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <!-- openid -->
+    <rect class="fg-box fg-box--accent" x="36" y="52" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="71">openid</text>
+    <text class="fg-m" x="232" y="71">sub</text>
+    <line class="fg-rule" x1="36" y1="96" x2="620" y2="96"/>
+    <!-- profile -->
+    <rect class="fg-box" x="36" y="106" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="125">profile</text>
+    <text class="fg-m" x="232" y="125">name · family_name · given_name · … (14 claims)</text>
+    <line class="fg-rule" x1="36" y1="150" x2="620" y2="150"/>
+    <!-- email -->
+    <rect class="fg-box" x="36" y="160" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="179">email</text>
+    <text class="fg-m" x="232" y="179">email · email_verified</text>
+    <line class="fg-rule" x1="36" y1="204" x2="620" y2="204"/>
+    <!-- address -->
+    <rect class="fg-box" x="36" y="214" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="233">address</text>
+    <text class="fg-m" x="232" y="233">address</text>
+    <line class="fg-rule" x1="36" y1="258" x2="620" y2="258"/>
+    <!-- phone -->
+    <rect class="fg-box" x="36" y="268" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="287">phone</text>
+    <text class="fg-m" x="232" y="287">phone_number · phone_number_verified</text>
+    <line class="fg-rule" x1="36" y1="312" x2="924" y2="312"/>
+    <!-- offline_access -->
+    <rect class="fg-box fg-box--muted" x="36" y="322" width="164" height="28" rx="6"/>
+    <text class="fg-m" x="52" y="341">offline_access</text>
+    <text class="fg-xs" x="232" y="341">no claim at all — it drives the consent prompt and the refresh-token TTL bucket</text>
+    <!-- ID Token panel -->
+    <rect class="fg-box fg-box--accent" x="660" y="44" width="264" height="98" rx="8"/>
+    <text class="fg-t fg-accent" x="678" y="68">ID token</text>
+    <text class="fg-mxs" x="678" y="88">iss · aud · exp · iat · sub</text>
+    <text class="fg-mxs" x="678" y="102">nonce · auth_time · azp</text>
+    <text class="fg-mxs" x="678" y="116">acr · amr · at_hash · sid</text>
+    <text class="fg-xs" x="678" y="134">filled in by the OP itself</text>
+    <path class="fg-edge fg-edge--accent" d="M624,68 H656" marker-end="url(#fg-ac)"/>
+    <!-- userinfo panel -->
+    <rect class="fg-box" x="660" y="158" width="264" height="130" rx="8"/>
+    <text class="fg-m" x="678" y="182">/userinfo</text>
+    <text class="fg-xs" x="678" y="202">the RP calls it with the access</text>
+    <text class="fg-xs" x="678" y="216">token and gets a JSON body back</text>
+    <line class="fg-rule" x1="678" y1="232" x2="906" y2="232"/>
+    <text class="fg-xs" x="678" y="252">it returns only the claims the</text>
+    <text class="fg-xs" x="678" y="266">granted scopes authorise</text>
+    <path class="fg-leader" d="M628,120 H640 V240 H628"/>
+    <path class="fg-edge" d="M640,196 H656" marker-end="url(#fg-a)"/>
+  </svg>
+  <figcaption class="fig-note">A scope is a request, not a guarantee. The OP grants the intersection of what the client registered, what the user consented to, and what your claim source can actually produce — so a claim listed here can still be absent from the response.</figcaption>
+</figure>
 
 An RP that wants a user claim inside the ID Token instead has to ask for it explicitly with the OIDC Core §5.5 `claims` parameter; a scope grant alone puts it at `/userinfo`.
 

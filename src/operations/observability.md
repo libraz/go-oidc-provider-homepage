@@ -18,37 +18,40 @@ Four streams cover what you need to see in production:
 
 The library deliberately keeps these decoupled — you can wire any subset.
 
-<svg role="img" aria-labelledby="observability-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="observability-split-title">The OP emits protocol events; the HTTP layer and your platform route them into operational logs, audit logs, metrics, and traces.</title>
-<rect class="obs-box" x="24" y="104" width="138" height="72" rx="8"/>
-  <text class="obs-text" x="93" y="134" text-anchor="middle">HTTP layer</text>
-  <text class="obs-sub" x="93" y="154" text-anchor="middle">request ID / trace</text>
-
-  <rect class="obs-main" x="242" y="92" width="170" height="96" rx="8"/>
-  <text class="obs-text" x="327" y="126" text-anchor="middle">OP handler</text>
-  <text class="obs-sub" x="327" y="148" text-anchor="middle">protocol work</text>
-  <text class="obs-sub" x="327" y="166" text-anchor="middle">audit events</text>
-
-  <rect class="obs-box" x="508" y="24" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="54" text-anchor="middle">Operational logs</text>
-  <rect class="obs-box" x="508" y="92" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="122" text-anchor="middle">Audit logs</text>
-  <rect class="obs-box" x="508" y="160" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="190" text-anchor="middle">Prometheus</text>
-  <rect class="obs-box" x="508" y="228" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="258" text-anchor="middle">OpenTelemetry</text>
-
-  <path class="obs-flow" d="M162 140 H238"/>
-  <path class="obs-flow" d="M232 136 L240 140 L232 144"/>
-  <path class="obs-flow" d="M412 120 C450 78 466 48 504 48"/>
-  <path class="obs-flow" d="M496 44 L505 48 L496 52"/>
-  <path class="obs-flow" d="M412 132 H504"/>
-  <path class="obs-flow" d="M496 128 L505 132 L496 136"/>
-  <path class="obs-flow" d="M412 152 C452 164 466 184 504 184"/>
-  <path class="obs-flow" d="M496 180 L505 184 L496 188"/>
-  <path class="obs-flow" d="M162 170 C300 260 390 252 504 252"/>
-  <path class="obs-flow" d="M496 248 L505 252 L496 256"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Where the signals come from, and where they go</div>
+  <svg class="fig-svg" role="img" aria-labelledby="observability-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="observability-title">The OP emits protocol-level audit events; the HTTP layer around it emits request identifiers and trace spans. Your platform routes the two into operational logs, audit logs, metrics and traces.</title>
+    <text class="fg-lbl" x="40" y="26">what emits</text>
+    <text class="fg-lbl" x="604" y="26">where it lands</text>
+    <rect class="fg-box" x="36" y="40" width="330" height="82" rx="8"/>
+    <text class="fg-t2" x="56" y="66">Your HTTP layer</text>
+    <text class="fg-xs" x="56" y="88">the middleware already wrapping the OP</text>
+    <text class="fg-mxs" x="56" y="108">request id · trace span · status · latency</text>
+    <rect class="fg-box fg-box--accent" x="36" y="136" width="330" height="82" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="162">The OP handler</text>
+    <text class="fg-xs" x="56" y="184">protocol work, and only protocol work</text>
+    <text class="fg-mxs" x="56" y="204">audit events — one per decision</text>
+    <path class="fg-leader" d="M370,81 H420 M370,177 H420 M420,64 V194"/>
+    <path class="fg-edge fg-edge--thin" d="M420,64 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M420,108 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M420,152 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M420,194 H592" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="600" y="44" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="62">Operational logs</text>
+    <text class="fg-xs" x="618" y="78">what happened on this request</text>
+    <rect class="fg-box" x="600" y="88" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="106">Audit logs</text>
+    <text class="fg-xs" x="618" y="122">who was granted what, and when</text>
+    <rect class="fg-box" x="600" y="132" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="150">Prometheus</text>
+    <text class="fg-xs" x="618" y="166">rates and latencies per endpoint</text>
+    <rect class="fg-box" x="600" y="176" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="194">OpenTelemetry</text>
+    <text class="fg-xs" x="618" y="210">the span the OP sits inside</text>
+  </svg>
+  <figcaption class="fig-note">The library does not own a logger, a registry, or an exporter. It emits events and leaves the routing to whatever you already run, which is why the OP shows up in your existing dashboards rather than beside them.</figcaption>
+</figure>
 
 ## Structured logging
 

@@ -30,78 +30,67 @@ pageClass: pg-concepts-token-exchange
 
 ## なりすまし（Impersonation）と委譲（Delegation）を並べて見る
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tx-imp-del-title" viewBox="0 0 760 588" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="tx-imp-del-title">service A が Alice の代理で service B を呼ぶ 3 通り — 単純な転送は拒否され、なりすましは actor を落とし、委譲は act chain を記録する。</title>
-  <!-- actor headers -->
-  <rect x="34" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl" x="86" y="33" text-anchor="middle">Frontend</text>
-  <text class="tx-sub" x="86" y="46" text-anchor="middle">ブラウザ</text>
-  <rect x="230" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl" x="282" y="33" text-anchor="middle">Service A</text>
-  <text class="tx-sub" x="282" y="46" text-anchor="middle">中継</text>
-  <rect class="tx-acc" x="426" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl tx-acc-f" x="478" y="33" text-anchor="middle">OP</text>
-  <text class="tx-sub" x="478" y="46" text-anchor="middle">認可サーバ</text>
-  <rect class="tx-rs" x="622" y="16" width="104" height="40" rx="6"/>
-  <text class="tx-lbl tx-rs-f" x="674" y="33" text-anchor="middle">Service B</text>
-  <text class="tx-sub" x="674" y="46" text-anchor="middle">リソース</text>
-  <!-- lifelines -->
-  <line x1="86" y1="56" x2="86" y2="574" stroke-width="1.5" stroke-opacity=".28"/>
-  <line x1="282" y1="56" x2="282" y2="574" stroke-width="1.5" stroke-opacity=".28"/>
-  <line class="tx-acc" x1="478" y1="56" x2="478" y2="574" stroke-width="1.5" stroke-opacity=".3"/>
-  <line class="tx-rs" x1="674" y1="56" x2="674" y2="574" stroke-width="1.5" stroke-opacity=".3"/>
-  <!-- band separators -->
-  <line x1="30" y1="66" x2="730" y2="66" stroke-width="1" stroke-opacity=".12"/>
-  <line x1="30" y1="190" x2="730" y2="190" stroke-width="1" stroke-opacity=".12"/>
-  <line x1="30" y1="384" x2="730" y2="384" stroke-width="1" stroke-opacity=".12"/>
-  <!-- ===== Band 1: plain forwarding ===== -->
-  <text class="tx-band halo" x="30" y="82">単純な転送 — 交換なし</text>
-  <line x1="86" y1="108" x2="282" y2="108"/>
-  <polyline points="276,104 282,108 276,112"/>
-  <text class="tx-mono halo" x="184" y="100" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
-  <line x1="282" y1="142" x2="674" y2="142"/>
-  <polyline points="668,138 674,142 668,146"/>
-  <text class="tx-mono halo" x="478" y="134" text-anchor="middle">Bearer sub=alice, aud=service-a</text>
-  <path d="M674,166 h12 v8 h-12"/>
-  <polyline points="679,171 674,174 679,177"/>
-  <text class="tx-note halo" x="666" y="173" text-anchor="end">aud が service-a で自分宛てではない → 拒否</text>
-  <!-- ===== Band 2: impersonation ===== -->
-  <text class="tx-band halo" x="30" y="206">Impersonation(なりすまし)</text>
-  <line x1="86" y1="232" x2="282" y2="232"/>
-  <polyline points="276,228 282,232 276,236"/>
-  <text class="tx-mono halo" x="184" y="224" text-anchor="middle">Bearer sub=alice</text>
-  <line x1="282" y1="268" x2="478" y2="268"/>
-  <polyline points="472,264 478,268 472,272"/>
-  <text class="tx-mono halo" x="380" y="252" text-anchor="middle">grant_type=token-exchange</text>
-  <text class="tx-mono halo" x="380" y="262" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-  <line x1="282" y1="302" x2="478" y2="302"/>
-  <polyline points="288,298 282,302 288,306"/>
-  <text class="tx-mono halo" x="380" y="294" text-anchor="middle">sub=alice, aud=service-b</text>
-  <line x1="282" y1="336" x2="674" y2="336"/>
-  <polyline points="668,332 674,336 668,340"/>
-  <text class="tx-mono halo" x="478" y="328" text-anchor="middle">Bearer sub=alice</text>
-  <path d="M674,360 h12 v8 h-12"/>
-  <polyline points="679,365 674,368 679,371"/>
-  <text class="tx-note halo" x="666" y="367" text-anchor="end">alice 単独 — A の記録なし</text>
-  <!-- ===== Band 3: delegation ===== -->
-  <text class="tx-band halo" x="30" y="400">Delegation(委譲)</text>
-  <line x1="86" y1="426" x2="282" y2="426"/>
-  <polyline points="276,422 282,426 276,430"/>
-  <text class="tx-mono halo" x="184" y="418" text-anchor="middle">Bearer sub=alice</text>
-  <line x1="282" y1="462" x2="478" y2="462"/>
-  <polyline points="472,458 478,462 472,466"/>
-  <text class="tx-mono halo" x="380" y="446" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-  <text class="tx-mono halo" x="380" y="456" text-anchor="middle">+ actor_token=&lt;A&gt;</text>
-  <line x1="282" y1="496" x2="478" y2="496"/>
-  <polyline points="288,492 282,496 288,500"/>
-  <text class="tx-mono halo" x="380" y="488" text-anchor="middle">sub=alice, act={sub: service-a}</text>
-  <line x1="282" y1="530" x2="674" y2="530"/>
-  <polyline points="668,526 674,530 668,534"/>
-  <text class="tx-mono halo" x="478" y="522" text-anchor="middle">Bearer sub=alice, act={sub: service-a}</text>
-  <path d="M674,554 h12 v8 h-12"/>
-  <polyline points="679,559 674,562 679,565"/>
-  <text class="tx-note halo" x="666" y="561" text-anchor="end">alice が service-a 経由 → ポリシー判定</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">転送・なりすまし・委譲</div>
+  <svg class="fig-svg" role="img" aria-labelledby="tx-modes-title" viewBox="0 0 960 606" xmlns="http://www.w3.org/2000/svg">
+    <title id="tx-modes-title">中継サービスがユーザの代理で下流サービスを呼ぶ 3 通りの方法。元のトークンをそのまま転送すると audience が合わず失敗します。なりすましの交換ではユーザだけを名乗るトークンが得られます。委譲の交換ではユーザを名乗りつつ、中継サービスを act claim に記録したトークンが得られます。</title>
+    <!-- 帯 -->
+    <rect class="fg-group" x="30" y="70" width="916" height="126" rx="8"/>
+    <rect class="fg-group" x="30" y="206" width="916" height="180" rx="8"/>
+    <rect class="fg-group" x="30" y="396" width="916" height="196" rx="8"/>
+    <text class="fg-lbl fg-danger" x="42" y="88">単純な転送 — 交換なし</text>
+    <text class="fg-lbl" x="42" y="224">なりすまし（impersonation）の交換</text>
+    <text class="fg-lbl fg-accent" x="42" y="414">委譲（delegation）の交換</text>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="110" y1="62" x2="110" y2="592"/>
+    <line class="fg-life" x1="370" y1="62" x2="370" y2="592"/>
+    <line class="fg-life fg-life--accent" x1="620" y1="62" x2="620" y2="592"/>
+    <line class="fg-life" x1="860" y1="62" x2="860" y2="592"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="35" y="16" width="150" height="42" rx="6"/>
+    <text class="fg-t" x="110" y="35" text-anchor="middle">Frontend</text>
+    <text class="fg-xs" x="110" y="49" text-anchor="middle">ブラウザ</text>
+    <rect class="fg-box" x="295" y="16" width="150" height="42" rx="6"/>
+    <text class="fg-t" x="370" y="35" text-anchor="middle">Service A</text>
+    <text class="fg-xs" x="370" y="49" text-anchor="middle">中継</text>
+    <rect class="fg-box fg-box--accent" x="540" y="16" width="160" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="620" y="35" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="620" y="49" text-anchor="middle">認可サーバー</text>
+    <rect class="fg-box" x="785" y="16" width="150" height="42" rx="6"/>
+    <text class="fg-t" x="860" y="35" text-anchor="middle">Service B</text>
+    <text class="fg-xs" x="860" y="49" text-anchor="middle">リソース</text>
+    <!-- 転送 -->
+    <path class="fg-edge" d="M110,112 H370" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="240" y="106" text-anchor="middle">Bearer sub=alice · aud=service-a</text>
+    <path class="fg-edge fg-edge--danger" d="M370,152 H860" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs fg-halo" x="615" y="146" text-anchor="middle">同じトークンをそのまま転送する</text>
+    <path class="fg-edge fg-edge--danger" d="M860,172 h-28 v16 h28" marker-end="url(#fg-ad)"/>
+    <text class="fg-xs fg-danger" x="820" y="184" text-anchor="end">aud が service-a で自分宛てではない → 401</text>
+    <!-- なりすまし -->
+    <path class="fg-edge" d="M110,250 H370" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="240" y="244" text-anchor="middle">Bearer sub=alice</text>
+    <path class="fg-edge" d="M370,290 H620" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="495" y="270" text-anchor="middle">grant_type=…:token-exchange</text>
+    <text class="fg-mxs" x="495" y="283" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M620,320 H370" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="495" y="314" text-anchor="middle">sub=alice · aud=service-b</text>
+    <path class="fg-edge" d="M370,356 H860" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="615" y="350" text-anchor="middle">Bearer sub=alice</text>
+    <text class="fg-xs fg-warn" x="860" y="378" text-anchor="end">B から見れば alice が単独で行ったことになる</text>
+    <!-- 委譲 -->
+    <path class="fg-edge" d="M110,440 H370" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="240" y="434" text-anchor="middle">Bearer sub=alice</text>
+    <path class="fg-edge" d="M370,482 H620" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="495" y="462" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <text class="fg-mxs" x="495" y="475" text-anchor="middle">actor_token=&lt;service-a&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M620,514 H370" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="495" y="508" text-anchor="middle">sub=alice · act={ sub: service-a }</text>
+    <path class="fg-edge" d="M370,552 H860" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="615" y="546" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
+    <text class="fg-xs fg-ok" x="860" y="576" text-anchor="end">B は「service-a 経由の alice」を見て、自分のポリシーで判断する</text>
+  </svg>
+  <figcaption class="fig-note">2 番目と 3 番目の構造上の違いは <code>actor_token</code> だけです。パラメータ 1 つの差で、監査ログが「alice が行った」と記録するか「alice が service A を経由して行った」と記録するかが変わります。</figcaption>
+</figure>
 
 差は監査ログ（service B が呼び出しの起点を知れる）と認可ポリシー（センシティブな操作で actor を要求できる）に現れます。
 

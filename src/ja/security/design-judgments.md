@@ -8,31 +8,31 @@ pageClass: pg-security-design-judgments
 
 OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなしています。複数の仕様で文言が矛盾する場面、あるいはある仕様の文字通りの読みが別の仕様と衝突する場面は珍しくなく、その都度どちらをどう取るかの解釈が必要になります。本ページではその選択を一覧化します。
 
-<svg role="img" aria-labelledby="design-judgment-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="design-judgment-title">設計判断の読み方: 複数仕様の衝突を確認し、本ライブラリの選択を決め、op.New や internal 実装で強制する。</title>
-<rect class="djf-box" x="36" y="78" width="154" height="76" rx="8"/>
-  <text class="djf-text" x="113" y="108" text-anchor="middle">仕様文</text>
-  <text class="djf-sub" x="113" y="130" text-anchor="middle">MUST / SHOULD / MAY</text>
-
-  <rect class="djf-box" x="242" y="78" width="154" height="76" rx="8"/>
-  <text class="djf-text" x="319" y="108" text-anchor="middle">衝突点</text>
-  <text class="djf-sub" x="319" y="130" text-anchor="middle">仕様間の折衷</text>
-
-  <rect class="djf-main" x="448" y="78" width="154" height="76" rx="8"/>
-  <text class="djf-text" x="525" y="108" text-anchor="middle">採用した規則</text>
-  <text class="djf-sub" x="525" y="130" text-anchor="middle">fail-closed を優先</text>
-
-  <rect class="djf-box" x="242" y="184" width="360" height="42" rx="8"/>
-  <text class="djf-text" x="422" y="210" text-anchor="middle">構築時検証 / ストア契約 / internal 実装</text>
-
-  <path class="djf-flow" d="M190 116 H238"/>
-  <path class="djf-flow" d="M230 112 L239 116 L230 120"/>
-  <path class="djf-flow" d="M396 116 H444"/>
-  <path class="djf-flow" d="M436 112 L445 116 L436 120"/>
-  <path class="djf-flow" d="M525 154 V180"/>
-  <path class="djf-flow" d="M521 174 L525 183 L529 174"/>
-  <text class="djf-sub halo" x="513" y="174" text-anchor="end">ここで強制</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">設計判断の読み方</div>
+  <svg class="fig-svg" role="img" aria-labelledby="dj-shape-title" viewBox="0 0 960 226" xmlns="http://www.w3.org/2000/svg">
+    <title id="dj-shape-title">各設計判断は、関係する仕様文、2 つの文書が食い違う箇所、本ライブラリが採用した規則を示し、その規則がどこで実際に強制されるかまで述べます。</title>
+    <rect class="fg-box" x="36" y="42" width="260" height="92" rx="8"/>
+    <text class="fg-t2" x="56" y="68">仕様文</text>
+    <text class="fg-mxs" x="56" y="92">MUST · SHOULD · MAY</text>
+    <text class="fg-xs" x="56" y="114">節番号を添えて引用する</text>
+    <path class="fg-edge" d="M300,88 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--warn" x="340" y="42" width="260" height="92" rx="8"/>
+    <text class="fg-t2" x="360" y="68">食い違う箇所</text>
+    <text class="fg-xs" x="360" y="92">同じリクエストに対して 2 つの</text>
+    <text class="fg-xs" x="360" y="112">文書が別の答えを与えている</text>
+    <path class="fg-edge" d="M604,88 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="644" y="42" width="280" height="92" rx="8"/>
+    <text class="fg-t2 fg-accent" x="664" y="68">本ライブラリが採用した規則</text>
+    <text class="fg-xs" x="664" y="92">厳しい側の解釈を採り、</text>
+    <text class="fg-xs" x="664" y="112">その理由を書き残す</text>
+    <path class="fg-edge fg-edge--accent" d="M784,138 V166" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--sub" x="36" y="170" width="888" height="42" rx="8"/>
+    <text class="fg-lbl" x="56" y="196">強制する場所</text>
+    <text class="fg-mxs" x="180" y="196">op.New の構築時検証 · ストアの契約 · internal の実装</text>
+  </svg>
+  <figcaption class="fig-note">判断と意見を分けるのが最後の行です。どこかで具体的に強制されていない規則は規則ではなく、作者がこう考えたという注記にすぎません。</figcaption>
+</figure>
 
 <div class="dj-hero">
   <div>

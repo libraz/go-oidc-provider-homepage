@@ -45,35 +45,52 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
 | **UserInfo 応答** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
-<svg class="tokens-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 0 760 244" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行し、RP はアクセストークンをリソースサーバと OP の /userinfo エンドポイントに提示し、/userinfo は claim の JSON を返す図。</title>
-  <rect class="d-box d-box-op" x="14" y="44" width="136" height="152" rx="10"/>
-  <rect class="d-box" x="312" y="44" width="136" height="152" rx="10"/>
-  <rect class="d-box d-box-rs" x="610" y="44" width="136" height="152" rx="10"/>
-  <text class="d-h d-op-text" x="82" y="116" text-anchor="middle">OP</text>
-  <text class="d-sub d-op-sub" x="82" y="135" text-anchor="middle">本ライブラリ</text>
-  <text class="d-h d-fill1" x="380" y="116" text-anchor="middle">RP</text>
-  <text class="d-sub" x="380" y="135" text-anchor="middle">クライアント</text>
-  <text class="d-h d-rs-t" x="678" y="116" text-anchor="middle">RS</text>
-  <text class="d-sub" x="678" y="135" text-anchor="middle">リソースサーバ</text>
-  <text class="d-mono-op" x="82" y="220" text-anchor="middle">/userinfo</text>
-  <line class="d-op" x1="150" y1="76" x2="308" y2="76"/>
-  <path class="d-op" d="M312,76 l-7,-4 M312,76 l-7,4"/>
-  <text class="d-txt halo" x="229" y="68" text-anchor="middle">ID トークン</text>
-  <line class="d-op" x1="150" y1="104" x2="308" y2="104"/>
-  <path class="d-op" d="M312,104 l-7,-4 M312,104 l-7,4"/>
-  <text class="d-mono halo" x="229" y="96" text-anchor="middle">access_token</text>
-  <line class="d-op" x1="312" y1="152" x2="154" y2="152"/>
-  <path class="d-op" d="M150,152 l7,-4 M150,152 l7,4"/>
-  <text class="d-mono halo" x="229" y="144" text-anchor="middle">GET /userinfo</text>
-  <line class="d-op" x1="150" y1="180" x2="308" y2="180"/>
-  <path class="d-op" d="M312,180 l-7,-4 M312,180 l-7,4"/>
-  <text class="d-txt halo" x="229" y="194" text-anchor="middle">claim の JSON</text>
-  <line class="d-rs" x1="448" y1="120" x2="606" y2="120"/>
-  <path class="d-rs" d="M610,120 l-7,-4 M610,120 l-7,4"/>
-  <text class="d-mono halo" x="527" y="112" text-anchor="middle">Authorization: Bearer</text>
-  <text class="d-mono halo" x="527" y="136" text-anchor="middle">access_token</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">誰が何を発行し、誰が検証するか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 30 960 240" xmlns="http://www.w3.org/2000/svg">
+    <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行する図。RP はアクセストークンをリソースサーバと OP の userinfo エンドポイントに提示し、userinfo はログイン中のユーザについての claim を返します。</title>
+    <!-- OP -->
+    <rect class="fg-box fg-box--accent" x="40" y="44" width="240" height="100" rx="8"/>
+    <text class="fg-lbl fg-accent" x="54" y="64">OP</text>
+    <text class="fg-t fg-accent" x="160" y="88" text-anchor="middle">OpenID Provider</text>
+    <text class="fg-mxs" x="160" y="102" text-anchor="middle">go-oidc-provider</text>
+    <line class="fg-rule" x1="54" y1="114" x2="266" y2="114"/>
+    <text class="fg-xs" x="160" y="132" text-anchor="middle">すべてのトークンを発行し署名する</text>
+    <!-- RP -->
+    <rect class="fg-box" x="400" y="44" width="240" height="100" rx="8"/>
+    <text class="fg-lbl" x="414" y="64">RP</text>
+    <text class="fg-t" x="520" y="88" text-anchor="middle">Relying Party</text>
+    <text class="fg-mxs" x="520" y="102" text-anchor="middle">クライアント</text>
+    <line class="fg-rule" x1="414" y1="114" x2="626" y2="114"/>
+    <text class="fg-xs" x="520" y="132" text-anchor="middle">トークンを保持する</text>
+    <!-- RS -->
+    <rect class="fg-box" x="760" y="44" width="160" height="100" rx="8"/>
+    <text class="fg-lbl" x="774" y="64">RS</text>
+    <text class="fg-t" x="840" y="88" text-anchor="middle">Resource Server</text>
+    <text class="fg-mxs" x="840" y="102" text-anchor="middle">リソースサーバ</text>
+    <line class="fg-rule" x1="774" y1="114" x2="906" y2="114"/>
+    <text class="fg-xs" x="840" y="132" text-anchor="middle">トークンを検証する</text>
+    <!-- userinfo -->
+    <rect class="fg-box fg-box--sub" x="40" y="196" width="240" height="56" rx="8"/>
+    <text class="fg-m" x="160" y="220" text-anchor="middle">/userinfo</text>
+    <text class="fg-xs" x="160" y="236" text-anchor="middle">ログイン中のユーザの claim</text>
+    <!-- 発行 -->
+    <path class="fg-edge fg-edge--accent" d="M284,74 H396" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="340" y="67" text-anchor="middle">id_token</text>
+    <path class="fg-edge fg-edge--accent" d="M284,112 H396" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="340" y="105" text-anchor="middle">access_token</text>
+    <!-- API 呼び出し -->
+    <path class="fg-edge" d="M644,100 H756" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="700" y="74" text-anchor="middle">Authorization:</text>
+    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt;</text>
+    <!-- userinfo の往復 -->
+    <path class="fg-edge" d="M520,148 V218 H288" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer</text>
+    <path class="fg-edge fg-edge--accent" d="M284,240 H560 V152" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="420" y="233" text-anchor="middle">200 { claims }</text>
+  </svg>
+  <figcaption class="fig-note">ID トークンは RP のためのもので、そこで止まります。「誰がログインしたか」に答えるためのトークンです。一方アクセストークンは RP が外へ持ち出す資格情報で、あなたの API にも <code>/userinfo</code> にも同じように提示されます。どちらも ID トークンを受け取ることはありません。</figcaption>
+</figure>
 
 ## ID トークン —「誰がログインしたか」
 

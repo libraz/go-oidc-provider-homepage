@@ -37,71 +37,63 @@ RP-Initiated Logout はデフォルトでこの group を対象にします。`l
 
 ## 動作
 
-<svg class="multi-account-flow" role="img" aria-labelledby="multi-account-chooser-flow-title" viewBox="0 0 720 656" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="multi-account-chooser-flow-title">3 回の /authorize 往復のシーケンス。初回ログインで chooser group を発行し、prompt=login でアカウントを追加、prompt=select_account でアクティブセッションを切り替える。</title>
-
-  <!-- actors -->
-  <rect x="60" y="14" width="120" height="34" rx="6"/>
-  <rect x="320" y="14" width="120" height="34" rx="6" class="d-op"/>
-  <rect x="560" y="14" width="120" height="34" rx="6"/>
-  <text class="d-lbl" text-anchor="middle" x="120" y="35">ユーザブラウザ</text>
-  <text class="d-lbl d-acc" text-anchor="middle" x="380" y="35">OP</text>
-  <text class="d-lbl" text-anchor="middle" x="620" y="35">RP</text>
-
-  <!-- lifelines -->
-  <path class="d-life" d="M120 48 V648"/>
-  <path class="d-op" d="M380 48 V648"/>
-  <path class="d-life" d="M620 48 V648"/>
-
-  <!-- phase 1 -->
-  <text class="d-ph" x="10" y="64">1 · 初回ログイン</text>
-  <path d="M120 84 H380"/><path d="M374 80 L380 84 L374 88"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="77"><tspan class="d-mono">GET /authorize</tspan>（prompt なし）</text>
-  <rect class="d-act" x="268" y="94" width="224" height="24" rx="5"/>
-  <text class="d-lbl" text-anchor="middle" x="380" y="110">有効セッションなし → ログイン実行</text>
-  <path d="M120 138 H380"/><path d="M374 134 L380 138 L374 142"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="131">ログイン — <tspan class="d-mono">alice@acme.com</tspan></text>
-  <rect x="268" y="148" width="224" height="36" rx="5" class="d-op d-act"/>
-  <text class="d-mono d-acc" text-anchor="middle" x="380" y="164">Sessions.Issue</text>
-  <text class="d-lbl" text-anchor="middle" x="380" y="178">新規 chooser group</text>
-  <path d="M380 204 H120"/><path d="M126 200 L120 204 L126 208"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="197"><tspan class="d-mono">302</tspan> → RP callback（code）</text>
-  <path d="M120 228 H620"/><path d="M614 224 L620 228 L614 232"/>
-  <text class="d-lbl d-mut" text-anchor="middle" x="370" y="221">ブラウザがリダイレクト追従</text>
-
-  <!-- phase 2 -->
-  <text class="d-ph" x="10" y="252">2 · アカウント追加</text>
-  <path d="M120 274 H380"/><path d="M374 270 L380 274 L374 278"/>
-  <text class="d-mono" text-anchor="middle" x="250" y="267">GET /authorize?prompt=login</text>
-  <rect class="d-act" x="268" y="284" width="224" height="24" rx="5"/>
-  <text class="d-lbl" text-anchor="middle" x="380" y="300">有効セッション + <tspan class="d-mono">prompt=login</tspan></text>
-  <path d="M120 328 H380"/><path d="M374 324 L380 328 L374 332"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="321">ログイン — <tspan class="d-mono">alice@personal.com</tspan></text>
-  <rect x="268" y="338" width="224" height="36" rx="5" class="d-op d-act"/>
-  <text class="d-mono d-acc" text-anchor="middle" x="380" y="354">AddAccount</text>
-  <text class="d-lbl" text-anchor="middle" x="380" y="368">既存 group に追加</text>
-  <path d="M380 394 H120"/><path d="M126 390 L120 394 L126 398"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="387"><tspan class="d-mono">302</tspan> → RP callback（code）</text>
-  <path d="M120 418 H620"/><path d="M614 414 L620 418 L614 422"/>
-  <text class="d-lbl d-mut" text-anchor="middle" x="370" y="411">ブラウザがリダイレクト追従</text>
-
-  <!-- phase 3 -->
-  <text class="d-ph" x="10" y="442">3 · アカウント切替</text>
-  <path d="M120 464 H380"/><path d="M374 460 L380 464 L374 468"/>
-  <text class="d-mono" text-anchor="middle" x="250" y="457">GET /authorize?prompt=select_account</text>
-  <path d="M380 496 H120"/><path d="M126 492 L120 496 L126 500"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="489">chooser UI — 両アカウント</text>
-  <path d="M120 528 H380"/><path d="M374 524 L380 528 L374 532"/>
-  <text class="d-mono" text-anchor="middle" x="250" y="521">POST /interaction/{uid}</text>
-  <text class="d-mono d-sm d-mut" text-anchor="middle" x="250" y="542">{ state_ref, values: { session_id } }</text>
-  <rect x="268" y="552" width="224" height="36" rx="5" class="d-op d-act"/>
-  <text class="d-mono d-acc" text-anchor="middle" x="380" y="568">Sessions.Switch</text>
-  <text class="d-lbl" text-anchor="middle" x="380" y="582">アクティブセッション切替</text>
-  <path d="M380 608 H120"/><path d="M126 604 L120 608 L126 612"/>
-  <text class="d-lbl" text-anchor="middle" x="250" y="601"><tspan class="d-mono">302</tspan> → RP callback（選択した sub）</text>
-  <path d="M120 632 H620"/><path d="M614 628 L620 632 L614 636"/>
-  <text class="d-lbl d-mut" text-anchor="middle" x="370" y="625">ブラウザがリダイレクト追従</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">3 回の往復 — ログイン、追加、切り替え</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-multiaccount-title" viewBox="0 0 960 612" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-multiaccount-title">authorize エンドポイントを 3 回通る流れ。1 回目でログインして chooser group を開き、2 回目は prompt=login で同じ group に 2 つ目のアカウントを追加し、3 回目は prompt=select_account で chooser を表示してアクティブなセッションを切り替えます。</title>
+    <rect class="fg-group" x="30" y="70" width="916" height="168" rx="8"/>
+    <rect class="fg-group" x="30" y="246" width="916" height="168" rx="8"/>
+    <rect class="fg-group" x="30" y="422" width="916" height="176" rx="8"/>
+    <text class="fg-lbl" x="42" y="88">1 · 初回ログイン</text>
+    <text class="fg-lbl" x="42" y="264">2 · アカウントを追加する</text>
+    <text class="fg-lbl" x="42" y="440">3 · アカウントを切り替える</text>
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="598"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="598"/>
+    <line class="fg-life" x1="840" y1="62" x2="840" y2="598"/>
+    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">ユーザのブラウザ</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">cookie は 1 セット</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="750" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="840" y="35" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="840" y="49" text-anchor="middle">組み込み側のアプリ</text>
+    <path class="fg-edge" d="M150,112 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="106" text-anchor="middle">GET /authorize — prompt なし</text>
+    <path class="fg-edge fg-edge--accent" d="M500,146 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="542" y="150">有効なセッションが無い → ログインフローを実行する</text>
+    <text class="fg-mxs" x="542" y="164">alice@acme.com としてログイン</text>
+    <path class="fg-edge fg-edge--accent" d="M500,192 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="542" y="196">Sessions.Issue</text>
+    <text class="fg-xs" x="542" y="210">新しい chooser group を開く</text>
+    <path class="fg-edge fg-edge--accent" d="M500,230 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="224" text-anchor="middle">302 → RP の callback へ、code 付きで</text>
+    <path class="fg-edge" d="M150,288 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="282" text-anchor="middle">GET /authorize?prompt=login</text>
+    <path class="fg-edge fg-edge--accent" d="M500,322 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="542" y="326">有効なセッションはあるが prompt=login が指定された</text>
+    <text class="fg-mxs" x="542" y="340">alice@personal.com としてログイン</text>
+    <path class="fg-edge fg-edge--accent" d="M500,368 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="542" y="372">AddAccount</text>
+    <text class="fg-xs" x="542" y="386">既存の group に加える</text>
+    <path class="fg-edge fg-edge--accent" d="M500,406 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="400" text-anchor="middle">302 → RP の callback へ、code 付きで</text>
+    <path class="fg-edge" d="M150,464 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="458" text-anchor="middle">GET /authorize?prompt=select_account</text>
+    <path class="fg-edge fg-edge--accent" d="M500,494 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="488" text-anchor="middle">chooser UI — 両方のアカウントが並ぶ</text>
+    <path class="fg-edge" d="M150,530 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="510" text-anchor="middle">POST /interaction/{uid}</text>
+    <text class="fg-mxs" x="325" y="524" text-anchor="middle">{ state_ref, values: { session_id } }</text>
+    <path class="fg-edge fg-edge--accent" d="M500,556 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="542" y="560">Sessions.Switch</text>
+    <text class="fg-xs" x="542" y="574">どのセッションをアクティブにするか切り替える</text>
+    <path class="fg-edge fg-edge--accent" d="M500,594 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="588" text-anchor="middle">302 → 選択した sub で RP の callback へ</text>
+  </svg>
+  <figcaption class="fig-note">3 回とも同じエンドポイントを、同じ cookie で通っています。違うのはパラメータ 1 つだけで、それを読んだ後の OP の動きは、その cookie が既に指している group から決まります。</figcaption>
+</figure>
 
 ## 実装
 

@@ -12,35 +12,37 @@ You want a working Authorization Code + PKCE round-trip end-to-end with the abso
 
 ## Architecture
 
-<svg class="minimal-op-flow" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 0 760 274" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="minimal-op-arch-title">A single Go process: a browser drives the rpkit RP, which speaks OIDC to op.New; the OP reads and writes the in-memory store and signs with an ephemeral keyset.</title>
-  <g transform="translate(20,-14)">
-  <rect x="150" y="28" width="560" height="246" rx="10" stroke-opacity="0.4"/>
-  <text class="d-sub" x="166" y="49">Single process</text>
-  <rect x="16" y="122" width="104" height="56" rx="6"/>
-  <text class="d-label" x="68" y="154" text-anchor="middle">Browser</text>
-  <rect x="180" y="118" width="118" height="64" rx="6"/>
-  <text class="d-label" x="239" y="146" text-anchor="middle">rpkit RP</text>
-  <text class="d-mono-2" x="239" y="164" text-anchor="middle">:9090</text>
-  <rect class="op-accent" x="360" y="110" width="150" height="80" rx="6"/>
-  <text class="d-mono" x="435" y="146" text-anchor="middle">op.New(…)</text>
-  <text class="d-mono-2" x="435" y="164" text-anchor="middle">:8080</text>
-  <rect x="560" y="44" width="140" height="48" rx="6" stroke-dasharray="5 4"/>
-  <text class="d-mono" x="630" y="72" text-anchor="middle">inmem.Store</text>
-  <rect x="560" y="190" width="140" height="64" rx="6"/>
-  <text class="d-label" x="630" y="216" text-anchor="middle">Keyset</text>
-  <text class="d-mono-sm" x="630" y="234" text-anchor="middle">ephemeral ECDSA P-256</text>
-  <path d="M120,150 H180"/>
-  <polyline points="172,145 180,150 172,155"/>
-  <path d="M298,150 H360"/>
-  <polyline points="352,145 360,150 352,155"/>
-  <path d="M510,138 H540 V68 H560"/>
-  <polyline points="552,63 560,68 552,73"/>
-  <polyline points="518,133 510,138 518,143"/>
-  <path d="M510,162 H540 V222 H560"/>
-  <polyline points="552,217 560,222 552,227"/>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">One Go process, nothing else running</div>
+  <svg class="fig-svg" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 0 960 232" xmlns="http://www.w3.org/2000/svg">
+    <title id="minimal-op-arch-title">A browser drives the bundled relying party, which speaks OIDC to the provider in the same process. The provider reads and writes an in-memory store and signs with an ephemeral keyset — no database and no key management to set up.</title>
+    <rect class="fg-box fg-box--ext" x="36" y="90" width="160" height="60" rx="8"/>
+    <text class="fg-t2" x="116" y="114" text-anchor="middle">Browser</text>
+    <text class="fg-xs" x="116" y="134" text-anchor="middle">yours</text>
+    <path class="fg-edge" d="M200,120 H258" marker-end="url(#fg-a)"/>
+    <rect class="fg-frame" x="236" y="40" width="688" height="172" rx="10"/>
+    <text class="fg-lbl" x="252" y="62">a single Go process</text>
+    <rect class="fg-box" x="266" y="76" width="200" height="70" rx="8"/>
+    <text class="fg-t2" x="366" y="104" text-anchor="middle">rpkit RP</text>
+    <text class="fg-mxs" x="366" y="124" text-anchor="middle">:9090</text>
+    <path class="fg-edge" d="M470,111 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="491" y="104" text-anchor="middle">OIDC</text>
+    <rect class="fg-box fg-box--accent" x="516" y="76" width="200" height="70" rx="8"/>
+    <text class="fg-m fg-accent" x="616" y="104" text-anchor="middle">op.New(…)</text>
+    <text class="fg-mxs" x="616" y="124" text-anchor="middle">:8080</text>
+    <path class="fg-edge fg-edge--thin" d="M720,97 H752" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M720,151 H752" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--sub" x="756" y="76" width="148" height="42" rx="6"/>
+    <text class="fg-mxs" x="772" y="94">inmem.Store</text>
+    <text class="fg-xs" x="772" y="110">gone on restart</text>
+    <rect class="fg-box fg-box--sub" x="756" y="130" width="148" height="54" rx="6"/>
+    <text class="fg-mxs" x="772" y="148">Keyset</text>
+    <text class="fg-xs" x="772" y="164">ephemeral</text>
+    <text class="fg-xs" x="772" y="178">ECDSA P-256</text>
+    <text class="fg-xs" x="252" y="196">no database, no key management, no configuration file — everything above is created at start-up</text>
+  </svg>
+  <figcaption class="fig-note">Both boxes on the right are deliberately throwaway. Restarting loses every session and every key, which is exactly what you want while you are still finding out whether the flow works at all.</figcaption>
+</figure>
 
 The library is one process. The store is in-memory. Keys are generated at boot. The example seeds one demo user (`demo`/`demo`) and registers a public client whose `redirect_uri` points back at the embedded RP.
 

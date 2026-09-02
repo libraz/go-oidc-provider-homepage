@@ -15,40 +15,38 @@ pageClass: pg-operations-key-rotation
 
 いずれも、新しい `*Provider` を構築してハンドラをアトミックに差し替える形でローテーションします。鍵スライスをその場で書き換える API はありません。
 
-<svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="key-rotation-title">署名鍵または cookie 鍵のローテーション手順: 新鍵を先頭にした設定で新しい Provider を構築し、ハンドラを差し替え、キャッシュ期間後に旧鍵を外す。</title>
-<rect class="rot-box" x="26" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="90" y="130" text-anchor="middle">新鍵を生成</text>
-  <text class="rot-sub" x="90" y="152" text-anchor="middle">new kid</text>
-
-  <rect class="rot-box" x="184" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="248" y="130" text-anchor="middle">先頭に配置</text>
-  <text class="rot-sub" x="248" y="152" text-anchor="middle">新鍵, 旧鍵</text>
-
-  <rect class="rot-main" x="342" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="406" y="130" text-anchor="middle">op.New</text>
-  <text class="rot-sub" x="406" y="152" text-anchor="middle">再検証</text>
-
-  <rect class="rot-box" x="500" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="564" y="130" text-anchor="middle">差し替え</text>
-  <text class="rot-sub" x="564" y="152" text-anchor="middle">atomic handler</text>
-
-  <rect class="rot-box" x="658" y="100" width="78" height="72" rx="8"/>
-  <text class="rot-text" x="697" y="130" text-anchor="middle">旧鍵</text>
-  <text class="rot-sub" x="697" y="152" text-anchor="middle">撤去</text>
-
-  <path class="rot-flow" d="M154 136 H180"/>
-  <path class="rot-flow" d="M172 132 L181 136 L172 140"/>
-  <path class="rot-flow" d="M312 136 H338"/>
-  <path class="rot-flow" d="M330 132 L339 136 L330 140"/>
-  <path class="rot-flow" d="M470 136 H496"/>
-  <path class="rot-flow" d="M488 132 L497 136 L488 140"/>
-  <path class="rot-flow" d="M628 136 H654"/>
-  <path class="rot-flow" d="M646 132 L655 136 L646 140"/>
-  <path class="rot-flow" d="M564 172 C580 208 664 208 697 174"/>
-  <path class="rot-flow" d="M692 184 L697 173 L702 184"/>
-  <text class="rot-sub halo" x="600" y="232" text-anchor="middle">TTL と JWKS キャッシュ期間が過ぎるのを待つ</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">切り替え日を設けずに鍵をローテーションする</div>
+  <svg class="fig-svg" role="img" aria-labelledby="key-rotation-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
+    <title id="key-rotation-title">署名鍵または cookie 鍵のローテーション手順。新しい鍵を生成し、新鍵を先頭に旧鍵も残した設定で Provider を構築し、ハンドラを不可分に差し替えます。旧鍵を外すのは、配布済みのキャッシュがすべて期限切れになってからです。</title>
+    <rect class="fg-box" x="36" y="60" width="168" height="80" rx="8"/>
+    <text class="fg-t2" x="54" y="88">生成する</text>
+    <text class="fg-xs" x="54" y="110">新しい kid を持つ</text>
+    <text class="fg-xs" x="54" y="128">鍵を作る</text>
+    <path class="fg-edge" d="M208,100 H244" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="248" y="60" width="196" height="80" rx="8"/>
+    <text class="fg-t2 fg-accent" x="266" y="88">先頭に置く</text>
+    <text class="fg-mxs" x="266" y="110">[新鍵, 旧鍵]</text>
+    <text class="fg-xs" x="266" y="128">先頭が署名し、残りは検証に使う</text>
+    <path class="fg-edge" d="M448,100 H484" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="488" y="60" width="180" height="80" rx="8"/>
+    <text class="fg-m" x="506" y="88">op.New</text>
+    <text class="fg-xs" x="506" y="110">構成全体を</text>
+    <text class="fg-xs" x="506" y="128">もう一度検証する</text>
+    <path class="fg-edge" d="M672,100 H708" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="712" y="60" width="212" height="80" rx="8"/>
+    <text class="fg-t2" x="730" y="88">ハンドラを差し替える</text>
+    <text class="fg-xs" x="730" y="110">不可分に切り替わるため、</text>
+    <text class="fg-xs" x="730" y="128">中途半端な状態は誰も見ない</text>
+    <path class="fg-leader" d="M818,144 V178 H444"/>
+    <path class="fg-edge fg-edge--muted" d="M444,178 H244" marker-end="url(#fg-am)"/>
+    <text class="fg-xs fg-warn" x="470" y="172">トークンの TTL と、各 RP の JWKS キャッシュ期間が過ぎるのを待つ</text>
+    <rect class="fg-box fg-box--muted" x="36" y="156" width="204" height="46" rx="8"/>
+    <text class="fg-t2" x="54" y="176">その後で旧鍵を外す</text>
+    <text class="fg-xs" x="54" y="194">それより早く外さない</text>
+  </svg>
+  <figcaption class="fig-note">旧鍵は重複期間のあいだ公開したままにし、署名だけをやめます。この手順で唯一壊れるのは、旧鍵を早く外した場合です。古い鍵集合を保持したままの検証側は、既に受け取ったトークンを検証する手段を失います。</figcaption>
+</figure>
 
 ## 署名鍵のローテーション
 

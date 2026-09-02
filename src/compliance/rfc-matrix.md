@@ -8,39 +8,39 @@ pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 
 Every standard the library actively cites in its code, mapped to the package that implements it and the option / feature that gates it.
 
-<svg role="img" aria-labelledby="rfc-matrix-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="rfc-matrix-title">How to read the RFC matrix: each spec is first sorted by whether it is the OP's concern, then classified as full, partial, planned, out of scope, or refused.</title>
-<rect class="rfc-main" x="36" y="102" width="154" height="76" rx="8"/>
-  <text class="rfc-text" x="113" y="132" text-anchor="middle">Specification</text>
-  <text class="rfc-sub" x="113" y="154" text-anchor="middle">RFC / OIDC / FAPI</text>
-
-  <rect class="rfc-box" x="284" y="54" width="174" height="56" rx="8"/>
-  <text class="rfc-text" x="371" y="88" text-anchor="middle">OP's concern</text>
-  <rect class="rfc-box" x="284" y="170" width="174" height="56" rx="8"/>
-  <text class="rfc-text" x="371" y="204" text-anchor="middle">Not the OP's concern</text>
-
-  <rect class="rfc-box" x="560" y="28" width="152" height="44" rx="8"/>
-  <text class="rfc-text" x="636" y="56" text-anchor="middle">full / partial</text>
-  <rect class="rfc-box" x="560" y="88" width="152" height="44" rx="8"/>
-  <text class="rfc-text" x="636" y="116" text-anchor="middle">planned</text>
-  <rect class="rfc-box" x="560" y="160" width="152" height="44" rx="8"/>
-  <text class="rfc-text" x="636" y="188" text-anchor="middle">out</text>
-  <rect class="rfc-box" x="560" y="220" width="152" height="44" rx="8"/>
-  <text class="rfc-text" x="636" y="248" text-anchor="middle">refused</text>
-
-  <path class="rfc-flow" d="M190 140 C234 118 250 84 280 84"/>
-  <path class="rfc-flow" d="M272 80 L281 84 L272 88"/>
-  <path class="rfc-flow" d="M190 140 C234 162 250 200 280 200"/>
-  <path class="rfc-flow" d="M272 196 L281 200 L272 204"/>
-  <path class="rfc-flow" d="M458 82 C500 66 516 50 556 50"/>
-  <path class="rfc-flow" d="M548 46 L557 50 L548 54"/>
-  <path class="rfc-flow" d="M458 94 C500 100 516 110 556 110"/>
-  <path class="rfc-flow" d="M548 106 L557 110 L548 114"/>
-  <path class="rfc-flow" d="M458 198 H556"/>
-  <path class="rfc-flow" d="M548 194 L557 198 L548 202"/>
-  <path class="rfc-flow" d="M458 208 C500 232 516 242 556 242"/>
-  <path class="rfc-flow" d="M548 238 L557 242 L548 246"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">How a specification is classified</div>
+  <svg class="fig-svg" role="img" aria-labelledby="rfc-matrix-shape-title" viewBox="0 0 960 216" xmlns="http://www.w3.org/2000/svg">
+    <title id="rfc-matrix-shape-title">Every specification in the matrix is first sorted by whether it is the OP's concern at all. What is the OP's concern is then marked full, partial or planned; what is not is marked out of scope or refused.</title>
+    <rect class="fg-box" x="36" y="70" width="264" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="98">A specification</text>
+    <text class="fg-mxs" x="56" y="120">RFC · OIDC · FAPI</text>
+    <text class="fg-xs" x="56" y="138">one row in the matrix</text>
+    <path class="fg-edge" d="M304,108 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="340" y="70" width="264" height="76" rx="8"/>
+    <text class="fg-t2 fg-accent" x="360" y="98">Is it the OP's concern?</text>
+    <text class="fg-xs" x="360" y="120">some specs describe what an RP</text>
+    <text class="fg-xs" x="360" y="138">or a resource server must do</text>
+    <path class="fg-leader" d="M608,108 H624 M624,62 V162"/>
+    <path class="fg-edge fg-edge--thin" d="M624,62 H640" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M624,162 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="644" y="28" width="280" height="68" rx="8"/>
+    <text class="fg-t2" x="662" y="50">Yes — the OP's concern</text>
+    <rect class="fg-box fg-box--ok" x="662" y="60" width="62" height="22" rx="5"/>
+    <text class="fg-mxs" x="674" y="75">full</text>
+    <rect class="fg-box fg-box--warn" x="732" y="60" width="76" height="22" rx="5"/>
+    <text class="fg-mxs" x="744" y="75">partial</text>
+    <rect class="fg-box fg-box--accent" x="816" y="60" width="88" height="22" rx="5"/>
+    <text class="fg-mxs" x="828" y="75">planned</text>
+    <rect class="fg-box" x="644" y="128" width="280" height="68" rx="8"/>
+    <text class="fg-t2" x="662" y="150">No — outside the OP</text>
+    <rect class="fg-box fg-box--muted" x="662" y="160" width="118" height="22" rx="5"/>
+    <text class="fg-mxs" x="674" y="175">out of scope</text>
+    <rect class="fg-box fg-box--danger" x="788" y="160" width="92" height="22" rx="5"/>
+    <text class="fg-mxs" x="800" y="175">refused</text>
+  </svg>
+  <figcaption class="fig-note">"Out of scope" and "refused" are different claims. The first says the specification is somebody else's job; the second says it is the OP's job and this OP declines it on purpose, with the reasoning recorded.</figcaption>
+</figure>
 
 ## Status legend
 

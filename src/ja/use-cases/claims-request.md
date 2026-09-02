@@ -18,41 +18,35 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 
 この 2 つの仕組みは、出力先の広がり方が違います。scope は束全体を ID Token と `/userinfo` の両方へ渡します。`claims` のメンバーは、そこに書かれた claim だけを、そのメンバーが属する出力先にだけ渡します。
 
-<svg role="img" aria-labelledby="claims-routing-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="claims-routing-title">要求ごとの出力先: claims パラメータの id_token メンバーは ID Token だけ、userinfo メンバーは /userinfo 応答だけに claim を出し、scope が定める束は両方に届く。</title>
-
-  <rect class="cr-src" x="24" y="32" width="250" height="56" rx="8"/>
-  <text class="cr-src-title" x="40" y="58">claims["id_token"]</text>
-  <text class="cr-note" x="40" y="78">指定した claim だけ · ID Token のみ</text>
-
-  <rect class="cr-src" x="24" y="112" width="250" height="56" rx="8"/>
-  <text class="cr-src-title" x="40" y="138">scope</text>
-  <text class="cr-note" x="40" y="158">§5.4 の束すべて · 両方へ</text>
-
-  <rect class="cr-src" x="24" y="192" width="250" height="56" rx="8"/>
-  <text class="cr-src-title" x="40" y="218">claims["userinfo"]</text>
-  <text class="cr-note" x="40" y="238">指定した claim だけ · UserInfo のみ</text>
-
-  <rect class="cr-dest" x="526" y="44" width="210" height="64" rx="8"/>
-  <text class="cr-dest-title" x="631" y="74" text-anchor="middle">id_token</text>
-  <text class="cr-note" x="631" y="94" text-anchor="middle">JWT に署名して載る</text>
-
-  <rect class="cr-dest" x="526" y="176" width="210" height="64" rx="8"/>
-  <text class="cr-dest-title" x="631" y="206" text-anchor="middle">GET /userinfo</text>
-  <text class="cr-note" x="631" y="226" text-anchor="middle">JSON 応答の本文に載る</text>
-
-  <path class="cr-flow" d="M274 60 H522"/>
-  <path class="cr-flow" d="M516 55 L522 60 L516 65"/>
-
-  <path class="cr-flow" d="M274 128 C398 128 398 92 522 92"/>
-  <path class="cr-flow" d="M516 87 L522 92 L516 97"/>
-
-  <path class="cr-flow" d="M274 152 C398 152 398 208 522 208"/>
-  <path class="cr-flow" d="M516 203 L522 208 L516 213"/>
-
-  <path class="cr-flow" d="M274 220 H522"/>
-  <path class="cr-flow" d="M516 215 L522 220 L516 225"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">要求ごとの出力先</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 258" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-claims-title">claims パラメータの id_token メンバーは ID トークンにだけ claim を出し、userinfo メンバーは userinfo 応答にだけ出します。これに対して scope は両方の出力先に同時に届きます。</title>
+    <text class="fg-lbl" x="40" y="26">何で要求するか</text>
+    <text class="fg-lbl" x="644" y="26">どこに出るか</text>
+    <rect class="fg-box" x="36" y="38" width="330" height="52" rx="6"/>
+    <text class="fg-mxs" x="54" y="60">claims["id_token"]</text>
+    <text class="fg-xs" x="54" y="78">指定した claim だけ</text>
+    <rect class="fg-box fg-box--accent" x="36" y="102" width="330" height="52" rx="6"/>
+    <text class="fg-mxs fg-accent" x="54" y="124">scope</text>
+    <text class="fg-xs" x="54" y="142">OIDC Core §5.4 が定める束のすべて</text>
+    <rect class="fg-box" x="36" y="166" width="330" height="52" rx="6"/>
+    <text class="fg-mxs" x="54" y="188">claims["userinfo"]</text>
+    <text class="fg-xs" x="54" y="206">指定した claim だけ</text>
+    <path class="fg-edge fg-edge--thin" d="M370,64 H600" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V64 H600" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M470,124 V192 H600" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--thin" d="M370,192 H600" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="604" y="38" width="320" height="52" rx="6"/>
+    <text class="fg-mxs" x="622" y="60">ID トークン</text>
+    <text class="fg-xs" x="622" y="78">JWT に署名されて載り、RP が読む</text>
+    <rect class="fg-box" x="604" y="166" width="320" height="52" rx="6"/>
+    <text class="fg-mxs" x="622" y="188">GET /userinfo</text>
+    <text class="fg-xs" x="622" y="206">JSON 応答の本文に載る</text>
+    <text class="fg-xs" x="36" y="246">2 つのメンバーは別々の要求です。片方に書いた claim がもう片方に現れることはありません</text>
+  </svg>
+  <figcaption class="fig-note">つまずきやすいのはここです。<code>claims["userinfo"]</code> に claim を足しても、RP が何度やり直しても ID トークンには現れません。</figcaption>
+</figure>
 
 `essential` はこの出力先を変えません。変わるのは OP がどこまで取得を試みるかだけです。`acr` に対する essential な要求は再認証を強制しますが、それ以外の claim では best-effort のヒントにとどまります。
 

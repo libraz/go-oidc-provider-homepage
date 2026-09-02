@@ -8,36 +8,42 @@ pageClass: pg-concepts-jarm
 
 By default the OP returns the authorization response (`code`, `state`, `iss`, …) as plain URL query parameters; `form_post` is the alternative non-JARM delivery. Anyone who can rewrite the redirect — a malicious browser extension, a compromised intermediary, a mix-up between two OPs — can substitute fields before the RP sees them. **JARM** (the OpenID Foundation FAPI WG specification "JWT Secured Authorization Response Mode for OAuth 2.0", referenced informationally by RFC 9101 §10.2) wraps that response into a single signed JWT delivered through one `response` parameter, so the response itself becomes tamper-evident and cryptographically attributable to the OP.
 
-<svg role="img" aria-labelledby="jarm-wrap-title" viewBox="0 0 760 340" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jarm-wrap-title">A plain authorization response returns code and state as separate parameters. JARM wraps them in a signed JWT returned as a single response parameter.</title>
-<text class="jarm-text" x="128" y="40" text-anchor="middle">Plain response</text>
-  <rect class="jarm-box" x="40" y="62" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="128" y="94" text-anchor="middle">OP</text>
-  <text class="jarm-sub" x="128" y="116" text-anchor="middle">code / state / iss</text>
-  <rect class="jarm-box" x="544" y="62" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="632" y="96" text-anchor="middle">RP</text>
-  <text class="jarm-sub" x="632" y="118" text-anchor="middle">checks each field</text>
-  <path class="jarm-flow" d="M216 102 H540"/>
-  <text class="jarm-sub halo" x="378" y="88" text-anchor="middle">?code=...&amp;state=...&amp;iss=...</text>
-  <path class="jarm-flow" d="M532 98 L541 102 L532 106"/>
-
-  <text class="jarm-text" x="128" y="198" text-anchor="middle">JARM response</text>
-  <rect class="jarm-box" x="40" y="220" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="128" y="252" text-anchor="middle">OP</text>
-  <text class="jarm-sub" x="128" y="274" text-anchor="middle">signs the whole response</text>
-  <rect class="jarm-main" x="280" y="212" width="150" height="94" rx="8"/>
-  <text class="jarm-text" x="355" y="244" text-anchor="middle">JWT response</text>
-  <text class="jarm-sub" x="355" y="266" text-anchor="middle">iss / aud / exp</text>
-  <text class="jarm-sub" x="355" y="284" text-anchor="middle">code or error</text>
-  <rect class="jarm-box" x="544" y="220" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="632" y="252" text-anchor="middle">RP</text>
-  <text class="jarm-sub" x="632" y="274" text-anchor="middle">verifies the signature</text>
-  <path class="jarm-flow" d="M216 260 H276"/>
-  <path class="jarm-flow" d="M268 256 L277 260 L268 264"/>
-  <path class="jarm-flow" d="M430 260 H540"/>
-  <text class="jarm-sub halo" x="485" y="246" text-anchor="middle">?response=&lt;JWT&gt;</text>
-  <path class="jarm-flow" d="M532 256 L541 260 L532 264"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Loose parameters, or one signed document</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jarm-shape-title" viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+    <title id="jarm-shape-title">A plain authorization response returns the code, the state and the issuer as separate query parameters, each of which the Relying Party has to check on its own. JARM wraps the same values in a signed JWT returned as a single response parameter.</title>
+    <line class="fg-rule fg-rule--dashed" x1="480" y1="16" x2="480" y2="304"/>
+    <text class="fg-lbl" x="40" y="30">plain response</text>
+    <text class="fg-lbl fg-accent" x="500" y="30">jarm response</text>
+    <!-- plain -->
+    <rect class="fg-box" x="163" y="44" width="180" height="52" rx="8"/>
+    <text class="fg-t" x="253" y="68" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="253" y="86" text-anchor="middle">returns the fields as they are</text>
+    <path class="fg-edge" d="M253,100 V124" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--sub" x="113" y="128" width="280" height="72" rx="8"/>
+    <text class="fg-t2" x="253" y="152" text-anchor="middle">three separate parameters</text>
+    <text class="fg-mxs" x="253" y="174" text-anchor="middle">?code=… &amp; state=… &amp; iss=…</text>
+    <text class="fg-xs" x="253" y="191" text-anchor="middle">nothing binds them together</text>
+    <path class="fg-edge" d="M253,204 V228" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="113" y="232" width="280" height="64" rx="8"/>
+    <text class="fg-t" x="253" y="258" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="253" y="278" text-anchor="middle">checks each field on its own</text>
+    <!-- jarm -->
+    <rect class="fg-box fg-box--accent" x="617" y="44" width="180" height="52" rx="8"/>
+    <text class="fg-t fg-accent" x="707" y="68" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="707" y="86" text-anchor="middle">signs the whole response</text>
+    <path class="fg-edge fg-edge--accent" d="M707,100 V124" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="567" y="128" width="280" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="707" y="152" text-anchor="middle">one signed JWT</text>
+    <text class="fg-mxs" x="707" y="172" text-anchor="middle">iss · aud · exp · code, or error</text>
+    <text class="fg-mxs" x="707" y="191" text-anchor="middle">?response=&lt;JWT&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M707,204 V228" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="567" y="232" width="280" height="64" rx="8"/>
+    <text class="fg-t" x="707" y="258" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="707" y="278" text-anchor="middle">verifies one signature, then reads</text>
+  </svg>
+  <figcaption class="fig-note">On the left, an attacker who can rewrite the query string can swap one parameter and leave the rest intact. On the right there is nothing to swap — the values are inside a document that only the OP's key can produce.</figcaption>
+</figure>
 
 JARM is one of the two protections FAPI 2.0 Message Signing layers on top of FAPI 2.0 Baseline. The other is response-side signing at the resource server. Together they give full non-repudiation: every authorization request and every authorization response is signed by an identifiable party.
 

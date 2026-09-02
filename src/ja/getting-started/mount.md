@@ -10,30 +10,32 @@ pageClass: pg-getting-started-mount
 
 OP は組み込み側のルータの 1 段下、自前のハンドラと並ぶ位置に入ります。ミドルウェアは OP も含めて外側から包み、OP が受け持つパス以外はすべて組み込み側のものです。
 
-<svg role="img" aria-labelledby="mount-layers-title" viewBox="0 0 760 296" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="mount-layers-title">OP のハンドラは組み込み側のルータの内側、自前のハンドラと並ぶ位置に入る。listener とミドルウェアは両方を外側から包む。</title>
-  <rect class="mt-layer" x="24" y="24" width="712" height="248" rx="10"/>
-  <text class="mt-title" x="48" y="52">自前の listener</text>
-  <text class="mt-hint" x="712" y="52" text-anchor="end">http.ListenAndServe</text>
-
-  <rect class="mt-layer" x="56" y="64" width="648" height="184" rx="10"/>
-  <text class="mt-title" x="80" y="92">自前のミドルウェア</text>
-  <text class="mt-hint" x="680" y="92" text-anchor="end">otelhttp · promhttp · access log</text>
-
-  <rect class="mt-layer" x="88" y="104" width="584" height="124" rx="10"/>
-  <text class="mt-title" x="112" y="132">自前のルータ</text>
-  <text class="mt-hint" x="648" y="132" text-anchor="end">net/http · chi · gin</text>
-
-  <rect class="mt-box" x="112" y="140" width="252" height="76" rx="8"/>
-  <text class="mt-title" x="238" y="164" text-anchor="middle">自前のハンドラ</text>
-  <text class="mt-route" x="238" y="184" text-anchor="middle">/ · /api/* · /healthz</text>
-  <text class="mt-route" x="238" y="202" text-anchor="middle">/metrics · /debug/pprof</text>
-
-  <rect class="mt-op" x="396" y="140" width="252" height="76" rx="8"/>
-  <text class="mt-title" x="522" y="164" text-anchor="middle">op.Provider</text>
-  <text class="mt-route" x="522" y="184" text-anchor="middle">/oidc/* (mount prefix)</text>
-  <text class="mt-route" x="522" y="202" text-anchor="middle">/.well-known/openid-configuration</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">OP がサーバのどこに入るか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="mount-title" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+    <title id="mount-title">OP のハンドラは組み込み側のルータの内側、自前のハンドラと並ぶ位置に入ります。listener とミドルウェアが両方を外側から包むため、追加の実装なしに OP のエンドポイントまで計測とアクセスログが届きます。</title>
+    <rect class="fg-frame" x="36" y="24" width="888" height="262" rx="10"/>
+    <text class="fg-lbl" x="52" y="46">自前の listener</text>
+    <text class="fg-mxs" x="176" y="46">http.ListenAndServe</text>
+    <rect class="fg-frame" x="56" y="58" width="848" height="208" rx="10"/>
+    <text class="fg-lbl" x="72" y="80">自前のミドルウェア</text>
+    <text class="fg-mxs" x="216" y="80">otelhttp · promhttp · access log</text>
+    <rect class="fg-frame" x="76" y="92" width="808" height="154" rx="10"/>
+    <text class="fg-lbl" x="92" y="114">自前のルータ</text>
+    <text class="fg-mxs" x="196" y="114">net/http · chi · gin</text>
+    <rect class="fg-box" x="96" y="128" width="374" height="98" rx="8"/>
+    <text class="fg-t2" x="116" y="154">自前のハンドラ</text>
+    <text class="fg-mxs" x="116" y="180">/ · /api/* · /healthz</text>
+    <text class="fg-mxs" x="116" y="200">/metrics · /debug/pprof</text>
+    <text class="fg-xs" x="116" y="218">OP が関与しない部分はすべてここ</text>
+    <rect class="fg-box fg-box--accent" x="490" y="128" width="374" height="98" rx="8"/>
+    <text class="fg-t2 fg-accent" x="510" y="154">op.Provider</text>
+    <text class="fg-mxs" x="510" y="180">/oidc/* — マウント先の prefix は任意</text>
+    <text class="fg-mxs" x="510" y="200">/.well-known/openid-configuration</text>
+    <text class="fg-xs" x="510" y="218">占有するのは 1 つの subtree だけ</text>
+  </svg>
+  <figcaption class="fig-note">OP が占有するのは 1 つの subtree だけで、その外側には触れません。例外は discovery ドキュメントで、これは仕様がホストのルート直下に固定しています。外側を包む部分はすべて組み込み側のもので、これまでどおり動きます。</figcaption>
+</figure>
 
 ## net/http、chi、gin で使う
 

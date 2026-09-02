@@ -16,40 +16,48 @@ pageClass: pg-compliance-ofcs-reproduce
 本サイトの数値は再現可能なスナップショットであり、本ページはその再現手順を扱います。これは有償の OpenID Foundation 認証の代替ではありません。ローカルでスイートを実行して自分の組み込みを検証する用途には使えますが、ローカルの PASS 数を認証として引用しないでください。
 :::
 
-<svg role="img" aria-labelledby="ofcs-reproduce-title" viewBox="0 0 760 260" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ofcs-reproduce-title">OFCS 再現手順: 証明書を生成し、OFCS と op-demo を起動し、プランを登録し、ベースラインを保存し、差分を確認する。</title>
-<rect class="repro-box" x="24" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="86" y="122" text-anchor="middle">証明書生成</text>
-  <text class="repro-sub" x="86" y="144" text-anchor="middle">certs</text>
-
-  <rect class="repro-box" x="174" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="236" y="122" text-anchor="middle">OFCS 起動</text>
-  <text class="repro-sub" x="236" y="144" text-anchor="middle">docker compose</text>
-
-  <rect class="repro-main" x="324" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="386" y="122" text-anchor="middle">op-demo 起動</text>
-  <text class="repro-sub" x="386" y="144" text-anchor="middle">profile を選択</text>
-
-  <rect class="repro-box" x="474" y="92" width="124" height="72" rx="8"/>
-  <text class="repro-text" x="536" y="122" text-anchor="middle">プラン登録</text>
-  <text class="repro-sub" x="536" y="144" text-anchor="middle">seed-plans</text>
-
-  <rect class="repro-box" x="624" y="50" width="112" height="58" rx="8"/>
-  <text class="repro-text" x="680" y="84" text-anchor="middle">実行</text>
-  <rect class="repro-box" x="624" y="148" width="112" height="58" rx="8"/>
-  <text class="repro-text" x="680" y="182" text-anchor="middle">差分確認</text>
-
-  <path class="repro-flow" d="M148 128 H170"/>
-  <path class="repro-flow" d="M162 124 L171 128 L162 132"/>
-  <path class="repro-flow" d="M298 128 H320"/>
-  <path class="repro-flow" d="M312 124 L321 128 L312 132"/>
-  <path class="repro-flow" d="M448 128 H470"/>
-  <path class="repro-flow" d="M462 124 L471 128 L462 132"/>
-  <path class="repro-flow" d="M598 128 H611 V79 H620"/>
-  <path class="repro-flow" d="M612 75 L621 79 L612 83"/>
-  <path class="repro-flow" d="M680 108 V144"/>
-  <path class="repro-flow" d="M676 136 L680 145 L684 136"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">実行を再現する手順</div>
+  <svg class="fig-svg" role="img" aria-labelledby="ofcs-repro-title" viewBox="0 0 960 148" xmlns="http://www.w3.org/2000/svg">
+    <title id="ofcs-repro-title">適合テストの実行を再現する 6 手順。証明書を生成し、適合スイートを起動し、対象プロファイルでデモ用 OP を起動し、プランを登録し、実行し、記録済みのベースラインと差分を取ります。</title>
+    <rect class="fg-box" x="36" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="54" cy="60" r="9"/>
+    <text class="fg-badge-t" x="54" y="63" text-anchor="middle">1</text>
+    <text class="fg-t2" x="52" y="90">証明書を生成</text>
+    <text class="fg-mxs" x="52" y="110">make certs</text>
+    <path class="fg-edge fg-edge--thin" d="M178,82 H186" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="190" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="208" cy="60" r="9"/>
+    <text class="fg-badge-t" x="208" y="63" text-anchor="middle">2</text>
+    <text class="fg-t2" x="206" y="90">OFCS を起動</text>
+    <text class="fg-mxs" x="206" y="110">docker compose</text>
+    <path class="fg-edge fg-edge--thin" d="M332,82 H340" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="344" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="362" cy="60" r="9"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="362" y="63" text-anchor="middle">3</text>
+    <text class="fg-t2 fg-accent" x="360" y="90">op-demo を起動</text>
+    <text class="fg-xs" x="360" y="110">対象プロファイルを指定して</text>
+    <path class="fg-edge fg-edge--thin" d="M486,82 H494" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="498" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="516" cy="60" r="9"/>
+    <text class="fg-badge-t" x="516" y="63" text-anchor="middle">4</text>
+    <text class="fg-t2" x="514" y="90">プランを登録</text>
+    <text class="fg-mxs" x="514" y="110">seed-plans</text>
+    <path class="fg-edge fg-edge--thin" d="M640,82 H648" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="652" y="40" width="138" height="84" rx="8"/>
+    <circle class="fg-badge" cx="670" cy="60" r="9"/>
+    <text class="fg-badge-t" x="670" y="63" text-anchor="middle">5</text>
+    <text class="fg-t2" x="668" y="90">実行</text>
+    <text class="fg-xs" x="668" y="110">9 本すべてを無人で</text>
+    <path class="fg-edge fg-edge--thin" d="M794,82 H802" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="806" y="40" width="118" height="84" rx="8"/>
+    <circle class="fg-badge" cx="824" cy="60" r="9"/>
+    <text class="fg-badge-t" x="824" y="63" text-anchor="middle">6</text>
+    <text class="fg-t2" x="822" y="90">差分を取る</text>
+    <text class="fg-xs" x="822" y="110">ベースラインと比較</text>
+  </svg>
+  <figcaption class="fig-note">この実行に意味を与えているのは手順 6 です。通過数だけを見ていると気付かないうちにずれていきますが、記録したベースラインとの差分なら、どの module が変わったかを名指しできます。</figcaption>
+</figure>
 
 ## 前提
 

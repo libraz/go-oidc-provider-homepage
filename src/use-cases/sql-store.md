@@ -32,21 +32,25 @@ The same applies to the Redis adapter.
 
 ## Architecture
 
-<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 760 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="sql-store-arch-title">op.Provider talks to the storeadapter/sql package over the Store interface, and the adapter persists each substore to its own table inside the SQL database.</title>
-  <rect x="16" y="30" width="180" height="60" rx="8" class="arch-op"/>
-  <text x="106" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5" font-weight="600">op.Provider</text>
-  <path d="M196 60 H298"/>
-  <path d="M292 55 l6 5 -6 5"/>
-  <text x="247" y="48" text-anchor="middle" class="lbl" font-size="11.5"><tspan class="mono">Store</tspan> interface</text>
-  <rect x="300" y="30" width="190" height="60" rx="8"/>
-  <text x="395" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5">storeadapter/sql</text>
-  <path d="M490 60 H578"/>
-  <path d="M572 55 l6 5 -6 5"/>
-  <rect x="580" y="30" width="164" height="60" rx="10" class="arch-db"/>
-  <text x="662" y="55" text-anchor="middle" class="mono" font-size="13.5" font-weight="600">SQL DB</text>
-  <text x="662" y="75" text-anchor="middle" class="lbl" font-size="11" fill="var(--vp-c-text-3)">oidc_* tables</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">One adapter, one table per substore</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-sqlstore-title" viewBox="0 0 960 126" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-sqlstore-title">The provider talks to the SQL store adapter over the Store interface, and the adapter persists each substore into its own table inside the database you already run.</title>
+    <rect class="fg-box" x="36" y="34" width="260" height="70" rx="8"/>
+    <text class="fg-t2" x="56" y="62">op.Provider</text>
+    <text class="fg-xs" x="56" y="84">knows nothing about SQL</text>
+    <path class="fg-edge" d="M300,66 H346" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="323" y="59" text-anchor="middle">Store</text>
+    <rect class="fg-box fg-box--accent" x="350" y="34" width="260" height="70" rx="8"/>
+    <text class="fg-m fg-accent" x="370" y="62">storeadapter/sql</text>
+    <text class="fg-xs" x="370" y="84">the only place that speaks SQL</text>
+    <path class="fg-edge fg-edge--accent" d="M614,66 H660" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="664" y="34" width="260" height="70" rx="8"/>
+    <text class="fg-t2" x="684" y="62">Your SQL database</text>
+    <text class="fg-mxs" x="684" y="84">oidc_* tables</text>
+  </svg>
+  <figcaption class="fig-note">The tables carry an <code>oidc_</code> prefix so they can sit in a schema you already own without colliding with anything. Nothing above them knows the schema exists.</figcaption>
+</figure>
 
 Each substore maps to one table. These are the tables the protocol paths touch most:
 

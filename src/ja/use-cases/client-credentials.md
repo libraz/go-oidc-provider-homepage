@@ -33,31 +33,33 @@ cron ジョブ、webhook、マイクロサービス間呼び出しなど、ブ�
 
 ## アーキテクチャ
 
-<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="0 0 760 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="cc-svc-flow-title">サービス間 client_credentials フロー: Service A が OP からアクセストークンを取得し、それを付けて Service B を呼び出し、Service B が OP でトークンを検証する。</title>
-  <rect class="d-box" x="16" y="40" width="160" height="72" rx="6"/>
-  <rect class="d-op" x="300" y="40" width="160" height="72" rx="6"/>
-  <rect class="d-box" x="584" y="40" width="160" height="72" rx="6"/>
-  <text class="d-bt" x="96" y="72" text-anchor="middle">Service A</text>
-  <text class="d-bs" x="96" y="92" text-anchor="middle">confidential クライアント</text>
-  <text class="d-bt d-op-text" x="380" y="72" text-anchor="middle">OP</text>
-  <text class="d-bs d-op-sub" x="380" y="92" text-anchor="middle">認可サーバ</text>
-  <text class="d-bt" x="664" y="72" text-anchor="middle">Service B</text>
-  <text class="d-bs" x="664" y="92" text-anchor="middle">リソースサーバ</text>
-  <line x1="182" y1="62" x2="294" y2="62"/>
-  <path d="M288 57 L294 62 L288 67"/>
-  <line x1="294" y1="90" x2="182" y2="90"/>
-  <path d="M188 85 L182 90 L188 95"/>
-  <line x1="578" y1="76" x2="466" y2="76"/>
-  <path d="M472 71 L466 76 L472 81"/>
-  <path d="M96 112 C96 176 664 176 664 116"/>
-  <path d="M659 123 L664 116 L669 123"/>
-  <text class="d-lbl" x="238" y="50" text-anchor="middle">1. <tspan class="d-tok">POST /token</tspan></text>
-  <text class="d-lbl" x="238" y="108" text-anchor="middle">2. <tspan class="d-tok">access_token</tspan></text>
-  <text class="d-lbl" x="522" y="62" text-anchor="middle">4. トークンを検証</text>
-  <text class="d-tok" x="522" y="96" text-anchor="middle" font-size="10">/introspect · /jwks</text>
-  <text class="d-lbl" x="380" y="150" text-anchor="middle">3. <tspan class="d-tok">Authorization: Bearer</tspan></text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">サービス間通信、ユーザは登場しない</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-cc-title" viewBox="0 0 960 196" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-cc-title">Service A が自分自身として OP に認証してアクセストークンを受け取り、それを付けて Service B を呼び出します。Service B は introspection か公開鍵集合のいずれかでそのトークンを検証します。</title>
+    <rect class="fg-box" x="36" y="56" width="230" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="82">Service A</text>
+    <text class="fg-xs" x="56" y="104">confidential クライアント</text>
+    <text class="fg-xs" x="56" y="120">実際に資格情報を保持する</text>
+    <path class="fg-edge" d="M270,80 H346" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="308" y="73" text-anchor="middle">1 · POST /token</text>
+    <path class="fg-edge fg-edge--accent" d="M346,112 H270" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="308" y="130" text-anchor="middle">2 · access_token</text>
+    <rect class="fg-box fg-box--accent" x="350" y="56" width="230" height="76" rx="8"/>
+    <text class="fg-t2 fg-accent" x="370" y="82">OP</text>
+    <text class="fg-xs" x="370" y="104">認可サーバー</text>
+    <text class="fg-mxs" x="370" y="120">/token · /introspect · /jwks</text>
+    <path class="fg-edge fg-edge--muted" d="M694,132 V158 H466 V136" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="580" y="152" text-anchor="middle">4 · トークンを検証する — /introspect か、/jwks で自前に</text>
+    <path class="fg-edge" d="M270,94 H660" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="620" y="88" text-anchor="middle">3 · Authorization: Bearer &lt;token&gt;</text>
+    <rect class="fg-box" x="664" y="56" width="260" height="76" rx="8"/>
+    <text class="fg-t2" x="684" y="82">Service B</text>
+    <text class="fg-xs" x="684" y="104">リソースサーバ</text>
+    <text class="fg-xs" x="684" y="120">Service A の資格情報は一切見ない</text>
+  </svg>
+  <figcaption class="fig-note">手順 3 が OP の前を横切っているのは、この通信に OP が関与しないからです。トークンについて OP に問い合わせるか自分で署名を検証するかは、手順 4 で Service B が決めます。その選択がアクセストークン形式のページの主題です。</figcaption>
+</figure>
 
 `/authorize` 無し、同意無し、`id_token` 無し、リフレッシュトークン無し。
 

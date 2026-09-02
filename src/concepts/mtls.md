@@ -51,46 +51,60 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
 
 ## Reverse-proxy deployments
 
-<svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="mtls-proxy-trust-title">Reverse-proxy trust boundary: a TLS-terminating proxy injects the client certificate into a header; the OP consults it only when the request arrives from a trusted CIDR and treats the forwarded certificate as authoritative.</title>
-  <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="9.5">PUBLIC</text>
-  <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="9.5">EDGE</text>
-  <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="9.5">OP TRUST ZONE</text>
-  <line x1="80" y1="120" x2="740" y2="120" class="d-faint"/>
-  <rect x="260" y="28" width="300" height="64" rx="10"/>
-  <text x="410" y="53" text-anchor="middle" class="d-label" font-size="15.5" font-weight="600">Client</text>
-  <text x="410" y="77" text-anchor="middle" class="d-sub halo" font-size="11.5">X.509 client cert</text>
-  <path d="M410 92 L410 138"/>
-  <path d="M405 131 L410 138 L415 131"/>
-  <text x="428" y="110" class="d-sub halo" font-size="10.5">TLS handshake</text>
-  <text x="428" y="125" class="d-sub halo" font-size="10">presents client cert</text>
-  <rect x="210" y="138" width="400" height="92" rx="10"/>
-  <text x="410" y="164" text-anchor="middle" class="d-label" font-size="14.5" font-weight="600">TLS-terminating proxy</text>
-  <text x="410" y="188" text-anchor="middle" class="d-sub halo" font-size="10.5">injects client cert into a header</text>
-  <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11">X-SSL-Cert: &lt;PEM&gt;</text>
-  <line x1="80" y1="262" x2="740" y2="262" stroke-width="1.5" stroke-dasharray="6 6"/>
-  <text x="88" y="256" class="d-sub halo" font-size="10.5">trust boundary</text>
-  <path d="M410 230 L410 298"/>
-  <path d="M405 291 L410 298 L415 291"/>
-  <rect x="260" y="298" width="300" height="64" rx="10"/>
-  <text x="410" y="323" text-anchor="middle" class="d-label" font-size="12.5" font-weight="600">trusted-CIDR gate</text>
-  <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11">RemoteAddr ∈ trustedCIDRs?</text>
-  <path d="M560 330 L634 330"/>
-  <path d="M627 325 L634 330 L627 335"/>
-  <text x="598" y="322" text-anchor="middle" class="d-sub halo" font-size="10">out of range</text>
-  <rect x="636" y="304" width="112" height="52" rx="8"/>
-  <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10">header ignored</text>
-  <text x="692" y="344" text-anchor="middle" class="d-sub halo" font-size="10">fail closed</text>
-  <path d="M410 362 L410 408"/>
-  <path d="M405 401 L410 408 L415 401"/>
-  <text x="396" y="380" text-anchor="end" class="d-sub halo" font-size="10">in range</text>
-  <text x="396" y="395" text-anchor="end" class="d-sub halo" font-size="10">header authoritative</text>
-  <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
-  <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — this library</text>
-  <text x="410" y="462" text-anchor="middle" class="d-sub halo" font-size="10.5">handshake cert used on direct TLS</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub halo" font-size="10.5">forwarded client cert selected</text>
-  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">cnf.x5t#S256</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Where the certificate crosses the trust boundary</div>
+  <svg class="fig-svg" role="img" aria-labelledby="mtls-proxy-title" viewBox="0 0 960 486" xmlns="http://www.w3.org/2000/svg">
+    <title id="mtls-proxy-title">A TLS-terminating proxy takes the client certificate off the handshake and forwards it in a header. The OP only reads that header when the request arrives from an address inside the trusted CIDR list; from anywhere else the header is ignored and the request fails closed.</title>
+    <!-- zones -->
+    <rect class="fg-group" x="30" y="30" width="900" height="110" rx="8"/>
+    <rect class="fg-group" x="30" y="152" width="900" height="130" rx="8"/>
+    <rect class="fg-group" x="30" y="302" width="900" height="172" rx="8"/>
+    <text class="fg-lbl" x="46" y="48">public</text>
+    <text class="fg-lbl" x="46" y="170">edge</text>
+    <text class="fg-lbl fg-accent" x="46" y="320">op trust zone</text>
+    <!-- client -->
+    <rect class="fg-box" x="330" y="56" width="300" height="68" rx="8"/>
+    <text class="fg-t" x="480" y="80" text-anchor="middle">Client</text>
+    <text class="fg-xs" x="480" y="98" text-anchor="middle">holds an X.509 client certificate</text>
+    <text class="fg-mxs" x="480" y="114" text-anchor="middle">presents it in the TLS handshake</text>
+    <path class="fg-edge" d="M480,128 V178" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="496" y="150">mutual TLS handshake</text>
+    <!-- proxy -->
+    <rect class="fg-box" x="330" y="182" width="300" height="82" rx="8"/>
+    <text class="fg-t2" x="480" y="206" text-anchor="middle">TLS-terminating proxy</text>
+    <text class="fg-xs" x="480" y="224" text-anchor="middle">terminates TLS, copies the certificate out</text>
+    <text class="fg-mxs" x="480" y="244" text-anchor="middle">X-SSL-Cert: &lt;PEM&gt;</text>
+    <!-- trust boundary -->
+    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="30" y1="292" x2="930" y2="292"/>
+    <text class="fg-lbl" x="806" y="287">trust boundary</text>
+    <path class="fg-edge" d="M480,268 V326" marker-end="url(#fg-a)"/>
+    <!-- gate -->
+    <rect class="fg-box fg-box--accent" x="360" y="330" width="240" height="60" rx="8"/>
+    <text class="fg-t2 fg-accent" x="480" y="354" text-anchor="middle">trusted-CIDR gate</text>
+    <text class="fg-mxs" x="480" y="374" text-anchor="middle">RemoteAddr ∈ trustedCIDRs?</text>
+    <!-- rejected -->
+    <path class="fg-edge fg-edge--danger" d="M356,360 H244" marker-end="url(#fg-ad)"/>
+    <text class="fg-xs" x="300" y="353" text-anchor="middle">out of range</text>
+    <rect class="fg-box fg-box--danger" x="46" y="330" width="194" height="60" rx="8"/>
+    <text class="fg-t2" x="64" y="354">Header ignored</text>
+    <text class="fg-xs" x="64" y="374">fail closed — no certificate</text>
+    <!-- accepted -->
+    <path class="fg-edge fg-edge--accent" d="M604,360 H716" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="660" y="353" text-anchor="middle">in range</text>
+    <rect class="fg-box fg-box--accent" x="720" y="330" width="194" height="60" rx="8"/>
+    <text class="fg-t2 fg-accent" x="738" y="354">Header authoritative</text>
+    <text class="fg-xs" x="738" y="374">the forwarded cert is used</text>
+    <!-- OP -->
+    <path class="fg-edge fg-edge--accent" d="M817,394 V430 H634" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="330" y="404" width="300" height="54" rx="8"/>
+    <text class="fg-t fg-accent" x="480" y="426" text-anchor="middle">OP — this library</text>
+    <text class="fg-mxs" x="480" y="446" text-anchor="middle">cnf.x5t#S256 binds the cert to the token</text>
+    <text class="fg-xs" x="46" y="424">on direct TLS, with no proxy in front,</text>
+    <text class="fg-xs" x="46" y="440">the OP uses the handshake certificate</text>
+    <text class="fg-xs" x="46" y="456">and never consults a header at all</text>
+  </svg>
+  <figcaption class="fig-note">The gate is the whole security argument. A header is trivially forgeable by anyone who can reach the OP directly, so the certificate it carries is only meaningful once the OP knows the request came from the proxy that wrote it.</figcaption>
+</figure>
 
 The OP almost never terminates TLS itself in production. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header (`X-SSL-Cert`, `X-Forwarded-Client-Cert`, …).
 

@@ -20,32 +20,37 @@ Most pages start with the same decision shape:
 
 If you are new to the library, start with [Minimal OP](/use-cases/minimal-op), then [Comprehensive bundle](/use-cases/bundle), and only jump to the pages below when your deployment has that specific need.
 
-<svg role="img" aria-labelledby="use-cases-route-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="use-cases-route-title">How to read the use-case pages: start from the minimal OP, then branch into profile, UI, storage, authentication, advanced grants, and operations as the deployment needs them.</title>
-<rect class="uc-main" x="36" y="106" width="146" height="74" rx="8"/>
-  <text class="uc-text" x="109" y="136" text-anchor="middle">Minimal OP</text>
-  <text class="uc-sub" x="109" y="158" text-anchor="middle">boot it first</text>
-
-  <rect class="uc-box" x="282" y="28" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="360" y="62" text-anchor="middle">Profile / flow</text>
-  <rect class="uc-box" x="282" y="104" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="360" y="138" text-anchor="middle">UI / SPA</text>
-  <rect class="uc-box" x="282" y="180" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="360" y="214" text-anchor="middle">Storage / Auth</text>
-
-  <rect class="uc-box" x="552" y="68" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="630" y="102" text-anchor="middle">Advanced grants</text>
-  <rect class="uc-box" x="552" y="160" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="630" y="194" text-anchor="middle">Crypto / operations</text>
-
-  <path class="uc-flow" d="M182 143 C224 102 244 56 278 56"/>
-  <path class="uc-flow" d="M182 143 H278"/>
-  <path class="uc-flow" d="M182 143 C224 178 244 208 278 208"/>
-  <path class="uc-flow" d="M438 82 C488 86 506 96 548 96"/>
-  <path class="uc-flow" d="M540 92 L549 96 L540 100"/>
-  <path class="uc-flow" d="M438 204 C488 198 506 188 548 188"/>
-  <path class="uc-flow" d="M540 184 L549 188 L540 192"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">A reading order for these pages</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-index-title" viewBox="0 0 960 254" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-index-title">Start from the minimal OP, then branch into whichever of the five areas the deployment actually needs: profile and flow, UI, storage and authentication, advanced grants, or cryptography and operations.</title>
+    <rect class="fg-box fg-box--accent" x="36" y="98" width="200" height="66" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="126">Minimal OP</text>
+    <text class="fg-xs" x="56" y="146">get it booting first</text>
+    <path class="fg-leader" d="M240,131 H270 M270,43 V219"/>
+    <path class="fg-edge fg-edge--thin" d="M270,43 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,87 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,131 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,175 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,219 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="300" y="24" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="47">Profile and flow</text>
+    <text class="fg-xs" x="470" y="47">FAPI, CIBA, device code, token exchange</text>
+    <rect class="fg-box" x="300" y="68" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="91">UI and SPA</text>
+    <text class="fg-xs" x="470" y="91">custom screens, the account chooser, step-up MFA</text>
+    <rect class="fg-box" x="300" y="112" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="135">Storage and authentication</text>
+    <text class="fg-xs" x="510" y="135">SQL, DynamoDB, Redis, your own user store</text>
+    <rect class="fg-box" x="300" y="156" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="179">Advanced grants</text>
+    <text class="fg-xs" x="470" y="179">grant management, authorization details, dynamic registration</text>
+    <rect class="fg-box" x="300" y="200" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="223">Cryptography and operations</text>
+    <text class="fg-xs" x="510" y="223">JWE, pairwise subjects, protected-resource metadata</text>
+  </svg>
+  <figcaption class="fig-note">The five rows are independent — take the one that matches what you are building. Only the box on the left has to come first.</figcaption>
+</figure>
 
 ## The reference application
 

@@ -102,34 +102,35 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 
 The handler chooses between **OP-signed** (`BoundAccessToken`) and **handler-signed** (`AccessToken`) — they are mutually exclusive.
 
-<svg class="cg-sign" role="img" aria-labelledby="custom-grant-signing-title" viewBox="0 0 760 290" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="custom-grant-signing-title">The two issuance shapes a custom grant can return. With BoundAccessToken the OP owns signing, standard claims, cnf, the ID token, and the refresh token. With AccessToken the handler returns an already-signed value and takes on cnf and introspection wiring itself.</title>
-  <defs>
-    <marker id="cg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="280" y="20" width="200" height="52" rx="8"/>
-  <text class="h" x="380" y="43" text-anchor="middle">CustomGrantHandler</text>
-  <text class="m sub" x="380" y="61" text-anchor="middle">Handle(ctx, req)</text>
-
-  <rect class="accent" x="48" y="134" width="286" height="136" rx="8"/>
-  <text class="h accent-text" x="191" y="162" text-anchor="middle">return BoundAccessToken</text>
-  <text class="t" x="191" y="190" text-anchor="middle">the OP picks the key and mints the JWT</text>
-  <text class="t sub" x="191" y="214" text-anchor="middle">standard claims · <tspan class="m">cnf</tspan> · TTL ceiling</text>
-  <text class="t sub" x="191" y="236" text-anchor="middle">id_token and refresh stay OP-managed</text>
-  <text class="m accent-text" x="191" y="258" text-anchor="middle">the default choice</text>
-
-  <rect x="426" y="134" width="286" height="136" rx="8"/>
-  <text class="h" x="569" y="162" text-anchor="middle">return AccessToken</text>
-  <text class="t" x="569" y="190" text-anchor="middle">the handler returns a signed value</text>
-  <text class="t sub" x="569" y="214" text-anchor="middle">for an external KMS or opaque backend</text>
-  <text class="t sub" x="569" y="236" text-anchor="middle"><tspan class="m">cnf</tspan> and revocation are yours</text>
-  <text class="m sub" x="569" y="258" text-anchor="middle">only with a concrete reason</text>
-
-  <path d="M350 72 C330 104 250 112 191 130" marker-end="url(#cg-arrow)"/>
-  <path d="M410 72 C430 104 510 112 569 130" marker-end="url(#cg-arrow)"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Two shapes a custom grant can return</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-customgrant-title" viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-customgrant-title">A custom grant handler can return a bound access token, in which case the OP owns the signing key, the standard claims, the confirmation claim, the ID token and the refresh token; or it can return an already-signed access token, in which case the confirmation claim and revocation wiring become the handler's responsibility.</title>
+    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="52" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="48" text-anchor="middle">CustomGrantHandler</text>
+    <text class="fg-mxs" x="480" y="66" text-anchor="middle">Handle(ctx, req)</text>
+    <path class="fg-leader" d="M480,80 V96 M253,96 H707"/>
+    <path class="fg-edge fg-edge--accent" d="M253,96 V116" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--muted" d="M707,96 V116" marker-end="url(#fg-am)"/>
+    <rect class="fg-box fg-box--accent" x="36" y="120" width="434" height="146" rx="8"/>
+    <text class="fg-m fg-accent" x="56" y="146">return BoundAccessToken</text>
+    <text class="fg-lbl fg-accent" x="56" y="166">the default choice</text>
+    <line class="fg-rule" x1="56" y1="178" x2="450" y2="178"/>
+    <text class="fg-xs" x="56" y="198">the OP picks the key and mints the JWT</text>
+    <text class="fg-xs" x="56" y="216">standard claims · cnf · the TTL ceiling</text>
+    <text class="fg-xs" x="56" y="234">the ID token and refresh token stay OP-managed</text>
+    <text class="fg-xs fg-ok" x="56" y="254">nothing about revocation is yours to wire</text>
+    <rect class="fg-box" x="490" y="120" width="434" height="146" rx="8"/>
+    <text class="fg-m" x="510" y="146">return AccessToken</text>
+    <text class="fg-lbl fg-warn" x="510" y="166">only with a concrete reason</text>
+    <line class="fg-rule" x1="510" y1="178" x2="904" y2="178"/>
+    <text class="fg-xs" x="510" y="198">the handler returns an already-signed value</text>
+    <text class="fg-xs" x="510" y="216">for an external KMS, or an opaque backend</text>
+    <text class="fg-xs" x="510" y="234">cnf and introspection are yours to wire</text>
+    <text class="fg-xs fg-warn" x="510" y="254">so is making revocation reach anywhere</text>
+  </svg>
+  <figcaption class="fig-note">The right-hand shape exists for cases where the signing key genuinely is not the OP's to use. Reaching for it otherwise moves four separate obligations from the library onto your handler, and they are the ones that are easy to get subtly wrong.</figcaption>
+</figure>
 
 The two shapes are mutually exclusive. A handler that returns both yields `server_error`, because exactly one party owns issuance.
 

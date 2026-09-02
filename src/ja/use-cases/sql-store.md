@@ -34,21 +34,25 @@ Redis アダプタも同様です。
 
 ## アーキテクチャ
 
-<svg role="img" aria-labelledby="sql-store-arch-title" viewBox="0 0 760 120" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="sql-store-arch-title">op.Provider は Store インターフェース越しに storeadapter/sql を呼び、アダプタが各サブストアを SQL データベース内の専用テーブルへ永続化する。</title>
-  <rect x="16" y="30" width="180" height="60" rx="8" class="arch-op"/>
-  <text x="106" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5" font-weight="600">op.Provider</text>
-  <path d="M196 60 H298"/>
-  <path d="M292 55 l6 5 -6 5"/>
-  <text x="247" y="48" text-anchor="middle" class="lbl" font-size="11.5"><tspan class="mono">Store</tspan> インターフェース</text>
-  <rect x="300" y="30" width="190" height="60" rx="8"/>
-  <text x="395" y="60" text-anchor="middle" dominant-baseline="central" class="mono" font-size="13.5">storeadapter/sql</text>
-  <path d="M490 60 H578"/>
-  <path d="M572 55 l6 5 -6 5"/>
-  <rect x="580" y="30" width="164" height="60" rx="10" class="arch-db"/>
-  <text x="662" y="55" text-anchor="middle" class="mono" font-size="13.5" font-weight="600">SQL DB</text>
-  <text x="662" y="75" text-anchor="middle" class="lbl" font-size="11" fill="var(--vp-c-text-3)">oidc_* テーブル</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">アダプタ 1 つ、サブストアごとにテーブル 1 つ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-sqlstore-title" viewBox="0 0 960 126" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-sqlstore-title">OP は Store インタフェース越しに SQL ストアアダプタを呼び、アダプタが各サブストアを、既に運用しているデータベース内の専用テーブルへ永続化します。</title>
+    <rect class="fg-box" x="36" y="34" width="260" height="70" rx="8"/>
+    <text class="fg-t2" x="56" y="62">op.Provider</text>
+    <text class="fg-xs" x="56" y="84">SQL について何も知らない</text>
+    <path class="fg-edge" d="M300,66 H346" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="323" y="59" text-anchor="middle">Store</text>
+    <rect class="fg-box fg-box--accent" x="350" y="34" width="260" height="70" rx="8"/>
+    <text class="fg-m fg-accent" x="370" y="62">storeadapter/sql</text>
+    <text class="fg-xs" x="370" y="84">SQL を話すのはここだけ</text>
+    <path class="fg-edge fg-edge--accent" d="M614,66 H660" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="664" y="34" width="260" height="70" rx="8"/>
+    <text class="fg-t2" x="684" y="62">自社の SQL データベース</text>
+    <text class="fg-mxs" x="684" y="84">oidc_* テーブル</text>
+  </svg>
+  <figcaption class="fig-note">テーブル名に <code>oidc_</code> の接頭辞を付けているのは、既存のスキーマにそのまま同居させても衝突しないようにするためです。その上の層はスキーマの存在を知りません。</figcaption>
+</figure>
 
 サブストアはそれぞれ 1 つのテーブルに対応します。プロトコル処理が最もよく触るのは次のテーブルです。
 

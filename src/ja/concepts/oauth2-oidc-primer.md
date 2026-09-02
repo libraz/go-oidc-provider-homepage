@@ -54,37 +54,49 @@ pageClass: pg-concepts-oauth2-oidc-primer
 
 ## 3 つの役割
 
-<svg class="diag diag-roles" role="img" aria-labelledby="roles-title" viewBox="0 0 760 202" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="roles-title">OAuth / OIDC の 3 つの役割: RP は OP に認証を委任してトークンを受け取り、Bearer アクセストークンで RS を呼び出す。</title>
-  <defs>
-    <marker id="roles-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="14" y="16" width="186" height="128" rx="8"/>
-  <rect class="op" x="287" y="16" width="186" height="128" rx="8"/>
-  <rect class="rs" x="560" y="16" width="186" height="128" rx="8"/>
-  <text class="p" x="107" y="50" text-anchor="middle" font-size="17.5" font-weight="700">RP</text>
-  <text class="p sub" x="107" y="72" text-anchor="middle" font-size="10.5">Relying Party / client</text>
-  <text class="p sub" x="107" y="90" text-anchor="middle" font-size="10.5">あなたのアプリ</text>
-  <text class="p sub" x="107" y="114" text-anchor="middle" font-size="9.5">ログインを開始し、</text>
-  <text class="p sub" x="107" y="128" text-anchor="middle" font-size="9.5">トークンを保持し API を呼ぶ</text>
-  <text class="p opf" x="380" y="50" text-anchor="middle" font-size="17.5" font-weight="700">OP</text>
-  <text class="p sub" x="380" y="72" text-anchor="middle" font-size="10.5">OpenID Provider</text>
-  <text class="m opf" x="380" y="91" text-anchor="middle" font-size="10.5">go-oidc-provider</text>
-  <text class="p sub" x="380" y="114" text-anchor="middle" font-size="9.5">ユーザを認証し、</text>
-  <text class="p sub" x="380" y="128" text-anchor="middle" font-size="9.5">トークンを発行</text>
-  <text class="p rsf" x="653" y="50" text-anchor="middle" font-size="17.5" font-weight="700">RS</text>
-  <text class="p sub" x="653" y="72" text-anchor="middle" font-size="10.5">Resource Server</text>
-  <text class="p sub" x="653" y="90" text-anchor="middle" font-size="10.5">あなたの API</text>
-  <text class="p sub" x="653" y="114" text-anchor="middle" font-size="9.5">アクセストークンを検証し</text>
-  <text class="p sub" x="653" y="128" text-anchor="middle" font-size="9.5">データを返す</text>
-  <text class="p sub" x="243" y="60" text-anchor="middle" font-size="9.5">認証を委任 /</text>
-  <text class="p sub" x="243" y="74" text-anchor="middle" font-size="9.5">トークンを受領</text>
-  <line x1="200" y1="88" x2="287" y2="88" marker-start="url(#roles-ah)" marker-end="url(#roles-ah)"/>
-  <path d="M120 144 C 120 200, 640 200, 640 144" marker-end="url(#roles-ah)"/>
-  <text class="p sub halo" x="380" y="178" text-anchor="middle" font-size="9.5"><tspan class="m">Bearer</tspan> アクセストークン</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">3 つの役割</div>
+  <svg class="fig-svg" role="img" aria-labelledby="primer-roles-title" viewBox="0 48 960 180" xmlns="http://www.w3.org/2000/svg">
+    <title id="primer-roles-title">OAuth と OIDC の 3 つの役割を示した図。RP は OP にログインを委任してトークンを受け取り、Bearer アクセストークンで RS を呼び出します。RS はそのトークンを OP の鍵で検証します。</title>
+    <!-- Relying Party -->
+    <rect class="fg-box" x="56" y="64" width="176" height="104" rx="8"/>
+    <text class="fg-lbl" x="70" y="83">RP</text>
+    <text class="fg-t" x="144" y="105" text-anchor="middle">Relying Party</text>
+    <text class="fg-mxs" x="144" y="119" text-anchor="middle">あなたのアプリ</text>
+    <line class="fg-rule" x1="70" y1="129" x2="218" y2="129"/>
+    <text class="fg-xs" x="144" y="145" text-anchor="middle">ログインを開始する</text>
+    <text class="fg-xs" x="144" y="158" text-anchor="middle">トークンを保持し API を呼ぶ</text>
+    <!-- OpenID Provider -->
+    <rect class="fg-box fg-box--accent" x="392" y="64" width="176" height="104" rx="8"/>
+    <text class="fg-lbl fg-accent" x="406" y="83">OP</text>
+    <text class="fg-t fg-accent" x="480" y="105" text-anchor="middle">OpenID Provider</text>
+    <text class="fg-mxs" x="480" y="119" text-anchor="middle">go-oidc-provider</text>
+    <line class="fg-rule" x1="406" y1="129" x2="554" y2="129"/>
+    <text class="fg-xs" x="480" y="145" text-anchor="middle">ユーザを認証する</text>
+    <text class="fg-xs" x="480" y="158" text-anchor="middle">トークンを発行し署名する</text>
+    <!-- Resource Server -->
+    <rect class="fg-box" x="728" y="64" width="176" height="104" rx="8"/>
+    <text class="fg-lbl" x="742" y="83">RS</text>
+    <text class="fg-t" x="816" y="105" text-anchor="middle">Resource Server</text>
+    <text class="fg-mxs" x="816" y="119" text-anchor="middle">あなたの API</text>
+    <line class="fg-rule" x1="742" y1="129" x2="890" y2="129"/>
+    <text class="fg-xs" x="816" y="145" text-anchor="middle">アクセストークンを検証する</text>
+    <text class="fg-xs" x="816" y="158" text-anchor="middle">データを返す</text>
+    <!-- RP から OP へ、そして戻り -->
+    <path class="fg-edge" d="M236,106 H388" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="312" y="99" text-anchor="middle">ログインを委任</text>
+    <path class="fg-edge fg-edge--accent" d="M388,140 H236" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="312" y="133" text-anchor="middle">id_token · access_token</text>
+    <!-- RS から OP へ -->
+    <path class="fg-edge fg-edge--muted" d="M724,128 H572" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="648" y="121" text-anchor="middle">署名を確認</text>
+    <text class="fg-mxs" x="648" y="145" text-anchor="middle">/jwks · /introspect</text>
+    <!-- RP から RS へ、OP の下を通す -->
+    <path class="fg-edge" d="M144,172 V206 H816 V176" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo--plain fg-halo" x="480" y="200" text-anchor="middle">Authorization: Bearer &lt;access_token&gt;</text>
+  </svg>
+  <figcaption class="fig-note">RS は認証情報そのものを受け取らず、有効期限のあるトークンだけを受け取ります。委任の要点はここにあり、API はユーザのパスワードを預かる代わりに OP の署名を信頼します。</figcaption>
+</figure>
 
 ログインの実際のステップ（`/auth` への redirect、code 交換、トークン取得）は後段の [認可コード + PKCE](#authorization-code-pkce) で詳述します。まずは「誰が何を担当しているか」を押さえてください。
 
@@ -149,80 +161,90 @@ Authorization: Bearer eyJ...access_token...
 
 ## 最もよく見かける処理: 認可コード + PKCE {#authorization-code-pkce}
 
-<svg class="diag diag-authcode" role="img" aria-labelledby="authcode-title" viewBox="0 0 760 520" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(-2,0)">
-  <title id="authcode-title">認可コード + PKCE のシーケンス: ブラウザがユーザを RP と OP の間で運んでログインと code 交換を行い、その後 RP が access token で RS を呼び出す。</title>
-  <defs>
-    <marker id="authcode-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <line class="life" x1="70" y1="48" x2="70" y2="506"/>
-  <line class="life" x1="280" y1="48" x2="280" y2="506"/>
-  <line class="life op" x1="500" y1="48" x2="500" y2="506"/>
-  <line class="life rs" x1="700" y1="48" x2="700" y2="506"/>
-  <rect x="20" y="12" width="100" height="36" rx="6"/>
-  <text class="p" x="70" y="30" text-anchor="middle" font-size="11.5" font-weight="700">ユーザ</text>
-  <text class="p sub" x="70" y="43" text-anchor="middle" font-size="8.5">(ブラウザ)</text>
-  <rect x="230" y="12" width="100" height="36" rx="6"/>
-  <text class="p" x="280" y="30" text-anchor="middle" font-size="11.5" font-weight="700">RP</text>
-  <text class="p sub" x="280" y="43" text-anchor="middle" font-size="8.5">あなたのアプリ</text>
-  <rect class="op" x="440" y="12" width="120" height="36" rx="6"/>
-  <text class="p opf" x="500" y="29" text-anchor="middle" font-size="11.5" font-weight="700">OP</text>
-  <text class="m opf" x="500" y="43" text-anchor="middle" font-size="8.5">go-oidc-provider</text>
-  <rect class="rs" x="650" y="12" width="100" height="36" rx="6"/>
-  <text class="p rsf" x="700" y="30" text-anchor="middle" font-size="11.5" font-weight="700">RS</text>
-  <text class="p sub" x="700" y="43" text-anchor="middle" font-size="8.5">あなたの API</text>
-  <circle cx="24" cy="92" r="10"/>
-  <text class="p" x="24" y="96" text-anchor="middle" font-size="10.5">1</text>
-  <line x1="70" y1="92" x2="280" y2="92" marker-end="url(#authcode-ah)"/>
-  <text class="p halo" x="78" y="83" font-size="10.5">アプリを開く</text>
-  <circle cx="24" cy="132" r="10"/>
-  <text class="p" x="24" y="136" text-anchor="middle" font-size="10.5">2</text>
-  <line x1="280" y1="132" x2="70" y2="132" marker-end="url(#authcode-ah)"/>
-  <text class="p halo" x="78" y="110" font-size="10.5">OP <tspan class="m">/auth</tspan> にリダイレクト</text>
-  <text class="m halo" x="78" y="122" font-size="9">client_id, redirect_uri, scope, state, code_challenge</text>
-  <circle cx="24" cy="172" r="10"/>
-  <text class="p" x="24" y="176" text-anchor="middle" font-size="10.5">3</text>
-  <line x1="70" y1="172" x2="500" y2="172" marker-end="url(#authcode-ah)"/>
-  <text class="m halo" x="78" y="163" font-size="9.5">GET /auth …</text>
-  <circle cx="24" cy="212" r="10"/>
-  <text class="p" x="24" y="216" text-anchor="middle" font-size="10.5">4</text>
-  <line x1="500" y1="212" x2="70" y2="212" marker-end="url(#authcode-ah)"/>
-  <text class="p halo" x="78" y="203" font-size="10.5">ログイン + 同意 UI</text>
-  <circle cx="24" cy="252" r="10"/>
-  <text class="p" x="24" y="256" text-anchor="middle" font-size="10.5">5</text>
-  <line x1="70" y1="252" x2="500" y2="252" marker-end="url(#authcode-ah)"/>
-  <text class="p halo" x="78" y="243" font-size="10.5">認証情報を送信</text>
-  <circle cx="24" cy="292" r="10"/>
-  <text class="p" x="24" y="296" text-anchor="middle" font-size="10.5">6</text>
-  <line x1="500" y1="292" x2="70" y2="292" marker-end="url(#authcode-ah)"/>
-  <text class="p halo" x="78" y="270" font-size="10.5">302 で RP <tspan class="m">/callback</tspan> へ</text>
-  <text class="m halo" x="78" y="282" font-size="9.5">?code=xyz&amp;state=…</text>
-  <circle cx="24" cy="332" r="10"/>
-  <text class="p" x="24" y="336" text-anchor="middle" font-size="10.5">7</text>
-  <line x1="70" y1="332" x2="280" y2="332" marker-end="url(#authcode-ah)"/>
-  <text class="m halo" x="78" y="323" font-size="9.5">GET /callback?code=xyz</text>
-  <circle cx="24" cy="372" r="10"/>
-  <text class="p" x="24" y="376" text-anchor="middle" font-size="10.5">8</text>
-  <line x1="280" y1="372" x2="500" y2="372" marker-end="url(#authcode-ah)"/>
-  <text class="m halo" x="288" y="350" font-size="9.5">POST /token</text>
-  <text class="m halo" x="288" y="362" font-size="9">code=xyz, code_verifier=…, client auth</text>
-  <circle cx="24" cy="412" r="10"/>
-  <text class="p" x="24" y="416" text-anchor="middle" font-size="10.5">9</text>
-  <line x1="500" y1="412" x2="280" y2="412" marker-end="url(#authcode-ah)"/>
-  <text class="m halo" x="288" y="403" font-size="9.5">{ access_token, id_token, refresh_token }</text>
-  <circle cx="24" cy="452" r="10"/>
-  <text class="p" x="24" y="456" text-anchor="middle" font-size="10.5">10</text>
-  <line x1="280" y1="452" x2="700" y2="452" marker-end="url(#authcode-ah)"/>
-  <text class="m halo" x="288" y="430" font-size="9.5">GET /api/…</text>
-  <text class="m halo" x="288" y="442" font-size="9">Authorization: Bearer &lt;access_token&gt;</text>
-  <circle cx="24" cy="492" r="10"/>
-  <text class="p" x="24" y="496" text-anchor="middle" font-size="10.5">11</text>
-  <line x1="700" y1="492" x2="280" y2="492" marker-end="url(#authcode-ah)"/>
-  <text class="m halo" x="288" y="483" font-size="9.5">200 OK  { data }</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">認可コード + PKCE — 全体の流れ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="primer-seq-title" viewBox="0 0 960 520" xmlns="http://www.w3.org/2000/svg">
+    <title id="primer-seq-title">認可コードフローと PKCE を 11 手順で示した図。ブラウザがユーザを RP と OP の間で運んでログインと同意を行い、RP が認可コードをトークンエンドポイントでトークンに交換し、そのアクセストークンで RS を呼び出します。</title>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="110" y1="62" x2="110" y2="502"/>
+    <line class="fg-life" x1="340" y1="62" x2="340" y2="502"/>
+    <line class="fg-life fg-life--accent" x1="590" y1="62" x2="590" y2="502"/>
+    <line class="fg-life" x1="850" y1="62" x2="850" y2="502"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="34" y="16" width="152" height="42" rx="6"/>
+    <text class="fg-t" x="110" y="35" text-anchor="middle">ユーザ</text>
+    <text class="fg-xs" x="110" y="49" text-anchor="middle">ブラウザ</text>
+    <rect class="fg-box" x="264" y="16" width="152" height="42" rx="6"/>
+    <text class="fg-t" x="340" y="35" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="340" y="49" text-anchor="middle">あなたのアプリ</text>
+    <rect class="fg-box fg-box--accent" x="510" y="16" width="160" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="590" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="590" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="774" y="16" width="152" height="42" rx="6"/>
+    <text class="fg-t" x="850" y="35" text-anchor="middle">RS</text>
+    <text class="fg-xs" x="850" y="49" text-anchor="middle">あなたの API</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="96" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="99" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M110,96 H340" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="225" y="90" text-anchor="middle">アプリを開く</text>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="15" cy="140" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="143" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M340,140 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="225" y="120" text-anchor="middle">302 で OP へ</text>
+    <text class="fg-mxs" x="225" y="133" text-anchor="middle">client_id · redirect_uri · scope · state · code_challenge</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="176" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="179" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M110,176 H590" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo fg-halo--plain" x="420" y="170" text-anchor="middle">GET /authorize</text>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="15" cy="212" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="215" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M590,212 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-halo fg-halo--plain" x="420" y="206" text-anchor="middle">200 ログイン + 同意画面</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="248" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="251" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M110,248 H590" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo fg-halo--plain" x="420" y="242" text-anchor="middle">POST 認証情報 · 同意</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="292" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="295" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M590,292 H110" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-halo fg-halo--plain" x="420" y="272" text-anchor="middle">302 で RP の callback へ</text>
+    <text class="fg-mxs fg-halo fg-halo--plain" x="420" y="285" text-anchor="middle">?code=xyz&amp;state=…</text>
+    <!-- 7 -->
+    <circle class="fg-badge" cx="15" cy="328" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="331" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M110,328 H340" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="225" y="322" text-anchor="middle">GET /callback?code=xyz</text>
+    <!-- 8 -->
+    <circle class="fg-badge" cx="15" cy="372" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="375" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M340,372 H590" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="465" y="352" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="465" y="365" text-anchor="middle">code · code_verifier · client auth</text>
+    <!-- 9 -->
+    <circle class="fg-badge" cx="15" cy="408" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="411" text-anchor="middle">9</text>
+    <path class="fg-edge fg-edge--accent" d="M590,408 H340" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="465" y="402" text-anchor="middle">{ access_token · id_token · refresh_token }</text>
+    <!-- 10 -->
+    <circle class="fg-badge" cx="15" cy="452" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="455" text-anchor="middle">10</text>
+    <path class="fg-edge" d="M340,452 H850" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo fg-halo--plain" x="595" y="432" text-anchor="middle">GET /api/…</text>
+    <text class="fg-mxs fg-halo fg-halo--plain" x="595" y="445" text-anchor="middle">Authorization: Bearer &lt;access_token&gt;</text>
+    <!-- 11 -->
+    <circle class="fg-badge" cx="15" cy="488" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="491" text-anchor="middle">11</text>
+    <path class="fg-edge" d="M850,488 H340" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo fg-halo--plain" x="595" y="482" text-anchor="middle">200 OK { data }</text>
+  </svg>
+  <figcaption class="fig-note">手順 1 から 7 はすべてブラウザを経由します。<code>state</code> と <code>code_challenge</code> をこれほど早い段階で送るのはそのためで、戻ってきたリダイレクトを送り出したリクエストに結び付けられるのはこの 2 つだけです。手順 8 と 9 はブラウザを通らない直接のバックチャネル通信です。</figcaption>
+</figure>
 
 「+ PKCE」（`code_challenge` / `code_verifier` で示される部分）は、悪意あるアプリが認可コードを横取りすることを防ぐ仕組みです。詳しくは [認可コードフロー + PKCE](/ja/concepts/authorization-code-pkce) で扱います。
 

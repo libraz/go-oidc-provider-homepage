@@ -9,47 +9,41 @@ pageClass: pg-operations-jwks
 
 The `/jwks` endpoint exposes the public half of the OP's signing keys. RPs fetch it to verify ID Tokens, JWT access tokens, JARM responses, and any userinfo JWTs. This page is the operational contract between the OP and those RP caches.
 
-<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jwks-cache-title">An RP learns jwks_uri from discovery, fetches /jwks and caches it, then refetches when it meets an unknown kid so it can verify with the rotated key.</title>
-  <rect class="jwks-box" x="20" y="40" width="150" height="78" rx="8"/>
-  <text class="jwks-text" x="95" y="72" text-anchor="middle">RP</text>
-  <text class="jwks-sub" x="95" y="94" text-anchor="middle">verifies tokens</text>
-
-  <rect class="jwks-main" x="290" y="40" width="180" height="78" rx="8"/>
-  <text class="jwks-text" x="380" y="72" text-anchor="middle">Discovery</text>
-  <text class="jwks-sub" x="380" y="94" text-anchor="middle">advertises jwks_uri</text>
-
-  <rect class="jwks-main" x="580" y="40" width="150" height="78" rx="8"/>
-  <text class="jwks-text" x="655" y="72" text-anchor="middle">/jwks</text>
-  <text class="jwks-sub" x="655" y="94" text-anchor="middle">JWK set + ETag</text>
-
-  <rect class="jwks-box" x="580" y="210" width="150" height="58" rx="8"/>
-  <text class="jwks-text" x="655" y="234" text-anchor="middle">RP cache</text>
-  <text class="jwks-sub" x="655" y="254" text-anchor="middle">picks key by kid</text>
-
-  <rect class="jwks-box" x="290" y="210" width="180" height="58" rx="8"/>
-  <text class="jwks-text" x="380" y="245" text-anchor="middle">Unknown kid</text>
-
-  <path class="jwks-flow" d="M170 79 H286"/>
-  <path class="jwks-flow" d="M278 75 L287 79 L278 83"/>
-  <text class="jwks-sub halo" x="228" y="68" text-anchor="middle">1. read config</text>
-
-  <path class="jwks-flow" d="M470 79 H576"/>
-  <path class="jwks-flow" d="M568 75 L577 79 L568 83"/>
-  <text class="jwks-sub halo" x="523" y="68" text-anchor="middle">2. fetch keys</text>
-
-  <path class="jwks-flow" d="M690 118 V206"/>
-  <path class="jwks-flow" d="M686 198 L690 207 L694 198"/>
-  <text class="jwks-sub halo" x="698" y="167" text-anchor="start">3. cache</text>
-
-  <path class="jwks-flow" d="M580 239 H474"/>
-  <path class="jwks-flow" d="M482 235 L473 239 L482 243"/>
-  <text class="jwks-sub halo" x="527" y="228" text-anchor="middle">4. kid miss</text>
-
-  <path class="jwks-flow" d="M380 210 V150 H615 V122"/>
-  <path class="jwks-flow" d="M611 130 L615 121 L619 130"/>
-  <text class="jwks-sub halo" x="500" y="140" text-anchor="middle">5. refetch</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">How an RP finds the right key</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jwks-fetch-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="jwks-fetch-title">A relying party reads jwks_uri out of the discovery document, fetches the key set once, and caches it. When a token arrives carrying a kid the cache does not know, it refetches — which is how a rotated key reaches every verifier without a coordinated deploy.</title>
+    <rect class="fg-box" x="36" y="94" width="180" height="80" rx="8"/>
+    <text class="fg-t" x="54" y="124">RP</text>
+    <text class="fg-xs" x="54" y="146">verifies the tokens</text>
+    <text class="fg-xs" x="54" y="162">it is presented with</text>
+    <path class="fg-edge" d="M220,116 H302" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="261" y="109" text-anchor="middle">1 · read config</text>
+    <rect class="fg-box fg-box--accent" x="306" y="34" width="230" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="324" y="60">/.well-known/…</text>
+    <text class="fg-xs" x="324" y="80">the discovery document</text>
+    <text class="fg-mxs" x="324" y="96">advertises jwks_uri</text>
+    <path class="fg-edge fg-edge--accent" d="M421,110 V142" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="437" y="132">2 · fetch keys</text>
+    <rect class="fg-box fg-box--accent" x="306" y="146" width="230" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="324" y="172">/jwks</text>
+    <text class="fg-xs" x="324" y="192">the JWK set, with an ETag</text>
+    <text class="fg-xs" x="324" y="208">so a refetch is usually a 304</text>
+    <path class="fg-edge" d="M540,182 H616" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="578" y="175" text-anchor="middle">3 · cache</text>
+    <rect class="fg-box" x="620" y="146" width="304" height="72" rx="8"/>
+    <text class="fg-t2" x="638" y="172">RP cache</text>
+    <text class="fg-xs" x="638" y="192">picks the key by the token's kid</text>
+    <text class="fg-xs" x="638" y="208">no network call on the happy path</text>
+    <path class="fg-edge fg-edge--muted" d="M772,142 V102" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="788" y="126">4 · unknown kid</text>
+    <rect class="fg-box fg-box--warn" x="620" y="52" width="304" height="50" rx="8"/>
+    <text class="fg-t2" x="638" y="74">A kid the cache has never seen</text>
+    <text class="fg-xs" x="638" y="92">refetch /jwks once, then verify — step 5</text>
+    <path class="fg-edge fg-edge--muted" d="M616,77 H556 V152" marker-end="url(#fg-am)"/>
+  </svg>
+  <figcaption class="fig-note">Step 4 is what makes rotation safe without coordination. An RP that has never heard of the new key finds out the first time it meets one — provided it refetches on a miss rather than rejecting outright.</figcaption>
+</figure>
 
 ## What's served
 

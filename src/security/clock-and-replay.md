@@ -45,66 +45,72 @@ The constants in the "Default window" column are the source of truth for the cur
 
 The same selected windows, drawn to scale on a logarithmic time axis, show the broad shape: replay and clock windows cluster around a minute, token lifetimes step up to minutes, and the refresh token's absolute lifetime reaches 30 days.
 
-<svg id="crws" role="img" aria-labelledby="clock-replay-window-scale-title" viewBox="0 0 760 392" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<title id="clock-replay-window-scale-title">Logarithmic comparison of every clock and replay window go-oidc-provider enforces, from the 60-second replay band to the 30-day refresh-token lifetime.</title>
-<line class="d-grid" x1="278.9" y1="58" x2="278.9" y2="362"/>
-<line class="d-grid" x1="369.8" y1="58" x2="369.8" y2="362"/>
-<line class="d-grid" x1="440.5" y1="58" x2="440.5" y2="362"/>
-<line class="d-grid" x1="565.8" y1="58" x2="565.8" y2="362"/>
-<line class="d-grid" x1="700" y1="58" x2="700" y2="362"/>
-<line class="d-axis" x1="250" y1="362" x2="724" y2="362"/>
-<line class="d-lane" x1="250" y1="70" x2="724" y2="70"/>
-<line class="d-lane" x1="250" y1="101" x2="724" y2="101"/>
-<line class="d-lane" x1="250" y1="132" x2="724" y2="132"/>
-<line class="d-lane" x1="250" y1="163" x2="724" y2="163"/>
-<line class="d-lane" x1="250" y1="194" x2="724" y2="194"/>
-<line class="d-lane" x1="250" y1="225" x2="724" y2="225"/>
-<line class="d-lane" x1="250" y1="256" x2="724" y2="256"/>
-<line class="d-lane" x1="250" y1="287" x2="724" y2="287"/>
-<line class="d-lane" x1="250" y1="318" x2="724" y2="318"/>
-<line class="d-lane" x1="250" y1="349" x2="724" y2="349"/>
-<rect class="d-op-store" x="274.4" y="65.5" width="9" height="9" rx="1"/>
-<rect class="d-op-store" x="274.4" y="96.5" width="9" height="9" rx="1"/>
-<circle class="d-op-fill" cx="278.9" cy="132" r="4.5"/>
-<circle class="d-op-fill" cx="278.9" cy="163" r="4.5"/>
-<circle class="d-op-fill" cx="278.9" cy="194" r="4.5"/>
-<rect class="d-op-store" x="274.4" y="220.5" width="9" height="9" rx="1"/>
-<rect class="d-op-store" x="301.8" y="251.5" width="9" height="9" rx="1"/>
-<circle class="d-op-fill" cx="342.4" cy="287" r="4.5"/>
-<circle class="d-op-fill" cx="369.8" cy="318" r="4.5"/>
-<circle class="d-op-fill" cx="700" cy="349" r="4.5"/>
-<text class="d-cap" x="8" y="18">Clock and replay windows, to scale</text>
-<text class="d-sub" x="8" y="34">logarithmic axis — window length after issuance</text>
-<circle class="d-op-fill" cx="470" cy="14" r="4.5"/>
-<text class="d-leg" x="480" y="18">clock / TTL freshness</text>
-<rect class="d-op-store" x="465.5" y="29.5" width="9" height="9" rx="1"/>
-<text class="d-leg" x="480" y="37">store-backed replay dedup</text>
-<text class="d-lbl" x="238" y="73.5" text-anchor="end">Authorization code</text>
-<text class="d-lbl" x="238" y="104.5" text-anchor="end">PAR <tspan class="d-mono">request_uri</tspan></text>
-<text class="d-lbl" x="238" y="135.5" text-anchor="end">Refresh token — grace</text>
-<text class="d-lbl" x="238" y="166.5" text-anchor="end">DPoP proof — <tspan class="d-mono">iat</tspan></text>
-<text class="d-lbl" x="238" y="197.5" text-anchor="end">JAR — future skew</text>
-<text class="d-lbl" x="238" y="228.5" text-anchor="end"><tspan class="d-mono">client_assertion</tspan></text>
-<text class="d-lbl" x="238" y="259.5" text-anchor="end">DPoP proof — <tspan class="d-mono">jti</tspan> cache</text>
-<text class="d-lbl" x="238" y="290.5" text-anchor="end">Access token</text>
-<text class="d-lbl" x="238" y="321.5" text-anchor="end">ID Token</text>
-<text class="d-lbl" x="238" y="352.5" text-anchor="end">Refresh token — absolute</text>
-<text class="d-val" x="289" y="73.5">60 s</text>
-<text class="d-val" x="289" y="104.5">60 s</text>
-<text class="d-val" x="289" y="135.5">60 s</text>
-<text class="d-val" x="289" y="166.5">±60 s</text>
-<text class="d-val" x="289" y="197.5">60 s</text>
-<text class="d-val" x="289" y="228.5">±60 s</text>
-<text class="d-val" x="316" y="259.5">≈120 s</text>
-<text class="d-val" x="352" y="290.5">5 min · FAPI 10 min</text>
-<text class="d-val" x="380" y="321.5">10 min</text>
-<text class="d-val" x="691" y="352.5" text-anchor="end">30 days</text>
-<text class="d-tick" x="278.9" y="375" text-anchor="middle">1 min</text>
-<text class="d-tick" x="369.8" y="375" text-anchor="middle">10 min</text>
-<text class="d-tick" x="440.5" y="375" text-anchor="middle">1 h</text>
-<text class="d-tick" x="565.8" y="375" text-anchor="middle">1 day</text>
-<text class="d-tick" x="700" y="375" text-anchor="middle">30 days</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Every clock and replay window, to scale</div>
+  <svg class="fig-svg" role="img" aria-labelledby="clock-windows-title" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg">
+    <title id="clock-windows-title">A logarithmic comparison of every clock and replay window the library enforces, from the sixty-second replay band up to the thirty-day absolute refresh-token lifetime. Filled circles are clock and TTL freshness checks; hollow squares are store-backed replay deduplication.</title>
+    <text class="fg-lbl" x="36" y="24">window length after issuance · logarithmic axis</text>
+    <circle class="fg-dot--accent" cx="560" cy="20" r="4.5"/>
+    <text class="fg-xs" x="572" y="24">clock / TTL freshness</text>
+    <rect class="fg-dot--hollow" x="712" y="15.5" width="9" height="9" rx="1"/>
+    <text class="fg-xs" x="729" y="24">store-backed replay dedup</text>
+    <!-- decade grid -->
+    <line class="fg-rule fg-rule--dashed" x1="340" y1="60" x2="340" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="461" y1="60" x2="461" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="555" y1="60" x2="555" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="721" y1="60" x2="721" y2="360"/>
+    <line class="fg-rule fg-rule--dashed" x1="900" y1="60" x2="900" y2="360"/>
+    <!-- rows -->
+    <line class="fg-rule" x1="340" y1="76" x2="900" y2="76"/>
+    <text class="fg-s" x="300" y="80" text-anchor="end">Authorization code</text>
+    <rect class="fg-dot--hollow" x="335.5" y="71.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="356" y="80">60 s</text>
+    <line class="fg-rule" x1="340" y1="106" x2="900" y2="106"/>
+    <text class="fg-s" x="300" y="110" text-anchor="end">PAR request_uri</text>
+    <rect class="fg-dot--hollow" x="335.5" y="101.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="356" y="110">60 s</text>
+    <line class="fg-rule" x1="340" y1="136" x2="900" y2="136"/>
+    <text class="fg-s" x="300" y="140" text-anchor="end">Refresh token — grace</text>
+    <circle class="fg-dot--accent" cx="340" cy="136" r="4.5"/>
+    <text class="fg-mxs" x="356" y="140">60 s</text>
+    <line class="fg-rule" x1="340" y1="166" x2="900" y2="166"/>
+    <text class="fg-s" x="300" y="170" text-anchor="end">DPoP proof — iat</text>
+    <circle class="fg-dot--accent" cx="340" cy="166" r="4.5"/>
+    <text class="fg-mxs" x="356" y="170">±60 s</text>
+    <line class="fg-rule" x1="340" y1="196" x2="900" y2="196"/>
+    <text class="fg-s" x="300" y="200" text-anchor="end">JAR — future skew</text>
+    <circle class="fg-dot--accent" cx="340" cy="196" r="4.5"/>
+    <text class="fg-mxs" x="356" y="200">60 s</text>
+    <line class="fg-rule" x1="340" y1="226" x2="900" y2="226"/>
+    <text class="fg-s" x="300" y="230" text-anchor="end">client_assertion</text>
+    <rect class="fg-dot--hollow" x="335.5" y="221.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="356" y="230">±60 s</text>
+    <line class="fg-rule" x1="340" y1="256" x2="900" y2="256"/>
+    <text class="fg-s" x="300" y="260" text-anchor="end">DPoP proof — jti cache</text>
+    <rect class="fg-dot--hollow" x="371.5" y="251.5" width="9" height="9" rx="1"/>
+    <text class="fg-mxs" x="392" y="260">≈120 s</text>
+    <line class="fg-rule" x1="340" y1="286" x2="900" y2="286"/>
+    <text class="fg-s" x="300" y="290" text-anchor="end">Access token</text>
+    <circle class="fg-dot--accent" cx="424" cy="286" r="4.5"/>
+    <text class="fg-mxs" x="440" y="290">5 min · FAPI 10 min</text>
+    <line class="fg-rule" x1="340" y1="316" x2="900" y2="316"/>
+    <text class="fg-s" x="300" y="320" text-anchor="end">ID token</text>
+    <circle class="fg-dot--accent" cx="461" cy="316" r="4.5"/>
+    <text class="fg-mxs" x="477" y="320">10 min</text>
+    <line class="fg-rule" x1="340" y1="346" x2="900" y2="346"/>
+    <text class="fg-s" x="300" y="350" text-anchor="end">Refresh token — absolute</text>
+    <circle class="fg-dot--accent" cx="900" cy="346" r="4.5"/>
+    <text class="fg-mxs" x="888" y="350" text-anchor="end">30 days</text>
+    <!-- axis -->
+    <line class="fg-rule fg-rule--strong" x1="320" y1="366" x2="912" y2="366"/>
+    <text class="fg-mxs" x="340" y="384" text-anchor="middle">1 min</text>
+    <text class="fg-mxs" x="461" y="384" text-anchor="middle">10 min</text>
+    <text class="fg-mxs" x="555" y="384" text-anchor="middle">1 h</text>
+    <text class="fg-mxs" x="721" y="384" text-anchor="middle">1 day</text>
+    <text class="fg-mxs" x="900" y="384" text-anchor="middle">30 days</text>
+  </svg>
+  <figcaption class="fig-note">Six of the ten sit on the leftmost gridline. That clustering is the design: anything an attacker could replay is measured in seconds, and only the things a user would notice losing are measured in days.</figcaption>
+</figure>
 
 ## Reauthentication freshness
 

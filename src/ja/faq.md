@@ -9,43 +9,41 @@ pageClass: pg-faq
 
 ここに並んでいる質問は、作者が examples を書いたり適合性テストのハーネスを実行したりする過程で実際に詰まったものです。FAQ の体裁を整えるために足した項目はありません。同じところで詰まった場合、ここに書いてある方法が本プロジェクトで実際に使っている方法です。
 
-<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="faq-route-title">FAQ の読み方: まずセットアップ、次に FAPI やトークンなど目的別の領域へ進み、最後にエラー対応と採用判断を確認する。</title>
-  <rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
-  <text class="faq-text" x="117" y="146" text-anchor="middle">まず起動</text>
-  <text class="faq-sub" x="117" y="168" text-anchor="middle">必須オプション / issuer</text>
-
-  <rect class="faq-box" x="292" y="36" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="70" text-anchor="middle">FAPI / DPoP</text>
-  <rect class="faq-box" x="292" y="112" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="146" text-anchor="middle">トークン / ストレージ</text>
-  <rect class="faq-box" x="292" y="188" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="222" text-anchor="middle">UI / SPA / MFA</text>
-
-  <rect class="faq-box" x="566" y="76" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="102" text-anchor="middle">エラー対応</text>
-  <text class="faq-sub" x="643" y="122" text-anchor="middle">よくある失敗</text>
-  <rect class="faq-box" x="566" y="172" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="198" text-anchor="middle">採用判断</text>
-  <text class="faq-sub" x="643" y="218" text-anchor="middle">本番投入 / 報告</text>
-
-  <path class="faq-flow" d="M194 153 C240 150 250 64 292 64"/>
-  <path class="faq-flow" d="M283 60 L292 64 L283 68"/>
-  <path class="faq-flow" d="M194 153 C240 153 250 140 292 140"/>
-  <path class="faq-flow" d="M283 136 L292 140 L283 144"/>
-  <path class="faq-flow" d="M194 153 C240 156 250 216 292 216"/>
-  <path class="faq-flow" d="M283 212 L292 216 L283 220"/>
-
-  <path class="faq-flow" d="M468 64 C520 62 528 90 566 90"/>
-  <path class="faq-flow" d="M557 86 L566 90 L557 94"/>
-  <path class="faq-flow" d="M468 140 C520 138 528 107 566 107"/>
-  <path class="faq-flow" d="M557 103 L566 107 L557 111"/>
-  <path class="faq-flow" d="M468 216 C520 214 528 124 566 124"/>
-  <path class="faq-flow" d="M557 120 L566 124 L557 128"/>
-
-  <path class="faq-flow" d="M643 138 V172"/>
-  <path class="faq-flow" d="M639 163 L643 172 L647 163"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">この FAQ の読み方</div>
+  <svg class="fig-svg" role="img" aria-labelledby="faq-order-title" viewBox="0 0 960 222" xmlns="http://www.w3.org/2000/svg">
+    <title id="faq-order-title">この FAQ の読み進め方。まず OP を起動できる状態にし、次に自分が取り組んでいる領域へ進み、最後にエラー対応と採用判断を確認します。</title>
+    <rect class="fg-box fg-box--accent" x="36" y="88" width="170" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="54" y="116">まず起動する</text>
+    <text class="fg-xs" x="54" y="138">必須オプション</text>
+    <text class="fg-xs" x="54" y="152">issuer · store · 鍵</text>
+    <path class="fg-leader" d="M210,124 H240 M240,54 V178"/>
+    <path class="fg-edge fg-edge--thin" d="M240,54 H258" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M240,116 H258" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M240,178 H258" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="262" y="32" width="250" height="44" rx="6"/>
+    <text class="fg-t2" x="280" y="52">FAPI / DPoP</text>
+    <text class="fg-xs" x="280" y="68">プロファイルと送信者制約</text>
+    <rect class="fg-box" x="262" y="94" width="250" height="44" rx="6"/>
+    <text class="fg-t2" x="280" y="114">トークン / ストレージ</text>
+    <text class="fg-xs" x="280" y="130">形式・TTL・どのストアを使うか</text>
+    <rect class="fg-box" x="262" y="156" width="250" height="44" rx="6"/>
+    <text class="fg-t2" x="280" y="176">UI / SPA / MFA</text>
+    <text class="fg-xs" x="280" y="192">画面とユーザ操作</text>
+    <path class="fg-leader" d="M516,54 H544 M516,116 H544 M516,178 H544 M544,54 V178"/>
+    <path class="fg-edge fg-edge--thin" d="M544,116 H564" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="568" y="88" width="170" height="72" rx="8"/>
+    <text class="fg-t2" x="586" y="116">エラー対応</text>
+    <text class="fg-xs" x="586" y="138">失敗が何を意味し、</text>
+    <text class="fg-xs" x="586" y="152">何を直せばよいか</text>
+    <path class="fg-edge fg-edge--thin" d="M742,124 H790" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="794" y="88" width="130" height="72" rx="8"/>
+    <text class="fg-t2" x="810" y="116">採用判断</text>
+    <text class="fg-xs" x="810" y="138">本番投入</text>
+    <text class="fg-xs" x="810" y="152">脆弱性報告</text>
+  </svg>
+  <figcaption class="fig-note">読み飛ばせるのは中央の列だけです。いま取り組んでいる領域を選んでください。最初と最後の列はどの読者にも当てはまります。</figcaption>
+</figure>
 
 <ul class="faq-index">
   <li><a href="#setup-basics"><div class="faq-index-title">セットアップと基本</div><div class="faq-index-desc">必須オプション、マウント先、Issuer 正規化、最小構成</div></a></li>

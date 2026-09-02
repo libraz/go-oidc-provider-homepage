@@ -9,47 +9,46 @@ pageClass: pg-operations-multi-instance
 
 The OP is stateless across HTTP requests; every replica reads and writes through the configured `store.Store`. Going from one replica to N shifts the conversation from "what's in process memory" to "what's shared, what's volatile, and what fan-out behaviour is acceptable".
 
-<svg class="mi-topo" role="img" aria-labelledby="mi-replica-topology-title" viewBox="0 0 760 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="mi-replica-topology-title">Replica topology: a load balancer round-robins one client's /token and /userinfo across N OP replicas, all sharing one durable store and one volatile Redis tier.</title>
-<defs><marker id="mi-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1.5 1.5 L6.5 4 L1.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<g transform="translate(20 0)">
-<rect x="280" y="16" width="160" height="44" rx="6"/>
-<text class="lbl" x="360" y="43">RP / client</text>
-<path d="M360 60 L360 90" marker-end="url(#mi-arrow)"/>
-<rect x="240" y="96" width="240" height="44" rx="6"/>
-<text class="lbl" x="360" y="115">Load balancer</text>
-<text class="sub" x="360" y="131">round-robin</text>
-<text class="mono" x="200" y="150" text-anchor="middle">POST /token</text>
-<text class="mono" x="520" y="150" text-anchor="middle">GET /userinfo</text>
-<path d="M320 140 L126 172" marker-end="url(#mi-arrow)"/>
-<path d="M360 140 L360 172" marker-end="url(#mi-arrow)"/>
-<path d="M400 140 L594 172" marker-end="url(#mi-arrow)"/>
-<rect class="op-accent" x="24" y="176" width="176" height="56" rx="6"/>
-<rect class="op-accent" x="272" y="176" width="176" height="56" rx="6"/>
-<rect class="op-accent" x="520" y="176" width="176" height="56" rx="6"/>
-<text class="op-text" x="112" y="200">OP #1</text>
-<text class="sub" x="112" y="218">nonce issued</text>
-<text class="op-text" x="360" y="208">OP #2</text>
-<text class="op-text" x="608" y="200">OP #3</text>
-<text class="sub" x="608" y="218">nonce checked</text>
-<path d="M112 232 L112 268"/>
-<path d="M360 232 L360 268"/>
-<path d="M608 232 L608 268"/>
-<path d="M112 268 L608 268"/>
-<path d="M184 268 L184 294"/>
-<path d="M536 268 L536 294"/>
-<rect class="store" x="24" y="296" width="320" height="132" rx="6"/>
-<text class="lbl" x="184" y="320">Durable store (shared)</text>
-<text class="mono" x="40" y="348">clients · codes · refresh/access tokens</text>
-<text class="mono" x="40" y="368">grants · IATs · PARs</text>
-<text class="sub" x="184" y="408">one backend across every replica</text>
-<rect class="store" x="376" y="296" width="320" height="132" rx="6"/>
-<text class="lbl" x="536" y="320">Volatile Redis tier</text>
-<text class="mono" x="392" y="348">Sessions · Interactions</text>
-<text class="mono" x="392" y="368">ConsumedJTIs · DPoP nonces</text>
-<text class="sub" x="536" y="408">evicted on restart / maxmemory</text>
-</g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">N replicas, one store, one volatile tier</div>
+  <svg class="fig-svg" role="img" aria-labelledby="multi-instance-title" viewBox="0 0 960 424" xmlns="http://www.w3.org/2000/svg">
+    <title id="multi-instance-title">A replica topology. A load balancer spreads one client's requests across several OP replicas, which share a single durable store and a single volatile Redis tier. Because a nonce may be issued by one replica and checked by another, that state has to live outside the process.</title>
+    <rect class="fg-box" x="380" y="24" width="200" height="46" rx="8"/>
+    <text class="fg-t" x="480" y="43" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="480" y="60" text-anchor="middle">POST /token · GET /userinfo</text>
+    <path class="fg-edge" d="M480,74 V104" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="380" y="108" width="200" height="46" rx="8"/>
+    <text class="fg-t2" x="480" y="128" text-anchor="middle">Load balancer</text>
+    <text class="fg-xs" x="480" y="145" text-anchor="middle">round-robin, no session affinity</text>
+    <path class="fg-leader" d="M480,158 V172 M156,172 H804"/>
+    <path class="fg-edge" d="M156,172 V196" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M480,172 V196" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M804,172 V196" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="66" y="200" width="180" height="64" rx="8"/>
+    <text class="fg-t2 fg-accent" x="156" y="224" text-anchor="middle">OP #1</text>
+    <text class="fg-xs" x="156" y="244" text-anchor="middle">issues a DPoP nonce</text>
+    <rect class="fg-box fg-box--accent" x="390" y="200" width="180" height="64" rx="8"/>
+    <text class="fg-t2 fg-accent" x="480" y="224" text-anchor="middle">OP #2</text>
+    <text class="fg-xs" x="480" y="244" text-anchor="middle">holds nothing of its own</text>
+    <rect class="fg-box fg-box--accent" x="714" y="200" width="180" height="64" rx="8"/>
+    <text class="fg-t2 fg-accent" x="804" y="224" text-anchor="middle">OP #3</text>
+    <text class="fg-xs" x="804" y="244" text-anchor="middle">checks that same nonce</text>
+    <path class="fg-leader" d="M156,268 V286 M480,268 V286 M804,268 V286 M156,286 H804"/>
+    <path class="fg-edge" d="M290,286 V310" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M670,286 V310" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="66" y="314" width="448" height="94" rx="8"/>
+    <text class="fg-t2" x="86" y="340">Durable store — shared</text>
+    <text class="fg-mxs" x="86" y="364">clients · codes · refresh and access tokens</text>
+    <text class="fg-mxs" x="86" y="382">grants · issued-at records · PAR requests</text>
+    <text class="fg-xs" x="86" y="400">one backend behind every replica</text>
+    <rect class="fg-box" x="546" y="314" width="348" height="94" rx="8"/>
+    <text class="fg-t2" x="566" y="340">Volatile tier — Redis</text>
+    <text class="fg-mxs" x="566" y="364">Sessions · Interactions</text>
+    <text class="fg-mxs" x="566" y="382">ConsumedJTIs · DPoP nonces</text>
+    <text class="fg-xs fg-warn" x="566" y="400">evicted on restart or at maxmemory</text>
+  </svg>
+  <figcaption class="fig-note">No replica is special and none of them remember anything, which is what lets the load balancer stay dumb. The price is that every piece of cross-request state has to be somewhere both boxes at the bottom can see.</figcaption>
+</figure>
 
 ## What's shared automatically
 

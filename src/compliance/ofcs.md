@@ -15,64 +15,53 @@ pageClass: pg-compliance-ofcs
 This is a personal project maintained by an individual developer. No OpenID Foundation membership fee is paid and **no formal OIDC certification** is held. The numbers on this page are reproducible snapshots from the plan set shown below. They are not a substitute for a paid OpenID Foundation certification and should not be cited as one.
 :::
 
-<svg role="img" aria-labelledby="ofcs-snapshot-title" viewBox="0 0 760 350" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ofcs-snapshot-title">How to read the OFCS snapshot: nine plans in four spec families run against op-demo, and every module lands in exactly one of five outcomes — PASSED, REVIEW, SKIPPED, no verdict, or FAILED.</title>
-  <text class="ofcs-cap" x="126" y="22" text-anchor="middle">TEST PLANS (9)</text>
-  <text class="ofcs-cap" x="644" y="22" text-anchor="middle">OUTCOME PER MODULE</text>
-
-  <rect class="ofcs-box" x="28" y="36" width="196" height="60" rx="10"/>
-  <text class="ofcs-text" x="126" y="62" text-anchor="middle">OIDC Core 1.0</text>
-  <text class="ofcs-sub" x="126" y="80" text-anchor="middle">6 plans</text>
-  <rect class="ofcs-box" x="28" y="112" width="196" height="60" rx="10"/>
-  <text class="ofcs-text" x="126" y="138" text-anchor="middle">FAPI 2.0 Baseline</text>
-  <text class="ofcs-sub" x="126" y="156" text-anchor="middle">1 plan</text>
-  <rect class="ofcs-box" x="28" y="188" width="196" height="60" rx="10"/>
-  <text class="ofcs-text" x="126" y="214" text-anchor="middle">FAPI 2.0 Message Signing</text>
-  <text class="ofcs-sub" x="126" y="232" text-anchor="middle">1 plan</text>
-  <rect class="ofcs-box" x="28" y="264" width="196" height="60" rx="10"/>
-  <text class="ofcs-text" x="126" y="290" text-anchor="middle">FAPI-CIBA</text>
-  <text class="ofcs-sub" x="126" y="308" text-anchor="middle">1 plan</text>
-
-  <rect class="ofcs-main" x="310" y="136" width="170" height="88" rx="10"/>
-  <text class="ofcs-text" x="395" y="172" text-anchor="middle">cmd/op-demo</text>
-  <text class="ofcs-sub" x="395" y="194" text-anchor="middle">the OP under test</text>
-
-  <rect class="ofcs-box" x="548" y="42" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-pass" x="566" y="58" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="590" y="69">PASSED</text>
-  <rect class="ofcs-box" x="548" y="100" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-review" x="566" y="116" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="590" y="127">REVIEW</text>
-  <rect class="ofcs-box" x="548" y="158" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-skip" x="566" y="174" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="590" y="185">SKIPPED</text>
-  <rect class="ofcs-box" x="548" y="216" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-noverdict" x="566" y="232" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="590" y="243">No verdict</text>
-  <rect class="ofcs-box" x="548" y="274" width="192" height="44" rx="8"/>
-  <rect class="ofcs-sw ofcs-sw-fail" x="566" y="290" width="12" height="12" rx="3"/>
-  <text class="ofcs-text" x="590" y="301">FAILED</text>
-
-  <path class="ofcs-flow" d="M224 66 C264 66 272 152 306 152"/>
-  <path class="ofcs-flow" d="M298 148 L307 152 L298 156"/>
-  <path class="ofcs-flow" d="M224 142 C264 142 272 168 306 168"/>
-  <path class="ofcs-flow" d="M298 164 L307 168 L298 172"/>
-  <path class="ofcs-flow" d="M224 218 C264 218 272 192 306 192"/>
-  <path class="ofcs-flow" d="M298 188 L307 192 L298 196"/>
-  <path class="ofcs-flow" d="M224 294 C264 294 272 208 306 208"/>
-  <path class="ofcs-flow" d="M298 204 L307 208 L298 212"/>
-
-  <path class="ofcs-flow" d="M480 180 C506 180 516 64 544 64"/>
-  <path class="ofcs-flow" d="M480 180 C506 180 516 122 544 122"/>
-  <path class="ofcs-flow" d="M480 180 H544"/>
-  <path class="ofcs-flow" d="M480 180 C506 180 516 238 544 238"/>
-  <path class="ofcs-flow" d="M480 180 C506 180 516 296 544 296"/>
-  <path class="ofcs-flow" d="M536 60 L545 64 L536 68"/>
-  <path class="ofcs-flow" d="M536 118 L545 122 L536 126"/>
-  <path class="ofcs-flow" d="M536 176 L545 180 L536 184"/>
-  <path class="ofcs-flow" d="M536 234 L545 238 L536 242"/>
-  <path class="ofcs-flow" d="M536 292 L545 296 L536 300"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Nine plans in, one outcome per module out</div>
+  <svg class="fig-svg" role="img" aria-labelledby="ofcs-shape-title" viewBox="0 0 960 262" xmlns="http://www.w3.org/2000/svg">
+    <title id="ofcs-shape-title">Nine conformance test plans across four specification families are run against the demo OP. Every module in every plan lands in exactly one of five outcomes: passed, review, skipped, no verdict, or failed.</title>
+    <text class="fg-lbl" x="40" y="26">test plans — nine of them</text>
+    <text class="fg-lbl" x="664" y="26">outcome per module</text>
+    <rect class="fg-box" x="36" y="38" width="264" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="58">OIDC Core 1.0</text>
+    <text class="fg-xs" x="54" y="74">6 plans</text>
+    <rect class="fg-box" x="36" y="90" width="264" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="110">FAPI 2.0 Baseline</text>
+    <text class="fg-xs" x="54" y="126">1 plan</text>
+    <rect class="fg-box" x="36" y="142" width="264" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="162">FAPI 2.0 Message Signing</text>
+    <text class="fg-xs" x="54" y="178">1 plan</text>
+    <rect class="fg-box" x="36" y="194" width="264" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="214">FAPI-CIBA</text>
+    <text class="fg-xs" x="54" y="230">1 plan</text>
+    <path class="fg-leader" d="M304,60 H332 M304,112 H332 M304,164 H332 M304,216 H332 M332,60 V216"/>
+    <path class="fg-edge fg-edge--accent" d="M332,138 H360" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="364" y="108" width="232" height="60" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="134" text-anchor="middle">cmd/op-demo</text>
+    <text class="fg-xs" x="480" y="154" text-anchor="middle">the OP under test</text>
+    <path class="fg-edge fg-edge--accent" d="M600,138 H628" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="660" y="38" width="264" height="34" rx="6"/>
+    <rect class="fg-fill--ok" x="676" y="49" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="698" y="59">PASSED</text>
+    <text class="fg-xs" x="770" y="59">every condition was met</text>
+    <rect class="fg-box" x="660" y="80" width="264" height="34" rx="6"/>
+    <rect class="fg-fill--warn" x="676" y="91" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="698" y="101">REVIEW</text>
+    <text class="fg-xs" x="770" y="101">the suite asks a human</text>
+    <rect class="fg-box" x="660" y="122" width="264" height="34" rx="6"/>
+    <rect class="fg-fill--muted" x="676" y="133" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="698" y="143">SKIPPED</text>
+    <text class="fg-xs" x="770" y="143">not applicable here</text>
+    <rect class="fg-box" x="660" y="164" width="264" height="34" rx="6"/>
+    <rect class="fg-fill" x="676" y="175" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="698" y="185">No verdict</text>
+    <text class="fg-xs" x="770" y="185">it ran and returned nothing</text>
+    <rect class="fg-box" x="660" y="206" width="264" height="34" rx="6"/>
+    <rect class="fg-fill--danger" x="676" y="217" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="698" y="227">FAILED</text>
+    <text class="fg-xs" x="770" y="227">a condition was not met</text>
+  </svg>
+  <figcaption class="fig-note">Only the last row is a defect. The middle three are the suite declining to answer — because the module does not apply to this profile, or because the verdict is one a person has to make.</figcaption>
+</figure>
 
 ## What this snapshot exercises
 

@@ -25,63 +25,64 @@ A **refresh token** is a long-lived credential the RP exchanges for a fresh acce
 
 Every successful `grant_type=refresh_token` call **rotates** the refresh token: the old one is invalidated and a new one is returned.
 
-<svg class="rr-flow-dg" role="img" aria-labelledby="refresh-rotation-flow-title" viewBox="0 0 760 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="refresh-rotation-flow-title">Refresh-token rotation: each exchange invalidates the presented token and mints a new one in the same chain, and replaying an already-rotated token is detected as reuse and revokes the whole chain.</title>
-  <line class="life" x1="110" y1="68" x2="110" y2="438"/>
-  <line class="life op-accent" x1="380" y1="68" x2="380" y2="438"/>
-  <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="438"/>
-  <rect x="35" y="14" width="150" height="30" rx="5"/>
-  <rect class="op-accent" x="305" y="14" width="150" height="30" rx="5"/>
-  <rect class="rs-stroke" x="575" y="14" width="150" height="30" rx="5"/>
-  <text class="d-actor" x="110" y="33" text-anchor="middle">RP / client</text>
-  <text class="d-actor op-fill" x="380" y="33" text-anchor="middle">OP</text>
-  <text class="d-actor rs-fill" x="650" y="33" text-anchor="middle">Attacker</text>
-  <text class="d-cap" x="110" y="58" text-anchor="middle">renews tokens</text>
-  <text class="d-cap op-fill" x="380" y="58" text-anchor="middle">this library</text>
-  <text class="d-cap rs-fill" x="650" y="58" text-anchor="middle">stole rt1</text>
-
-  <path d="M110,100 H380"/>
-  <path d="M373,96 L380,100 L373,104"/>
-  <text class="d-mono halo" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
-
-  <path d="M380,140 H110"/>
-  <path d="M117,136 L110,140 L117,144"/>
-  <text class="d-mono halo" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
-
-  <text class="d-mono rs-fill halo" x="245" y="166" text-anchor="middle">access_token expires</text>
-
-  <path d="M110,196 H380"/>
-  <path d="M373,192 L380,196 L373,200"/>
-  <text class="d-mono halo" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
-
-  <path class="op-accent" d="M380,211 h16 v12 h-16"/>
-  <path class="op-accent" d="M387,215 L380,219 L387,223"/>
-  <text class="d-prose op-fill halo" x="404" y="208">Rotate refresh token</text>
-  <text class="d-mono halo" x="404" y="220">invalidate rt1 · mint rt2 (same chain)</text>
-
-  <path d="M380,256 H110"/>
-  <path d="M117,252 L110,256 L117,260"/>
-  <text class="d-mono halo" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
-
-  <path d="M110,292 H380"/>
-  <path d="M373,288 L380,292 L373,296"/>
-  <text class="d-mono halo" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
-
-  <path d="M380,328 H110"/>
-  <path d="M117,324 L110,328 L117,332"/>
-  <text class="d-mono halo" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
-
-  <text class="d-mono rs-fill halo" x="515" y="354" text-anchor="middle">attacker steals rt1</text>
-
-  <path class="rs-stroke" d="M650,384 H380"/>
-  <path class="rs-stroke" d="M387,380 L380,384 L387,388"/>
-  <text class="d-mono rs-fill halo" x="515" y="376" text-anchor="middle">replay refresh_token=rt1 (already consumed)</text>
-
-  <path class="op-accent" d="M380,401 h16 v12 h-16"/>
-  <path class="op-accent" d="M387,405 L380,409 L387,413"/>
-  <text class="d-prose op-fill halo" x="404" y="398">Reuse detected → revoke chain</text>
-  <text class="d-mono halo" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Rotation, and what happens when a rotated token comes back</div>
+  <svg class="fig-svg" role="img" aria-labelledby="rt-rotation-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
+    <title id="rt-rotation-title">Refresh-token rotation. Every exchange invalidates the token that was presented and mints a new one in the same chain. When a token that has already been rotated is replayed, the OP detects reuse and revokes the entire chain, including the tokens the legitimate client still holds.</title>
+    <!-- phase bands -->
+    <rect class="fg-group" x="30" y="70" width="916" height="300" rx="8"/>
+    <rect class="fg-group" x="30" y="378" width="916" height="172" rx="8"/>
+    <text class="fg-lbl" x="42" y="88">normal renewal</text>
+    <text class="fg-lbl fg-danger" x="42" y="396">a stolen token comes back</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="550"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="550"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="550"/>
+    <!-- actors -->
+    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / client</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">renews its tokens</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box fg-box--danger" x="740" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">Attacker</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">holds a copy of rt1</text>
+    <!-- initial issue -->
+    <path class="fg-edge" d="M150,110 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="104" text-anchor="middle">POST /token · grant_type=authorization_code</text>
+    <path class="fg-edge fg-edge--accent" d="M500,140 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="134" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
+    <!-- expiry -->
+    <path class="fg-edge fg-edge--muted" d="M150,166 h28 v14 h-28" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="190" y="178">the access token expires</text>
+    <!-- first rotation -->
+    <path class="fg-edge" d="M150,212 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="206" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
+    <path class="fg-edge fg-edge--accent" d="M500,244 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="542" y="248">Rotate</text>
+    <text class="fg-mxs" x="542" y="261">invalidate rt1 · mint rt2 in the same chain</text>
+    <path class="fg-edge fg-edge--accent" d="M500,290 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="284" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
+    <!-- second rotation -->
+    <path class="fg-edge" d="M150,322 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="316" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,354 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="348" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
+    <!-- theft -->
+    <path class="fg-edge fg-edge--muted" d="M150,424 H830" marker-end="url(#fg-am)"/>
+    <text class="fg-xs fg-halo" x="490" y="418" text-anchor="middle">rt1 leaked earlier — the attacker kept the copy</text>
+    <!-- replay -->
+    <path class="fg-edge fg-edge--danger" d="M830,456 H500" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs" x="665" y="450" text-anchor="middle">replay refresh_token=rt1 — already consumed</text>
+    <path class="fg-edge fg-edge--danger" d="M500,484 h30 v16 h-30" marker-end="url(#fg-ad)"/>
+    <text class="fg-s fg-danger" x="542" y="488">Reuse detected</text>
+    <text class="fg-mxs" x="542" y="501">RevokeChain(rt1…rt3) · refresh.replay_detected</text>
+    <path class="fg-edge fg-edge--danger" d="M500,536 H150" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs" x="325" y="530" text-anchor="middle">400 invalid_grant — rt3 is gone too</text>
+  </svg>
+  <figcaption class="fig-note">The last arrow is the point of the design: the legitimate client loses its working token as well. Reuse means one of the two holders is an attacker and the OP cannot tell which, so it ends the chain and makes both re-authenticate.</figcaption>
+</figure>
 
 ::: warning Reuse detection invalidates the chain
 If a previously-rotated refresh token is presented again, the OP treats it as a stolen-credential signal and **revokes the entire chain** — both the stolen token and the legitimate token derived from it. Both parties have to re-authenticate. This is intentional: it's the strongest signal the OP can give that something has gone wrong.

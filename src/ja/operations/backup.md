@@ -9,49 +9,44 @@ pageClass: pg-operations-backup
 
 OP 自体はステートレスです。復旧方針は完全に `store.Store` の性質に依存します。「何が永続で、何が揮発で、サブストアごとの RPO（recovery point objective）はどこか」を整理する作業です。
 
-<svg role="img" aria-labelledby="backup-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="backup-split-title">バックアップ方針: OP 本体はステートレスで、永続サブストアは復元対象、短命状態は捨てて再作成、replay 防御用集合は復元しない。</title>
-<rect class="bkp-main" x="38" y="112" width="152" height="74" rx="8"/>
-  <text class="bkp-text" x="114" y="142" text-anchor="middle">OP プロセス</text>
-  <text class="bkp-sub" x="114" y="164" text-anchor="middle">ステートレス</text>
-
-  <rect class="bkp-box" x="300" y="34" width="178" height="62" rx="8"/>
-  <text class="bkp-text" x="389" y="64" text-anchor="middle">永続サブストア</text>
-  <text class="bkp-sub" x="389" y="82" text-anchor="middle">Clients / Grants / MFA</text>
-
-  <rect class="bkp-box" x="300" y="119" width="178" height="62" rx="8"/>
-  <text class="bkp-text" x="389" y="149" text-anchor="middle">短命状態</text>
-  <text class="bkp-sub" x="389" y="167" text-anchor="middle">PAR / code / interaction</text>
-
-  <rect class="bkp-box" x="300" y="204" width="178" height="62" rx="8"/>
-  <text class="bkp-text" x="389" y="234" text-anchor="middle">復元禁止</text>
-  <text class="bkp-sub" x="389" y="252" text-anchor="middle">ConsumedJTIs</text>
-
-  <rect class="bkp-box" x="578" y="34" width="144" height="62" rx="8"/>
-  <text class="bkp-text" x="650" y="64" text-anchor="middle">バックアップ</text>
-  <text class="bkp-sub" x="650" y="82" text-anchor="middle">RPO を設定</text>
-
-  <rect class="bkp-box" x="578" y="119" width="144" height="62" rx="8"/>
-  <text class="bkp-text" x="650" y="149" text-anchor="middle">再試行</text>
-  <text class="bkp-sub" x="650" y="167" text-anchor="middle">自然に回復</text>
-
-  <rect class="bkp-box" x="578" y="204" width="144" height="62" rx="8"/>
-  <text class="bkp-text" x="650" y="234" text-anchor="middle">破棄</text>
-  <text class="bkp-sub" x="650" y="252" text-anchor="middle">巻き戻さない</text>
-
-  <path class="bkp-flow" d="M190 150 C238 132 260 66 296 66"/>
-  <path class="bkp-flow" d="M288 62 L297 66 L288 70"/>
-  <path class="bkp-flow" d="M190 150 H296"/>
-  <path class="bkp-flow" d="M288 146 L297 150 L288 154"/>
-  <path class="bkp-flow" d="M190 150 C238 168 260 234 296 234"/>
-  <path class="bkp-flow" d="M288 230 L297 234 L288 238"/>
-  <path class="bkp-flow" d="M478 65 H574"/>
-  <path class="bkp-flow" d="M566 61 L575 65 L566 69"/>
-  <path class="bkp-flow" d="M478 150 H574"/>
-  <path class="bkp-flow" d="M566 146 L575 150 L566 154"/>
-  <path class="bkp-flow" d="M478 235 H574"/>
-  <path class="bkp-flow" d="M566 231 L575 235 L566 239"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">何を復元し、何を復元しないか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="backup-policy-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="backup-policy-title">バックアップ方針を 4 行で示した図。OP プロセス自体は何も保持しません。永続サブストアはバックアップして復元します。短命な状態は破棄し、再試行によって作り直されます。消費済み JTI の集合は復元しません。復元すると replay の窓が再び開くためです。</title>
+    <text class="fg-lbl" x="40" y="26">対象</text>
+    <text class="fg-lbl" x="484" y="26">扱い方</text>
+    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <!-- プロセス -->
+    <rect class="fg-box fg-box--muted" x="36" y="48" width="420" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="68">OP プロセス</text>
+    <text class="fg-xs" x="54" y="84">自前の状態を持たない</text>
+    <path class="fg-edge fg-edge--thin" d="M460,70 H476" marker-end="url(#fg-a)"/>
+    <text class="fg-t2" x="484" y="68">バックアップ対象なし</text>
+    <text class="fg-xs" x="484" y="84">別のインスタンスを立てれば等価</text>
+    <!-- 永続 -->
+    <rect class="fg-box fg-box--accent" x="36" y="100" width="420" height="44" rx="6"/>
+    <text class="fg-t2 fg-accent" x="54" y="120">永続サブストア</text>
+    <text class="fg-mxs" x="54" y="136">Clients · Grants · MFA 登録情報</text>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M460,122 H476" marker-end="url(#fg-ac)"/>
+    <text class="fg-t2 fg-accent" x="484" y="120">バックアップする — RPO を決める</text>
+    <text class="fg-xs" x="484" y="136">失うと同意履歴とクライアント登録が失われる</text>
+    <!-- 短命 -->
+    <rect class="fg-box" x="36" y="152" width="420" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="172">短命な状態</text>
+    <text class="fg-mxs" x="54" y="188">PAR リクエスト · 認可コード · interaction</text>
+    <path class="fg-edge fg-edge--thin" d="M460,174 H476" marker-end="url(#fg-a)"/>
+    <text class="fg-t2" x="484" y="172">破棄する</text>
+    <text class="fg-xs" x="484" y="188">クライアントが再試行すればフローが作り直す</text>
+    <!-- 復元禁止 -->
+    <rect class="fg-box fg-box--danger" x="36" y="204" width="420" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="224">replay 防御用の集合</text>
+    <text class="fg-mxs" x="54" y="240">ConsumedJTIs</text>
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M460,226 H476" marker-end="url(#fg-ad)"/>
+    <text class="fg-t2 fg-danger" x="484" y="224">復元しない</text>
+    <text class="fg-xs" x="484" y="240">巻き戻すと、閉じたはずの窓がすべて開き直す</text>
+  </svg>
+  <figcaption class="fig-note">意外に思われるのは最後の行です。消費済み JTI の集合は「どの proof が既に使われたか」の記録であり、古い複製を戻すことは、それらを未使用だと宣言することにあたります。</figcaption>
+</figure>
 
 ## バックアップ優先度
 

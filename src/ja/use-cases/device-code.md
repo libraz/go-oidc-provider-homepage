@@ -8,53 +8,52 @@ pageClass: pg-use-cases-device-code
 
 device flow がどういうものか、いつ選ぶべきか、なぜ `slow_down` / `expired_token` が要るのか、といった概念的な背景は [Device Code 入門](/ja/concepts/device-code) を先に読んでください。このページは組み込み手順を扱います。
 
-<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="device-code-flow-title">Device Code の流れ: 入力しづらいデバイスがコードを表示し、ユーザは自分のスマホや PC でそのコードを入力して承認し、デバイスは OP がアクセストークンを発行するまで /token をポーリングする。</title>
-  <line class="dc-life" x1="110" y1="78" x2="110" y2="348"/>
-  <line class="dc-life dc-life-op" x1="380" y1="78" x2="380" y2="348"/>
-  <line class="dc-life" x1="650" y1="78" x2="650" y2="348"/>
-
-  <rect class="dc-box" x="20" y="14" width="180" height="64" rx="8"/>
-  <text class="dc-text" x="110" y="36" text-anchor="middle">デバイス</text>
-  <text class="dc-sub" x="110" y="54" text-anchor="middle">入力しづらい</text>
-  <text class="dc-sub" x="110" y="70" text-anchor="middle">TV / CLI / プリンタ</text>
-
-  <rect class="dc-op" x="290" y="14" width="180" height="64" rx="8"/>
-  <text class="dc-text" x="380" y="36" text-anchor="middle">OP</text>
-  <text class="dc-sub" x="380" y="54" text-anchor="middle">/device_authorization</text>
-  <text class="dc-sub" x="380" y="70" text-anchor="middle">DeviceCodeStore · /token</text>
-
-  <rect class="dc-box" x="560" y="14" width="180" height="64" rx="8"/>
-  <text class="dc-text" x="650" y="40" text-anchor="middle">ユーザの端末</text>
-  <text class="dc-sub" x="650" y="62" text-anchor="middle">スマホ / PC</text>
-
-  <path class="dc-flow" d="M110 114 H380"/>
-  <path class="dc-flow" d="M373 110 L380 114 L373 118"/>
-  <text class="dc-sub" x="245" y="106" text-anchor="middle">1. POST /device_authorization</text>
-
-  <path class="dc-flow" d="M380 152 H110"/>
-  <path class="dc-flow" d="M117 148 L110 152 L117 156"/>
-  <text class="dc-sub" x="245" y="144" text-anchor="middle">2. device_code + user_code</text>
-
-  <rect class="dc-box" x="26" y="176" width="168" height="28" rx="6"/>
-  <text class="dc-sub" x="110" y="195" text-anchor="middle">3. コードと URL を表示</text>
-
-  <path class="dc-flow dc-oob" d="M110 232 H650"/>
-  <path class="dc-flow" d="M643 228 L650 232 L643 236"/>
-  <text class="dc-sub halo" x="380" y="224" text-anchor="middle">4. ユーザが画面のコードを読む</text>
-
-  <path class="dc-flow" d="M650 270 H380"/>
-  <path class="dc-flow" d="M387 266 L380 270 L387 274"/>
-  <text class="dc-sub" x="515" y="262" text-anchor="middle">5. コードを入力して承認</text>
-
-  <path class="dc-flow" d="M110 308 H380"/>
-  <path class="dc-flow" d="M373 304 L380 308 L373 312"/>
-  <text class="dc-sub" x="245" y="300" text-anchor="middle">6. device_code で /token をポーリング</text>
-
-  <path class="dc-flow" d="M380 344 H110"/>
-  <path class="dc-flow" d="M117 340 L110 344 L117 348"/>
-  <text class="dc-sub" x="245" y="336" text-anchor="middle">7. 200 access_token</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">片方の画面に出たコードを、もう片方に打ち込む</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-devicecode-title" viewBox="0 0 960 306" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-devicecode-title">入力しづらいデバイスが OP に device_code と短い user_code を要求し、コードを画面に表示してトークンエンドポイントを poll します。ユーザはその画面のコードを読み取り、自分のスマホや PC で入力して承認します。</title>
+    <rect class="fg-box" x="36" y="76" width="220" height="108" rx="8"/>
+    <text class="fg-t2" x="146" y="106" text-anchor="middle">デバイス</text>
+    <text class="fg-xs" x="146" y="128" text-anchor="middle">TV · CLI · プリンタ</text>
+    <line class="fg-rule" x1="56" y1="140" x2="236" y2="140"/>
+    <text class="fg-xs" x="146" y="160" text-anchor="middle">入力が難しい —</text>
+    <text class="fg-xs" x="146" y="174" text-anchor="middle">まともに打てるキーボードが無い</text>
+    <rect class="fg-box fg-box--accent" x="320" y="46" width="320" height="168" rx="8"/>
+    <text class="fg-t fg-accent" x="480" y="74" text-anchor="middle">OP</text>
+    <line class="fg-rule" x1="340" y1="86" x2="620" y2="86"/>
+    <text class="fg-mxs" x="340" y="112">/device_authorization</text>
+    <text class="fg-xs" x="340" y="130">2 種類のコードを発行する</text>
+    <text class="fg-mxs" x="340" y="158">DeviceCodeStore</text>
+    <text class="fg-xs" x="340" y="176">承認まで保持する</text>
+    <text class="fg-mxs" x="340" y="200">/token</text>
+    <rect class="fg-box" x="704" y="76" width="220" height="108" rx="8"/>
+    <text class="fg-t2" x="814" y="106" text-anchor="middle">ユーザ自身の端末</text>
+    <text class="fg-xs" x="814" y="128" text-anchor="middle">スマホ · PC</text>
+    <line class="fg-rule" x1="724" y1="140" x2="904" y2="140"/>
+    <text class="fg-xs" x="814" y="160" text-anchor="middle">信頼できるブラウザと</text>
+    <text class="fg-xs" x="814" y="174" text-anchor="middle">キーボードがある</text>
+    <path class="fg-edge" d="M260,96 H316" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="288" cy="84" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="87" text-anchor="middle">1</text>
+    <path class="fg-edge fg-edge--accent" d="M316,126 H260" marker-end="url(#fg-ac)"/>
+    <circle class="fg-badge" cx="288" cy="140" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="143" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--muted" d="M146,188 V232 H814 V188" marker-end="url(#fg-am)"/>
+    <circle class="fg-badge" cx="480" cy="232" r="8.5"/>
+    <text class="fg-badge-t" x="480" y="235" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M700,96 H648" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="672" cy="84" r="8.5"/>
+    <text class="fg-badge-t" x="672" y="87" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M260,166 H316" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="288" cy="180" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="183" text-anchor="middle">5</text>
+    <text class="fg-xs" x="36" y="266">1 · デバイスが device_code と user_code を要求する</text>
+    <text class="fg-xs" x="36" y="284">2 · OP が両方と、開くべき URL を返す</text>
+    <text class="fg-xs" x="500" y="266">3 · ユーザが画面の短いコードを読み取る</text>
+    <text class="fg-xs" x="500" y="284">4 · 入力して承認する · 5 · デバイスは /token を poll する</text>
+  </svg>
+  <figcaption class="fig-note">破線はネットワークではなく人間です。この経路がフローに渡すのは短いコード 1 つだけで、推測されにくさよりも読みやすさと入力しやすさを優先して選ばれています。秘密として扱われるのは、デバイスが保持する <code>device_code</code> の側です。</figcaption>
+</figure>
 
 ::: details `device_code` と `user_code` の違い
 `/device_authorization` は 2 つの異なる識別子を返します。**`device_code`** は長い不透明文字列で、デバイス側だけが保持し、`/token` へのポーリングごとに送信します — 実質的に「この保留中の authorization」を表すベアラ資格情報です。**`user_code`** は短い人間が打てる文字列（"BDWP-HQPK" 等）で、デバイスが画面に表示し、ユーザがスマホやノート PC で入力します。寿命は同じ（`expires_in`）ですが、見せる相手が完全に異なります。ユーザは `device_code` を見ませんし、OP は `/token` で `user_code` を受け付けません。

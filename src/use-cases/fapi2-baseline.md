@@ -41,47 +41,57 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 
 ## Architecture
 
-<svg class="fapi2-flow-dg" role="img" aria-labelledby="fapi2-baseline-flow-title" viewBox="0 0 760 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="fapi2-baseline-flow-title">FAPI 2.0 Baseline sequence: the RP pushes the authorization request to /par, the OP returns a request_uri, and after /auth and /token the OP issues DPoP-bound tokens signed with ES256.</title>
-  <g transform="translate(20,0)">
-  <line class="life" x1="150" y1="68" x2="150" y2="448"/>
-  <line class="life op-accent" x1="570" y1="68" x2="570" y2="448"/>
-  <rect x="75" y="14" width="150" height="30" rx="5"/>
-  <rect class="op-accent" x="495" y="14" width="150" height="30" rx="5"/>
-  <text class="d-actor" x="150" y="33" text-anchor="middle">RP / client</text>
-  <text class="d-actor op-fill" x="570" y="33" text-anchor="middle">OP</text>
-  <text class="d-cap" x="150" y="58" text-anchor="middle">private_key_jwt + DPoP</text>
-  <text class="d-cap op-fill" x="570" y="58" text-anchor="middle">this library</text>
-  <text class="d-prose halo" x="360" y="98" text-anchor="middle">1 · POST /par</text>
-  <text class="d-mono halo" x="360" y="110" text-anchor="middle">client_assertion=&lt;private_key_jwt&gt; · code_challenge=S256</text>
-  <line x1="150" y1="118" x2="570" y2="118"/>
-  <path d="M563,114 L570,118 L563,122"/>
-  <text class="d-mono halo" x="360" y="150" text-anchor="middle">2 · 201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
-  <line x1="570" y1="158" x2="150" y2="158"/>
-  <path d="M157,154 L150,158 L157,162"/>
-  <text class="d-mono halo" x="360" y="190" text-anchor="middle">3 · GET /auth?request_uri=urn:…&amp;client_id</text>
-  <line x1="150" y1="198" x2="570" y2="198"/>
-  <path d="M563,194 L570,198 L563,202"/>
-  <path class="op-accent" d="M570,224 h-16 v28 h16"/>
-  <path class="op-accent" d="M563,246 L570,250 L563,254"/>
-  <text class="d-prose op-fill halo" x="544" y="234" text-anchor="end">4 · ES256 id_token signing</text>
-  <text class="d-mono halo" x="544" y="248" text-anchor="end">redirect_uri exact match</text>
-  <text class="d-prose halo" x="360" y="290" text-anchor="middle">5 · login + consent (interaction-driven)</text>
-  <line x1="570" y1="298" x2="150" y2="298"/>
-  <path d="M157,294 L150,298 L157,302"/>
-  <text class="d-mono halo" x="360" y="326" text-anchor="middle">6 · 302 redirect_uri?code=…&amp;state=…</text>
-  <line x1="570" y1="334" x2="150" y2="334"/>
-  <path d="M157,330 L150,334 L157,338"/>
-  <text class="d-prose halo" x="360" y="364" text-anchor="middle">7 · POST /token · DPoP: &lt;proof&gt;</text>
-  <text class="d-mono halo" x="360" y="376" text-anchor="middle">code + code_verifier + client_assertion</text>
-  <line x1="150" y1="384" x2="570" y2="384"/>
-  <path d="M563,380 L570,384 L563,388"/>
-  <text class="d-prose halo" x="360" y="414" text-anchor="middle">8 · 200</text>
-  <text class="d-mono halo" x="360" y="426" text-anchor="middle">access_token (DPoP-bound) · id_token (ES256) · refresh_token</text>
-  <line x1="570" y1="434" x2="150" y2="434"/>
-  <path d="M157,430 L150,434 L157,438"/>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">FAPI 2.0 Baseline, end to end</div>
+  <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 412" xmlns="http://www.w3.org/2000/svg">
+    <title id="fapi2-arch-title">Under FAPI 2.0 Baseline the RP pushes its authorization request to the pushed-authorization endpoint and receives a request_uri; the browser only ever carries that reference. The token request is authenticated with private_key_jwt and carries a DPoP proof, and the tokens that come back are DPoP-bound and signed with ES256.</title>
+    <line class="fg-life" x1="260" y1="62" x2="260" y2="404"/>
+    <line class="fg-life fg-life--accent" x1="700" y1="62" x2="700" y2="404"/>
+    <rect class="fg-box" x="170" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="260" y="35" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="260" y="49" text-anchor="middle">private_key_jwt + DPoP</text>
+    <rect class="fg-box fg-box--accent" x="600" y="16" width="200" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="700" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="700" y="49" text-anchor="middle">go-oidc-provider</text>
+    <circle class="fg-badge" cx="15" cy="104" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="107" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M260,104 H700" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="480" y="84" text-anchor="middle">POST /par</text>
+    <text class="fg-mxs" x="480" y="97" text-anchor="middle">client_assertion=&lt;private_key_jwt&gt; · code_challenge=S256</text>
+    <circle class="fg-badge" cx="15" cy="140" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="143" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M700,140 H260" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="480" y="134" text-anchor="middle">201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
+    <circle class="fg-badge" cx="15" cy="176" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="179" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M260,176 H700" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="480" y="170" text-anchor="middle">GET /authorize?request_uri=urn:…&amp;client_id</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="212" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="215" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M700,204 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="742" y="208">validate against the profile</text>
+    <text class="fg-mxs" x="742" y="221">ES256 signing · redirect_uri exact match</text>
+    <circle class="fg-badge" cx="15" cy="258" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="261" text-anchor="middle">5</text>
+    <rect class="fg-box fg-box--sub" x="170" y="240" width="620" height="36" rx="6"/>
+    <text class="fg-xs" x="480" y="262" text-anchor="middle">the user logs in and consents, driven by the interaction endpoints</text>
+    <circle class="fg-badge" cx="15" cy="306" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="309" text-anchor="middle">6</text>
+    <path class="fg-edge fg-edge--accent" d="M700,306 H260" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="480" y="300" text-anchor="middle">302 redirect_uri?code=…&amp;state=…</text>
+    <circle class="fg-badge" cx="15" cy="352" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="355" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M260,352 H700" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="480" y="332" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <text class="fg-mxs" x="480" y="345" text-anchor="middle">code · code_verifier · client_assertion</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="396" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="399" text-anchor="middle">8</text>
+    <path class="fg-edge fg-edge--accent" d="M700,396 H260" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="480" y="376" text-anchor="middle">200</text>
+    <text class="fg-mxs" x="480" y="389" text-anchor="middle">access_token (DPoP-bound) · id_token (ES256) · refresh_token</text>
+  </svg>
+  <figcaption class="fig-note">Steps 1 and 2 are what Baseline adds up front. After them the browser carries a reference rather than the request itself, so nothing in the URL bar is worth tampering with.</figcaption>
+</figure>
 
 ## Code (excerpts from [`examples/03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2))
 

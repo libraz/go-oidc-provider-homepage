@@ -36,49 +36,57 @@ pageClass: pg-concepts-access-token-format
 
 ### JWT（RFC 9068） — RS がローカルで検証
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-local-title" viewBox="0 0 760 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <g transform="translate(38,0)">
-  <title id="atf-jwt-local-title">JWT アクセストークン: RP が Bearer JWT を提示し、RS はキャッシュした OP の JWKS でローカル検証するため、OP はリクエストの処理経路に入らない。</title>
-  <rect x="28" y="38" width="118" height="56" rx="6"/>
-  <text class="atf-b atf-t1" x="87" y="70" text-anchor="middle">RP</text>
-  <rect x="420" y="24" width="236" height="84" rx="6"/>
-  <text class="atf-b atf-t1" x="538" y="56" text-anchor="middle">RS</text>
-  <text class="atf-c atf-t1" x="538" y="78" text-anchor="middle">sig + <tspan class="atf-m">aud</tspan> + <tspan class="atf-m">exp</tspan> をローカル検証</text>
-  <line x1="146" y1="66" x2="416" y2="66"/>
-  <path d="M409 62 L416 66 L409 70"/>
-  <text class="atf-m atf-t2 halo" x="282" y="54" text-anchor="middle">Bearer JWT</text>
-  <rect class="atf-sop" x="28" y="118" width="176" height="52" rx="6"/>
-  <text class="atf-b atf-op" x="116" y="149" text-anchor="middle">OP <tspan class="atf-m">/jwks</tspan></text>
-  <line x1="204" y1="144" x2="414" y2="98" stroke-dasharray="5 4"/>
-  <path d="M407 94 L414 98 L407 102"/>
-  <text class="atf-s atf-t2 halo" x="312" y="114" text-anchor="middle">取得してキャッシュ（一度だけ）</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">JWT — リソースサーバが自分で判断する</div>
+  <svg class="fig-svg" role="img" aria-labelledby="atf-jwt-title" viewBox="0 30 960 140" xmlns="http://www.w3.org/2000/svg">
+    <title id="atf-jwt-title">JWT アクセストークンでは、リソースサーバが署名・audience・有効期限を自分で検証します。鍵は OP から一度取得してキャッシュしたものを使い、OP はリクエストの処理経路に入りません。</title>
+    <rect class="fg-box" x="36" y="54" width="190" height="68" rx="8"/>
+    <text class="fg-t" x="56" y="84">RP</text>
+    <text class="fg-xs" x="56" y="104">アクセストークンを保持する</text>
+    <path class="fg-edge" d="M230,96 H316" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="273" y="89" text-anchor="middle">Bearer &lt;JWT&gt;</text>
+    <rect class="fg-box" x="320" y="48" width="320" height="98" rx="8"/>
+    <text class="fg-t" x="340" y="80">RS</text>
+    <text class="fg-xs" x="340" y="102">署名・aud・exp を自分で検証する</text>
+    <text class="fg-xs" x="340" y="120">問い合わせる相手も待ち時間も無い</text>
+    <text class="fg-mxs fg-ok" x="340" y="138">リクエストあたりのネットワーク呼び出し 0 回</text>
+    <path class="fg-edge fg-edge--muted" d="M644,96 H730" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="687" y="89" text-anchor="middle">一度だけ</text>
+    <rect class="fg-box fg-box--accent" x="734" y="54" width="190" height="68" rx="8"/>
+    <text class="fg-m fg-accent" x="754" y="84">OP /jwks</text>
+    <text class="fg-xs" x="754" y="104">RS が取得してキャッシュする</text>
+  </svg>
+  <figcaption class="fig-note">高速で、しかもオフラインで完結します。それが同時に難点でもあり、発行後に OP が行ったことは、トークン自身の <code>exp</code> が過ぎるまでこのリソースサーバには届きません。</figcaption>
+</figure>
 
 RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `aud` / `exp` をチェックし、リクエストに応えます。OP は **リクエストの処理経路に入りません**。JWT 自体が claim（`sub`、`scope`、`aud`、`auth_time`、`acr`、`cnf` …）を運ぶので、RS に必要な情報は全て揃っています。
 
 ### Opaque — RS は毎回 OP に問い合わせる
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-introspect-title" viewBox="0 0 760 112" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <g transform="translate(20,0)">
-  <title id="atf-opaque-introspect-title">opaque アクセストークン: RP が Bearer opaque を提示し、RS は毎リクエスト OP の introspection エンドポイントを呼んでトークンを解決する。</title>
-  <rect x="28" y="38" width="112" height="52" rx="6"/>
-  <text class="atf-b atf-t1" x="84" y="68" text-anchor="middle">RP</text>
-  <rect class="atf-srs" x="248" y="38" width="112" height="52" rx="6"/>
-  <text class="atf-b atf-rs" x="304" y="68" text-anchor="middle">RS</text>
-  <rect class="atf-sop" x="576" y="38" width="116" height="52" rx="6"/>
-  <text class="atf-b atf-op" x="634" y="68" text-anchor="middle">OP</text>
-  <line x1="140" y1="64" x2="246" y2="64"/>
-  <path d="M239 60 L246 64 L239 68"/>
-  <text class="atf-m atf-t2 halo" x="194" y="54" text-anchor="middle">Bearer opaque</text>
-  <line x1="360" y1="52" x2="574" y2="52"/>
-  <path d="M567 48 L574 52 L567 56"/>
-  <text class="atf-m atf-t2 halo" x="468" y="42" text-anchor="middle">POST /introspect</text>
-  <line x1="576" y1="76" x2="362" y2="76"/>
-  <path d="M369 72 L362 76 L369 80"/>
-  <text class="atf-m atf-t2 halo" x="468" y="94" text-anchor="middle">{active, sub, scope, …}</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Opaque — リソースサーバが毎回問い合わせる</div>
+  <svg class="fig-svg" role="img" aria-labelledby="atf-opaque-title" viewBox="0 30 960 140" xmlns="http://www.w3.org/2000/svg">
+    <title id="atf-opaque-title">opaque なアクセストークンは読み取れる内容を持たないため、リソースサーバはリクエストのたびに OP の introspection エンドポイントを呼び出し、その応答でトークンを解決します。</title>
+    <rect class="fg-box" x="36" y="54" width="190" height="68" rx="8"/>
+    <text class="fg-t" x="56" y="84">RP</text>
+    <text class="fg-xs" x="56" y="104">アクセストークンを保持する</text>
+    <path class="fg-edge" d="M230,96 H316" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="273" y="89" text-anchor="middle">Bearer &lt;opaque&gt;</text>
+    <rect class="fg-box" x="320" y="48" width="320" height="98" rx="8"/>
+    <text class="fg-t" x="340" y="80">RS</text>
+    <text class="fg-xs" x="340" y="102">トークン単体では何も分からない</text>
+    <text class="fg-xs" x="340" y="120">これが何かを OP に尋ねる必要がある</text>
+    <text class="fg-mxs fg-warn" x="340" y="138">リクエストあたりのネットワーク呼び出し 1 回</text>
+    <path class="fg-edge" d="M644,80 H730" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="687" y="73" text-anchor="middle">毎リクエスト</text>
+    <path class="fg-edge fg-edge--accent" d="M730,120 H648" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="689" y="138" text-anchor="middle">応答</text>
+    <rect class="fg-box fg-box--accent" x="734" y="54" width="190" height="68" rx="8"/>
+    <text class="fg-m fg-accent" x="754" y="84">OP /introspect</text>
+    <text class="fg-mxs" x="754" y="104">{ active, sub, scope, … }</text>
+  </svg>
+  <figcaption class="fig-note">呼び出しごとに往復が発生する代わりに、返ってくる答えはその瞬間に正しい値です。ここでトークンを失効させれば、次のリクエストがもうそれを知っています。</figcaption>
+</figure>
 
 opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 文字にしたランダム識別子です。claim を一切運びません。RS は毎リクエストごとに OP の `/introspect`（RFC 7662）でトークンを解決します（あるいは結果を意図的に短い時間幅だけキャッシュします）。OP は **リクエストの処理経路に入ります**。
 
@@ -149,65 +157,67 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 
 **JWT 形式:**
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-jwt-revocation-title" viewBox="0 0 760 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <g transform="translate(20,0)">
-  <title id="atf-jwt-revocation-title">JWT の失効到達範囲: end_session による grant tombstone の切り替えは OP の userinfo / introspect では参照されるが、オフライン JWT 検証をする RS では参照されない。</title>
-  <rect x="24" y="98" width="150" height="52" rx="6"/>
-  <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
-  <rect x="214" y="84" width="190" height="80" rx="6" stroke-dasharray="5 4"/>
-  <text class="atf-c atf-t1" x="309" y="116" text-anchor="middle">grant tombstone（既定）</text>
-  <text class="atf-c atf-t1" x="309" y="136" text-anchor="middle">または registry <tspan class="atf-m">RevokeByGrant</tspan></text>
-  <line x1="174" y1="124" x2="212" y2="124"/>
-  <path d="M205 120 L212 124 L205 128"/>
-  <rect class="atf-sop" x="540" y="20" width="170" height="48" rx="6"/>
-  <text class="atf-b atf-op" x="625" y="49" text-anchor="middle">OP <tspan class="atf-m">/userinfo</tspan></text>
-  <rect class="atf-sop" x="540" y="100" width="170" height="48" rx="6"/>
-  <text class="atf-b atf-op" x="625" y="129" text-anchor="middle">OP <tspan class="atf-m">/introspect</tspan></text>
-  <rect class="atf-srs" x="540" y="180" width="170" height="52" rx="6"/>
-  <text class="atf-b atf-rs" x="625" y="200" text-anchor="middle">RS</text>
-  <text class="atf-c atf-rs" x="625" y="218" text-anchor="middle">オフライン JWT 検証</text>
-  <line x1="404" y1="112" x2="537" y2="47" stroke-dasharray="5 4"/>
-  <path d="M530 43 L537 47 L530 51"/>
-  <text class="atf-s atf-t2 halo" x="470" y="72" text-anchor="middle">参照する</text>
-  <line x1="404" y1="124" x2="537" y2="124" stroke-dasharray="5 4"/>
-  <path d="M530 120 L537 124 L530 128"/>
-  <text class="atf-s atf-t2 halo" x="468" y="116" text-anchor="middle">参照する</text>
-  <line x1="404" y1="136" x2="532" y2="197" stroke-dasharray="5 4"/>
-  <path d="M534 193 L546 205 M546 193 L534 205"/>
-  <text class="atf-s atf-t2 halo" x="458" y="160" text-anchor="middle">参照しない</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">JWT — 失効はどこで止まるか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="atf-revoke-jwt-title" viewBox="0 20 960 220" xmlns="http://www.w3.org/2000/svg">
+    <title id="atf-revoke-jwt-title">JWT アクセストークンの場合、セッション終了は grant tombstone を書き込みます。OP は userinfo と introspection のエンドポイントでこれを参照しますが、オフラインで JWT を検証するリソースサーバには届きません。</title>
+    <rect class="fg-box fg-box--accent" x="36" y="90" width="180" height="60" rx="8"/>
+    <text class="fg-m fg-accent" x="126" y="116" text-anchor="middle">/end_session</text>
+    <text class="fg-xs" x="126" y="136" text-anchor="middle">RP 起点のログアウト</text>
+    <path class="fg-edge fg-edge--accent" d="M220,120 H316" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="320" y="84" width="240" height="72" rx="8"/>
+    <text class="fg-t2" x="340" y="110">grant tombstone</text>
+    <text class="fg-xs" x="340" y="128">既定。または registry の</text>
+    <text class="fg-mxs" x="340" y="146">RevokeByGrant</text>
+    <path class="fg-leader" d="M564,120 H620 M620,54 V193"/>
+    <path class="fg-edge fg-edge--thin" d="M620,54 H696" marker-end="url(#fg-a)"/>
+    <text class="fg-xs fg-ok" x="658" y="47" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--thin" d="M620,120 H696" marker-end="url(#fg-a)"/>
+    <text class="fg-xs fg-ok" x="658" y="113" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M620,193 H696" marker-end="url(#fg-ad)"/>
+    <text class="fg-xs fg-danger" x="658" y="186" text-anchor="middle">届かない</text>
+    <rect class="fg-box" x="700" y="34" width="224" height="40" rx="6"/>
+    <text class="fg-m" x="718" y="59">OP /userinfo</text>
+    <rect class="fg-box" x="700" y="100" width="224" height="40" rx="6"/>
+    <text class="fg-m" x="718" y="125">OP /introspect</text>
+    <rect class="fg-box fg-box--danger" x="700" y="166" width="224" height="54" rx="6"/>
+    <text class="fg-t2" x="718" y="188">RS</text>
+    <text class="fg-xs" x="718" y="208">オフラインの JWT 検証</text>
+  </svg>
+  <figcaption class="fig-note">このページが扱っているギャップがここです。長さを決めるのはアクセストークンの TTL だけで、他に何もありません。形式が JWT のときに TTL を短く保つべき理由がこれです。</figcaption>
+</figure>
 
 **Opaque 形式:**
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-opaque-revocation-title" viewBox="0 0 760 252" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <g transform="translate(20,0)">
-  <title id="atf-opaque-revocation-title">opaque の失効到達範囲: end_session による opaque サブストアの切り替えは OP の userinfo / introspect でも、各 RS の introspect 呼び出しでも参照される。</title>
-  <rect x="24" y="98" width="150" height="52" rx="6"/>
-  <text class="atf-m atf-t1" x="99" y="129" text-anchor="middle">/end_session</text>
-  <rect x="214" y="84" width="190" height="80" rx="6" stroke-dasharray="5 4"/>
-  <text class="atf-c atf-t1" x="309" y="116" text-anchor="middle">opaque サブストア</text>
-  <text class="atf-m atf-t1" x="309" y="136" text-anchor="middle">RevokeByGrant</text>
-  <line x1="174" y1="124" x2="212" y2="124"/>
-  <path d="M205 120 L212 124 L205 128"/>
-  <rect class="atf-sop" x="540" y="20" width="170" height="48" rx="6"/>
-  <text class="atf-b atf-op" x="625" y="49" text-anchor="middle">OP <tspan class="atf-m">/userinfo</tspan></text>
-  <rect class="atf-sop" x="540" y="100" width="170" height="48" rx="6"/>
-  <text class="atf-b atf-op" x="625" y="129" text-anchor="middle">OP <tspan class="atf-m">/introspect</tspan></text>
-  <rect class="atf-srs" x="540" y="180" width="170" height="52" rx="6"/>
-  <text class="atf-b atf-rs" x="625" y="200" text-anchor="middle">RS</text>
-  <text class="atf-c atf-rs" x="625" y="218" text-anchor="middle"><tspan class="atf-m">/introspect</tspan> 呼び出し</text>
-  <line x1="404" y1="112" x2="537" y2="47" stroke-dasharray="5 4"/>
-  <path d="M530 43 L537 47 L530 51"/>
-  <text class="atf-s atf-t2 halo" x="470" y="72" text-anchor="middle">参照する</text>
-  <line x1="404" y1="124" x2="537" y2="124" stroke-dasharray="5 4"/>
-  <path d="M530 120 L537 124 L530 128"/>
-  <text class="atf-s atf-t2 halo" x="468" y="116" text-anchor="middle">参照する</text>
-  <line x1="404" y1="136" x2="537" y2="199" stroke-dasharray="5 4"/>
-  <path d="M530 195 L537 199 L530 203"/>
-  <text class="atf-s atf-t2 halo" x="460" y="160" text-anchor="middle">参照する</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Opaque — 失効はすべてに届く</div>
+  <svg class="fig-svg" role="img" aria-labelledby="atf-revoke-opaque-title" viewBox="0 20 960 220" xmlns="http://www.w3.org/2000/svg">
+    <title id="atf-revoke-opaque-title">opaque アクセストークンの場合、セッション終了はトークンストアの行を切り替えます。OP は userinfo と introspection のエンドポイントでこのストアを参照し、各リソースサーバも参照します。どのみち introspection を呼ばなければならないからです。</title>
+    <rect class="fg-box fg-box--accent" x="36" y="90" width="180" height="60" rx="8"/>
+    <text class="fg-m fg-accent" x="126" y="116" text-anchor="middle">/end_session</text>
+    <text class="fg-xs" x="126" y="136" text-anchor="middle">RP 起点のログアウト</text>
+    <path class="fg-edge fg-edge--accent" d="M220,120 H316" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="320" y="84" width="240" height="72" rx="8"/>
+    <text class="fg-t2" x="340" y="110">opaque トークンストア</text>
+    <text class="fg-xs" x="340" y="128">次の呼び出しで行を revoked に</text>
+    <text class="fg-mxs" x="340" y="146">RevokeByGrant</text>
+    <path class="fg-leader" d="M564,120 H620 M620,54 V193"/>
+    <path class="fg-edge fg-edge--thin" d="M620,54 H696" marker-end="url(#fg-a)"/>
+    <text class="fg-xs fg-ok" x="658" y="47" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--thin" d="M620,120 H696" marker-end="url(#fg-a)"/>
+    <text class="fg-xs fg-ok" x="658" y="113" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M620,193 H696" marker-end="url(#fg-ao)"/>
+    <text class="fg-xs fg-ok" x="658" y="186" text-anchor="middle">参照する</text>
+    <rect class="fg-box" x="700" y="34" width="224" height="40" rx="6"/>
+    <text class="fg-m" x="718" y="59">OP /userinfo</text>
+    <rect class="fg-box" x="700" y="100" width="224" height="40" rx="6"/>
+    <text class="fg-m" x="718" y="125">OP /introspect</text>
+    <rect class="fg-box fg-box--ok" x="700" y="166" width="224" height="54" rx="6"/>
+    <text class="fg-t2" x="718" y="188">RS</text>
+    <text class="fg-xs" x="718" y="208">自身の /introspect 呼び出し</text>
+  </svg>
+  <figcaption class="fig-note">迂回路が存在しないため、到達範囲に穴が空きません。トークンを読めないリソースサーバは、問い合わせずに受理する方法を持たず、その問い合わせがギャップを閉じています。</figcaption>
+</figure>
 
 - **JWT 経路。** トークンが OP のエンドポイント（`/userinfo`、`/introspect`、`/revoke`）に到達したときに registry を参照します。そこに来た revoked JWT は即座に拒否されます。**JWKS でオフライン JWT 検証している RS は registry を参照しません** — それが自己完結トークンの存在意義だからです。その RS では revoked JWT が `exp` まで通り続けます。
 - **Opaque 経路。** トークンを使うすべての経路が `/introspect` を通るので、カスケードは定義上どの RS にも届きます。
@@ -292,46 +302,50 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 
 判断は概ね「誰を信頼するか」「RS にどこまで要求できるか」「アクセストークン TTL がどれだけ短いか」で決まります。
 
-<svg class="atf" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="atf-choosing-format-title" viewBox="0 0 760 402" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <g transform="translate(30,0)">
-  <title id="atf-choosing-format-title">introspection の要件・アクセストークン TTL・RS の構成から opaque / JWT / per-audience 混成を選ぶ決定木。</title>
-  <rect x="24" y="24" width="340" height="64" rx="6"/>
-  <text class="atf-c atf-t1" x="194" y="48" text-anchor="middle">全 RS に毎回</text>
-  <text class="atf-c atf-t1" x="194" y="68" text-anchor="middle"><tspan class="atf-m">/introspect</tspan> を要求できる？</text>
-  <rect x="516" y="32" width="150" height="48" rx="24"/>
-  <text class="atf-b atf-t1" x="591" y="60" text-anchor="middle">Opaque</text>
-  <line x1="364" y1="56" x2="514" y2="56"/>
-  <path d="M507 52 L514 56 L507 60"/>
-  <text class="atf-s atf-t2 halo" x="440" y="48" text-anchor="middle">はい</text>
-  <line x1="194" y1="88" x2="194" y2="132"/>
-  <path d="M190 125 L194 132 L198 125"/>
-  <text class="atf-s atf-t2 halo" x="212" y="112" text-anchor="middle">いいえ</text>
-  <rect x="24" y="136" width="340" height="64" rx="6"/>
-  <text class="atf-c atf-t1" x="194" y="160" text-anchor="middle">AT TTL を短くして</text>
-  <text class="atf-c atf-t1" x="194" y="180" text-anchor="middle"><tspan class="atf-m">exp</tspan> までのギャップを許容できる？</text>
-  <rect x="516" y="144" width="150" height="48" rx="24"/>
-  <text class="atf-b atf-t1" x="591" y="172" text-anchor="middle">JWT（既定）</text>
-  <line x1="364" y1="168" x2="514" y2="168"/>
-  <path d="M507 164 L514 168 L507 172"/>
-  <text class="atf-s atf-t2 halo" x="440" y="160" text-anchor="middle">はい</text>
-  <line x1="194" y1="200" x2="194" y2="244"/>
-  <path d="M190 237 L194 244 L198 237"/>
-  <text class="atf-s atf-t2 halo" x="212" y="224" text-anchor="middle">いいえ</text>
-  <rect x="24" y="248" width="340" height="64" rx="6"/>
-  <text class="atf-c atf-t1" x="194" y="272" text-anchor="middle">内部 RS と外部 RS が</text>
-  <text class="atf-c atf-t1" x="194" y="292" text-anchor="middle">混在する？</text>
-  <rect x="502" y="256" width="178" height="48" rx="24"/>
-  <text class="atf-b atf-t1" x="591" y="284" text-anchor="middle">per-audience 混成</text>
-  <line x1="364" y1="280" x2="500" y2="280"/>
-  <path d="M493 276 L500 280 L493 284"/>
-  <text class="atf-s atf-t2 halo" x="440" y="272" text-anchor="middle">はい</text>
-  <line x1="194" y1="312" x2="194" y2="336"/>
-  <path d="M190 329 L194 336 L198 329"/>
-  <text class="atf-s atf-t2 halo" x="212" y="323" text-anchor="middle">いいえ</text>
-  <rect x="119" y="338" width="150" height="48" rx="24"/>
-  <text class="atf-b atf-t1" x="194" y="366" text-anchor="middle">Opaque</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">形式の選び方</div>
+  <svg class="fig-svg" role="img" aria-labelledby="atf-choice-title" viewBox="0 0 960 374" xmlns="http://www.w3.org/2000/svg">
+    <title id="atf-choice-title">アクセストークンの形式を 3 つの問いで決める判定木。すべてのリソースサーバに introspection の呼び出しを義務付けられるか、トークンの有効期限で区切られるギャップを許容できるか、内部と外部のリソースサーバが混在するかを順に見ます。</title>
+    <!-- 1 -->
+    <rect class="fg-box" x="36" y="24" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="52">すべての RS に毎回 /introspect を義務付けられるか</text>
+    <text class="fg-xs" x="56" y="74">自社が運用していない RS も含めて</text>
+    <path class="fg-edge" d="M434,57 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="50" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="530" y="28" width="394" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="52">Opaque</text>
+    <text class="fg-xs" x="550" y="72">失効がすべてに届く。代償は 1 回ずつの往復</text>
+    <path class="fg-edge" d="M233,94 V116" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="110">いいえ</text>
+    <!-- 2 -->
+    <rect class="fg-box" x="36" y="120" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="148">アクセストークンの TTL を十分短くできるか</text>
+    <text class="fg-xs" x="56" y="170">exp までのギャップを許容できる長さに</text>
+    <path class="fg-edge" d="M434,153 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="146" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="530" y="124" width="394" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="148">JWT — 既定</text>
+    <text class="fg-xs" x="550" y="168">処理経路に呼び出しが無く、ギャップは exp で閉じる</text>
+    <path class="fg-edge" d="M233,190 V212" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="206">いいえ</text>
+    <!-- 3 -->
+    <rect class="fg-box" x="36" y="216" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="244">内部 RS と外部 RS が混在するか</text>
+    <text class="fg-xs" x="56" y="266">audience が異なれば、要求できることも異なる</text>
+    <path class="fg-edge" d="M434,249 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="242" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="220" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="244">audience ごとの使い分け</text>
+    <text class="fg-xs" x="550" y="264">内側には JWT、外側には opaque。形式は audience 単位で決まる</text>
+    <path class="fg-edge" d="M233,286 V308" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="302">いいえ</text>
+    <!-- 既定 -->
+    <rect class="fg-box" x="36" y="312" width="888" height="54" rx="8"/>
+    <text class="fg-t2" x="56" y="334">Opaque</text>
+    <text class="fg-xs" x="56" y="354">ギャップを許容できず TTL も短くできないなら、残る選択肢は毎回の往復です</text>
+  </svg>
+  <figcaption class="fig-note">形式は audience の性質であって、デプロイ全体の性質ではありません。自社で運用するサービスには JWT を、そうでないサービスには opaque を、同じ OP から発行して構いません。</figcaption>
+</figure>
 
 audience ごとの選択は実運用の現実解として有効です。OP に近い内部 RS は opaque で運用してログアウトを即時反映させ、公開向けの RS は JWT で運用して OP を処理経路上の依存にしない、といった切り分けができます。
 

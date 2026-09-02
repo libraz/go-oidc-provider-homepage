@@ -8,32 +8,37 @@ pageClass: pg-getting-started-required-options
 
 `op.New(...)` rejects partial configurations at construction time, so an unsafe OP cannot accidentally take traffic. Three options are unconditionally required. `WithCookieKeys` joins them whenever the `authorization_code` grant is enabled — and the default grant set enables it.
 
-<svg role="img" aria-labelledby="required-options-title" viewBox="0 0 760 292" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="required-options-title">Three options are always required — issuer, store, and keyset. Cookie keys are required in addition whenever the authorization_code grant is enabled.</title>
-  <text class="ro-head" x="34" y="32">Always required</text>
-
-  <rect class="ro-box" x="34" y="44" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="141" y="72" text-anchor="middle">op.WithIssuer</text>
-  <text class="ro-note" x="141" y="94" text-anchor="middle">iss claim · discovery URL</text>
-  <text class="ro-note" x="141" y="112" text-anchor="middle">cookie scope</text>
-
-  <rect class="ro-box" x="272" y="44" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="379" y="72" text-anchor="middle">op.WithStore</text>
-  <text class="ro-note" x="379" y="94" text-anchor="middle">codes · sessions · clients</text>
-  <text class="ro-note" x="379" y="112" text-anchor="middle">refresh chains · JTI sets</text>
-
-  <rect class="ro-box" x="510" y="44" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="617" y="72" text-anchor="middle">op.WithKeyset</text>
-  <text class="ro-note" x="617" y="94" text-anchor="middle">ES256 signing keys for</text>
-  <text class="ro-note" x="617" y="112" text-anchor="middle">ID Token · JWT AT · JARM</text>
-
-  <text class="ro-head" x="272" y="170">Required with the authorization_code grant</text>
-
-  <rect class="ro-box ro-conditional" x="272" y="182" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="379" y="210" text-anchor="middle">op.WithCookieKeys</text>
-  <text class="ro-note" x="379" y="232" text-anchor="middle">AES-256-GCM sealing of</text>
-  <text class="ro-note" x="379" y="250" text-anchor="middle">session + CSRF cookies</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Three always, and a fourth with the code grant</div>
+  <svg class="fig-svg" role="img" aria-labelledby="req-opts-title" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+    <title id="req-opts-title">Three options are always required: the issuer, the store, and the keyset. Cookie keys become required in addition as soon as the authorization_code grant is enabled, because that grant is the one that puts state in a browser.</title>
+    <text class="fg-lbl" x="40" y="26">always required</text>
+    <rect class="fg-box" x="36" y="38" width="284" height="132" rx="8"/>
+    <text class="fg-m" x="56" y="66">op.WithIssuer</text>
+    <line class="fg-rule" x1="56" y1="80" x2="300" y2="80"/>
+    <text class="fg-xs" x="56" y="102">the iss claim on every token</text>
+    <text class="fg-xs" x="56" y="122">the discovery URL</text>
+    <text class="fg-xs" x="56" y="142">the scope the cookies are set on</text>
+    <rect class="fg-box" x="340" y="38" width="284" height="132" rx="8"/>
+    <text class="fg-m" x="360" y="66">op.WithStore</text>
+    <line class="fg-rule" x1="360" y1="80" x2="604" y2="80"/>
+    <text class="fg-xs" x="360" y="102">authorization codes · sessions</text>
+    <text class="fg-xs" x="360" y="122">clients · refresh chains</text>
+    <text class="fg-xs" x="360" y="142">consumed-JTI sets</text>
+    <rect class="fg-box" x="644" y="38" width="280" height="132" rx="8"/>
+    <text class="fg-m" x="664" y="66">op.WithKeyset</text>
+    <line class="fg-rule" x1="664" y1="80" x2="904" y2="80"/>
+    <text class="fg-xs" x="664" y="102">ES256 signing keys for the</text>
+    <text class="fg-xs" x="664" y="122">ID token, JWT access tokens</text>
+    <text class="fg-xs" x="664" y="142">and JARM responses</text>
+    <text class="fg-lbl fg-accent" x="40" y="206">and this one, once the authorization_code grant is enabled</text>
+    <rect class="fg-box fg-box--accent" x="36" y="218" width="888" height="70" rx="8"/>
+    <text class="fg-m fg-accent" x="56" y="246">op.WithCookieKeys</text>
+    <line class="fg-rule" x1="56" y1="258" x2="904" y2="258"/>
+    <text class="fg-xs" x="56" y="278">AES-256-GCM sealing for the session and CSRF cookies — the only grant that puts state in a browser</text>
+  </svg>
+  <figcaption class="fig-note">The fourth is conditional rather than optional. Leave it out with the code grant enabled and <code>op.New</code> refuses at start-up, rather than issuing unsealed cookies and finding out in production.</figcaption>
+</figure>
 
 | Option | Why it's required |
 |---|---|

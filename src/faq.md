@@ -9,43 +9,41 @@ pageClass: pg-faq
 
 Every question below came out of building the example suite or running the conformance harness. Nothing is here just because a FAQ ought to cover it. If you are stuck on one of them, the answer below is the one the project itself uses.
 
-<svg role="img" aria-labelledby="faq-route-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="faq-route-title">How to use this FAQ: start at setup, move into the area you are working in such as FAPI or tokens, then finish at the error catalogue and the adoption questions.</title>
-  <rect class="faq-main" x="40" y="116" width="154" height="74" rx="8"/>
-  <text class="faq-text" x="117" y="146" text-anchor="middle">Boot it first</text>
-  <text class="faq-sub" x="117" y="168" text-anchor="middle">required options / issuer</text>
-
-  <rect class="faq-box" x="292" y="36" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="70" text-anchor="middle">FAPI / DPoP</text>
-  <rect class="faq-box" x="292" y="112" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="146" text-anchor="middle">Tokens / storage</text>
-  <rect class="faq-box" x="292" y="188" width="176" height="56" rx="8"/>
-  <text class="faq-text" x="380" y="222" text-anchor="middle">UI / SPA / MFA</text>
-
-  <rect class="faq-box" x="566" y="76" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="102" text-anchor="middle">Errors</text>
-  <text class="faq-sub" x="643" y="122" text-anchor="middle">common failures</text>
-  <rect class="faq-box" x="566" y="172" width="154" height="62" rx="8"/>
-  <text class="faq-text" x="643" y="198" text-anchor="middle">Adoption</text>
-  <text class="faq-sub" x="643" y="218" text-anchor="middle">production / disclosure</text>
-
-  <path class="faq-flow" d="M194 153 C240 150 250 64 292 64"/>
-  <path class="faq-flow" d="M283 60 L292 64 L283 68"/>
-  <path class="faq-flow" d="M194 153 C240 153 250 140 292 140"/>
-  <path class="faq-flow" d="M283 136 L292 140 L283 144"/>
-  <path class="faq-flow" d="M194 153 C240 156 250 216 292 216"/>
-  <path class="faq-flow" d="M283 212 L292 216 L283 220"/>
-
-  <path class="faq-flow" d="M468 64 C520 62 528 90 566 90"/>
-  <path class="faq-flow" d="M557 86 L566 90 L557 94"/>
-  <path class="faq-flow" d="M468 140 C520 138 528 107 566 107"/>
-  <path class="faq-flow" d="M557 103 L566 107 L557 111"/>
-  <path class="faq-flow" d="M468 216 C520 214 528 124 566 124"/>
-  <path class="faq-flow" d="M557 120 L566 124 L557 128"/>
-
-  <path class="faq-flow" d="M643 138 V172"/>
-  <path class="faq-flow" d="M639 163 L643 172 L647 163"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">How to read this FAQ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="faq-order-title" viewBox="0 0 960 222" xmlns="http://www.w3.org/2000/svg">
+    <title id="faq-order-title">A reading order for this FAQ: get the OP booted first, then move into whichever area you are working in, then finish at the error catalogue and the adoption questions.</title>
+    <rect class="fg-box fg-box--accent" x="36" y="88" width="170" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="54" y="116">Boot it first</text>
+    <text class="fg-xs" x="54" y="138">required options</text>
+    <text class="fg-xs" x="54" y="152">issuer · store · keys</text>
+    <path class="fg-leader" d="M210,124 H240 M240,54 V178"/>
+    <path class="fg-edge fg-edge--thin" d="M240,54 H258" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M240,116 H258" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M240,178 H258" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="262" y="32" width="250" height="44" rx="6"/>
+    <text class="fg-t2" x="280" y="52">FAPI / DPoP</text>
+    <text class="fg-xs" x="280" y="68">profiles and sender constraints</text>
+    <rect class="fg-box" x="262" y="94" width="250" height="44" rx="6"/>
+    <text class="fg-t2" x="280" y="114">Tokens / storage</text>
+    <text class="fg-xs" x="280" y="130">formats, TTLs, which store to use</text>
+    <rect class="fg-box" x="262" y="156" width="250" height="44" rx="6"/>
+    <text class="fg-t2" x="280" y="176">UI / SPA / MFA</text>
+    <text class="fg-xs" x="280" y="192">screens and interaction</text>
+    <path class="fg-leader" d="M516,54 H544 M516,116 H544 M516,178 H544 M544,54 V178"/>
+    <path class="fg-edge fg-edge--thin" d="M544,116 H564" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="568" y="88" width="170" height="72" rx="8"/>
+    <text class="fg-t2" x="586" y="116">Errors</text>
+    <text class="fg-xs" x="586" y="138">what a failure means</text>
+    <text class="fg-xs" x="586" y="152">and what to change</text>
+    <path class="fg-edge fg-edge--thin" d="M742,124 H790" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="794" y="88" width="130" height="72" rx="8"/>
+    <text class="fg-t2" x="810" y="116">Adoption</text>
+    <text class="fg-xs" x="810" y="138">production</text>
+    <text class="fg-xs" x="810" y="152">disclosure</text>
+  </svg>
+  <figcaption class="fig-note">The middle column is the only part you can skip through — pick the one you are actually working on. The first and last columns apply to everyone.</figcaption>
+</figure>
 
 <ul class="faq-index">
   <li><a href="#setup-basics"><div class="faq-index-title">Setup &amp; basics</div><div class="faq-index-desc">Required options, mount path, issuer normalization, minimal setup</div></a></li>

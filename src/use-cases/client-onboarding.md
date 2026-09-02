@@ -17,88 +17,64 @@ pageClass: pg-use-cases-client-onboarding
 
 ## At a glance — five patterns
 
-<svg id="onbo-spectrum" role="img" aria-labelledby="onbo-spectrum-title" viewBox="0 0 716 236" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="onbo-spectrum-title">The five client-onboarding patterns placed on a trust spectrum from fully operator-controlled (static registration) to no trust on the wire (out-of-band CLI); the middle two patterns are gated by a token carried on the wire.</title>
-<g>
-<rect class="card" x="14" y="10" width="128" height="162" rx="8"/>
-<circle class="badge" cx="34" cy="30" r="11"/>
-<text class="lbl" x="34" y="34" text-anchor="middle" font-size="10.5" font-weight="700">1</text>
-<text class="lbl" x="24" y="58" font-size="10.5" font-weight="600">Static</text>
-<text class="lbl" x="24" y="72" font-size="10.5" font-weight="600">registration</text>
-<line class="divider" x1="24" y1="82" x2="132" y2="82"/>
-<text class="lbl muted" x="24" y="96" font-size="7" letter-spacing=".1em">TRUST GATE</text>
-<text class="lbl" x="24" y="110" font-size="9">Operator</text>
-<text class="lbl" x="24" y="123" font-size="9">config</text>
-<rect class="seam" x="24" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="78" y="145" text-anchor="middle" font-size="7.5">WithStaticClients</text>
-</g>
-<g>
-<rect class="card" x="154" y="10" width="128" height="162" rx="8"/>
-<circle class="badge" cx="174" cy="30" r="11"/>
-<text class="lbl" x="174" y="34" text-anchor="middle" font-size="10.5" font-weight="700">2</text>
-<text class="lbl" x="164" y="58" font-size="10.5" font-weight="600">IaC /</text>
-<text class="lbl" x="164" y="72" font-size="10.5" font-weight="600">GitOps</text>
-<line class="divider" x1="164" y1="82" x2="272" y2="82"/>
-<text class="lbl muted" x="164" y="96" font-size="7" letter-spacing=".1em">TRUST GATE</text>
-<text class="lbl" x="164" y="110" font-size="9">Operator's</text>
-<text class="lbl" x="164" y="123" font-size="9">CI pipeline</text>
-<rect class="seam store" x="164" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="218" y="145" text-anchor="middle" font-size="7.5">store.ClientRegistry</text>
-</g>
-<g>
-<rect class="card op-accent" x="294" y="10" width="128" height="162" rx="8"/>
-<circle class="badge op-accent" cx="314" cy="30" r="11"/>
-<text class="lbl op-fill" x="314" y="34" text-anchor="middle" font-size="10.5" font-weight="700">3</text>
-<text class="lbl op-fill" x="304" y="58" font-size="10.5" font-weight="600">Standardised</text>
-<text class="lbl op-fill" x="304" y="72" font-size="10.5" font-weight="600">DCR</text>
-<line class="divider" x1="304" y1="82" x2="412" y2="82"/>
-<text class="lbl muted" x="304" y="96" font-size="7" letter-spacing=".1em">TRUST GATE</text>
-<text class="lbl" x="304" y="110" font-size="9">Minted IAT,</text>
-<text class="lbl" x="304" y="123" font-size="9">per-client RAT</text>
-<rect class="seam op-accent" x="304" y="132" width="108" height="20" rx="4"/>
-<text class="mono op-fill" x="358" y="145" text-anchor="middle" font-size="7.5">/register</text>
-</g>
-<g>
-<rect class="card" x="434" y="10" width="128" height="162" rx="8"/>
-<circle class="badge" cx="454" cy="30" r="11"/>
-<text class="lbl" x="454" y="34" text-anchor="middle" font-size="10.5" font-weight="700">4</text>
-<text class="lbl" x="444" y="58" font-size="10.5" font-weight="600">Scope-protected</text>
-<text class="lbl" x="444" y="72" font-size="10.5" font-weight="600">admin API</text>
-<line class="divider" x1="444" y1="82" x2="552" y2="82"/>
-<text class="lbl muted" x="444" y="96" font-size="7" letter-spacing=".1em">TRUST GATE</text>
-<text class="lbl" x="444" y="110" font-size="9">Management AT</text>
-<text class="lbl" x="444" y="123" font-size="9">(scope + claim)</text>
-<rect class="seam store" x="444" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="498" y="145" text-anchor="middle" font-size="7.5">store.ClientRegistry</text>
-</g>
-<g>
-<rect class="card" x="574" y="10" width="128" height="162" rx="8"/>
-<circle class="badge" cx="594" cy="30" r="11"/>
-<text class="lbl" x="594" y="34" text-anchor="middle" font-size="10.5" font-weight="700">5</text>
-<text class="lbl" x="584" y="58" font-size="10.5" font-weight="600">Out-of-band</text>
-<text class="lbl" x="584" y="72" font-size="10.5" font-weight="600">CLI</text>
-<line class="divider" x1="584" y1="82" x2="692" y2="82"/>
-<text class="lbl muted" x="584" y="96" font-size="7" letter-spacing=".1em">TRUST GATE</text>
-<text class="lbl" x="584" y="110" font-size="9">None —</text>
-<text class="lbl" x="584" y="123" font-size="9">off the wire</text>
-<rect class="seam store" x="584" y="132" width="108" height="20" rx="4"/>
-<text class="mono" x="638" y="145" text-anchor="middle" font-size="7.5">RegisterClient</text>
-</g>
-<line class="hair" x1="78" y1="172" x2="78" y2="194"/>
-<line class="hair" x1="218" y1="172" x2="218" y2="194"/>
-<line class="hair" x1="358" y1="172" x2="358" y2="194"/>
-<line class="hair" x1="498" y1="172" x2="498" y2="194"/>
-<line class="hair" x1="638" y1="172" x2="638" y2="194"/>
-<line class="axis" x1="24" y1="194" x2="692" y2="194"/>
-<path class="axis" d="M32 189 L24 194 L32 199"/>
-<path class="axis" d="M684 189 L692 194 L684 199"/>
-<line class="band" x1="358" y1="194" x2="498" y2="194"/>
-<text class="lbl muted" x="24" y="212" font-size="8.5">Fully operator</text>
-<text class="lbl muted" x="24" y="224" font-size="8.5">controlled</text>
-<text class="lbl muted" x="692" y="212" text-anchor="end" font-size="8.5">No trust</text>
-<text class="lbl muted" x="692" y="224" text-anchor="end" font-size="8.5">on the wire</text>
-<text class="lbl muted" x="428" y="214" text-anchor="middle" font-size="8.5">trust carried on the wire</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Five ways in, on one trust spectrum</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-onboarding-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-onboarding-title">Five client-onboarding patterns, arranged from fully operator-controlled at one end to nothing trusted on the wire at the other. The middle three are gated by something a caller carries; the two ends are gated by who has access to the deployment.</title>
+    <text class="fg-lbl" x="36" y="26">fully operator-controlled</text>
+    <text class="fg-lbl" x="924" y="26" text-anchor="end">nothing trusted on the wire</text>
+    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <rect class="fg-box fg-box--accent" x="36" y="52" width="168" height="140" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="56" cy="74" r="9"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="56" y="77" text-anchor="middle">1</text>
+    <text class="fg-t2" x="76" y="78">Static</text>
+    <text class="fg-lbl" x="52" y="104">gated by</text>
+    <text class="fg-xs" x="52" y="124">the operator's own</text>
+    <text class="fg-xs" x="52" y="140">configuration</text>
+    <line class="fg-rule" x1="52" y1="152" x2="188" y2="152"/>
+    <text class="fg-mxs" x="52" y="174">WithStaticClients</text>
+    <rect class="fg-box" x="216" y="52" width="168" height="140" rx="8"/>
+    <circle class="fg-badge" cx="236" cy="74" r="9"/>
+    <text class="fg-badge-t" x="236" y="77" text-anchor="middle">2</text>
+    <text class="fg-t2" x="256" y="78">IaC / GitOps</text>
+    <text class="fg-lbl" x="232" y="104">gated by</text>
+    <text class="fg-xs" x="232" y="124">the operator's CI</text>
+    <text class="fg-xs" x="232" y="140">pipeline</text>
+    <line class="fg-rule" x1="232" y1="152" x2="368" y2="152"/>
+    <text class="fg-mxs" x="232" y="174">store.ClientRegistry</text>
+    <rect class="fg-box" x="396" y="52" width="168" height="140" rx="8"/>
+    <circle class="fg-badge" cx="416" cy="74" r="9"/>
+    <text class="fg-badge-t" x="416" y="77" text-anchor="middle">3</text>
+    <text class="fg-t2" x="436" y="78">DCR</text>
+    <text class="fg-lbl fg-warn" x="412" y="104">gated by</text>
+    <text class="fg-xs" x="412" y="124">a minted IAT, then a</text>
+    <text class="fg-xs" x="412" y="140">per-client RAT</text>
+    <line class="fg-rule" x1="412" y1="152" x2="548" y2="152"/>
+    <text class="fg-mxs" x="412" y="174">/register</text>
+    <rect class="fg-box" x="576" y="52" width="168" height="140" rx="8"/>
+    <circle class="fg-badge" cx="596" cy="74" r="9"/>
+    <text class="fg-badge-t" x="596" y="77" text-anchor="middle">4</text>
+    <text class="fg-t2" x="616" y="78">Admin API</text>
+    <text class="fg-lbl fg-warn" x="592" y="104">gated by</text>
+    <text class="fg-xs" x="592" y="124">a management token</text>
+    <text class="fg-xs" x="592" y="140">— scope plus claim</text>
+    <line class="fg-rule" x1="592" y1="152" x2="728" y2="152"/>
+    <text class="fg-mxs" x="592" y="174">store.ClientRegistry</text>
+    <rect class="fg-box fg-box--accent" x="756" y="52" width="168" height="140" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="776" cy="74" r="9"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="776" y="77" text-anchor="middle">5</text>
+    <text class="fg-t2" x="796" y="78">CLI</text>
+    <text class="fg-lbl" x="772" y="104">gated by</text>
+    <text class="fg-xs" x="772" y="124">nothing on the wire —</text>
+    <text class="fg-xs" x="772" y="140">it is never on one</text>
+    <line class="fg-rule" x1="772" y1="152" x2="908" y2="152"/>
+    <text class="fg-mxs" x="772" y="174">RegisterClient</text>
+    <path class="fg-leader" d="M396,206 H744 M396,206 V214 M744,206 V214"/>
+    <text class="fg-lbl fg-warn" x="570" y="230" text-anchor="middle">these two carry their trust on the wire</text>
+    <text class="fg-xs" x="570" y="250" text-anchor="middle">everything else is decided by who can reach the deployment at all</text>
+  </svg>
+  <figcaption class="fig-note">The two middle patterns are the only ones where a stranger can start the conversation, which is why they are the only ones that need a credential in the request. The ends need none because there is no request.</figcaption>
+</figure>
 
 | Pattern | Trust gate | Who writes the metadata | Best fit |
 |---|---|---|---|

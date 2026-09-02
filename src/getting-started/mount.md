@@ -10,30 +10,32 @@ pageClass: pg-getting-started-mount
 
 The provider sits one level below your router, as a sibling of your own handlers. Your middleware still wraps it, and every path outside the ones it claims stays yours.
 
-<svg role="img" aria-labelledby="mount-layers-title" viewBox="0 0 760 296" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="mount-layers-title">The provider handler sits inside your router, alongside your own handlers, with your listener and middleware wrapping both.</title>
-  <rect class="mt-layer" x="24" y="24" width="712" height="248" rx="10"/>
-  <text class="mt-title" x="48" y="52">Your listener</text>
-  <text class="mt-hint" x="712" y="52" text-anchor="end">http.ListenAndServe</text>
-
-  <rect class="mt-layer" x="56" y="64" width="648" height="184" rx="10"/>
-  <text class="mt-title" x="80" y="92">Your middleware</text>
-  <text class="mt-hint" x="680" y="92" text-anchor="end">otelhttp · promhttp · access log</text>
-
-  <rect class="mt-layer" x="88" y="104" width="584" height="124" rx="10"/>
-  <text class="mt-title" x="112" y="132">Your router</text>
-  <text class="mt-hint" x="648" y="132" text-anchor="end">net/http · chi · gin</text>
-
-  <rect class="mt-box" x="112" y="140" width="252" height="76" rx="8"/>
-  <text class="mt-title" x="238" y="164" text-anchor="middle">Your handlers</text>
-  <text class="mt-route" x="238" y="184" text-anchor="middle">/ · /api/* · /healthz</text>
-  <text class="mt-route" x="238" y="202" text-anchor="middle">/metrics · /debug/pprof</text>
-
-  <rect class="mt-op" x="396" y="140" width="252" height="76" rx="8"/>
-  <text class="mt-title" x="522" y="164" text-anchor="middle">op.Provider</text>
-  <text class="mt-route" x="522" y="184" text-anchor="middle">/oidc/* (mount prefix)</text>
-  <text class="mt-route" x="522" y="202" text-anchor="middle">/.well-known/openid-configuration</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Where the provider sits in your server</div>
+  <svg class="fig-svg" role="img" aria-labelledby="mount-title" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+    <title id="mount-title">The provider handler sits inside your own router, next to your own handlers. Your listener and your middleware wrap both of them, so telemetry and access logging cover the OP endpoints without any extra wiring.</title>
+    <rect class="fg-frame" x="36" y="24" width="888" height="262" rx="10"/>
+    <text class="fg-lbl" x="52" y="46">your listener</text>
+    <text class="fg-mxs" x="164" y="46">http.ListenAndServe</text>
+    <rect class="fg-frame" x="56" y="58" width="848" height="208" rx="10"/>
+    <text class="fg-lbl" x="72" y="80">your middleware</text>
+    <text class="fg-mxs" x="196" y="80">otelhttp · promhttp · access log</text>
+    <rect class="fg-frame" x="76" y="92" width="808" height="154" rx="10"/>
+    <text class="fg-lbl" x="92" y="114">your router</text>
+    <text class="fg-mxs" x="182" y="114">net/http · chi · gin</text>
+    <rect class="fg-box" x="96" y="128" width="374" height="98" rx="8"/>
+    <text class="fg-t2" x="116" y="154">Your handlers</text>
+    <text class="fg-mxs" x="116" y="180">/ · /api/* · /healthz</text>
+    <text class="fg-mxs" x="116" y="200">/metrics · /debug/pprof</text>
+    <text class="fg-xs" x="116" y="218">everything the OP has no opinion about</text>
+    <rect class="fg-box fg-box--accent" x="490" y="128" width="374" height="98" rx="8"/>
+    <text class="fg-t2 fg-accent" x="510" y="154">op.Provider</text>
+    <text class="fg-mxs" x="510" y="180">/oidc/* — whatever prefix you mount it on</text>
+    <text class="fg-mxs" x="510" y="200">/.well-known/openid-configuration</text>
+    <text class="fg-xs" x="510" y="218">one subtree, no global routes</text>
+  </svg>
+  <figcaption class="fig-note">The provider claims one subtree and nothing outside it — with the single exception of the discovery document, which the spec fixes at the host root. Everything wrapped around it is yours and keeps working unchanged.</figcaption>
+</figure>
 
 ## Mount on net/http, chi, or gin
 

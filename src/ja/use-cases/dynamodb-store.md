@@ -65,37 +65,31 @@ if err := storage.CreateTables(ctx); err != nil {
 
 現在のデバイスコードテーブルは `by_user_code` グローバルセカンダリインデックスを使いません。デバイスレコードは `device_code` のダイジェストをキーにし、`user_code` を持つ場合は `Save` が `uc#<user_code>` という予約 item を同じ `TransactWriteItems` で書き込みます。`FindByUserCode`、`ApproveByUserCode`、`DenyByUserCode` はこの予約 item を strongly consistent read で解決します。予約 item が一意性制約です。セカンダリインデックスは重複を検索できても、2 つの writer が同じコードを同時に取得することまでは防げません。
 
-<svg role="img" aria-labelledby="ddb-reservation-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="ddb-reservation-title">デバイスコードの予約 item 構成: 1 回の Save がデバイスレコードと user_code の予約 item を同じ TransactWriteItems で書き込み、user_code による参照は予約 item を strongly consistent read で読んでからレコードを解決する。</title>
-
-  <rect class="ddb-call" x="20" y="28" width="190" height="60" rx="8"/>
-  <text class="ddb-call-name" x="115" y="54" text-anchor="middle">Save</text>
-  <text class="ddb-note" x="115" y="74" text-anchor="middle">1 回の TransactWriteItems</text>
-
-  <rect class="ddb-item" x="420" y="16" width="320" height="58" rx="8"/>
-  <text class="ddb-item-key" x="440" y="42">pk = digest(device_code)</text>
-  <text class="ddb-note" x="440" y="62">デバイスレコード本体</text>
-
-  <rect class="ddb-item" x="420" y="104" width="320" height="58" rx="8"/>
-  <text class="ddb-item-key" x="440" y="130">pk = uc#&lt;user_code&gt;</text>
-  <text class="ddb-note" x="440" y="150">一意性を担保する予約 item</text>
-
-  <path class="ddb-flow" d="M210 48 H414"/>
-  <path class="ddb-flow" d="M408 43 L414 48 L408 53"/>
-  <path class="ddb-flow" d="M210 70 C312 70 322 133 414 133"/>
-  <path class="ddb-flow" d="M408 128 L414 133 L408 138"/>
-
-  <rect class="ddb-call" x="20" y="176" width="190" height="60" rx="8"/>
-  <text class="ddb-call-name" x="115" y="202" text-anchor="middle">FindByUserCode</text>
-  <text class="ddb-note" x="115" y="222" text-anchor="middle">strongly consistent read</text>
-
-  <path class="ddb-flow" d="M210 202 C312 202 330 150 414 148"/>
-  <path class="ddb-flow" d="M408 143 L414 148 L409 154"/>
-
-  <path class="ddb-flow" d="M580 104 V78"/>
-  <path class="ddb-flow" d="M575 85 L580 78 L585 85"/>
-  <text class="ddb-note" x="592" y="96">レコードを解決</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">2 つの item を 1 回のトランザクションで書く</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-ddb-title" viewBox="0 0 960 234" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-ddb-title">1 回の Save が、デバイスレコードと user_code の予約 item を同じ TransactWriteItems で書き込みます。user_code による参照は、まず予約 item を strongly consistent read で読み、そこからデバイスレコードを解決します。</title>
+    <rect class="fg-box fg-box--accent" x="36" y="36" width="240" height="64" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="62">Save</text>
+    <text class="fg-xs" x="56" y="84">1 回の TransactWriteItems — 両方書くか、どちらも書かないか</text>
+    <path class="fg-leader" d="M280,68 H310 M310,56 V126"/>
+    <path class="fg-edge fg-edge--accent" d="M310,56 H336" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent" d="M310,126 H336" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="340" y="30" width="360" height="52" rx="6"/>
+    <text class="fg-mxs" x="358" y="52">pk = digest(device_code)</text>
+    <text class="fg-xs" x="358" y="70">デバイスレコード本体</text>
+    <rect class="fg-box" x="340" y="100" width="360" height="52" rx="6"/>
+    <text class="fg-mxs" x="358" y="122">pk = uc#&lt;user_code&gt;</text>
+    <text class="fg-xs" x="358" y="140">user_code の一意性を担保する item</text>
+    <rect class="fg-box" x="36" y="150" width="240" height="64" rx="8"/>
+    <text class="fg-t2" x="56" y="176">FindByUserCode</text>
+    <text class="fg-xs" x="56" y="198">strongly consistent read で読む</text>
+    <path class="fg-edge" d="M280,182 V182 H520 V156" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M704,126 H744 V56 H704" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="756" y="94">レコードを解決する</text>
+  </svg>
+  <figcaption class="fig-note">短い user_code の一意性を担保しているのは、この予約 item だけです。レコードと同じトランザクションで書くのは、コードだけが存在する状態も、予約だけが残る状態も作らないためです。</figcaption>
+</figure>
 
 既存テーブルには、以前の未使用な `by_user_code` インデックスが残っていることがあります。容量を見直すまで残しても安全です。不要になった時点で、通常の DynamoDB インフラ手順を使って削除してください。更新のためにテーブルを drop したり作り直したりする必要はありません。予約 item 方式より前に発行したデバイスコードには `uc#...` 予約がないため、意図的に `user_code` では解決されず、通常の短い有効期間を経て自然に期限切れになります。古いインデックスへのフォールバックはありません。そうすると、まだ有効な更新前レコードが保持する `user_code` を新しいリクエストが取得できてしまうためです。
 

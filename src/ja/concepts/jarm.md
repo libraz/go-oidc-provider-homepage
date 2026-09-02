@@ -8,36 +8,42 @@ pageClass: pg-concepts-jarm
 
 OP は既定では認可応答（`code`、`state`、`iss` など）を URL クエリにそのまま載せて返します。JARM ではない配送方式として `form_post` も選べます。リダイレクトを書き換えられる立場の攻撃者 — 悪意のあるブラウザ拡張、改ざんされた中継、別の OP との mix-up — は、RP が応答を受け取る前にフィールドを差し替えることができます。**JARM**(OpenID Foundation FAPI WG 仕様 "JWT Secured Authorization Response Mode for OAuth 2.0"、RFC 9101 §10.2 が情報参照しています)は、この応答全体をひとつの署名付き JWT にまとめ、`response` 1 個のパラメータとして配送する方式です。応答そのものに改ざん検知性が乗り、OP が発行したことが暗号学的に立証できるようになります。
 
-<svg role="img" aria-labelledby="jarm-wrap-title" viewBox="0 0 760 340" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jarm-wrap-title">通常の認可応答は code や state を個別のパラメータで返す。JARM はそれらを署名付き JWT に包み、response パラメータ 1 個で返す。</title>
-<text class="jarm-text" x="128" y="40" text-anchor="middle">通常の応答</text>
-  <rect class="jarm-box" x="40" y="62" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="128" y="94" text-anchor="middle">OP</text>
-  <text class="jarm-sub" x="128" y="116" text-anchor="middle">code / state / iss</text>
-  <rect class="jarm-box" x="544" y="62" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="632" y="96" text-anchor="middle">RP</text>
-  <text class="jarm-sub" x="632" y="118" text-anchor="middle">個別に検証</text>
-  <path class="jarm-flow" d="M216 102 H540"/>
-  <text class="jarm-sub halo" x="378" y="88" text-anchor="middle">?code=...&amp;state=...&amp;iss=...</text>
-  <path class="jarm-flow" d="M532 98 L541 102 L532 106"/>
-
-  <text class="jarm-text" x="128" y="198" text-anchor="middle">JARM 応答</text>
-  <rect class="jarm-box" x="40" y="220" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="128" y="252" text-anchor="middle">OP</text>
-  <text class="jarm-sub" x="128" y="274" text-anchor="middle">応答全体に署名</text>
-  <rect class="jarm-main" x="280" y="212" width="150" height="94" rx="8"/>
-  <text class="jarm-text" x="355" y="244" text-anchor="middle">JWT response</text>
-  <text class="jarm-sub" x="355" y="266" text-anchor="middle">iss / aud / exp</text>
-  <text class="jarm-sub" x="355" y="284" text-anchor="middle">code または error</text>
-  <rect class="jarm-box" x="544" y="220" width="176" height="78" rx="8"/>
-  <text class="jarm-text" x="632" y="252" text-anchor="middle">RP</text>
-  <text class="jarm-sub" x="632" y="274" text-anchor="middle">署名を検証</text>
-  <path class="jarm-flow" d="M216 260 H276"/>
-  <path class="jarm-flow" d="M268 256 L277 260 L268 264"/>
-  <path class="jarm-flow" d="M430 260 H540"/>
-  <text class="jarm-sub halo" x="485" y="246" text-anchor="middle">?response=&lt;JWT&gt;</text>
-  <path class="jarm-flow" d="M532 256 L541 260 L532 264"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">ばらばらのパラメータか、署名された 1 通の文書か</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jarm-shape-title" viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+    <title id="jarm-shape-title">通常の認可応答は code・state・issuer を個別の query パラメータで返し、RP はそれぞれを個別に検証する必要があります。JARM は同じ値を署名付き JWT に包み、response パラメータ 1 つで返します。</title>
+    <line class="fg-rule fg-rule--dashed" x1="480" y1="16" x2="480" y2="304"/>
+    <text class="fg-lbl" x="40" y="30">通常の応答</text>
+    <text class="fg-lbl fg-accent" x="500" y="30">JARM の応答</text>
+    <!-- 通常 -->
+    <rect class="fg-box" x="163" y="44" width="180" height="52" rx="8"/>
+    <text class="fg-t" x="253" y="68" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="253" y="86" text-anchor="middle">各フィールドをそのまま返す</text>
+    <path class="fg-edge" d="M253,100 V124" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--sub" x="113" y="128" width="280" height="72" rx="8"/>
+    <text class="fg-t2" x="253" y="152" text-anchor="middle">3 つの独立したパラメータ</text>
+    <text class="fg-mxs" x="253" y="174" text-anchor="middle">?code=… &amp; state=… &amp; iss=…</text>
+    <text class="fg-xs" x="253" y="191" text-anchor="middle">互いを結び付けるものが無い</text>
+    <path class="fg-edge" d="M253,204 V228" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="113" y="232" width="280" height="64" rx="8"/>
+    <text class="fg-t" x="253" y="258" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="253" y="278" text-anchor="middle">各フィールドを個別に検証する</text>
+    <!-- JARM -->
+    <rect class="fg-box fg-box--accent" x="617" y="44" width="180" height="52" rx="8"/>
+    <text class="fg-t fg-accent" x="707" y="68" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="707" y="86" text-anchor="middle">応答全体に署名する</text>
+    <path class="fg-edge fg-edge--accent" d="M707,100 V124" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="567" y="128" width="280" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="707" y="152" text-anchor="middle">署名された JWT 1 通</text>
+    <text class="fg-mxs" x="707" y="172" text-anchor="middle">iss · aud · exp · code または error</text>
+    <text class="fg-mxs" x="707" y="191" text-anchor="middle">?response=&lt;JWT&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M707,204 V228" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="567" y="232" width="280" height="64" rx="8"/>
+    <text class="fg-t" x="707" y="258" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="707" y="278" text-anchor="middle">署名を 1 回検証してから読む</text>
+  </svg>
+  <figcaption class="fig-note">左の形では、query 文字列を書き換えられる攻撃者が 1 つのパラメータだけをすり替え、残りをそのまま残せます。右の形にはすり替える対象がありません。値は OP の鍵でしか作れない文書の内側にあるからです。</figcaption>
+</figure>
 
 JARM は FAPI 2.0 Message Signing が FAPI 2.0 Baseline の上に重ねる 2 つの保護のうちの 1 つです。もう 1 つはリソースサーバ側での応答署名です。両者を合わせると完全な非否認性が得られます — すべての認可リクエストとすべての認可応答が、識別可能な発信者の署名で守られます。
 

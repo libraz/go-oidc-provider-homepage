@@ -9,40 +9,44 @@ pageClass: pg-reference-audit-events
 
 OP は `op/audit.go` で閉じたカタログとして定義された、構造化された監査イベントを発火します。ただしカタログは語彙であり、すべての定数が発火するという約束ではありません。本ページでは OP が発火するシグナルと、将来または組み込み側の account/device plane 向けに予約された名前を区別します。各イベントは `<area>.<verb>`（または `<area>.<verb>.<qualifier>`）形の安定した文字列です。SOC ダッシュボードは自由形式のメッセージを解析しなくても、area 単位で集計できます。
 
-<svg role="img" aria-labelledby="audit-flow-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="audit-flow-title">監査イベントの流れ: OP の各処理パスが閉じたイベントカタログからイベントを発火し、slog、SOC、Prometheus のカウンタへ流れる。</title>
-<rect class="aud-box" x="28" y="46" width="156" height="54" rx="8"/>
-  <text class="aud-text" x="106" y="80" text-anchor="middle">login / MFA</text>
-  <rect class="aud-box" x="28" y="123" width="156" height="54" rx="8"/>
-  <text class="aud-text" x="106" y="157" text-anchor="middle">token / grant</text>
-  <rect class="aud-box" x="28" y="200" width="156" height="54" rx="8"/>
-  <text class="aud-text" x="106" y="234" text-anchor="middle">DCR / device</text>
-
-  <rect class="aud-main" x="282" y="96" width="192" height="88" rx="8"/>
-  <text class="aud-text" x="378" y="130" text-anchor="middle">監査イベント</text>
-  <text class="aud-sub" x="378" y="152" text-anchor="middle">op.Audit*</text>
-  <text class="aud-sub" x="378" y="170" text-anchor="middle">extras に文脈を載せる</text>
-
-  <rect class="aud-box" x="566" y="40" width="158" height="54" rx="8"/>
-  <text class="aud-text" x="645" y="74" text-anchor="middle">slog JSON</text>
-  <rect class="aud-box" x="566" y="123" width="158" height="54" rx="8"/>
-  <text class="aud-text" x="645" y="157" text-anchor="middle">SOC / SIEM</text>
-  <rect class="aud-box" x="566" y="206" width="158" height="54" rx="8"/>
-  <text class="aud-text" x="645" y="240" text-anchor="middle">Prometheus</text>
-
-  <path class="aud-flow" d="M184 73 C226 80 244 112 278 126"/>
-  <path class="aud-flow" d="M270 122 L279 126 L270 130"/>
-  <path class="aud-flow" d="M184 150 H278"/>
-  <path class="aud-flow" d="M270 146 L279 150 L270 154"/>
-  <path class="aud-flow" d="M184 227 C226 218 244 178 278 162"/>
-  <path class="aud-flow" d="M270 158 L279 162 L270 166"/>
-  <path class="aud-flow" d="M474 126 C514 100 526 68 562 68"/>
-  <path class="aud-flow" d="M554 64 L563 68 L554 72"/>
-  <path class="aud-flow" d="M474 150 H562"/>
-  <path class="aud-flow" d="M554 146 L563 150 L554 154"/>
-  <path class="aud-flow" d="M474 166 C516 190 526 234 562 234"/>
-  <path class="aud-flow" d="M554 230 L563 234 L554 238"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">閉じたカタログ 1 つ、届き先 3 つ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="audit-flow-title" viewBox="0 0 960 244" xmlns="http://www.w3.org/2000/svg">
+    <title id="audit-flow-title">OP の各処理パスは、閉じた 1 つのカタログから監査イベントを発火します。各イベントは文脈を extras に載せ、構造化ログ、SOC パイプライン、Prometheus のカウンタへ届きます。</title>
+    <text class="fg-lbl" x="40" y="26">発火元</text>
+    <text class="fg-lbl" x="640" y="26">届き先</text>
+    <rect class="fg-box" x="36" y="40" width="230" height="42" rx="6"/>
+    <text class="fg-t2" x="54" y="58">login / MFA</text>
+    <text class="fg-xs" x="54" y="74">要素の判定結果、ステップアップ</text>
+    <rect class="fg-box" x="36" y="92" width="230" height="42" rx="6"/>
+    <text class="fg-t2" x="54" y="110">token / grant</text>
+    <text class="fg-xs" x="54" y="126">発行、ローテーション、失効</text>
+    <rect class="fg-box" x="36" y="144" width="230" height="42" rx="6"/>
+    <text class="fg-t2" x="54" y="162">DCR / device</text>
+    <text class="fg-xs" x="54" y="178">動的登録、デバイスの承認</text>
+    <path class="fg-leader" d="M270,61 H300 M270,113 H300 M270,165 H300 M300,61 V165"/>
+    <path class="fg-edge fg-edge--accent" d="M300,113 H336" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="340" y="66" width="256" height="94" rx="8"/>
+    <text class="fg-t2 fg-accent" x="360" y="92">監査イベント</text>
+    <text class="fg-mxs" x="360" y="114">op.Audit* — 閉じた集合</text>
+    <text class="fg-xs" x="360" y="134">文脈は extras に載せて運び、</text>
+    <text class="fg-xs" x="360" y="150">整形済みメッセージには入れない</text>
+    <path class="fg-leader" d="M600,113 H632 M632,61 V165"/>
+    <path class="fg-edge fg-edge--thin" d="M632,61 H692" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M632,113 H692" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M632,165 H692" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="696" y="40" width="228" height="42" rx="6"/>
+    <text class="fg-t2" x="714" y="58">slog の JSON</text>
+    <text class="fg-xs" x="714" y="74">イベント 1 件につき 1 オブジェクト</text>
+    <rect class="fg-box" x="696" y="92" width="228" height="42" rx="6"/>
+    <text class="fg-t2" x="714" y="110">SOC / SIEM</text>
+    <text class="fg-xs" x="714" y="126">イベント名で検索できる</text>
+    <rect class="fg-box" x="696" y="144" width="228" height="42" rx="6"/>
+    <text class="fg-t2" x="714" y="162">Prometheus</text>
+    <text class="fg-xs" x="714" y="178">結果をラベルにしたカウンタ</text>
+  </svg>
+  <figcaption class="fig-note">右の列が成立するのは、カタログが閉じているからです。イベント名の集合が固定されバージョン管理されているため、アラートをイベント名で組めます。呼び出し箇所のフォーマット文字列から組み立てているのではありません。</figcaption>
+</figure>
 
 ## 購読する
 

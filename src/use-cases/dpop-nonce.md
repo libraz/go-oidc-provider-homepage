@@ -32,45 +32,54 @@ In short, the nonce flow blocks two classes of attack:
 
 ## The flow
 
-<svg class="dpop-nonce-dg" role="img" aria-labelledby="dpop-nonce-flow-title" viewBox="0 0 760 456" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="dpop-nonce-flow-title">Sequence of the DPoP nonce handshake: the OP rejects the first proof with use_dpop_nonce and a DPoP-Nonce header, the client retries with the nonce claim, and every later call carries the newest rotating nonce.</title>
-  <line class="life" x1="130" y1="68" x2="130" y2="442"/>
-  <line class="life op-accent" x1="630" y1="68" x2="630" y2="442"/>
-  <rect x="55" y="14" width="150" height="30" rx="5"/>
-  <rect class="op-accent" x="555" y="14" width="150" height="30" rx="5"/>
-  <text class="d-actor" x="130" y="33" text-anchor="middle">RP / client</text>
-  <text class="d-actor op-fill" x="630" y="33" text-anchor="middle">OP</text>
-  <text class="d-cap" x="130" y="58" text-anchor="middle">holds priv_dpop</text>
-  <text class="d-cap op-fill" x="630" y="58" text-anchor="middle">this library</text>
-  <text class="d-mono" x="380" y="98" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-  <text class="d-mono" x="380" y="111" text-anchor="middle">no nonce yet</text>
-  <path d="M130,120 H630"/>
-  <path d="M623,116 L630,120 L623,124"/>
-  <text class="d-mono" x="380" y="150" text-anchor="middle">400 use_dpop_nonce</text>
-  <text class="d-mono" x="380" y="163" text-anchor="middle">DPoP-Nonce: nonce-1</text>
-  <path d="M630,172 H130"/>
-  <path d="M137,168 L130,172 L137,176"/>
-  <path d="M130,196 h16 v16 h-16"/>
-  <path d="M137,206 L130,210 L137,214"/>
-  <text class="d-prose" x="156" y="200">Rebuild the proof</text>
-  <text class="d-mono" x="156" y="213">nonce = nonce-1</text>
-  <text class="d-mono" x="380" y="246" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-  <text class="d-mono" x="380" y="259" text-anchor="middle">nonce = nonce-1</text>
-  <path d="M130,268 H630"/>
-  <path d="M623,264 L630,268 L623,272"/>
-  <text class="d-mono" x="380" y="298" text-anchor="middle">200 · access_token (DPoP-bound)</text>
-  <text class="d-mono" x="380" y="311" text-anchor="middle">DPoP-Nonce: nonce-2</text>
-  <path d="M630,320 H130"/>
-  <path d="M137,316 L130,320 L137,324"/>
-  <text class="d-mono" x="380" y="356" text-anchor="middle">GET /userinfo · DPoP: &lt;proof&gt;</text>
-  <text class="d-mono" x="380" y="369" text-anchor="middle">nonce = nonce-2</text>
-  <path d="M130,378 H630"/>
-  <path d="M623,374 L630,378 L623,382"/>
-  <text class="d-mono" x="380" y="408" text-anchor="middle">200 · { user claims }</text>
-  <text class="d-mono" x="380" y="421" text-anchor="middle">DPoP-Nonce: nonce-3</text>
-  <path d="M630,430 H130"/>
-  <path d="M137,426 L130,430 L137,434"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">One rejection, then a nonce on every proof</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dpopnonce-title" viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-dpopnonce-title">The OP refuses the first proof with use_dpop_nonce and hands back a nonce in a header. The client rebuilds the proof with that nonce and succeeds; every response after that carries the next nonce, so each proof is pinned to a value the OP chose.</title>
+    <line class="fg-life" x1="200" y1="72" x2="200" y2="390"/>
+    <line class="fg-life fg-life--accent" x1="700" y1="72" x2="700" y2="390"/>
+    <rect class="fg-box" x="110" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t" x="200" y="44" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="200" y="59" text-anchor="middle">holds priv_dpop</text>
+    <rect class="fg-box fg-box--accent" x="610" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t fg-accent" x="700" y="44" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="700" y="59" text-anchor="middle">go-oidc-provider</text>
+    <circle class="fg-badge" cx="15" cy="112" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="115" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M200,112 H700" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="450" y="92" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <text class="fg-xs" x="450" y="105" text-anchor="middle">no nonce yet — the client cannot know one</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="158" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="161" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--warn fg-edge--accent" d="M700,158 H200" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="450" y="138" text-anchor="middle">400 use_dpop_nonce</text>
+    <text class="fg-mxs" x="450" y="151" text-anchor="middle">DPoP-Nonce: nonce-1</text>
+    <circle class="fg-badge" cx="15" cy="196" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="199" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M200,188 h28 v16 h-28" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="240" y="192">rebuild the proof</text>
+    <text class="fg-mxs" x="240" y="205">with nonce = nonce-1</text>
+    <circle class="fg-badge" cx="15" cy="242" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="245" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M200,242 H700" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="450" y="236" text-anchor="middle">POST /token · DPoP: &lt;proof, nonce-1&gt;</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="288" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="291" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--accent" d="M700,288 H200" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="450" y="268" text-anchor="middle">200 · access_token, DPoP-bound</text>
+    <text class="fg-mxs" x="450" y="281" text-anchor="middle">DPoP-Nonce: nonce-2 — use this next</text>
+    <circle class="fg-badge" cx="15" cy="330" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="333" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M200,330 H700" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="450" y="324" text-anchor="middle">GET /userinfo · DPoP: &lt;proof, nonce-2&gt;</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="376" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="379" text-anchor="middle">7</text>
+    <path class="fg-edge fg-edge--accent" d="M700,376 H200" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="450" y="356" text-anchor="middle">200 · { user claims }</text>
+    <text class="fg-mxs" x="450" y="369" text-anchor="middle">DPoP-Nonce: nonce-3 — and so on</text>
+  </svg>
+  <figcaption class="fig-note">The first rejection is not a failure to handle specially — it is the handshake. A client that treats <code>use_dpop_nonce</code> as a normal error will retry forever; one that reads the header succeeds on the next attempt.</figcaption>
+</figure>
 
 The handshake happens once. After it, every later call carries the newest nonce: the OP returns a `DPoP-Nonce` header on each response, and the client copies that value into the `nonce` claim of the next proof.
 

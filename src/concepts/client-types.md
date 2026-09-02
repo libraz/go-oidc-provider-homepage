@@ -75,42 +75,42 @@ The library implements six methods, all from the IANA "OAuth Token Endpoint Auth
 
 The decision tree traces each client shape down to the `token_endpoint_auth_method` value it registers — a public client lands on `none`, a confidential client on a `client_secret_*` method, and a FAPI-grade client on an asymmetric method.
 
-<figure style="margin:1.6rem 0;text-align:center">
-
-<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 760 268" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(20,0)">
-<title id="authmethod-decision-title">Decision tree from client shape — public, confidential, or FAPI-grade — down to the token_endpoint_auth_method value the OP enforces.</title>
-<rect x="260" y="12" width="200" height="44" rx="6"/>
-<text class="dt-title" x="360" y="32" text-anchor="middle">Client shape</text>
-<text class="dt-root-code" x="360" y="47" text-anchor="middle">token_endpoint_auth_method</text>
-<path d="M360 56 V64 M120 64 H600 M120 64 V74 M360 64 V74 M600 64 V74"/>
-<path d="M120 90 V96 M360 90 V96 M600 90 V96"/>
-<text class="dt-edge" x="120" y="84" text-anchor="middle">no safe secret</text>
-<text class="dt-edge" x="360" y="84" text-anchor="middle">keeps a secret</text>
-<text class="dt-edge" x="600" y="84" text-anchor="middle">FAPI 2.0 profile</text>
-<rect x="20" y="96" width="200" height="48" rx="6"/>
-<text class="dt-title" x="120" y="118" text-anchor="middle">Public client</text>
-<text class="dt-sub" x="120" y="134" text-anchor="middle">SPA · native · CLI</text>
-<rect x="260" y="96" width="200" height="48" rx="6"/>
-<text class="dt-title" x="360" y="118" text-anchor="middle">Confidential client</text>
-<text class="dt-sub" x="360" y="134" text-anchor="middle">backend · service</text>
-<rect x="500" y="96" width="200" height="48" rx="6"/>
-<text class="dt-title" x="600" y="118" text-anchor="middle">FAPI-grade client</text>
-<text class="dt-sub" x="600" y="134" text-anchor="middle">sender-constrained</text>
-<path d="M120 144 V158 M360 144 V158 M600 144 V158"/>
-<rect class="dt-leaf" x="20" y="158" width="200" height="28" rx="6"/>
-<text class="dt-code" x="120" y="176" text-anchor="middle">none</text>
-<text class="dt-note" x="120" y="200" text-anchor="middle">+ PKCE (S256)</text>
-<rect class="dt-leaf" x="260" y="158" width="200" height="28" rx="6"/>
-<text class="dt-code" x="360" y="176" text-anchor="middle">client_secret_basic</text>
-<path d="M360 186 V192"/>
-<rect class="dt-leaf" x="260" y="192" width="200" height="28" rx="6"/>
-<text class="dt-code" x="360" y="210" text-anchor="middle">client_secret_post</text>
-<rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
-<text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
-<text class="dt-note" x="600" y="200" text-anchor="middle">+ DPoP / mTLS sender constraint</text>
-</g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Client shape decides the authentication method</div>
+  <svg class="fig-svg" role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 960 322" xmlns="http://www.w3.org/2000/svg">
+    <title id="authmethod-decision-title">Three client shapes and the token endpoint authentication method each one ends up with: a public client authenticates with none plus PKCE, a confidential client with a client secret, and a FAPI-grade client with private_key_jwt plus a sender constraint.</title>
+    <text class="fg-lbl" x="40" y="28">client shape</text>
+    <text class="fg-lbl" x="564" y="28">token_endpoint_auth_method</text>
+    <!-- public -->
+    <rect class="fg-box" x="36" y="40" width="344" height="72" rx="8"/>
+    <text class="fg-t" x="56" y="70">Public client</text>
+    <text class="fg-xs" x="56" y="90">SPA · native app · CLI</text>
+    <path class="fg-edge" d="M384,76 H556" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="470" y="69" text-anchor="middle">no secret it can keep</text>
+    <rect class="fg-box" x="560" y="40" width="364" height="72" rx="8"/>
+    <text class="fg-m" x="580" y="70">none</text>
+    <text class="fg-xs" x="580" y="90">with PKCE (S256) — never optional</text>
+    <!-- confidential -->
+    <rect class="fg-box" x="36" y="128" width="344" height="72" rx="8"/>
+    <text class="fg-t" x="56" y="158">Confidential client</text>
+    <text class="fg-xs" x="56" y="178">backend web app · service</text>
+    <path class="fg-edge" d="M384,164 H556" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="470" y="157" text-anchor="middle">holds a client secret</text>
+    <rect class="fg-box" x="560" y="128" width="364" height="72" rx="8"/>
+    <text class="fg-m" x="580" y="155">client_secret_basic</text>
+    <text class="fg-m" x="580" y="173">client_secret_post</text>
+    <text class="fg-xs" x="580" y="191">pick one and register it</text>
+    <!-- FAPI -->
+    <rect class="fg-box fg-box--accent" x="36" y="216" width="344" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="56" y="246">FAPI-grade client</text>
+    <text class="fg-xs" x="56" y="266">sender-constrained · high assurance</text>
+    <path class="fg-edge fg-edge--accent" d="M384,252 H556" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="470" y="245" text-anchor="middle">FAPI 2.0 profile</text>
+    <rect class="fg-box fg-box--accent" x="560" y="216" width="364" height="72" rx="8"/>
+    <text class="fg-m" x="580" y="246">private_key_jwt</text>
+    <text class="fg-xs" x="580" y="266">plus a DPoP or mTLS sender constraint</text>
+  </svg>
+  <figcaption class="fig-note">The shape is not a label you choose — it follows from where the code runs. Anything that ships to a browser or a device cannot keep a secret, so it is a public client whatever the registration says.</figcaption>
 </figure>
 
 | Method | Pre-shared secret? | Asymmetric? | FAPI 2.0? | Typical use |

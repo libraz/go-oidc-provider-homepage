@@ -41,54 +41,79 @@ A DPoP proof is a JWT (RFC 9449 §4) signed with a private key the client contro
 | `ath` | Optional. SHA-256 of the access token, required when the proof is presented alongside an access token (RFC 9449 §4.2). |
 | `nonce` | Optional. Server-supplied value when the OP runs the §8 / §9 nonce flow. |
 
-<svg class="dpop-flow-dg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 760 556" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="dpop-proof-flow-title">Sequence of a DPoP proof: the client signs a per-request proof, the OP binds cnf.jkt into the access token, and the resource server re-checks the proof against the binding.</title>
-  <line class="life" x1="110" y1="68" x2="110" y2="540"/>
-  <line class="life op-accent" x1="380" y1="68" x2="380" y2="540"/>
-  <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="540"/>
-  <rect x="35" y="14" width="150" height="30" rx="5"/>
-  <rect class="op-accent" x="305" y="14" width="150" height="30" rx="5"/>
-  <rect class="rs-stroke" x="575" y="14" width="150" height="30" rx="5"/>
-  <text class="d-actor" x="110" y="33" text-anchor="middle">RP / client</text>
-  <text class="d-actor op-fill" x="380" y="33" text-anchor="middle">OP</text>
-  <text class="d-actor rs-fill" x="650" y="33" text-anchor="middle">Resource server</text>
-  <text class="d-cap" x="110" y="58" text-anchor="middle">holds priv_dpop</text>
-  <text class="d-cap op-fill" x="380" y="58" text-anchor="middle">this library</text>
-  <text class="d-cap rs-fill" x="650" y="58" text-anchor="middle">verifies binding</text>
-  <path d="M110,99 h16 v12 h-16"/>
-  <path d="M117,107 L110,111 L117,115"/>
-  <text class="d-prose" x="134" y="96">Build &amp; sign DPoP proof</text>
-  <text class="d-mono" x="134" y="108">jti · htm:POST · htu:/token · iat</text>
-  <text class="d-mono" x="134" y="120">hdr: typ dpop+jwt · alg ES256 · jwk</text>
-  <path d="M110,160 H380"/>
-  <path d="M373,156 L380,160 L373,164"/>
-  <text class="d-mono" x="245" y="152" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-  <path class="op-accent" d="M380,199 h16 v12 h-16"/>
-  <path class="op-accent" d="M387,207 L380,211 L387,215"/>
-  <text class="d-prose op-fill" x="404" y="201">Verify proof</text>
-  <text class="d-mono" x="404" y="213">typ/alg/jwk, htm/htu, iat, jti, nonce</text>
-  <path class="op-accent" d="M380,252 h16 v12 h-16"/>
-  <path class="op-accent" d="M387,260 L380,264 L387,268"/>
-  <text class="d-prose op-fill" x="404" y="254">Bind access token</text>
-  <text class="d-mono" x="404" y="266">cnf.jkt = SHA-256(jwk thumbprint)</text>
-  <path d="M380,312 H110"/>
-  <path d="M117,308 L110,312 L117,316"/>
-  <text class="d-mono" x="245" y="304" text-anchor="middle">200 · access_token · token_type: DPoP</text>
-  <path d="M110,351 h16 v12 h-16"/>
-  <path d="M117,359 L110,363 L117,367"/>
-  <text class="d-prose" x="134" y="353">Build new proof for the API call</text>
-  <text class="d-mono" x="134" y="365">adds ath = SHA-256(access_token)</text>
-  <path d="M110,417 H650"/>
-  <path d="M643,413 L650,417 L643,421"/>
-  <text class="d-mono" x="380" y="409" text-anchor="middle">GET /api · Authorization: DPoP · DPoP: &lt;proof&gt;</text>
-  <path class="rs-stroke" d="M650,456 h-16 v12 h16"/>
-  <path class="rs-stroke" d="M643,464 L650,468 L643,472"/>
-  <text class="d-prose rs-fill" x="626" y="458" text-anchor="end">Verify proof</text>
-  <text class="d-mono" x="626" y="470" text-anchor="end">+ cnf.jkt == proof.jwk thumbprint</text>
-  <path d="M650,520 H110"/>
-  <path d="M117,516 L110,520 L117,524"/>
-  <text class="d-mono" x="380" y="512" text-anchor="middle">200 OK</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">One proof per request, checked twice</div>
+  <svg class="fig-svg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 960 476" xmlns="http://www.w3.org/2000/svg">
+    <title id="dpop-proof-flow-title">A DPoP proof end to end. The client signs a fresh proof for every request, the OP verifies it and writes the key's thumbprint into the access token as cnf.jkt, and the resource server re-checks a later proof against that same binding.</title>
+    <!-- lifelines -->
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="462"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="462"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="462"/>
+    <!-- actors -->
+    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="150" y="49" text-anchor="middle">holds priv_dpop</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">Resource server</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">re-checks the binding</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="107" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="110" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,98 h30 v18 h-30" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="192" y="102">build and sign a DPoP proof</text>
+    <text class="fg-mxs" x="192" y="115">jti · htm:POST · htu:/token · iat</text>
+    <text class="fg-mxs" x="192" y="128">typ: dpop+jwt · alg: ES256 · jwk</text>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="15" cy="162" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="165" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M150,162 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="156" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <!-- 3 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="194" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="197" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--accent" d="M500,186 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="542" y="190">verify the proof</text>
+    <text class="fg-mxs" x="542" y="203">typ/alg/jwk · htm/htu · iat · jti · nonce</text>
+    <!-- 4 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="240" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="243" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M500,232 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="542" y="236">bind the key into the token</text>
+    <text class="fg-mxs" x="542" y="249">cnf.jkt = SHA-256(JWK thumbprint)</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="286" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="289" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--accent" d="M500,286 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="280" text-anchor="middle">200 · access_token · token_type: DPoP</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="320" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="323" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M150,312 h30 v16 h-30" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="192" y="316">mint a fresh proof for the API call</text>
+    <text class="fg-mxs" x="192" y="329">this one also carries ath = SHA-256(access_token)</text>
+    <!-- 7 -->
+    <circle class="fg-badge" cx="15" cy="378" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="381" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M150,378 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="490" y="358" text-anchor="middle">GET /api</text>
+    <text class="fg-mxs fg-halo" x="490" y="371" text-anchor="middle">Authorization: DPoP &lt;token&gt; · DPoP: &lt;proof&gt;</text>
+    <!-- 8 -->
+    <circle class="fg-badge" cx="15" cy="412" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="415" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M830,404 h-30 v16 h30" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="788" y="408" text-anchor="end">verify the proof, then the binding</text>
+    <text class="fg-mxs" x="788" y="421" text-anchor="end">cnf.jkt == thumbprint(proof.jwk)</text>
+    <!-- 9 -->
+    <circle class="fg-badge" cx="15" cy="456" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="459" text-anchor="middle">9</text>
+    <path class="fg-edge" d="M830,456 H150" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="490" y="450" text-anchor="middle">200 OK</text>
+  </svg>
+  <figcaption class="fig-note">The token that comes back at step 5 is useless on its own: without a proof signed by the key behind <code>cnf.jkt</code>, step 8 fails. That is the whole trade — an extra signature per request, in exchange for a stolen token being worthless.</figcaption>
+</figure>
 
 The OP and the RS run the same checklist. The RS additionally verifies that the proof's `jwk` thumbprint equals the access token's `cnf.jkt`.
 

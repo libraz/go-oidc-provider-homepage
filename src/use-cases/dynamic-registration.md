@@ -29,68 +29,76 @@ In the simplest setup, you (the OP operator) hand-register every RP that integra
 
 ## Architecture
 
-<svg class="dcr-flow" role="img" aria-labelledby="dcr-seq-title" viewBox="0 0 800 596" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="dcr-seq-title">Dynamic Client Registration sequence: the operator mints an Initial Access Token, hands it out-of-band to a new RP, which registers at POST /register and then reads, updates, and deletes its registration via RFC 7592.</title>
-  <line x1="130" y1="64" x2="130" y2="581" class="d-life"/>
-  <line x1="420" y1="64" x2="420" y2="581" class="d-life-op"/>
-  <line x1="710" y1="64" x2="710" y2="581" class="d-life"/>
-  <rect x="55" y="20" width="150" height="44" rx="6" class="d-box"/>
-  <text x="130" y="47" text-anchor="middle" class="d-name">Operator</text>
-  <rect x="345" y="20" width="150" height="44" rx="6" class="d-box op-accent"/>
-  <text x="420" y="47" text-anchor="middle" class="d-name d-accent-fill">OP</text>
-  <rect x="635" y="20" width="150" height="44" rx="6" class="d-box"/>
-  <text x="710" y="47" text-anchor="middle" class="d-name">New RP</text>
-  <line x1="138" y1="105" x2="418" y2="105" class="d-msg"/>
-  <polyline points="411,101 418,105 411,109" class="d-msg"/>
-  <text x="275" y="97" text-anchor="middle" class="d-mono">IssueInitialAccessToken(ctx, spec)</text>
-  <line x1="412" y1="142" x2="132" y2="142" class="d-msg"/>
-  <polyline points="139,138 132,142 139,146" class="d-msg"/>
-  <text x="275" y="134" text-anchor="middle" class="d-mono">&lt;iat&gt;</text>
-  <line x1="138" y1="179" x2="708" y2="179" class="d-msg-oob"/>
-  <polyline points="701,175 708,179 701,183" class="d-msg"/>
-  <text x="420" y="171" text-anchor="middle" class="d-lbl halo">out-of-band handoff <tspan class="d-mono">&lt;iat&gt;</tspan></text>
-  <line x1="702" y1="246" x2="422" y2="246" class="d-msg"/>
-  <polyline points="429,242 422,246 429,250" class="d-msg"/>
-  <text x="565" y="208" text-anchor="middle" class="d-mono">POST /register</text>
-  <text x="565" y="223" text-anchor="middle" class="d-mono">Authorization: Bearer &lt;iat&gt;</text>
-  <text x="565" y="238" text-anchor="middle" class="d-mono">{ redirect_uris, …, client_name }</text>
-  <line x1="428" y1="328" x2="708" y2="328" class="d-msg"/>
-  <polyline points="701,324 708,328 701,332" class="d-msg"/>
-  <text x="565" y="275" text-anchor="middle" class="d-mono">201</text>
-  <text x="565" y="290" text-anchor="middle" class="d-mono">{ client_id, client_secret?,</text>
-  <text x="565" y="305" text-anchor="middle" class="d-mono">registration_access_token,</text>
-  <text x="565" y="320" text-anchor="middle" class="d-mono">registration_client_uri, … }</text>
-  <line x1="702" y1="380" x2="422" y2="380" class="d-msg"/>
-  <polyline points="429,376 422,380 429,384" class="d-msg"/>
-  <text x="565" y="357" text-anchor="middle" class="d-mono">GET /register/&lt;client_id&gt;</text>
-  <text x="565" y="372" text-anchor="middle" class="d-mono">Authorization: Bearer &lt;rat&gt;</text>
-  <line x1="428" y1="417" x2="708" y2="417" class="d-msg"/>
-  <polyline points="701,413 708,417 701,421" class="d-msg"/>
-  <text x="565" y="409" text-anchor="middle" class="d-lbl"><tspan class="d-mono">200</tspan> full client metadata</text>
-  <line x1="702" y1="454" x2="422" y2="454" class="d-msg"/>
-  <polyline points="429,450 422,454 429,458" class="d-msg"/>
-  <text x="565" y="446" text-anchor="middle" class="d-mono">PUT /register/&lt;client_id&gt; …</text>
-  <line x1="428" y1="491" x2="708" y2="491" class="d-msg"/>
-  <polyline points="701,487 708,491 701,495" class="d-msg"/>
-  <text x="565" y="483" text-anchor="middle" class="d-lbl"><tspan class="d-mono">200</tspan> updated metadata</text>
-  <line x1="702" y1="528" x2="422" y2="528" class="d-msg"/>
-  <polyline points="429,524 422,528 429,532" class="d-msg"/>
-  <text x="565" y="520" text-anchor="middle" class="d-mono">DELETE /register/&lt;client_id&gt;</text>
-  <line x1="428" y1="565" x2="708" y2="565" class="d-msg"/>
-  <polyline points="701,561 708,565 701,569" class="d-msg"/>
-  <text x="565" y="557" text-anchor="middle" class="d-lbl"><tspan class="d-mono">204</tspan> No Content</text>
-  <circle cx="130" cy="105" r="8" class="d-badge"/><text x="130" y="108.5" text-anchor="middle" class="d-badge-t">1</text>
-  <circle cx="420" cy="142" r="8" class="d-badge"/><text x="420" y="145.5" text-anchor="middle" class="d-badge-t">2</text>
-  <circle cx="130" cy="179" r="8" class="d-badge"/><text x="130" y="182.5" text-anchor="middle" class="d-badge-t">3</text>
-  <circle cx="710" cy="246" r="8" class="d-badge"/><text x="710" y="249.5" text-anchor="middle" class="d-badge-t">4</text>
-  <circle cx="420" cy="328" r="8" class="d-badge"/><text x="420" y="331.5" text-anchor="middle" class="d-badge-t">5</text>
-  <circle cx="710" cy="380" r="8" class="d-badge"/><text x="710" y="383.5" text-anchor="middle" class="d-badge-t">6</text>
-  <circle cx="420" cy="417" r="8" class="d-badge"/><text x="420" y="420.5" text-anchor="middle" class="d-badge-t">7</text>
-  <circle cx="710" cy="454" r="8" class="d-badge"/><text x="710" y="457.5" text-anchor="middle" class="d-badge-t">8</text>
-  <circle cx="420" cy="491" r="8" class="d-badge"/><text x="420" y="494.5" text-anchor="middle" class="d-badge-t">9</text>
-  <circle cx="710" cy="528" r="8" class="d-badge"/><text x="710" y="531.5" text-anchor="middle" class="d-badge-t">10</text>
-  <circle cx="420" cy="565" r="8" class="d-badge"/><text x="420" y="568.5" text-anchor="middle" class="d-badge-t">11</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">From an initial token to a managed registration</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dcr-title" viewBox="0 0 960 546" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-dcr-title">The operator mints an initial access token and hands it to a new relying party out of band. The RP registers with it and receives a registration access token, which it then uses to read, update and finally delete its own registration.</title>
+    <rect class="fg-group" x="30" y="70" width="916" height="118" rx="8"/>
+    <rect class="fg-group" x="30" y="196" width="916" height="150" rx="8"/>
+    <rect class="fg-group" x="30" y="354" width="916" height="180" rx="8"/>
+    <text class="fg-lbl" x="42" y="88">1 · the operator hands out an initial token</text>
+    <text class="fg-lbl" x="42" y="214">2 · the RP registers itself</text>
+    <text class="fg-lbl" x="42" y="372">3 · the RP manages its own record (RFC 7592)</text>
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="534"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="534"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="534"/>
+    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">Operator</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">you</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">A new RP</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">not registered yet</text>
+    <circle class="fg-badge" cx="15" cy="112" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="115" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,112 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="106" text-anchor="middle">IssueInitialAccessToken(ctx, spec)</text>
+    <circle class="fg-badge" cx="15" cy="144" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="147" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,144 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="138" text-anchor="middle">&lt;iat&gt;</text>
+    <circle class="fg-badge" cx="15" cy="178" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="181" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--muted" d="M150,178 H830" marker-end="url(#fg-am)"/>
+    <text class="fg-xs fg-halo" x="490" y="172" text-anchor="middle">handed over out of band — email, ticket, whatever you already trust</text>
+    <circle class="fg-badge" cx="15" cy="262" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="265" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M830,262 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="230" text-anchor="middle">POST /register</text>
+    <text class="fg-mxs" x="665" y="244" text-anchor="middle">Authorization: Bearer &lt;iat&gt;</text>
+    <text class="fg-mxs" x="665" y="256" text-anchor="middle">{ redirect_uris, …, client_name }</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="326" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="329" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--accent" d="M500,326 H830" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="665" y="294" text-anchor="middle">201 · { client_id, client_secret?,</text>
+    <text class="fg-mxs" x="665" y="308" text-anchor="middle">registration_access_token,</text>
+    <text class="fg-mxs" x="665" y="320" text-anchor="middle">registration_client_uri, … }</text>
+    <circle class="fg-badge" cx="15" cy="408" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="411" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M830,408 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="390" text-anchor="middle">GET /register/&lt;client_id&gt;</text>
+    <text class="fg-mxs" x="665" y="402" text-anchor="middle">Authorization: Bearer &lt;rat&gt;</text>
+    <circle class="fg-badge" cx="15" cy="438" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="441" text-anchor="middle">7</text>
+    <path class="fg-edge fg-edge--accent" d="M500,438 H830" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="665" y="432" text-anchor="middle">200 · the full client metadata</text>
+    <circle class="fg-badge" cx="15" cy="470" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="473" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M830,470 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="464" text-anchor="middle">PUT /register/&lt;client_id&gt; → 200 updated</text>
+    <circle class="fg-badge" cx="15" cy="502" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="505" text-anchor="middle">9</text>
+    <path class="fg-edge" d="M830,502 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="496" text-anchor="middle">DELETE /register/&lt;client_id&gt;</text>
+    <circle class="fg-badge" cx="15" cy="530" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="533" text-anchor="middle">10</text>
+    <path class="fg-edge fg-edge--accent" d="M500,530 H830" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="665" y="524" text-anchor="middle">204 · No Content</text>
+  </svg>
+  <figcaption class="fig-note">Step 3 is the only leg the specification says nothing about, and it is where the trust actually comes from. Everything after it is scoped to one client by a token that client alone holds.</figcaption>
+</figure>
 
 ## Wiring
 

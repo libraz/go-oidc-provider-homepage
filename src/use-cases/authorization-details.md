@@ -30,39 +30,39 @@ The split is deliberate. The library owns the RFC 9396 §2.1 **structure**: the 
 
 A type registered without a validator would accept arbitrary payloads under that type, so the library refuses to start: a nil `Validate` is rejected at `op.New`.
 
-<svg role="img" aria-labelledby="rar-shape-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="rar-shape-title">One authorization_details element: the OP checks the array shape and the type member, a registered validator checks every other member, and the granted array is then echoed on the token response, the JWT access token, and introspection.</title>
-
-  <rect class="rar-doc" x="24" y="24" width="340" height="140" rx="8"/>
-  <text class="rar-json" x="44" y="52">[{</text>
-  <text class="rar-json" x="60" y="74">"type": "payment_initiation",</text>
-  <text class="rar-json" x="60" y="100">"actions": ["initiate"],</text>
-  <text class="rar-json" x="60" y="122">"amount": "40.00"</text>
-  <text class="rar-json" x="44" y="148">}]</text>
-
-  <path class="rar-flow" d="M364 70 H396"/>
-  <text class="rar-check-op" x="404" y="74">the OP: array shape + registered type</text>
-
-  <path class="rar-hook" d="M364 111 H384 M384 96 V126 M384 96 H392 M384 126 H392"/>
-  <text class="rar-check-you" x="404" y="115">your Validate: every other member</text>
-
-  <path class="rar-flow" d="M194 164 V182 M134 182 H626 M134 182 V198 M380 182 V198 M626 182 V198"/>
-  <path class="rar-flow" d="M129 193 L134 200 L139 193"/>
-  <path class="rar-flow" d="M375 193 L380 200 L385 193"/>
-  <path class="rar-flow" d="M621 193 L626 200 L631 193"/>
-
-  <rect class="rar-sink" x="34" y="204" width="200" height="54" rx="8"/>
-  <text class="rar-sink-title" x="134" y="228" text-anchor="middle">token response</text>
-  <text class="rar-sink-note" x="134" y="247" text-anchor="middle">echoed as granted</text>
-
-  <rect class="rar-sink" x="280" y="204" width="200" height="54" rx="8"/>
-  <text class="rar-sink-title" x="380" y="228" text-anchor="middle">JWT access token</text>
-  <text class="rar-sink-note" x="380" y="247" text-anchor="middle">RFC 9068 §2.2.3</text>
-
-  <rect class="rar-sink" x="526" y="204" width="200" height="54" rx="8"/>
-  <text class="rar-sink-title" x="626" y="228" text-anchor="middle">introspection</text>
-  <text class="rar-sink-note" x="626" y="247" text-anchor="middle">RFC 9396 §9</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Who checks which member</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-authzdetails-title" viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-authzdetails-title">For one authorization_details element the OP checks the array shape and the type member; a validator you register checks every other member. The granted array is then echoed on the token response, inside a JWT access token, and from introspection.</title>
+    <rect class="fg-box fg-box--sub" x="36" y="36" width="330" height="150" rx="8"/>
+    <text class="fg-mxs" x="56" y="62">[{</text>
+    <text class="fg-mxs fg-accent" x="70" y="84">"type": "payment_initiation",</text>
+    <text class="fg-mxs" x="70" y="106">"actions": ["initiate"],</text>
+    <text class="fg-mxs" x="70" y="128">"amount": "40.00"</text>
+    <text class="fg-mxs" x="56" y="150">}]</text>
+    <text class="fg-xs" x="56" y="176">one element of the array</text>
+    <path class="fg-leader" d="M370,80 H396 M370,116 H396"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M396,80 H426" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--thin" d="M396,116 H426" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="430" y="56" width="290" height="48" rx="6"/>
+    <text class="fg-t2 fg-accent" x="448" y="76">The OP checks</text>
+    <text class="fg-xs" x="448" y="94">the array shape, and that type is registered</text>
+    <rect class="fg-box" x="430" y="112" width="290" height="48" rx="6"/>
+    <text class="fg-t2" x="448" y="132">Your Validate checks</text>
+    <text class="fg-xs" x="448" y="150">every other member — it is your vocabulary</text>
+    <text class="fg-lbl" x="36" y="216">once granted, the array is echoed in three places</text>
+    <rect class="fg-box" x="36" y="226" width="290" height="42" rx="6"/>
+    <text class="fg-mxs" x="54" y="246">the token response</text>
+    <text class="fg-xs" x="54" y="262">as authorization_details</text>
+    <rect class="fg-box" x="336" y="226" width="290" height="42" rx="6"/>
+    <text class="fg-mxs" x="354" y="246">a JWT access token</text>
+    <text class="fg-xs" x="354" y="262">RFC 9068 §2.2.3</text>
+    <rect class="fg-box" x="636" y="226" width="288" height="42" rx="6"/>
+    <text class="fg-mxs" x="654" y="246">introspection</text>
+    <text class="fg-xs" x="654" y="262">RFC 9396 §9</text>
+  </svg>
+  <figcaption class="fig-note">The split is the point of the feature. The OP has no opinion about what an amount or an action means, so it verifies the envelope and hands the contents to code that does.</figcaption>
+</figure>
 
 ## Wiring
 

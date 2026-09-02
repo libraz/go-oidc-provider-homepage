@@ -8,36 +8,36 @@ pageClass: pg-getting-started-minimal
 
 The shortest path to a running OP. `op.New` returns an error if `WithIssuer`, `WithStore`, or `WithKeyset` is missing. `WithCookieKeys` is required too whenever the `authorization_code` grant is enabled, which it is by default (along with `refresh_token`) — so for this minimal, default-grants config all four are effectively mandatory.
 
-<svg role="img" aria-labelledby="minimal-options-title" viewBox="0 0 760 282" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="minimal-options-title">The four pieces a minimal OP needs: issuer, store, keyset, and cookie keys go into op.New, which returns an HTTP handler.</title>
-  <rect class="min-box" x="34" y="34" width="150" height="58" rx="8"/>
-  <text class="min-text" x="109" y="68" text-anchor="middle">Issuer</text>
-  <rect class="min-box" x="34" y="112" width="150" height="58" rx="8"/>
-  <text class="min-text" x="109" y="146" text-anchor="middle">Store</text>
-  <rect class="min-box" x="34" y="190" width="150" height="58" rx="8"/>
-  <text class="min-text" x="109" y="224" text-anchor="middle">Keyset</text>
-
-  <rect class="min-box" x="286" y="34" width="170" height="58" rx="8"/>
-  <text class="min-text" x="371" y="68" text-anchor="middle">Cookie keys</text>
-  <rect class="min-main" x="286" y="122" width="170" height="76" rx="8"/>
-  <text class="min-text" x="371" y="154" text-anchor="middle">op.New(...)</text>
-  <text class="min-sub" x="371" y="176" text-anchor="middle">validates the config</text>
-
-  <rect class="min-box" x="574" y="122" width="152" height="76" rx="8"/>
-  <text class="min-text" x="650" y="154" text-anchor="middle">HTTP handler</text>
-  <text class="min-sub" x="650" y="176" text-anchor="middle">ListenAndServe</text>
-
-  <path class="min-flow" d="M184 63 C232 63 246 140 286 140"/>
-  <path class="min-flow" d="M277 136 L286 140 L277 144"/>
-  <path class="min-flow" d="M184 141 C232 141 246 160 286 160"/>
-  <path class="min-flow" d="M277 156 L286 160 L277 164"/>
-  <path class="min-flow" d="M184 219 C232 219 246 180 286 180"/>
-  <path class="min-flow" d="M277 176 L286 180 L277 184"/>
-  <path class="min-flow" d="M371 92 V122"/>
-  <path class="min-flow" d="M367 113 L371 122 L375 113"/>
-  <path class="min-flow" d="M456 160 H574"/>
-  <path class="min-flow" d="M565 156 L574 160 L565 164"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Four values in, one handler out</div>
+  <svg class="fig-svg" role="img" aria-labelledby="min-op-title" viewBox="0 10 960 200" xmlns="http://www.w3.org/2000/svg">
+    <title id="min-op-title">A minimal OP takes four values — an issuer, a store, a keyset and cookie keys — into op.New, which validates them and returns an ordinary HTTP handler.</title>
+    <rect class="fg-box" x="36" y="24" width="240" height="40" rx="6"/>
+    <text class="fg-m" x="52" y="42">Issuer</text>
+    <text class="fg-xs" x="52" y="57">the public https URL of the OP</text>
+    <rect class="fg-box" x="36" y="68" width="240" height="40" rx="6"/>
+    <text class="fg-m" x="52" y="86">Store</text>
+    <text class="fg-xs" x="52" y="101">codes · sessions · clients · chains</text>
+    <rect class="fg-box" x="36" y="112" width="240" height="40" rx="6"/>
+    <text class="fg-m" x="52" y="130">Keyset</text>
+    <text class="fg-xs" x="52" y="145">ES256 signing keys</text>
+    <rect class="fg-box" x="36" y="156" width="240" height="40" rx="6"/>
+    <text class="fg-m" x="52" y="174">Cookie keys</text>
+    <text class="fg-xs" x="52" y="189">AES-256-GCM sealing</text>
+    <path class="fg-leader" d="M280,44 H316 M280,88 H316 M280,132 H316 M280,176 H316 M316,44 V176"/>
+    <path class="fg-edge" d="M316,110 H396" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="400" y="74" width="300" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="420" y="102">op.New(…)</text>
+    <text class="fg-xs" x="420" y="124">validates the configuration up front</text>
+    <text class="fg-xs" x="420" y="140">and refuses to start on a bad one</text>
+    <path class="fg-edge fg-edge--accent" d="M704,110 H756" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="760" y="74" width="164" height="72" rx="8"/>
+    <text class="fg-t" x="778" y="102">HTTP handler</text>
+    <text class="fg-mxs" x="778" y="124">http.Handler</text>
+    <text class="fg-xs" x="778" y="140">mount it, or serve it directly</text>
+  </svg>
+  <figcaption class="fig-note">Nothing here is a framework. What comes back is an <code>http.Handler</code> like any other, which is why the OP can sit anywhere in a router you already have.</figcaption>
+</figure>
 
 ::: code-group
 

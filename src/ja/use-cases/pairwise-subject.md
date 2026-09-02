@@ -99,48 +99,40 @@ OP の全レプリカで共有する高エントロピな秘密値（256 bit 以
 
 複数 redirect-URI ホストを持ち `sector_identifier_uri` を持たないクライアントは sector を解決できず、issuance が `server_error` で失敗します。複数ホストへ 一斉通知 するクライアントには `sector_identifier_uri` を必須にしてください。
 
-<svg id="psfd" role="img" aria-labelledby="pairwise-sub-fanout-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<title id="pairwise-sub-fanout-title">1 つの internal_user_id が 2 つの RP sector それぞれに異なる pairwise sub を導出する図。sector は各クライアントの sector_identifier_uri から解決されます。</title>
-<g transform="translate(24,0)">
-<text class="d-cap" x="8" y="18">pairwise sub の派生</text>
-<text class="d-sub" x="8" y="34">1 つの internal_user_id → sector ごとに異なる sub</text>
-<rect x="16" y="136" width="150" height="50" rx="8"/>
-<text class="d-lbl" x="91" y="158" text-anchor="middle" font-weight="600">同一ユーザ</text>
-<text class="d-mono" x="91" y="176" text-anchor="middle">internal_user_id</text>
-<rect class="d-store" x="16" y="196" width="150" height="42" rx="8"/>
-<text class="d-mono" x="91" y="214" text-anchor="middle">salt</text>
-<text class="d-sub" x="91" y="229" text-anchor="middle">KMS / Vault</text>
-<path class="d-flow" d="M166 161 H210"/>
-<path class="d-flow" d="M166 217 H210"/>
-<path class="d-flow" d="M210 112 V217"/>
-<path class="d-flow" d="M210 112 H250"/>
-<path class="d-flow" d="M243 107 L250 112 L243 117"/>
-<path class="d-flow" d="M210 214 H250"/>
-<path class="d-flow" d="M243 209 L250 214 L243 219"/>
-<rect class="d-op" x="250" y="76" width="176" height="72" rx="8"/>
-<text class="d-lbl d-op-t" x="338" y="106" text-anchor="middle" font-weight="600">OP が sub を導出</text>
-<text class="d-mono" x="338" y="126" text-anchor="middle">sector = a.example.com</text>
-<rect class="d-op" x="250" y="178" width="176" height="72" rx="8"/>
-<text class="d-lbl d-op-t" x="338" y="208" text-anchor="middle" font-weight="600">OP が sub を導出</text>
-<text class="d-mono" x="338" y="228" text-anchor="middle">sector = b.example.com</text>
-<path class="d-flow" d="M426 112 H486"/>
-<path class="d-flow" d="M479 107 L486 112 L479 117"/>
-<path class="d-flow" d="M426 214 H486"/>
-<path class="d-flow" d="M479 209 L486 214 L479 219"/>
-<rect x="486" y="68" width="210" height="88" rx="8"/>
-<text class="d-lbl" x="500" y="88" font-weight="600">RP A</text>
-<text class="d-mono d-muted" x="500" y="107">sector_identifier_uri</text>
-<text class="d-mono" x="500" y="125">→ a.example.com</text>
-<text class="d-mono" x="500" y="143">sub = 7bQ…Xa</text>
-<rect x="486" y="170" width="210" height="88" rx="8"/>
-<text class="d-lbl" x="500" y="190" font-weight="600">RP B</text>
-<text class="d-mono d-muted" x="500" y="209">sector_identifier_uri</text>
-<text class="d-mono" x="500" y="227">→ b.example.com</text>
-<text class="d-mono" x="500" y="245">sub = k9P…Zb</text>
-<text class="d-mono d-op-t halo" x="591" y="167" text-anchor="middle">sub_A ≠ sub_B</text>
-<text class="d-mono" x="356" y="282" text-anchor="middle">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
-</g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">同一ユーザ、sector ごとに異なる subject</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-pairwise-title" viewBox="0 0 960 292" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-pairwise-title">1 つの内部ユーザ ID から、RP の sector ごとに異なる subject を導出します。sector はクライアントの sector_identifier_uri から決まり、salt は OP の外に出ません。そのため 2 つの RP が同一人物を突き合わせることはできません。</title>
+    <rect class="fg-box" x="36" y="60" width="200" height="66" rx="8"/>
+    <text class="fg-t2" x="56" y="86">同一ユーザ</text>
+    <text class="fg-mxs" x="56" y="108">internal_user_id</text>
+    <rect class="fg-box fg-box--sub" x="36" y="140" width="200" height="66" rx="8"/>
+    <text class="fg-t2" x="56" y="166">salt</text>
+    <text class="fg-xs" x="56" y="188">KMS や Vault から取得する</text>
+    <path class="fg-leader" d="M240,93 H272 M240,173 H272 M272,93 V173"/>
+    <path class="fg-edge fg-edge--accent" d="M272,96 H316" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent" d="M272,170 H316" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="320" y="60" width="270" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="340" y="86">OP が sub を導出する</text>
+    <text class="fg-mxs" x="340" y="110">sector = a.example.com</text>
+    <rect class="fg-box fg-box--accent" x="320" y="140" width="270" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="340" y="166">OP が sub を導出する</text>
+    <text class="fg-mxs" x="340" y="190">sector = b.example.com</text>
+    <path class="fg-edge fg-edge--accent" d="M594,96 H638" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent" d="M594,176 H638" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="642" y="60" width="282" height="72" rx="8"/>
+    <text class="fg-t2" x="662" y="84">RP A</text>
+    <text class="fg-xs" x="662" y="102">sector_identifier_uri → a.example.com</text>
+    <text class="fg-mxs fg-accent" x="662" y="122">sub = 7bQ…Xa</text>
+    <rect class="fg-box" x="642" y="140" width="282" height="72" rx="8"/>
+    <text class="fg-t2" x="662" y="164">RP B</text>
+    <text class="fg-xs" x="662" y="182">sector_identifier_uri → b.example.com</text>
+    <text class="fg-mxs fg-accent" x="662" y="202">sub = k9P…Zb</text>
+    <text class="fg-mxs" x="36" y="248">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
+    <text class="fg-xs fg-ok" x="642" y="248">sub_A ≠ sub_B — 互いに相手の値を計算できない</text>
+  </svg>
+  <figcaption class="fig-note">この導出を一方向にしているのは salt です。salt が無ければ、subject と内部 ID の推測値を持つ RP がその推測を確かめられてしまいます。salt があるため、同じ導出を行えるのは OP だけです。</figcaption>
+</figure>
 
 ### `sector_identifier_uri` 解決
 

@@ -41,54 +41,51 @@ pageClass: pg-use-cases-mfa-step-up
 
 ## 構成
 
-<svg class="mfa-loginflow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mfa-loginflow-title" viewBox="0 0 800 486" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="mfa-loginflow-title">ログインフローの構成: primary パスワード step、どの factor step を実行するか判定する rule 層、その後のトークン発行。</title>
-  <rect x="330" y="16" width="140" height="38" rx="6"/>
-  <rect x="290" y="78" width="220" height="50" rx="6"/>
-  <rect x="17" y="352" width="176" height="42" rx="6"/>
-  <rect x="214" y="352" width="176" height="42" rx="6"/>
-  <rect x="410" y="352" width="176" height="42" rx="6"/>
-  <rect x="607" y="352" width="176" height="42" rx="6"/>
-  <rect class="d-accent" x="330" y="150" width="140" height="44" rx="6"/>
-  <rect class="d-accent" x="17" y="240" width="176" height="58" rx="8"/>
-  <rect class="d-accent" x="214" y="240" width="176" height="58" rx="8"/>
-  <rect class="d-accent" x="410" y="240" width="176" height="58" rx="8"/>
-  <rect class="d-accent" x="607" y="240" width="176" height="58" rx="8"/>
-  <rect class="d-accent" x="330" y="430" width="140" height="40" rx="6"/>
-  <path d="M400 54 L400 78"/>
-  <path d="M400 128 L400 150"/>
-  <path d="M400 194 L400 214 M105 214 L695 214 M105 214 L105 240 M302 214 L302 240 M498 214 L498 240 M695 214 L695 240"/>
-  <path d="M105 298 L105 352 M302 298 L302 352 M498 298 L498 352 M695 298 L695 352"/>
-  <path d="M105 394 L105 412 M302 394 L302 412 M498 394 L498 412 M695 394 L695 412 M105 412 L695 412 M400 412 L400 430"/>
-  <path d="M396 71 L400 78 L404 71"/>
-  <path d="M396 143 L400 150 L404 143"/>
-  <path d="M101 233 L105 240 L109 233"/>
-  <path d="M298 233 L302 240 L306 233"/>
-  <path d="M494 233 L498 240 L502 233"/>
-  <path d="M691 233 L695 240 L699 233"/>
-  <path d="M101 345 L105 352 L109 345"/>
-  <path d="M298 345 L302 352 L306 345"/>
-  <path d="M494 345 L498 352 L502 345"/>
-  <path d="M691 345 L695 352 L699 345"/>
-  <path d="M396 423 L400 430 L404 423"/>
-  <text class="d-lbl" x="400" y="40" font-size="12.5" text-anchor="middle">ログイン開始</text>
-  <text class="d-lbl d-mono" x="400" y="100" font-size="12.5" text-anchor="middle">PrimaryPassword</text>
-  <text class="d-cap" x="400" y="117" font-size="10.5" text-anchor="middle">primary step</text>
-  <text x="400" y="177" font-size="12.5" text-anchor="middle"><tspan class="d-accent-t d-mono">Rules</tspan><tspan class="d-accent-t"> を評価</tspan></text>
-  <text class="d-accent-t d-mono" x="105" y="266" font-size="12" text-anchor="middle">RuleAlways</text>
-  <text class="d-cap" x="105" y="285" font-size="10.5" text-anchor="middle">毎回</text>
-  <text class="d-accent-t d-mono" x="302" y="266" font-size="11.5" text-anchor="middle">RuleAfterFailedAttempts</text>
-  <text class="d-cap" x="302" y="285" font-size="10.5" text-anchor="middle">失敗回数 ≥ 3</text>
-  <text class="d-accent-t d-mono" x="498" y="266" font-size="12" text-anchor="middle">RuleRisk</text>
-  <text class="d-cap" x="498" y="285" font-size="10.5" text-anchor="middle">リスク ≥ High</text>
-  <text class="d-accent-t d-mono" x="695" y="266" font-size="12" text-anchor="middle">RuleACR</text>
-  <text x="695" y="285" font-size="10.5" text-anchor="middle"><tspan class="d-cap d-mono">aal3</tspan><tspan class="d-cap"> を要求</tspan></text>
-  <text class="d-lbl d-mono" x="105" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
-  <text class="d-lbl d-mono" x="302" y="378" font-size="12.5" text-anchor="middle">StepCaptcha</text>
-  <text class="d-lbl d-mono" x="498" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
-  <text class="d-lbl d-mono" x="695" y="378" font-size="12.5" text-anchor="middle">StepTOTP</text>
-  <text class="d-accent-t" x="400" y="455" font-size="12.5" text-anchor="middle">トークン発行</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">primary step の後、発火したルールの分だけ step が増える</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-mfa-title" viewBox="0 0 960 372" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-mfa-title">ログインフローは primary step を 1 つ実行し、続いてルールを評価します。発火したルールがそれぞれ追加の factor step を要求し、どれも発火しなくなった時点でトークンを発行します。ルールは互いに独立で、宣言順にも依存しません。</title>
+    <rect class="fg-box" x="360" y="24" width="240" height="46" rx="8"/>
+    <text class="fg-t2" x="480" y="52" text-anchor="middle">ログイン開始</text>
+    <path class="fg-edge fg-edge--thin" d="M480,74 V88" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="360" y="92" width="240" height="52" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="116" text-anchor="middle">PrimaryPassword</text>
+    <text class="fg-xs" x="480" y="134" text-anchor="middle">primary step — 常に実行される</text>
+    <path class="fg-edge fg-edge--thin" d="M480,148 V162" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="360" y="166" width="240" height="46" rx="8"/>
+    <text class="fg-m fg-accent" x="480" y="194" text-anchor="middle">Rules を評価する</text>
+    <path class="fg-leader" d="M480,216 V230 M144,230 H816"/>
+    <path class="fg-edge fg-edge--thin" d="M144,230 V244" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M368,230 V244" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M592,230 V244" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M816,230 V244" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="36" y="248" width="216" height="92" rx="8"/>
+    <text class="fg-mxs" x="54" y="270">RuleAlways</text>
+    <text class="fg-xs" x="54" y="288">毎回</text>
+    <line class="fg-rule" x1="54" y1="300" x2="234" y2="300"/>
+    <text class="fg-mxs fg-accent" x="54" y="322">→ StepTOTP</text>
+    <rect class="fg-box" x="260" y="248" width="216" height="92" rx="8"/>
+    <text class="fg-mxs" x="278" y="270">RuleAfterFailedAttempts</text>
+    <text class="fg-xs" x="278" y="288">失敗回数 ≥ 3</text>
+    <line class="fg-rule" x1="278" y1="300" x2="458" y2="300"/>
+    <text class="fg-mxs fg-accent" x="278" y="322">→ StepCaptcha</text>
+    <rect class="fg-box" x="484" y="248" width="216" height="92" rx="8"/>
+    <text class="fg-mxs" x="502" y="270">RuleRisk</text>
+    <text class="fg-xs" x="502" y="288">リスク ≥ High</text>
+    <line class="fg-rule" x1="502" y1="300" x2="682" y2="300"/>
+    <text class="fg-mxs fg-accent" x="502" y="322">→ StepTOTP</text>
+    <rect class="fg-box" x="708" y="248" width="216" height="92" rx="8"/>
+    <text class="fg-mxs" x="726" y="270">RuleACR</text>
+    <text class="fg-xs" x="726" y="288">acr_values に aal3</text>
+    <line class="fg-rule" x1="726" y1="300" x2="906" y2="300"/>
+    <text class="fg-mxs fg-accent" x="726" y="322">→ StepTOTP</text>
+    <path class="fg-edge fg-edge--ok" d="M632,189 H720" marker-end="url(#fg-ao)"/>
+    <text class="fg-xs fg-ok" x="676" y="182" text-anchor="middle">どれも発火しない</text>
+    <rect class="fg-box fg-box--ok" x="724" y="166" width="200" height="46" rx="8"/>
+    <text class="fg-t2" x="824" y="194" text-anchor="middle">トークンを発行する</text>
+  </svg>
+  <figcaption class="fig-note">ここにあるのは if 文の連鎖ではありません。各ルールが独立に答え、要求された step が集められ、ループが再び回ります。だから 5 つ目のルールを足しても、他の 4 つの判断は変わりません。</figcaption>
+</figure>
 
 `LoginFlow` は `Primary` step と `Rules` リストを持つ struct。各 rule は `op.RuleAlways(step)`、`op.RuleAfterFailedAttempts(n, step)`、`op.RuleRisk(threshold, step)`、`op.RuleACR(acr, step)` 等のコンストラクタで作る `Rule` 値です。
 

@@ -13,34 +13,32 @@ OP は以下を行えます:
 
 両方向とも閉じた許可リストに対して実装しています。
 
-<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jwe-wrap-title">JWE が JWS を包み込む。OP は claim を JWS に署名し、その JWS を RP の use=enc JWK 宛の JWE の中に暗号化する。RP は外側の JWE を復号してから内側の署名を検証する。</title>
-
-  <rect class="jwe-box" x="16" y="110" width="140" height="62" rx="8"/>
-  <text class="jwe-text" x="86" y="136" text-anchor="middle">OP</text>
-  <text class="jwe-sub" x="86" y="156" text-anchor="middle">claim を組み立てる</text>
-
-  <rect class="jwe-box" x="214" y="70" width="250" height="150" rx="10"/>
-  <text class="jwe-text" x="339" y="97" text-anchor="middle">外側: JWE</text>
-  <rect class="jwe-main" x="242" y="110" width="194" height="62" rx="8"/>
-  <text class="jwe-text" x="339" y="147" text-anchor="middle">内側: JWS</text>
-  <text class="jwe-sub" x="339" y="201" text-anchor="middle">RP の公開鍵で暗号化</text>
-
-  <rect class="jwe-box" x="604" y="110" width="140" height="62" rx="8"/>
-  <text class="jwe-text" x="674" y="136" text-anchor="middle">RP</text>
-  <text class="jwe-sub" x="674" y="156" text-anchor="middle">復号 → 署名検証</text>
-
-  <rect class="jwe-box" x="254" y="250" width="170" height="44" rx="8"/>
-  <text class="jwe-text" x="339" y="278" text-anchor="middle">use=enc JWK</text>
-
-  <path class="jwe-flow" d="M156 141 H211"/>
-  <path class="jwe-flow" d="M205 137 L213 141 L205 145"/>
-  <text class="jwe-sub" x="534" y="126" text-anchor="middle">暗号化済み応答</text>
-  <path class="jwe-flow" d="M464 141 H601"/>
-  <path class="jwe-flow" d="M595 137 L603 141 L595 145"/>
-  <path class="jwe-flow" d="M339 250 V224"/>
-  <path class="jwe-flow" d="M335 230 L339 221 L343 230"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">JWE が JWS を包む</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-jwe-title" viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-jwe-title">OP は claim を JWS に署名し、その JWS を RP の暗号化鍵宛の JWE の中に入れて暗号化します。RP はまず外側を復号し、その後で内側の署名を検証します。</title>
+    <rect class="fg-box" x="36" y="66" width="200" height="96" rx="8"/>
+    <text class="fg-t2" x="56" y="94">OP</text>
+    <text class="fg-xs" x="56" y="116">claim を組み立て、</text>
+    <text class="fg-xs" x="56" y="134">署名する</text>
+    <path class="fg-edge fg-edge--accent" d="M240,114 H286" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="290" y="42" width="360" height="144" rx="10"/>
+    <text class="fg-lbl fg-accent" x="310" y="66">外側 · JWE</text>
+    <text class="fg-xs" x="310" y="86">RP の use=enc JWK 宛に暗号化する</text>
+    <rect class="fg-box fg-box--sub" x="310" y="100" width="320" height="70" rx="8"/>
+    <text class="fg-lbl" x="330" y="124">内側 · JWS</text>
+    <text class="fg-xs" x="330" y="144">署名された claim — 内容はそのまま、</text>
+    <text class="fg-xs" x="330" y="160">外側を外すまで読めない</text>
+    <path class="fg-edge fg-edge--accent" d="M654,114 H700" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="677" y="107" text-anchor="middle">通信路上</text>
+    <rect class="fg-box" x="704" y="66" width="220" height="96" rx="8"/>
+    <text class="fg-t2" x="724" y="94">RP</text>
+    <text class="fg-xs" x="724" y="116">外側の JWE を復号し、</text>
+    <text class="fg-xs" x="724" y="134">続けて内側の JWS を検証する</text>
+    <text class="fg-xs" x="36" y="216">署名は誰が発行したかを示し、暗号化は誰が読めるかを決めます。答えている問いが違うため、ここでは両方が必要です</text>
+  </svg>
+  <figcaption class="fig-note">順序はどちらの向きでも重要です。先に署名するから署名の対象が暗号文ではなく claim になり、先に復号するから RP は読めなかったものに対して署名検証をせずに済みます。</figcaption>
+</figure>
 
 ::: details JWS と JWE の違い
 **JWS**（RFC 7515 — JSON Web Signature）はおなじみの JOSE 形式で、ヘッダ + 本文 + 署名の構成です。鍵があれば誰でも本文を読めますが、署名は改ざんが無いことしか保証しません。**JWE**（RFC 7516 — JSON Web Encryption）は本文を暗号文に包み、対応する秘密鍵を持つ受信者だけが読めるようにします。id_token は既定で署名（JWS）されており、その上にさらに JWE で暗号化すれば、想定 RP 以外には本文が不透明になります。RP 以外が TLS を終端するような構成で有用です。

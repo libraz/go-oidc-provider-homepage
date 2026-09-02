@@ -65,46 +65,52 @@ type Authenticator interface {
 
 `Authenticator` は、毎回「次に表示する Prompt」または「認証完了を表す Result」のどちらかを返します。SMS OTP のような 2 段階の認証要素では、`Begin` が最初の Prompt を返し、SPA からの送信ごとに `Continue` が次の Prompt か Result を返します。
 
-<svg class="auth-flow" role="img" aria-labelledby="authenticator-flow-title" viewBox="0 0 760 352" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="authenticator-flow-title">カスタム Authenticator の状態遷移。LoginFlow が Begin を呼び、電話番号入力 Prompt、コード入力 Prompt、Result の順に進み、Result が返ると subject と factor がセッションに反映される。</title>
-  <defs>
-    <marker id="auth-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="40" y="34" width="160" height="58" rx="8"/>
-  <text class="h" x="120" y="58" text-anchor="middle">LoginFlow</text>
-  <text class="m sub" x="120" y="77" text-anchor="middle">Begin(ctx, input)</text>
-
-  <rect class="accent" x="300" y="24" width="180" height="78" rx="8"/>
-  <text class="h accent-text" x="390" y="50" text-anchor="middle">Authenticator</text>
-  <text class="m sub" x="390" y="70" text-anchor="middle">Type / AAL / AMR</text>
-  <text class="m sub" x="390" y="88" text-anchor="middle">Prompts()</text>
-
-  <rect x="560" y="34" width="160" height="58" rx="8"/>
-  <text class="h" x="640" y="58" text-anchor="middle">SPA / HTML</text>
-  <text class="t sub" x="640" y="77" text-anchor="middle">画面を描画</text>
-
-  <path d="M200 63 H296" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="248" y="52" text-anchor="middle">Begin</text>
-  <path d="M480 63 H556" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="518" y="52" text-anchor="middle">Prompt</text>
-
-  <rect class="soft" x="88" y="142" width="584" height="56" rx="8"/>
-  <text class="h" x="380" y="166" text-anchor="middle">1. myorg.sms.collect_phone</text>
-  <text class="t sub" x="380" y="185" text-anchor="middle">電話番号を受け取り、OTP を生成して送信する</text>
-  <path d="M640 92 C640 122 530 132 438 142" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub halo" x="576" y="126" text-anchor="middle">POST phone</text>
-  <path d="M322 198 C245 214 245 244 322 260" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="246" y="234" text-anchor="middle">Continue</text>
-
-  <rect class="soft" x="88" y="260" width="584" height="56" rx="8"/>
-  <text class="h" x="380" y="284" text-anchor="middle">2. myorg.sms.collect_code</text>
-  <text class="t sub" x="380" y="303" text-anchor="middle">入力コードを検証し、成功なら Result{Subject: ...} を返す</text>
-
-  <path d="M380 316 V340 H56 V96" marker-end="url(#auth-flow-arrow)"/>
-  <text class="m sub" x="250" y="330" text-anchor="middle">returns Result</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">カスタム Authenticator を prompt 単位で追う</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-customauth-title" viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-customauth-title">LoginFlow が Begin を呼び、Authenticator が prompt を返し、ユーザが送信し、その内容で Continue が呼ばれ、2 つ目の prompt が続きます。Result を返すとチェーンが終わり、subject と factor がセッションに書き込まれます。</title>
+    <line class="fg-life" x1="150" y1="72" x2="150" y2="316"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="72" x2="500" y2="316"/>
+    <line class="fg-life" x1="830" y1="72" x2="830" y2="316"/>
+    <rect class="fg-box" x="60" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t" x="150" y="44" text-anchor="middle">LoginFlow</text>
+    <text class="fg-xs" x="150" y="59" text-anchor="middle">オーケストレータ</text>
+    <rect class="fg-box fg-box--accent" x="410" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="44" text-anchor="middle">Authenticator</text>
+    <text class="fg-mxs" x="500" y="59" text-anchor="middle">自前実装 · Type / AAL / AMR</text>
+    <rect class="fg-box" x="740" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t" x="830" y="44" text-anchor="middle">画面</text>
+    <text class="fg-xs" x="830" y="59" text-anchor="middle">SPA でもサーバ描画でもよい</text>
+    <circle class="fg-badge" cx="15" cy="104" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="107" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,104 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="98" text-anchor="middle">Begin(ctx, input)</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="146" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="149" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,146 H830" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="665" y="126" text-anchor="middle">Prompt · myorg.sms.collect_phone</text>
+    <text class="fg-xs" x="665" y="140" text-anchor="middle">番号を受け取り、OTP を生成して送信する</text>
+    <circle class="fg-badge" cx="15" cy="186" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="189" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M830,186 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="180" text-anchor="middle">ユーザが電話番号を送信する</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="234" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="237" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M500,234 H830" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="665" y="214" text-anchor="middle">Continue → Prompt · myorg.sms.collect_code</text>
+    <text class="fg-xs" x="665" y="228" text-anchor="middle">送信されたコードを検証する</text>
+    <circle class="fg-badge" cx="15" cy="272" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="275" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M830,272 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="266" text-anchor="middle">ユーザがコードを送信する</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="310" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="313" text-anchor="middle">6</text>
+    <path class="fg-edge fg-edge--accent" d="M500,310 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="290" text-anchor="middle">Result{ Subject: … }</text>
+    <text class="fg-xs" x="325" y="304" text-anchor="middle">チェーンが終わり、subject と factor がセッションに入る</text>
+  </svg>
+  <figcaption class="fig-note">Authenticator は画面を描画せず、セッションにも触れません。返すのは prompt か result のどちらかで、残りはオーケストレータが担います。だから同じ Authenticator が SPA の裏でもサーバ描画の裏でも動きます。</figcaption>
+</figure>
 
 最後のステップが返す `Result` が認証要素の完了を表します。オーケストレータはこの `Result` から subject、AAL、AMR の値をセッションに書き込み、LoginFlow は次の Rule へ進みます。
 

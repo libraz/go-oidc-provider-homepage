@@ -12,31 +12,36 @@ pageClass: pg-use-cases-protected-resource-metadata
 
 これは、クライアントが resource identifier から API を発見する構成、または複数の API が同じ OP に戻る機械可読メタデータを持つ構成で使います。すべてのクライアントを手動設定していて、issuer も既に知っているなら、このメタデータは任意です。これを有効にしても、トークン検証やゲートウェイ動作が追加されるわけではありません。
 
-<svg role="img" aria-labelledby="prm-discovery-title" viewBox="0 0 760 220" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="prm-discovery-title">クライアントがリソース識別子から認可サーバに辿り着くまでの経路。リソースの well-known メタデータを取得し、そこから authorization_servers を読み、その issuer を辿って OP 自身の discovery 文書に到達する。</title>
-
-  <path class="prm-rail" d="M40 48 V192"/>
-
-  <circle class="prm-dot" cx="40" cy="48" r="9"/>
-  <text class="prm-step-no" x="40" y="51.5" text-anchor="middle">1</text>
-  <text class="prm-step" x="66" y="52">クライアントがリソース識別子を持つ</text>
-  <text class="prm-value" x="744" y="52" text-anchor="end">https://op.example.com/api</text>
-
-  <circle class="prm-dot" cx="40" cy="96" r="9"/>
-  <text class="prm-step-no" x="40" y="99.5" text-anchor="middle">2</text>
-  <text class="prm-step" x="66" y="100">そのリソースのメタデータを取得</text>
-  <text class="prm-value" x="744" y="100" text-anchor="end">/.well-known/oauth-protected-resource/api</text>
-
-  <circle class="prm-dot" cx="40" cy="144" r="9"/>
-  <text class="prm-step-no" x="40" y="147.5" text-anchor="middle">3</text>
-  <text class="prm-step" x="66" y="148">文書が認可サーバを示す</text>
-  <text class="prm-value-hit" x="744" y="148" text-anchor="end">"authorization_servers": ["https://op.example.com"]</text>
-
-  <circle class="prm-dot" cx="40" cy="192" r="9"/>
-  <text class="prm-step-no" x="40" y="195.5" text-anchor="middle">4</text>
-  <text class="prm-step" x="66" y="196">その issuer から discovery を辿る</text>
-  <text class="prm-value" x="744" y="196" text-anchor="end">/.well-known/openid-configuration</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">リソース識別子から discovery 文書まで</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-prm-title" viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-prm-title">リソース識別子しか知らないクライアントが、そのリソースの well-known メタデータを取得し、authorization_servers メンバーを読み、示された issuer を辿って OP 自身の discovery 文書に到達する経路です。</title>
+    <rect class="fg-box" x="36" y="46" width="440" height="66" rx="8"/>
+    <circle class="fg-badge" cx="58" cy="70" r="9"/>
+    <text class="fg-badge-t" x="58" y="73" text-anchor="middle">1</text>
+    <text class="fg-t2" x="80" y="74">クライアントはリソース識別子だけを持っている</text>
+    <text class="fg-mxs" x="56" y="98">https://op.example.com/api</text>
+    <path class="fg-edge" d="M480,79 H514" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="518" y="46" width="406" height="66" rx="8"/>
+    <circle class="fg-badge" cx="540" cy="70" r="9"/>
+    <text class="fg-badge-t" x="540" y="73" text-anchor="middle">2</text>
+    <text class="fg-t2" x="562" y="74">そのリソースのメタデータを取得する</text>
+    <text class="fg-mxs" x="538" y="98">/.well-known/oauth-protected-resource/api</text>
+    <path class="fg-edge" d="M721,116 V138" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="518" y="142" width="406" height="66" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="540" cy="166" r="9"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="540" y="169" text-anchor="middle">3</text>
+    <text class="fg-t2 fg-accent" x="562" y="170">文書が認可サーバーを示す</text>
+    <text class="fg-mxs" x="538" y="194">"authorization_servers": ["https://op.example.com"]</text>
+    <path class="fg-edge fg-edge--accent" d="M514,175 H480" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="36" y="142" width="440" height="66" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="58" cy="166" r="9"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="58" y="169" text-anchor="middle">4</text>
+    <text class="fg-t2 fg-accent" x="80" y="170">その issuer を辿って discovery に到達する</text>
+    <text class="fg-mxs" x="56" y="194">/.well-known/openid-configuration</text>
+  </svg>
+  <figcaption class="fig-note">ここには事前設定が一つもありません。呼びたい URL さえ分かれば、それを統括する OP に辿り着けます。リソースサーバの隣に issuer を埋め込まずに済むのはこのためです。</figcaption>
+</figure>
 
 この経路に出てくる文書はどちらも OP が配信します。Bearer トークンの検証はリソースサーバの仕事のままです。
 

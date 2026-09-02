@@ -30,39 +30,39 @@ RAR は、リソースサーバが金額、口座、location、action、datatype
 
 validator なしで登録された type は、その type 配下で任意の中身を受理してしまいます。そのため nil の `Validate` は `op.New` で拒否され、OP は起動しません。
 
-<svg role="img" aria-labelledby="rar-shape-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="rar-shape-title">authorization_details 要素 1 件の形: OP は配列の形と type メンバーを確認し、登録された validator がそれ以外のメンバーを確認する。許可された配列はトークン応答、JWT アクセストークン、introspection に反映される。</title>
-
-  <rect class="rar-doc" x="24" y="24" width="340" height="140" rx="8"/>
-  <text class="rar-json" x="44" y="52">[{</text>
-  <text class="rar-json" x="60" y="74">"type": "payment_initiation",</text>
-  <text class="rar-json" x="60" y="100">"actions": ["initiate"],</text>
-  <text class="rar-json" x="60" y="122">"amount": "40.00"</text>
-  <text class="rar-json" x="44" y="148">}]</text>
-
-  <path class="rar-flow" d="M364 70 H396"/>
-  <text class="rar-check-op" x="404" y="74">OP: 配列の形と登録済み type</text>
-
-  <path class="rar-hook" d="M364 111 H384 M384 96 V126 M384 96 H392 M384 126 H392"/>
-  <text class="rar-check-you" x="404" y="115">組み込み側の Validate: それ以外のメンバー</text>
-
-  <path class="rar-flow" d="M194 164 V182 M134 182 H626 M134 182 V198 M380 182 V198 M626 182 V198"/>
-  <path class="rar-flow" d="M129 193 L134 200 L139 193"/>
-  <path class="rar-flow" d="M375 193 L380 200 L385 193"/>
-  <path class="rar-flow" d="M621 193 L626 200 L631 193"/>
-
-  <rect class="rar-sink" x="34" y="204" width="200" height="54" rx="8"/>
-  <text class="rar-sink-title" x="134" y="228" text-anchor="middle">トークン応答</text>
-  <text class="rar-sink-note" x="134" y="247" text-anchor="middle">許可された内容をそのまま返す</text>
-
-  <rect class="rar-sink" x="280" y="204" width="200" height="54" rx="8"/>
-  <text class="rar-sink-title" x="380" y="228" text-anchor="middle">JWT アクセストークン</text>
-  <text class="rar-sink-note" x="380" y="247" text-anchor="middle">RFC 9068 §2.2.3</text>
-
-  <rect class="rar-sink" x="526" y="204" width="200" height="54" rx="8"/>
-  <text class="rar-sink-title" x="626" y="228" text-anchor="middle">introspection</text>
-  <text class="rar-sink-note" x="626" y="247" text-anchor="middle">RFC 9396 §9</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">どのメンバーを誰が見るか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-authzdetails-title" viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-authzdetails-title">authorization_details の 1 要素について、OP は配列の形と type メンバーを確認し、登録した validator がそれ以外のメンバーを確認します。許可された配列はトークン応答、JWT アクセストークンの中、introspection の 3 か所に反映されます。</title>
+    <rect class="fg-box fg-box--sub" x="36" y="36" width="330" height="150" rx="8"/>
+    <text class="fg-mxs" x="56" y="62">[{</text>
+    <text class="fg-mxs fg-accent" x="70" y="84">"type": "payment_initiation",</text>
+    <text class="fg-mxs" x="70" y="106">"actions": ["initiate"],</text>
+    <text class="fg-mxs" x="70" y="128">"amount": "40.00"</text>
+    <text class="fg-mxs" x="56" y="150">}]</text>
+    <text class="fg-xs" x="56" y="176">配列のうちの 1 要素</text>
+    <path class="fg-leader" d="M370,80 H396 M370,116 H396"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M396,80 H426" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--thin" d="M396,116 H426" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="430" y="56" width="290" height="48" rx="6"/>
+    <text class="fg-t2 fg-accent" x="448" y="76">OP が見る部分</text>
+    <text class="fg-xs" x="448" y="94">配列の形と、type が登録済みかどうか</text>
+    <rect class="fg-box" x="430" y="112" width="290" height="48" rx="6"/>
+    <text class="fg-t2" x="448" y="132">組み込み側の Validate が見る部分</text>
+    <text class="fg-xs" x="448" y="150">それ以外のメンバー — 語彙は組み込み側のもの</text>
+    <text class="fg-lbl" x="36" y="216">許可された配列は 3 か所に反映される</text>
+    <rect class="fg-box" x="36" y="226" width="290" height="42" rx="6"/>
+    <text class="fg-mxs" x="54" y="246">トークン応答</text>
+    <text class="fg-xs" x="54" y="262">authorization_details として</text>
+    <rect class="fg-box" x="336" y="226" width="290" height="42" rx="6"/>
+    <text class="fg-mxs" x="354" y="246">JWT アクセストークン</text>
+    <text class="fg-xs" x="354" y="262">RFC 9068 §2.2.3</text>
+    <rect class="fg-box" x="636" y="226" width="288" height="42" rx="6"/>
+    <text class="fg-mxs" x="654" y="246">introspection</text>
+    <text class="fg-xs" x="654" y="262">RFC 9396 §9</text>
+  </svg>
+  <figcaption class="fig-note">この分担がこの機能の要点です。OP は金額や操作が何を意味するかについて見解を持たないため、外形だけを検証し、中身は意味を知っているコードに渡します。</figcaption>
+</figure>
 
 ## 設定
 

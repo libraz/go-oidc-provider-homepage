@@ -37,29 +37,44 @@ RFC 9700 §4.1 はこれを閉じています。
 
 本ライブラリはこれを文字通り実装します。クライアントが登録した文字列だけが、その登録を満たす唯一の文字列です。`https://app.example.com/cb` を登録したなら、リクエストはこの文字列と 1 バイトも違ってはなりません。
 
-<svg role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="redirect-exact-title">登録値と 1 バイトも違わない redirect_uri だけが一致する。末尾のスラッシュ、query パラメータの追加、host の大文字小文字、ポート番号の違いはいずれも不一致になる。</title>
-  <text class="ru-cap" x="24" y="18">登録値</text>
-  <rect class="ru-registered" x="24" y="28" width="712" height="40" rx="8"/>
-  <text class="ru-registered-uri" x="44" y="53">https://app.example.com/cb</text>
-  <text class="ru-cap" x="24" y="98">authorize 要求で送られてきた値</text>
-  <line class="ru-rule" x1="24" y1="108" x2="736" y2="108"/>
-  <text class="ru-ok" x="30" y="132">✓</text>
-  <text class="ru-uri" x="56" y="132">https://app.example.com/cb</text>
-  <text class="ru-why" x="470" y="132">完全一致 — 受理</text>
-  <text class="ru-no" x="30" y="164">✗</text>
-  <text class="ru-uri" x="56" y="164">https://app.example.com/cb<tspan class="ru-diff">/</tspan></text>
-  <text class="ru-why" x="470" y="164">末尾のスラッシュ</text>
-  <text class="ru-no" x="30" y="196">✗</text>
-  <text class="ru-uri" x="56" y="196">https://app.example.com/cb<tspan class="ru-diff">?env=prod</tspan></text>
-  <text class="ru-why" x="470" y="196">query パラメータの追加</text>
-  <text class="ru-no" x="30" y="228">✗</text>
-  <text class="ru-uri" x="56" y="228">https://<tspan class="ru-diff">APP</tspan>.example.com/cb</text>
-  <text class="ru-why" x="470" y="228">ホスト名の大文字小文字が違う</text>
-  <text class="ru-no" x="30" y="260">✗</text>
-  <text class="ru-uri" x="56" y="260">https://app.example.com<tspan class="ru-diff">:8443</tspan>/cb</text>
-  <text class="ru-why" x="470" y="260">ポート番号が違う</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">完全一致が弾くもの</div>
+  <svg class="fig-svg" role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 960 348" xmlns="http://www.w3.org/2000/svg">
+    <title id="redirect-exact-title">登録値と 1 バイトも違わない redirect_uri だけが一致します。末尾のスラッシュ、query パラメータの追加、ホスト名の大文字小文字、ポート番号の違いはいずれも拒否されます。</title>
+    <text class="fg-lbl" x="40" y="28">クライアントに登録した値</text>
+    <rect class="fg-box fg-box--accent" x="36" y="38" width="440" height="36" rx="6"/>
+    <text class="fg-m" x="54" y="61">https://app.example.com/cb</text>
+    <text class="fg-lbl" x="72" y="106">authorize リクエストで送られた値</text>
+    <text class="fg-lbl" x="612" y="106">判定</text>
+    <line class="fg-rule--strong fg-rule" x1="36" y1="118" x2="924" y2="118"/>
+    <!-- 受理 -->
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M44,136 l4,5 l8,-10"/>
+    <text class="fg-m" x="72" y="143">https://app.example.com/cb</text>
+    <text class="fg-xs fg-ok" x="612" y="143">受理 — 1 バイトも違わない</text>
+    <line class="fg-rule" x1="36" y1="158" x2="924" y2="158"/>
+    <!-- 末尾のスラッシュ -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,177 l10,10 M54,177 l-10,10"/>
+    <text class="fg-m" x="72" y="183">https://app.example.com/cb<tspan class="fg-danger">/</tspan></text>
+    <text class="fg-xs" x="612" y="183">末尾のスラッシュは別のパス</text>
+    <line class="fg-rule" x1="36" y1="198" x2="924" y2="198"/>
+    <!-- query パラメータ -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,217 l10,10 M54,217 l-10,10"/>
+    <text class="fg-m" x="72" y="223">https://app.example.com/cb<tspan class="fg-danger">?env=prod</tspan></text>
+    <text class="fg-xs" x="612" y="223">追加の query パラメータは吸収されない</text>
+    <line class="fg-rule" x1="36" y1="238" x2="924" y2="238"/>
+    <!-- ホスト名の大文字小文字 -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,257 l10,10 M54,257 l-10,10"/>
+    <text class="fg-m" x="72" y="263">https://<tspan class="fg-danger">APP</tspan>.example.com/cb</text>
+    <text class="fg-xs" x="612" y="263">比較の前にホスト名を小文字化しない</text>
+    <line class="fg-rule" x1="36" y1="278" x2="924" y2="278"/>
+    <!-- ポート -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,297 l10,10 M54,297 l-10,10"/>
+    <text class="fg-m" x="72" y="303">https://app.example.com<tspan class="fg-danger">:8443</tspan>/cb</text>
+    <text class="fg-xs" x="612" y="303">ポート番号が違えば別のオリジン</text>
+    <line class="fg-rule" x1="36" y1="318" x2="924" y2="318"/>
+  </svg>
+  <figcaption class="fig-note">これらはいずれも比較前に正規化されません。正規化規則をひとつ設けるたびに、攻撃者が似せた URI を狙える面がひとつ増えるためです。単純な文字列比較にはその面がありません。</figcaption>
+</figure>
 
 拒否される行はいずれも登録値と 1 〜 2 文字しか違いません。OP はそのどれも正規化しません。2 つの文字列を比較して、それで終わりです。唯一の例外が後述の loopback の緩和で、native client だけがポート番号を変えられます。
 

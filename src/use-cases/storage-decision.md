@@ -21,50 +21,44 @@ Two questions settle almost everything: **where do the OIDC tables live** (one b
 | **Existing database** — you already run a `users` table and migrations | Adapter-owned `oidc_*` tables (renamed to fit), your identity data projected in | [BYO store backend](/use-cases/byo-store) · [BYO user store](/use-cases/byo-userstore) |
 | **Scale / high churn** — you want volatile state off the durable tier | `composite` split: durable SQL + volatile Redis | [Hot/cold split](/use-cases/hot-cold-redis) |
 
-<svg class="storage-choice" role="img" aria-labelledby="storage-choice-title" viewBox="0 0 760 330" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="storage-choice-title">Choosing a storage layout. Greenfield takes one SQL adapter; an existing users table keeps the OIDC tables on the SQL adapter and supplies its own UserStore; splitting off high-churn volatile state routes SQL and Redis through composite.</title>
-  <defs>
-    <marker id="storage-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="250" y="18" width="260" height="52" rx="8"/>
-  <text class="h" x="380" y="40" text-anchor="middle">Where does the state live?</text>
-  <text class="t sub" x="380" y="58" text-anchor="middle">start from one of three entry points</text>
-
-  <path d="M380 70 V100" marker-end="url(#storage-arrow)"/>
-  <rect x="40" y="102" width="210" height="74" rx="8"/>
-  <text class="h" x="145" y="130" text-anchor="middle">Greenfield</text>
-  <text class="t sub" x="145" y="151" text-anchor="middle">no schema yet</text>
-
-  <rect x="274" y="102" width="212" height="74" rx="8"/>
-  <text class="h" x="380" y="130" text-anchor="middle">Existing database</text>
-  <text class="t sub" x="380" y="151" text-anchor="middle">a users table already runs</text>
-
-  <rect x="510" y="102" width="210" height="74" rx="8"/>
-  <text class="h" x="615" y="130" text-anchor="middle">Split off churn</text>
-  <text class="t sub" x="615" y="151" text-anchor="middle">you want Redis</text>
-
-  <path d="M145 176 V218" marker-end="url(#storage-arrow)"/>
-  <path d="M380 176 V218" marker-end="url(#storage-arrow)"/>
-  <path d="M615 176 V218" marker-end="url(#storage-arrow)"/>
-
-  <rect class="accent" x="40" y="220" width="210" height="92" rx="8"/>
-  <text class="h accent-text" x="145" y="248" text-anchor="middle">One SQL adapter</text>
-  <text class="t sub" x="145" y="272" text-anchor="middle">let the adapter own</text>
-  <text class="t sub" x="145" y="291" text-anchor="middle">the OIDC tables</text>
-
-  <rect class="accent" x="274" y="220" width="212" height="92" rx="8"/>
-  <text class="h accent-text" x="380" y="248" text-anchor="middle">SQL + UserStore</text>
-  <text class="t sub" x="380" y="272" text-anchor="middle">protocol state on SQL</text>
-  <text class="t sub" x="380" y="291" text-anchor="middle">identity in your database</text>
-
-  <rect class="accent" x="510" y="220" width="210" height="92" rx="8"/>
-  <text class="h accent-text" x="615" y="248" text-anchor="middle">composite</text>
-  <text class="t sub" x="615" y="272" text-anchor="middle">durable on SQL</text>
-  <text class="t sub" x="615" y="291" text-anchor="middle">volatile on Redis</text>
-
-</svg>
+<figure class="fig">
+  <div class="fig-head">Three entry points, by what you already have</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-storage-decision-title" viewBox="0 0 960 296" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-storage-decision-title">Choosing a storage layout. A greenfield deployment takes one SQL adapter. A deployment with an existing users table keeps the OIDC tables on the SQL adapter and supplies its own user store. A deployment that wants the high-churn state off SQL routes both backends through the composite adapter.</title>
+    <rect class="fg-box fg-box--accent" x="36" y="24" width="888" height="52" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="48">Where does the state live?</text>
+    <text class="fg-xs" x="56" y="68">the answer follows from what your deployment already runs, not from what the OP prefers</text>
+    <path class="fg-leader" d="M480,80 V94 M184,94 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M184,94 V108" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M480,94 V108" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M792,94 V108" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="36" y="112" width="296" height="164" rx="8"/>
+    <text class="fg-t2" x="56" y="140">Greenfield</text>
+    <text class="fg-xs" x="56" y="160">no schema of your own yet</text>
+    <line class="fg-rule" x1="56" y1="176" x2="312" y2="176"/>
+    <text class="fg-m fg-accent" x="56" y="202">One SQL adapter</text>
+    <text class="fg-xs" x="56" y="224">let the adapter own the OIDC</text>
+    <text class="fg-xs" x="56" y="240">tables, including users</text>
+    <text class="fg-xs fg-ok" x="56" y="264">the least to build</text>
+    <rect class="fg-box" x="348" y="112" width="296" height="164" rx="8"/>
+    <text class="fg-t2" x="368" y="140">An existing database</text>
+    <text class="fg-xs" x="368" y="160">a users table already runs</text>
+    <line class="fg-rule" x1="368" y1="176" x2="624" y2="176"/>
+    <text class="fg-m fg-accent" x="368" y="202">SQL + your own UserStore</text>
+    <text class="fg-xs" x="368" y="224">protocol state on the adapter,</text>
+    <text class="fg-xs" x="368" y="240">identity stays where it is</text>
+    <text class="fg-xs" x="368" y="264">no migration of your users</text>
+    <rect class="fg-box" x="660" y="112" width="264" height="164" rx="8"/>
+    <text class="fg-t2" x="680" y="140">Splitting off the churn</text>
+    <text class="fg-xs" x="680" y="160">you want Redis for the hot part</text>
+    <line class="fg-rule" x1="680" y1="176" x2="904" y2="176"/>
+    <text class="fg-m fg-accent" x="680" y="202">composite</text>
+    <text class="fg-xs" x="680" y="224">durable substores on SQL,</text>
+    <text class="fg-xs" x="680" y="240">volatile ones on Redis</text>
+    <text class="fg-xs fg-warn" x="680" y="264">two backends to operate</text>
+  </svg>
+  <figcaption class="fig-note">These are entry points, not destinations. Starting on the left and moving right later is a configuration change: the substore split is where the routing lives, and nothing above it has to know.</figcaption>
+</figure>
 
 The third branch has one trap. Authorization codes and the PAR `request_uri` are short-lived, so they look like volatile state, but they still belong on the durable side: every member of `composite.TxClusterKinds` must resolve to a single backend.
 

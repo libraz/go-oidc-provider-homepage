@@ -43,50 +43,61 @@ Both grants exist because the canonical `authorization_code + PKCE` flow assumes
 
 Run through these four questions in order. The first one usually settles it.
 
-<svg role="img" aria-labelledby="nobrowser-choice-title" viewBox="0 0 760 480" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="nobrowser-choice-title">Decision tree for choosing between CIBA and Device Code from four sequential questions.</title>
-  <g transform="translate(50,0)">
-  <rect class="dtx-q" x="20" y="20" width="320" height="58" rx="6"/>
-  <rect class="dtx-q" x="20" y="118" width="320" height="58" rx="6"/>
-  <rect class="dtx-q" x="20" y="216" width="320" height="58" rx="6"/>
-  <rect class="dtx-q" x="20" y="314" width="320" height="58" rx="6"/>
-  <rect class="dtx-op" x="470" y="27" width="180" height="44" rx="6"/>
-  <rect class="dtx-rp" x="470" y="125" width="180" height="44" rx="6"/>
-  <rect class="dtx-rp" x="470" y="223" width="180" height="44" rx="6"/>
-  <rect class="dtx-op" x="470" y="321" width="180" height="44" rx="6"/>
-  <rect class="dtx-rp" x="90" y="418" width="200" height="44" rx="6"/>
-  <path class="dtx-edge" d="M340 49 H470 M463 45 L470 49 L463 53"/>
-  <path class="dtx-edge" d="M340 147 H470 M463 143 L470 147 L463 151"/>
-  <path class="dtx-edge" d="M340 245 H470 M463 241 L470 245 L463 249"/>
-  <path class="dtx-edge" d="M340 343 H470 M463 339 L470 343 L463 347"/>
-  <path class="dtx-edge" d="M180 78 V118 M176 111 L180 118 L184 111"/>
-  <path class="dtx-edge" d="M180 176 V216 M176 209 L180 216 L184 209"/>
-  <path class="dtx-edge" d="M180 274 V314 M176 307 L180 314 L184 307"/>
-  <path class="dtx-edge" d="M180 372 V418 M176 411 L180 418 L184 411"/>
-  <text class="dtx-qt" x="180" y="45" text-anchor="middle">Does the RP know the user</text>
-  <text class="dtx-qt" x="180" y="61" text-anchor="middle">before the flow starts?</text>
-  <text class="dtx-qt" x="180" y="143" text-anchor="middle">Is there a screen on the</text>
-  <text class="dtx-qt" x="180" y="159" text-anchor="middle">device that wants the token?</text>
-  <text class="dtx-qt" x="180" y="241" text-anchor="middle">Does the user have a</text>
-  <text class="dtx-qt" x="180" y="257" text-anchor="middle">registered auth device?</text>
-  <text class="dtx-qt" x="180" y="339" text-anchor="middle">Regulated finance / health,</text>
-  <text class="dtx-qt" x="180" y="355" text-anchor="middle">out-of-band approval?</text>
-  <text class="dtx-leaf-op" x="560" y="54" text-anchor="middle">CIBA</text>
-  <text class="dtx-leaf" x="560" y="152" text-anchor="middle">Device Code</text>
-  <text class="dtx-leaf" x="560" y="250" text-anchor="middle">Device Code</text>
-  <text class="dtx-leaf-op" x="560" y="348" text-anchor="middle">CIBA</text>
-  <text class="dtx-leaf" x="190" y="440" text-anchor="middle">Device Code</text>
-  <text class="dtx-sub" x="190" y="454" text-anchor="middle">default</text>
-  <text class="dtx-lbl halo" x="405" y="43" text-anchor="middle">Yes</text>
-  <text class="dtx-lbl halo" x="405" y="141" text-anchor="middle">Yes</text>
-  <text class="dtx-lbl halo" x="405" y="239" text-anchor="middle">No</text>
-  <text class="dtx-lbl halo" x="405" y="337" text-anchor="middle">Yes</text>
-  <text class="dtx-lbl" x="188" y="102" text-anchor="start">No</text>
-  <text class="dtx-lbl" x="188" y="200" text-anchor="start">No</text>
-  <text class="dtx-lbl" x="188" y="298" text-anchor="start">Yes</text>
-  <text class="dtx-lbl" x="188" y="396" text-anchor="start">No</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">CIBA or Device Code — four questions</div>
+  <svg class="fig-svg" role="img" aria-labelledby="nbf-decision-title" viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg">
+    <title id="nbf-decision-title">Four sequential questions that decide between CIBA and the Device Authorization Grant: whether the RP already knows the user, whether the device has a screen, whether the user has a pre-registered authentication device, and whether out-of-band approval is a regulatory requirement.</title>
+    <!-- 1 -->
+    <rect class="fg-box" x="36" y="24" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="52">Does the RP already know which user this is</text>
+    <text class="fg-xs" x="56" y="74">it can supply a login_hint before the flow starts</text>
+    <path class="fg-edge" d="M434,57 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="50" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--accent" x="530" y="28" width="394" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="52">CIBA</text>
+    <text class="fg-xs" x="550" y="72">the OP can address the user without a redirect</text>
+    <path class="fg-edge" d="M233,94 V116" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="110">no</text>
+    <!-- 2 -->
+    <rect class="fg-box" x="36" y="120" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="148">Does the device that wants the token have a screen</text>
+    <text class="fg-xs" x="56" y="170">enough to print a short code and a URL on</text>
+    <path class="fg-edge" d="M434,153 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="146" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="530" y="124" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="148">Device Code</text>
+    <text class="fg-xs" x="550" y="168">the user carries the code to a second screen</text>
+    <path class="fg-edge" d="M233,190 V212" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="206">no</text>
+    <!-- 3 -->
+    <rect class="fg-box" x="36" y="216" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="244">Has the user pre-registered an authentication device</text>
+    <text class="fg-xs" x="56" y="266">a phone the OP already knows how to reach</text>
+    <path class="fg-edge" d="M434,249 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="242" text-anchor="middle">no</text>
+    <rect class="fg-box" x="530" y="220" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="244">Device Code</text>
+    <text class="fg-xs" x="550" y="264">nothing to notify — the user has to come to it</text>
+    <path class="fg-edge" d="M233,286 V308" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="302">yes</text>
+    <!-- 4 -->
+    <rect class="fg-box" x="36" y="312" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="340">Regulated finance or health, out-of-band approval</text>
+    <text class="fg-xs" x="56" y="362">approval must happen away from the transacting device</text>
+    <path class="fg-edge" d="M434,345 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="338" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--accent" x="530" y="316" width="394" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="340">CIBA</text>
+    <text class="fg-xs" x="550" y="360">binding_message ties the two devices together</text>
+    <path class="fg-edge" d="M233,382 V404" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="398">no</text>
+    <!-- default -->
+    <rect class="fg-box" x="36" y="408" width="888" height="54" rx="8"/>
+    <text class="fg-t2" x="56" y="430">Default: Device Code</text>
+    <text class="fg-xs" x="56" y="450">it asks less of your infrastructure — no hint resolver, no notification channel to operate</text>
+  </svg>
+  <figcaption class="fig-note">The dividing line is who starts the conversation. Device Code puts the user in charge of finding the OP; CIBA has the OP reach out to a device it was told about in advance, which only works if you already run that channel.</figcaption>
+</figure>
 
 **1. Does the RP know who the user is *before* the flow starts?**
 
@@ -114,92 +125,152 @@ If you are still unsure after running the questions: default to **Device Code** 
 
 ### Device Code (RFC 8628)
 
-<svg role="img" aria-labelledby="dc-seq-title" viewBox="0 0 760 452" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="dc-seq-title">Device Code (RFC 8628) sequence: the browserless device polls the OP while the user enters the user_code and approves on a separate browser.</title>
-  <g transform="translate(20,0)">
-  <line class="dcx-rp dcx-life" x1="115" y1="50" x2="115" y2="446"/>
-  <line class="dcx-op dcx-life" x1="360" y1="50" x2="360" y2="446"/>
-  <line class="dcx-user dcx-life" x1="605" y1="50" x2="605" y2="446"/>
-  <rect class="dcx-frame" x="44" y="198" width="644" height="166" rx="6"/>
-  <rect class="dcx-rp" x="20" y="6" width="190" height="44" rx="6"/>
-  <rect class="dcx-op" x="265" y="6" width="190" height="44" rx="6"/>
-  <rect class="dcx-user" x="510" y="6" width="190" height="44" rx="6"/>
-  <text class="dcx-actor" x="115" y="24" text-anchor="middle">Device — no browser</text>
-  <text class="dcx-sub" x="115" y="40" text-anchor="middle">TV / CLI / IoT</text>
-  <text class="dcx-actor-op" x="360" y="24" text-anchor="middle">OP</text>
-  <text class="dcx-sub" x="360" y="40" text-anchor="middle">go-oidc-provider</text>
-  <text class="dcx-actor" x="605" y="24" text-anchor="middle">User's browser</text>
-  <text class="dcx-sub" x="605" y="40" text-anchor="middle">any phone / laptop</text>
-  <path class="dcx-rp" d="M115 86 H360 M353 82 L360 86 L353 90"/>
-  <text class="dcx-mono" x="237" y="78" text-anchor="middle"><tspan class="dcx-step">1  </tspan>POST /device_authorization</text>
-  <path class="dcx-op" d="M360 124 H115 M122 120 L115 124 L122 128"/>
-  <text class="dcx-mono" x="237" y="116" text-anchor="middle"><tspan class="dcx-step">2  </tspan>200 { device_code, user_code, verification_uri }</text>
-  <rect class="dcx-frame dcx-nb" x="36" y="138" width="188" height="36" rx="4"/>
-  <text class="dcx-note" x="130" y="161" text-anchor="middle">Shows <tspan class="dcx-mono">user_code</tspan> + verify URL</text>
-  <text class="dcx-hdr" x="237" y="216" text-anchor="middle">Device polls</text>
-  <text class="dcx-hdr" x="482" y="216" text-anchor="middle">User approves</text>
-  <path class="dcx-rp" d="M115 246 H360 M353 242 L360 246 L353 250"/>
-  <text class="dcx-mono" x="237" y="238" text-anchor="middle"><tspan class="dcx-step">3  </tspan>POST /token · grant_type=device_code</text>
-  <path class="dcx-op" d="M360 282 H115 M122 278 L115 282 L122 286"/>
-  <text class="dcx-mono" x="237" y="274" text-anchor="middle"><tspan class="dcx-step">4  </tspan>400 authorization_pending</text>
-  <text class="dcx-note" x="237" y="302" text-anchor="middle">repeat every interval s</text>
-  <path class="dcx-user" d="M605 252 H360 M367 248 L360 252 L367 256"/>
-  <text class="dcx-note" x="482" y="244" text-anchor="middle"><tspan class="dcx-step">5  </tspan>Open <tspan class="dcx-mono">verification_uri</tspan>, enter <tspan class="dcx-mono">user_code</tspan></text>
-  <path class="dcx-user" d="M605 312 H360 M367 308 L360 312 L367 316"/>
-  <text class="dcx-note" x="482" y="304" text-anchor="middle"><tspan class="dcx-step">6  </tspan>Log in + consent → approve</text>
-  <path class="dcx-rp" d="M115 392 H360 M353 388 L360 392 L353 396"/>
-  <text class="dcx-mono" x="237" y="384" text-anchor="middle"><tspan class="dcx-step">7  </tspan>POST /token <tspan class="dcx-note">(next poll)</tspan></text>
-  <path class="dcx-op" d="M360 430 H115 M122 426 L115 430 L122 434"/>
-  <text class="dcx-mono" x="237" y="422" text-anchor="middle"><tspan class="dcx-step">8  </tspan>200 { access_token, id_token? }</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Device Code (RFC 8628)</div>
+  <svg class="fig-svg" role="img" aria-labelledby="nbf-devicecode-title" viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg">
+    <title id="nbf-devicecode-title">The Device Authorization Grant. A device with no browser asks for a device code and a short user code, prints the code and a URL, and polls the token endpoint while the user approves from any other browser.</title>
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="454"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="454"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="454"/>
+    <rect class="fg-box" x="55" y="16" width="190" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">Device — no browser</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">TV · CLI · IoT</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="735" y="16" width="190" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">User's browser</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">any phone or laptop</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="96" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="99" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,96 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="325" y="90" text-anchor="middle">POST /device_authorization</text>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="15" cy="130" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="133" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,130 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="124" text-anchor="middle">200 · { device_code, user_code, verification_uri }</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="176" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="179" text-anchor="middle">3</text>
+    <rect class="fg-box fg-box--sub" x="55" y="156" width="330" height="40" rx="6"/>
+    <text class="fg-xs" x="71" y="181">the device prints the <tspan class="fg-accent">user_code</tspan> and the URL to visit</text>
+    <!-- par -->
+    <rect class="fg-frame" x="44" y="216" width="896" height="176" rx="8"/>
+    <rect class="fg-box fg-box--muted" x="44" y="216" width="52" height="18" rx="4"/>
+    <text class="fg-tab" x="56" y="229">par</text>
+    <line class="fg-rule fg-rule--dashed" x1="44" y1="322" x2="940" y2="322"/>
+    <rect class="fg-frame" x="64" y="246" width="600" height="66" rx="6"/>
+    <rect class="fg-box fg-box--muted" x="64" y="246" width="176" height="18" rx="4"/>
+    <text class="fg-tab" x="76" y="259">loop · every interval s</text>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="15" cy="278" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="281" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M150,278 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="325" y="272" text-anchor="middle">POST /token · grant_type=…:device_code</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="304" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="307" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--muted" d="M500,304 H150" marker-end="url(#fg-am)"/>
+    <text class="fg-mxs fg-halo" x="325" y="298" text-anchor="middle">400 · authorization_pending</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="364" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="367" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M830,364 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="665" y="344" text-anchor="middle">open verification_uri, enter the user_code,</text>
+    <text class="fg-xs" x="665" y="357" text-anchor="middle">log in and approve</text>
+    <!-- 7 -->
+    <circle class="fg-badge" cx="15" cy="418" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="421" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M150,418 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="412" text-anchor="middle">POST /token — the next poll</text>
+    <!-- 8 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="448" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="451" text-anchor="middle">8</text>
+    <path class="fg-edge fg-edge--accent" d="M500,448 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="442" text-anchor="middle">200 · { access_token, id_token? }</text>
+  </svg>
+  <figcaption class="fig-note">The device and the browser are never connected to each other. The only thing that travels between them is the <code>user_code</code>, carried by a person reading one screen and typing into another.</figcaption>
+</figure>
 
 ### CIBA (Core 1.0, poll mode)
 
-<svg role="img" aria-labelledby="ciba-seq-title" viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="ciba-seq-title">CIBA (OIDC Core 1.0, poll mode) sequence: the RP supplies a login_hint at /bc-authorize, the OP resolves it, the embedder's notification service addresses the user's pre-registered device, and the RP polls until approval.</title>
-  <g transform="translate(20,0)">
-  <line class="cbx-rp cbx-life" x1="115" y1="50" x2="115" y2="554"/>
-  <line class="cbx-op cbx-life" x1="360" y1="50" x2="360" y2="554"/>
-  <line class="cbx-user cbx-life" x1="605" y1="50" x2="605" y2="554"/>
-  <rect class="cbx-frame" x="44" y="306" width="644" height="164" rx="6"/>
-  <rect class="cbx-rp" x="20" y="6" width="190" height="44" rx="6"/>
-  <rect class="cbx-op" x="265" y="6" width="190" height="44" rx="6"/>
-  <rect class="cbx-user" x="510" y="6" width="190" height="44" rx="6"/>
-  <text class="cbx-actor" x="115" y="24" text-anchor="middle">RP / API client</text>
-  <text class="cbx-sub" x="115" y="40" text-anchor="middle">POS, call-center panel</text>
-  <text class="cbx-actor-op" x="360" y="24" text-anchor="middle">OP</text>
-  <text class="cbx-sub" x="360" y="40" text-anchor="middle">go-oidc-provider</text>
-  <text class="cbx-actor" x="605" y="24" text-anchor="middle">User's auth device</text>
-  <text class="cbx-sub" x="605" y="40" text-anchor="middle">pre-registered</text>
-  <path class="cbx-rp" d="M115 82 H360 M353 78 L360 82 L353 86"/>
-  <text class="cbx-mono" x="237" y="74" text-anchor="middle"><tspan class="cbx-step">1  </tspan>POST /bc-authorize</text>
-  <rect class="cbx-frame cbx-nb" x="35" y="96" width="175" height="40" rx="4"/>
-  <text class="cbx-mono" x="122" y="112" text-anchor="middle">login_hint=alice</text>
-  <text class="cbx-mono" x="122" y="128" text-anchor="middle">binding_message</text>
-  <path class="cbx-op" d="M360 158 H398 V184 H367 M367 180 L360 184 L367 188"/>
-  <text class="cbx-note" x="406" y="176" text-anchor="start"><tspan class="cbx-step">2  </tspan><tspan class="cbx-mono">HintResolver</tspan> → subject</text>
-  <path class="cbx-op" d="M360 210 H605 M598 206 L605 210 L598 214"/>
-  <text class="cbx-note" x="482" y="202" text-anchor="middle"><tspan class="cbx-step">3  </tspan>embedder notification</text>
-  <rect class="cbx-frame cbx-nb" x="510" y="224" width="190" height="34" rx="4"/>
-  <text class="cbx-note" x="605" y="245" text-anchor="middle">“Approve $80 at Acme Coffee?”</text>
-  <path class="cbx-op" d="M360 286 H115 M122 282 L115 286 L122 290"/>
-  <text class="cbx-mono" x="237" y="278" text-anchor="middle"><tspan class="cbx-step">4  </tspan>200 { auth_req_id, expires_in, interval }</text>
-  <text class="cbx-hdr" x="237" y="326" text-anchor="middle">RP polls</text>
-  <text class="cbx-hdr" x="482" y="326" text-anchor="middle">User approves</text>
-  <path class="cbx-rp" d="M115 356 H360 M353 352 L360 356 L353 360"/>
-  <text class="cbx-mono" x="237" y="348" text-anchor="middle"><tspan class="cbx-step">5  </tspan>POST /token · grant_type=ciba</text>
-  <path class="cbx-op" d="M360 392 H115 M122 388 L115 392 L122 396"/>
-  <text class="cbx-mono" x="237" y="384" text-anchor="middle"><tspan class="cbx-step">6  </tspan>400 authorization_pending</text>
-  <text class="cbx-note" x="237" y="412" text-anchor="middle">repeat every interval s</text>
-  <path class="cbx-user" d="M605 362 H360 M367 358 L360 362 L367 366"/>
-  <text class="cbx-note" x="482" y="354" text-anchor="middle"><tspan class="cbx-step">7  </tspan>Approve → <tspan class="cbx-mono">Approve(auth_req_id)</tspan></text>
-  <path class="cbx-rp" d="M115 500 H360 M353 496 L360 500 L353 504"/>
-  <text class="cbx-mono" x="237" y="492" text-anchor="middle"><tspan class="cbx-step">8  </tspan>POST /token <tspan class="cbx-note">(next poll)</tspan></text>
-  <path class="cbx-op" d="M360 538 H115 M122 534 L115 538 L122 542"/>
-  <text class="cbx-mono" x="237" y="530" text-anchor="middle"><tspan class="cbx-step">9  </tspan>200 { access_token, id_token, refresh_token? }</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">CIBA (OIDC Core 1.0, poll mode)</div>
+  <svg class="fig-svg" role="img" aria-labelledby="nbf-ciba-title" viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg">
+    <title id="nbf-ciba-title">CIBA in poll mode. The RP supplies a login hint at the backchannel authentication endpoint, the OP resolves it to a subject, the embedder's notification service reaches the user's pre-registered device, and the RP polls until the approval lands.</title>
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="454"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="454"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="454"/>
+    <rect class="fg-box" x="55" y="16" width="190" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / API client</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">POS · call-centre panel</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="735" y="16" width="190" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">User's auth device</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">pre-registered</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,102 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="325" y="82" text-anchor="middle">POST /bc-authorize</text>
+    <text class="fg-mxs" x="325" y="95" text-anchor="middle">login_hint=alice · binding_message</text>
+    <!-- 2 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="132" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="135" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,124 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="542" y="136">HintResolver → subject</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="180" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="183" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M500,180 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="665" y="160" text-anchor="middle">the embedder's notification service</text>
+    <text class="fg-mxs" x="665" y="173" text-anchor="middle">"Approve $80 at Acme Coffee?"</text>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="15" cy="210" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="213" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M500,210 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="204" text-anchor="middle">200 · { auth_req_id, expires_in, interval }</text>
+    <!-- par -->
+    <rect class="fg-frame" x="44" y="230" width="896" height="162" rx="8"/>
+    <rect class="fg-box fg-box--muted" x="44" y="230" width="52" height="18" rx="4"/>
+    <text class="fg-tab" x="56" y="243">par</text>
+    <line class="fg-rule fg-rule--dashed" x1="44" y1="330" x2="940" y2="330"/>
+    <rect class="fg-frame" x="64" y="258" width="600" height="62" rx="6"/>
+    <rect class="fg-box fg-box--muted" x="64" y="258" width="176" height="18" rx="4"/>
+    <text class="fg-tab" x="76" y="271">loop · every interval s</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="288" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="291" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M150,288 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="325" y="282" text-anchor="middle">POST /token · grant_type=…:ciba</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="312" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="315" text-anchor="middle">6</text>
+    <path class="fg-edge fg-edge--muted" d="M500,312 H150" marker-end="url(#fg-am)"/>
+    <text class="fg-mxs fg-halo" x="325" y="306" text-anchor="middle">400 · authorization_pending</text>
+    <!-- 7 -->
+    <circle class="fg-badge" cx="15" cy="366" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="369" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M830,366 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="665" y="346" text-anchor="middle">the user approves on the device</text>
+    <text class="fg-mxs" x="665" y="359" text-anchor="middle">Approve(auth_req_id)</text>
+    <!-- 8 -->
+    <circle class="fg-badge" cx="15" cy="418" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="421" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M150,418 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="412" text-anchor="middle">POST /token — the next poll</text>
+    <!-- 9 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="448" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="451" text-anchor="middle">9</text>
+    <path class="fg-edge fg-edge--accent" d="M500,448 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="442" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+  </svg>
+  <figcaption class="fig-note">Compared with the figure above, the difference is step 3: here the OP addresses the user, so it needs both a hint it can resolve and a channel it can send on. Steps 5 to 9 are the same polling loop either way.</figcaption>
+</figure>
 
 The shape is similar enough to map between the two mentally. The decisive difference is the diagonal arrow: in Device Code the user **walks to the OP** with a code in hand; in CIBA the OP **reaches out to a device the user already trusts**.
 

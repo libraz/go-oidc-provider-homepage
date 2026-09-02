@@ -13,34 +13,32 @@ The OP can:
 
 Both directions use a closed algorithm allow-list.
 
-<svg role="img" aria-labelledby="jwe-wrap-title" viewBox="0 0 760 310" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jwe-wrap-title">The JWE encloses the JWS. The OP signs the claims into a JWS, encrypts that JWS inside a JWE addressed to the RP's use=enc JWK, and the RP decrypts the outer JWE before verifying the inner signature.</title>
-
-  <rect class="jwe-box" x="16" y="110" width="140" height="62" rx="8"/>
-  <text class="jwe-text" x="86" y="136" text-anchor="middle">OP</text>
-  <text class="jwe-sub" x="86" y="156" text-anchor="middle">assembles the claims</text>
-
-  <rect class="jwe-box" x="214" y="70" width="250" height="150" rx="10"/>
-  <text class="jwe-text" x="339" y="97" text-anchor="middle">Outer: JWE</text>
-  <rect class="jwe-main" x="242" y="110" width="194" height="62" rx="8"/>
-  <text class="jwe-text" x="339" y="147" text-anchor="middle">Inner: JWS</text>
-  <text class="jwe-sub" x="339" y="201" text-anchor="middle">encrypted to the RP's key</text>
-
-  <rect class="jwe-box" x="604" y="110" width="140" height="62" rx="8"/>
-  <text class="jwe-text" x="674" y="136" text-anchor="middle">RP</text>
-  <text class="jwe-sub" x="674" y="156" text-anchor="middle">decrypt, then verify</text>
-
-  <rect class="jwe-box" x="254" y="250" width="170" height="44" rx="8"/>
-  <text class="jwe-text" x="339" y="278" text-anchor="middle">use=enc JWK</text>
-
-  <path class="jwe-flow" d="M156 141 H211"/>
-  <path class="jwe-flow" d="M205 137 L213 141 L205 145"/>
-  <text class="jwe-sub" x="534" y="126" text-anchor="middle">encrypted response</text>
-  <path class="jwe-flow" d="M464 141 H601"/>
-  <path class="jwe-flow" d="M595 137 L603 141 L595 145"/>
-  <path class="jwe-flow" d="M339 250 V224"/>
-  <path class="jwe-flow" d="M335 230 L339 221 L343 230"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">The JWE encloses the JWS</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-jwe-title" viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-jwe-title">The OP signs the claims into a JWS, then encrypts that JWS inside a JWE addressed to the relying party's encryption key. The RP decrypts the outer layer first and only then verifies the signature inside it.</title>
+    <rect class="fg-box" x="36" y="66" width="200" height="96" rx="8"/>
+    <text class="fg-t2" x="56" y="94">OP</text>
+    <text class="fg-xs" x="56" y="116">assembles the claims</text>
+    <text class="fg-xs" x="56" y="134">and signs them</text>
+    <path class="fg-edge fg-edge--accent" d="M240,114 H286" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="290" y="42" width="360" height="144" rx="10"/>
+    <text class="fg-lbl fg-accent" x="310" y="66">outer · JWE</text>
+    <text class="fg-xs" x="310" y="86">encrypted to the RP's use=enc JWK</text>
+    <rect class="fg-box fg-box--sub" x="310" y="100" width="320" height="70" rx="8"/>
+    <text class="fg-lbl" x="330" y="124">inner · JWS</text>
+    <text class="fg-xs" x="330" y="144">the signed claims — unchanged,</text>
+    <text class="fg-xs" x="330" y="160">and unreadable until the outer layer is off</text>
+    <path class="fg-edge fg-edge--accent" d="M654,114 H700" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="677" y="107" text-anchor="middle">on the wire</text>
+    <rect class="fg-box" x="704" y="66" width="220" height="96" rx="8"/>
+    <text class="fg-t2" x="724" y="94">RP</text>
+    <text class="fg-xs" x="724" y="116">decrypt the outer JWE,</text>
+    <text class="fg-xs" x="724" y="134">then verify the inner JWS</text>
+    <text class="fg-xs" x="36" y="216">signing proves who issued it; encrypting decides who can read it — the two answer different questions and both are needed here</text>
+  </svg>
+  <figcaption class="fig-note">The order matters in both directions. Signing first means the signature covers the claims and not the ciphertext; decrypting first means the RP never verifies a signature over something it could not read.</figcaption>
+</figure>
 
 ::: details JWS vs JWE — what's the difference?
 **JWS** (RFC 7515 — JSON Web Signature) is the JOSE format you already know: a header + payload + signature. Anyone with the key can read the payload; the signature only proves it wasn't tampered with. **JWE** (RFC 7516 — JSON Web Encryption) wraps the payload in a ciphertext so that only the holder of the matching private key can read it. id_tokens are signed (JWS) by default; encrypting them on top means the payload becomes opaque to anything that's not the intended RP — useful when something other than the RP terminates TLS.

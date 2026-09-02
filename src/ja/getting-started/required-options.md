@@ -8,32 +8,37 @@ pageClass: pg-getting-started-required-options
 
 `op.New(...)` は構築時に不完全な設定を拒否します。そのため、安全でない OP が誤ってトラフィックを受け取ることはありません。3 つのオプションは無条件で必須です。`WithCookieKeys` はこれに加えて、`authorization_code` grant を有効にしている場合に必須になります。既定の grant 集合はこの grant を含みます。
 
-<svg role="img" aria-labelledby="required-options-title" viewBox="0 0 760 292" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="required-options-title">常に必須なのは issuer、store、keyset の 3 つ。cookie 鍵は authorization_code grant を有効にしている場合に加えて必須になる。</title>
-  <text class="ro-head" x="34" y="32">常に必須</text>
-
-  <rect class="ro-box" x="34" y="44" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="141" y="72" text-anchor="middle">op.WithIssuer</text>
-  <text class="ro-note" x="141" y="94" text-anchor="middle">iss claim・discovery URL</text>
-  <text class="ro-note" x="141" y="112" text-anchor="middle">cookie の適用範囲</text>
-
-  <rect class="ro-box" x="272" y="44" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="379" y="72" text-anchor="middle">op.WithStore</text>
-  <text class="ro-note" x="379" y="94" text-anchor="middle">認可コード・session・クライアント</text>
-  <text class="ro-note" x="379" y="112" text-anchor="middle">リフレッシュ連鎖・JTI 集合</text>
-
-  <rect class="ro-box" x="510" y="44" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="617" y="72" text-anchor="middle">op.WithKeyset</text>
-  <text class="ro-note" x="617" y="94" text-anchor="middle">ID トークン・JWT AT・JARM の</text>
-  <text class="ro-note" x="617" y="112" text-anchor="middle">ES256 署名鍵</text>
-
-  <text class="ro-head" x="272" y="170">authorization_code grant を有効にする場合に必須</text>
-
-  <rect class="ro-box ro-conditional" x="272" y="182" width="214" height="86" rx="8"/>
-  <text class="ro-option" x="379" y="210" text-anchor="middle">op.WithCookieKeys</text>
-  <text class="ro-note" x="379" y="232" text-anchor="middle">session と CSRF cookie を</text>
-  <text class="ro-note" x="379" y="250" text-anchor="middle">AES-256-GCM で暗号化</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">常に必須の 3 つと、認可コードグラントで加わる 1 つ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="req-opts-title" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+    <title id="req-opts-title">常に必須なのは issuer・store・keyset の 3 つです。authorization_code グラントを有効にすると cookie 鍵が加えて必須になります。ブラウザに状態を置くグラントがこれだけだからです。</title>
+    <text class="fg-lbl" x="40" y="26">常に必須</text>
+    <rect class="fg-box" x="36" y="38" width="284" height="132" rx="8"/>
+    <text class="fg-m" x="56" y="66">op.WithIssuer</text>
+    <line class="fg-rule" x1="56" y1="80" x2="300" y2="80"/>
+    <text class="fg-xs" x="56" y="102">全トークンに載る iss claim</text>
+    <text class="fg-xs" x="56" y="122">discovery の URL</text>
+    <text class="fg-xs" x="56" y="142">cookie を設定する範囲</text>
+    <rect class="fg-box" x="340" y="38" width="284" height="132" rx="8"/>
+    <text class="fg-m" x="360" y="66">op.WithStore</text>
+    <line class="fg-rule" x1="360" y1="80" x2="604" y2="80"/>
+    <text class="fg-xs" x="360" y="102">認可コード · session</text>
+    <text class="fg-xs" x="360" y="122">クライアント · リフレッシュ連鎖</text>
+    <text class="fg-xs" x="360" y="142">消費済み JTI の集合</text>
+    <rect class="fg-box" x="644" y="38" width="280" height="132" rx="8"/>
+    <text class="fg-m" x="664" y="66">op.WithKeyset</text>
+    <line class="fg-rule" x1="664" y1="80" x2="904" y2="80"/>
+    <text class="fg-xs" x="664" y="102">ID トークン · JWT アクセストークン</text>
+    <text class="fg-xs" x="664" y="122">JARM レスポンスに使う</text>
+    <text class="fg-xs" x="664" y="142">ES256 署名鍵</text>
+    <text class="fg-lbl fg-accent" x="40" y="206">authorization_code グラントを有効にすると、これも必須になる</text>
+    <rect class="fg-box fg-box--accent" x="36" y="218" width="888" height="70" rx="8"/>
+    <text class="fg-m fg-accent" x="56" y="246">op.WithCookieKeys</text>
+    <line class="fg-rule" x1="56" y1="258" x2="904" y2="258"/>
+    <text class="fg-xs" x="56" y="278">session と CSRF cookie を AES-256-GCM で暗号化する — ブラウザに状態を置くグラントはこれだけです</text>
+  </svg>
+  <figcaption class="fig-note">4 つ目は任意ではなく条件付きの必須です。認可コードグラントを有効にしたまま省くと <code>op.New</code> が起動時に拒否します。暗号化されていない cookie を発行して本番で気付く、という事態を防ぐためです。</figcaption>
+</figure>
 
 | Option | 必須である理由 |
 |---|---|

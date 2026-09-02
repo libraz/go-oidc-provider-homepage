@@ -18,37 +18,40 @@ pageClass: pg-operations-observability
 
 ライブラリはこれらを意図的に分離しています。任意のサブセットだけを組み込むことができます。
 
-<svg role="img" aria-labelledby="observability-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="observability-split-title">OP は業務イベントを出し、HTTP 層と運用基盤がログ、監査ログ、メトリクス、トレースに振り分ける構造。</title>
-<rect class="obs-box" x="24" y="104" width="138" height="72" rx="8"/>
-  <text class="obs-text" x="93" y="134" text-anchor="middle">HTTP 層</text>
-  <text class="obs-sub" x="93" y="154" text-anchor="middle">リクエスト ID / トレース</text>
-
-  <rect class="obs-main" x="242" y="92" width="170" height="96" rx="8"/>
-  <text class="obs-text" x="327" y="126" text-anchor="middle">OP ハンドラ</text>
-  <text class="obs-sub" x="327" y="148" text-anchor="middle">プロトコル処理</text>
-  <text class="obs-sub" x="327" y="166" text-anchor="middle">監査イベント</text>
-
-  <rect class="obs-box" x="508" y="24" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="54" text-anchor="middle">運用ログ</text>
-  <rect class="obs-box" x="508" y="92" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="122" text-anchor="middle">監査ログ</text>
-  <rect class="obs-box" x="508" y="160" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="190" text-anchor="middle">Prometheus</text>
-  <rect class="obs-box" x="508" y="228" width="196" height="48" rx="8"/>
-  <text class="obs-text" x="606" y="258" text-anchor="middle">OpenTelemetry</text>
-
-  <path class="obs-flow" d="M162 140 H238"/>
-  <path class="obs-flow" d="M232 136 L240 140 L232 144"/>
-  <path class="obs-flow" d="M412 120 C450 78 466 48 504 48"/>
-  <path class="obs-flow" d="M496 44 L505 48 L496 52"/>
-  <path class="obs-flow" d="M412 132 H504"/>
-  <path class="obs-flow" d="M496 128 L505 132 L496 136"/>
-  <path class="obs-flow" d="M412 152 C452 164 466 184 504 184"/>
-  <path class="obs-flow" d="M496 180 L505 184 L496 188"/>
-  <path class="obs-flow" d="M162 170 C300 260 390 252 504 252"/>
-  <path class="obs-flow" d="M496 248 L505 252 L496 256"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">何が出て、どこへ届くか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="observability-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="observability-title">OP はプロトコル層の監査イベントを出し、その外側の HTTP 層はリクエスト ID とトレーススパンを出します。運用基盤がその両方を、運用ログ・監査ログ・メトリクス・トレースへ振り分けます。</title>
+    <text class="fg-lbl" x="40" y="26">出す側</text>
+    <text class="fg-lbl" x="604" y="26">届く先</text>
+    <rect class="fg-box" x="36" y="40" width="330" height="82" rx="8"/>
+    <text class="fg-t2" x="56" y="66">自前の HTTP 層</text>
+    <text class="fg-xs" x="56" y="88">OP を既に包んでいるミドルウェア</text>
+    <text class="fg-mxs" x="56" y="108">リクエスト ID · トレーススパン · status · latency</text>
+    <rect class="fg-box fg-box--accent" x="36" y="136" width="330" height="82" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="162">OP のハンドラ</text>
+    <text class="fg-xs" x="56" y="184">プロトコル処理だけを担う</text>
+    <text class="fg-mxs" x="56" y="204">監査イベント — 判断 1 件につき 1 つ</text>
+    <path class="fg-leader" d="M370,81 H420 M370,177 H420 M420,64 V194"/>
+    <path class="fg-edge fg-edge--thin" d="M420,64 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M420,108 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M420,152 H592" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M420,194 H592" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="600" y="44" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="62">運用ログ</text>
+    <text class="fg-xs" x="618" y="78">このリクエストで何が起きたか</text>
+    <rect class="fg-box" x="600" y="88" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="106">監査ログ</text>
+    <text class="fg-xs" x="618" y="122">誰に何がいつ許可されたか</text>
+    <rect class="fg-box" x="600" y="132" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="150">Prometheus</text>
+    <text class="fg-xs" x="618" y="166">エンドポイントごとの流量とレイテンシ</text>
+    <rect class="fg-box" x="600" y="176" width="324" height="40" rx="6"/>
+    <text class="fg-t2" x="618" y="194">OpenTelemetry</text>
+    <text class="fg-xs" x="618" y="210">OP が収まっているスパン</text>
+  </svg>
+  <figcaption class="fig-note">本ライブラリは logger も registry も exporter も持ちません。イベントを出すだけで、振り分けは既存の基盤に任せます。だから OP は既存のダッシュボードの隣ではなく、その中に現れます。</figcaption>
+</figure>
 
 ## 構造化ログ
 

@@ -26,50 +26,50 @@ pageClass: pg-concepts-consent
 
 本ライブラリは authorize フローのたびに次の 4 つを評価します。
 
-<svg id="consent-shown-decision" role="img" aria-labelledby="consent-shown-decision-title" viewBox="0 0 760 384" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(30,0)">
-  <title id="consent-shown-decision-title">grant の状態に対する判定木: prompt=consent、grant が無い、要求 scope が既存 grant の範囲外、のいずれかで同意画面を表示し、それ以外は既存 grant が要求をカバーするためプロンプトなしで認可コードを発行する。</title>
-  <rect x="24" y="28" width="270" height="48" rx="8"/>
-  <rect x="24" y="120" width="270" height="48" rx="8"/>
-  <rect x="24" y="212" width="270" height="48" rx="8"/>
-  <rect x="24" y="304" width="270" height="48" rx="8" class="accent"/>
-  <rect x="470" y="28" width="210" height="48" rx="8"/>
-  <rect x="470" y="120" width="210" height="48" rx="8"/>
-  <rect x="470" y="212" width="210" height="48" rx="8"/>
-  <text class="lbl" x="159" y="47" text-anchor="middle">リクエストが</text>
-  <text x="159" y="64" text-anchor="middle"><tspan class="mono">prompt=consent</tspan><tspan class="lbl"> を含む?</tspan></text>
-  <text x="159" y="139" text-anchor="middle"><tspan class="mono">(subject, client_id)</tspan><tspan class="lbl"> の</tspan></text>
-  <text class="lbl" x="159" y="156" text-anchor="middle">既存 grant が無い?</text>
-  <text class="lbl" x="159" y="231" text-anchor="middle">要求 scope が既存</text>
-  <text class="lbl" x="159" y="248" text-anchor="middle">grant の範囲外?</text>
-  <text class="lbl" x="159" y="323" text-anchor="middle">既存 grant が要求をカバー</text>
-  <text class="sub" x="159" y="340" text-anchor="middle">&#8594; スキップして認可コードを発行</text>
-  <text class="lbl" x="575" y="47" text-anchor="middle">強制再プロンプト</text>
-  <text class="sub" x="575" y="64" text-anchor="middle">&#8594; 同意画面を表示</text>
-  <text class="lbl" x="575" y="139" text-anchor="middle">初回 grant</text>
-  <text class="sub" x="575" y="156" text-anchor="middle">&#8594; 同意画面を表示</text>
-  <text class="lbl" x="575" y="231" text-anchor="middle">Scope delta</text>
-  <text class="sub" x="575" y="248" text-anchor="middle">&#8594; 同意画面を表示</text>
-  <path d="M294 52 H464"/>
-  <path d="M464 48 L470 52 L464 56"/>
-  <path d="M294 144 H464"/>
-  <path d="M464 140 L470 144 L464 148"/>
-  <path d="M294 236 H464"/>
-  <path d="M464 232 L470 236 L464 240"/>
-  <path d="M159 76 V114"/>
-  <path d="M155 114 L159 120 L163 114"/>
-  <path d="M159 168 V206"/>
-  <path d="M155 206 L159 212 L163 206"/>
-  <path d="M159 260 V298"/>
-  <path d="M155 298 L159 304 L163 298"/>
-  <text class="edge" x="382" y="46" text-anchor="middle">はい</text>
-  <text class="edge" x="382" y="138" text-anchor="middle">はい</text>
-  <text class="edge" x="382" y="230" text-anchor="middle">はい</text>
-  <text class="edge" x="170" y="101">いいえ</text>
-  <text class="edge" x="170" y="193">いいえ</text>
-  <text class="edge" x="170" y="285">いいえ</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">同意画面が表示される条件</div>
+  <svg class="fig-svg" role="img" aria-labelledby="consent-decision-title" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg">
+    <title id="consent-decision-title">同意画面を出すかどうかを 3 つの判定で決める図。prompt=consent の明示、この subject と client_id に対する grant が無い、要求 scope が既存 grant の範囲外、のいずれかで表示します。どれにも当たらなければ既存 grant が要求をカバーしているため、プロンプトなしで認可コードを発行します。</title>
+    <!-- 判定 1 -->
+    <rect class="fg-box" x="36" y="30" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="58">リクエストが次を含む</text>
+    <text class="fg-m" x="56" y="76">prompt=consent</text>
+    <path class="fg-edge" d="M434,63 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="56" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--warn" x="530" y="34" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="58">強制的な再確認</text>
+    <text class="fg-xs" x="550" y="76">既存 grant が要求をカバーしていても同意画面を表示する</text>
+    <path class="fg-edge" d="M233,100 V126" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="118">いいえ</text>
+    <!-- 判定 2 -->
+    <rect class="fg-box" x="36" y="130" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="158">次の組に対する grant が存在しない</text>
+    <text class="fg-m" x="56" y="176">(subject, client_id)</text>
+    <path class="fg-edge" d="M434,163 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="156" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--warn" x="530" y="134" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="158">初回の grant</text>
+    <text class="fg-xs" x="550" y="176">同意画面を表示し、ユーザが同意した範囲を記録する</text>
+    <path class="fg-edge" d="M233,200 V226" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="218">いいえ</text>
+    <!-- 判定 3 -->
+    <rect class="fg-box" x="36" y="230" width="394" height="66" rx="8"/>
+    <text class="fg-s" x="56" y="258">要求 scope に既存 grant の</text>
+    <text class="fg-s" x="56" y="276">範囲外のものが含まれる</text>
+    <path class="fg-edge" d="M434,263 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="256" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--warn" x="530" y="234" width="394" height="58" rx="8"/>
+    <text class="fg-t2" x="550" y="258">scope の差分</text>
+    <text class="fg-xs" x="550" y="276">全体ではなく差分について同意画面を表示する</text>
+    <path class="fg-edge" d="M233,300 V326" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="318">いいえ</text>
+    <!-- 結果 -->
+    <rect class="fg-box fg-box--accent" x="36" y="330" width="888" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="354">既存 grant が要求をすでにカバーしている</text>
+    <text class="fg-xs" x="56" y="372">プロンプトなしで認可コードを発行し、そのままリダイレクトで返す</text>
+  </svg>
+  <figcaption class="fig-note">scope を見るのは 3 つ目の判定だけです。運用中の統合に scope をひとつ足すと全ユーザに同意画面が再表示されるのはこのためで、リクエストが既存の grant に収まらなくなり、OP は同意を得ていない範囲へ grant を広げないからです。</figcaption>
+</figure>
 
 | ケース | 挙動 |
 |---|---|

@@ -26,35 +26,48 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 > 適合性 ≠ セキュリティです。OFCS が緑でも、攻撃が可能なケース（alg 混同、PKCE ダウングレード、redirect_uri 部分一致、シークレット比較のタイミング攻撃など）は存在し得ます。次のセクションでは、それぞれのクラスを if 文ではなく構造的に閉じている理由を説明します。
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="0 0 760 124" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="posture-five-properties-title">「これは安全か？」を支える 5 つの独立した性質 — 適合性・正しさ・セキュリティ・サプライチェーン・運用の保証を順に並べた図。</title>
-  <rect x="7" y="18" width="130" height="84" rx="6"/>
-  <rect x="161" y="18" width="130" height="84" rx="6"/>
-  <rect x="315" y="18" width="130" height="84" rx="6"/>
-  <rect x="469" y="18" width="130" height="84" rx="6"/>
-  <rect x="623" y="18" width="130" height="84" rx="6"/>
-  <path class="op-fp-flow" d="M139 60 H158 M153 56 L158 60 L153 64"/>
-  <path class="op-fp-flow" d="M293 60 H312 M307 56 L312 60 L307 64"/>
-  <path class="op-fp-flow" d="M447 60 H466 M461 56 L466 60 L461 64"/>
-  <path class="op-fp-flow" d="M601 60 H620 M615 56 L620 60 L615 64"/>
-  <text class="op-fp-num" x="72" y="40" text-anchor="middle" stroke="none">1</text>
-  <text class="op-fp-title" x="72" y="61" text-anchor="middle" fill="currentColor" stroke="none">適合性</text>
-  <text class="op-fp-mono" x="72" y="82" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
-  <text class="op-fp-num" x="226" y="40" text-anchor="middle" stroke="none">2</text>
-  <text class="op-fp-title" x="226" y="61" text-anchor="middle" fill="currentColor" stroke="none">正しさ</text>
-  <text class="op-fp-prose" x="226" y="82" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
-  <text class="op-fp-num" x="380" y="40" text-anchor="middle" stroke="none">3</text>
-  <text class="op-fp-title" x="380" y="61" text-anchor="middle" fill="currentColor" stroke="none">セキュリティ</text>
-  <text class="op-fp-prose" x="380" y="82" text-anchor="middle" fill="currentColor" stroke="none">構造的防御</text>
-  <text class="op-fp-num" x="534" y="40" text-anchor="middle" stroke="none">4</text>
-  <text class="op-fp-title" x="534" y="61" text-anchor="middle" fill="currentColor" stroke="none">サプライチェーン</text>
-  <text class="op-fp-mono" x="534" y="78" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
-  <text class="op-fp-mono" x="534" y="91" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
-  <text class="op-fp-num" x="688" y="40" text-anchor="middle" stroke="none">5</text>
-  <text class="op-fp-title" x="688" y="61" text-anchor="middle" fill="currentColor" stroke="none">運用</text>
-  <text class="op-fp-mono" x="688" y="78" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
-  <text class="op-fp-mono" x="688" y="91" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">「これは安全か」を支える 5 つの独立した性質</div>
+  <svg class="fig-svg" role="img" aria-labelledby="posture-five-title" viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+    <title id="posture-five-title">適合性・正しさ・セキュリティ・サプライチェーン・運用の保証は、それぞれ独立した性質です。裏付けの取り方も別々で、ひとつについての主張が他のことを保証するわけではありません。</title>
+    <rect class="fg-box" x="36" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="56" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="56" y="49" text-anchor="middle">1</text>
+    <text class="fg-t2" x="76" y="50">適合性</text>
+    <line class="fg-rule" x1="52" y1="64" x2="188" y2="64"/>
+    <text class="fg-mxs" x="52" y="84">OFCS</text>
+    <text class="fg-xs" x="52" y="100">適合スイートで実行する</text>
+    <rect class="fg-box" x="216" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="236" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="236" y="49" text-anchor="middle">2</text>
+    <text class="fg-t2" x="256" y="50">正しさ</text>
+    <line class="fg-rule" x1="232" y1="64" x2="368" y2="64"/>
+    <text class="fg-mxs" x="232" y="84">テスト · fuzzing</text>
+    <text class="fg-xs" x="232" y="100">仕様どおりに動くか</text>
+    <rect class="fg-box" x="396" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="416" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="416" y="49" text-anchor="middle">3</text>
+    <text class="fg-t2" x="436" y="50">セキュリティ</text>
+    <line class="fg-rule" x1="412" y1="64" x2="548" y2="64"/>
+    <text class="fg-mxs" x="412" y="84">構造的な防御</text>
+    <text class="fg-xs" x="412" y="100">チェック項目の羅列ではない</text>
+    <rect class="fg-box" x="576" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="596" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="596" y="49" text-anchor="middle">4</text>
+    <text class="fg-t2" x="616" y="50">サプライチェーン</text>
+    <line class="fg-rule" x1="592" y1="64" x2="728" y2="64"/>
+    <text class="fg-mxs" x="592" y="84">govulncheck · depguard</text>
+    <text class="fg-xs" x="592" y="100">CI で強制する</text>
+    <rect class="fg-box" x="756" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="776" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="776" y="49" text-anchor="middle">5</text>
+    <text class="fg-t2" x="796" y="50">運用</text>
+    <line class="fg-rule" x1="772" y1="64" x2="908" y2="64"/>
+    <text class="fg-mxs" x="772" y="84">SECURITY.md · GHSA</text>
+    <text class="fg-xs" x="772" y="100">報告が来たときに何が起きるか</text>
+  </svg>
+  <figcaption class="fig-note">並び順は読む順序であって、重要度の順ではありません。適合スイートが通ったことは 4 番目について何も語りませんし、依存関係のスキャンが綺麗なことは 3 番目について何も語りません。</figcaption>
+</figure>
 
 ## 構造的防御（コードの形そのもので強制している箇所）
 

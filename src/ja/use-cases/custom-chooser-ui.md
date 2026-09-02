@@ -68,58 +68,59 @@ provider, err := op.New(
 
 ## Flow
 
-<svg role="img" aria-labelledby="chooser-flow-title" viewBox="0 0 720 425" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-<title id="chooser-flow-title">カスタムアカウント選択 UI のフロー: ブラウザが prompt=select_account を要求し、OP が chooser group を読み込んでテンプレートを描画し、送信を検証してからセッションを切り替え RP にリダイレクトする流れ。</title>
-<rect x="30" y="14" width="120" height="36" rx="6"/>
-<rect x="300" y="14" width="120" height="36" rx="6" class="ccui-op"/>
-<rect x="558" y="14" width="144" height="36" rx="6" class="ccui-sec"/>
-<text class="ccui-actor" x="90" y="37" text-anchor="middle">ブラウザ</text>
-<text class="ccui-actor ccui-opf" x="360" y="37" text-anchor="middle">OP</text>
-<text class="ccui-actor ccui-secf" x="630" y="37" text-anchor="middle">chooser テンプレート</text>
-<line x1="90" y1="50" x2="90" y2="405"/>
-<line x1="360" y1="50" x2="360" y2="405" class="ccui-op"/>
-<line x1="630" y1="50" x2="630" y2="405" class="ccui-sec"/>
-<line x1="90" y1="88" x2="360" y2="88"/>
-<polyline points="352,83 360,88 352,93"/>
-<circle class="ccui-op" cx="76" cy="74" r="8"/>
-<text class="ccui-num ccui-opf" x="76" y="78" text-anchor="middle">1</text>
-<text class="ccui-mono" x="225" y="80" text-anchor="middle">GET /authorize · prompt=select_account</text>
-<path d="M360,120 H406 V140 H366"/>
-<polyline points="368,135 360,140 368,145"/>
-<circle class="ccui-op" cx="372" cy="108" r="8"/>
-<text class="ccui-num ccui-opf" x="372" y="112" text-anchor="middle">2</text>
-<text class="ccui-lbl" x="414" y="134" text-anchor="start">chooser group を読み込む</text>
-<line x1="360" y1="176" x2="630" y2="176"/>
-<polyline points="622,171 630,176 622,181"/>
-<circle class="ccui-op" cx="372" cy="162" r="8"/>
-<text class="ccui-num ccui-opf" x="372" y="166" text-anchor="middle">3</text>
-<text class="ccui-lbl" x="495" y="168" text-anchor="middle"><tspan class="ccui-mono">ChooserTemplateData</tspan> を描画</text>
-<line x1="630" y1="216" x2="90" y2="216" stroke-dasharray="5 4"/>
-<polyline points="98,211 90,216 98,221"/>
-<circle class="ccui-op" cx="618" cy="202" r="8"/>
-<text class="ccui-num ccui-opf" x="618" y="206" text-anchor="middle">4</text>
-<text class="ccui-lbl halo" x="360" y="208" text-anchor="middle">アカウント一覧 + <tspan class="ccui-mono">CSRFToken</tspan> + <tspan class="ccui-mono">StateRef</tspan></text>
-<line x1="90" y1="260" x2="360" y2="260"/>
-<polyline points="352,255 360,260 352,265"/>
-<circle class="ccui-op" cx="102" cy="246" r="8"/>
-<text class="ccui-num ccui-opf" x="102" y="250" text-anchor="middle">5</text>
-<text class="ccui-mono" x="225" y="252" text-anchor="middle">POST SubmitAction · session_id</text>
-<path d="M360,292 H406 V312 H366"/>
-<polyline points="368,307 360,312 368,317"/>
-<circle class="ccui-op" cx="372" cy="280" r="8"/>
-<text class="ccui-num ccui-opf" x="372" y="284" text-anchor="middle">6</text>
-<text class="ccui-lbl" x="414" y="306" text-anchor="start"><tspan class="ccui-mono">CSRFToken</tspan> + <tspan class="ccui-mono">StateRef</tspan> を検証</text>
-<path d="M360,336 H406 V356 H366"/>
-<polyline points="368,351 360,356 368,361"/>
-<circle class="ccui-op" cx="372" cy="324" r="8"/>
-<text class="ccui-num ccui-opf" x="372" y="328" text-anchor="middle">7</text>
-<text class="ccui-mono halo" x="414" y="350" text-anchor="start">Sessions.Switch(group, session_id)</text>
-<line x1="360" y1="392" x2="90" y2="392" stroke-dasharray="5 4"/>
-<polyline points="98,387 90,392 98,397"/>
-<circle class="ccui-op" cx="348" cy="378" r="8"/>
-<text class="ccui-num ccui-opf" x="348" y="382" text-anchor="middle">8</text>
-<text class="ccui-lbl" x="225" y="384" text-anchor="middle"><tspan class="ccui-mono">code</tspan> 付きで RP に 302</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">chooser — リクエストから切り替えまで</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-chooser-title" viewBox="0 0 960 386" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-chooser-title">prompt=select_account を伴うリクエストを受けると、OP は chooser group を読み込んで自前のテンプレートに渡します。送信された内容には CSRF トークンと state 参照が含まれ、セッションを切り替える前に両方を検証します。</title>
+    <line class="fg-life" x1="150" y1="72" x2="150" y2="372"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="72" x2="500" y2="372"/>
+    <line class="fg-life" x1="830" y1="72" x2="830" y2="372"/>
+    <rect class="fg-box" x="60" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t" x="150" y="44" text-anchor="middle">ブラウザ</text>
+    <text class="fg-xs" x="150" y="59" text-anchor="middle">ユーザの手元</text>
+    <rect class="fg-box fg-box--accent" x="410" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="44" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="59" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="740" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t" x="830" y="44" text-anchor="middle">chooser テンプレート</text>
+    <text class="fg-xs" x="830" y="59" text-anchor="middle">組み込み側の実装</text>
+    <circle class="fg-badge" cx="15" cy="104" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="107" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,104 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="98" text-anchor="middle">GET /authorize · prompt=select_account</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="142" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="145" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,134 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="542" y="146">cookie が指す chooser group を読み込む</text>
+    <circle class="fg-badge" cx="15" cy="182" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="185" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M500,182 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="176" text-anchor="middle">ChooserTemplateData を描画する</text>
+    <circle class="fg-badge" cx="15" cy="222" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="225" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M830,222 H150" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="490" y="202" text-anchor="middle">アカウント一覧</text>
+    <text class="fg-mxs fg-halo" x="490" y="215" text-anchor="middle">および CSRFToken と StateRef</text>
+    <circle class="fg-badge" cx="15" cy="262" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="265" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M150,262 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="256" text-anchor="middle">POST SubmitAction · session_id</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="300" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="303" text-anchor="middle">6</text>
+    <path class="fg-edge fg-edge--accent" d="M500,292 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="542" y="296">CSRFToken と StateRef を検証する</text>
+    <text class="fg-xs" x="542" y="310">切り替えは、その後で行う</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="338" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="341" text-anchor="middle">7</text>
+    <path class="fg-edge fg-edge--accent" d="M500,330 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="542" y="342">Sessions.Switch(group, session_id)</text>
+    <circle class="fg-badge" cx="15" cy="368" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="371" text-anchor="middle">8</text>
+    <path class="fg-edge fg-edge--accent" d="M500,368 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="362" text-anchor="middle">code 付きで RP へ 302</text>
+  </svg>
+  <figcaption class="fig-note">自前のテンプレートが持つのはマークアップだけです。送り返す 2 つの不透明な値が、提出された <code>session_id</code> を「このブラウザに今提示されたもの」だけに限定しています。</figcaption>
+</figure>
 
 テンプレートは切替そのものを実行しません。選択されたセッション識別子を OP に返すだけです。
 

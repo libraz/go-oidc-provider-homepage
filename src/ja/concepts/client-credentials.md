@@ -23,55 +23,57 @@ pageClass: pg-concepts-client-credentials
 - **`private_key_jwt`** — クライアント認証方式のひとつ。クライアントが秘密鍵で短寿命の JWT に署名し、OP は登録済みの公開鍵で検証します。共有秘密と違い、秘密がクライアントの外に出ないので強度が高い。
 :::
 
-<svg id="cc-flow" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(20,0)">
-  <title id="cc-flow-title">client_credentials フロー: Service A が OP に認証してアクセストークンを受け取り、それを bearer token として Service B に提示する。</title>
-  <rect class="box" x="15" y="8" width="150" height="40" rx="6"/>
-  <text x="90" y="26" text-anchor="middle" font-size="12.5" font-weight="600">Service A</text>
-  <text x="90" y="40" text-anchor="middle" font-size="9" opacity=".7">(あなたのバックエンド)</text>
-  <rect class="box c-op" x="285" y="8" width="150" height="40" rx="6"/>
-  <text class="tf-op" x="360" y="26" text-anchor="middle" font-size="12.5" font-weight="600">OP</text>
-  <text class="tf-op mono" x="360" y="40" text-anchor="middle" font-size="9">go-oidc-provider</text>
-  <rect class="box c-rs" x="555" y="8" width="150" height="40" rx="6"/>
-  <text class="tf-rs" x="630" y="26" text-anchor="middle" font-size="12.5" font-weight="600">Service B</text>
-  <text class="tf-rs" x="630" y="40" text-anchor="middle" font-size="9">(別のバックエンド)</text>
-  <line class="life" x1="90" y1="48" x2="90" y2="344"/>
-  <line class="life c-op" x1="360" y1="48" x2="360" y2="344"/>
-  <line class="life c-rs" x1="630" y1="48" x2="630" y2="344"/>
-  <text class="mono" x="225" y="62" text-anchor="middle" font-size="10.5">POST /token</text>
-  <text class="mono" x="225" y="76" text-anchor="middle" font-size="10.5">grant_type=client_credentials</text>
-  <text x="225" y="90" text-anchor="middle" font-size="10.5"><tspan class="mono">scope</tspan> + クライアント認証</text>
-  <path class="arw" d="M99 104 H360"/>
-  <path class="arw" d="M353 99 L360 104 L353 109"/>
-  <circle class="num" cx="90" cy="104" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono" x="90" y="108" text-anchor="middle" font-size="10.5">1</text>
-  <path class="arw c-op" d="M369 148 h20 v10 h-20"/>
-  <path class="arw c-op" d="M376 153 L369 158 L376 163"/>
-  <text x="398" y="151" font-size="10.5"><tspan class="mono">scope</tspan> をクライアントの</text>
-  <text x="398" y="165" font-size="10.5"><tspan class="mono">許可リスト</tspan> と照合</text>
-  <circle class="num c-op" cx="360" cy="150" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono tf-op" x="360" y="154" text-anchor="middle" font-size="10.5">2</text>
-  <text x="225" y="194" text-anchor="middle" font-size="10.5">200 OK</text>
-  <text class="mono" x="225" y="208" text-anchor="middle" font-size="10.5">{ access_token, expires_in }</text>
-  <path class="arw c-op" d="M351 220 H90"/>
-  <path class="arw c-op" d="M97 215 L90 220 L97 225"/>
-  <circle class="num c-op" cx="360" cy="220" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono tf-op" x="360" y="224" text-anchor="middle" font-size="10.5">3</text>
-  <rect x="262" y="242" width="196" height="28" fill="var(--vp-c-bg)" stroke="none"/>
-  <text class="mono" x="360" y="253" text-anchor="middle" font-size="10.5">GET /things</text>
-  <text class="mono" x="360" y="267" text-anchor="middle" font-size="10.5">Authorization: Bearer &lt;token&gt;</text>
-  <path class="arw" d="M99 278 H630"/>
-  <path class="arw" d="M623 273 L630 278 L623 283"/>
-  <circle class="num" cx="90" cy="278" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono" x="90" y="282" text-anchor="middle" font-size="10.5">4</text>
-  <rect x="305" y="303" width="110" height="16" fill="var(--vp-c-bg)" stroke="none"/>
-  <text class="mono" x="360" y="314" text-anchor="middle" font-size="10.5">200 [ ... ]</text>
-  <path class="arw c-rs" d="M621 326 H90"/>
-  <path class="arw c-rs" d="M97 321 L90 326 L97 331"/>
-  <circle class="num c-rs" cx="630" cy="326" r="9" fill="var(--vp-c-bg)"/>
-  <text class="mono tf-rs" x="630" y="330" text-anchor="middle" font-size="10.5">5</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Client Credentials — サービス単体、ユーザ不在</div>
+  <svg class="fig-svg" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 960 316" xmlns="http://www.w3.org/2000/svg">
+    <title id="cc-flow-title">client_credentials フローを示した図。Service A が自分自身として OP に認証し、登録済みの範囲に絞られたアクセストークンを受け取り、それを bearer の資格情報として Service B に提示します。</title>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="160" y1="62" x2="160" y2="300"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="300"/>
+    <line class="fg-life" x1="820" y1="62" x2="820" y2="300"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="70" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="160" y="35" text-anchor="middle">Service A</text>
+    <text class="fg-xs" x="160" y="49" text-anchor="middle">あなたのバックエンド</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="730" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="820" y="35" text-anchor="middle">Service B</text>
+    <text class="fg-xs" x="820" y="49" text-anchor="middle">別のバックエンド</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="124" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="127" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M160,124 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="330" y="92" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="330" y="105" text-anchor="middle">grant_type=client_credentials</text>
+    <text class="fg-mxs" x="330" y="118" text-anchor="middle">scope · クライアント認証</text>
+    <!-- 2 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="158" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="161" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,150 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="542" y="154">要求された scope を検査する</text>
+    <text class="fg-mxs" x="542" y="167">クライアントの許可リストと照合</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="204" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="207" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--accent" d="M500,204 H160" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="330" y="184" text-anchor="middle">200 OK</text>
+    <text class="fg-mxs" x="330" y="197" text-anchor="middle">{ access_token, expires_in } — id_token も refresh_token も無い</text>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="15" cy="252" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="255" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M160,252 H820" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="490" y="232" text-anchor="middle">GET /things</text>
+    <text class="fg-mxs fg-halo" x="490" y="245" text-anchor="middle">Authorization: Bearer &lt;token&gt;</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="288" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="291" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M820,288 H160" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="490" y="282" text-anchor="middle">200 [ … ]</text>
+  </svg>
+  <figcaption class="fig-note">この図のどこにもユーザがいません。ID トークンが記述すべき相手も、リフレッシュトークンが切れたときに再同意する相手も存在しないということです。発行されるトークンの <code>sub</code> はクライアント自身になります。</figcaption>
+</figure>
 
 ::: warning Confidential クライアントのみ
 `client_credentials` は本ライブラリでは構造的に **confidential クライアント**（実認証情報を持つもの: `client_secret_basic`、`client_secret_post`、`private_key_jwt`）に制限されます。public クライアント（SPA / ネイティブ、`token_endpoint_auth_method=none`）は使えません。mTLS は発行アクセストークンの結び付けには使えますが、`client_credentials` の認証方式ではありません。

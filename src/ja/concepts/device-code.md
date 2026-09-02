@@ -25,91 +25,87 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 
 ## フローの動き方
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 570" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="device-code-flow-title">デバイス認可のシーケンス: デバイスが device_code と user_code を要求し、ユーザが別画面で承認する間トークンエンドポイントを poll し、最後にアクセストークンを受け取る。</title>
-  <g transform="translate(30,0)">
-
-  <!-- actors -->
-  <rect x="12" y="14" width="128" height="40" rx="5"/>
-  <rect class="dcf-sacc" x="286" y="14" width="128" height="40" rx="5"/>
-  <rect class="dcf-smut" x="560" y="14" width="128" height="40" rx="5"/>
-  <text class="dcf-fp dcf-neu" x="76" y="32" font-size="12.5" font-weight="600" text-anchor="middle">デバイス</text>
-  <text class="dcf-fm dcf-neu" x="76" y="46" font-size="9" text-anchor="middle">TV · CLI · コンソール</text>
-  <text class="dcf-fp dcf-acc" x="350" y="32" font-size="12.5" font-weight="600" text-anchor="middle">OP</text>
-  <text class="dcf-fm dcf-acc" x="350" y="46" font-size="9" text-anchor="middle">go-oidc-provider</text>
-  <text class="dcf-fp dcf-mut" x="624" y="32" font-size="12.5" font-weight="600" text-anchor="middle">ユーザ</text>
-  <text class="dcf-fm dcf-mut" x="624" y="46" font-size="9" text-anchor="middle">スマホ · 別画面</text>
-
-  <!-- lifelines -->
-  <line class="dcf-life" x1="76" y1="54" x2="76" y2="558"/>
-  <line class="dcf-life dcf-sacc" x1="350" y1="54" x2="350" y2="558"/>
-  <line class="dcf-life dcf-smut" x1="624" y1="54" x2="624" y2="558"/>
-
-  <!-- msg1: device authorization request -->
-  <text class="dcf-fm dcf-neu" x="213" y="74" font-size="10.5" text-anchor="middle">POST /device_authorization</text>
-  <text class="dcf-fm dcf-neu" x="213" y="87" font-size="9.5" text-anchor="middle">client_id · scope=openid profile</text>
-  <line x1="76" y1="96" x2="350" y2="96"/>
-  <path d="M343 92 L350 96 L343 100"/>
-
-  <!-- msg2: device authorization response -->
-  <text class="dcf-fm dcf-neu" x="213" y="116" font-size="10" text-anchor="middle">200  device_code · user_code=ABCD-EFGH</text>
-  <text class="dcf-fm dcf-neu" x="213" y="129" font-size="9.5" text-anchor="middle">verification_uri(_complete) · interval · expires_in</text>
-  <line class="dcf-ret" x1="350" y1="138" x2="76" y2="138"/>
-  <path d="M83 134 L76 138 L83 142"/>
-
-  <!-- note over device -->
-  <path class="dcf-frame dcf-nb" d="M20 154 H238 L250 166 V196 H20 Z"/>
-  <path class="dcf-frame" d="M238 154 V166 H250"/>
-  <text class="dcf-fp dcf-neu" x="30" y="173" font-size="10">画面に表示 <tspan class="dcf-fm">op.example.com/device</tspan></text>
-  <text class="dcf-fp dcf-neu" x="30" y="188" font-size="10">を開き <tspan class="dcf-fm">ABCD-EFGH</tspan> を入力</text>
-
-  <!-- par frame -->
-  <rect class="dcf-frame" x="30" y="210" width="658" height="264" rx="5"/>
-  <line class="dcf-frame" x1="30" y1="356" x2="688" y2="356"/>
-  <path class="dcf-tabbg" d="M30 210 h46 v12 l-6 6 h-40 z"/>
-  <text class="dcf-fp dcf-mut" x="41" y="223" font-size="10" font-style="italic">par</text>
-  <text class="dcf-fp dcf-mut" x="104" y="243" font-size="10">デバイスがトークンエンドポイントを poll</text>
-  <text class="dcf-fp dcf-mut" x="40" y="370" font-size="10">ユーザが別チャネルで承認</text>
-
-  <!-- loop frame -->
-  <rect class="dcf-frame" x="44" y="250" width="340" height="94" rx="4"/>
-  <path class="dcf-tabbg" d="M44 250 h50 v12 l-6 6 h-44 z"/>
-  <text class="dcf-fp dcf-mut" x="55" y="263" font-size="10" font-style="italic">loop</text>
-  <text class="dcf-fp dcf-mut" x="100" y="263" font-size="10"><tspan class="dcf-fm">interval</tspan> 秒ごとに再送</text>
-
-  <!-- msg3: poll -->
-  <text class="dcf-fm dcf-neu" x="213" y="284" font-size="10.5" text-anchor="middle">POST /token</text>
-  <text class="dcf-fm dcf-neu" x="213" y="297" font-size="9.5" text-anchor="middle">grant_type=…:device_code · device_code</text>
-  <line x1="76" y1="306" x2="350" y2="306"/>
-  <path d="M343 302 L350 306 L343 310"/>
-
-  <!-- msg4: pending -->
-  <text class="dcf-fm dcf-neu" x="213" y="326" font-size="10" text-anchor="middle">400  authorization_pending</text>
-  <line class="dcf-ret" x1="350" y1="334" x2="76" y2="334"/>
-  <path d="M83 330 L76 334 L83 338"/>
-
-  <!-- msg5: verification page -->
-  <text class="dcf-fm dcf-neu" x="487" y="388" font-size="10.5" text-anchor="middle">GET /device</text>
-  <text class="dcf-fp dcf-neu" x="487" y="401" font-size="10" text-anchor="middle"><tspan class="dcf-fm">ABCD-EFGH</tspan> を入力</text>
-  <line x1="624" y1="410" x2="350" y2="410"/>
-  <path d="M357 406 L350 410 L357 414"/>
-
-  <!-- msg6: approve -->
-  <text class="dcf-fp dcf-neu" x="487" y="444" font-size="10" text-anchor="middle">ログイン + 同意 → 承認</text>
-  <line x1="624" y1="452" x2="350" y2="452"/>
-  <path d="M357 448 L350 452 L357 456"/>
-
-  <!-- msg7: next poll -->
-  <text class="dcf-fp dcf-neu" x="213" y="498" font-size="10" text-anchor="middle">次の poll: <tspan class="dcf-fm">POST /token</tspan></text>
-  <line x1="76" y1="506" x2="350" y2="506"/>
-  <path d="M343 502 L350 506 L343 510"/>
-
-  <!-- msg8: tokens -->
-  <text class="dcf-fm dcf-neu" x="213" y="536" font-size="10" text-anchor="middle">200  access_token · id_token? · refresh_token?</text>
-  <line class="dcf-ret" x1="350" y1="544" x2="76" y2="544"/>
-  <path d="M83 540 L76 544 L83 548"/>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">デバイス認可グラント</div>
+  <svg class="fig-svg" role="img" aria-labelledby="device-flow-title" viewBox="0 0 960 556" xmlns="http://www.w3.org/2000/svg">
+    <title id="device-flow-title">デバイス認可グラントを示した図。デバイスが device_code と短い user_code を要求し、ユーザに移動先を表示し、ユーザが別画面で承認する間トークンエンドポイントを poll します。承認が届くと次の poll でトークンが返ります。</title>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="540"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="540"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="540"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">デバイス</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">TV · CLI · コンソール</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">ユーザ</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">スマホ · 別画面</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,102 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="325" y="82" text-anchor="middle">POST /device_authorization</text>
+    <text class="fg-mxs" x="325" y="95" text-anchor="middle">client_id · scope=openid profile</text>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="15" cy="146" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="149" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,146 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="126" text-anchor="middle">200 · device_code · user_code=ABCD-EFGH</text>
+    <text class="fg-mxs" x="325" y="139" text-anchor="middle">verification_uri(_complete) · interval · expires_in</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="192" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="195" text-anchor="middle">3</text>
+    <rect class="fg-box fg-box--sub" x="60" y="170" width="360" height="44" rx="6"/>
+    <text class="fg-xs" x="76" y="188">デバイスの画面に表示: <tspan class="fg-accent">op.example.com/device</tspan> を開き</text>
+    <text class="fg-xs" x="76" y="204"><tspan class="fg-accent">ABCD-EFGH</tspan> を入力する</text>
+    <!-- par フラグメント -->
+    <rect class="fg-frame" x="44" y="234" width="896" height="240" rx="8"/>
+    <rect class="fg-box fg-box--muted" x="44" y="234" width="52" height="18" rx="4"/>
+    <text class="fg-tab" x="56" y="247">par</text>
+    <line class="fg-rule fg-rule--dashed" x1="44" y1="360" x2="940" y2="360"/>
+    <!-- loop -->
+    <rect class="fg-frame" x="64" y="266" width="600" height="80" rx="6"/>
+    <rect class="fg-box fg-box--muted" x="64" y="266" width="168" height="18" rx="4"/>
+    <text class="fg-tab" x="76" y="279">loop · interval 秒ごとに再送</text>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="15" cy="302" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="305" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M150,302 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="325" y="296" text-anchor="middle">POST /token · grant_type=…:device_code · device_code</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="332" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="335" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--muted" d="M500,332 H150" marker-end="url(#fg-am)"/>
+    <text class="fg-mxs fg-halo" x="325" y="326" text-anchor="middle">400 · authorization_pending</text>
+    <!-- 別画面 -->
+    <text class="fg-xs" x="76" y="384">その間、別画面では</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="412" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="415" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M830,412 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="665" y="406" text-anchor="middle">GET /device — ABCD-EFGH を入力</text>
+    <!-- 7 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="450" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="453" text-anchor="middle">7</text>
+    <path class="fg-edge fg-edge--accent" d="M500,442 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="542" y="446">ログイン、同意、承認</text>
+    <text class="fg-xs" x="542" y="459">この時点で device_code が subject に結び付く</text>
+    <!-- 8 -->
+    <circle class="fg-badge" cx="15" cy="504" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="507" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M150,504 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="498" text-anchor="middle">POST /token — 次の poll</text>
+    <!-- 9 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="536" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="539" text-anchor="middle">9</text>
+    <path class="fg-edge fg-edge--accent" d="M500,536 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="530" text-anchor="middle">200 · access_token · id_token? · refresh_token?</text>
+  </svg>
+  <figcaption class="fig-note">デバイスはパスワードを一度も見ませんし、ログイン画面も描画しません。保持するのは <code>device_code</code> だけです。短い <code>user_code</code> があるのは、文字を打てるキーボードのある端末で人間が入力し直せるようにするためです。</figcaption>
+</figure>
 
 デバイス側はパスワードを一切持ちません。ユーザもデバイスには何も打ちません。2 つの面が短い `user_code` を介して OP で合流します。
 

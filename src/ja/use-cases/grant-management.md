@@ -12,62 +12,47 @@ grant が長命になると、継続的な支払いマンデートや常設の�
 
 これは、初回認可のあともクライアントが同意のような grant を管理する必要がある場合に使います。特に grant を後から拡張する、またはブラウザセッションとは独立して失効する必要がある場合に有効です。短命な一回限りのサインインフローでは有効にしない方がよいです。クライアントが grant に名前を付ける必要がないなら、通常の認可コード、リフレッシュトークンローテーション、通常のトークン失効の方が単純です。
 
-<svg role="img" aria-labelledby="gm-lifecycle-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="gm-lifecycle-title">grant のライフサイクル。create / replace / merge は認可リクエストに乗って grant の scope と authorization_details を決め、query / revoke は grant management エンドポイントへの操作。grant に紐づくトークンに届くのは revoke だけ。</title>
-
-  <text class="gm-cap" x="111" y="26" text-anchor="middle">認可リクエストに乗る</text>
-
-  <rect x="16" y="40" width="190" height="40" rx="6"/>
-  <text class="gm-mode" x="30" y="59">create</text>
-  <text class="gm-note" x="30" y="73">grant_id なし — OP が採番</text>
-
-  <rect x="16" y="92" width="190" height="40" rx="6"/>
-  <text class="gm-mode" x="30" y="111">replace</text>
-  <text class="gm-note" x="30" y="125">scope := 新リクエストの内容</text>
-
-  <rect x="16" y="144" width="190" height="40" rx="6"/>
-  <text class="gm-mode" x="30" y="163">merge</text>
-  <text class="gm-note" x="30" y="177">scope := 既存 ∪ 新規</text>
-
-  <path d="M206 60 H240"/>
-  <path d="M206 112 H240"/>
-  <path d="M206 164 H240"/>
-  <path d="M240 60 V164"/>
-  <path d="M240 108 H272"/>
-  <path d="M266 104 L274 108 L266 112"/>
-
-  <rect class="gm-grant" x="274" y="60" width="212" height="96" rx="8"/>
-  <text class="gm-grant-title" x="380" y="88" text-anchor="middle">Grant</text>
-  <text class="gm-mono" x="380" y="108" text-anchor="middle">grant_id = g-9f3c…</text>
-  <rect class="gm-chip" x="288" y="118" width="184" height="28" rx="5"/>
-  <text class="gm-chip-text" x="380" y="136" text-anchor="middle">scope + authorization_details</text>
-
-  <path d="M380 156 V196"/>
-  <path d="M376 190 L380 199 L384 190"/>
-
-  <rect class="gm-tokens" x="274" y="200" width="212" height="86" rx="8"/>
-  <text class="gm-sub" x="380" y="220" text-anchor="middle">この grant に紐づくトークン</text>
-  <text class="gm-token" x="380" y="240" text-anchor="middle">JWT アクセストークン</text>
-  <text class="gm-token" x="380" y="258" text-anchor="middle">opaque アクセストークン</text>
-  <text class="gm-token" x="380" y="276" text-anchor="middle">リフレッシュトークン</text>
-
-  <text class="gm-cap" x="649" y="26" text-anchor="middle">grant management エンドポイント</text>
-
-  <rect x="554" y="40" width="190" height="40" rx="6"/>
-  <text class="gm-mono" x="568" y="60">GET …/{grant_id}</text>
-  <text class="gm-note" x="568" y="74">scope と details を返す</text>
-
-  <rect x="554" y="92" width="190" height="40" rx="6"/>
-  <text class="gm-mono" x="568" y="112">DELETE …/{grant_id}</text>
-  <text class="gm-note" x="568" y="126">204 · grant レコード削除</text>
-
-  <text class="gm-sub" x="649" y="152" text-anchor="middle">紐づくトークンすべてに波及</text>
-
-  <path d="M552 60 H520 V90 H492"/>
-  <path d="M498 86 L490 90 L498 94"/>
-  <path d="M552 112 H520 V243 H492"/>
-  <path d="M498 239 L490 243 L498 247"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">grant を決めるもの、トークンまで届くもの</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-grantmgmt-title" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-grantmgmt-title">create・replace・merge は認可リクエストに乗り、grant の scope と authorization details を決めます。query と revoke は grant management エンドポイントへの操作です。5 つのうち、grant に紐づくトークンまで届くのは revoke だけです。</title>
+    <text class="fg-lbl" x="36" y="26">認可リクエストに乗るもの</text>
+    <rect class="fg-box" x="36" y="38" width="264" height="40" rx="6"/>
+    <text class="fg-mxs fg-accent" x="54" y="58">create</text>
+    <text class="fg-xs" x="54" y="72">grant_id なし — OP が採番する</text>
+    <rect class="fg-box" x="36" y="86" width="264" height="40" rx="6"/>
+    <text class="fg-mxs fg-accent" x="54" y="106">replace</text>
+    <text class="fg-xs" x="54" y="120">scope := このリクエストが要求した内容</text>
+    <rect class="fg-box" x="36" y="134" width="264" height="40" rx="6"/>
+    <text class="fg-mxs fg-accent" x="54" y="154">merge</text>
+    <text class="fg-xs" x="54" y="168">scope := 既存の集合に新規を加えたもの</text>
+    <path class="fg-leader" d="M304,58 H336 M304,106 H336 M304,154 H336 M336,58 V154"/>
+    <path class="fg-edge fg-edge--accent" d="M336,106 H366" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="370" y="60" width="250" height="92" rx="8"/>
+    <text class="fg-t2 fg-accent" x="390" y="86">grant</text>
+    <text class="fg-mxs" x="390" y="108">grant_id = g-9f3c…</text>
+    <text class="fg-xs" x="390" y="128">scope + authorization_details</text>
+    <text class="fg-xs" x="390" y="144">トークンが何本あってもレコードは 1 つ</text>
+    <path class="fg-edge" d="M495,156 V186" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--sub" x="370" y="190" width="250" height="90" rx="8"/>
+    <text class="fg-lbl" x="390" y="212">この grant に紐づくトークン</text>
+    <text class="fg-mxs" x="390" y="234">JWT アクセストークン</text>
+    <text class="fg-mxs" x="390" y="252">opaque アクセストークン</text>
+    <text class="fg-mxs" x="390" y="270">リフレッシュトークン</text>
+    <text class="fg-lbl" x="660" y="26">grant management エンドポイントへの操作</text>
+    <rect class="fg-box" x="660" y="38" width="264" height="64" rx="6"/>
+    <text class="fg-mxs" x="678" y="60">GET …/{grant_id}</text>
+    <text class="fg-xs" x="678" y="80">scope と details を読み出す</text>
+    <text class="fg-xs" x="678" y="96">何も変更しない</text>
+    <path class="fg-edge fg-edge--muted" d="M656,70 H624" marker-end="url(#fg-am)"/>
+    <rect class="fg-box fg-box--danger" x="660" y="180" width="264" height="80" rx="6"/>
+    <text class="fg-mxs" x="678" y="204">DELETE …/{grant_id}</text>
+    <text class="fg-xs" x="678" y="224">204 · grant レコードが消える</text>
+    <text class="fg-xs fg-danger" x="678" y="246">紐づくトークンもすべて失効する</text>
+    <path class="fg-edge fg-edge--danger" d="M656,225 H624" marker-end="url(#fg-ad)"/>
+  </svg>
+  <figcaption class="fig-note">下段の箱に触れる矢印は 1 本だけです。grant の scope を変えても、既に発行済みのトークンは無効になりません。新しい scope が効くのは次回以降の発行からです。</figcaption>
+</figure>
 
 下段の箱に届くのは `revoke` だけです。`create` / `replace` / `merge` は grant が保持する内容を書き換え、`query` はそれを読み戻します。`revoke` は grant レコードを削除したうえで、そこにぶら下がるトークンを失効させます。
 

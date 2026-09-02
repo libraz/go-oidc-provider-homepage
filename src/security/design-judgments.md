@@ -8,31 +8,31 @@ pageClass: pg-security-design-judgments
 
 Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authorization server may". Several places need an explicit reading because the literature disagrees with itself, or because a literal reading collides with another spec. This page lists those calls.
 
-<svg role="img" aria-labelledby="design-judgment-title" viewBox="0 0 760 250" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="design-judgment-title">How to read a design judgment: identify where the specs conflict, state the rule this library adopts, and enforce it in op.New or the internal implementation.</title>
-<rect class="djf-box" x="36" y="78" width="154" height="76" rx="8"/>
-  <text class="djf-text" x="113" y="108" text-anchor="middle">Spec text</text>
-  <text class="djf-sub" x="113" y="130" text-anchor="middle">MUST / SHOULD / MAY</text>
-
-  <rect class="djf-box" x="242" y="78" width="154" height="76" rx="8"/>
-  <text class="djf-text" x="319" y="108" text-anchor="middle">Conflict</text>
-  <text class="djf-sub" x="319" y="130" text-anchor="middle">specs disagree</text>
-
-  <rect class="djf-main" x="448" y="78" width="154" height="76" rx="8"/>
-  <text class="djf-text" x="525" y="108" text-anchor="middle">Adopted rule</text>
-  <text class="djf-sub" x="525" y="130" text-anchor="middle">fail-closed wins</text>
-
-  <rect class="djf-box" x="242" y="184" width="360" height="42" rx="8"/>
-  <text class="djf-text" x="422" y="210" text-anchor="middle">construction checks · store contract · internals</text>
-
-  <path class="djf-flow" d="M190 116 H238"/>
-  <path class="djf-flow" d="M230 112 L239 116 L230 120"/>
-  <path class="djf-flow" d="M396 116 H444"/>
-  <path class="djf-flow" d="M436 112 L445 116 L436 120"/>
-  <path class="djf-flow" d="M525 154 V180"/>
-  <path class="djf-flow" d="M521 174 L525 183 L529 174"/>
-  <text class="djf-sub halo" x="513" y="174" text-anchor="end">enforced in</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">How to read a design judgment</div>
+  <svg class="fig-svg" role="img" aria-labelledby="dj-shape-title" viewBox="0 0 960 226" xmlns="http://www.w3.org/2000/svg">
+    <title id="dj-shape-title">Each design judgment names the specification text involved, the point where two documents disagree, and the rule this library adopted — then says where that rule is actually enforced.</title>
+    <rect class="fg-box" x="36" y="42" width="260" height="92" rx="8"/>
+    <text class="fg-t2" x="56" y="68">The spec text</text>
+    <text class="fg-mxs" x="56" y="92">MUST · SHOULD · MAY</text>
+    <text class="fg-xs" x="56" y="114">quoted, with the section</text>
+    <path class="fg-edge" d="M300,88 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--warn" x="340" y="42" width="260" height="92" rx="8"/>
+    <text class="fg-t2" x="360" y="68">Where they conflict</text>
+    <text class="fg-xs" x="360" y="92">two documents give different</text>
+    <text class="fg-xs" x="360" y="112">answers to the same request</text>
+    <path class="fg-edge" d="M604,88 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="644" y="42" width="280" height="92" rx="8"/>
+    <text class="fg-t2 fg-accent" x="664" y="68">The rule adopted here</text>
+    <text class="fg-xs" x="664" y="92">the stricter reading wins,</text>
+    <text class="fg-xs" x="664" y="112">and the reasoning is written down</text>
+    <path class="fg-edge fg-edge--accent" d="M784,138 V166" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--sub" x="36" y="170" width="888" height="42" rx="8"/>
+    <text class="fg-lbl" x="56" y="196">enforced in</text>
+    <text class="fg-mxs" x="160" y="196">op.New construction checks · the store contract · the internal implementation</text>
+  </svg>
+  <figcaption class="fig-note">The last row is what separates a judgment from an opinion. If a rule is not enforced somewhere concrete, it is not a rule — it is a note about what the author intended.</figcaption>
+</figure>
 
 <div class="dj-hero">
   <div>

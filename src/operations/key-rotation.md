@@ -15,40 +15,38 @@ Three distinct key roles rotate on different cadences:
 
 All three are rotated by constructing a new `*Provider` and atomically swapping the handler. The library never mutates a key slice in place.
 
-<svg role="img" aria-labelledby="key-rotation-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="key-rotation-title">The shape of a signing or cookie key rotation: build a new Provider with the new key first in the list, swap the handler, then drop the old key once the cache window has passed.</title>
-<rect class="rot-box" x="26" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="90" y="130" text-anchor="middle">Generate key</text>
-  <text class="rot-sub" x="90" y="152" text-anchor="middle">new kid</text>
-
-  <rect class="rot-box" x="184" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="248" y="130" text-anchor="middle">Put it first</text>
-  <text class="rot-sub" x="248" y="152" text-anchor="middle">new, old</text>
-
-  <rect class="rot-main" x="342" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="406" y="130" text-anchor="middle">op.New</text>
-  <text class="rot-sub" x="406" y="152" text-anchor="middle">revalidates</text>
-
-  <rect class="rot-box" x="500" y="100" width="128" height="72" rx="8"/>
-  <text class="rot-text" x="564" y="130" text-anchor="middle">Swap</text>
-  <text class="rot-sub" x="564" y="152" text-anchor="middle">atomic handler</text>
-
-  <rect class="rot-box" x="658" y="100" width="78" height="72" rx="8"/>
-  <text class="rot-text" x="697" y="130" text-anchor="middle">Old key</text>
-  <text class="rot-sub" x="697" y="152" text-anchor="middle">retired</text>
-
-  <path class="rot-flow" d="M154 136 H180"/>
-  <path class="rot-flow" d="M172 132 L181 136 L172 140"/>
-  <path class="rot-flow" d="M312 136 H338"/>
-  <path class="rot-flow" d="M330 132 L339 136 L330 140"/>
-  <path class="rot-flow" d="M470 136 H496"/>
-  <path class="rot-flow" d="M488 132 L497 136 L488 140"/>
-  <path class="rot-flow" d="M628 136 H654"/>
-  <path class="rot-flow" d="M646 132 L655 136 L646 140"/>
-  <path class="rot-flow" d="M564 172 C580 208 664 208 697 174"/>
-  <path class="rot-flow" d="M692 184 L697 173 L702 184"/>
-  <text class="rot-sub halo" x="600" y="232" text-anchor="middle">wait out the TTL and the JWKS cache window</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Rotating a key without a flag day</div>
+  <svg class="fig-svg" role="img" aria-labelledby="key-rotation-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
+    <title id="key-rotation-title">The shape of a signing or cookie key rotation: generate a new key, build a Provider with the new key first and the old one still present, swap the handler atomically, and only drop the old key once every cached copy of the key set has expired.</title>
+    <rect class="fg-box" x="36" y="60" width="168" height="80" rx="8"/>
+    <text class="fg-t2" x="54" y="88">Generate</text>
+    <text class="fg-xs" x="54" y="110">a new key with a</text>
+    <text class="fg-mxs" x="54" y="128">new kid</text>
+    <path class="fg-edge" d="M208,100 H244" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="248" y="60" width="196" height="80" rx="8"/>
+    <text class="fg-t2 fg-accent" x="266" y="88">Put it first</text>
+    <text class="fg-mxs" x="266" y="110">[new, old]</text>
+    <text class="fg-xs" x="266" y="128">first entry signs, the rest verify</text>
+    <path class="fg-edge" d="M448,100 H484" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="488" y="60" width="180" height="80" rx="8"/>
+    <text class="fg-m" x="506" y="88">op.New</text>
+    <text class="fg-xs" x="506" y="110">revalidates the whole</text>
+    <text class="fg-xs" x="506" y="128">configuration again</text>
+    <path class="fg-edge" d="M672,100 H708" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="712" y="60" width="212" height="80" rx="8"/>
+    <text class="fg-t2" x="730" y="88">Swap the handler</text>
+    <text class="fg-xs" x="730" y="110">atomic — no request sees</text>
+    <text class="fg-xs" x="730" y="128">a half-rotated provider</text>
+    <path class="fg-leader" d="M818,144 V178 H444"/>
+    <path class="fg-edge fg-edge--muted" d="M444,178 H244" marker-end="url(#fg-am)"/>
+    <text class="fg-xs fg-warn" x="470" y="172">wait out the token TTL and every RP's JWKS cache window</text>
+    <rect class="fg-box fg-box--muted" x="36" y="156" width="204" height="46" rx="8"/>
+    <text class="fg-t2" x="54" y="176">Then drop the old key</text>
+    <text class="fg-xs" x="54" y="194">not before</text>
+  </svg>
+  <figcaption class="fig-note">The old key stays published for the whole overlap and only stops signing. Removing it early is the one way to break this: a verifier still holding the previous key set has no way to check a token it already accepted.</figcaption>
+</figure>
 
 ## Signing key rotation
 

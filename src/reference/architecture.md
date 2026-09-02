@@ -74,80 +74,126 @@ The most-trodden path. Roughly:
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="seq-en-title" viewBox="0 0 760 662" xmlns="http://www.w3.org/2000/svg">
-<title id="seq-en-title">Authorize-to-token happy path: the browser drives /authorize and interaction, then the RP redeems the code at /token.</title>
-<defs>
-<marker id="seq-ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
-<marker id="seq-ahm" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--vp-c-text-3)"/></marker>
-</defs>
-<line class="seq-ll" x1="66" y1="44" x2="66" y2="645"/>
-<line class="seq-ll" x1="220" y1="44" x2="220" y2="645"/>
-<line class="seq-llop" x1="380" y1="44" x2="380" y2="645"/>
-<line class="seq-llst" x1="545" y1="44" x2="545" y2="645"/>
-<line class="seq-lllf" x1="700" y1="44" x2="700" y2="645"/>
-<rect class="seq-box" x="18" y="10" width="96" height="34" rx="6"/>
-<text class="seq-hd" x="66" y="32" text-anchor="middle">RP</text>
-<rect class="seq-box" x="172" y="10" width="96" height="34" rx="6"/>
-<text class="seq-hd" x="220" y="32" text-anchor="middle">User agent</text>
-<rect class="seq-boxop" x="332" y="10" width="96" height="34" rx="6"/>
-<text class="seq-hd seq-hdop" x="380" y="32" text-anchor="middle">OP</text>
-<rect class="seq-boxst" x="497" y="10" width="96" height="34" rx="6"/>
-<text class="seq-hd" x="545" y="32" text-anchor="middle">Store</text>
-<rect class="seq-boxlf" x="652" y="10" width="96" height="34" rx="6"/>
-<text class="seq-hd seq-hdlf" x="700" y="32" text-anchor="middle">LoginFlow</text>
-<line class="seq-msg" x1="66" y1="80" x2="220" y2="80" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="72" y="75">1</text>
-<text class="seq-lbl" x="87" y="75">redirect to <tspan class="seq-mono">/authorize?…</tspan></text>
-<line class="seq-msg" x1="220" y1="114" x2="380" y2="114" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="226" y="109">2</text>
-<text class="seq-lbl" x="241" y="109"><tspan class="seq-mono">GET /authorize</tspan></text>
-<line class="seq-msg" x1="380" y1="148" x2="545" y2="148" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="386" y="143">3</text>
-<text class="seq-lbl" x="401" y="143"><tspan class="seq-mono">Clients.GetClient</tspan> / validate <tspan class="seq-mono">redirect_uri</tspan></text>
-<path class="seq-msg" d="M380 174 h30 v14 h-30" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="420" y="170">4</text>
-<text class="seq-lbl" x="432" y="170">PKCE / scope / <tspan class="seq-mono">response_type</tspan> checks</text>
-<line class="seq-msg" x1="380" y1="216" x2="220" y2="216" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="226" y="211">5</text>
-<text class="seq-lbl" x="241" y="211">302 → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
-<line class="seq-msg" x1="220" y1="250" x2="380" y2="250" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="226" y="245">6</text>
-<text class="seq-lbl" x="241" y="245"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (login)</text>
-<line class="seq-msg" x1="380" y1="284" x2="700" y2="284" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="386" y="279">7</text>
-<text class="seq-lbl" x="401" y="279"><tspan class="seq-mono">Begin / Continue</tspan> (Step chain)</text>
-<line class="seq-ret" x1="700" y1="318" x2="380" y2="318" marker-end="url(#seq-ahm)"/>
-<text class="seq-num halo" x="386" y="313">8</text>
-<text class="seq-lbl" x="401" y="313"><tspan class="seq-mono">Result</tspan> (subject + AAL + AMR)</text>
-<line class="seq-msg" x1="380" y1="352" x2="220" y2="352" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="226" y="347">9</text>
-<text class="seq-lbl" x="241" y="347">200 consent → <tspan class="seq-mono">/interaction/{uid}</tspan></text>
-<line class="seq-msg" x1="220" y1="386" x2="380" y2="386" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="226" y="381">10</text>
-<text class="seq-lbl" x="241" y="381"><tspan class="seq-mono">POST /interaction/{uid}</tspan> (consent)</text>
-<line class="seq-msg" x1="380" y1="420" x2="545" y2="420" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="386" y="415">11</text>
-<text class="seq-lbl" x="401" y="415"><tspan class="seq-mono">AuthorizationCodes.Save</tspan> (code + PKCE)</text>
-<line class="seq-msg" x1="380" y1="454" x2="220" y2="454" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="226" y="449">12</text>
-<text class="seq-lbl" x="241" y="449">302 → <tspan class="seq-mono">redirect_uri?code=…&amp;state=…&amp;iss=…</tspan></text>
-<line class="seq-msg" x1="220" y1="488" x2="66" y2="488" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="72" y="483">13</text>
-<text class="seq-lbl" x="87" y="483">arrives with <tspan class="seq-mono">code</tspan></text>
-<line class="seq-msg" x1="66" y1="522" x2="380" y2="522" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="72" y="517">14</text>
-<text class="seq-lbl" x="87" y="517"><tspan class="seq-mono">POST /token</tspan> (<tspan class="seq-mono">grant_type=authorization_code</tspan>)</text>
-<line class="seq-msg" x1="380" y1="556" x2="545" y2="556" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="386" y="551">15</text>
-<text class="seq-lbl" x="401" y="539"><tspan class="seq-mono">AuthorizationCodes.Consume</tspan></text>
-<text class="seq-lbl" x="401" y="551">verify PKCE / client auth</text>
-<line class="seq-msg" x1="380" y1="590" x2="545" y2="590" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="386" y="585">16</text>
-<text class="seq-lbl" x="401" y="585"><tspan class="seq-mono">AccessTokens.Register / RefreshTokens.Save</tspan></text>
-<line class="seq-msg" x1="380" y1="624" x2="66" y2="624" marker-end="url(#seq-ah)"/>
-<text class="seq-num halo" x="72" y="619">17</text>
-<text class="seq-lbl" x="87" y="619">200 <tspan class="seq-mono">{ access_token, id_token, refresh_token? }</tspan></text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Authorize → token, with the store and the login flow in view</div>
+  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 700" xmlns="http://www.w3.org/2000/svg">
+    <title id="arch-lifecycle-title">The happy path from the authorize request to the token response, showing which calls reach the store and which reach the configured login flow. The browser drives the first two phases; the third is a direct back-channel exchange between the RP and the OP.</title>
+    <rect class="fg-group" x="30" y="68" width="916" height="146" rx="8"/>
+    <rect class="fg-group" x="30" y="222" width="916" height="236" rx="8"/>
+    <rect class="fg-group" x="30" y="466" width="916" height="222" rx="8"/>
+    <text class="fg-lbl" x="42" y="86">1 · the authorize request</text>
+    <text class="fg-lbl" x="42" y="240">2 · interaction</text>
+    <text class="fg-lbl" x="42" y="484">3 · redeeming the code</text>
+    <line class="fg-life" x1="106" y1="62" x2="106" y2="688"/>
+    <line class="fg-life" x1="300" y1="62" x2="300" y2="688"/>
+    <line class="fg-life fg-life--accent" x1="510" y1="62" x2="510" y2="688"/>
+    <line class="fg-life" x1="710" y1="62" x2="710" y2="688"/>
+    <line class="fg-life" x1="880" y1="62" x2="880" y2="688"/>
+    <rect class="fg-box" x="36" y="16" width="140" height="42" rx="6"/>
+    <text class="fg-t" x="106" y="35" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="106" y="49" text-anchor="middle">your app</text>
+    <rect class="fg-box" x="230" y="16" width="140" height="42" rx="6"/>
+    <text class="fg-t" x="300" y="35" text-anchor="middle">User agent</text>
+    <text class="fg-xs" x="300" y="49" text-anchor="middle">browser</text>
+    <rect class="fg-box fg-box--accent" x="430" y="16" width="160" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="510" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="510" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="640" y="16" width="140" height="42" rx="6"/>
+    <text class="fg-t" x="710" y="35" text-anchor="middle">Store</text>
+    <text class="fg-xs" x="710" y="49" text-anchor="middle">yours</text>
+    <rect class="fg-box" x="812" y="16" width="136" height="42" rx="6"/>
+    <text class="fg-t" x="880" y="35" text-anchor="middle">LoginFlow</text>
+    <text class="fg-xs" x="880" y="49" text-anchor="middle">yours</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M106,102 H300" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="203" y="96" text-anchor="middle">redirect to /authorize?…</text>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="15" cy="132" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="135" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M300,132 H510" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="405" y="126" text-anchor="middle">GET /authorize</text>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="15" cy="164" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="167" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M510,164 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="158" text-anchor="middle">Clients.GetClient · exact-match redirect_uri</text>
+    <!-- 4 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="196" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="199" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M510,188 h28 v16 h-28" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="550" y="200">PKCE · scope · response_type checks</text>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="15" cy="266" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="269" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--accent" d="M510,266 H300" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="405" y="260" text-anchor="middle">302 → /interaction/{uid}</text>
+    <!-- 6 -->
+    <circle class="fg-badge" cx="15" cy="298" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="301" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M300,298 H510" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="405" y="292" text-anchor="middle">POST /interaction/{uid} — login</text>
+    <!-- 7 -->
+    <circle class="fg-badge" cx="15" cy="330" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="333" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M510,330 H880" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="695" y="324" text-anchor="middle">Begin / Continue — the Step chain</text>
+    <!-- 8 -->
+    <circle class="fg-badge" cx="15" cy="362" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="365" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M880,362 H510" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="695" y="356" text-anchor="middle">Result — subject · AAL · AMR</text>
+    <!-- 9 -->
+    <circle class="fg-badge" cx="15" cy="394" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="397" text-anchor="middle">9</text>
+    <path class="fg-edge fg-edge--accent" d="M510,394 H300" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="405" y="388" text-anchor="middle">200 consent page</text>
+    <!-- 10 -->
+    <circle class="fg-badge" cx="15" cy="424" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="427" text-anchor="middle">10</text>
+    <path class="fg-edge" d="M300,424 H510" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="405" y="418" text-anchor="middle">POST /interaction/{uid} — consent</text>
+    <!-- 11 -->
+    <circle class="fg-badge" cx="15" cy="452" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="455" text-anchor="middle">11</text>
+    <path class="fg-edge" d="M510,452 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="446" text-anchor="middle">AuthorizationCodes.Save — code + PKCE</text>
+    <!-- 12 -->
+    <circle class="fg-badge" cx="15" cy="514" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="517" text-anchor="middle">12</text>
+    <path class="fg-edge fg-edge--accent" d="M510,514 H300" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="405" y="508" text-anchor="middle">302 → redirect_uri?code&amp;state&amp;iss</text>
+    <!-- 13 -->
+    <circle class="fg-badge" cx="15" cy="544" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="547" text-anchor="middle">13</text>
+    <path class="fg-edge" d="M300,544 H106" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="203" y="538" text-anchor="middle">arrives carrying the code</text>
+    <!-- 14 -->
+    <circle class="fg-badge" cx="15" cy="586" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="589" text-anchor="middle">14</text>
+    <path class="fg-edge" d="M106,586 H510" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="308" y="566" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs fg-halo" x="308" y="579" text-anchor="middle">grant_type=authorization_code</text>
+    <!-- 15 -->
+    <circle class="fg-badge" cx="15" cy="624" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="627" text-anchor="middle">15</text>
+    <path class="fg-edge" d="M510,624 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="604" text-anchor="middle">AuthorizationCodes.Consume</text>
+    <text class="fg-xs" x="610" y="617" text-anchor="middle">then verify PKCE and client auth</text>
+    <!-- 16 -->
+    <circle class="fg-badge" cx="15" cy="654" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="657" text-anchor="middle">16</text>
+    <path class="fg-edge" d="M510,654 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="648" text-anchor="middle">AccessTokens.Register · RefreshTokens.Save</text>
+    <!-- 17 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="682" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="685" text-anchor="middle">17</text>
+    <path class="fg-edge fg-edge--accent" d="M510,682 H106" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs fg-halo" x="308" y="676" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+  </svg>
+  <figcaption class="fig-note">The two rightmost lanes are yours. Every arrow that reaches them is an interface call, which is what makes the storage backend and the login experience replaceable without touching the protocol path in the middle.</figcaption>
+</figure>
 </div>
 
 `/par` and `/end_session` follow the same general shape; the sequence-diagram is the canonical happy path.
@@ -171,47 +217,58 @@ internal/authn/CompiledLoginFlow
 
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
-<svg role="img" aria-labelledby="lfp-en-title" viewBox="0 0 760 410" xmlns="http://www.w3.org/2000/svg">
-<title id="lfp-en-title">WithLoginFlow compiles the Primary, Rules, Decider and Risk spec into a CompiledLoginFlow the orchestrator drives in a per-request loop.</title>
-<defs>
-<marker id="lfp-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
-<marker id="lfp-arra" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--vp-c-brand-2)"/></marker>
-</defs>
-<rect class="lfp-box" x="24" y="22" width="172" height="132" rx="8"/>
-<text class="lfp-t1" x="110" y="44" text-anchor="middle">LoginFlow</text>
-<text class="lfp-fld" x="44" y="72">Primary</text>
-<text class="lfp-fld" x="44" y="94">Rules[]</text>
-<text class="lfp-fld" x="44" y="116">Decider</text>
-<text class="lfp-fld" x="44" y="138">Risk</text>
-<path class="lfp-line" d="M196 88 H250" marker-end="url(#lfp-arrow)"/>
-<text class="lfp-cap" x="223" y="82" text-anchor="middle">compile</text>
-<rect class="lfp-op" x="252" y="22" width="206" height="132" rx="8"/>
-<text class="lfp-t1a" x="355" y="42" text-anchor="middle">CompiledLoginFlow</text>
-<text class="lfp-sub" x="355" y="57" text-anchor="middle">internal/authn</text>
-<text class="lfp-fld" x="270" y="82">primary</text>
-<text class="lfp-fld" x="270" y="102">rules</text>
-<text class="lfp-fld" x="270" y="122">decider</text>
-<text class="lfp-fld" x="270" y="142">risk</text>
-<path class="lfp-oln" d="M355 154 V196" marker-end="url(#lfp-arra)"/>
-<text class="lfp-cap" x="365" y="178" text-anchor="start">once at chain start</text>
-<rect class="lfp-op" x="40" y="210" width="172" height="52" rx="8"/>
-<text class="lfp-nd" x="126" y="232" text-anchor="middle"><tspan class="lfp-mono">Primary.Begin /</tspan></text>
-<text class="lfp-nd" x="126" y="248" text-anchor="middle"><tspan class="lfp-mono">Continue → Step</tspan></text>
-<rect class="lfp-op" x="252" y="210" width="172" height="52" rx="8"/>
-<text class="lfp-nd" x="338" y="232" text-anchor="middle">Prompt → user submits</text>
-<text class="lfp-nd" x="338" y="248" text-anchor="middle">Result binds <tspan class="lfp-mono">Identity</tspan></text>
-<rect class="lfp-op" x="452" y="210" width="200" height="52" rx="8"/>
-<text class="lfp-nd" x="552" y="232" text-anchor="middle"><tspan class="lfp-mono">LoginContext</tspan> → <tspan class="lfp-mono">Decider</tspan></text>
-<text class="lfp-nd" x="552" y="248" text-anchor="middle">then <tspan class="lfp-mono">Rules</tspan> evaluate</text>
-<path class="lfp-oln" d="M212 236 H252" marker-end="url(#lfp-arra)"/>
-<path class="lfp-oln" d="M424 236 H452" marker-end="url(#lfp-arra)"/>
-<path class="lfp-oln" d="M500 262 C 500 336, 126 336, 126 262" marker-end="url(#lfp-arra)"/>
-<text class="lfp-lba" x="313" y="332" text-anchor="middle">repeat until no rule fires</text>
-<path class="lfp-oln" d="M652 236 H704 V346" marker-end="url(#lfp-arra)"/>
-<text class="lfp-cap" x="698" y="300" text-anchor="end">no rule fires</text>
-<rect class="lfp-op" x="636" y="346" width="118" height="40" rx="8"/>
-<text class="lfp-nd" x="695" y="370" text-anchor="middle">Session issued</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">LoginFlow — declared once, compiled once, driven per request</div>
+  <svg class="fig-svg" role="img" aria-labelledby="loginflow-title" viewBox="0 0 960 344" xmlns="http://www.w3.org/2000/svg">
+    <title id="loginflow-title">What you pass to WithLoginFlow is a specification. It is compiled once into a CompiledLoginFlow, which the orchestrator then drives in a loop for each request: begin the primary factor, prompt, bind an identity, evaluate the decider and the rules, and repeat until no rule fires.</title>
+    <text class="fg-lbl" x="40" y="26">declared</text>
+    <text class="fg-lbl fg-accent" x="334" y="26">compiled once</text>
+    <text class="fg-lbl" x="620" y="26">driven per request</text>
+    <rect class="fg-box" x="36" y="38" width="234" height="192" rx="8"/>
+    <text class="fg-t2" x="56" y="64">LoginFlow</text>
+    <text class="fg-xs" x="56" y="82">what you hand to WithLoginFlow</text>
+    <line class="fg-rule" x1="56" y1="94" x2="250" y2="94"/>
+    <text class="fg-m" x="56" y="120">Primary</text>
+    <text class="fg-xs" x="56" y="136">the first factor</text>
+    <text class="fg-m" x="56" y="164">Rules[]</text>
+    <text class="fg-xs" x="56" y="180">when to ask for more</text>
+    <text class="fg-m" x="56" y="208">Decider · Risk</text>
+    <text class="fg-xs" x="56" y="224">AAL policy and signals</text>
+    <path class="fg-edge" d="M274,134 H326" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="300" y="127" text-anchor="middle">compile</text>
+    <rect class="fg-box fg-box--accent" x="330" y="38" width="244" height="192" rx="8"/>
+    <text class="fg-t2 fg-accent" x="350" y="64">CompiledLoginFlow</text>
+    <text class="fg-mxs" x="350" y="82">internal/authn</text>
+    <line class="fg-rule" x1="350" y1="94" x2="554" y2="94"/>
+    <text class="fg-mxs" x="350" y="120">primary</text>
+    <text class="fg-mxs" x="350" y="146">rules</text>
+    <text class="fg-mxs" x="350" y="172">decider</text>
+    <text class="fg-mxs" x="350" y="198">risk</text>
+    <text class="fg-xs" x="350" y="222">resolved and validated at op.New</text>
+    <path class="fg-edge fg-edge--accent" d="M578,134 H610" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="616" y="38" width="284" height="48" rx="6"/>
+    <text class="fg-mxs" x="634" y="58">Primary.Begin → Step</text>
+    <text class="fg-xs" x="634" y="76">once, at the start of the chain</text>
+    <path class="fg-edge fg-edge--thin" d="M758,88 V96" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="616" y="98" width="284" height="48" rx="6"/>
+    <text class="fg-mxs" x="634" y="118">prompt → the user submits</text>
+    <text class="fg-xs" x="634" y="136">one Step at a time</text>
+    <path class="fg-edge fg-edge--thin" d="M758,148 V156" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="616" y="158" width="284" height="48" rx="6"/>
+    <text class="fg-mxs" x="634" y="178">Result binds an Identity</text>
+    <text class="fg-xs" x="634" y="196">subject · AAL · AMR</text>
+    <path class="fg-edge fg-edge--thin" d="M758,208 V216" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="616" y="218" width="284" height="48" rx="6"/>
+    <text class="fg-mxs" x="634" y="238">LoginContext → Decider, then Rules</text>
+    <text class="fg-xs" x="634" y="256">a rule fires → another Step</text>
+    <path class="fg-edge" d="M904,242 H930 V122 H904" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M758,268 V276" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="616" y="278" width="284" height="48" rx="6"/>
+    <text class="fg-t2 fg-accent" x="634" y="298">No rule fires</text>
+    <text class="fg-xs" x="634" y="316">the session is issued</text>
+  </svg>
+  <figcaption class="fig-note">Compiling up front is what makes a misconfigured flow a start-up error rather than a runtime one. By the time a request arrives there is nothing left to interpret — only a chain to walk.</figcaption>
+</figure>
 </div>
 
 For each authorize request:

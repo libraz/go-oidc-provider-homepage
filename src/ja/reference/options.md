@@ -17,73 +17,82 @@ pageClass: pg-reference-options
 
 このページは、`op.New` に渡せる公開オプションを並べた索引です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目当てが探しにくいことがあります。下の決定木で関連するエリアを当てたうえで、表の対応セクションに飛んでください。
 
-<svg class="opt-tree" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="opt-decision-title" viewBox="0 0 760 512" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="opt-decision-title">設定の目的（新規 OP / FAPI 切り替え / 単一機能 / grant 制限 / 送信者制約 / トークン形式）を、それを担う op.New オプションに振り分け、該当なしなら下の表へ導く決定木。</title>
-  <g transform="translate(30 0)">
-  <rect x="24" y="24" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="54" text-anchor="middle">OP を新規に立ち上げる？</text>
-  <rect class="od-sop" x="430" y="28" width="246" height="44" rx="22"/>
-  <text class="od-b od-op" x="553" y="55" text-anchor="middle">必須オプション</text>
-  <line x1="324" y1="50" x2="426" y2="50"/>
-  <path d="M419 46 L426 50 L419 54"/>
-  <text class="od-s od-t2" x="376" y="42" text-anchor="middle">はい</text>
-  <line x1="174" y1="76" x2="174" y2="94"/>
-  <path d="M170 87 L174 94 L178 87"/>
-  <text class="od-s od-t2" x="190" y="90">いいえ</text>
-  <rect x="24" y="96" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="126" text-anchor="middle">FAPI 2.0 を 1 行で有効化？</text>
-  <rect class="od-sop" x="430" y="100" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="126" text-anchor="middle">WithProfile(...)</text>
-  <line x1="324" y1="122" x2="426" y2="122"/>
-  <path d="M419 118 L426 122 L419 126"/>
-  <text class="od-s od-t2" x="376" y="114" text-anchor="middle">はい</text>
-  <line x1="174" y1="148" x2="174" y2="166"/>
-  <path d="M170 159 L174 166 L178 159"/>
-  <text class="od-s od-t2" x="190" y="162">いいえ</text>
-  <rect x="24" y="168" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="198" text-anchor="middle">機能を 1 つだけ有効化？</text>
-  <rect class="od-sop" x="430" y="172" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="198" text-anchor="middle">WithFeature(...)</text>
-  <line x1="324" y1="194" x2="426" y2="194"/>
-  <path d="M419 190 L426 194 L419 198"/>
-  <text class="od-s od-t2" x="376" y="186" text-anchor="middle">はい</text>
-  <line x1="174" y1="220" x2="174" y2="238"/>
-  <path d="M170 231 L174 238 L178 231"/>
-  <text class="od-s od-t2" x="190" y="234">いいえ</text>
-  <rect x="24" y="240" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="270" text-anchor="middle"><tspan class="od-m">/token</tspan> の grant を絞る？</text>
-  <rect class="od-sop" x="430" y="244" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="270" text-anchor="middle">WithGrants(...)</text>
-  <line x1="324" y1="266" x2="426" y2="266"/>
-  <path d="M419 262 L426 266 L419 270"/>
-  <text class="od-s od-t2" x="376" y="258" text-anchor="middle">はい</text>
-  <line x1="174" y1="292" x2="174" y2="310"/>
-  <path d="M170 303 L174 310 L178 303"/>
-  <text class="od-s od-t2" x="190" y="306">いいえ</text>
-  <rect x="24" y="312" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="342" text-anchor="middle">送信者制約付きトークン？</text>
-  <rect class="od-sop" x="430" y="316" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="342" text-anchor="middle">WithFeature(DPoP|MTLS)</text>
-  <line x1="324" y1="338" x2="426" y2="338"/>
-  <path d="M419 334 L426 338 L419 342"/>
-  <text class="od-s od-t2" x="376" y="330" text-anchor="middle">はい</text>
-  <line x1="174" y1="364" x2="174" y2="382"/>
-  <path d="M170 375 L174 382 L178 375"/>
-  <text class="od-s od-t2" x="190" y="378">いいえ</text>
-  <rect x="24" y="384" width="300" height="52" rx="6"/>
-  <text class="od-b od-t1" x="174" y="414" text-anchor="middle">JWT か opaque か？</text>
-  <rect class="od-sop" x="430" y="388" width="246" height="44" rx="22"/>
-  <text class="od-m od-op" x="553" y="414" text-anchor="middle">WithAccessTokenFormat(...)</text>
-  <line x1="324" y1="410" x2="426" y2="410"/>
-  <path d="M419 406 L426 410 L419 414"/>
-  <text class="od-s od-t2" x="376" y="402" text-anchor="middle">はい</text>
-  <line x1="174" y1="436" x2="174" y2="454"/>
-  <path d="M170 447 L174 454 L178 447"/>
-  <text class="od-s od-t2" x="190" y="450">いいえ</text>
-  <rect x="24" y="456" width="652" height="48" rx="6"/>
-  <text class="od-b od-t1" x="350" y="484" text-anchor="middle">下の全オプション表</text>
-  </g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">どのオプションが要るのか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="options-decision-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
+    <title id="options-decision-title">設定の目的を、それを担う op.New のオプションへ振り分ける判定木。新規に OP を立ち上げる、FAPI を有効化する、機能を 1 つ有効化する、grant を絞る、送信者制約を加える、トークン形式を選ぶ、のいずれにも当たらなければ、下の全オプション表へ進みます。</title>
+    <!-- 1 -->
+    <rect class="fg-box" x="36" y="24" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="50">OP を新規に立ち上げる</text>
+    <text class="fg-xs" x="56" y="70">まだ何も動いていない段階</text>
+    <path class="fg-edge" d="M434,53 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="46" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="530" y="24" width="394" height="58" rx="8"/>
+    <text class="fg-t2 fg-accent" x="550" y="48">必須オプション</text>
+    <text class="fg-xs" x="550" y="70">issuer · store · keyset、認可コードグラントなら cookie 鍵も</text>
+    <path class="fg-edge" d="M233,86 V104" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="100">いいえ</text>
+    <!-- 2 -->
+    <rect class="fg-box" x="36" y="108" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="134">FAPI 2.0 を 1 行で有効化する</text>
+    <text class="fg-xs" x="56" y="154">個別の設定ではなくプロファイル全体が欲しい</text>
+    <path class="fg-edge" d="M434,137 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="130" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="530" y="108" width="394" height="58" rx="8"/>
+    <text class="fg-m fg-accent" x="550" y="134">op.WithProfile(…)</text>
+    <text class="fg-xs" x="550" y="154">プロファイルが求める必須要件を一括で固定する</text>
+    <path class="fg-edge" d="M233,170 V188" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="184">いいえ</text>
+    <!-- 3 -->
+    <rect class="fg-box" x="36" y="192" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="218">プロファイルなしで機能を 1 つだけ有効化する</text>
+    <text class="fg-xs" x="56" y="238">PAR、JAR、JARM、grant management など</text>
+    <path class="fg-edge" d="M434,221 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="214" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="192" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="218">op.WithFeature(…)</text>
+    <text class="fg-xs" x="550" y="238">機能 1 つを単独で有効にする</text>
+    <path class="fg-edge" d="M233,254 V272" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="268">いいえ</text>
+    <!-- 4 -->
+    <rect class="fg-box" x="36" y="276" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="302">/token が受け付ける grant を絞る</text>
+    <text class="fg-xs" x="56" y="322">client credentials を一切発行しない OP にする、など</text>
+    <path class="fg-edge" d="M434,305 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="298" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="276" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="302">op.WithGrants(…)</text>
+    <text class="fg-xs" x="550" y="322">列挙していない grant はエンドポイントで拒否される</text>
+    <path class="fg-edge" d="M233,338 V356" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="352">いいえ</text>
+    <!-- 5 -->
+    <rect class="fg-box" x="36" y="360" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="386">送信者制約付きアクセストークンにする</text>
+    <text class="fg-xs" x="56" y="406">漏れたトークン単体では使えない状態にしたい</text>
+    <path class="fg-edge" d="M434,389 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="382" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="360" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="386">op.WithFeature(DPoP) · op.WithFeature(MTLS)</text>
+    <text class="fg-xs" x="550" y="406">どちらでも、両方でも。登録時に各クライアントが選ぶ</text>
+    <path class="fg-edge" d="M233,422 V440" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="436">いいえ</text>
+    <!-- 6 -->
+    <rect class="fg-box" x="36" y="444" width="394" height="58" rx="8"/>
+    <text class="fg-s" x="56" y="470">JWT と opaque のどちらにするか決める</text>
+    <text class="fg-xs" x="56" y="490">audience 単位で決める判断</text>
+    <path class="fg-edge" d="M434,473 H526" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="466" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="530" y="444" width="394" height="58" rx="8"/>
+    <text class="fg-m" x="550" y="470">op.WithAccessTokenFormat(…)</text>
+    <text class="fg-xs" x="550" y="490">失効の到達範囲とレイテンシの取引になる</text>
+    <path class="fg-edge" d="M233,506 V524" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="243" y="520">いいえ</text>
+    <!-- 該当なし -->
+    <rect class="fg-box fg-box--muted" x="36" y="528" width="888" height="34" rx="8"/>
+    <text class="fg-t2" x="56" y="550">どれにも当てはまらない — 下の全オプション表へ</text>
+  </svg>
+  <figcaption class="fig-note">上から下へ読む順序が、そのまま設定する順序でもあります。プロファイルは後段の答えをいくつか自動的に確定させるため、先に設定しておけば個別に選んだあとで衝突に気付く事態を避けられます。</figcaption>
+</figure>
 
 - **これから新規に OP を立ち上げる** → まず [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、そして通常は [`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys) を渡します。`WithCookieKeys` は `authorization_code` grant が有効な場合に必須で、既定 grant 集合では有効です。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
 - **FAPI を採用せず OAuth 2.1 の姿勢を明示したい** → `WithProfile(profile.Baseline)` はすべての authorization-code request に PKCE を要求し、それ以外は OIDC Core の既定を保ちます。FAPI 2.0 には `profile.FAPI2Baseline`(または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`)を使います。これらのプロファイルは mTLS が明示されていなければ DPoP を既定選択します。プロファイルが必要とする grant が組み込まれていない場合、OP はエンドポイントを勝手に mount せず `op.New` が失敗します（`profile.FAPICIBA` は `grant.CIBA` を必要とします）。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile)、[使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。

@@ -62,37 +62,39 @@ FAPI 1.0 には区分が 2 つありました。**Read-Only** はデータ取得
 
 FAPI 2.0 は 2 段構成です。
 
-<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 390" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="fapi-layers-title">FAPI 2.0 の層構造。OAuth 2.0 と OIDC の上に Baseline が安全な必須要件を固定し、Message Signing が署名付き要求・署名付き応答・DPoP nonce を追加して後から否認できない証拠を残す。</title>
-  <rect class="soft" x="70" y="306" width="620" height="64" rx="8"/>
-  <text class="h" x="380" y="332" text-anchor="middle">OAuth 2.0 + OpenID Connect</text>
-  <text class="t sub" x="380" y="354" text-anchor="middle">基盤仕様。選択肢が多く、危険な組み合わせも残る</text>
-
-  <rect class="accent" x="112" y="184" width="536" height="88" rx="8"/>
-  <text class="h accent-text" x="380" y="213" text-anchor="middle">FAPI 2.0 Baseline</text>
-  <text class="t" x="380" y="238" text-anchor="middle">PAR / PKCE / DPoP または mTLS / ES256 / 完全一致 redirect_uri</text>
-  <text class="m sub" x="380" y="258" text-anchor="middle">op.WithProfile(profile.FAPI2Baseline)</text>
-
-  <rect x="154" y="52" width="452" height="96" rx="8"/>
-  <text class="h" x="380" y="82" text-anchor="middle">FAPI 2.0 Message Signing</text>
-  <text class="t" x="380" y="107" text-anchor="middle">Baseline に加えて JAR / JARM / DPoP nonce</text>
-  <text class="t sub" x="380" y="128" text-anchor="middle">発信元と応答を署名で後から検証できる</text>
-
-  <path d="M380 306 V276"/>
-  <path d="M376 276 L380 272 L384 276"/>
-  <path d="M380 184 V152"/>
-  <path d="M376 152 L380 148 L384 152"/>
-
-  <rect x="8" y="78" width="128" height="44" rx="6"/>
-  <text class="t" x="72" y="96" text-anchor="middle">通信路</text>
-  <text class="t sub" x="72" y="113" text-anchor="middle">安全性</text>
-  <path d="M136 100 H150"/>
-
-  <rect x="624" y="78" width="128" height="44" rx="6"/>
-  <text class="t" x="688" y="96" text-anchor="middle">監査証跡</text>
-  <text class="t sub" x="688" y="113" text-anchor="middle">非否認性</text>
-  <path d="M624 100 H610"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">FAPI の各層が足すもの</div>
+  <svg class="fig-svg" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+    <title id="fapi-layers-title">FAPI 2.0 の層構造。基盤仕様は選択肢を広く残しており、Baseline がその上に安全な必須要件を固定し、Message Signing が署名付きリクエスト・署名付きレスポンス・DPoP nonce を追加して、後から否認できない証拠を残します。</title>
+    <!-- Message Signing -->
+    <rect class="fg-box fg-box--accent" x="36" y="24" width="664" height="102" rx="8"/>
+    <text class="fg-t fg-accent" x="56" y="52">FAPI 2.0 Message Signing</text>
+    <text class="fg-xs" x="56" y="74">Baseline のすべてに加えて JAR・JARM・DPoP nonce</text>
+    <text class="fg-xs" x="56" y="94">リクエストとレスポンスの両方を、後からでも検証できる状態に保つ</text>
+    <text class="fg-mxs" x="56" y="116">op.WithProfile(profile.FAPI2MessageSigning)</text>
+    <path class="fg-leader" d="M704,44 H736 M704,80 H736"/>
+    <rect class="fg-box fg-box--muted" x="740" y="32" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="48">監査証跡</text>
+    <rect class="fg-box fg-box--muted" x="740" y="68" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="84">非否認性</text>
+    <!-- Baseline -->
+    <rect class="fg-box" x="36" y="138" width="664" height="88" rx="8"/>
+    <text class="fg-t" x="56" y="166">FAPI 2.0 Baseline</text>
+    <text class="fg-xs" x="56" y="188">PAR · PKCE · DPoP または mTLS · ES256 · redirect_uri の完全一致</text>
+    <text class="fg-mxs" x="56" y="212">op.WithProfile(profile.FAPI2Baseline)</text>
+    <path class="fg-leader" d="M704,182 H736"/>
+    <rect class="fg-box fg-box--muted" x="740" y="170" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="186">最低安全要件</text>
+    <!-- 基盤 -->
+    <rect class="fg-box fg-box--muted" x="36" y="238" width="664" height="74" rx="8"/>
+    <text class="fg-t" x="56" y="266">OAuth 2.0 + OpenID Connect</text>
+    <text class="fg-xs" x="56" y="288">基盤仕様。選択肢が多く、組み合わせ次第では危険なものも残る</text>
+    <path class="fg-leader" d="M704,275 H736"/>
+    <rect class="fg-box fg-box--muted" x="740" y="263" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="279">通信路</text>
+  </svg>
+  <figcaption class="fig-note">上の層ほど選択肢を減らしているだけで、新しいプロトコルは足していません。Baseline は基盤仕様から危険な組み合わせを外したものです。だからこそプロファイルの適用はハンドラの書き換えではなく、オプション 1 つで済みます。</figcaption>
+</figure>
 
 FAPI は別仕様ではありません。OAuth 2.0 と OpenID Connect の安全な使い方を固定するプロファイルです。図で基盤仕様の横ではなく上に積んでいるのはそのためです。
 

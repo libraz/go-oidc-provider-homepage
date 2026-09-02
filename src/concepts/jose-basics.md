@@ -8,51 +8,46 @@ pageClass: pg-concepts-jose-basics
 
 **JOSE** (JavaScript Object Signing and Encryption) is the umbrella term for a family of IETF specs that define how to sign, encrypt, and represent keys for JSON-shaped tokens. Any OIDC implementation deals with all four pieces — JWS, JWE, JWK, JWKS — usually under the surface, occasionally directly. This page is the minimum a reader needs to understand `id_token`, `jwks_uri`, the JAR `request=` parameter, and `kid`.
 
-<svg role="img" aria-labelledby="jose-map-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jose-map-title">How the JOSE pieces relate: JWS signs, JWE encrypts, and the kid in a JWS header selects one JWK out of the JWKS published at /jwks.</title>
-<rect class="jose-main" x="44" y="54" width="178" height="88" rx="8"/>
-  <text class="jose-text" x="133" y="88" text-anchor="middle">JWS</text>
-  <text class="jose-sub" x="133" y="110" text-anchor="middle">signs a JWT</text>
-  <text class="jose-sub" x="133" y="128" text-anchor="middle">header.payload.signature</text>
-
-  <rect class="jose-box" x="292" y="54" width="178" height="88" rx="8"/>
-  <text class="jose-text" x="381" y="88" text-anchor="middle">JWE</text>
-  <text class="jose-sub" x="381" y="110" text-anchor="middle">wraps a signed JWT</text>
-  <text class="jose-sub" x="381" y="128" text-anchor="middle">an encrypted outer shell</text>
-
-  <rect class="jose-box" x="540" y="54" width="178" height="88" rx="8"/>
-  <text class="jose-text" x="629" y="88" text-anchor="middle">Recipient</text>
-  <text class="jose-sub" x="629" y="110" text-anchor="middle">decrypts, then verifies</text>
-
-  <path class="jose-flow" d="M222 98 H288"/>
-  <path class="jose-flow" d="M280 94 L289 98 L280 102"/>
-  <path class="jose-flow" d="M470 98 H536"/>
-  <path class="jose-flow" d="M528 94 L537 98 L528 102"/>
-
-  <rect class="jose-box" x="44" y="238" width="212" height="76" rx="8"/>
-  <text class="jose-text" x="150" y="268" text-anchor="middle">JWS header</text>
-  <text class="jose-sub" x="150" y="292" text-anchor="middle">"kid": "2024-05"</text>
-
-  <rect class="jose-set" x="306" y="196" width="412" height="140" rx="10"/>
-  <text class="jose-text" x="322" y="224">JWKS</text>
-  <text class="jose-sub" x="380" y="224">a set of JWKs, published at /jwks</text>
-
-  <rect class="jose-match" x="322" y="240" width="120" height="76" rx="6"/>
-  <text class="jose-text" x="382" y="270" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="382" y="292" text-anchor="middle">kid 2024-05</text>
-
-  <rect class="jose-box" x="454" y="240" width="120" height="76" rx="6"/>
-  <text class="jose-text" x="514" y="270" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="514" y="292" text-anchor="middle">kid 2023-11</text>
-
-  <rect class="jose-box" x="586" y="240" width="120" height="76" rx="6"/>
-  <text class="jose-text" x="646" y="270" text-anchor="middle">JWK</text>
-  <text class="jose-sub" x="646" y="292" text-anchor="middle">kid 2024-09</text>
-
-  <path class="jose-flow" d="M256 278 H316"/>
-  <path class="jose-flow" d="M308 274 L317 278 L308 282"/>
-  <text class="jose-sub halo" x="286" y="268" text-anchor="middle">selects</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">How the JOSE pieces fit together</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jose-map-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+    <title id="jose-map-title">JWS signs a JWT, JWE wraps a signed JWT in an encrypted shell, and the recipient unwraps then verifies. Separately, the kid in a JWS header selects one JWK out of the JWKS the OP publishes at its jwks endpoint.</title>
+    <text class="fg-lbl" x="40" y="26">producing a token</text>
+    <rect class="fg-box" x="36" y="38" width="280" height="86" rx="8"/>
+    <text class="fg-t" x="56" y="64">JWS</text>
+    <text class="fg-xs" x="56" y="84">signs a JWT — anyone can read it</text>
+    <text class="fg-mxs" x="56" y="108">header.payload.signature</text>
+    <path class="fg-edge" d="M320,81 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="340" y="38" width="280" height="86" rx="8"/>
+    <text class="fg-t" x="360" y="64">JWE</text>
+    <text class="fg-xs" x="360" y="84">wraps a signed JWT — nobody can read it</text>
+    <text class="fg-mxs" x="360" y="108">an encrypted outer shell</text>
+    <path class="fg-edge" d="M624,81 H640" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="644" y="38" width="280" height="86" rx="8"/>
+    <text class="fg-t" x="664" y="64">Recipient</text>
+    <text class="fg-xs" x="664" y="84">decrypts the shell first,</text>
+    <text class="fg-xs" x="664" y="102">then verifies the signature inside</text>
+    <text class="fg-lbl" x="40" y="164">finding the right key</text>
+    <rect class="fg-box fg-box--accent" x="36" y="176" width="280" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="202">JWS header</text>
+    <text class="fg-mxs" x="56" y="226">"alg": "RS256", "kid": "2024-05"</text>
+    <path class="fg-edge fg-edge--accent" d="M320,212 H420" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="370" y="205" text-anchor="middle">selects</text>
+    <rect class="fg-box" x="424" y="160" width="500" height="160" rx="8"/>
+    <text class="fg-t2" x="444" y="184">JWKS</text>
+    <text class="fg-xs" x="512" y="184">a set of JWKs, published at /jwks</text>
+    <rect class="fg-box fg-box--accent" x="444" y="196" width="460" height="34" rx="6"/>
+    <text class="fg-mxs" x="460" y="217">JWK · kid 2024-05</text>
+    <text class="fg-xs" x="700" y="217">current signing key</text>
+    <rect class="fg-box fg-box--muted" x="444" y="238" width="460" height="34" rx="6"/>
+    <text class="fg-mxs" x="460" y="259">JWK · kid 2023-11</text>
+    <text class="fg-xs" x="700" y="259">retired, still verifies old tokens</text>
+    <rect class="fg-box fg-box--muted" x="444" y="280" width="460" height="34" rx="6"/>
+    <text class="fg-mxs" x="460" y="301">JWK · kid 2024-09</text>
+    <text class="fg-xs" x="700" y="301">next key, published ahead of time</text>
+  </svg>
+  <figcaption class="fig-note">All three keys sit in the document at once, and that is the point: a verifier that fetched the set yesterday can still check a token signed today, and one signed last year, without a flag day.</figcaption>
+</figure>
 
 ::: details Specs referenced on this page
 - [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515) — JSON Web Signature (JWS)

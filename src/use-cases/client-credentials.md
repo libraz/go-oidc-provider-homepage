@@ -33,31 +33,33 @@ This is the right grant for cron jobs, webhooks, microservice ↔ microservice c
 
 ## Architecture
 
-<svg class="cc-svc-flow" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cc-svc-flow-title" viewBox="0 0 760 188" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="cc-svc-flow-title">Service-to-service client_credentials flow: Service A gets an access token from the OP, calls Service B with it, and Service B validates the token at the OP.</title>
-  <rect class="d-box" x="16" y="40" width="160" height="72" rx="6"/>
-  <rect class="d-op" x="300" y="40" width="160" height="72" rx="6"/>
-  <rect class="d-box" x="584" y="40" width="160" height="72" rx="6"/>
-  <text class="d-bt" x="96" y="72" text-anchor="middle">Service A</text>
-  <text class="d-bs" x="96" y="92" text-anchor="middle">confidential client</text>
-  <text class="d-bt d-op-text" x="380" y="72" text-anchor="middle">OP</text>
-  <text class="d-bs d-op-sub" x="380" y="92" text-anchor="middle">authorization server</text>
-  <text class="d-bt" x="664" y="72" text-anchor="middle">Service B</text>
-  <text class="d-bs" x="664" y="92" text-anchor="middle">resource server</text>
-  <line x1="182" y1="62" x2="294" y2="62"/>
-  <path d="M288 57 L294 62 L288 67"/>
-  <line x1="294" y1="90" x2="182" y2="90"/>
-  <path d="M188 85 L182 90 L188 95"/>
-  <line x1="578" y1="76" x2="466" y2="76"/>
-  <path d="M472 71 L466 76 L472 81"/>
-  <path d="M96 112 C96 176 664 176 664 116"/>
-  <path d="M659 123 L664 116 L669 123"/>
-  <text class="d-lbl" x="238" y="50" text-anchor="middle">1. <tspan class="d-tok">POST /token</tspan></text>
-  <text class="d-lbl" x="238" y="108" text-anchor="middle">2. <tspan class="d-tok">access_token</tspan></text>
-  <text class="d-lbl" x="522" y="62" text-anchor="middle">4. verify token</text>
-  <text class="d-tok" x="522" y="96" text-anchor="middle" font-size="10">/introspect · /jwks</text>
-  <text class="d-lbl" x="380" y="150" text-anchor="middle">3. <tspan class="d-tok">Authorization: Bearer</tspan></text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Service to service, no user in the loop</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-cc-title" viewBox="0 0 960 196" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-cc-title">Service A authenticates to the OP as itself and receives an access token, calls Service B with it, and Service B validates that token — either by introspection or against the published key set.</title>
+    <rect class="fg-box" x="36" y="56" width="230" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="82">Service A</text>
+    <text class="fg-xs" x="56" y="104">a confidential client</text>
+    <text class="fg-xs" x="56" y="120">it holds real credentials</text>
+    <path class="fg-edge" d="M270,80 H346" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="308" y="73" text-anchor="middle">1 · POST /token</text>
+    <path class="fg-edge fg-edge--accent" d="M346,112 H270" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="308" y="130" text-anchor="middle">2 · access_token</text>
+    <rect class="fg-box fg-box--accent" x="350" y="56" width="230" height="76" rx="8"/>
+    <text class="fg-t2 fg-accent" x="370" y="82">OP</text>
+    <text class="fg-xs" x="370" y="104">the authorization server</text>
+    <text class="fg-mxs" x="370" y="120">/token · /introspect · /jwks</text>
+    <path class="fg-edge fg-edge--muted" d="M694,132 V158 H466 V136" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="580" y="152" text-anchor="middle">4 · verify the token — /introspect, or against /jwks</text>
+    <path class="fg-edge" d="M270,94 H660" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="620" y="88" text-anchor="middle">3 · Authorization: Bearer &lt;token&gt;</text>
+    <rect class="fg-box" x="664" y="56" width="260" height="76" rx="8"/>
+    <text class="fg-t2" x="684" y="82">Service B</text>
+    <text class="fg-xs" x="684" y="104">the resource server</text>
+    <text class="fg-xs" x="684" y="120">it never sees Service A's credentials</text>
+  </svg>
+  <figcaption class="fig-note">Step 3 crosses in front of the OP because it does not involve it. Service B decides in step 4 whether to ask the OP about the token or to check the signature itself, and that choice is what the access-token format page is about.</figcaption>
+</figure>
 
 No `/authorize`, no consent, no `id_token`, no refresh token.
 

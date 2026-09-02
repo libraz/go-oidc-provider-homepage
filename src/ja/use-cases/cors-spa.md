@@ -17,38 +17,33 @@ pageClass: pg-use-cases-cors-spa
 
 本ページは CORS レイヤを扱います。PKCE 自体は [Authorization Code + PKCE](/ja/concepts/authorization-code-pkce) を参照。
 
-<svg role="img" aria-labelledby="cors-spa-flow-title" viewBox="0 0 760 200" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="cors-spa-flow-title">SPA の CORS フロー: ブラウザが Origin 付きで preflight を送り、OP が許可リストを確認し、許可された場合だけ本リクエストのレスポンスを SPA に読ませる。</title>
-  <rect class="cors-box" x="20" y="76" width="150" height="90" rx="8"/>
-  <text class="cors-text" x="95" y="108" text-anchor="middle">SPA</text>
-  <text class="cors-sub" x="95" y="130" text-anchor="middle">app.example.com</text>
-
-  <rect class="cors-main" x="298" y="62" width="164" height="118" rx="8"/>
-  <text class="cors-text" x="380" y="96" text-anchor="middle">ブラウザ</text>
-  <text class="cors-sub" x="380" y="118" text-anchor="middle">same-origin policy</text>
-  <text class="cors-sub" x="380" y="136" text-anchor="middle">preflight を実行</text>
-
-  <rect class="cors-box" x="590" y="76" width="150" height="90" rx="8"/>
-  <text class="cors-text" x="665" y="108" text-anchor="middle">OP</text>
-  <text class="cors-sub" x="665" y="130" text-anchor="middle">許可リストを確認</text>
-
-  <path class="cors-flow" d="M170 120 H292"/>
-  <path class="cors-flow" d="M285 116 L292 120 L285 124"/>
-  <text class="cors-sub" x="231" y="110" text-anchor="middle">fetch()</text>
-
-  <path class="cors-flow" d="M462 96 H584"/>
-  <path class="cors-flow" d="M577 92 L584 96 L577 100"/>
-  <text class="cors-sub" x="523" y="86" text-anchor="middle">OPTIONS + Origin</text>
-
-  <path class="cors-flow" d="M590 124 H468"/>
-  <path class="cors-flow" d="M475 120 L468 124 L475 128"/>
-  <text class="cors-sub" x="523" y="114" text-anchor="middle">Allow-Origin</text>
-
-  <path class="cors-flow" d="M462 152 H584"/>
-  <path class="cors-flow" d="M577 148 L584 152 L577 156"/>
-  <text class="cors-sub" x="523" y="142" text-anchor="middle">本リクエスト</text>
-  <text class="cors-sub" x="523" y="172" text-anchor="middle">PKCE / Bearer</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">なぜブラウザが先に尋ねるのか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-cors-title" viewBox="0 0 960 206" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-cors-title">SPA が fetch を呼ぶと、SPA ではなくブラウザがページのオリジンを載せた preflight を送り、OP が許可リストに照らして応答します。許可されたオリジンの場合にだけ、SPA は本リクエストの応答を読めます。</title>
+    <rect class="fg-box" x="36" y="60" width="230" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="86">SPA</text>
+    <text class="fg-mxs" x="56" y="108">app.example.com</text>
+    <text class="fg-xs" x="56" y="126">preflight そのものは見えない</text>
+    <path class="fg-edge" d="M270,84 H346" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="308" y="77" text-anchor="middle">fetch()</text>
+    <rect class="fg-box" x="350" y="46" width="230" height="104" rx="8"/>
+    <text class="fg-t2" x="370" y="72">ブラウザ</text>
+    <text class="fg-xs" x="370" y="94">same-origin policy を強制し</text>
+    <text class="fg-xs" x="370" y="112">preflight を自分で送る</text>
+    <text class="fg-xs fg-warn" x="370" y="136">SPA が何を読めるかを決めるのはここ</text>
+    <path class="fg-edge" d="M584,76 H660" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="622" y="69" text-anchor="middle">OPTIONS + Origin</text>
+    <path class="fg-edge fg-edge--accent" d="M660,110 H584" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="622" y="128" text-anchor="middle">Allow-Origin</text>
+    <rect class="fg-box fg-box--accent" x="664" y="46" width="260" height="104" rx="8"/>
+    <text class="fg-t2 fg-accent" x="684" y="72">OP</text>
+    <text class="fg-xs" x="684" y="94">オリジンを許可リストと照合し</text>
+    <text class="fg-xs" x="684" y="112">許可するかどうかを応答する</text>
+    <text class="fg-mxs" x="684" y="136">その後: 本リクエスト · PKCE · Bearer</text>
+  </svg>
+  <figcaption class="fig-note">許可リストは認証の検査ではありませんし、そのつもりで作られてもいません。決めているのは、そのオリジンのページが応答を読んでよいかどうかだけで、トークン自体は単独で成立している必要があります。</figcaption>
+</figure>
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework

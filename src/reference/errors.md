@@ -11,38 +11,39 @@ The OP returns errors from a closed catalog. There is no free-form `fmt.Errorf` 
 
 This page enumerates both.
 
-<svg role="img" aria-labelledby="error-routing-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="error-routing-title">How OP errors are classified: op.New configuration errors surface at boot, while endpoint errors come back as JSON, a redirect, or an HTML error page.</title>
-<rect class="err-box" x="32" y="58" width="170" height="70" rx="8"/>
-  <text class="err-text" x="117" y="88" text-anchor="middle">Construction error</text>
-  <text class="err-sub" x="117" y="110" text-anchor="middle">returned by op.New</text>
-
-  <rect class="err-box" x="32" y="174" width="170" height="70" rx="8"/>
-  <text class="err-text" x="117" y="204" text-anchor="middle">Request error</text>
-  <text class="err-sub" x="117" y="226" text-anchor="middle">from an endpoint</text>
-
-  <rect class="err-main" x="300" y="76" width="160" height="90" rx="8"/>
-  <text class="err-text" x="380" y="112" text-anchor="middle">Closed catalog</text>
-  <text class="err-sub" x="380" y="134" text-anchor="middle">error + description</text>
-
-  <rect class="err-box" x="558" y="34" width="170" height="54" rx="8"/>
-  <text class="err-text" x="643" y="68" text-anchor="middle">JSON response</text>
-  <rect class="err-box" x="558" y="116" width="170" height="54" rx="8"/>
-  <text class="err-text" x="643" y="150" text-anchor="middle">redirect</text>
-  <rect class="err-box" x="558" y="198" width="170" height="54" rx="8"/>
-  <text class="err-text" x="643" y="232" text-anchor="middle">HTML error page</text>
-
-  <path class="err-flow" d="M202 94 C242 94 258 108 296 116"/>
-  <path class="err-flow" d="M288 112 L297 116 L288 120"/>
-  <path class="err-flow" d="M202 210 C252 200 268 158 296 138"/>
-  <path class="err-flow" d="M288 134 L297 138 L288 142"/>
-  <path class="err-flow" d="M460 112 C500 84 516 62 554 62"/>
-  <path class="err-flow" d="M546 58 L555 62 L546 66"/>
-  <path class="err-flow" d="M460 124 H554"/>
-  <path class="err-flow" d="M546 120 L555 124 L546 128"/>
-  <path class="err-flow" d="M460 138 C504 160 516 226 554 226"/>
-  <path class="err-flow" d="M546 222 L555 226 L546 230"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Two kinds of error, and where each one surfaces</div>
+  <svg class="fig-svg" role="img" aria-labelledby="errors-shape-title" viewBox="0 0 960 252" xmlns="http://www.w3.org/2000/svg">
+    <title id="errors-shape-title">Configuration errors are returned by op.New and stop the process from starting. Request errors come out of an endpoint and are rendered as a JSON body, a redirect carrying error parameters, or an HTML error page, depending on where the request was in the flow.</title>
+    <rect class="fg-box fg-box--warn" x="36" y="44" width="270" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="70">Construction error</text>
+    <text class="fg-mxs" x="56" y="92">returned by op.New</text>
+    <text class="fg-xs" x="56" y="110">the process never starts</text>
+    <rect class="fg-box" x="36" y="140" width="270" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="166">Request error</text>
+    <text class="fg-xs" x="56" y="188">raised inside an endpoint</text>
+    <text class="fg-xs" x="56" y="206">while a client is waiting</text>
+    <path class="fg-edge" d="M310,178 H358" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="362" y="140" width="234" height="76" rx="8"/>
+    <text class="fg-t2 fg-accent" x="382" y="166">A closed catalog</text>
+    <text class="fg-mxs" x="382" y="188">error + error_description</text>
+    <text class="fg-xs" x="382" y="206">the code is the contract</text>
+    <path class="fg-leader" d="M600,178 H632 M632,68 V178"/>
+    <path class="fg-edge fg-edge--thin" d="M632,68 H692" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M632,140 H692" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M632,208 H692" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="696" y="44" width="228" height="48" rx="6"/>
+    <text class="fg-t2" x="714" y="66">JSON response</text>
+    <text class="fg-xs" x="714" y="84">back-channel endpoints</text>
+    <rect class="fg-box" x="696" y="116" width="228" height="48" rx="6"/>
+    <text class="fg-t2" x="714" y="138">Redirect</text>
+    <text class="fg-xs" x="714" y="156">once redirect_uri is trusted</text>
+    <rect class="fg-box" x="696" y="184" width="228" height="48" rx="6"/>
+    <text class="fg-t2" x="714" y="206">HTML error page</text>
+    <text class="fg-xs" x="714" y="224">when it is not, or not yet</text>
+  </svg>
+  <figcaption class="fig-note">Which of the three a client sees is not a style choice. Until <code>redirect_uri</code> has been validated the OP cannot redirect anywhere — sending an error to an unverified URI is how open redirectors get built.</figcaption>
+</figure>
 
 ## Error shape
 

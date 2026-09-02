@@ -10,40 +10,35 @@ You already have a users, members, employees, or accounts table, and it is not s
 
 The seam runs between the OAuth records and the end-user records. The library keeps the first half; your application keeps the second, and hands the OP three read methods across the boundary.
 
-<svg role="img" aria-labelledby="byo-userstore-seam-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="byo-userstore-seam-title">The seam between the two halves: the library keeps the OAuth and OIDC records in its bundled store, the application keeps the end-user rows, and the OP reads across the boundary through FindBySubject, FindByUsername, and ReadPasswordHash.</title>
-
-  <path class="bu-seam" d="M380 26 V268"/>
-  <text class="bu-call" x="380" y="16" text-anchor="middle">op.WithUserStore</text>
-
-  <rect class="bu-lib" x="20" y="28" width="280" height="88" rx="8"/>
-  <text class="bu-lib-title" x="160" y="56" text-anchor="middle">The library owns</text>
-  <text class="bu-note" x="160" y="80" text-anchor="middle">clients · codes · refresh tokens · grants</text>
-  <text class="bu-note" x="160" y="100" text-anchor="middle">sessions · PAR · IATs · RATs · access tokens</text>
-
-  <rect class="bu-app" x="460" y="28" width="280" height="88" rx="8"/>
-  <text class="bu-app-title" x="600" y="56" text-anchor="middle">You own</text>
-  <text class="bu-note" x="600" y="80" text-anchor="middle">members: member_id · email_address</text>
-  <text class="bu-note" x="600" y="100" text-anchor="middle">password_phc · full_name · locale_pref</text>
-
-  <text class="bu-note" x="300" y="156" text-anchor="end">ID Token and /userinfo claims</text>
-  <path class="bu-flow" d="M310 152 H450"/>
-  <path class="bu-flow" d="M444 147 L450 152 L444 157"/>
-  <text class="bu-call" x="380" y="142" text-anchor="middle">FindBySubject</text>
-  <text class="bu-note" x="460" y="156">reads the member row</text>
-
-  <text class="bu-note" x="300" y="202" text-anchor="end">login identifier to subject</text>
-  <path class="bu-flow" d="M310 198 H450"/>
-  <path class="bu-flow" d="M444 193 L450 198 L444 203"/>
-  <text class="bu-call" x="380" y="188" text-anchor="middle">FindByUsername</text>
-  <text class="bu-note" x="460" y="202">matches email_address</text>
-
-  <text class="bu-note" x="300" y="248" text-anchor="end">op.PrimaryPassword</text>
-  <path class="bu-flow" d="M310 244 H450"/>
-  <path class="bu-flow" d="M444 239 L450 244 L444 249"/>
-  <text class="bu-call" x="380" y="234" text-anchor="middle">ReadPasswordHash</text>
-  <text class="bu-note" x="460" y="248">returns password_phc</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Protocol records here, people over there</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-byouserstore-title" viewBox="0 0 960 286" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-byouserstore-title">The library keeps the OAuth and OIDC records in its own store; your application keeps the end-user rows where they already are. The provider reaches across the boundary through three read calls and nothing else.</title>
+    <text class="fg-lbl fg-accent" x="480" y="18" text-anchor="middle">op.WithUserStore</text>
+    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="480" y1="26" x2="480" y2="270"/>
+    <rect class="fg-box" x="36" y="34" width="404" height="106" rx="8"/>
+    <text class="fg-t2" x="56" y="60">The library owns</text>
+    <text class="fg-mxs" x="56" y="84">clients · codes · refresh tokens · grants</text>
+    <text class="fg-mxs" x="56" y="104">sessions · PAR · IATs · RATs · access tokens</text>
+    <text class="fg-xs" x="56" y="128">everything that only exists because the protocol says so</text>
+    <rect class="fg-box" x="520" y="34" width="404" height="106" rx="8"/>
+    <text class="fg-t2" x="540" y="60">You own</text>
+    <text class="fg-mxs" x="540" y="84">members: member_id · email_address</text>
+    <text class="fg-mxs" x="540" y="104">password_phc · full_name · locale_pref</text>
+    <text class="fg-xs" x="540" y="128">the rows your product already had before any of this</text>
+    <text class="fg-lbl" x="36" y="172">the three calls that cross</text>
+    <rect class="fg-box fg-box--accent" x="36" y="182" width="888" height="34" rx="6"/>
+    <text class="fg-m fg-accent" x="56" y="204">FindBySubject</text>
+    <text class="fg-xs" x="240" y="204">reads the member row behind a subject — the source of the ID token and /userinfo claims</text>
+    <rect class="fg-box fg-box--accent" x="36" y="220" width="888" height="26" rx="6"/>
+    <text class="fg-m fg-accent" x="56" y="238">FindByUsername</text>
+    <text class="fg-xs" x="240" y="238">turns a login identifier into a subject — matched against email_address here</text>
+    <rect class="fg-box fg-box--accent" x="36" y="250" width="888" height="26" rx="6"/>
+    <text class="fg-m fg-accent" x="56" y="268">ReadPasswordHash</text>
+    <text class="fg-xs" x="240" y="268">returns password_phc for op.PrimaryPassword to verify — the hash never leaves your side</text>
+  </svg>
+  <figcaption class="fig-note">All three are reads. The library never writes a member row, never invents one, and never needs your schema to look a particular way — only for those three questions to have answers.</figcaption>
+</figure>
 
 > **Source:** [`examples/24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore)
 

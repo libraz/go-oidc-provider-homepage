@@ -30,74 +30,60 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
 
 ## Architecture
 
-<svg class="bcl-svg" role="img" aria-labelledby="bcl-arch-title" viewBox="0 0 760 386" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="bcl-arch-title">Back-channel logout sequence: RP A drives /end_session, the OP terminates the session and fans out signed logout tokens to grant-derived RP targets B and C, then redirects RP A.</title>
-
-  <path class="life" d="M70 48V372"/>
-  <path class="life" d="M220 48V372"/>
-  <path class="life" d="M380 48V372"/>
-  <path class="life" d="M540 48V372"/>
-  <path class="life" d="M700 48V372"/>
-
-  <rect x="24" y="12" width="92" height="36" rx="7"/>
-  <text class="nm" x="70" y="35" text-anchor="middle">User</text>
-
-  <rect x="168" y="12" width="104" height="36" rx="7"/>
-  <text class="nm" x="220" y="30" text-anchor="middle">RP A</text>
-  <text class="rl" x="220" y="42" text-anchor="middle">initiates</text>
-
-  <rect class="accent" x="328" y="12" width="104" height="36" rx="7"/>
-  <text class="nm accentt" x="380" y="35" text-anchor="middle">OP</text>
-
-  <rect x="488" y="12" width="104" height="36" rx="7"/>
-  <text class="nm" x="540" y="35" text-anchor="middle">RP B</text>
-
-  <rect x="654" y="12" width="92" height="36" rx="7"/>
-  <text class="nm" x="700" y="35" text-anchor="middle">RP C</text>
-
-  <text class="lb" x="145" y="74" text-anchor="middle">click &#8220;log out&#8221;</text>
-  <path d="M70 82L220 82M213 78L220 82L213 86"/>
-  <circle class="bg" cx="70" cy="82" r="8" stroke-width="1.5"/>
-  <text class="bn" x="70" y="85.5" text-anchor="middle">1</text>
-
-  <text class="lb" x="300" y="104" text-anchor="middle">redirect to</text>
-  <text class="lbm m halo" x="300" y="116" text-anchor="middle">/end_session?id_token_hint=&#8230;</text>
-  <path d="M220 124L380 124M373 120L380 124L373 128"/>
-  <circle class="bg" cx="220" cy="124" r="8" stroke-width="1.5"/>
-  <text class="bn" x="220" y="127.5" text-anchor="middle">2</text>
-
-  <rect class="accent" x="326" y="138" width="108" height="26" rx="5"/>
-  <text class="lb halo" x="380" y="155" text-anchor="middle">terminate session</text>
-  <circle class="bg" cx="312" cy="151" r="8" stroke-width="1.5"/>
-  <text class="bn" x="312" y="154.5" text-anchor="middle">3</text>
-
-  <rect class="frame" x="350" y="176" width="396" height="94" rx="8"/>
-  <text class="fr halo" x="360" y="193">fan-out to grant-derived RP targets</text>
-  <text class="lbm m halo" x="548" y="211" text-anchor="middle">POST backchannel_logout_uri &#183; logout_token = signed JWT</text>
-
-  <path class="accent" d="M380 228L540 228M533 224L540 228L533 232"/>
-  <circle class="bg" cx="380" cy="228" r="8" stroke-width="1.5"/>
-  <text class="bn" x="380" y="231.5" text-anchor="middle">4</text>
-
-  <path class="accent" d="M380 254L700 254M693 250L700 254L693 258"/>
-  <circle class="bg" cx="380" cy="254" r="8" stroke-width="1.5"/>
-  <text class="bn" x="380" y="257.5" text-anchor="middle">5</text>
-
-  <text class="lbm m" x="392" y="288">200</text>
-  <path class="ret" d="M540 294L380 294M387 290L380 294L387 298"/>
-  <circle class="bg" cx="540" cy="294" r="8" stroke-width="1.5"/>
-  <text class="bn" x="540" y="297.5" text-anchor="middle">6</text>
-
-  <text class="lbm m" x="392" y="314">200</text>
-  <path class="ret" d="M700 320L380 320M387 316L380 320L387 324"/>
-  <circle class="bg" cx="700" cy="320" r="8" stroke-width="1.5"/>
-  <text class="bn" x="700" y="323.5" text-anchor="middle">7</text>
-
-  <text class="lb halo" x="300" y="348" text-anchor="middle">302 <tspan class="m" font-size="10">post_logout_redirect_uri</tspan></text>
-  <path class="accent" d="M380 356L220 356M227 352L220 356L227 360"/>
-  <circle class="bg" cx="380" cy="356" r="8" stroke-width="1.5"/>
-  <text class="bn" x="380" y="359.5" text-anchor="middle">8</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">One logout, fanned out to every RP</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-bcl-title" viewBox="0 0 960 366" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-bcl-title">RP A sends the user to the end-session endpoint. The OP terminates the session, then posts a signed logout token to every RP the session's grants point at, and finally redirects the user back to RP A.</title>
+    <line class="fg-life" x1="110" y1="72" x2="110" y2="356"/>
+    <line class="fg-life" x1="300" y1="72" x2="300" y2="356"/>
+    <line class="fg-life fg-life--accent" x1="530" y1="72" x2="530" y2="356"/>
+    <line class="fg-life" x1="760" y1="72" x2="760" y2="356"/>
+    <line class="fg-life" x1="890" y1="72" x2="890" y2="356"/>
+    <rect class="fg-box" x="40" y="24" width="140" height="44" rx="6"/>
+    <text class="fg-t" x="110" y="44" text-anchor="middle">User</text>
+    <text class="fg-xs" x="110" y="59" text-anchor="middle">browser</text>
+    <rect class="fg-box" x="230" y="24" width="140" height="44" rx="6"/>
+    <text class="fg-t" x="300" y="44" text-anchor="middle">RP A</text>
+    <text class="fg-xs" x="300" y="59" text-anchor="middle">initiates</text>
+    <rect class="fg-box fg-box--accent" x="450" y="24" width="160" height="44" rx="6"/>
+    <text class="fg-t fg-accent" x="530" y="44" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="530" y="59" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="700" y="24" width="120" height="44" rx="6"/>
+    <text class="fg-t" x="760" y="49" text-anchor="middle">RP B</text>
+    <rect class="fg-box" x="838" y="24" width="86" height="44" rx="6"/>
+    <text class="fg-t" x="881" y="49" text-anchor="middle">RP C</text>
+    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M110,102 H300" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="205" y="96" text-anchor="middle">the user clicks "log out"</text>
+    <circle class="fg-badge" cx="15" cy="142" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="145" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M300,142 H530" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="415" y="122" text-anchor="middle">redirect to</text>
+    <text class="fg-mxs fg-halo" x="415" y="135" text-anchor="middle">/end_session?id_token_hint=…</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="180" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="183" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--accent" d="M530,172 h28 v16 h-28" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="570" y="184">terminate the session, then walk its grants</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="228" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="231" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M530,228 H756" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent" d="M530,258 H886" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="643" y="208" text-anchor="middle">POST backchannel_logout_uri</text>
+    <text class="fg-mxs" x="643" y="221" text-anchor="middle">logout_token — a signed JWT</text>
+    <text class="fg-xs fg-halo" x="700" y="252" text-anchor="middle">one POST per grant-derived target</text>
+    <circle class="fg-badge" cx="15" cy="292" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="295" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--muted" d="M756,292 H534" marker-end="url(#fg-am)"/>
+    <path class="fg-edge fg-edge--muted" d="M886,314 H534" marker-end="url(#fg-am)"/>
+    <text class="fg-mxs fg-halo" x="645" y="286" text-anchor="middle">200 — or nothing at all</text>
+    <circle class="fg-badge" cx="15" cy="350" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="353" text-anchor="middle">6</text>
+    <path class="fg-edge fg-edge--accent" d="M530,350 H110" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs fg-halo" x="320" y="344" text-anchor="middle">302 → post_logout_redirect_uri</text>
+  </svg>
+  <figcaption class="fig-note">Step 5 is drawn muted for a reason: the OP does not wait on it, and an RP that never answers still gets logged out everywhere else. Back-channel logout is a best-effort notification, not a distributed transaction.</figcaption>
+</figure>
 
 The OP signs a `logout_token` per RP and POSTs it to that RP's `backchannel_logout_uri`. The token contains:
 

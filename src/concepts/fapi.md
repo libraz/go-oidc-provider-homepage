@@ -62,37 +62,39 @@ FAPI 1.0 had two bands. **Read-Only** was for use cases that only retrieved data
 
 FAPI 2.0 has two bands:
 
-<svg class="fapi-layers" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 760 390" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="fapi-layers-title">The FAPI 2.0 layers. Baseline pins a safe set of mandates on top of OAuth 2.0 and OIDC, and Message Signing adds signed requests, signed responses, and DPoP nonces so the exchange leaves evidence that cannot be repudiated later.</title>
-  <rect class="soft" x="70" y="306" width="620" height="64" rx="8"/>
-  <text class="h" x="380" y="332" text-anchor="middle">OAuth 2.0 + OpenID Connect</text>
-  <text class="t sub" x="380" y="354" text-anchor="middle">the base specs — many options, some of them dangerous in combination</text>
-
-  <rect class="accent" x="112" y="184" width="536" height="88" rx="8"/>
-  <text class="h accent-text" x="380" y="213" text-anchor="middle">FAPI 2.0 Baseline</text>
-  <text class="t" x="380" y="238" text-anchor="middle">PAR / PKCE / DPoP or mTLS / ES256 / exact-match redirect_uri</text>
-  <text class="m sub" x="380" y="258" text-anchor="middle">op.WithProfile(profile.FAPI2Baseline)</text>
-
-  <rect x="154" y="52" width="452" height="96" rx="8"/>
-  <text class="h" x="380" y="82" text-anchor="middle">FAPI 2.0 Message Signing</text>
-  <text class="t" x="380" y="107" text-anchor="middle">Baseline plus JAR / JARM / DPoP nonce</text>
-  <text class="t sub" x="380" y="128" text-anchor="middle">request and response stay verifiable after the fact</text>
-
-  <path d="M380 306 V276"/>
-  <path d="M376 276 L380 272 L384 276"/>
-  <path d="M380 184 V152"/>
-  <path d="M376 152 L380 148 L384 152"/>
-
-  <rect x="8" y="78" width="128" height="44" rx="6"/>
-  <text class="t" x="72" y="96" text-anchor="middle">transport</text>
-  <text class="t sub" x="72" y="113" text-anchor="middle">safety</text>
-  <path d="M136 100 H150"/>
-
-  <rect x="624" y="78" width="128" height="44" rx="6"/>
-  <text class="t" x="688" y="96" text-anchor="middle">audit trail</text>
-  <text class="t sub" x="688" y="113" text-anchor="middle">non-repudiation</text>
-  <path d="M624 100 H610"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">What each FAPI layer adds</div>
+  <svg class="fig-svg" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+    <title id="fapi-layers-title">The FAPI 2.0 layers. The base specifications leave many options open; Baseline pins a safe set of mandates on top of them; Message Signing adds signed requests, signed responses and DPoP nonces so the exchange leaves evidence that cannot be repudiated afterwards.</title>
+    <!-- message signing -->
+    <rect class="fg-box fg-box--accent" x="36" y="24" width="664" height="102" rx="8"/>
+    <text class="fg-t fg-accent" x="56" y="52">FAPI 2.0 Message Signing</text>
+    <text class="fg-xs" x="56" y="74">everything in Baseline, plus JAR, JARM and DPoP nonces</text>
+    <text class="fg-xs" x="56" y="94">the request and the response both stay verifiable after the fact</text>
+    <text class="fg-mxs" x="56" y="116">op.WithProfile(profile.FAPI2MessageSigning)</text>
+    <path class="fg-leader" d="M704,44 H736 M704,80 H736"/>
+    <rect class="fg-box fg-box--muted" x="740" y="32" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="48">audit trail</text>
+    <rect class="fg-box fg-box--muted" x="740" y="68" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="84">non-repudiation</text>
+    <!-- baseline -->
+    <rect class="fg-box" x="36" y="138" width="664" height="88" rx="8"/>
+    <text class="fg-t" x="56" y="166">FAPI 2.0 Baseline</text>
+    <text class="fg-xs" x="56" y="188">PAR · PKCE · DPoP or mTLS · ES256 · exact-match redirect_uri</text>
+    <text class="fg-mxs" x="56" y="212">op.WithProfile(profile.FAPI2Baseline)</text>
+    <path class="fg-leader" d="M704,182 H736"/>
+    <rect class="fg-box fg-box--muted" x="740" y="170" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="186">safety floor</text>
+    <!-- base -->
+    <rect class="fg-box fg-box--muted" x="36" y="238" width="664" height="74" rx="8"/>
+    <text class="fg-t" x="56" y="266">OAuth 2.0 + OpenID Connect</text>
+    <text class="fg-xs" x="56" y="288">the base specifications — many options, some dangerous in combination</text>
+    <path class="fg-leader" d="M704,275 H736"/>
+    <rect class="fg-box fg-box--muted" x="740" y="263" width="184" height="24" rx="4"/>
+    <text class="fg-lbl" x="756" y="279">transport</text>
+  </svg>
+  <figcaption class="fig-note">Each layer only removes choices. Nothing in Baseline is new protocol — it is the base specifications with the dangerous combinations taken off the table, which is why a profile can be switched on with one option instead of rewritten into your handlers.</figcaption>
+</figure>
 
 FAPI is not a separate protocol. It is a profile that pins down how to use OAuth 2.0 and OpenID Connect safely, which is why the diagram stacks it on top of the base specs rather than beside them.
 

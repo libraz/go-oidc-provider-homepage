@@ -25,63 +25,64 @@ pageClass: pg-concepts-refresh-tokens
 
 `grant_type=refresh_token` が成功するたびに、リフレッシュトークンは **ローテーション** します — 古いトークンは無効化され、新しいトークンが返されます。
 
-<svg class="rr-flow-dg" role="img" aria-labelledby="refresh-rotation-flow-title" viewBox="0 0 760 452" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="refresh-rotation-flow-title">リフレッシュトークンのローテーション: 交換のたびに提示されたトークンを無効化して同じ連鎖内で新しいトークンを発行し、ローテーション済みトークンの再提示は再利用として検知され連鎖全体を失効させる。</title>
-  <line class="life" x1="110" y1="68" x2="110" y2="438"/>
-  <line class="life op-accent" x1="380" y1="68" x2="380" y2="438"/>
-  <line class="life rs-stroke" x1="650" y1="68" x2="650" y2="438"/>
-  <rect x="35" y="14" width="150" height="30" rx="5"/>
-  <rect class="op-accent" x="305" y="14" width="150" height="30" rx="5"/>
-  <rect class="rs-stroke" x="575" y="14" width="150" height="30" rx="5"/>
-  <text class="d-actor" x="110" y="33" text-anchor="middle">RP / クライアント</text>
-  <text class="d-actor op-fill" x="380" y="33" text-anchor="middle">OP</text>
-  <text class="d-actor rs-fill" x="650" y="33" text-anchor="middle">攻撃者</text>
-  <text class="d-cap" x="110" y="58" text-anchor="middle">トークンを更新</text>
-  <text class="d-cap op-fill" x="380" y="58" text-anchor="middle">本ライブラリ</text>
-  <text class="d-cap rs-fill" x="650" y="58" text-anchor="middle">rt1 を盗む</text>
-
-  <path d="M110,100 H380"/>
-  <path d="M373,96 L380,100 L373,104"/>
-  <text class="d-mono halo" x="245" y="92" text-anchor="middle">POST /token · grant_type=authorization_code</text>
-
-  <path d="M380,140 H110"/>
-  <path d="M117,136 L110,140 L117,144"/>
-  <text class="d-mono halo" x="245" y="132" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
-
-  <text class="d-mono rs-fill halo" x="245" y="166" text-anchor="middle">access_token 有効期限切れ</text>
-
-  <path d="M110,196 H380"/>
-  <path d="M373,192 L380,196 L373,200"/>
-  <text class="d-mono halo" x="245" y="188" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
-
-  <path class="op-accent" d="M380,211 h16 v12 h-16"/>
-  <path class="op-accent" d="M387,215 L380,219 L387,223"/>
-  <text class="d-prose op-fill halo" x="404" y="208">リフレッシュトークンをローテーション</text>
-  <text class="d-mono halo" x="404" y="220">rt1 を無効化 · rt2 を発行（同じ連鎖）</text>
-
-  <path d="M380,256 H110"/>
-  <path d="M117,252 L110,256 L117,260"/>
-  <text class="d-mono halo" x="245" y="248" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
-
-  <path d="M110,292 H380"/>
-  <path d="M373,288 L380,292 L373,296"/>
-  <text class="d-mono halo" x="245" y="284" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
-
-  <path d="M380,328 H110"/>
-  <path d="M117,324 L110,328 L117,332"/>
-  <text class="d-mono halo" x="245" y="320" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
-
-  <text class="d-mono rs-fill halo" x="515" y="354" text-anchor="middle">攻撃者が rt1 を盗む</text>
-
-  <path class="rs-stroke" d="M650,384 H380"/>
-  <path class="rs-stroke" d="M387,380 L380,384 L387,388"/>
-  <text class="d-mono rs-fill halo" x="515" y="376" text-anchor="middle">refresh_token=rt1 を再提示（消費済み）</text>
-
-  <path class="op-accent" d="M380,401 h16 v12 h-16"/>
-  <path class="op-accent" d="M387,405 L380,409 L387,413"/>
-  <text class="d-prose op-fill halo" x="404" y="398">再利用を検知 → 連鎖全体を失効</text>
-  <text class="d-mono halo" x="404" y="410">RevokeChain(rt1..rt3) · refresh.replay_detected</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">ローテーションと、消費済みトークンが戻ってきたとき</div>
+  <svg class="fig-svg" role="img" aria-labelledby="rt-rotation-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
+    <title id="rt-rotation-title">リフレッシュトークンのローテーションを示した図。交換のたびに提示されたトークンを無効化し、同じ連鎖内で新しいトークンを発行します。ローテーション済みのトークンが再提示されると OP は再利用として検知し、正規クライアントが保持しているトークンを含めて連鎖全体を失効させます。</title>
+    <!-- 段階の帯 -->
+    <rect class="fg-group" x="30" y="70" width="916" height="300" rx="8"/>
+    <rect class="fg-group" x="30" y="378" width="916" height="172" rx="8"/>
+    <text class="fg-lbl" x="42" y="88">通常の更新</text>
+    <text class="fg-lbl fg-danger" x="42" y="396">盗まれたトークンが戻ってくる</text>
+    <!-- ライフライン -->
+    <line class="fg-life" x1="150" y1="62" x2="150" y2="550"/>
+    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="550"/>
+    <line class="fg-life" x1="830" y1="62" x2="830" y2="550"/>
+    <!-- 登場人物 -->
+    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / クライアント</text>
+    <text class="fg-xs" x="150" y="49" text-anchor="middle">トークンを更新する</text>
+    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box fg-box--danger" x="740" y="16" width="180" height="42" rx="6"/>
+    <text class="fg-t" x="830" y="35" text-anchor="middle">攻撃者</text>
+    <text class="fg-xs" x="830" y="49" text-anchor="middle">rt1 の複製を持つ</text>
+    <!-- 初回発行 -->
+    <path class="fg-edge" d="M150,110 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="104" text-anchor="middle">POST /token · grant_type=authorization_code</text>
+    <path class="fg-edge fg-edge--accent" d="M500,140 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="134" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
+    <!-- 有効期限切れ -->
+    <path class="fg-edge fg-edge--muted" d="M150,166 h28 v14 h-28" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="190" y="178">アクセストークンの有効期限が切れる</text>
+    <!-- 1 回目のローテーション -->
+    <path class="fg-edge" d="M150,212 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="206" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
+    <path class="fg-edge fg-edge--accent" d="M500,244 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="542" y="248">ローテーション</text>
+    <text class="fg-mxs" x="542" y="261">rt1 を無効化 · 同じ連鎖で rt2 を発行</text>
+    <path class="fg-edge fg-edge--accent" d="M500,290 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="284" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
+    <!-- 2 回目のローテーション -->
+    <path class="fg-edge" d="M150,322 H500" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="325" y="316" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
+    <path class="fg-edge fg-edge--accent" d="M500,354 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="325" y="348" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
+    <!-- 盗難 -->
+    <path class="fg-edge fg-edge--muted" d="M150,424 H830" marker-end="url(#fg-am)"/>
+    <text class="fg-xs fg-halo" x="490" y="418" text-anchor="middle">rt1 が以前に漏洩し、攻撃者が複製を保持している</text>
+    <!-- 再提示 -->
+    <path class="fg-edge fg-edge--danger" d="M830,456 H500" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs" x="665" y="450" text-anchor="middle">refresh_token=rt1 を再提示 — すでに消費済み</text>
+    <path class="fg-edge fg-edge--danger" d="M500,484 h30 v16 h-30" marker-end="url(#fg-ad)"/>
+    <text class="fg-s fg-danger" x="542" y="488">再利用を検知</text>
+    <text class="fg-mxs" x="542" y="501">RevokeChain(rt1…rt3) · refresh.replay_detected</text>
+    <path class="fg-edge fg-edge--danger" d="M500,536 H150" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs" x="325" y="530" text-anchor="middle">400 invalid_grant — rt3 も失効している</text>
+  </svg>
+  <figcaption class="fig-note">最後の矢印がこの設計の要点です。正規のクライアントも手元の有効なトークンを失います。再利用が起きたということは 2 人の保持者のどちらかが攻撃者だということで、OP にはどちらかを判別できません。そこで連鎖を打ち切り、双方に再認証を求めます。</figcaption>
+</figure>
 
 ::: warning 再利用検知は連鎖全体を無効化
 すでにローテーション済みのリフレッシュトークンが再提示されると、OP は「資格情報が盗まれた」シグナルとして扱い、**連鎖全体を失効させます** — 盗まれたトークンも、それを起点に発行された正規のトークンも、両方とも無効になります。両者とも再認証が必要です。

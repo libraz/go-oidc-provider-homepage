@@ -26,36 +26,48 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 > Conformance ≠ Security. An OFCS-passing OP can still be exploitable (alg confusion, PKCE downgrade, redirect_uri partial match, timing attacks on secret compare). The next sections describe how each class is closed structurally rather than by runtime checks alone.
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="posture-five-properties-title" viewBox="0 0 760 124" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="posture-five-properties-title">The five separate properties behind "is this safe?" — conformance, correctness, security, supply-chain, and operational assurance, read in order.</title>
-  <rect x="7" y="18" width="130" height="84" rx="6"/>
-  <rect x="161" y="18" width="130" height="84" rx="6"/>
-  <rect x="315" y="18" width="130" height="84" rx="6"/>
-  <rect x="469" y="18" width="130" height="84" rx="6"/>
-  <rect x="623" y="18" width="130" height="84" rx="6"/>
-  <path class="op-fp-flow" d="M139 60 H158 M153 56 L158 60 L153 64"/>
-  <path class="op-fp-flow" d="M293 60 H312 M307 56 L312 60 L307 64"/>
-  <path class="op-fp-flow" d="M447 60 H466 M461 56 L466 60 L461 64"/>
-  <path class="op-fp-flow" d="M601 60 H620 M615 56 L620 60 L615 64"/>
-  <text class="op-fp-num" x="72" y="40" text-anchor="middle" stroke="none">1</text>
-  <text class="op-fp-title" x="72" y="61" text-anchor="middle" fill="currentColor" stroke="none">Conformance</text>
-  <text class="op-fp-mono" x="72" y="82" text-anchor="middle" fill="currentColor" stroke="none">OFCS</text>
-  <text class="op-fp-num" x="226" y="40" text-anchor="middle" stroke="none">2</text>
-  <text class="op-fp-title" x="226" y="61" text-anchor="middle" fill="currentColor" stroke="none">Correctness</text>
-  <text class="op-fp-prose" x="226" y="82" text-anchor="middle" fill="currentColor" stroke="none">tests + fuzz</text>
-  <text class="op-fp-num" x="380" y="40" text-anchor="middle" stroke="none">3</text>
-  <text class="op-fp-title" x="380" y="61" text-anchor="middle" fill="currentColor" stroke="none">Security</text>
-  <text class="op-fp-prose" x="380" y="78" text-anchor="middle" fill="currentColor" stroke="none">structural</text>
-  <text class="op-fp-prose" x="380" y="91" text-anchor="middle" fill="currentColor" stroke="none">defenses</text>
-  <text class="op-fp-num" x="534" y="40" text-anchor="middle" stroke="none">4</text>
-  <text class="op-fp-title" x="534" y="61" text-anchor="middle" fill="currentColor" stroke="none">Supply-chain</text>
-  <text class="op-fp-mono" x="534" y="78" text-anchor="middle" fill="currentColor" stroke="none">govulncheck</text>
-  <text class="op-fp-mono" x="534" y="91" text-anchor="middle" fill="currentColor" stroke="none">depguard</text>
-  <text class="op-fp-num" x="688" y="40" text-anchor="middle" stroke="none">5</text>
-  <text class="op-fp-title" x="688" y="61" text-anchor="middle" fill="currentColor" stroke="none">Operational</text>
-  <text class="op-fp-mono" x="688" y="78" text-anchor="middle" fill="currentColor" stroke="none">SECURITY.md</text>
-  <text class="op-fp-mono" x="688" y="91" text-anchor="middle" fill="currentColor" stroke="none">GHSA</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">Five separate properties behind "is this safe?"</div>
+  <svg class="fig-svg" role="img" aria-labelledby="posture-five-title" viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+    <title id="posture-five-title">Conformance, correctness, security, supply chain and operational assurance are five separate properties. Each is evidenced differently, and a claim about one says nothing about the others.</title>
+    <rect class="fg-box" x="36" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="56" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="56" y="49" text-anchor="middle">1</text>
+    <text class="fg-t2" x="76" y="50">Conformance</text>
+    <line class="fg-rule" x1="52" y1="64" x2="188" y2="64"/>
+    <text class="fg-mxs" x="52" y="84">OFCS</text>
+    <text class="fg-xs" x="52" y="100">run against the suite</text>
+    <rect class="fg-box" x="216" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="236" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="236" y="49" text-anchor="middle">2</text>
+    <text class="fg-t2" x="256" y="50">Correctness</text>
+    <line class="fg-rule" x1="232" y1="64" x2="368" y2="64"/>
+    <text class="fg-mxs" x="232" y="84">tests · fuzzing</text>
+    <text class="fg-xs" x="232" y="100">does it do what it says</text>
+    <rect class="fg-box" x="396" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="416" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="416" y="49" text-anchor="middle">3</text>
+    <text class="fg-t2" x="436" y="50">Security</text>
+    <line class="fg-rule" x1="412" y1="64" x2="548" y2="64"/>
+    <text class="fg-mxs" x="412" y="84">structural defenses</text>
+    <text class="fg-xs" x="412" y="100">not a list of checks</text>
+    <rect class="fg-box" x="576" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="596" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="596" y="49" text-anchor="middle">4</text>
+    <text class="fg-t2" x="616" y="50">Supply chain</text>
+    <line class="fg-rule" x1="592" y1="64" x2="728" y2="64"/>
+    <text class="fg-mxs" x="592" y="84">govulncheck · depguard</text>
+    <text class="fg-xs" x="592" y="100">enforced in CI</text>
+    <rect class="fg-box" x="756" y="24" width="168" height="88" rx="8"/>
+    <circle class="fg-badge fg-badge--accent" cx="776" cy="46" r="10"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="776" y="49" text-anchor="middle">5</text>
+    <text class="fg-t2" x="796" y="50">Operational</text>
+    <line class="fg-rule" x1="772" y1="64" x2="908" y2="64"/>
+    <text class="fg-mxs" x="772" y="84">SECURITY.md · GHSA</text>
+    <text class="fg-xs" x="772" y="100">what happens on a report</text>
+  </svg>
+  <figcaption class="fig-note">They are listed in the order they should be read, not in order of importance. A passing conformance run says nothing about the fourth box, and a clean dependency scan says nothing about the third.</figcaption>
+</figure>
 
 ## Structural defenses (what the codebase enforces by shape)
 

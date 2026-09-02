@@ -51,84 +51,76 @@ RP の `/authorize` リダイレクトと、OP からのコード付きリダイ
 
 低レベル JSON ドライバ構成では、`/authorize` は `/interaction/{uid}` へリダイレクトします。`/authorize` のリダイレクトから RP のコールバックに戻る `code` 付きリダイレクトまでの間は、すべて SPA 上で完結します。
 
-<svg role="img" aria-labelledby="spa-interaction-seq-title" viewBox="0 0 760 518" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="spa-interaction-seq-title">JSON ドライバ構成の SPA interaction のシーケンス: ブラウザが SPA の入口を読み込み、各画面状態を OP から JSON で取得して回答を送り返し、終端の redirect 応答に従う。</title>
-
-  <line class="life" x1="120" y1="56" x2="120" y2="505"/>
-  <line class="life" x1="385" y1="56" x2="385" y2="505"/>
-  <line class="life op-accent" x1="650" y1="56" x2="650" y2="505"/>
-
-  <rect x="45" y="16" width="150" height="40" rx="5"/>
-  <text class="actor" x="120" y="41" text-anchor="middle">ユーザのブラウザ</text>
-  <rect x="310" y="16" width="150" height="40" rx="5"/>
-  <text class="actor" x="385" y="34" text-anchor="middle">SPA バンドル</text>
-  <text class="sub" x="385" y="48" text-anchor="middle">自前のコード・自前のルータ</text>
-  <rect class="op-accent" x="575" y="16" width="150" height="40" rx="5"/>
-  <text class="actor op-text" x="650" y="41" text-anchor="middle">OP</text>
-
-  <circle class="badge" cx="22" cy="88" r="9"/><text class="num" x="22" y="91.5" text-anchor="middle">1</text>
-  <line x1="120" y1="88" x2="650" y2="88"/>
-  <path d="M642,84 L650,88 L642,92"/>
-  <text class="mono" x="385" y="79" text-anchor="middle">GET /authorize?...</text>
-
-  <circle class="badge" cx="22" cy="121" r="9"/><text class="num" x="22" y="124.5" text-anchor="middle">2</text>
-  <rect class="note" x="553" y="109" width="194" height="24" rx="4"/>
-  <text class="lbl" x="650" y="124.5" text-anchor="middle">interaction uid + cookie 生成</text>
-
-  <circle class="badge" cx="22" cy="154" r="9"/><text class="num" x="22" y="157.5" text-anchor="middle">3</text>
-  <line x1="650" y1="154" x2="120" y2="154"/>
-  <path d="M128,150 L120,154 L128,158"/>
-  <text x="385" y="145" text-anchor="middle"><tspan class="mono">302 → /login/{uid}</tspan><tspan class="lbl">(自前のルート)</tspan></text>
-
-  <circle class="badge" cx="22" cy="187" r="9"/><text class="num" x="22" y="190.5" text-anchor="middle">4</text>
-  <line x1="120" y1="187" x2="385" y2="187"/>
-  <path d="M377,183 L385,187 L377,191"/>
-  <text class="mono" x="252" y="178" text-anchor="middle">GET /login/{uid}</text>
-
-  <circle class="badge" cx="22" cy="220" r="9"/><text class="num" x="22" y="223.5" text-anchor="middle">5</text>
-  <line x1="385" y1="220" x2="120" y2="220"/>
-  <path d="M128,216 L120,220 L128,224"/>
-  <text x="252" y="211" text-anchor="middle"><tspan class="mono">200 index.html</tspan><tspan class="lbl"> (SPA 入口)</tspan></text>
-
-  <circle class="badge" cx="22" cy="253" r="9"/><text class="num" x="22" y="256.5" text-anchor="middle">6</text>
-  <line x1="120" y1="253" x2="650" y2="253"/>
-  <path d="M642,249 L650,253 L642,257"/>
-  <text class="mono" x="385" y="244" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
-
-  <circle class="badge" cx="22" cy="286" r="9"/><text class="num" x="22" y="289.5" text-anchor="middle">7</text>
-  <line x1="650" y1="286" x2="120" y2="286"/>
-  <path d="M128,282 L120,286 L128,290"/>
-  <text class="mono" x="385" y="277" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
-
-  <circle class="badge" cx="22" cy="319" r="9"/><text class="num" x="22" y="322.5" text-anchor="middle">8</text>
-  <rect class="note" x="42" y="307" width="156" height="24" rx="4"/>
-  <text class="lbl" x="120" y="322.5" text-anchor="middle">SPA がログインフォームを描画</text>
-
-  <circle class="badge" cx="22" cy="352" r="9"/><text class="num" x="22" y="355.5" text-anchor="middle">9</text>
-  <line x1="120" y1="352" x2="650" y2="352"/>
-  <path d="M642,348 L650,352 L642,356"/>
-  <text class="mono" x="385" y="343" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
-
-  <circle class="badge" cx="22" cy="385" r="9"/><text class="num" x="22" y="388.5" text-anchor="middle">10</text>
-  <line x1="650" y1="385" x2="120" y2="385"/>
-  <path d="M128,381 L120,385 L128,389"/>
-  <text x="385" y="376" text-anchor="middle"><tspan class="mono">200 { type:"consent.scope", … }</tspan><tspan class="lbl"> または </tspan><tspan class="mono">{ type:"redirect", … }</tspan></text>
-
-  <circle class="badge" cx="22" cy="418" r="9"/><text class="num" x="22" y="421.5" text-anchor="middle">11</text>
-  <line x1="120" y1="418" x2="650" y2="418"/>
-  <path d="M642,414 L650,418 L642,422"/>
-  <text x="385" y="409" text-anchor="middle"><tspan class="mono">POST /interaction/{uid}</tspan><tspan class="lbl">(consent の値)</tspan></text>
-
-  <circle class="badge" cx="22" cy="451" r="9"/><text class="num" x="22" y="454.5" text-anchor="middle">12</text>
-  <line x1="650" y1="451" x2="120" y2="451"/>
-  <path d="M128,447 L120,451 L128,455"/>
-  <text class="mono" x="385" y="442" text-anchor="middle">200 { type:"redirect", location:"/auth?…&amp;code=…" }</text>
-
-  <circle class="badge" cx="22" cy="484" r="9"/><text class="num" x="22" y="487.5" text-anchor="middle">13</text>
-  <line x1="120" y1="484" x2="385" y2="484"/>
-  <path d="M377,480 L385,484 L377,488"/>
-  <text class="mono" x="252" y="475" text-anchor="middle">window.location.href = location</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">SPA が各画面を JSON で取りにいく</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-spa-title" viewBox="0 0 960 520" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-spa-title">ブラウザは組み込み側が持つルートへリダイレクトされ、そこで SPA の入口が返ります。以降 SPA は各 interaction の状態を OP から JSON で取得し、回答を送り返し、最後に redirect 応答に従って authorize エンドポイントへ戻ります。</title>
+    <line class="fg-life" x1="150" y1="72" x2="150" y2="510"/>
+    <line class="fg-life" x1="490" y1="72" x2="490" y2="510"/>
+    <line class="fg-life fg-life--accent" x1="830" y1="72" x2="830" y2="510"/>
+    <rect class="fg-box" x="60" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t" x="150" y="44" text-anchor="middle">ユーザのブラウザ</text>
+    <rect class="fg-box" x="390" y="24" width="200" height="44" rx="6"/>
+    <text class="fg-t" x="490" y="44" text-anchor="middle">SPA バンドル</text>
+    <text class="fg-xs" x="490" y="59" text-anchor="middle">自前のコード · 自前のルータ</text>
+    <rect class="fg-box fg-box--accent" x="740" y="24" width="180" height="44" rx="6"/>
+    <text class="fg-t fg-accent" x="830" y="44" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="830" y="59" text-anchor="middle">go-oidc-provider</text>
+    <circle class="fg-badge" cx="15" cy="100" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="103" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M150,100 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs fg-halo" x="490" y="94" text-anchor="middle">GET /authorize?…</text>
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="136" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="139" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M830,128 h30 v16 h-30" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="872" y="140">interaction の uid を作り、cookie を設定する</text>
+    <circle class="fg-badge" cx="15" cy="172" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="175" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--accent" d="M830,172 H150" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs fg-halo" x="490" y="166" text-anchor="middle">302 → /login/{uid} — 組み込み側が持つルート</text>
+    <circle class="fg-badge" cx="15" cy="208" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="211" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M150,208 H490" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="320" y="202" text-anchor="middle">GET /login/{uid}</text>
+    <circle class="fg-badge" cx="15" cy="240" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="243" text-anchor="middle">5</text>
+    <path class="fg-edge" d="M490,240 H150" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="320" y="234" text-anchor="middle">200 index.html — SPA の入口</text>
+    <circle class="fg-badge" cx="15" cy="276" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="279" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M490,276 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="660" y="270" text-anchor="middle">GET /interaction/{uid} · Accept: application/json</text>
+    <circle class="fg-badge" cx="15" cy="312" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="315" text-anchor="middle">7</text>
+    <path class="fg-edge fg-edge--accent" d="M830,312 H490" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="660" y="306" text-anchor="middle">200 { type:"login", inputs, state_ref, csrf_token }</text>
+    <circle class="fg-badge" cx="15" cy="344" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="347" text-anchor="middle">8</text>
+    <path class="fg-edge fg-edge--muted" d="M490,336 h28 v16 h-28" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="530" y="348">SPA が自分のやり方でログインフォームを描画する</text>
+    <circle class="fg-badge" cx="15" cy="380" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="383" text-anchor="middle">9</text>
+    <path class="fg-edge" d="M490,380 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="660" y="374" text-anchor="middle">POST /interaction/{uid} · { state_ref, values }</text>
+    <circle class="fg-badge" cx="15" cy="416" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="419" text-anchor="middle">10</text>
+    <path class="fg-edge fg-edge--accent" d="M830,416 H490" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="660" y="410" text-anchor="middle">200 { type:"consent.scope", … } — または redirect 応答</text>
+    <circle class="fg-badge" cx="15" cy="452" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="455" text-anchor="middle">11</text>
+    <path class="fg-edge" d="M490,452 H830" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="660" y="446" text-anchor="middle">POST /interaction/{uid} · 同意の値</text>
+    <circle class="fg-badge" cx="15" cy="484" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="487" text-anchor="middle">12</text>
+    <path class="fg-edge fg-edge--accent" d="M830,484 H490" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="660" y="478" text-anchor="middle">200 { type:"redirect", location:"/authorize?…&amp;code=…" }</text>
+    <circle class="fg-badge" cx="15" cy="510" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="513" text-anchor="middle">13</text>
+    <path class="fg-edge" d="M490,510 H150" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="320" y="504" text-anchor="middle">window.location.href = location</text>
+  </svg>
+  <figcaption class="fig-note">手順 6 から 12 で HTML は一切生成されません。OP は画面が何を尋ねるべきかを記述するだけで、見た目も描画に使うフレームワークも、境界の組み込み側にあります。</figcaption>
+</figure>
 
 状態遷移は OP が所有します。SPA は次の画面状態を取得し、ユーザの回答を送り返すだけです。OP が次に何を出すかを決めます。
 

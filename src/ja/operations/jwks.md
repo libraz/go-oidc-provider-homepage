@@ -9,47 +9,41 @@ pageClass: pg-operations-jwks
 
 `/jwks` は OP の署名鍵の公開側を公開します。RP はこれを取得して、ID トークン、JWT アクセストークン、JARM、userinfo JWT を検証します。本ページは OP と RP キャッシュの間の運用契約です。
 
-<svg role="img" aria-labelledby="jwks-cache-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="jwks-cache-title">RP は discovery で jwks_uri を知り、/jwks を取得してキャッシュする。未知の kid を見たら再取得し、ローテーション後の新しい鍵で検証する。</title>
-  <rect class="jwks-box" x="20" y="40" width="150" height="78" rx="8"/>
-  <text class="jwks-text" x="95" y="72" text-anchor="middle">RP</text>
-  <text class="jwks-sub" x="95" y="94" text-anchor="middle">トークンを検証</text>
-
-  <rect class="jwks-main" x="290" y="40" width="180" height="78" rx="8"/>
-  <text class="jwks-text" x="380" y="72" text-anchor="middle">Discovery</text>
-  <text class="jwks-sub" x="380" y="94" text-anchor="middle">jwks_uri を告知</text>
-
-  <rect class="jwks-main" x="580" y="40" width="150" height="78" rx="8"/>
-  <text class="jwks-text" x="655" y="72" text-anchor="middle">/jwks</text>
-  <text class="jwks-sub" x="655" y="94" text-anchor="middle">JWK 集合 + ETag</text>
-
-  <rect class="jwks-box" x="580" y="210" width="150" height="58" rx="8"/>
-  <text class="jwks-text" x="655" y="234" text-anchor="middle">RP キャッシュ</text>
-  <text class="jwks-sub" x="655" y="254" text-anchor="middle">kid で鍵を選ぶ</text>
-
-  <rect class="jwks-box" x="290" y="210" width="180" height="58" rx="8"/>
-  <text class="jwks-text" x="380" y="245" text-anchor="middle">未知の kid</text>
-
-  <path class="jwks-flow" d="M170 79 H286"/>
-  <path class="jwks-flow" d="M278 75 L287 79 L278 83"/>
-  <text class="jwks-sub halo" x="228" y="68" text-anchor="middle">1. 設定取得</text>
-
-  <path class="jwks-flow" d="M470 79 H576"/>
-  <path class="jwks-flow" d="M568 75 L577 79 L568 83"/>
-  <text class="jwks-sub halo" x="523" y="68" text-anchor="middle">2. 鍵取得</text>
-
-  <path class="jwks-flow" d="M690 118 V206"/>
-  <path class="jwks-flow" d="M686 198 L690 207 L694 198"/>
-  <text class="jwks-sub halo" x="698" y="167" text-anchor="start">3. 保存</text>
-
-  <path class="jwks-flow" d="M580 239 H474"/>
-  <path class="jwks-flow" d="M482 235 L473 239 L482 243"/>
-  <text class="jwks-sub halo" x="527" y="228" text-anchor="middle">4. kid 不一致</text>
-
-  <path class="jwks-flow" d="M380 210 V150 H615 V122"/>
-  <path class="jwks-flow" d="M611 130 L615 121 L619 130"/>
-  <text class="jwks-sub halo" x="500" y="140" text-anchor="middle">5. 再取得</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">RP が正しい鍵に辿り着くまで</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jwks-fetch-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="jwks-fetch-title">RP は discovery ドキュメントから jwks_uri を読み取り、鍵集合を一度取得してキャッシュします。キャッシュが知らない kid を持つトークンが届くと再取得します。ローテーションした鍵が、足並みを揃えたデプロイなしに各検証側へ届く仕組みです。</title>
+    <rect class="fg-box" x="36" y="94" width="180" height="80" rx="8"/>
+    <text class="fg-t" x="54" y="124">RP</text>
+    <text class="fg-xs" x="54" y="146">提示されたトークンを</text>
+    <text class="fg-xs" x="54" y="162">検証する</text>
+    <path class="fg-edge" d="M220,116 H302" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="261" y="109" text-anchor="middle">1 · 設定を読む</text>
+    <rect class="fg-box fg-box--accent" x="306" y="34" width="230" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="324" y="60">/.well-known/…</text>
+    <text class="fg-xs" x="324" y="80">discovery ドキュメント</text>
+    <text class="fg-mxs" x="324" y="96">jwks_uri を告知する</text>
+    <path class="fg-edge fg-edge--accent" d="M421,110 V142" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="437" y="132">2 · 鍵を取得</text>
+    <rect class="fg-box fg-box--accent" x="306" y="146" width="230" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="324" y="172">/jwks</text>
+    <text class="fg-xs" x="324" y="192">ETag 付きの JWK 集合</text>
+    <text class="fg-xs" x="324" y="208">再取得はたいてい 304 で済む</text>
+    <path class="fg-edge" d="M540,182 H616" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="578" y="175" text-anchor="middle">3 · キャッシュ</text>
+    <rect class="fg-box" x="620" y="146" width="304" height="72" rx="8"/>
+    <text class="fg-t2" x="638" y="172">RP のキャッシュ</text>
+    <text class="fg-xs" x="638" y="192">トークンの kid で鍵を選ぶ</text>
+    <text class="fg-xs" x="638" y="208">通常経路ではネットワーク呼び出しなし</text>
+    <path class="fg-edge fg-edge--muted" d="M772,142 V102" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="788" y="126">4 · 未知の kid</text>
+    <rect class="fg-box fg-box--warn" x="620" y="52" width="304" height="50" rx="8"/>
+    <text class="fg-t2" x="638" y="74">キャッシュに無い kid</text>
+    <text class="fg-xs" x="638" y="92">/jwks を一度だけ再取得して検証する — 手順 5</text>
+    <path class="fg-edge fg-edge--muted" d="M616,77 H556 V152" marker-end="url(#fg-am)"/>
+  </svg>
+  <figcaption class="fig-note">手順 4 があるおかげで、足並みを揃えなくてもローテーションが成立します。新しい鍵を知らない RP は、その鍵に初めて出会ったときに知ります。ただし kid 不一致で即座に拒否せず、再取得する実装であることが前提です。</figcaption>
+</figure>
 
 ## 何を返すか
 

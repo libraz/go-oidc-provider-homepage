@@ -20,55 +20,47 @@ RFC 8693 §4.1 は `act` claim を「誰が誰の代わりに動作したか」�
 
 トークン交換は「入力トークンをそのまま別 audience にコピーする」処理ではありません。OP は subject と actor を検証し、scope と audience を狭め、`act` チェーンを構成し、送信者制約を呼び出し側の鍵へ付け替えてから、新しいアクセストークンを発行します。
 
-<svg class="tx-flow" role="img" aria-labelledby="token-exchange-flow-title" viewBox="0 0 760 324" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="token-exchange-flow-title">トークン交換の全体像。service-a が Alice の subject_token と自身の actor_token を OP に送り、OP が検証、scope 積集合、audience 正規化、act チェーン構築、cnf 再バインド、ポリシー判定を通して service-b 向けトークンを発行する。</title>
-  <defs>
-    <marker id="tx-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-    </marker>
-  </defs>
-  <rect x="30" y="44" width="190" height="76" rx="8"/>
-  <text class="h" x="125" y="72" text-anchor="middle">subject_token</text>
-  <text class="t sub" x="125" y="94" text-anchor="middle">Alice のアクセストークン</text>
-  <text class="m sub" x="125" y="112" text-anchor="middle">sub=alice · scope=profile write</text>
-
-  <rect x="30" y="164" width="190" height="76" rx="8"/>
-  <text class="h" x="125" y="192" text-anchor="middle">actor_token</text>
-  <text class="t sub" x="125" y="214" text-anchor="middle">service-a 自身のトークン</text>
-  <text class="m sub" x="125" y="232" text-anchor="middle">sub=service-a</text>
-
-  <rect class="accent" x="292" y="34" width="220" height="260" rx="8"/>
-  <text class="h accent-text" x="402" y="64" text-anchor="middle">OP /token</text>
-  <text class="m sub" x="402" y="84" text-anchor="middle">grant_type=token-exchange</text>
-  <rect class="soft" x="318" y="106" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="126" text-anchor="middle">1. 入力トークン検証</text>
-  <rect class="soft" x="318" y="146" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="166" text-anchor="middle">2. scope 積集合</text>
-  <rect class="soft" x="318" y="186" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="206" text-anchor="middle">3. audience 正規化</text>
-  <rect class="soft" x="318" y="226" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="246" text-anchor="middle">4. act / cnf を再構成</text>
-  <rect class="soft" x="318" y="266" width="168" height="30" rx="6"/>
-  <text class="t" x="402" y="286" text-anchor="middle">5. Policy.Allow</text>
-
-  <rect x="580" y="82" width="150" height="88" rx="8"/>
-  <text class="h" x="655" y="112" text-anchor="middle">発行トークン</text>
-  <text class="m sub" x="655" y="134" text-anchor="middle">aud=service-b</text>
-  <text class="m sub" x="655" y="152" text-anchor="middle">act.sub=service-a</text>
-
-  <rect x="580" y="218" width="150" height="72" rx="8"/>
-  <text class="h" x="655" y="248" text-anchor="middle">service-b</text>
-  <text class="t sub" x="655" y="270" text-anchor="middle">act と cnf を検証</text>
-
-  <path d="M220 82 H288" marker-end="url(#tx-arrow)"/>
-  <path d="M220 202 H288" marker-end="url(#tx-arrow)"/>
-  <path d="M512 126 H576" marker-end="url(#tx-arrow)"/>
-  <path d="M655 170 V214" marker-end="url(#tx-arrow)"/>
-  <text class="m sub" x="253" y="70" text-anchor="middle">POST</text>
-  <text class="m sub" x="253" y="190" text-anchor="middle">POST</text>
-  <text class="m sub" x="546" y="114" text-anchor="middle">200</text>
-
-</svg>
+<figure class="fig">
+  <div class="fig-head">2 つのトークンを入れて、1 つを受け取る</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-tx-title" viewBox="0 0 960 322" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-tx-title">トークン交換の全体像。Service A は Alice のトークンを subject として、自身のトークンを actor として提示します。OP は両方を検証し、scope の積を取り、audience を正規化し、act チェーンと confirmation claim を組み直し、ポリシー判定を経て Service B 宛てのトークンを発行します。</title>
+    <text class="fg-lbl" x="40" y="26">入力</text>
+    <rect class="fg-box" x="36" y="38" width="248" height="76" rx="8"/>
+    <text class="fg-t2" x="54" y="62">subject_token</text>
+    <text class="fg-xs" x="54" y="82">Alice のアクセストークン</text>
+    <text class="fg-mxs" x="54" y="102">sub=alice · scope=profile write</text>
+    <rect class="fg-box" x="36" y="126" width="248" height="76" rx="8"/>
+    <text class="fg-t2" x="54" y="150">actor_token</text>
+    <text class="fg-xs" x="54" y="170">service-a 自身のトークン</text>
+    <text class="fg-mxs" x="54" y="190">sub=service-a</text>
+    <path class="fg-leader" d="M288,76 H316 M288,164 H316 M316,76 V164"/>
+    <path class="fg-edge fg-edge--accent" d="M316,120 H346" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="350" y="38" width="290" height="228" rx="8"/>
+    <text class="fg-m fg-accent" x="370" y="64">OP /token</text>
+    <text class="fg-mxs" x="370" y="82">grant_type=…:token-exchange</text>
+    <line class="fg-rule" x1="370" y1="94" x2="620" y2="94"/>
+    <text class="fg-xs" x="370" y="118">1 · 入力トークンを両方検証する</text>
+    <text class="fg-xs" x="370" y="146">2 · scope の積を取る</text>
+    <text class="fg-xs" x="370" y="174">3 · audience を正規化する</text>
+    <text class="fg-xs" x="370" y="202">4 · act と cnf を組み直す</text>
+    <text class="fg-xs" x="370" y="230">5 · Policy.Allow を実行する</text>
+    <text class="fg-xs fg-warn" x="370" y="254">どの段階でも拒否しうる。権限が広がることはない</text>
+    <text class="fg-lbl" x="688" y="26">出力</text>
+    <path class="fg-edge fg-edge--accent" d="M644,80 H676" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="680" y="38" width="244" height="84" rx="8"/>
+    <text class="fg-t2 fg-accent" x="698" y="62">発行されたトークン</text>
+    <text class="fg-mxs" x="698" y="84">aud=service-b</text>
+    <text class="fg-mxs" x="698" y="104">act.sub=service-a</text>
+    <path class="fg-edge" d="M802,126 V158" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="680" y="162" width="244" height="84" rx="8"/>
+    <text class="fg-t2" x="698" y="186">service-b</text>
+    <text class="fg-xs" x="698" y="208">act と cnf を検証してから、</text>
+    <text class="fg-xs" x="698" y="224">「a 経由の alice」に何を許すか決める</text>
+    <text class="fg-xs" x="36" y="292">この交換は常に狭める方向にしか働きません。scope は積集合になり、audience は単一のサービスに絞られ、actor は落とされずに記録されます。</text>
+    <text class="fg-xs" x="36" y="308">subject token が元々持っていた以上の権限が返ってくるリクエストの形は存在しません。</text>
+  </svg>
+  <figcaption class="fig-note">ポリシーが入るのは手順 5 です。それより上は機械的な処理で、service A が Alice の代理として service B に対して動いてよいかどうかを、OP が独自に判断することはありません。</figcaption>
+</figure>
 
 発行トークンの `cnf` は Alice ではなく service-a の鍵に結び付きます。OP はこの値を、呼び出し側 actor が提示した検証済みの DPoP / mTLS 証明から取ります。`subject_token.cnf` を引き継ぐことはありません。
 

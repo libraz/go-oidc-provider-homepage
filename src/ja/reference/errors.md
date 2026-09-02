@@ -11,38 +11,39 @@ OP は閉じたカタログからしかエラーを返しません。`fmt.Errorf
 
 このページは両方を網羅した一覧です。
 
-<svg role="img" aria-labelledby="error-routing-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="error-routing-title">OP のエラー分類: op.New の構成エラーは起動時に返り、エンドポイント処理エラーは JSON、redirect、HTML エラーページのいずれかで返る。</title>
-<rect class="err-box" x="32" y="58" width="170" height="70" rx="8"/>
-  <text class="err-text" x="117" y="88" text-anchor="middle">構築時エラー</text>
-  <text class="err-sub" x="117" y="110" text-anchor="middle">op.New が返す</text>
-
-  <rect class="err-box" x="32" y="174" width="170" height="70" rx="8"/>
-  <text class="err-text" x="117" y="204" text-anchor="middle">処理時エラー</text>
-  <text class="err-sub" x="117" y="226" text-anchor="middle">各エンドポイント</text>
-
-  <rect class="err-main" x="300" y="76" width="160" height="90" rx="8"/>
-  <text class="err-text" x="380" y="112" text-anchor="middle">閉じたカタログ</text>
-  <text class="err-sub" x="380" y="134" text-anchor="middle">error + description</text>
-
-  <rect class="err-box" x="558" y="34" width="170" height="54" rx="8"/>
-  <text class="err-text" x="643" y="68" text-anchor="middle">JSON 応答</text>
-  <rect class="err-box" x="558" y="116" width="170" height="54" rx="8"/>
-  <text class="err-text" x="643" y="150" text-anchor="middle">redirect</text>
-  <rect class="err-box" x="558" y="198" width="170" height="54" rx="8"/>
-  <text class="err-text" x="643" y="232" text-anchor="middle">HTML エラー</text>
-
-  <path class="err-flow" d="M202 94 C242 94 258 108 296 116"/>
-  <path class="err-flow" d="M288 112 L297 116 L288 120"/>
-  <path class="err-flow" d="M202 210 C252 200 268 158 296 138"/>
-  <path class="err-flow" d="M288 134 L297 138 L288 142"/>
-  <path class="err-flow" d="M460 112 C500 84 516 62 554 62"/>
-  <path class="err-flow" d="M546 58 L555 62 L546 66"/>
-  <path class="err-flow" d="M460 124 H554"/>
-  <path class="err-flow" d="M546 120 L555 124 L546 128"/>
-  <path class="err-flow" d="M460 138 C504 160 516 226 554 226"/>
-  <path class="err-flow" d="M546 222 L555 226 L546 230"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">2 種類のエラーと、それぞれの現れ方</div>
+  <svg class="fig-svg" role="img" aria-labelledby="errors-shape-title" viewBox="0 0 960 252" xmlns="http://www.w3.org/2000/svg">
+    <title id="errors-shape-title">構成エラーは op.New が返し、プロセスが起動しません。処理時エラーはエンドポイントから発生し、JSON ボディ、エラーパラメータを載せたリダイレクト、HTML エラーページのいずれかで返ります。どれになるかはフローのどの段階かで決まります。</title>
+    <rect class="fg-box fg-box--warn" x="36" y="44" width="270" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="70">構築時エラー</text>
+    <text class="fg-mxs" x="56" y="92">op.New が返す</text>
+    <text class="fg-xs" x="56" y="110">プロセスは起動しない</text>
+    <rect class="fg-box" x="36" y="140" width="270" height="76" rx="8"/>
+    <text class="fg-t2" x="56" y="166">処理時エラー</text>
+    <text class="fg-xs" x="56" y="188">クライアントが待っている間に</text>
+    <text class="fg-xs" x="56" y="206">エンドポイント内で発生する</text>
+    <path class="fg-edge" d="M310,178 H358" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="362" y="140" width="234" height="76" rx="8"/>
+    <text class="fg-t2 fg-accent" x="382" y="166">閉じたカタログ</text>
+    <text class="fg-mxs" x="382" y="188">error + error_description</text>
+    <text class="fg-xs" x="382" y="206">契約になるのはコードの側</text>
+    <path class="fg-leader" d="M600,178 H632 M632,68 V178"/>
+    <path class="fg-edge fg-edge--thin" d="M632,68 H692" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M632,140 H692" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M632,208 H692" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="696" y="44" width="228" height="48" rx="6"/>
+    <text class="fg-t2" x="714" y="66">JSON 応答</text>
+    <text class="fg-xs" x="714" y="84">バックチャネルのエンドポイント</text>
+    <rect class="fg-box" x="696" y="116" width="228" height="48" rx="6"/>
+    <text class="fg-t2" x="714" y="138">リダイレクト</text>
+    <text class="fg-xs" x="714" y="156">redirect_uri を信頼できた後</text>
+    <rect class="fg-box" x="696" y="184" width="228" height="48" rx="6"/>
+    <text class="fg-t2" x="714" y="206">HTML エラーページ</text>
+    <text class="fg-xs" x="714" y="224">まだ信頼できていない段階</text>
+  </svg>
+  <figcaption class="fig-note">3 つのどれになるかは見た目の好みではありません。<code>redirect_uri</code> を検証し終えるまで OP はどこへもリダイレクトできません。未検証の URI へエラーを送ることが、そのままオープンリダイレクタの作り方だからです。</figcaption>
+</figure>
 
 ## エラーの形
 

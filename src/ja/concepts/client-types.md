@@ -92,42 +92,42 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 
 次の決定木は、クライアントの構造から登録する `token_endpoint_auth_method` の値までを辿ります — public client は `none`、confidential client は `client_secret_*` 系、FAPI grade client は非対称メソッドに落ちます。
 
-<figure style="margin:1.6rem 0;text-align:center">
-
-<svg role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 760 268" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(20,0)">
-<title id="authmethod-decision-title">クライアントの構造（public / confidential / FAPI grade）から OP が強制する token_endpoint_auth_method の値までを辿る決定木。</title>
-<rect x="260" y="12" width="200" height="44" rx="6"/>
-<text class="dt-title" x="360" y="32" text-anchor="middle">クライアントの構造</text>
-<text class="dt-root-code" x="360" y="47" text-anchor="middle">token_endpoint_auth_method</text>
-<path d="M360 56 V64 M120 64 H600 M120 64 V74 M360 64 V74 M600 64 V74"/>
-<path d="M120 90 V96 M360 90 V96 M600 90 V96"/>
-<text class="dt-edge" x="120" y="84" text-anchor="middle">シークレットを持てない</text>
-<text class="dt-edge" x="360" y="84" text-anchor="middle">シークレットを保持</text>
-<text class="dt-edge" x="600" y="84" text-anchor="middle">FAPI 2.0 プロファイル</text>
-<rect x="20" y="96" width="200" height="48" rx="6"/>
-<text class="dt-title" x="120" y="118" text-anchor="middle">public client</text>
-<text class="dt-sub" x="120" y="134" text-anchor="middle">SPA · native · CLI</text>
-<rect x="260" y="96" width="200" height="48" rx="6"/>
-<text class="dt-title" x="360" y="118" text-anchor="middle">confidential client</text>
-<text class="dt-sub" x="360" y="134" text-anchor="middle">バックエンド · サービス</text>
-<rect x="500" y="96" width="200" height="48" rx="6"/>
-<text class="dt-title" x="600" y="118" text-anchor="middle">FAPI grade client</text>
-<text class="dt-sub" x="600" y="134" text-anchor="middle">送信者制約付き</text>
-<path d="M120 144 V158 M360 144 V158 M600 144 V158"/>
-<rect class="dt-leaf" x="20" y="158" width="200" height="28" rx="6"/>
-<text class="dt-code" x="120" y="176" text-anchor="middle">none</text>
-<text class="dt-note" x="120" y="200" text-anchor="middle">+ PKCE (S256)</text>
-<rect class="dt-leaf" x="260" y="158" width="200" height="28" rx="6"/>
-<text class="dt-code" x="360" y="176" text-anchor="middle">client_secret_basic</text>
-<path d="M360 186 V192"/>
-<rect class="dt-leaf" x="260" y="192" width="200" height="28" rx="6"/>
-<text class="dt-code" x="360" y="210" text-anchor="middle">client_secret_post</text>
-<rect class="dt-leaf" x="500" y="158" width="200" height="28" rx="6"/>
-<text class="dt-code" x="600" y="176" text-anchor="middle">private_key_jwt</text>
-<text class="dt-note" x="600" y="200" text-anchor="middle">+ DPoP / mTLS sender constraint</text>
-</g>
-</svg>
+<figure class="fig">
+  <div class="fig-head">クライアントの構造が認証メソッドを決める</div>
+  <svg class="fig-svg" role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 960 322" xmlns="http://www.w3.org/2000/svg">
+    <title id="authmethod-decision-title">3 種類のクライアント構造と、それぞれが到達するトークンエンドポイント認証メソッドを示した図。public クライアントは none と PKCE、confidential クライアントは client secret、FAPI 相当のクライアントは private_key_jwt と送信者制約を使います。</title>
+    <text class="fg-lbl" x="40" y="28">クライアントの構造</text>
+    <text class="fg-lbl" x="564" y="28">token_endpoint_auth_method</text>
+    <!-- public -->
+    <rect class="fg-box" x="36" y="40" width="344" height="72" rx="8"/>
+    <text class="fg-t" x="56" y="70">public クライアント</text>
+    <text class="fg-xs" x="56" y="90">SPA · ネイティブアプリ · CLI</text>
+    <path class="fg-edge" d="M384,76 H556" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="470" y="69" text-anchor="middle">秘密を保持できない</text>
+    <rect class="fg-box" x="560" y="40" width="364" height="72" rx="8"/>
+    <text class="fg-m" x="580" y="70">none</text>
+    <text class="fg-xs" x="580" y="90">PKCE (S256) を必ず併用する</text>
+    <!-- confidential -->
+    <rect class="fg-box" x="36" y="128" width="344" height="72" rx="8"/>
+    <text class="fg-t" x="56" y="158">confidential クライアント</text>
+    <text class="fg-xs" x="56" y="178">バックエンド web アプリ · サービス</text>
+    <path class="fg-edge" d="M384,164 H556" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="470" y="157" text-anchor="middle">client secret を保持する</text>
+    <rect class="fg-box" x="560" y="128" width="364" height="72" rx="8"/>
+    <text class="fg-m" x="580" y="155">client_secret_basic</text>
+    <text class="fg-m" x="580" y="173">client_secret_post</text>
+    <text class="fg-xs" x="580" y="191">どちらかを選んで登録する</text>
+    <!-- FAPI -->
+    <rect class="fg-box fg-box--accent" x="36" y="216" width="344" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="56" y="246">FAPI 相当のクライアント</text>
+    <text class="fg-xs" x="56" y="266">送信者制約付き · 高保証</text>
+    <path class="fg-edge fg-edge--accent" d="M384,252 H556" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="470" y="245" text-anchor="middle">FAPI 2.0 プロファイル</text>
+    <rect class="fg-box fg-box--accent" x="560" y="216" width="364" height="72" rx="8"/>
+    <text class="fg-m" x="580" y="246">private_key_jwt</text>
+    <text class="fg-xs" x="580" y="266">加えて DPoP または mTLS の送信者制約</text>
+  </svg>
+  <figcaption class="fig-note">構造は選んで名乗るものではなく、コードがどこで動くかによって決まります。ブラウザや端末に配布されるものは秘密を保持できないため、登録内容が何であれ public クライアントです。</figcaption>
 </figure>
 
 | メソッド | 事前共有シークレット？ | 非対称？ | FAPI 2.0？ | 主な用途 |

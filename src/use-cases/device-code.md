@@ -8,53 +8,52 @@ pageClass: pg-use-cases-device-code
 
 For the conceptual background — what device flow is, when to pick it, why `slow_down` and `expired_token` exist — read the [Device Code primer](/concepts/device-code) first. This page covers the wiring.
 
-<svg role="img" aria-labelledby="device-code-flow-title" viewBox="0 0 760 360" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="device-code-flow-title">The device-code flow: an input-constrained device shows a code, the user reads it and approves the request on their own phone or laptop, and the device polls the token endpoint until the OP issues an access token.</title>
-  <line class="dc-life" x1="110" y1="78" x2="110" y2="348"/>
-  <line class="dc-life dc-life-op" x1="380" y1="78" x2="380" y2="348"/>
-  <line class="dc-life" x1="650" y1="78" x2="650" y2="348"/>
-
-  <rect class="dc-box" x="20" y="14" width="180" height="64" rx="8"/>
-  <text class="dc-text" x="110" y="36" text-anchor="middle">Device</text>
-  <text class="dc-sub" x="110" y="54" text-anchor="middle">input-constrained</text>
-  <text class="dc-sub" x="110" y="70" text-anchor="middle">TV / CLI / printer</text>
-
-  <rect class="dc-op" x="290" y="14" width="180" height="64" rx="8"/>
-  <text class="dc-text" x="380" y="36" text-anchor="middle">OP</text>
-  <text class="dc-sub" x="380" y="54" text-anchor="middle">/device_authorization</text>
-  <text class="dc-sub" x="380" y="70" text-anchor="middle">DeviceCodeStore · /token</text>
-
-  <rect class="dc-box" x="560" y="14" width="180" height="64" rx="8"/>
-  <text class="dc-text" x="650" y="40" text-anchor="middle">User's own device</text>
-  <text class="dc-sub" x="650" y="62" text-anchor="middle">phone / laptop</text>
-
-  <path class="dc-flow" d="M110 114 H380"/>
-  <path class="dc-flow" d="M373 110 L380 114 L373 118"/>
-  <text class="dc-sub" x="245" y="106" text-anchor="middle">1. POST /device_authorization</text>
-
-  <path class="dc-flow" d="M380 152 H110"/>
-  <path class="dc-flow" d="M117 148 L110 152 L117 156"/>
-  <text class="dc-sub" x="245" y="144" text-anchor="middle">2. device_code + user_code</text>
-
-  <rect class="dc-box" x="26" y="176" width="168" height="28" rx="6"/>
-  <text class="dc-sub" x="110" y="195" text-anchor="middle">3. shows user_code + URL</text>
-
-  <path class="dc-flow dc-oob" d="M110 232 H650"/>
-  <path class="dc-flow" d="M643 228 L650 232 L643 236"/>
-  <text class="dc-sub halo" x="380" y="224" text-anchor="middle">4. the user reads it off the screen</text>
-
-  <path class="dc-flow" d="M650 270 H380"/>
-  <path class="dc-flow" d="M387 266 L380 270 L387 274"/>
-  <text class="dc-sub" x="515" y="262" text-anchor="middle">5. enters the code and approves</text>
-
-  <path class="dc-flow" d="M110 308 H380"/>
-  <path class="dc-flow" d="M373 304 L380 308 L373 312"/>
-  <text class="dc-sub" x="245" y="300" text-anchor="middle">6. poll /token with device_code</text>
-
-  <path class="dc-flow" d="M380 344 H110"/>
-  <path class="dc-flow" d="M117 340 L110 344 L117 348"/>
-  <text class="dc-sub" x="245" y="336" text-anchor="middle">7. 200 access_token</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">A code on one screen, typed into another</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-devicecode-title" viewBox="0 0 960 306" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-devicecode-title">An input-constrained device asks the OP for a device code and a short user code, prints the code, and polls the token endpoint. The user reads the code off that screen, enters it on their own phone or laptop, and approves there.</title>
+    <rect class="fg-box" x="36" y="76" width="220" height="108" rx="8"/>
+    <text class="fg-t2" x="146" y="106" text-anchor="middle">Device</text>
+    <text class="fg-xs" x="146" y="128" text-anchor="middle">TV · CLI · printer</text>
+    <line class="fg-rule" x1="56" y1="140" x2="236" y2="140"/>
+    <text class="fg-xs" x="146" y="160" text-anchor="middle">input-constrained —</text>
+    <text class="fg-xs" x="146" y="174" text-anchor="middle">no keyboard worth typing on</text>
+    <rect class="fg-box fg-box--accent" x="320" y="46" width="320" height="168" rx="8"/>
+    <text class="fg-t fg-accent" x="480" y="74" text-anchor="middle">OP</text>
+    <line class="fg-rule" x1="340" y1="86" x2="620" y2="86"/>
+    <text class="fg-mxs" x="340" y="112">/device_authorization</text>
+    <text class="fg-xs" x="340" y="130">mints the pair of codes</text>
+    <text class="fg-mxs" x="340" y="158">DeviceCodeStore</text>
+    <text class="fg-xs" x="340" y="176">holds them until approval</text>
+    <text class="fg-mxs" x="340" y="200">/token</text>
+    <rect class="fg-box" x="704" y="76" width="220" height="108" rx="8"/>
+    <text class="fg-t2" x="814" y="106" text-anchor="middle">The user's own device</text>
+    <text class="fg-xs" x="814" y="128" text-anchor="middle">phone · laptop</text>
+    <line class="fg-rule" x1="724" y1="140" x2="904" y2="140"/>
+    <text class="fg-xs" x="814" y="160" text-anchor="middle">a browser they trust,</text>
+    <text class="fg-xs" x="814" y="174" text-anchor="middle">and a keyboard</text>
+    <path class="fg-edge" d="M260,96 H316" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="288" cy="84" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="87" text-anchor="middle">1</text>
+    <path class="fg-edge fg-edge--accent" d="M316,126 H260" marker-end="url(#fg-ac)"/>
+    <circle class="fg-badge" cx="288" cy="140" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="143" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--muted" d="M146,188 V232 H814 V188" marker-end="url(#fg-am)"/>
+    <circle class="fg-badge" cx="480" cy="232" r="8.5"/>
+    <text class="fg-badge-t" x="480" y="235" text-anchor="middle">3</text>
+    <path class="fg-edge" d="M700,96 H648" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="672" cy="84" r="8.5"/>
+    <text class="fg-badge-t" x="672" y="87" text-anchor="middle">4</text>
+    <path class="fg-edge" d="M260,166 H316" marker-end="url(#fg-a)"/>
+    <circle class="fg-badge" cx="288" cy="180" r="8.5"/>
+    <text class="fg-badge-t" x="288" y="183" text-anchor="middle">5</text>
+    <text class="fg-xs" x="36" y="266">1 · the device asks for a device_code and a user_code</text>
+    <text class="fg-xs" x="36" y="284">2 · the OP returns both, plus the URL to visit</text>
+    <text class="fg-xs" x="500" y="266">3 · the user reads the short code off the screen</text>
+    <text class="fg-xs" x="500" y="284">4 · enters it and approves · 5 · the device polls /token</text>
+  </svg>
+  <figcaption class="fig-note">The dashed path is a person, not a network. Everything the flow needs from that leg is one short code, chosen to be readable and typeable rather than unguessable — the <code>device_code</code> the device keeps is the secret.</figcaption>
+</figure>
 
 ::: details `device_code` vs `user_code` — what's the difference?
 Two different identifiers come back from `/device_authorization`. **`device_code`** is a long opaque string the device keeps to itself and submits on every `/token` poll — it's effectively a bearer credential for "this pending authorization". **`user_code`** is the short, human-typeable string ("BDWP-HQPK") the device shows on its screen so the user can enter it on their phone or laptop. They live for the same duration (`expires_in`) but are presented to entirely different audiences; the user never sees `device_code`, the OP never accepts `user_code` on `/token`.

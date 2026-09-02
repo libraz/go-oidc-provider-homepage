@@ -9,49 +9,44 @@ pageClass: pg-operations-backup
 
 The OP itself is stateless. Recovery posture is entirely a property of your `store.Store` — what's persistent, what's volatile, and what your recovery point objective (RPO) is per substore.
 
-<svg role="img" aria-labelledby="backup-split-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="backup-split-title">Backup policy: the OP process is stateless, durable substores are restored, short-lived state is discarded and recreated, and the replay-defence set is never restored.</title>
-<rect class="bkp-main" x="38" y="112" width="152" height="74" rx="8"/>
-  <text class="bkp-text" x="114" y="142" text-anchor="middle">OP process</text>
-  <text class="bkp-sub" x="114" y="164" text-anchor="middle">stateless</text>
-
-  <rect class="bkp-box" x="300" y="34" width="178" height="62" rx="8"/>
-  <text class="bkp-text" x="389" y="64" text-anchor="middle">Durable substores</text>
-  <text class="bkp-sub" x="389" y="82" text-anchor="middle">Clients / Grants / MFA</text>
-
-  <rect class="bkp-box" x="300" y="119" width="178" height="62" rx="8"/>
-  <text class="bkp-text" x="389" y="149" text-anchor="middle">Short-lived state</text>
-  <text class="bkp-sub" x="389" y="167" text-anchor="middle">PAR / code / interaction</text>
-
-  <rect class="bkp-box" x="300" y="204" width="178" height="62" rx="8"/>
-  <text class="bkp-text" x="389" y="234" text-anchor="middle">Never restore</text>
-  <text class="bkp-sub" x="389" y="252" text-anchor="middle">ConsumedJTIs</text>
-
-  <rect class="bkp-box" x="578" y="34" width="144" height="62" rx="8"/>
-  <text class="bkp-text" x="650" y="64" text-anchor="middle">Back up</text>
-  <text class="bkp-sub" x="650" y="82" text-anchor="middle">set an RPO</text>
-
-  <rect class="bkp-box" x="578" y="119" width="144" height="62" rx="8"/>
-  <text class="bkp-text" x="650" y="149" text-anchor="middle">Retry</text>
-  <text class="bkp-sub" x="650" y="167" text-anchor="middle">recovers on its own</text>
-
-  <rect class="bkp-box" x="578" y="204" width="144" height="62" rx="8"/>
-  <text class="bkp-text" x="650" y="234" text-anchor="middle">Discard</text>
-  <text class="bkp-sub" x="650" y="252" text-anchor="middle">never roll back</text>
-
-  <path class="bkp-flow" d="M190 150 C238 132 260 66 296 66"/>
-  <path class="bkp-flow" d="M288 62 L297 66 L288 70"/>
-  <path class="bkp-flow" d="M190 150 H296"/>
-  <path class="bkp-flow" d="M288 146 L297 150 L288 154"/>
-  <path class="bkp-flow" d="M190 150 C238 168 260 234 296 234"/>
-  <path class="bkp-flow" d="M288 230 L297 234 L288 238"/>
-  <path class="bkp-flow" d="M478 65 H574"/>
-  <path class="bkp-flow" d="M566 61 L575 65 L566 69"/>
-  <path class="bkp-flow" d="M478 150 H574"/>
-  <path class="bkp-flow" d="M566 146 L575 150 L566 154"/>
-  <path class="bkp-flow" d="M478 235 H574"/>
-  <path class="bkp-flow" d="M566 231 L575 235 L566 239"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">What to restore, and what never to</div>
+  <svg class="fig-svg" role="img" aria-labelledby="backup-policy-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
+    <title id="backup-policy-title">A backup policy in four rows. The OP process itself holds nothing. Durable substores are backed up and restored. Short-lived state is discarded and recreated by a retry. The consumed-JTI set is never restored, because restoring it would reopen a replay window.</title>
+    <text class="fg-lbl" x="40" y="26">what it is</text>
+    <text class="fg-lbl" x="484" y="26">what to do with it</text>
+    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <!-- process -->
+    <rect class="fg-box fg-box--muted" x="36" y="48" width="420" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="68">OP process</text>
+    <text class="fg-xs" x="54" y="84">holds no state of its own</text>
+    <path class="fg-edge fg-edge--thin" d="M460,70 H476" marker-end="url(#fg-a)"/>
+    <text class="fg-t2" x="484" y="68">Nothing to back up</text>
+    <text class="fg-xs" x="484" y="84">a replacement instance is equivalent</text>
+    <!-- durable -->
+    <rect class="fg-box fg-box--accent" x="36" y="100" width="420" height="44" rx="6"/>
+    <text class="fg-t2 fg-accent" x="54" y="120">Durable substores</text>
+    <text class="fg-mxs" x="54" y="136">Clients · Grants · MFA enrolments</text>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M460,122 H476" marker-end="url(#fg-ac)"/>
+    <text class="fg-t2 fg-accent" x="484" y="120">Back up — set an RPO</text>
+    <text class="fg-xs" x="484" y="136">losing these loses consent and registrations</text>
+    <!-- short-lived -->
+    <rect class="fg-box" x="36" y="152" width="420" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="172">Short-lived state</text>
+    <text class="fg-mxs" x="54" y="188">PAR requests · codes · interactions</text>
+    <path class="fg-edge fg-edge--thin" d="M460,174 H476" marker-end="url(#fg-a)"/>
+    <text class="fg-t2" x="484" y="172">Discard</text>
+    <text class="fg-xs" x="484" y="188">the client retries and the flow recreates it</text>
+    <!-- never -->
+    <rect class="fg-box fg-box--danger" x="36" y="204" width="420" height="44" rx="6"/>
+    <text class="fg-t2" x="54" y="224">Replay-defence set</text>
+    <text class="fg-mxs" x="54" y="240">ConsumedJTIs</text>
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M460,226 H476" marker-end="url(#fg-ad)"/>
+    <text class="fg-t2 fg-danger" x="484" y="224">Never restore</text>
+    <text class="fg-xs" x="484" y="240">rolling it back reopens every window it had closed</text>
+  </svg>
+  <figcaption class="fig-note">The last row is the one that surprises people. A backup of the consumed-JTI set is a record of which proofs were already spent; restoring an older copy declares them unspent again.</figcaption>
+</figure>
 
 ## Backup priority
 

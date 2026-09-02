@@ -34,45 +34,42 @@ The formal version of this policy is [`SECURITY.md`](https://github.com/libraz/g
 
 The rough flow once a report lands:
 
-<svg class="disclosure-flow" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 760 400" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="disclosure-flow-title">The vulnerability-report pipeline: a report is received, acknowledged, triaged, and either closed as out of scope or fixed, disclosed, released, and published as a GHSA.</title>
-  <!-- intake column -->
-  <rect x="60" y="30" width="240" height="62" rx="8"/>
-  <rect x="60" y="122" width="240" height="62" rx="8" class="op-accent"/>
-  <rect x="60" y="214" width="240" height="62" rx="8" class="op-accent"/>
-  <rect x="60" y="306" width="240" height="62" rx="8"/>
-  <!-- remediation column -->
-  <rect x="460" y="30" width="240" height="62" rx="8" class="op-accent"/>
-  <rect x="460" y="122" width="240" height="62" rx="8" class="op-accent"/>
-  <rect x="460" y="214" width="240" height="62" rx="8" class="op-accent"/>
-  <rect x="460" y="306" width="240" height="62" rx="8" class="op-accent"/>
-  <!-- connectors -->
-  <path d="M180 92 L180 122"/><path d="M174 116 L180 122 L186 116"/>
-  <path d="M180 184 L180 214"/><path d="M174 208 L180 214 L186 208"/>
-  <path d="M180 276 L180 306"/><path d="M174 300 L180 306 L186 300"/>
-  <path d="M300 245 H380 V61 H456"/><path d="M450 55 L456 61 L450 67"/>
-  <path d="M580 92 L580 122"/><path d="M574 116 L580 122 L586 116"/>
-  <path d="M580 184 L580 214"/><path d="M574 208 L580 214 L586 208"/>
-  <path d="M580 276 L580 306"/><path d="M574 300 L580 306 L586 300"/>
-  <!-- intake labels -->
-  <text class="d-title" x="180" y="66" text-anchor="middle">Report received</text>
-  <text class="d-title" x="180" y="150" text-anchor="middle">Acknowledge</text>
-  <text class="d-sub" x="180" y="168" text-anchor="middle">when I'm next online</text>
-  <text class="d-title" x="180" y="242" text-anchor="middle">Triage</text>
-  <text class="d-sub" x="180" y="260" text-anchor="middle">reproduce / classify</text>
-  <text class="d-title" x="180" y="342" text-anchor="middle">Close with reason</text>
-  <!-- remediation labels -->
-  <text class="d-title" x="580" y="58" text-anchor="middle">Fix or mitigation plan</text>
-  <text class="d-sub" x="580" y="76" text-anchor="middle">severity drives priority</text>
-  <text class="d-title" x="580" y="150" text-anchor="middle">Coordinated disclosure</text>
-  <text class="d-sub" x="580" y="168" text-anchor="middle">agreed window</text>
-  <text class="d-title" x="580" y="250" text-anchor="middle">Release patched version</text>
-  <text class="d-title" x="580" y="334" text-anchor="middle">Publish GHSA</text>
-  <text class="d-sub" x="580" y="352" text-anchor="middle">request CVE if applicable</text>
-  <!-- edge labels -->
-  <text class="d-edge halo" x="340" y="237" text-anchor="middle">confirmed</text>
-  <text class="d-edge halo" x="190" y="296" text-anchor="start">out of scope</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">What happens after you send a report</div>
+  <svg class="fig-svg" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg">
+    <title id="disclosure-flow-title">The pipeline a vulnerability report travels: received, acknowledged, triaged, and then either closed with a stated reason or fixed, disclosed on an agreed window, released, and published as a GHSA.</title>
+    <rect class="fg-box" x="280" y="24" width="400" height="54" rx="8"/>
+    <text class="fg-t2" x="300" y="48">Report received</text>
+    <text class="fg-xs" x="300" y="68">privately, through the channel in SECURITY.md</text>
+    <path class="fg-edge fg-edge--thin" d="M480,80 V88" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="280" y="90" width="400" height="54" rx="8"/>
+    <text class="fg-t2" x="300" y="114">Acknowledged</text>
+    <text class="fg-xs" x="300" y="134">when I am next online — this is a personal project</text>
+    <path class="fg-edge fg-edge--thin" d="M480,146 V154" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--accent" x="280" y="156" width="400" height="54" rx="8"/>
+    <text class="fg-t2 fg-accent" x="300" y="180">Triage</text>
+    <text class="fg-xs" x="300" y="200">reproduced and classified</text>
+    <path class="fg-edge fg-edge--muted" d="M684,183 H760" marker-end="url(#fg-am)"/>
+    <text class="fg-xs" x="722" y="176" text-anchor="middle">out of scope</text>
+    <rect class="fg-box fg-box--muted" x="764" y="156" width="160" height="54" rx="8"/>
+    <text class="fg-t2" x="782" y="180">Closed</text>
+    <text class="fg-xs" x="782" y="200">with the reason stated</text>
+    <path class="fg-edge fg-edge--thin" d="M480,212 V220" marker-end="url(#fg-a)"/>
+    <text class="fg-xs fg-ok" x="496" y="222">confirmed</text>
+    <rect class="fg-box" x="280" y="222" width="400" height="54" rx="8"/>
+    <text class="fg-t2" x="300" y="246">Fix, or a mitigation plan</text>
+    <text class="fg-xs" x="300" y="266">severity drives the priority, not the reporter</text>
+    <path class="fg-edge fg-edge--thin" d="M480,278 V286" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="280" y="288" width="400" height="54" rx="8"/>
+    <text class="fg-t2" x="300" y="312">Coordinated disclosure</text>
+    <text class="fg-xs" x="300" y="332">on a window agreed with the reporter</text>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M480,344 V352" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="280" y="354" width="400" height="54" rx="8"/>
+    <text class="fg-t2 fg-accent" x="300" y="378">Patched release, then a GHSA</text>
+    <text class="fg-xs" x="300" y="398">with a CVE requested where it applies</text>
+  </svg>
+  <figcaption class="fig-note">Only the acknowledgement step has a soft timeline, and it says so plainly. Everything below it is fixed: nothing is published before the agreed window, and nothing is quietly patched without one.</figcaption>
+</figure>
 
 Realistic timing: acknowledgement usually takes a few days; severe issues get worked on right away, lower-severity ones may wait until I have a weekend free. If a week goes by without a reply, please ping again — it's not rudeness, just a missed notification or a busy stretch.
 

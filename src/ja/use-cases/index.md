@@ -20,32 +20,37 @@ pageClass: pg-use-cases-index
 
 初めて読む場合は [最小 OP](/ja/use-cases/minimal-op)、次に [Comprehensive bundle](/ja/use-cases/bundle) を確認し、自分の構成にその必要が出てきた段階で下の各ページへ進むのがおすすめです。
 
-<svg role="img" aria-labelledby="use-cases-route-title" viewBox="0 0 760 300" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="use-cases-route-title">使い方ページの読み進め方: 最小 OP から始め、必要に応じてプロファイル、UI、ストレージ、認証、拡張 grant、運用へ進む。</title>
-<rect class="uc-main" x="36" y="106" width="146" height="74" rx="8"/>
-  <text class="uc-text" x="109" y="136" text-anchor="middle">最小 OP</text>
-  <text class="uc-sub" x="109" y="158" text-anchor="middle">まず起動する</text>
-
-  <rect class="uc-box" x="282" y="28" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="360" y="62" text-anchor="middle">Profile / flow</text>
-  <rect class="uc-box" x="282" y="104" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="360" y="138" text-anchor="middle">UI / SPA</text>
-  <rect class="uc-box" x="282" y="180" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="360" y="214" text-anchor="middle">Storage / Auth</text>
-
-  <rect class="uc-box" x="552" y="68" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="630" y="102" text-anchor="middle">Advanced grants</text>
-  <rect class="uc-box" x="552" y="160" width="156" height="54" rx="8"/>
-  <text class="uc-text" x="630" y="194" text-anchor="middle">Crypto / 運用</text>
-
-  <path class="uc-flow" d="M182 143 C224 102 244 56 278 56"/>
-  <path class="uc-flow" d="M182 143 H278"/>
-  <path class="uc-flow" d="M182 143 C224 178 244 208 278 208"/>
-  <path class="uc-flow" d="M438 82 C488 86 506 96 548 96"/>
-  <path class="uc-flow" d="M540 92 L549 96 L540 100"/>
-  <path class="uc-flow" d="M438 204 C488 198 506 188 548 188"/>
-  <path class="uc-flow" d="M540 184 L549 188 L540 192"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">このセクションの読み進め方</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-index-title" viewBox="0 0 960 254" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-index-title">最小構成の OP から始め、実際に必要になった領域へ進みます。プロファイルとフロー、UI、ストレージと認証、拡張グラント、暗号と運用の 5 つです。</title>
+    <rect class="fg-box fg-box--accent" x="36" y="98" width="200" height="66" rx="8"/>
+    <text class="fg-t2 fg-accent" x="56" y="126">最小構成の OP</text>
+    <text class="fg-xs" x="56" y="146">まず起動させる</text>
+    <path class="fg-leader" d="M240,131 H270 M270,43 V219"/>
+    <path class="fg-edge fg-edge--thin" d="M270,43 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,87 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,131 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,175 H296" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M270,219 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="300" y="24" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="47">プロファイルとフロー</text>
+    <text class="fg-xs" x="470" y="47">FAPI、CIBA、デバイスコード、token exchange</text>
+    <rect class="fg-box" x="300" y="68" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="91">UI と SPA</text>
+    <text class="fg-xs" x="470" y="91">独自画面、アカウントチューザ、ステップアップ MFA</text>
+    <rect class="fg-box" x="300" y="112" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="135">ストレージと認証</text>
+    <text class="fg-xs" x="470" y="135">SQL、DynamoDB、Redis、自前のユーザストア</text>
+    <rect class="fg-box" x="300" y="156" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="179">拡張グラント</text>
+    <text class="fg-xs" x="470" y="179">grant management、authorization details、動的登録</text>
+    <rect class="fg-box" x="300" y="200" width="624" height="38" rx="6"/>
+    <text class="fg-t2" x="318" y="223">暗号と運用</text>
+    <text class="fg-xs" x="470" y="223">JWE、pairwise subject、protected resource metadata</text>
+  </svg>
+  <figcaption class="fig-note">5 つの行は互いに独立しています。いま作っているものに合う行を選んでください。順番が決まっているのは左の箱だけです。</figcaption>
+</figure>
 
 ## リファレンスアプリケーション
 

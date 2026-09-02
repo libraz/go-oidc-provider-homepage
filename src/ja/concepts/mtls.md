@@ -51,46 +51,60 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
 
 ## リバースプロキシ構成
 
-<svg class="mtls-proxy-flow" role="img" aria-labelledby="mtls-proxy-trust-title" viewBox="0 0 760 536" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-  <title id="mtls-proxy-trust-title">リバースプロキシの信頼境界: TLS 終端プロキシがクライアント証明書をヘッダに載せ、OP は信頼済み CIDR 内のリクエストからのみそれを参照し、前送りされた証明書を正本として扱います。</title>
-  <text transform="rotate(-90 26 66)" x="26" y="66" text-anchor="middle" class="d-layer" font-size="9.5">PUBLIC</text>
-  <text transform="rotate(-90 26 190)" x="26" y="190" text-anchor="middle" class="d-layer" font-size="9.5">EDGE</text>
-  <text transform="rotate(-90 26 392)" x="26" y="392" text-anchor="middle" class="d-layer" font-size="9.5">OP TRUST ZONE</text>
-  <line x1="80" y1="120" x2="740" y2="120" class="d-faint"/>
-  <rect x="260" y="28" width="300" height="64" rx="10"/>
-  <text x="410" y="53" text-anchor="middle" class="d-label" font-size="15.5" font-weight="600">クライアント</text>
-  <text x="410" y="77" text-anchor="middle" class="d-sub halo" font-size="11.5">X.509 クライアント証明書</text>
-  <path d="M410 92 L410 138"/>
-  <path d="M405 131 L410 138 L415 131"/>
-  <text x="428" y="110" class="d-sub halo" font-size="10.5">TLS ハンドシェイク</text>
-  <text x="428" y="125" class="d-sub halo" font-size="10">クライアント証明書を提示</text>
-  <rect x="210" y="138" width="400" height="92" rx="10"/>
-  <text x="410" y="164" text-anchor="middle" class="d-label" font-size="14.5" font-weight="600">TLS 終端プロキシ</text>
-  <text x="410" y="188" text-anchor="middle" class="d-sub halo" font-size="10.5">クライアント証明書をヘッダに載せる</text>
-  <text x="410" y="210" text-anchor="middle" class="d-mono" font-size="11">X-SSL-Cert: &lt;PEM&gt;</text>
-  <line x1="80" y1="262" x2="740" y2="262" stroke-width="1.5" stroke-dasharray="6 6"/>
-  <text x="88" y="256" class="d-sub halo" font-size="10.5">信頼境界</text>
-  <path d="M410 230 L410 298"/>
-  <path d="M405 291 L410 298 L415 291"/>
-  <rect x="260" y="298" width="300" height="64" rx="10"/>
-  <text x="410" y="323" text-anchor="middle" class="d-label" font-size="12.5" font-weight="600">trusted-CIDR ゲート</text>
-  <text x="410" y="346" text-anchor="middle" class="d-mono" font-size="11">RemoteAddr ∈ trustedCIDRs?</text>
-  <path d="M560 330 L634 330"/>
-  <path d="M627 325 L634 330 L627 335"/>
-  <text x="598" y="322" text-anchor="middle" class="d-sub halo" font-size="10">範囲外</text>
-  <rect x="636" y="304" width="112" height="52" rx="8"/>
-  <text x="692" y="326" text-anchor="middle" class="d-mono" font-size="10">ヘッダを無視</text>
-  <text x="692" y="344" text-anchor="middle" class="d-sub halo" font-size="10">fail closed</text>
-  <path d="M410 362 L410 408"/>
-  <path d="M405 401 L410 408 L415 401"/>
-  <text x="396" y="380" text-anchor="end" class="d-sub halo" font-size="10">範囲内</text>
-  <text x="396" y="395" text-anchor="end" class="d-sub halo" font-size="10">ヘッダが正本</text>
-  <rect x="210" y="408" width="400" height="112" rx="10" class="op-accent"/>
-  <text x="410" y="436" text-anchor="middle" class="d-op" font-size="14.5" font-weight="600">OP — 本ライブラリ</text>
-  <text x="410" y="462" text-anchor="middle" class="d-sub halo" font-size="10.5">直接 TLS 終端時はハンドシェイク証明書</text>
-  <text x="410" y="484" text-anchor="middle" class="d-sub halo" font-size="10.5">前送りされた証明書を選択</text>
-  <text x="410" y="505" text-anchor="middle" class="d-mono" font-size="11">cnf.x5t#S256</text>
-</svg>
+<figure class="fig">
+  <div class="fig-head">証明書が信頼境界を越える場所</div>
+  <svg class="fig-svg" role="img" aria-labelledby="mtls-proxy-title" viewBox="0 0 960 486" xmlns="http://www.w3.org/2000/svg">
+    <title id="mtls-proxy-title">TLS 終端プロキシがハンドシェイクからクライアント証明書を取り出し、ヘッダに載せて前送りします。OP がそのヘッダを読むのは、リクエストが信頼済み CIDR に含まれるアドレスから届いた場合だけです。それ以外ではヘッダを無視し、リクエストは fail closed になります。</title>
+    <!-- ゾーン -->
+    <rect class="fg-group" x="30" y="30" width="900" height="110" rx="8"/>
+    <rect class="fg-group" x="30" y="152" width="900" height="130" rx="8"/>
+    <rect class="fg-group" x="30" y="302" width="900" height="172" rx="8"/>
+    <text class="fg-lbl" x="46" y="48">public</text>
+    <text class="fg-lbl" x="46" y="170">edge</text>
+    <text class="fg-lbl fg-accent" x="46" y="320">op trust zone</text>
+    <!-- クライアント -->
+    <rect class="fg-box" x="330" y="56" width="300" height="68" rx="8"/>
+    <text class="fg-t" x="480" y="80" text-anchor="middle">クライアント</text>
+    <text class="fg-xs" x="480" y="98" text-anchor="middle">X.509 クライアント証明書を保持する</text>
+    <text class="fg-mxs" x="480" y="114" text-anchor="middle">TLS ハンドシェイクで提示する</text>
+    <path class="fg-edge" d="M480,128 V178" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="496" y="150">相互 TLS ハンドシェイク</text>
+    <!-- プロキシ -->
+    <rect class="fg-box" x="330" y="182" width="300" height="82" rx="8"/>
+    <text class="fg-t2" x="480" y="206" text-anchor="middle">TLS 終端プロキシ</text>
+    <text class="fg-xs" x="480" y="224" text-anchor="middle">TLS を終端し、証明書を取り出す</text>
+    <text class="fg-mxs" x="480" y="244" text-anchor="middle">X-SSL-Cert: &lt;PEM&gt;</text>
+    <!-- 信頼境界 -->
+    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="30" y1="292" x2="930" y2="292"/>
+    <text class="fg-lbl" x="806" y="287">trust boundary</text>
+    <path class="fg-edge" d="M480,268 V326" marker-end="url(#fg-a)"/>
+    <!-- ゲート -->
+    <rect class="fg-box fg-box--accent" x="360" y="330" width="240" height="60" rx="8"/>
+    <text class="fg-t2 fg-accent" x="480" y="354" text-anchor="middle">trusted-CIDR ゲート</text>
+    <text class="fg-mxs" x="480" y="374" text-anchor="middle">RemoteAddr ∈ trustedCIDRs?</text>
+    <!-- 拒否 -->
+    <path class="fg-edge fg-edge--danger" d="M356,360 H244" marker-end="url(#fg-ad)"/>
+    <text class="fg-xs" x="300" y="353" text-anchor="middle">範囲外</text>
+    <rect class="fg-box fg-box--danger" x="46" y="330" width="194" height="60" rx="8"/>
+    <text class="fg-t2" x="64" y="354">ヘッダを無視する</text>
+    <text class="fg-xs" x="64" y="374">fail closed — 証明書なし扱い</text>
+    <!-- 受理 -->
+    <path class="fg-edge fg-edge--accent" d="M604,360 H716" marker-end="url(#fg-ac)"/>
+    <text class="fg-xs" x="660" y="353" text-anchor="middle">範囲内</text>
+    <rect class="fg-box fg-box--accent" x="720" y="330" width="194" height="60" rx="8"/>
+    <text class="fg-t2 fg-accent" x="738" y="354">ヘッダが正本</text>
+    <text class="fg-xs" x="738" y="374">前送りされた証明書を使う</text>
+    <!-- OP -->
+    <path class="fg-edge fg-edge--accent" d="M817,394 V430 H634" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="330" y="404" width="300" height="54" rx="8"/>
+    <text class="fg-t fg-accent" x="480" y="426" text-anchor="middle">OP — 本ライブラリ</text>
+    <text class="fg-mxs" x="480" y="446" text-anchor="middle">cnf.x5t#S256 が証明書をトークンに結び付ける</text>
+    <text class="fg-xs" x="46" y="424">プロキシを挟まず OP が直接 TLS を</text>
+    <text class="fg-xs" x="46" y="440">終端する構成では、ハンドシェイクの</text>
+    <text class="fg-xs" x="46" y="456">証明書を使い、ヘッダは一切参照しません</text>
+  </svg>
+  <figcaption class="fig-note">このゲートがセキュリティ上の論拠のすべてです。ヘッダは OP に直接到達できる相手なら誰でも偽造できるため、そのヘッダが載せる証明書は、リクエストが書き込んだプロキシから来たと OP が確認できて初めて意味を持ちます。</figcaption>
+</figure>
 
 本番では OP が自前で TLS を終端することはほぼありません。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが HTTP ヘッダ（`X-SSL-Cert`、`X-Forwarded-Client-Cert` など）で前送りする必要があります。
 
