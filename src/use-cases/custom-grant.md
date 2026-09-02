@@ -235,7 +235,7 @@ Known client-attributable dispatch failures use a 4xx OAuth error. A dispatcher 
 [`examples/30-custom-grant`](https://github.com/libraz/go-oidc-provider/tree/main/examples/30-custom-grant):
 
 ```sh
-(cd examples/30-custom-grant && go run -tags example .)
+(cd examples/30-custom-grant && GOWORK=off go run -tags example .)
 ```
 
 The embedder defines `urn:example:libraz:service-token-exchange`, the OP routes it via `op.WithCustomGrant`, and the handler returns a `BoundAccessToken` so the dispatcher mints a JWT access token bound to the request's DPoP / mTLS confirmation. Files: `op.go` (OP wiring + handler), `client.go` (client side), `probe.go` (self-verify).

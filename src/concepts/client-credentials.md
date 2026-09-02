@@ -165,7 +165,7 @@ For service-to-service traffic in regulated contexts (FAPI 2.0, PSD2, OBL), send
 [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) ships a runnable end-to-end version with a `client_secret_basic` client.
 
 ```sh
-(cd examples/05-client-credentials && go run -tags example .)
+(cd examples/05-client-credentials && GOWORK=off go run -tags example .)
 ```
 
 ## Read next

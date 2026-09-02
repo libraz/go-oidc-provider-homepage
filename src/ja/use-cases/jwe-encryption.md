@@ -213,7 +213,7 @@ discovery は `op.WithSupportedEncryptionAlgs` による narrowing 後の、実�
 [`examples/35-encrypted-id-token`](https://github.com/libraz/go-oidc-provider/tree/main/examples/35-encrypted-id-token):
 
 ```sh
-(cd examples/35-encrypted-id-token && go run -tags example .)
+(cd examples/35-encrypted-id-token && GOWORK=off go run -tags example .)
 ```
 
 RSA-OAEP-256 / A256GCM id_token 暗号化のペア OP+RP デモ。OP が `use=enc` JWKS を公開、RP が `id_token_encrypted_response_alg=RSA-OAEP-256` + `_enc=A256GCM` で登録、OP が id_token を JWE で包み、RP 側が復号して内側の JWS を検証します。ファイル: `op.go`（`WithEncryptionKeyset` での OP 組み立て）、`rp.go`（RP 側の復号 + 署名検証）、`jose.go`（鍵生成 + JWKS 変換）。

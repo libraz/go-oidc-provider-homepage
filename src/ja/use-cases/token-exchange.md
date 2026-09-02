@@ -240,7 +240,7 @@ Service B は `cnf.jkt` に対して DPoP 証明を検証し、`act.sub` を見�
 [`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation):
 
 ```sh
-(cd examples/33-token-exchange-delegation && go run -tags example .)
+(cd examples/33-token-exchange-delegation && GOWORK=off go run -tags example .)
 ```
 
 フロントエンド → service-a → service-b のチェーンです。service-a が Alice のトークンを委譲トークン（`act={sub: service-a}`）に交換し、service-b のリソースサーバ側検証器が `act.sub` を辿ります。チェーンを持たないトークンは拒否されます。ファイル: `op.go`(OP の組み立て + `TokenExchangePolicy`)、`service_a.go`(中継)、`service_b.go`(リソースサーバ)、`probe.go`(self-verify)。

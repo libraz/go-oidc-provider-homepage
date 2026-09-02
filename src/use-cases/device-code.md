@@ -266,7 +266,7 @@ When `AccessTokens` is set, the `device_code.revoked` audit event includes `revo
 [`examples/31-device-code-cli`](https://github.com/libraz/go-oidc-provider/tree/main/examples/31-device-code-cli) drives the full RFC 8628 round trip:
 
 ```sh
-(cd examples/31-device-code-cli && go run -tags example .)
+(cd examples/31-device-code-cli && GOWORK=off go run -tags example .)
 ```
 
 The example boots the OP, prints a boxed `user_code` panel + `verification_uri_complete` shortcut, simulates browser approval after a few seconds, and polls until the OP issues an access_token + id_token. Files are split by role (`op.go` / `cli.go` / `device.go` / `probe.go`).

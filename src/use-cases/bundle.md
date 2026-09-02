@@ -28,7 +28,7 @@ description: A reference wiring that pulls together every option a typical embed
 The example is intentionally long — its job is to be the page you copy from and delete the parts you don't need. If you find yourself writing a wiring from scratch, scan `02-bundle` first and confirm you didn't miss anything obvious.
 
 ```sh
-(cd examples/02-bundle && go run -tags example .)
+(cd examples/02-bundle && GOWORK=off go run -tags example .)
 ```
 
 ## When to consult it

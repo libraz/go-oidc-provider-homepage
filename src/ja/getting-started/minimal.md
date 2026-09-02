@@ -185,7 +185,7 @@ func main() {
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-(cd examples/01-minimal && go run -tags example .)
+(cd examples/01-minimal && GOWORK=off go run -tags example .)
 ```
 
 upstream の `01-minimal` 例では `examples/internal/devkeys` が揮発性鍵を、`examples/internal/serve` がリスナまわりの定型コードを提供します。そのため、`main.go` 自体は `op.New` に集中できます。
