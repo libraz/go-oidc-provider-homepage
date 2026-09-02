@@ -162,7 +162,11 @@ export default defineConfig({
       'link',
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap'
+        // IBM Plex Sans carries the nav bar and the landing page; Inter is
+        // the docs reading face and Outfit the heading face; IBM Plex Sans JP
+        // is appended to every Latin-first stack so Japanese glyphs route to
+        // one deliberate face instead of an OS default.
+        href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+JP:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap'
       }
     ],
     ['meta', { property: 'og:site_name', content: 'go-oidc-provider' }],

@@ -1,0 +1,101 @@
+/* =========================================
+   Design tokens
+
+   One table for the whole site. Everything downstream — the reading
+   surface (docs.css), the figure layer (figures.css), the shared doc
+   components (components.css) — reads from here and never hard-codes a
+   colour, a face, or a step of the type scale.
+
+   The landing page keeps its own `.VPHome`-scoped palette in
+   landing.css and is deliberately untouched by this file beyond the
+   VitePress brand vars it already shared.
+   ========================================= */
+
+/* --- Typefaces ---
+   `--vp-font-family-base` stays IBM Plex Sans so the nav bar, the landing
+   page, and the home wordmark keep the identity they were designed with.
+   The three faces below are docs-scoped and applied in docs.css.
+
+   'IBM Plex Sans JP' is appended to every Latin-first stack so Japanese
+   glyphs — which Outfit and Inter lack — route to it automatically
+   through the fallback chain, giving mixed JA/Latin runs an intentional
+   pairing instead of whatever the OS picks. */
+:root {
+  --vp-font-family-base: "IBM Plex Sans", "IBM Plex Sans JP", system-ui, sans-serif;
+  --vp-font-family-mono: "JetBrains Mono", "IBM Plex Sans JP", "SF Mono", Consolas, monospace;
+
+  /* Headings: geometric, tight, sets the section rhythm. */
+  --font-display: "Outfit", "IBM Plex Sans JP", system-ui, sans-serif;
+  /* Long-form reading face for body copy, tables, and figure prose. */
+  --font-reading: "Inter", "IBM Plex Sans JP", system-ui, sans-serif;
+  /* Micro-labels, identifiers, spec ids, figure edge labels. */
+  --font-mono: "JetBrains Mono", "IBM Plex Sans JP", "SF Mono", Consolas, monospace;
+}
+
+/* --- Brand ---
+   Navy / blue, carried over from the landing page so a reader moving from
+   the home hero into the docs stays inside one identity. */
+:root {
+  --vp-c-brand-1: #1e40af;
+  --vp-c-brand-2: #1d4ed8;
+  --vp-c-brand-3: #2563eb;
+  --vp-c-brand-soft: rgba(37, 99, 235, 0.14);
+}
+
+.dark {
+  --vp-c-brand-1: #93c5fd;
+  --vp-c-brand-2: #60a5fa;
+  --vp-c-brand-3: #bfdbfe;
+  --vp-c-brand-soft: rgba(147, 197, 253, 0.18);
+}
+
+/* --- Semantic accents ---
+   Used by callouts, status pills, and figure state marks. Light and dark
+   are stepped separately so each slot clears 3:1 against its own surface;
+   every place they appear also carries a text label, so the hue never
+   has to carry the meaning alone. */
+:root {
+  --sem-ok: #047857;
+  --sem-warn: #b45309;
+  --sem-danger: #b91c1c;
+  --sem-info: #1d4ed8;
+  --sem-neutral: #64748b;
+}
+
+.dark {
+  --sem-ok: #34d399;
+  --sem-warn: #fbbf24;
+  --sem-danger: #f87171;
+  --sem-info: #93c5fd;
+  --sem-neutral: #94a3b8;
+}
+
+/* --- Rules and shadows --- */
+:root {
+  --rule-subtle: rgba(15, 23, 42, 0.08);
+  --rule-default: rgba(15, 23, 42, 0.14);
+  --rule-strong: rgba(15, 23, 42, 0.22);
+}
+
+.dark {
+  --rule-subtle: rgba(255, 255, 255, 0.07);
+  --rule-default: rgba(255, 255, 255, 0.13);
+  --rule-strong: rgba(255, 255, 255, 0.2);
+}
+
+/* --- Radius / motion --- */
+:root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-default: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Layout width ---
+   Reference tables and wide sequence figures need more rail than the
+   VitePress default (1440px / 688px content) leaves on a 14"+ screen. */
+:root {
+  --vp-layout-max-width: 1600px;
+}

@@ -1,0 +1,441 @@
+/* =========================================
+   Page-specific furniture
+
+   Layout that belongs to exactly one page and is not a figure: the
+   design-judgments index at the top of that page, and anything else
+   that is structural markup rather than a diagram. Figures live in
+   figures.css; anything used by more than one page lives in
+   components.css.
+   ========================================= */
+
+.dj-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  gap: 24px;
+  align-items: stretch;
+  margin: 28px 0 24px;
+  padding: 22px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.08), rgba(15, 23, 42, 0.02));
+}
+
+.dark .dj-hero {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(255, 255, 255, 0.03));
+}
+
+.dj-kicker {
+  margin: 0 0 8px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+}
+
+.dj-lede {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: var(--vp-c-text-1);
+}
+
+.dj-stats {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+
+.dj-stats span {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-2);
+  font-size: 0.86rem;
+}
+
+.dj-stats strong {
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-mono);
+}
+
+.dj-map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0 34px;
+}
+
+.dj-group {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--vp-c-bg-soft);
+}
+
+.dj-group h3 {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  letter-spacing: 0;
+}
+
+.dj-group a {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 9px 0;
+  border-top: 1px solid var(--vp-c-divider);
+  text-decoration: none;
+  color: var(--vp-c-text-2);
+  font-weight: 400;
+}
+
+.dj-group a:first-of-type {
+  border-top: 0;
+}
+
+.dj-group a:hover span {
+  color: var(--vp-c-brand-1);
+}
+
+.dj-group strong {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.82rem;
+  color: var(--vp-c-brand-1);
+}
+
+.dj-group span {
+  line-height: 1.45;
+  font-weight: 400;
+  transition: color 0.15s ease;
+}
+
+.dj-group code {
+  font-size: 0.86em;
+}
+
+@media (max-width: 860px) {
+  .dj-hero,
+  .dj-map {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The landing page still draws a bare <svg>, so it keeps the sizing and the
+   opt-in halo the figure layer supersedes everywhere else. Scoped to the page
+   so it cannot outrank `.fig-svg`, whose selector is one specificity point
+   lighter than an attribute selector. */
+.pg-index .vp-doc svg[viewBox] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 1.75rem auto;
+}
+
+.pg-index .vp-doc svg text,
+.pg-index .vp-doc svg tspan {
+  paint-order: stroke fill;
+  stroke: var(--dg-halo, none);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.pg-index .vp-doc svg .halo {
+  --dg-halo: var(--vp-c-bg);
+}
+
+/* pg-compliance-ofcs — src/compliance/ofcs.md + src/ja/compliance/ofcs.md */
+.pg-compliance-ofcs {
+  --ofcs-pass: #047857;
+  --ofcs-review: #d97706;
+  --ofcs-skip: #64748b;
+  --ofcs-noverdict: #9333ea;
+  --ofcs-fail: #dc2626;
+}
+.dark .pg-compliance-ofcs {
+  --ofcs-pass: #10b981;
+  --ofcs-review: #f59e0b;
+  --ofcs-skip: #6b7280;
+  --ofcs-noverdict: #a855f7;
+  --ofcs-fail: #ef4444;
+}
+
+/* Snapshot headline: one stacked bar for the whole run, plus a legend carrying the exact count and share per outcome. */
+.pg-compliance-ofcs .vp-doc .ofcs-summary {
+  margin: 24px 0 28px;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  background: var(--vp-c-bg-soft);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-headline b {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-headline span {
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+}
+
+.pg-compliance-ofcs .ofcs-track {
+  height: 12px;
+  border-radius: 5px;
+  background: var(--vp-c-divider);
+}
+/* The run-wide bar and the per-plan bars have different denominators, so the run-wide one names its own: full width is all 271 modules. */
+.pg-compliance-ofcs .vp-doc .ofcs-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: 18px 0 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--vp-c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+.pg-compliance-ofcs .ofcs-stack {
+  display: flex;
+  gap: 2px;
+  height: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.pg-compliance-ofcs .ofcs-stack i {
+  display: block;
+  min-width: 2px;
+}
+.pg-compliance-ofcs .ofcs-stack .pass {
+  background: var(--ofcs-pass);
+}
+.pg-compliance-ofcs .ofcs-stack .review {
+  background: var(--ofcs-review);
+}
+.pg-compliance-ofcs .ofcs-stack .skip {
+  background: var(--ofcs-skip);
+}
+.pg-compliance-ofcs .ofcs-stack .noverdict {
+  background: var(--ofcs-noverdict);
+}
+.pg-compliance-ofcs .ofcs-stack .fail {
+  background: var(--ofcs-fail);
+}
+
+.pg-compliance-ofcs .vp-doc .ofcs-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(178px, 1fr));
+  gap: 6px 22px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend > li::before {
+  content: none;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend b {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-legend em {
+  min-width: 46px;
+  font-style: normal;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-3);
+}
+
+.pg-compliance-ofcs .ofcs-dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+.pg-compliance-ofcs .ofcs-dot.pass {
+  background: var(--ofcs-pass);
+}
+.pg-compliance-ofcs .ofcs-dot.review {
+  background: var(--ofcs-review);
+}
+.pg-compliance-ofcs .ofcs-dot.skip {
+  background: var(--ofcs-skip);
+}
+.pg-compliance-ofcs .ofcs-dot.noverdict {
+  background: var(--ofcs-noverdict);
+}
+.pg-compliance-ofcs .ofcs-dot.fail {
+  background: var(--ofcs-fail);
+}
+/* A list item opening with an outcome swatch uses that swatch as its bullet — the site's generic dot on top of it would read as noise. */
+.pg-compliance-ofcs .vp-doc ul > li:has(> .ofcs-dot:first-child)::before {
+  content: none;
+}
+.pg-compliance-ofcs .vp-doc ul:not(.ofcs-legend) > li > .ofcs-dot:first-child {
+  margin-right: 7px;
+  margin-left: -1.25em;
+}
+
+.pg-compliance-ofcs .vp-doc .ofcs-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+
+.pg-compliance-ofcs .vp-doc .ofcs-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--vp-c-divider);
+  font-size: 12.5px;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-meta span {
+  display: inline-flex;
+  gap: 7px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-meta i {
+  font-style: normal;
+  color: var(--vp-c-text-3);
+}
+
+/* Root causes behind the non-passing modules, directly under the headline so the red segment never has to be chased down the page. */
+.pg-compliance-ofcs .vp-doc .ofcs-causes {
+  margin: 20px 0 28px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 20px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause-main {
+  flex: 1 1 340px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause-main strong {
+  display: block;
+  font-size: 15px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause-main p {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-cause .ofcs-plan-counts {
+  flex: none;
+  padding-top: 2px;
+}
+
+/* Every per-plan bar is normalised to its own plan: full width is that plan's module count, printed as the numerator/denominator beside the name. Length therefore always means share, never plan size. */
+.pg-compliance-ofcs .vp-doc .ofcs-plans {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+  margin: 0 0 7px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-name {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: 12px;
+  color: var(--vp-c-text-2);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-counts b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-1);
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan > .ofcs-plan-counts {
+  margin-top: 8px;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-score {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--vp-c-text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pg-compliance-ofcs .vp-doc .ofcs-plan-score b {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+/* pg-index — src/index.md + src/ja/index.md */
+.pg-index .home-box {
+  fill: var(--vp-c-bg-soft);
+}
+.pg-index .home-main {
+  fill: var(--vp-c-brand-soft);
+}
+.pg-index .home-text {
+  fill: var(--vp-c-text-1);
+  stroke: none;
+  font:
+    600 14px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-index .home-sub {
+  fill: var(--vp-c-text-2);
+  stroke: var(--dg-halo, none);
+  font:
+    12px system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+.pg-index .home-flow {
+  stroke: var(--vp-c-brand-2);
+}

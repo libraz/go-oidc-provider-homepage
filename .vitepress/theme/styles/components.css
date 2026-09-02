@@ -1,0 +1,272 @@
+/* =========================================
+   Shared doc components
+
+   Page furniture that is not part of the reading surface itself and not
+   a figure: status pills, the FAQ index, inline doc-reference pills, and
+   the two table layouts that need column control. Every one of these is
+   used by more than one page.
+   ========================================= */
+
+/* Replace VitePress's default "Aあ" language icon with a globe so the
+ * locale switcher reads as i18n at a glance instead of a typography hint. */
+.vpi-languages {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='currentColor' d='M17.9 17.39c-.26-.8-1.01-1.39-1.9-1.39h-1v-3a1 1 0 0 0-1-1H8v-2h2a1 1 0 0 0 1-1V7h2a2 2 0 0 0 2-2v-.41a7.984 7.984 0 0 1 2.9 12.8M11 19.93c-3.95-.49-7-3.85-7-7.93c0-.62.08-1.22.21-1.79L9 15v1a2 2 0 0 0 2 2m1-16A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2'/%3E%3C/svg%3E");
+}
+
+/* Status pills used in compliance tables.
+ * Fixed height + min-width keeps every variant the same shape inside a
+ * cell so the column reads as a uniform stripe instead of a ragged list.
+ */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  height: 18px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.status-pill.full {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #15803d;
+}
+
+.status-pill.partial {
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  color: #a16207;
+}
+
+.status-pill.planned {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #1d4ed8;
+}
+
+.status-pill.out {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #475569;
+}
+
+.status-pill.refused {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #b91c1c;
+}
+
+.dark .status-pill.full {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+.dark .status-pill.partial {
+  background: rgba(234, 179, 8, 0.18);
+  color: #fde047;
+}
+.dark .status-pill.planned {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+.dark .status-pill.out {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+}
+.dark .status-pill.refused {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+/* RFC compliance matrix tables.  The Status column carries pill + an
+ * optional parenthetical, which under default auto-layout grabs ~60%
+ * of the row width and squeezes the Standard / Where columns into
+ * unreadable strips.  Force a fixed layout with explicit proportions
+ * so each column gets a predictable share regardless of how long the
+ * inline note is — long notes wrap inside the cell instead.
+ */
+.rfc-matrix-page .vp-doc table {
+  table-layout: fixed;
+}
+
+.rfc-matrix-page .vp-doc table:has(.status-pill) th:nth-child(1),
+.rfc-matrix-page .vp-doc table:has(.status-pill) td:nth-child(1) {
+  width: 26%;
+}
+
+.rfc-matrix-page .vp-doc table:has(.status-pill) th:nth-child(2),
+.rfc-matrix-page .vp-doc table:has(.status-pill) td:nth-child(2) {
+  width: 36%;
+}
+
+.rfc-matrix-page .vp-doc table:has(.status-pill) th:nth-child(3),
+.rfc-matrix-page .vp-doc table:has(.status-pill) td:nth-child(3) {
+  width: 38%;
+}
+
+/* "Other RFCs" 2-column appendix table — narrower name column. */
+.rfc-matrix-page .vp-doc table:not(:has(.status-pill)) th:nth-child(1),
+.rfc-matrix-page .vp-doc table:not(:has(.status-pill)) td:nth-child(1) {
+  width: 22%;
+}
+
+/* Top-align cells so the pill stays next to the name when the
+ * Status cell wraps onto multiple lines from a long parenthetical. */
+.rfc-matrix-page .vp-doc table td {
+  vertical-align: top;
+}
+
+/* The pill's own vertical-align: middle sits slightly high against the
+ * top-aligned Standard/Where text in the same row; nudge it down so the
+ * row reads as a uniform stripe. */
+.rfc-matrix-page .vp-doc td .status-pill {
+  margin-top: 2px;
+}
+
+/* Wide tables (`<table class="wide">` or any table inside `.wide-table`)
+ * get a horizontal scroll wrapper so the rest of the page stays
+ * readable on narrow viewports.
+ */
+.vp-doc .wide-table {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.vp-doc .wide-table > table {
+  display: table;
+  min-width: 720px;
+}
+
+/* "Why this library exists" callout — green tint to set apart the
+ * one-paragraph pitch from the technical info blocks that follow. */
+.vp-doc .why-callout .custom-block.info {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.vp-doc .why-callout .custom-block.info .custom-block-title {
+  color: #15803d;
+}
+
+.dark .vp-doc .why-callout .custom-block.info {
+  background-color: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.dark .vp-doc .why-callout .custom-block.info .custom-block-title {
+  color: #4ade80;
+}
+
+/* FAQ category index — replace the wall-of-links default toc */
+.vp-doc .faq-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 1.5rem 0 2rem;
+  padding: 0;
+  list-style: none;
+}
+
+.vp-doc .faq-index > li {
+  margin: 0;
+  padding: 0;
+}
+
+.vp-doc .faq-index > li::before {
+  content: none;
+}
+
+.vp-doc .faq-index a {
+  display: block;
+  height: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.vp-doc .faq-index a:hover {
+  border-color: var(--vp-c-brand-1);
+  transform: translateY(-1px);
+}
+
+.vp-doc .faq-index .faq-index-title {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+  color: var(--vp-c-text-1);
+}
+
+.vp-doc .faq-index .faq-index-desc {
+  font-size: 0.8rem;
+  color: var(--vp-c-text-2);
+  line-height: 1.45;
+}
+
+/* Invisible ASCII anchor placed just above each FAQ H2 — the H2 IDs that
+ * VitePress autogenerates from Japanese headings end up in NFD form, so
+ * `getElementById` lookups against NFC-encoded hashes miss. Linking to
+ * an explicit ASCII anchor sidesteps the Unicode normalization mismatch.
+ */
+.vp-doc .faq-anchor {
+  display: block;
+  height: 0;
+  scroll-margin-top: calc(var(--vp-nav-height, 64px) + 24px);
+}
+
+/* Inline doc-reference pill — used inside prose to mark in-site
+ * navigation pointers ("see X for details"). Lighter weight than a
+ * full callout, heavier than a bare link, so the eye lands on it.
+ */
+.vp-doc a.doc-ref {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0 2px;
+  padding: 1px 8px 2px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-size: 0.875em;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.vp-doc a.doc-ref::before {
+  content: "↗";
+  display: inline-block;
+  font-size: 0.95em;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.vp-doc a.doc-ref:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-bg-elv);
+  text-decoration: none;
+}
+
+.vp-doc a.doc-ref:hover::before {
+  opacity: 1;
+}

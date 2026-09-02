@@ -1,0 +1,574 @@
+/* =========================================
+   Figure layer
+
+   One presentation vocabulary for every hand-authored SVG on the site.
+   The markup in a page owns geometry only — coordinates, box sizes, the
+   order of the steps. Every stroke weight, fill, and type spec lives
+   here, so the whole figure set reads as one system and follows the
+   light / dark token tables without a page ever naming a colour.
+
+   The register is deliberately fine: hairline strokes (1–1.3), type from
+   9 to 13px, tints instead of saturated fills. A figure should read like
+   a printed schematic sitting inside the prose, not like a slide.
+
+   Vocabulary
+     frame     .fg-plate .fg-frame .fg-group .fg-rule .fg-life .fg-lane
+     nodes     .fg-box (--sub --accent --muted --ok --warn --danger)
+     edges     .fg-edge (--accent --muted --danger --thin) .fg-tick .fg-dot
+     type      .fg-t .fg-t2 .fg-s .fg-xs .fg-lbl .fg-m .fg-mxs
+               .fg-edge-lbl .fg-num .fg-note
+     colour    .fg-ink .fg-dim .fg-faint .fg-accent .fg-ok .fg-warn .fg-danger
+     utility   .fg-halo .fg-badge .fg-badge-t
+
+   Arrowheads come from the shared markers rendered once per document by
+   `FigureDefs.vue`: url(#fg-a) ink, #fg-ac accent, #fg-am muted,
+   #fg-ad danger, #fg-ao open (line, not solid).
+   ========================================= */
+
+:root {
+  --fg-ink: var(--vp-c-text-1);
+  --fg-dim: var(--vp-c-text-2);
+  --fg-faint: var(--vp-c-text-3);
+  --fg-accent: #1d4ed8;
+  --fg-surface: var(--vp-c-bg);
+  --fg-surface-2: var(--vp-c-bg-soft);
+  --fg-rule: rgba(15, 23, 42, 0.16);
+  --fg-rule-soft: rgba(15, 23, 42, 0.09);
+  --fg-tint: rgba(29, 78, 216, 0.07);
+  /* Phase / group bands, and the colour a haloed label knocks out to.
+     They are the same value on purpose: nearly every label that needs a
+     halo sits inside a band, so the knockout disappears completely
+     instead of leaving a pale rectangle behind the glyphs. */
+  --fg-band: color-mix(in srgb, var(--fg-ink) 4%, var(--vp-c-bg-soft));
+}
+
+.dark {
+  --fg-accent: #7dafff;
+  --fg-rule: rgba(255, 255, 255, 0.17);
+  --fg-rule-soft: rgba(255, 255, 255, 0.09);
+  --fg-tint: rgba(125, 175, 255, 0.1);
+}
+
+/* --- Figure chrome ---------------------------------------------------
+   The HTML frame a diagram sits in. `.fig-head` is the mono uppercase
+   micro-label used everywhere else on the page for "this names a thing";
+   `.fig-note` is the sentence underneath that says what to look at. */
+
+.vp-doc .fig {
+  margin: 1.75rem 0;
+  padding: 1.1rem 1.15rem 0.95rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: var(--radius-lg);
+  background: var(--vp-c-bg-soft);
+  overflow-x: auto;
+}
+
+.vp-doc .fig-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--vp-c-text-3);
+}
+
+.vp-doc .fig-head::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, var(--vp-c-brand-1), var(--vp-c-brand-2));
+}
+
+.vp-doc .fig-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.vp-doc .fig-note {
+  margin: 0.85rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--vp-c-divider);
+  font-family: var(--font-reading);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+}
+
+html[lang="ja"] .vp-doc .fig-note {
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+}
+
+/* Legend row: one entry per swatch, mono like the head label. */
+.vp-doc .fig-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vp-doc .fig-legend > li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  line-height: 1.4;
+  color: var(--vp-c-text-2);
+}
+
+.vp-doc .fig-legend > li::before {
+  content: none;
+}
+
+.vp-doc .fig-sw {
+  flex: none;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--fg-accent);
+}
+
+.vp-doc .fig-sw[data-kind="ink"] {
+  background: var(--fg-dim);
+}
+.vp-doc .fig-sw[data-kind="muted"] {
+  height: 0;
+  background: none;
+  border-top: 2px dashed var(--fg-faint);
+  border-radius: 0;
+}
+.vp-doc .fig-sw[data-kind="ok"] {
+  background: var(--sem-ok);
+}
+.vp-doc .fig-sw[data-kind="warn"] {
+  background: var(--sem-warn);
+}
+.vp-doc .fig-sw[data-kind="danger"] {
+  background: var(--sem-danger);
+}
+.vp-doc .fig-sw[data-kind="box"] {
+  height: 10px;
+  border: 1px solid var(--fg-rule);
+  background: var(--fg-surface);
+}
+.vp-doc .fig-sw[data-kind="ext"] {
+  height: 10px;
+  border: 1px dashed var(--fg-rule);
+  background: none;
+}
+
+/* --- Structure ------------------------------------------------------- */
+
+/* Full-bleed rounded plate a figure is drawn on. Only needed when the
+   drawing has to separate itself from the panel behind it. */
+.fg-plate {
+  fill: var(--fg-surface);
+  stroke: none;
+}
+
+/* A bounded region: "everything inside this line is the runtime". */
+.fg-frame {
+  fill: none;
+  stroke: var(--fg-rule);
+  stroke-width: 1;
+}
+
+/* Outside the boundary — another party, another process, out of scope. */
+.fg-frame--dashed {
+  stroke-dasharray: 5 4;
+}
+
+.fg-frame--accent {
+  stroke: color-mix(in srgb, var(--fg-accent) 55%, transparent);
+}
+
+/* Soft panel grouping several boxes; no stroke, so it reads as ground. */
+.fg-group {
+  fill: var(--fg-band);
+  stroke: none;
+}
+
+.fg-group--accent {
+  fill: var(--fg-tint);
+}
+
+/* Hairline divider inside a box, or a baseline under a row. */
+.fg-rule {
+  fill: none;
+  stroke: var(--fg-rule-soft);
+  stroke-width: 1;
+}
+
+.fg-rule--strong {
+  stroke: var(--fg-rule);
+}
+
+.fg-rule--dashed {
+  stroke-dasharray: 3 4;
+}
+
+/* Sequence-diagram lifeline. */
+.fg-life {
+  fill: none;
+  stroke: var(--fg-rule);
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+}
+
+.fg-life--accent {
+  stroke: color-mix(in srgb, var(--fg-accent) 45%, transparent);
+}
+
+/* Horizontal track a set of blocks sits on (timelines, storage rows). */
+.fg-lane {
+  fill: color-mix(in srgb, var(--fg-ink) 3.5%, transparent);
+  stroke: var(--fg-rule-soft);
+  stroke-width: 1;
+}
+
+/* --- Nodes ----------------------------------------------------------- */
+
+.fg-box {
+  fill: var(--fg-surface);
+  stroke: var(--fg-rule);
+  stroke-width: 1;
+}
+
+/* Nested inside another box — one step quieter. */
+.fg-box--sub {
+  fill: var(--fg-surface-2);
+}
+
+/* This library / the OP: the one thing the page is about. */
+.fg-box--accent {
+  fill: var(--fg-tint);
+  stroke: color-mix(in srgb, var(--fg-accent) 55%, transparent);
+}
+
+.fg-box--muted {
+  fill: color-mix(in srgb, var(--fg-ink) 3.5%, transparent);
+  stroke: var(--fg-rule-soft);
+}
+
+/* Not implemented here / another party's responsibility. */
+.fg-box--ext {
+  fill: none;
+  stroke: var(--fg-rule);
+  stroke-dasharray: 5 4;
+}
+
+.fg-box--ok {
+  fill: color-mix(in srgb, var(--sem-ok) 12%, transparent);
+  stroke: color-mix(in srgb, var(--sem-ok) 55%, transparent);
+}
+
+.fg-box--warn {
+  fill: color-mix(in srgb, var(--sem-warn) 12%, transparent);
+  stroke: color-mix(in srgb, var(--sem-warn) 55%, transparent);
+}
+
+.fg-box--danger {
+  fill: color-mix(in srgb, var(--sem-danger) 12%, transparent);
+  stroke: color-mix(in srgb, var(--sem-danger) 55%, transparent);
+}
+
+/* --- Edges ----------------------------------------------------------- */
+
+.fg-edge {
+  fill: none;
+  stroke: var(--fg-dim);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fg-edge--accent {
+  stroke: var(--fg-accent);
+}
+
+/* Return paths, optional steps, background traffic. */
+.fg-edge--muted {
+  stroke: var(--fg-faint);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+
+.fg-edge--danger {
+  stroke: var(--sem-danger);
+}
+
+.fg-edge--ok {
+  stroke: var(--sem-ok);
+}
+
+.fg-edge--thin {
+  stroke-width: 1;
+}
+
+/* Thin leader from a note to the mark it names. */
+.fg-leader {
+  fill: none;
+  stroke: var(--fg-rule);
+  stroke-width: 1;
+}
+
+.fg-tick {
+  fill: none;
+  stroke: var(--fg-rule);
+  stroke-width: 1;
+}
+
+.fg-dot {
+  fill: var(--fg-dim);
+  stroke: none;
+}
+
+.fg-dot--accent {
+  fill: var(--fg-accent);
+}
+
+.fg-dot--hollow {
+  fill: var(--fg-surface);
+  stroke: var(--fg-accent);
+  stroke-width: 1.2;
+}
+
+.fg-dot--ok {
+  fill: var(--sem-ok);
+}
+.fg-dot--warn {
+  fill: var(--sem-warn);
+}
+.fg-dot--danger {
+  fill: var(--sem-danger);
+}
+
+/* Solid fills for bars, shares, and swatches inside a figure. */
+.fg-fill {
+  stroke: none;
+  fill: var(--fg-accent);
+}
+.fg-fill--ok {
+  fill: var(--sem-ok);
+}
+.fg-fill--warn {
+  fill: var(--sem-warn);
+}
+.fg-fill--danger {
+  fill: var(--sem-danger);
+}
+.fg-fill--muted {
+  fill: color-mix(in srgb, var(--fg-ink) 14%, transparent);
+}
+
+/* --- Type ------------------------------------------------------------
+   Text never inherits a stroke; the halo below is opt-in per label. */
+
+.fg-svg text {
+  stroke: none;
+  fill: var(--fg-ink);
+  font-family: var(--font-reading);
+}
+
+/* Node title. */
+.fg-t {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--fg-ink);
+}
+
+/* Secondary / nested node title. */
+.fg-t2 {
+  font-size: 11.5px;
+  font-weight: 500;
+  fill: var(--fg-ink);
+}
+
+/* A detail line inside a box. */
+.fg-s {
+  font-size: 10.5px;
+  fill: var(--fg-dim);
+}
+
+/* Micro caption — the smallest thing that still has to be read. */
+.fg-xs {
+  font-size: 9.5px;
+  fill: var(--fg-faint);
+}
+
+/* Region label above a group: the mono uppercase micro-label again. */
+.fg-lbl {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  fill: var(--fg-faint);
+}
+
+/* The tab on a sequence fragment (`par`, `loop`, `alt`). Mono like the
+   region label but never upper-cased: these tabs carry units and
+   identifiers, and "EVERY INTERVAL S" is not a readable thing to write. */
+.fg-tab {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  fill: var(--fg-faint);
+}
+
+/* Identifiers: endpoints, claim names, package paths. */
+.fg-m {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--fg-dim);
+}
+
+.fg-mxs {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  fill: var(--fg-faint);
+}
+
+/* The label riding on an arrow. Mono, because it is nearly always a
+   method + path or a parameter list. */
+.fg-edge-lbl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--fg-dim);
+}
+
+/* Step numbers beside an edge. */
+.fg-num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--fg-faint);
+}
+
+/* A sentence pointing at something — set in the reading face because it
+   is prose, not a name. */
+.fg-note {
+  font-size: 10.5px;
+  fill: var(--fg-dim);
+}
+
+.fg-note--strong {
+  font-weight: 600;
+  fill: var(--fg-ink);
+}
+
+/* Colour modifiers, composable with any of the sizes above. */
+.fg-ink {
+  fill: var(--fg-ink);
+}
+.fg-dim {
+  fill: var(--fg-dim);
+}
+.fg-faint {
+  fill: var(--fg-faint);
+}
+.fg-accent {
+  fill: var(--fg-accent);
+}
+.fg-ok {
+  fill: var(--sem-ok);
+}
+.fg-warn {
+  fill: var(--sem-warn);
+}
+.fg-danger {
+  fill: var(--sem-danger);
+}
+
+/* Japanese figure labels: 'palt' closes the gaps fullwidth punctuation
+   leaves at these sizes, and kana need a hair less tracking than the
+   Latin defaults above. */
+html[lang="ja"] .fg-svg text {
+  font-feature-settings: "palt" 1;
+}
+
+/* --- Utilities -------------------------------------------------------- */
+
+/* A label that crosses an arrow or a lifeline paints the page colour
+   behind its glyphs instead of sitting on a knockout rectangle. Never
+   put it on text inside a filled box — the halo would punch a hole. */
+.fg-halo {
+  paint-order: stroke fill;
+  stroke: var(--fg-band);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* On a figure drawn straight onto the panel, with no band underneath. */
+.fg-halo--plain {
+  stroke: var(--vp-c-bg-soft);
+}
+
+/* Numbered step marker: a small hollow circle with the number inside. */
+.fg-badge {
+  fill: var(--fg-surface);
+  stroke: var(--fg-rule);
+  stroke-width: 1;
+}
+
+.fg-badge--accent {
+  stroke: color-mix(in srgb, var(--fg-accent) 55%, transparent);
+  fill: var(--fg-tint);
+}
+
+.fg-badge-t {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  fill: var(--fg-dim);
+}
+
+.fg-badge-t--accent {
+  fill: var(--fg-accent);
+}
+
+/* Shared arrowheads. Rendered once per document by FigureDefs.vue and
+   referenced from every figure, so a page never carries its own <defs>. */
+.fg-head-ink {
+  fill: var(--fg-dim);
+  stroke: none;
+}
+.fg-head-accent {
+  fill: var(--fg-accent);
+  stroke: none;
+}
+.fg-head-muted {
+  fill: var(--fg-faint);
+  stroke: none;
+}
+.fg-head-danger {
+  fill: var(--sem-danger);
+  stroke: none;
+}
+.fg-head-ok {
+  fill: var(--sem-ok);
+  stroke: none;
+}
+
+@media (max-width: 768px) {
+  .vp-doc .fig {
+    padding: 0.9rem 0.85rem 0.8rem;
+  }
+  /* Below this width a 960px figure would set its type at 6px or less;
+     let it keep its own scale and scroll instead. */
+  .vp-doc .fig-svg {
+    min-width: 620px;
+  }
+}
