@@ -9,10 +9,12 @@ pageClass: pg-reference-architecture
 
 `op.New(...)` は `http.ServeMux` を内部に持つ `http.Handler` を返します。本ページでは、リクエスト到着からレスポンスまでの間に OP が何を実行するか、関わるパッケージ、検証の順序、組み込み側が制御するストレージの差し込み口を整理します。
 
+以下のシーケンスで RP は別アプリです。OP 側のアプリケーションが go-oidc-provider を組み込み、`Store` と `LoginFlow` の実装を所有します。
+
 ## パッケージ構成
 
 ```
-op/                         ← 公開 API 表面(組み込み側はここを import)
+op/                         ← 公開 API（組み込み側はここを import）
 op/profile/                 ← FAPI 2.0 / 将来のプロファイル
 op/feature/                 ← PAR / DPoP / mTLS / introspect / revoke / DCR / JAR
 op/grant/                   ← authorization_code、refresh_token、client_credentials
@@ -35,14 +37,14 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 ## ルート一覧
 
-`op.New` は `*http.ServeMux` を構築し、設定されたパスごとにハンドラを 1 つ登録します。既定のパスと、その裏にあるパッケージは次のとおりです。
+`op.New` は `*http.ServeMux` を構築し、設定されたパスごとにハンドラを 1 つ登録します。既定のパスと、それを担当するパッケージは次のとおりです。
 
 | パス | ハンドラのパッケージ | 何を返すか | 公開条件 |
 |---|---|---|---|
 | `/.well-known/openid-configuration` | `internal/discovery` | OP の実効設定を discovery 文書として返す | 常時 |
 | `/jwks` | `internal/jwks` | 署名鍵セットの公開側（設定時は `use=enc` 鍵も） | 常時 |
 | `/auth` | `internal/authorizeendpoint` | リクエストの解析、クライアントと `redirect_uri` の検証、interaction へのリダイレクト | `authorization_code` grant が有効な場合 |
-| `/interaction/{uid}` | `internal/authorizeendpoint` + `op/interaction` ドライバ | ログインと同意の ceremony。HTML で描画するか、SPA へ JSON で返す | `/auth` と同時 |
+| `/interaction/{uid}` | `internal/authorizeendpoint` + `op/interaction` ドライバ | ログインと同意の手続き。HTML で描画するか、SPA へ JSON で返す | `/auth` と同時 |
 | `/par` | `internal/parendpoint` | pushed authorization request を受け取り、一度限りの `request_uri` を返す | `feature.PAR` |
 | `/token` | `internal/tokenendpoint` | クライアント認証、認可コードとリフレッシュトークンの引き換え、トークン発行 | 常時 |
 | `/userinfo` | `internal/userinfo` | 提示されたアクセストークンが指す subject の claim | 常時 |
@@ -66,7 +68,7 @@ internal/                   ← 外部からは import 不可(Go の可視性)
 
 これらはオプションではありません。組み込み側のオプション設定に関係なく構造的に適用されます。
 
-origin の集合は意図的に分かれています。API の CORS は明示的な `WithCORSOrigins` でのみ拡張され（API 互換性のため redirect URI の origin も含まれます）、interaction と end-session の ceremony 検査は issuer origin と明示的な origin だけを許可します。redirect URI の origin だけで cross-origin interaction / logout POST が許可されることはありません。
+origin の集合は意図的に分かれています。API の CORS は明示的な `WithCORSOrigins` でのみ拡張され（API 互換性のため redirect URI の origin も含まれます）、interaction と end-session の手続きの検査は issuer origin と明示的な origin だけを許可します。redirect URI の origin だけで cross-origin interaction / logout POST が許可されることはありません。
 
 ## Authorize → token のライフサイクル
 
@@ -76,22 +78,22 @@ origin の集合は意図的に分かれています。API の CORS は明示的
 
 <figure class="fig">
   <div class="fig-head">authorize から token まで — ストアと LoginFlow を含めて</div>
-  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 700" xmlns="http://www.w3.org/2000/svg">
-    <title id="arch-lifecycle-title">authorize リクエストからトークン応答までの正常系を、どの呼び出しがストアに届き、どの呼び出しが LoginFlow に届くかまで含めて示した図。最初の 2 段階はブラウザが進め、3 段階目は RP と OP の直接のバックチャネル通信です。</title>
+  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 740" xmlns="http://www.w3.org/2000/svg">
+    <title id="arch-lifecycle-title">authorize リクエストからトークン応答までの正常系を、どの呼び出しがストアに届き、どの呼び出しが LoginFlow に届くかまで含めて示した図。RP は別アプリで、OP 側のアプリケーションが go-oidc-provider を組み込みます。最初の 2 段階はブラウザが進め、3 段階目は RP と OP の直接のバックチャネル通信です。</title>
     <rect class="fg-group" x="30" y="68" width="916" height="146" rx="8"/>
     <rect class="fg-group" x="30" y="222" width="916" height="236" rx="8"/>
-    <rect class="fg-group" x="30" y="466" width="916" height="222" rx="8"/>
+    <rect class="fg-group" x="30" y="466" width="916" height="262" rx="8"/>
     <text class="fg-lbl" x="42" y="86">1 · authorize リクエスト</text>
     <text class="fg-lbl" x="42" y="240">2 · interaction</text>
     <text class="fg-lbl" x="42" y="484">3 · 認可コードの引き換え</text>
-    <line class="fg-life" x1="106" y1="62" x2="106" y2="688"/>
-    <line class="fg-life" x1="300" y1="62" x2="300" y2="688"/>
-    <line class="fg-life fg-life--accent" x1="510" y1="62" x2="510" y2="688"/>
-    <line class="fg-life" x1="710" y1="62" x2="710" y2="688"/>
-    <line class="fg-life" x1="880" y1="62" x2="880" y2="688"/>
+    <line class="fg-life" x1="106" y1="62" x2="106" y2="728"/>
+    <line class="fg-life" x1="300" y1="62" x2="300" y2="728"/>
+    <line class="fg-life fg-life--accent" x1="510" y1="62" x2="510" y2="728"/>
+    <line class="fg-life" x1="710" y1="62" x2="710" y2="728"/>
+    <line class="fg-life" x1="880" y1="62" x2="880" y2="728"/>
     <rect class="fg-box" x="36" y="16" width="140" height="42" rx="6"/>
     <text class="fg-t" x="106" y="35" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="106" y="49" text-anchor="middle">組み込み側のアプリ</text>
+    <text class="fg-xs" x="106" y="49" text-anchor="middle">別アプリ</text>
     <rect class="fg-box" x="230" y="16" width="140" height="42" rx="6"/>
     <text class="fg-t" x="300" y="35" text-anchor="middle">ブラウザ</text>
     <text class="fg-xs" x="300" y="49" text-anchor="middle">user agent</text>
@@ -176,27 +178,35 @@ origin の集合は意図的に分かれています。API の CORS は明示的
     <text class="fg-mxs fg-halo" x="308" y="566" text-anchor="middle">POST /token</text>
     <text class="fg-mxs fg-halo" x="308" y="579" text-anchor="middle">grant_type=authorization_code</text>
     <!-- 15 -->
-    <circle class="fg-badge" cx="15" cy="624" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="627" text-anchor="middle">15</text>
-    <path class="fg-edge" d="M510,624 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="604" text-anchor="middle">AuthorizationCodes.Consume</text>
-    <text class="fg-xs" x="610" y="617" text-anchor="middle">続けて PKCE とクライアント認証を検証する</text>
+    <circle class="fg-badge" cx="15" cy="614" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="617" text-anchor="middle">15</text>
+    <path class="fg-edge" d="M510,614 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="598" text-anchor="middle">Clients.GetClient · クライアント認証</text>
+    <text class="fg-xs" x="610" y="611" text-anchor="middle">認可コードの消費より前</text>
     <!-- 16 -->
-    <circle class="fg-badge" cx="15" cy="654" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="657" text-anchor="middle">16</text>
-    <path class="fg-edge" d="M510,654 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="648" text-anchor="middle">AccessTokens.Register · RefreshTokens.Save</text>
+    <circle class="fg-badge" cx="15" cy="644" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="647" text-anchor="middle">16</text>
+    <path class="fg-edge" d="M510,644 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="636" text-anchor="middle">AuthorizationCodes.Consume</text>
+    <text class="fg-xs" x="610" y="649" text-anchor="middle">続けて PKCE と redirect_uri を検証</text>
     <!-- 17 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="682" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="685" text-anchor="middle">17</text>
-    <path class="fg-edge fg-edge--accent" d="M510,682 H106" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs fg-halo" x="308" y="676" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+    <circle class="fg-badge" cx="15" cy="674" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="677" text-anchor="middle">17</text>
+    <path class="fg-edge" d="M510,674 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="668" text-anchor="middle">AccessTokens.Register（JTIRegistry のみ） · RefreshTokens.Save（条件成立時）</text>
+    <!-- 18 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="704" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="707" text-anchor="middle">18</text>
+    <path class="fg-edge fg-edge--accent" d="M510,704 H106" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs fg-halo" x="308" y="698" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
   </svg>
   <figcaption class="fig-note">右端の 2 レーンは組み込み側のものです。そこへ向かう矢印はすべてインタフェース呼び出しで、だからこそ中央のプロトコル処理に手を入れずに、保存先とログイン体験を差し替えられます。</figcaption>
 </figure>
 </div>
 
 `/par` と `/end_session` も大筋は同じ形です。上記が標準的な成功経路です。
+
+JWT アクセストークンに対して `AccessTokens` の shadow row が保存されるのは、`RevocationStrategyJTIRegistry` を選択した場合だけです。既定の `RevocationStrategyGrantTombstone` は失効時に grant tombstone を記録し、`RevocationStrategyNone` は JWT のサーバ側失効を無効にします。リフレッシュトークンは、OP の grant、クライアント登録、scope の条件をすべて満たした場合だけ保存されます。
 
 <a class="faq-anchor" id="loginflow-internals"></a>
 
@@ -327,7 +337,7 @@ MFA factor のストア（`EmailOTPStore`、`TOTPStore`、`PasskeyStore`、`Reco
 `/.well-known/openid-configuration` は OP の実効設定から discovery 文書を組み立てます。広告されるフィールドはそのまま OP の実挙動を表します。discovery と挙動の間に乖離はありません。理由は以下のとおりです。
 
 - **`response_types_supported`** は `WithGrants` + FAPI プロファイルから計算されます。client-credentials だけの OP では空配列となり、browser authorization / logout の surface と flag は広告されません。
-- **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `FAPI2MessageSigning` が有効なときに FAPI の許可リストと交差します。
+- **`token_endpoint_auth_methods_supported`** は、`WithProfile(profile.FAPI2Baseline)` または `WithProfile(profile.FAPI2MessageSigning)` が有効なときに本ライブラリの FAPI 許可リストと交差します。
 - **`scopes_supported`** は組み込みの scope と `WithScope` で登録された scope の和集合です。
 - **`ui_locales_supported`** は runtime locale resolver（seed bundle + `WithLocale` 追加分）から自動導出されます。`WithDiscoveryMetadata(...).UILocalesSupported` に非空の明示リストを渡した場合だけ、それが優先されます。
 - **`code_challenge_methods_supported`** は常に `["S256"]` です。`plain` は構造的に存在しません。

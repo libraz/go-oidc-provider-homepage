@@ -13,15 +13,15 @@ By default, the RP picks claims via **scopes**: `scope=openid profile email` ask
 OIDC Core 1.0 §5.5 adds a finer mechanism: the RP sends a `claims=...` JSON object listing **individual claims** (e.g. just `email_verified` and `phone_number`) and where they should appear (in the `id_token`, in `/userinfo`, or both), with optional `essential` markers and value constraints.
 
 This is most useful for two cases:
-1. **Step-up consent** — RP asks for `acr=urn:mace:incommon:iap:silver` as essential to force a higher-assurance authentication.
+1. **Step-up authentication** — RP asks for an essential `acr` value that the current session does not satisfy, prompting re-authentication.
 2. **Privacy-minimising RPs** — RP asks for only the claims it needs, not the full scope bundle.
 
-The two mechanisms differ in where their output lands. A scope releases its whole bundle to both the ID Token and `/userinfo`; a `claims` member releases only the claims it names, and only to the destination it is nested under.
+The two mechanisms differ in where their output lands. In the authorization code flow, the standard `profile`, `email`, `address`, and `phone` scopes request claims from `/userinfo`; a `claims` member requests only the claims it names, at the destination it specifies. In an ID Token-only response with no access token, scope-derived claims instead appear in the ID Token.
 
 <figure class="fig">
   <div class="fig-head">Where each request lands</div>
   <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 258" xmlns="http://www.w3.org/2000/svg">
-    <title id="uc-claims-title">The id_token member of the claims parameter selects claims for the ID token only; the userinfo member selects them for the userinfo response only. A scope, by contrast, reaches both destinations at once.</title>
+    <title id="uc-claims-title">In the authorization code flow, the id_token member requests claims in the ID Token; the userinfo member and standard profile scopes request claims from UserInfo.</title>
     <text class="fg-lbl" x="40" y="26">what you ask with</text>
     <text class="fg-lbl" x="644" y="26">where it comes out</text>
     <rect class="fg-box" x="36" y="38" width="330" height="52" rx="6"/>
@@ -34,21 +34,20 @@ The two mechanisms differ in where their output lands. A scope releases its whol
     <text class="fg-mxs" x="54" y="188">claims["userinfo"]</text>
     <text class="fg-xs" x="54" y="206">exactly the claims it names</text>
     <path class="fg-edge fg-edge--thin" d="M370,64 H600" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V64 H600" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M470,124 V192 H600" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V192 H600" marker-end="url(#fg-ac)"/>
     <path class="fg-edge fg-edge--thin" d="M370,192 H600" marker-end="url(#fg-a)"/>
     <rect class="fg-box" x="604" y="38" width="320" height="52" rx="6"/>
     <text class="fg-mxs" x="622" y="60">the ID token</text>
     <text class="fg-xs" x="622" y="78">signed into the JWT, read by the RP</text>
     <rect class="fg-box" x="604" y="166" width="320" height="52" rx="6"/>
     <text class="fg-mxs" x="622" y="188">GET /userinfo</text>
-    <text class="fg-xs" x="622" y="206">returned in the JSON body</text>
+    <text class="fg-xs" x="622" y="206">returned in the response</text>
     <text class="fg-xs" x="36" y="246">the two members are separate requests — naming a claim under one does not put it in the other</text>
   </svg>
-  <figcaption class="fig-note">This is the part that surprises people: adding a claim to <code>claims["userinfo"]</code> will never make it appear in the ID token, however many times the RP retries.</figcaption>
+  <figcaption class="fig-note">This diagram shows the authorization code flow. A claim requested only under <code>claims["userinfo"]</code> is not requested for the ID Token.</figcaption>
 </figure>
 
-`essential` does not change that routing. It changes only how hard the OP tries: for `acr` an essential request forces re-authentication, and for every other claim it stays a best-effort hint.
+`essential` does not change that routing. For ordinary claims it signals importance to the OP's authorization experience but does not require an error when the claim is unavailable. An essential `acr` request with a required value has special matching rules and can trigger re-authentication.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §5.4 (scope-to-claim mapping), §5.5 (claims request)
@@ -59,7 +58,7 @@ The two mechanisms differ in where their output lands. A scope releases its whol
 ::: details Quick refresher
 - **Scope** — a coarse permission bundle (`profile`, `email`, …). One scope maps to a fixed set of claims.
 - **Claim request** — a fine-grained, per-claim ask. The RP specifies exactly which claims it wants and where they should appear (`id_token` vs `userinfo`), with optional `essential` markers.
-- **Essential vs voluntary** — for an ordinary claim, `essential` is a hint, not an enforcement lever: the OP makes a best-effort attempt and silently omits the claim if it isn't available, same as a voluntary request. The one exception is `acr`: an essential `acr` request the current session doesn't satisfy forces re-authentication (see [MFA / step-up](/use-cases/mfa-step-up)).
+- **Essential vs voluntary** — for an ordinary claim, `essential` marks its importance but does not make absence an error. The OP may omit an unavailable claim; `acr` with `essential: true` and a required value has special matching rules (see [MFA / step-up](/use-cases/mfa-step-up)).
 :::
 
 > **Source:** [`examples/61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request)
@@ -107,12 +106,12 @@ After the flow:
 
 | Place | Outcome |
 |---|---|
-| `id_token` | `email` is included if the user store has it; if not, the OP silently omits it (essential only means "attempt harder", not "fail if absent") |
+| `id_token` | `email` is included if the user store has it; if not, the OP omits it without failing the request |
 | `/userinfo` response | `locale` is included on a best-effort basis (voluntary) |
 
 ## Essential vs voluntary
 
-For ordinary claims (anything other than `acr`), `essential` does not change what the OP is willing to fail on. OIDC Core 1.0 §5.5 only says the OP "MUST attempt to provide" an essential claim, and it stops there — it does not require the OP to refuse the request when the claim is absent.
+For ordinary claims (anything other than `acr`), `essential` communicates importance to the authorization experience. OIDC Core 1.0 §5.5.1 says the OP must not generate an error merely because an essential claim cannot be returned, unless a claim-specific rule says otherwise. This library omits an unavailable ordinary claim.
 
 - `{"essential": true}` — the OP looks the claim up and includes it if the value exists; if the user store doesn't carry the claim, the OP silently omits it, exactly as it would for a voluntary request. There is no error code and no re-prompt tied to a missing ordinary claim.
 - `{"essential": false}` or `null` — the OP includes the claim **if it has it**; otherwise silently omits.

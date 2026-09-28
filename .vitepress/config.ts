@@ -22,8 +22,8 @@ const softwareApplicationJsonLd = (lang: Locale) => ({
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   description:
     lang === 'ja'
-      ? 'Go 向けの OpenID Connect Provider（認可サーバ）ライブラリ。http.Handler として組み込め、FAPI 2.0 Baseline / Message Signing をターゲットにしています。'
-      : 'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
+      ? 'Go 向けの OpenID Connect Provider（認可サーバー）ライブラリ。http.Handler として組み込め、FAPI 用のプロファイル設定を備えています。'
+      : 'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler and includes FAPI profile options.',
   url: lang === 'ja' ? `${siteUrl}/ja/` : siteUrl,
   downloadUrl: githubUrl,
   softwareVersion: docsVersion,
@@ -39,16 +39,16 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
   en: {
     title: 'go-oidc-provider — OpenID Connect Provider library for Go',
     description:
-      'OIDC Provider library that mounts as a Go http.Handler. Targets FAPI 2.0 Baseline / Message Signing.',
+      'OIDC Provider library that mounts as a Go http.Handler, with PAR, JAR, DPoP, and FAPI profile options.',
     keywords:
-      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, refresh token rotation, Go, Authorization Server, http.Handler'
+      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, refresh token rotation, Go, Authorization Server, http.Handler'
   },
   ja: {
     title: 'go-oidc-provider — Go 向け OpenID Connect Provider ライブラリ',
     description:
-      'Go の http.Handler として組み込める OIDC Provider ライブラリ。FAPI 2.0 Baseline / Message Signing をターゲットにしています。',
+      'Go の http.Handler として組み込める OIDC Provider ライブラリ。PAR、JAR、DPoP と FAPI 用のプロファイル設定を備えています。',
     keywords:
-      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, FAPI Baseline, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバ, http.Handler'
+      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバー, http.Handler'
   }
 }
 
@@ -74,7 +74,7 @@ const LLMS_LOCALES: LlmsLocale[] = [
     prefix: '',
     title: 'go-oidc-provider',
     summary:
-      'OpenID Connect Provider (Authorization Server) for Go that embeds as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing with PAR, JAR, DPoP, and mTLS.',
+      'OpenID Connect Provider (Authorization Server) for Go that embeds as an http.Handler. Includes PAR, JAR, DPoP, mTLS, and FAPI profile options.',
     intro:
       'go-oidc-provider is a library, not a deployable product: it mounts into an existing Go\nservice and leaves storage, user authentication, and consent to the host application.\nThe documentation covers OAuth 2.0 / OIDC concepts from the ground up alongside the API\nreference, so it doubles as a primer. The links below point to the canonical HTML pages.',
     overviewHeading: 'Key pages',
@@ -95,7 +95,7 @@ const LLMS_LOCALES: LlmsLocale[] = [
     prefix: '/ja',
     title: 'go-oidc-provider',
     summary:
-      'Go の http.Handler に組み込める OpenID Connect Provider（Authorization Server）ライブラリです。PAR・JAR・DPoP・mTLS を備え、FAPI 2.0 Baseline / Message Signing をターゲットにしています。',
+      'Go の http.Handler に組み込める OpenID Connect Provider（認可サーバー）ライブラリです。PAR・JAR・DPoP・mTLS と FAPI 用のプロファイル設定を備えています。',
     intro:
       'go-oidc-provider は単体で動く製品ではなく、既存の Go サービスに組み込むライブラリです。\nストレージ・ユーザ認証・同意画面はホスト側のアプリケーションが担います。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門にも使えます。\n以下は日本語ドキュメントへのリンク一覧です。',
     overviewHeading: '主要ページ',
@@ -118,7 +118,7 @@ export default defineConfig({
   appearance: true,
   title: 'go-oidc-provider',
   description:
-    'OpenID Connect Provider (Authorization Server) for Go. Embeds as an http.Handler. Targets FAPI 2.0 Baseline / Message Signing with PAR, JAR, DPoP, mTLS.',
+    'OpenID Connect Provider (Authorization Server) for Go. Embeds as an http.Handler and includes PAR, JAR, DPoP, mTLS, and FAPI profile options.',
   cleanUrls: true,
 
   markdown: {
@@ -884,7 +884,7 @@ export default defineConfig({
       label: '日本語',
       lang: 'ja',
       description:
-        'Go の http.Handler に組み込める OpenID Connect Provider（Authorization Server）ライブラリ。FAPI 2.0 Baseline / Message Signing をターゲット。',
+        'Go の http.Handler に組み込める OpenID Connect Provider（認可サーバー）ライブラリ。PAR、JAR、DPoP、mTLS と FAPI 用のプロファイル設定を備えます。',
       themeConfig: {
         search: {
           provider: 'local',

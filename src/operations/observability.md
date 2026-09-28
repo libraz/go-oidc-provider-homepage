@@ -87,9 +87,9 @@ op.New(
 )
 ```
 
-Each event is a JSON line with an `event` attribute containing `"<event.name>"`; `msg` is the short human-readable message. The line also carries the common attributes (`request_id`, `subject`, `client_id`, `extras`). See the [Audit event catalog](/reference/audit-events) for the full list.
+Each event is a JSON line with an `event` attribute containing `"<event.name>"`; `msg` is the short human-readable message. Optional canonical attributes (`actor_id`, `client_id`, `session_id`, `request_id`, `ip`, `user_agent`, and `tag`) are emitted when set, and a non-empty `extras` group carries category-specific fields. See the [Audit event catalog](/reference/audit-events) for the full list.
 
-`WithAuditLogger` is synchronous: the handler runs on the request goroutine. It must not block on slow I/O or unbounded queues, and it must be safe for concurrent calls from many requests. Use a bounded, concurrency-safe handoff when the final sink is asynchronous. The catalog contains reserved names as well as events emitted by this library, so do not treat every constant as proof that a signal fired.
+`WithAuditLogger` is synchronous: the handler runs on the emitting caller's goroutine. It must not block on slow I/O or unbounded queues, and it must be safe for concurrent calls. Use a bounded, concurrency-safe handoff when the final sink is asynchronous. The catalog contains reserved names as well as events emitted by this library, so do not treat every constant as proof that a signal fired.
 
 ::: tip One stream, multiple sinks
 A single `*slog.Logger` can fan out to file + Loki + Splunk via a multiplexing handler. The OP constructs the `slog.Record` itself and passes it directly to the logger's `Handler().Handle(...)`; the OP does not rebuild the event through `logger.LogAttrs(...)`. This preserves the audit timestamp supplied by `WithClock`.

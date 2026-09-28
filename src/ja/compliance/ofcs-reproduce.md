@@ -8,7 +8,7 @@ pageClass: pg-compliance-ofcs-reproduce
 
 このページは運用者向けの runbook です。[OFCS 適合状況](/ja/compliance/ofcs)が「最新の実行で何が観測されたか」を記録するのに対し、本ページは「自分のマシンでそれを再現するには」「各 OFCS プランがどの `op.With...` オプションを使うか」を扱います。
 
-適合状況ページは、core のコミット [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a) で `2026-09-01T13:48:21Z` に取得した最新の release run を要約しています。JSON snapshot はローカルの gitignore 対象 release artifact なので、この runbook で自分の環境向けに新しい snapshot を生成してください。
+適合状況ページは、リリースタグ直前に取得した保持済みのリリース相当 run を要約しています。core のコミット [`8ee7ca3`](https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd) で `2026-09-28T13:43:49Z` に取得しました。この run はリリースタグ直前に測定したため、OFCS `release-v5.3.1` と同等のリリース相当結果として扱います。JSON snapshot はローカルの gitignore 対象 release artifact で、OFCS のイメージ tag や digest は記録していません。現在の `conformance/docker-compose.yml` の既定 pin は `release-v5.3.1` です。
 
 最新の PASS / REVIEW / SKIPPED / WARNING 件数を確認したい場合は、まず [OFCS 適合状況](/ja/compliance/ofcs) を参照してください。自分の OP に同じ OFCS プランを通すためにどのオプションを組み込めばよいかを知りたい場合は、本ページが該当します。
 
@@ -63,10 +63,10 @@ pageClass: pg-compliance-ofcs-reproduce
 
 - **Docker** + Compose v2(ハーネスは `docker compose` を呼び出します。`docker-compose` ではありません)
 - **OpenSSL**(`scripts/conformance.sh certs` の証明書生成に使用)
-- **Go 1.25+**。このリリースでは `go.mod` に `go1.27.0` toolchain を固定しています。
+- **Go 1.26 以降**。`go.mod` では `go1.27.1` toolchain を指定しています。
 - seed-plans / drive スクリプト用の `curl` と `python3`
 
-OFCS イメージは [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml) で固定された tag を OpenID Foundation の registry から pull します。OFCS の checkout や `mvn install` は不要です。
+OFCS イメージは、現在の既定 tag `release-v5.3.1` として [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml) から OpenID Foundation の registry に pull します。status page の保持済み run はリリースタグ直前に測定したため、この tag と同等のリリース相当結果として扱います。ただし snapshot にイメージ tag や digest は記録されていません。OFCS の checkout や `mvn install` は不要です。
 
 ## ワンコマンドでのクイックスタート
 
@@ -105,6 +105,8 @@ OFCS テストプランによって検証するライブラリ機能が異なり
 | `fapi2-message-signing-id1-test-plan` | `OP_PROFILE=fapi2-message-signing make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2MessageSigningOptions` |
 | `fapi-ciba-id1-test-plan` | `OP_PROFILE=fapi-ciba make conformance-op-up` | [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) — `fapiCIBAOptions` |
 
+固定した OFCS リリースでは、この Message Signing プランを `fapi2-message-signing-id1-test-plan` と呼びます。末尾の `id1` は OFCS のプラン識別子であり、FAPI 2.0 Message Signing Final の版を示すラベルではありません。このプランの結果は固定版スイートのテスト範囲だけを示し、現行 Final のすべての要件への適合や認証を示すものではありません。
+
 `cmd/op-demo/` 配下の各プロファイルファイルは冒頭にコメントブロックを持ち、そのプロファイルが有効化するオプション、各オプションが満たす仕様セクション、その実装が対象としている OFCS module を列挙しています。自分の OP にパターンを取り込む前に、実行するプランに対応するファイルを通読してください。
 
 ## 自分の OP に組み込むもの
@@ -132,7 +134,7 @@ dynamic 系プラン（`oidcc-dynamic`、`*-rp-initiated-logout-*`）では、co
 `op-demo` 起動時に `OP_PROFILE=fapi2-baseline` を設定します。`fapi2BaselineOptions` がまとめている profile 固有の追加項目は次のとおりです。
 
 - `op.WithProfile(profile.FAPI2Baseline)` — PAR(RFC 9126)、JAR(RFC 9101)、FAPI alg 制限を自動有効化します。
-- `op.WithFeature(feature.DPoP)` — 送信者制約付きトークン。FAPI 2.0 §3.1.4 は DPoP **OR** mTLS を要求しますが、demo は OFCS テンプレートが fapi2-* プランに対して `sender_constrain=dpop` を ship しているため DPoP を選択しています。
+- `op.WithFeature(feature.DPoP)` — 送信者制約付きトークン。現行の FAPI 2.0 Security Profile §5.3.2.1(4)–(5) は DPoP **または** mTLS を求めます。デモが DPoP を選ぶのは、OFCS テンプレートの fapi2-* プランで `sender_constrain=dpop` が指定されているためです。
 
 demo は OFCS テストクライアントの公開鍵を保持する `op.PrivateKeyJWTClient` を 2 件（`demo-fapi`、`demo-fapi-2`）seed します。対応する秘密鍵は [`conformance/plans/fapi2-*.json`](https://github.com/libraz/go-oidc-provider/tree/main/conformance/plans) に置かれており、OFCS が `private_key_jwt` assertion の署名に使用します。
 
@@ -144,7 +146,7 @@ demo は OFCS テストクライアントの公開鍵を保持する `op.Private
 
 - `op.WithProfile(profile.FAPI2MessageSigning)` — PAR / JAR / alg 制限の上に JARM(署名 authorization response)を自動有効化します。
 - `op.WithFeature(feature.DPoP)` — Baseline と同じ送信者制約。
-- `op.WithDPoPNonceSource(...)` — FAPI 2.0 Message Signing §5.3.4 はサーバ供給の DPoP nonce を必須としています。このプロファイルで source が組み込まれていない場合、option layer は `op.New` を拒否します。demo は in-memory rotator を使用しますが、マルチインスタンスの OP では共有ストアで source を裏付けてください。
+- `op.WithDPoPNonceSource(...)` — `profile.FAPI2MessageSigning` で DPoP を有効にする場合、本ライブラリはサーバが発行する DPoP nonce の source を要求し、`op/options_validate.go` で検証します。これはライブラリの構成要件であり、FAPI 2.0 Message Signing Final の要件ではありません。同仕様には §5.3.4 がなく、§5.6 は ID トークンの署名を扱います。mTLS を明示的に選んで DPoP を使わない場合、DPoP nonce source は不要です。demo は in-memory rotator を使用しますが、マルチインスタンスの OP では共有ストアで source を裏付けてください。
 
 ### FAPI-CIBA
 
@@ -254,7 +256,7 @@ OFCS のテストロジックはリリース間で drift します（module rena
 
 ## 明示しておく制限事項
 
-- **plan suite version。** pin は `conformance/docker-compose.yml` で設定されています。新しい OFCS リリースで追加 / rename された module は、pin を bump するまでカバーされません。
-- **headless drive。** drive スクリプトは OFCS REST surface を reverse-engineering したものです。OFCS はこれを文書化していません。挙動は固定リリースに対してのみ確認しています。
+- **plan suite version。** 現在の既定 pin は `release-v5.3.1` です。保持済み run はリリースタグ直前に測定したため、この pin と同等のリリース相当結果として扱います。ただし snapshot に実際のイメージ tag や digest は記録されていません。
+- **headless drive。** drive スクリプトは OFCS REST surface を reverse-engineering したものです。OFCS はこれを文書化していません。保持済み snapshot に実際のイメージ tag や digest は記録されていません。
 - **実 RP 証明書なし。** mTLS plan slot は `conformance/certs/` に生成された自己署名証明書を使い、プランの instantiation を可能にしています。実 CA chain は検証していません。
 - **単一 OP インスタンス。** クロスインスタンスの挙動（共有ストアを介した 2 つの OP 間での token introspection 等）は OFCS ではなく `test/scenarios/` 配下の Spec Scenario Suite で検証しています。

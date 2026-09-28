@@ -13,15 +13,15 @@ pageClass: pg-use-cases-claims-request
 OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `claims=...` JSON オブジェクトで **個別の claim**（例: `email_verified` と `phone_number` だけ）を要求でき、出力先（`id_token` か `/userinfo` か両方）も指定できます。`essential` マーカーや値制約も付けられます。
 
 主な使いどころ:
-1. **ステップアップ同意** — RP が `acr=urn:mace:incommon:iap:silver` を essential として要求し、より高い保証水準の認証を強制する。
+1. **ステップアップ認証** — RP が現在のセッションでは満たせない `acr` 値を essential として要求し、再認証を促す。
 2. **プライバシー最小化志向の RP** — scope 束ではなく、本当に必要な claim だけをピンポイントで要求する。
 
-この 2 つの仕組みは、出力先の広がり方が違います。scope は束全体を ID Token と `/userinfo` の両方へ渡します。`claims` のメンバーは、そこに書かれた claim だけを、そのメンバーが属する出力先にだけ渡します。
+この 2 つの仕組みは返却先が異なります。認可コードフローでは、標準の `profile`、`email`、`address`、`phone` scope は `/userinfo` で返す claim を要求します。`claims` パラメータでは、個別の claim と返却先を指定します。アクセストークンを発行しない ID トークンのみのレスポンスでは、scope に対応する claim は ID トークンに入ります。
 
 <figure class="fig">
   <div class="fig-head">要求ごとの出力先</div>
   <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 258" xmlns="http://www.w3.org/2000/svg">
-    <title id="uc-claims-title">claims パラメータの id_token メンバーは ID トークンにだけ claim を出し、userinfo メンバーは userinfo 応答にだけ出します。これに対して scope は両方の出力先に同時に届きます。</title>
+    <title id="uc-claims-title">認可コードフローでは、claims パラメータの id_token メンバーは ID トークン、userinfo メンバーと標準の profile scope は UserInfo の claim を要求します。</title>
     <text class="fg-lbl" x="40" y="26">何で要求するか</text>
     <text class="fg-lbl" x="644" y="26">どこに出るか</text>
     <rect class="fg-box" x="36" y="38" width="330" height="52" rx="6"/>
@@ -34,21 +34,20 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
     <text class="fg-mxs" x="54" y="188">claims["userinfo"]</text>
     <text class="fg-xs" x="54" y="206">指定した claim だけ</text>
     <path class="fg-edge fg-edge--thin" d="M370,64 H600" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V64 H600" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M470,124 V192 H600" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V192 H600" marker-end="url(#fg-ac)"/>
     <path class="fg-edge fg-edge--thin" d="M370,192 H600" marker-end="url(#fg-a)"/>
     <rect class="fg-box" x="604" y="38" width="320" height="52" rx="6"/>
     <text class="fg-mxs" x="622" y="60">ID トークン</text>
     <text class="fg-xs" x="622" y="78">JWT に署名されて載り、RP が読む</text>
     <rect class="fg-box" x="604" y="166" width="320" height="52" rx="6"/>
     <text class="fg-mxs" x="622" y="188">GET /userinfo</text>
-    <text class="fg-xs" x="622" y="206">JSON 応答の本文に載る</text>
+    <text class="fg-xs" x="622" y="206">レスポンスで返す</text>
     <text class="fg-xs" x="36" y="246">2 つのメンバーは別々の要求です。片方に書いた claim がもう片方に現れることはありません</text>
   </svg>
-  <figcaption class="fig-note">つまずきやすいのはここです。<code>claims["userinfo"]</code> に claim を足しても、RP が何度やり直しても ID トークンには現れません。</figcaption>
+  <figcaption class="fig-note">図は認可コードフローの場合です。<code>claims["userinfo"]</code> だけで要求した claim は、ID トークン用には要求されません。</figcaption>
 </figure>
 
-`essential` はこの出力先を変えません。変わるのは OP がどこまで取得を試みるかだけです。`acr` に対する essential な要求は再認証を強制しますが、それ以外の claim では best-effort のヒントにとどまります。
+`essential` を付けても返却先は変わりません。通常の claim では、その値が認可の判断に重要であることを OP に伝えますが、値がない場合のエラーは要求しません。必要な値を指定した essential な `acr` には特別な一致規則があり、再認証につながる場合があります。
 
 ::: details このページで触れる仕様
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §5.4（scope と claim のマップ）、§5.5（claims request）
@@ -59,7 +58,7 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 ::: details 用語の補足
 - **Scope** — 粗い権限の束（`profile`、`email` など）。1 scope が固定の claim 集合に対応します。
 - **Claims request** — claim 単位のきめ細かい指定。RP が必要な claim と出力先（`id_token` / `userinfo`）を明示し、`essential` マーカーで essential / voluntary を区別できます。
-- **Essential / voluntary** — 通常の claim では、`essential` は強制のスイッチではなくヒントに過ぎません。OP は best-effort で取得を試み、取得できなければ voluntary リクエストと同じく黙って省略します。唯一の例外は `acr` で、現在のセッションが満たせない essential な `acr` リクエストは再認証を強制します（詳細は [MFA / ステップアップ](/ja/use-cases/mfa-step-up)）。
+- **Essential / voluntary** — 通常の claim では、`essential` はその重要性を示しますが、値がない場合のエラーを求めるものではありません。本ライブラリは取得できない claim を省略します。`essential: true` と必要な値を指定した `acr` には特別な一致規則があります（[MFA / ステップアップ](/ja/use-cases/mfa-step-up)）。
 :::
 
 > **ソース:** [`examples/61-claims-request`](https://github.com/libraz/go-oidc-provider/tree/main/examples/61-claims-request)
@@ -107,12 +106,12 @@ curl -G --data-urlencode "claims=$CLAIMS" \
 
 | 場所 | 結果 |
 |---|---|
-| `id_token` | ユーザストアに値があれば `email` を含む。なければ黙って省略する（essential は「より頑張って取得する」の意味であり、無ければ失敗する、という意味ではない） |
+| `id_token` | ユーザストアに値があれば `email` を含む。なければリクエストを失敗させずに省略する |
 | `/userinfo` レスポンス | `locale` を best-effort で含める（voluntary） |
 
 ## Essential と voluntary
 
-通常の claim（`acr` 以外）では、`essential` は OP がどこで失敗するかを変えません。OIDC Core 1.0 §5.5 は essential な claim について「OP は提供を試みなければならない（MUST attempt to provide）」と定めるだけで、そこで止まっています。claim が存在しないときに OP がリクエストを拒否することまでは求めていません。
+通常の claim（`acr` 以外）では、`essential` は認可時にその値が重要であることを示します。OIDC Core 1.0 §5.5.1 は、claim 固有の規則がない限り、essential な claim を返せないことだけを理由に OP がエラーを生成してはならないと定めています。本ライブラリは値のない通常の claim を省略します。
 
 - `{"essential": true}` — OP は claim を検索し、値があれば含めます。ユーザストアにその claim がなければ、voluntary リクエストと全く同じように黙って省略します。存在しない通常の claim に紐づくエラーコードや再プロンプトはありません。
 - `{"essential": false}` または `null` — OP は claim を **持っていれば** 含めます。なければ何も告知せず省略します。

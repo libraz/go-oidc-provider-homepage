@@ -1,6 +1,6 @@
 ---
 title: FAPI 2.0 Baseline
-description: Enable FAPI 2.0 Baseline with PAR, JAR, DPoP-or-mTLS, ES256, private_key_jwt, and the 60-minute JAR request-object age bound.
+description: Enable this library's FAPI2Baseline profile with PAR, library-required JAR, DPoP-or-mTLS, private_key_jwt, ES256-only ID Tokens, and the 60-minute JAR request-object age bound.
 pageClass: pg-use-cases-fapi2-baseline
 ---
 
@@ -8,16 +8,16 @@ pageClass: pg-use-cases-fapi2-baseline
 
 ## What is FAPI 2.0?
 
-**FAPI** ("Financial-grade API") is a profile of OAuth 2.0 + OIDC maintained by the OpenID Foundation. It picks a **strict subset** of the underlying specs and forbids the optional flexibility that attackers historically abused. FAPI rejects `RS256` signatures in favour of `ES256` / `PS256`, requires PKCE on every authorization, mandates sender-constrained tokens (DPoP **or** mTLS), and makes RPs send their authorize requests through PAR + JAR rather than as plain query strings. The authorize endpoint is `/auth` under the configured mount prefix, so the default `/oidc` mount serves it at `/oidc/auth`. This library signs id_tokens with `ES256` only, so the anti-`RS256` clause is satisfied by construction.
+**FAPI** ("Financial-grade API") is a family of OAuth 2.0 security profiles maintained by the OpenID Foundation; OIDC applies when the client needs an authenticated user's identifier. The current FAPI 2.0 Security Profile requires PAR, PKCE with `S256`, sender-constrained tokens (DPoP **or** mTLS), confidential clients, and JWT algorithms from `PS256`, `ES256`, or `EdDSA`. It does not require JAR as part of the Security Profile or restrict ID Token signing to `ES256`. The authorize endpoint is `/auth` under the configured mount prefix, so the default `/oidc` mount serves it at `/oidc/auth`. This library's `profile.FAPI2Baseline` adds JAR, uses `private_key_jwt` for client authentication, and currently signs ID Tokens with `ES256` only.
 
-The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). FAPI 2.0 Baseline is the entry-level profile; FAPI 2.0 Message Signing adds JARM + DPoP nonce + RS-side proof signing.
+The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). The final FAPI 2.0 document is titled Security Profile; this library calls its preset `profile.FAPI2Baseline`. The library's separate Message Signing preset adds JARM, a DPoP nonce-source constraint, and response-signing behavior; those are library preset behaviors, not requirements of the final Security Profile.
 
-This library exposes Baseline as a **single profile switch** (`op.WithProfile(profile.FAPI2Baseline)`) that flips every required flag and refuses to start in any combination that would silently violate the profile.
+This library exposes Baseline as a **single profile switch** (`op.WithProfile(profile.FAPI2Baseline)`) that enables its required checks and refuses to start in any combination that would silently violate the library profile.
 
 A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is at [FAPI 2.0 primer](/concepts/fapi). This page covers the wiring.
 
 ::: details Specs referenced on this page
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html) — Final
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — Final (the library's `profile.FAPI2Baseline` setting)
 - [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126) — Pushed Authorization Requests (PAR)
 - [RFC 9101](https://datatracker.ietf.org/doc/html/rfc9101) — JWT-Secured Authorization Request (JAR)
 - [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) — PKCE
@@ -28,23 +28,23 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 
 > **Sources:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) covers the profile flow. [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) shows `op.FAPITLSConfig()` for the TLS 1.2 FAPI 1.0 RW cipher allow-list and `op.LoadPublicJWKS`, which strips private JWK material before client registration. TLS 1.3 deployments need their own `tls.Config`, because Go does not expose a TLS 1.3 cipher-suite allow-list.
 
-## What FAPI 2.0 Baseline mandates
+## What the library's `FAPI2Baseline` enforces
 
 | Requirement | RFC | Library behaviour |
 |---|---|---|
 | Pushed Authorization Requests | RFC 9126 | `feature.PAR` auto-enabled by the profile. `request_uri` returned from `/par` is the only authorize entry. |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` required; `plain` rejected. |
 | Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | `profile.RequiredAnyOf` returns `{DPoP, MTLS}` for this profile, so either one satisfies the requirement; if neither is configured, the constructor auto-selects DPoP as the no-infrastructure default. |
-| ES256 signing | RFC 7518 | `id_token_signing_alg_values_supported` is `["ES256"]` unconditionally; `RS256` / `none` / HS* never advertised. |
-| `redirect_uri` exact match | FAPI 2.0 §5.3 | No wildcards. Byte-identical comparison. |
-| `private_key_jwt` client auth | FAPI 2.0 §3.1.3 | Use `private_key_jwt` for the token endpoint auth path. mTLS can satisfy sender constraint, but mTLS client-auth dispatch is not wired. |
+| JWT algorithms | FAPI 2.0 §5.4.1 | The profile permits `PS256`, `ES256`, and `EdDSA`. This library's `id_token_signing_alg_values_supported` remains `["ES256"]`; `RS256` / `none` / HS* are never advertised. |
+| `redirect_uri` exact match | Library policy | The library requires a pre-registered URI and compares it byte-for-byte, without wildcards. The final FAPI 2.0 Security Profile instead requires `redirect_uri` in the authenticated PAR request; it does not mandate pre-registration. |
+| Client authentication | FAPI 2.0 §5.3.2.1 | FAPI allows mTLS or `private_key_jwt`. This library dispatches only `private_key_jwt` for token endpoint client authentication; mTLS can satisfy sender constraint, but mTLS client-auth dispatch is not wired. |
 
 ## Architecture
 
 <figure class="fig">
-  <div class="fig-head">FAPI 2.0 Baseline, end to end</div>
+  <div class="fig-head">The library's FAPI2Baseline path, end to end</div>
   <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 412" xmlns="http://www.w3.org/2000/svg">
-    <title id="fapi2-arch-title">Under FAPI 2.0 Baseline the RP pushes its authorization request to the pushed-authorization endpoint and receives a request_uri; the browser only ever carries that reference. The token request is authenticated with private_key_jwt and carries a DPoP proof, and the tokens that come back are DPoP-bound and signed with ES256.</title>
+    <title id="fapi2-arch-title">With the library's FAPI2Baseline profile, the RP pushes its authorization request to the pushed-authorization endpoint and receives a request_uri; the browser only ever carries that reference. The token request is authenticated with private_key_jwt and carries a DPoP proof, and the returned access token is DPoP-bound while the library's ID Token is signed with ES256.</title>
     <line class="fg-life" x1="260" y1="62" x2="260" y2="404"/>
     <line class="fg-life fg-life--accent" x1="700" y1="62" x2="700" y2="404"/>
     <rect class="fg-box" x="170" y="16" width="180" height="42" rx="6"/>
@@ -70,11 +70,11 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
     <text class="fg-badge-t fg-badge-t--accent" x="15" y="215" text-anchor="middle">4</text>
     <path class="fg-edge fg-edge--accent" d="M700,204 h30 v16 h-30" marker-end="url(#fg-ac)"/>
     <text class="fg-s" x="742" y="208">validate against the profile</text>
-    <text class="fg-mxs" x="742" y="221">ES256 signing · redirect_uri exact match</text>
+    <text class="fg-mxs" x="742" y="221">library ID Token ES256 · redirect_uri exact match</text>
     <circle class="fg-badge" cx="15" cy="258" r="8.5"/>
     <text class="fg-badge-t" x="15" y="261" text-anchor="middle">5</text>
     <rect class="fg-box fg-box--sub" x="170" y="240" width="620" height="36" rx="6"/>
-    <text class="fg-xs" x="480" y="262" text-anchor="middle">the user logs in and consents, driven by the interaction endpoints</text>
+    <text class="fg-xs" x="480" y="262" text-anchor="middle">the interaction endpoints obtain an authorization decision</text>
     <circle class="fg-badge" cx="15" cy="306" r="8.5"/>
     <text class="fg-badge-t" x="15" y="309" text-anchor="middle">6</text>
     <path class="fg-edge fg-edge--accent" d="M700,306 H260" marker-end="url(#fg-ac)"/>
@@ -90,7 +90,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
     <text class="fg-s" x="480" y="376" text-anchor="middle">200</text>
     <text class="fg-mxs" x="480" y="389" text-anchor="middle">access_token (DPoP-bound) · id_token (ES256) · refresh_token</text>
   </svg>
-  <figcaption class="fig-note">Steps 1 and 2 are what Baseline adds up front. After them the browser carries a reference rather than the request itself, so nothing in the URL bar is worth tampering with.</figcaption>
+  <figcaption class="fig-note">Steps 1 and 2 are what the library's profile adds up front. After them the browser carries a reference rather than the request itself, so nothing in the URL bar is worth tampering with.</figcaption>
 </figure>
 
 ## Code (excerpts from [`examples/03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2))
@@ -135,11 +135,11 @@ provider, err := op.New(
 
 `PrivateKeyJWTClient` is the typed seed for FAPI clients — it forces `token_endpoint_auth_method=private_key_jwt` automatically, so the embedder never has to spell that field out. The companion typed seeds are `op.PublicClient` and `op.ConfidentialClient`; all three implement `op.ClientSeed` and feed `WithStaticClients(seeds ...ClientSeed)`.
 
-The `WithProfile` call:
+The library's `WithProfile` call:
 
 1. Enables `feature.PAR` and `feature.JAR` automatically.
-2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §3.1.3 allow-list; configure clients with `private_key_jwt` for the token endpoint.
-3. Keeps `id_token_signing_alg_values_supported = ["ES256"]` (the OP only ever advertises and signs `ES256` id_tokens; FAPI 2.0's anti-`RS256` clause is satisfied by construction).
+2. Intersects `token_endpoint_auth_methods_supported` with the FAPI 2.0 §5.3.2.1 allow-list; configure clients with `private_key_jwt` for the token endpoint.
+3. Keeps `id_token_signing_alg_values_supported = ["ES256"]` (the OP only ever advertises and signs `ES256` ID Tokens). This is the library's current keyset policy; the FAPI 2.0 Security Profile also permits `PS256` and `EdDSA`.
 4. Forces `redirect_uri` exact match (no wildcards anywhere).
 5. Satisfies the DPoP-or-mTLS sender-constraint requirement by preserving an explicit `feature.MTLS` opt-in when present, or by adding `feature.DPoP` when neither binding was selected.
 
@@ -175,9 +175,11 @@ Expected:
 }
 ```
 
-The library publishes `["ES256"]` for `id_token_signing_alg_values_supported` regardless of profile (every issued id_token is signed `ES256`); the FAPI 2.0 §6.2.1 mandate against `RS256` is satisfied because `RS256` never appears on the OP's supported set in the first place. `dpop_signing_alg_values_supported` covers DPoP proof acceptance and is `["ES256", "EdDSA", "PS256"]`.
+The library publishes `["ES256"]` for `id_token_signing_alg_values_supported` regardless of profile (every issued ID Token is signed `ES256`). The live FAPI 2.0 Security Profile allows `PS256`, `ES256`, and `EdDSA` for JWT algorithms (§5.4.1); the library's ES256-only ID Token policy is stricter. `dpop_signing_alg_values_supported` covers DPoP proof acceptance and is `["ES256", "EdDSA", "PS256"]`.
 
 ## Conformance
+
+The library's `profile.FAPI2Baseline` is a policy preset, not a claim that every deployment conforms to every requirement in the current final Security Profile. The core refresh-token flow rotates refresh tokens, while FAPI 2.0 Security Profile §5.3.2.1(9) prohibits routine rotation except under extraordinary circumstances. The client-assertion verifier also accepts a token-endpoint URL or array `aud`, whereas §5.3.2.1(8) requires the issuer identifier as a string. Review these differences before making a conformance claim.
 
 The OFCS [`fapi2-security-profile-id2-test-plan`](/compliance/ofcs) exercises this exact wiring: 48 PASSED / 9 REVIEW (manual reviewer) / 1 SKIPPED (RSA-key negative test that needs an additional client key) / **0 FAILED** in the latest baseline.
 

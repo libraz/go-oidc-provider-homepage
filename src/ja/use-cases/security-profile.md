@@ -6,7 +6,7 @@ pageClass: pg-use-cases-security-profile
 
 # 使い方 — セキュリティプロファイルの宣言
 
-`op.WithProfile` は OP のセキュリティ姿勢を明示します。未指定も 1 つの選択です。OpenID Connect Core 1.0 互換の形では、confidential authorization-code client が PKCE 無しで要求できます。OAuth 2.1 / RFC 9700 に従い、すべての authorization-code request に PKCE を求めるなら `profile.Baseline` を使います。
+`op.WithProfile` は OP のセキュリティ姿勢を明示します。未指定も 1 つの選択です。本ライブラリの OpenID Connect Core 1.0 互換の形では、confidential な認可コードクライアントが PKCE なしで要求できます。OAuth 2.1 / RFC 9700 に従い、すべての認可コードリクエストに PKCE を求めるなら `profile.Baseline` を使います。
 
 ```go
 provider, err := op.New(
@@ -15,7 +15,7 @@ provider, err := op.New(
 )
 ```
 
-`profile.Baseline` が変えるのはこの 1 つの規則だけです。PAR を必須にせず、token lifetime や client authentication method を制限せず、送信者制約付き token も要求しません。これらは FAPI の要件です。対象が FAPI なら [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を使ってください。
+`profile.Baseline` が変えるのはこの 1 つの規則だけです。PAR を必須にせず、アクセストークンの有効期間やクライアント認証方式を制限せず、送信者制約付きアクセストークンも要求しません。これらは対象とする FAPI プロファイルの要件であり、本ライブラリの `profile.Baseline` が追加する規則ではありません。対象が FAPI なら [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を使ってください。
 
 構築に成功すると、OP は audit logger へ `startup.profile` を 1 回出力します。宣言した profile、feature、grant と、`pkce_required` を含む解決後のポリシーが入ります。最初の request を受ける前に、配備した姿勢を確認できます。
 
@@ -29,7 +29,7 @@ provider, err := op.New(
 | OAuth 2.1 の姿勢を取る | `op.WithProfile(profile.Baseline)` |
 | Financial-grade API のプロファイルを取る | `op.WithProfile(profile.FAPI2Baseline)` または該当する FAPI profile |
 
-public / native client は `profile.Baseline` を指定しなくても PKCE 必須です。違いが現れるのは confidential client の互換経路です。
+本ライブラリでは public / native client は `profile.Baseline` を指定しなくても PKCE 必須です。違いが現れるのは confidential client の互換経路です。
 
 ## feature は補われ、grant は補われない
 

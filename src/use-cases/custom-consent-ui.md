@@ -7,18 +7,18 @@ description: Customise consent with op.WithConsentUI, locale bundles, or the JSO
 
 ## What is "consent" in OIDC?
 
-After the user authenticates, OIDC Core 1.0 §3.1.2.4 expects the OP to ask **the user — not the RP — whether to release the requested scopes** (`profile`, `email`, anything else the RP listed). The user clicks "Approve" or "Deny", and only then does the OP redirect back with a code. This page exists *between* login and the redirect.
+After the user authenticates, OIDC Core 1.0 §3.1.2.4 requires the OP to obtain an authorization decision before releasing information. An interactive dialogue in which **the user — not the RP — approves or denies the requested scopes** (`profile`, `email`, anything else the RP listed) is one permitted way to obtain it; prior administrative consent or another established condition can also suffice. This page covers the library's interactive consent UI path between login and the redirect.
 
 The bundled consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n. For small copy changes, locale bundle overlays are enough. For a branded server-rendered page, pass `op.WithConsentUI`. For full client-side rendering, use the JSON driver.
 
 ::: details Specs referenced on this page
-- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent prompt)
+- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (authorization decision and consent)
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §3.1 (authorization endpoint)
 - [RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700) — OAuth 2.0 Security Best Current Practice (CSRF mitigation, etc.)
 :::
 
 ::: details Vocabulary refresher
-- **Consent screen** — The page between login and the redirect-back-with-code where the user approves the scopes a particular RP is requesting. The OP decides what data to ask about; the user decides whether to release it.
+- **Consent screen** — When the OP uses interactive dialogue, this is the page between login and the redirect-back-with-code where the user approves the scopes a particular RP is requesting. The OP decides what data to ask about; the user decides whether to release it.
 - **CSRF token** — A per-session secret embedded in a form so a hostile third-party site cannot trick the browser into submitting "Approve" on the user's behalf. The OP issues and validates the token; SPA / template only echo it back in the POST body or the `X-CSRF-Token` header.
 - **Content Security Policy (CSP)** — A response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page may load. The OP renders the bundled consent page under a strict default policy that blocks `<script>`, inline event handlers, and external assets, so a hostile RP `client_name` cannot escalate into XSS.
 :::

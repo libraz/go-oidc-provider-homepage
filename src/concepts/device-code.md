@@ -116,7 +116,7 @@ The token endpoint (`/token`) returns one of four shapes per poll:
 | Response | Meaning | What the device should do |
 |---|---|---|
 | `400 authorization_pending` | The user has not approved (or denied) yet. | Wait `interval` seconds and try again. |
-| `400 slow_down` | The device polled too fast. | Double the interval (RFC 8628 §3.5: "MUST honor the new value"). The OP persists the new interval atomically with `LastPolledAt` so a multi-replica deployment cannot be tricked into resetting it. |
+| `400 slow_down` | The device polled too fast. | Increase the interval by 5 seconds for this and all subsequent requests (RFC 8628 §3.5). The OP persists the new interval atomically with `LastPolledAt` so a multi-replica deployment cannot be tricked into resetting it. |
 | `400 access_denied` | The user clicked **deny** on the verification page (or an embedder revocation hook fired). | Stop polling. Show "Sign-in cancelled". |
 | `400 expired_token` | The `device_code` outlived `expires_in` (default 600 s). | Stop polling. Restart the flow if the user wants to retry. |
 | `200 { access_token, ... }` | The user approved. | Treat as a normal token response. |

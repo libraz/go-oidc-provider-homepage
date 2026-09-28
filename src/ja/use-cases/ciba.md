@@ -243,8 +243,8 @@ CIBA id_token の `amr` を読む RP は、claim を空 / 不在として扱っ�
 - `MaxAccessTokenTTL` = 10 分
 - クライアント認証 = `private_key_jwt`（`client_secret_basic` は拒否）。`feature.MTLS` を構成した場合、mTLS は送信者制約要件を満たせますが、`/token` のクライアント認証方式にはなりません。
 - `RequiresAccessTokenRevocation` = true
-- `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須、request-object 寿命は 60 分上限（FAPI 2.0 Message Signing §5.6）。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な要件に戻ります。
-- `requested_expiry > 600s` はハードエラー `invalid_request`(FAPI-CIBA-ID1 §5 / FAPI 2.0 §3.1.9 の 10 分上限)。プロファイル無効時の素の CIBA は黙って上限へクランプする挙動のまま
+- `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須にし、本ライブラリは `MaxRequestObjectAge` によりリクエストオブジェクトの `iat` からの経過時間にも 60 分の上限を適用します。これはライブラリの検証上限です。一方、FAPI-CIBA-ID1 §5.2.2 の 9 は署名付き認証リクエストの `nbf` / `exp` が示す有効期間を 60 分以内に制限します。この根拠は FAPI 2.0 Message Signing Final §5.6 ではありません。同仕様の同節は ID トークンの署名を扱います。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な形を選びます。
+- `requested_expiry > 600s` は、本ライブラリの FAPI-CIBA 設定では `invalid_request` になります。10 分の上限は旧 FAPI-CIBA-ID1 プロファイルとライブラリの制約によるもので、現行の FAPI 2.0 Security Profile の節番号ではありません。プロファイル無効時の CIBA では上限に丸めます。
 - `/bc-authorize` で発生したあらゆる JAR 失敗（署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…）は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/auth` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
 
 `op.WithACRValuesSupported(...)` が非空のとき、エンドポイントは要求された `acr_values` の各エントリを公開済みリストに対して検証します。空リストの場合は従来どおり緩い受理（permissive）のままです。

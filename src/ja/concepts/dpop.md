@@ -8,14 +8,14 @@ pageClass: pg-concepts-dpop
 
 **DPoP**（RFC 9449）は、クライアントが保有する鍵にアクセストークンを結び付ける仕組みです。同じ鍵で署名された新しい証明（DPoP proof）が無ければ、漏洩したアクセストークンは使えません。API 呼び出しごとに小さな JWT が同行し、OP とリソースサーバはトークンと合わせてこの証明も検証します。
 
-DPoP は HTTP 層だけで完結する方式です。クライアントは TLS クライアント証明書を持つ必要がなく、OP もリバースプロキシのヘッダ仕様を意識する必要がありません。SPA・モバイル・バックエンドのいずれでも同じ流れが使えます。この移植性の高さが、FAPI 2.0 Baseline が DPoP を送信者制約付きトークンの 2 つの選択肢の片方として認める理由です（もう片方は[mTLS](/ja/concepts/mtls)）。
+DPoP は HTTP 層だけで完結する方式です。クライアントは TLS クライアント証明書を持つ必要がなく、OP もリバースプロキシのヘッダ仕様を意識する必要がありません。SPA・モバイル・バックエンドのいずれでも同じ流れが使えます。この移植性の高さが、FAPI 2.0 Security Profile が DPoP を送信者制約付きトークンの 2 つの選択肢の片方として認める理由です（もう片方は [mTLS](/ja/concepts/mtls)）。Security Profile の対象は confidential client なので、後半の公開クライアントの例は本ライブラリの一般的な OAuth 動作として説明します。
 
 ::: details このページで触れる仕様
 - [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP (Demonstrating Proof of Possession)
 - [RFC 7638](https://datatracker.ietf.org/doc/html/rfc7638) — JWK Thumbprint
 - [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800) — Confirmation (`cnf`) claim
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
-- [FAPI 2.0 Message Signing](https://openid.net/specs/fapi-2_0-message-signing.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — Final
+- [FAPI 2.0 Message Signing](https://openid.net/specs/fapi-message-signing-2_0.html) — Final
 :::
 
 ## DPoP proof の仕組み
@@ -26,7 +26,7 @@ DPoP proof はクライアントが保有する秘密鍵で署名した JWT（RF
 
 | フィールド | 値 |
 |---|---|
-| `typ` | `dpop+jwt`(必須) |
+| `typ` | `dpop+jwt`（必須） |
 | `alg` | `ES256` / `EdDSA` / `PS256`（本ライブラリの許可リスト、`internal/dpop/proof.go` 参照） |
 | `jwk` | 署名鍵の公開鍵部分。ヘッダに同梱 |
 
@@ -82,7 +82,7 @@ DPoP proof はクライアントが保有する秘密鍵で署名した JWT（RF
     <text class="fg-badge-t fg-badge-t--accent" x="15" y="243" text-anchor="middle">4</text>
     <path class="fg-edge fg-edge--accent" d="M500,232 h30 v16 h-30" marker-end="url(#fg-ac)"/>
     <text class="fg-s fg-accent" x="542" y="236">鍵をトークンに結び付ける</text>
-    <text class="fg-mxs" x="542" y="249">cnf.jkt = SHA-256(JWK thumbprint)</text>
+    <text class="fg-mxs" x="542" y="249">cnf.jkt = JWK の SHA-256 thumbprint</text>
     <!-- 5 -->
     <circle class="fg-badge" cx="15" cy="286" r="8.5"/>
     <text class="fg-badge-t" x="15" y="289" text-anchor="middle">5</text>
@@ -123,7 +123,7 @@ DPoP 付きアクセストークンは `Authorization: DPoP <token>` で提示�
 
 ## Confirmation claim — `cnf.jkt`
 
-`/token` で最初に提示された proof が、どの鍵に結び付けるかを確定させます。OP は proof の `jwk` の SHA-256 指紋（thumbprint。RFC 7638 がハッシュ対象とする JWK フィールドを正準化しています）を計算し、アクセストークンに `cnf.jkt` として書き込みます。以後、このアクセストークンを使うリクエストはすべて **同じ鍵** で署名された proof を提示する必要があり、リソースサーバは指紋を再計算して照合します。
+`/token` で最初に提示された proof が、どの鍵に結び付けるかを確定させます。OP は proof の `jwk` の RFC 7638 JWK thumbprint（SHA-256 ハッシュの対象となる JWK フィールドを RFC 7638 が正準化）を計算し、アクセストークンに `cnf.jkt` として書き込みます。以後、このアクセストークンを使うリクエストはすべて **同じ鍵** で署名された proof を提示する必要があり、リソースサーバは thumbprint を再計算して照合します。
 
 `cnf` 自体は単なる JSON object で、その内側の **メンバ名** が「どの種類の結び付きか」を示します（RFC 7800）。DPoP では `jkt`、mTLS では `x5t#S256` を使います。1 つのトークンに両方のメンバを持たせることもできます。両方の結び付きがある場合、利用側 endpoint は両方を満たすように検証します。つまり DPoP proof は `jkt` に、提示証明書は `x5t#S256` に一致しなければなりません。本ライブラリは `/userinfo` でこの conjunction を適用し、device-code と CIBA の grant binding でも記録されたすべての方式を要求します。
 
@@ -148,24 +148,24 @@ DPoP は独立した 4 つの検査を重ね、proof 1 通を盗み出した攻�
 
 `DPoPNonceSource` を構成すると、OP は応答ヘッダ `DPoP-Nonce` で新しい nonce を発行します。次の proof はこれを `nonce` claim に含めなければなりません。攻撃者は次回の nonce を予測できないため、事前計算した proof は即座に無効化されます。
 
-本ライブラリには単一プロセス用の in-memory 参照実装（`op.NewInMemoryDPoPNonceSource`）が同梱されています。マルチレプリカの HA 構成では、共有 store を持つ自前の `DPoPNonceSource` を差し込みます。FAPI 2.0 Message Signing は nonce を必須化し、Baseline は許可します。
+本ライブラリには単一プロセス用の in-memory 参照実装（`op.NewInMemoryDPoPNonceSource`）が同梱されています。マルチレプリカの HA 構成では、共有 store を持つ自前の `DPoPNonceSource` を差し込みます。Final の FAPI 2.0 Security Profile と Message Signing 仕様では DPoP nonce は任意です。本ライブラリで `DPoPNonceSource` を構成すると、nonce チャレンジと検証のフローが有効になります。本ライブラリの validator は `profile.FAPI2MessageSigning` と DPoP を併用する場合にこの source を要求しますが、Final Message Signing 仕様の要件ではありません。
 
 組み込み手順、ローテーションのパイプライン、複数インスタンス運用の注意点は[DPoP nonce フロー](/ja/use-cases/dpop-nonce)に詳しく書いています。
 
 ## 本ライブラリが何を結び付けるか
 
-アクセストークンは、`feature.DPoP` が有効でクライアントが `/token` で proof を提示した場合（あるいは authorize / PAR 要求で `dpop_jkt` により鍵を事前確約した場合）、常に DPoP に結び付けられます。
+アクセストークンは、`feature.DPoP` が有効でクライアントが `/token` で proof を提示した場合（あるいは authorize / PAR 要求で `dpop_jkt` により鍵を事前確約した場合）、常に DPoP に結び付けられます。以下のリフレッシュトークンの扱いはライブラリの方針です。Final の FAPI 2.0 Security Profile は例外的な状況を除く通常のリフレッシュトークンローテーションを禁止するため、適合性を主張する前に本ライブラリの通常動作を確認してください。
 
 リフレッシュトークンは[設計判断 #15](/ja/security/design-judgments#dj-15)に従います。公開クライアントには結び付け、confidential クライアントには結び付けません:
 
 - **公開クライアント**（`token_endpoint_auth_method = "none"`、典型的には SPA とネイティブアプリ）では、リフレッシュトークンの連鎖は最初の発行で DPoP に結び付けられ、RFC 9449 §5.4 の規則に従って以降のローテーションでも結び付きが継承されます。鍵が無ければリフレッシュトークン単体は無価値で、これはまさに RFC 9449 §1 が想定する脅威モデルです。
 - **Confidential クライアント**（`private_key_jwt`、`client_secret_*`）では、リフレッシュトークンの連鎖は結び付けません。リクエストごとに DPoP 鍵をローテーションでき（OFCS の plan がこの動作を検証しています）、連鎖が生きている間ずっと 1 つの鍵に縛られることはありません。各リフレッシュで発行されるアクセストークンは、その交換時に提示された鍵に結び付けられ続けるので、漏洩面はアクセストークンに限定されます。
 
-トレードオフは明示的です。confidential クライアントは鍵ローテーションの自由度を得る代わりに、リフレッシュトークンの連鎖を保護のない bearer のまま残します。confidential クライアントはそもそも長寿命の非対称クレデンシャルで token endpoint に認証しているため、リフレッシュトークン単体の漏洩で攻撃者が新しいトークンを発行させることはできません。
+トレードオフは明示的です。confidential クライアントは鍵ローテーションの自由度を得る代わりに、リフレッシュトークンの連鎖を保護のない bearer のまま残します。token endpoint のクレデンシャルは別の制御であり、共有シークレットの場合もあるため、リフレッシュトークンの漏洩には保管、通信、運用面の対策が必要です。
 
 ## `dpop_jkt` リクエストパラメータ
 
-RFC 9449 §10 では、公開クライアントが authorize 要求（または PAR 要求）に `dpop_jkt=<thumbprint>` を含めることで、発行されるアクセストークンの結び付き先 DPoP 鍵を **事前確約** できます。攻撃者が自分の鍵で code を交換するタイプの code-substitution 攻撃の窓を塞ぎます。FAPI 2.0 Baseline では必須ではなく（token endpoint での mTLS / DPoP で十分）、PKCE で動かす公開クライアントは PAR + token endpoint での DPoP に頼るのが一般的です。
+RFC 9449 §10 では、クライアントが authorize 要求（または PAR 要求）に `dpop_jkt=<thumbprint>` を含めることで、発行されるアクセストークンの結び付き先 DPoP 鍵を **事前確約** できます。攻撃者が自分の鍵で code を交換するタイプの code-substitution 攻撃の窓を塞ぎます。FAPI 2.0 Security Profile はクライアントにこのパラメータの送信を必須としていませんが、DPoP を使う認可サーバは Authorization Code Binding to DPoP Key に対応する必要があります。PKCE で動かす公開クライアントは PAR + token endpoint での DPoP に頼るのが一般的です。
 
 本ライブラリは `dpop_jkt` を PAR（`internal/parendpoint/par.go`）で取り扱います。PAR 要求が DPoP proof を伴っていれば、OP はその thumbprint をスナップショットに刻み、別の鍵で来る `/token` 交換を拒否します。
 
@@ -206,7 +206,7 @@ op.New(
 )
 ```
 
-`op.WithProfile(profile.FAPI2Baseline)` は PAR と JAR を自動有効化したうえで、`feature.DPoP` と `feature.MTLS` に対する `RequiredAnyOf` 制約を課します。どちらの送信者制約も指定されていなければ、`op.New` は DPoP を既定メンバーとして選びます。`feature.MTLS` を明示している場合はそれで制約を満たすため、DPoP は追加されません。
+`op.WithProfile(profile.FAPI2Baseline)` はライブラリ設定として PAR と JAR を自動有効化したうえで、`feature.DPoP` と `feature.MTLS` に対する `RequiredAnyOf` 制約を課します。JAR は Final Security Profile では任意です。どちらの送信者制約も指定されていなければ、`op.New` は DPoP を既定メンバーとして選びます。`feature.MTLS` を明示している場合はそれで制約を満たすため、DPoP は追加されません。
 
 ## DPoP が向いているケース
 

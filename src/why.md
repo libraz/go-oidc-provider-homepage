@@ -64,13 +64,13 @@ Where the line falls:
 
 ### "I want one switch for FAPI 2.0"
 
-You can make PAR work, then later remember JAR, then later discover that discovery still advertises `client_secret_basic`, then later find that one test path signs an ID Token with a non-FAPI alg. That is the kind of drift FAPI makes expensive.
+You can make PAR work, then later remember JAR, then later discover that discovery still advertises `client_secret_basic`, then later find that one test path signs an ID Token with an algorithm outside the profile's allow-list. That is the kind of drift FAPI makes expensive.
 
 ::: details Background — what FAPI 2.0 demands
-FAPI 2.0 Baseline mandates **PAR** (RFC 9126), **JAR** (RFC 9101), **PKCE** (RFC 7636), **sender-constrained tokens** via DPoP (RFC 9449) or mTLS (RFC 8705), **ES256** OP signing, and **redirect_uri exact match**. Message Signing additionally requires **JARM**, a DPoP nonce, and RS-side response signing for non-repudiation. Toggling these by hand is a half-dozen options and three places the discovery document needs to agree.
+The final FAPI 2.0 Security Profile requires **PAR** (RFC 9126), **PKCE with S256** (RFC 7636), and **sender-constrained tokens** via DPoP (RFC 9449) or mTLS (RFC 8705). This library also enforces exact `redirect_uri` matching as a policy; FAPI 2.0 §5.5 does not require pre-registration of exact values. JAR and ES256-only OP signing are choices made by this library's `profile.FAPI2Baseline`, not requirements of the FAPI Security Profile itself. In this library, Message Signing adds **JARM** for signed authorization responses. A profile also keeps discovery and implementation choices aligned.
 :::
 
-`op.WithProfile(profile.FAPI2Baseline)` does the profile work — auto-enables PAR + JAR, selects DPoP unless mTLS is explicitly enabled, intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list, and keeps OP-issued JWT signing on ES256.
+`op.WithProfile(profile.FAPI2Baseline)` applies this library's profile policy — it enables PAR + JAR, selects DPoP unless mTLS is explicitly enabled, intersects `token_endpoint_auth_methods_supported` with the profile allow-list, and keeps OP-issued JWT signing on ES256.
 
 ```go
 op.New(
@@ -83,7 +83,7 @@ op.New(
 ```
 
 ::: tip Conflicts caught at startup
-The constructor refuses to start if the declared profile and the declared options conflict, so partial-FAPI never escapes review.
+The constructor rejects option conflicts and missing collaborators it can detect at startup. It does not establish conformance with every requirement in the final FAPI 2.0 specifications; see the [RFC status matrix](/compliance/rfc-matrix).
 :::
 
 ### "I don't want to give up my users table"
@@ -173,9 +173,9 @@ Each release is regressed against the OpenID Foundation conformance suite. The l
 
 When a mobile app retries the same refresh request, you want an idempotent replay inside the grace window. When a stolen old refresh token appears later, you want the whole chain revoked and an audit event that explains why.
 
-Refresh tokens rotate by default. Reuse-detection invalidates the entire chain.
+Refresh tokens rotate by default. Reuse detection invalidates the entire chain. This is a library policy; final FAPI 2.0 Security Profile §5.3.2.1(9) prohibits routine refresh-token rotation except under extraordinary circumstances, so this default does not establish final-profile conformance.
 
-- `op.WithRefreshGracePeriod` — widens the rotation window for racing clients; `FAPI2Baseline` and `FAPI2MessageSigning` accept explicit values from 0 through 60 seconds (inclusive) and reject only a value above 60 seconds.
+- `op.WithRefreshGracePeriod` — widens the rotation window for racing clients; this library's `profile.FAPI2Baseline` and `profile.FAPI2MessageSigning` accept explicit values from 0 through 60 seconds (inclusive) and reject only a value above 60 seconds.
 - Refresh rotation rechecks the effective scope against the client's current registration before consuming the presented token, so narrowing a registration takes effect on an existing chain.
 - `op.WithRefreshTokenOfflineTTL` — separates the lifetime of `offline_access` refresh tokens (stay-signed-in) from conventional rotation.
 

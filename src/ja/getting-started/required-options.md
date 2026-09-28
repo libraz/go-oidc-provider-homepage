@@ -53,10 +53,10 @@ pageClass: pg-getting-started-required-options
 op.WithIssuer("https://op.example.com")
 ```
 
-::: warning OIDC Discovery 1.0 §3 / FAPI 2.0 §5.4
-issuer は `https://` で始まり、末尾スラッシュ無し、query / fragment 無し、でなければなりません。scheme と host は全て小文字、既定ポート（https は `:443`、http は `:80`）の混入は禁止、path は正規形（`..`、`.`、重複スラッシュは禁止）です。loopback の IP リテラル（`127.0.0.0/8`、`[::1]`）は localhost 開発のため `https://` 要件から免除されます。テキストの `localhost` は例外には **含まれません**（RFC 8252 §7.3 の DNS hijack 観点）。
+::: warning issuer の検証: 仕様の要件とライブラリのポリシー
+OIDC Discovery 1.0 §3 は、issuer を query・fragment のない HTTPS URL とし、メタデータの `issuer` と完全一致させるよう求めます。本ライブラリはさらに、末尾スラッシュ、scheme・host の大文字、既定ポート（HTTPS の `:443`、HTTP の `:80`）、正規形でないパス（`..`、`.`、重複スラッシュ）を拒否します。ローカル開発では loopback IP リテラル（`127.0.0.0/8`、`[::1]`）に限り HTTP を許可し、`localhost` は明示的な opt-in を求めます。HTTP の例外は OIDC Discovery の規定ではなく、ライブラリのポリシーです。
 
-`internal/discovery.ValidateIssuer` は、オプション setter の検査に加えて issuer の形を再確認します。typo（末尾スラッシュ、`:443`、host の大文字など）は `op.New` で失敗し、RP が拒否する discovery 文書を黙って出すことはありません。この厳しさが RFC 9207 の byte 完全一致ミックスアップ防御を端から端まで成立させています。正規形の詳細は [Issuer](/ja/concepts/issuer) を参照してください。
+`internal/discovery.ValidateIssuer` は、オプション setter の検査に加えて issuer の形を再確認します。typo（末尾スラッシュ、`:443`、host の大文字など）は `op.New` で失敗し、RP が拒否する discovery 文書を黙って出すことはありません。この検証によって、RFC 9207 の比較に使う issuer の表記を一つに固定できます。正規形の詳細は [Issuer](/ja/concepts/issuer) を参照してください。
 :::
 
 ## `WithStore`

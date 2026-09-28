@@ -125,32 +125,34 @@ RP の検証側でも、片側に正規形でない 1 文字が紛れただけ�
 
 ### `op.WithProfile(profile.FAPI2Baseline)` で具体的に何が ON になる？
 
-1 行で、仕様が要求する 6 つのスイッチがまとめて入ります:
+1 行で、本ライブラリの FAPI プロファイル方針を 6 つの領域に適用します:
 
 | スイッチ | 効果 |
 |---|---|
-| feature 有効化 | `feature.PAR` と `feature.JAR` を ON。`feature.MTLS` が明示されていなければ `feature.DPoP` を既定選択 |
-| クライアント認証 | `token_endpoint_auth_methods_supported` を `private_key_jwt` に絞り込み |
-| alg 制約 | 署名 alg を FAPI 部分集合にロック |
+| feature 有効化 | `feature.PAR` と本ライブラリの JAR 設定を ON。`feature.MTLS` が明示されていなければ `feature.DPoP` を既定選択 |
+| クライアント認証 | `token_endpoint_auth_methods_supported` を、本プロファイルが実装する `private_key_jwt` に絞り込み |
+| alg 制約 | クライアントが署名する request / assertion の alg をプロファイル許可リストに絞り込み |
 | `redirect_uri` | 完全一致を強制（ワイルドカード不可） |
-| PKCE | すべての code 要求で必須 |
+| PKCE | すべての code 要求で S256 を必須化 |
 | `state` / `nonce` | すべての authorize 要求でいずれか必須 |
 
+FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、送信者制約付きトークンです。`redirect_uri` の完全一致は本ライブラリのポリシーです。FAPI 2.0 §5.5 は完全一致する値の事前登録を要求していません。JAR、本ライブラリの alg 絞り込み、OP 発行 JWT の ES256 固定は、本ライブラリのプロファイル設定であり、FAPI Security Profile の必須要件ではありません。
+
 ::: warning プロファイル指定後にこれらと矛盾するオプションを重ねると、`op.New` がエラーを返します。
-プロファイルは意図的に剛直にしてあります。黙って緩めると、FAPI 2.0 を選んだことで得られる監査上の保証が崩れるためです。
+プロファイルは意図的に剛直にしてあり、誤って一部だけ緩めることがないようにしています。
 :::
 
 ### Baseline と Message Signing — どちらが必要？
 
-Message Signing は Baseline に JARM を加えたものです。authorize 要求と応答そのものについて **非否認性**（non-repudiation）が必要なら Message Signing を選びます。オープンバンキングのような監査連鎖が典型例です。それ以外は Baseline で足ります。
+本ライブラリでは Message Signing は `profile.FAPI2Baseline` に JARM を加えたものです。authorize 要求と応答そのものについて **非否認性**（non-repudiation）が必要なら Message Signing を選びます。オープンバンキングのような監査連鎖が典型例です。それ以外は本ライブラリの Baseline プロファイルで足ります。
 
-| Baseline | Message Signing |
+| `FAPI2Baseline`（本ライブラリのプロファイル） | Message Signing |
 |---|---|
-| PAR + JAR + PKCE + DPoP / mTLS | + JARM（署名付き authorization 応答） |
+| PAR + JAR（本ライブラリの設定）+ PKCE（S256）+ DPoP / mTLS | + JARM（署名付き認可応答） |
 
 ### DPoP なしで FAPI 2.0 に対応できる？
 
-可能です。`feature.MTLS` を有効化し、`op.WithMTLSProxy(...)` で proxy からの証明書ヘッダを構成すれば mTLS 送信者バインディングに切り替わります。FAPI 2.0 §3.1.4 は「DPoP **または** mTLS」を要求しますが、FAPI クライアントは `/token` クライアント認証には引き続き `private_key_jwt` を使います。
+可能です。`feature.MTLS` を有効化し、`op.WithMTLSProxy(...)` で proxy からの証明書ヘッダを構成すれば mTLS 送信者バインディングに切り替わります。FAPI 2.0 §5.3.2.1(4)–(5) は「DPoP **または** mTLS」を要求しますが、本ライブラリの FAPI プロファイルでは `/token` のクライアント認証に引き続き `private_key_jwt` を使います。
 
 <div id="tokens" class="faq-anchor"></div>
 
@@ -158,23 +160,27 @@ Message Signing は Baseline に JARM を加えたものです。authorize 要�
 
 ### リフレッシュトークンのリトライで `invalid_grant` が返る — 既に通信中だったのに
 
-ローテーション後の **猶予期間（grace period）** に守られているケースです。既定は 60 秒です。ローテーションのネットワーク往復が落ちても、猶予期間内に前のリフレッシュトークンを提示すれば、新しいアクセストークンを返します（再ローテーションは発生しません）。期間を過ぎたか、再利用検知で chain が失効しているケースでは `invalid_grant` になります。
+ローテーション後の **猶予期間（grace period）** の話です。既定は 60 秒です。応答が届かなかった場合、猶予期間内に前のリフレッシュトークンを再提示すると、再ローテーションせずに保存済みの後継トークンを返します。送信者制約付きの再試行では、結び付け直したアクセストークンを発行する場合があります。期間を過ぎた場合や、再利用検知で系列が失効した場合は `invalid_grant` になります。
 
 ::: details 期間を調整したいとき
-FAPI 以外の profile では、`op.WithRefreshGracePeriod(90 * time.Second)` で延長できます。`profile.FAPI2Baseline` または `profile.FAPI2MessageSigning` では、`0` 秒から `60` 秒まで（60 秒を含む）の明示設定が許容され、`60` 秒を超える値だけが拒否されます。`op.WithRefreshGracePeriod(0)` で猶予期間を完全に無効化（厳密な single-use）にできます。負値はオプション側で拒否されます。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §2</a>。
+FAPI 以外の profile では、`op.WithRefreshGracePeriod(90 * time.Second)` で延長できます。本ライブラリの `profile.FAPI2Baseline` または `profile.FAPI2MessageSigning` では、`0` 秒から `60` 秒まで（60 秒を含む）の明示設定が許容され、`60` 秒を超える値だけが拒否されます。`op.WithRefreshGracePeriod(0)` で猶予期間を完全に無効化（厳密な single-use）にできます。負値はオプション側で拒否されます。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §2</a>。
+
+この猶予期間はライブラリの設定であり、現行 FAPI 仕様への適合条件ではありません。FAPI 2.0 Security Profile §5.3.2.1(9) は、例外的な状況を除く通常のリフレッシュトークンローテーションを禁止しています。
 :::
 
 ### リフレッシュトークンが返ってこないのはなぜ？
 
-既定では次の **2 つ両方** が必要です。
+組み込みの認可コードフローでリフレッシュトークンが発行されるには、次の条件をすべて満たす必要があります。
 
-1. 付与された scope に `openid` が含まれている。
+1. OP の grant 集合が `grant.RefreshToken` を受け付ける（既定で有効。`WithGrants` を使うと既定集合が置き換わります）。
 2. クライアントの `GrantTypes` に `refresh_token` が含まれている。
+3. 付与された scope に `openid` が含まれている。ただし `op.WithOpenIDScopeOptional()` を有効にした場合は不要。
+4. `op.WithStrictOfflineAccess()` を有効にした場合は、付与された scope に `offline_access` も含まれている。
 
-どちらかが欠けると、トークンエンドポイントは `access_token` + `id_token` を返して成功扱いとなり、`refresh_token` フィールドは付きません。OIDC Core 1.0 §11 の既定（lax）の解釈では、`offline_access` はリフレッシュトークン受領の必須条件では **ありません** — offline 用の TTL bucket を選び、同意・監査の表示を形づくる役割です。
+`openid` が含まれているのに OP またはクライアントの grant が欠けている場合、トークンエンドポイントは `access_token` + `id_token` を返して成功し、`refresh_token` は付きません。`openid` がなければ ID トークンも発行されません。`op.WithOpenIDScopeOptional()` を有効にすると、OAuth 2.0 専用リクエストでも grant の条件を満たせばアクセストークンとリフレッシュトークンを受け取れます。本ライブラリの既定ポリシーでは、`offline_access` はリフレッシュトークン受領の必須条件では **ありません**。offline 用の TTL 区分と同意・監査の表示を切り替えます。
 
 ::: details `offline_access` を必須にしたい場合
-OIDC Core 1.0 §11 は狭い解釈も許容しており、その場合は付与 scope に `offline_access` があるときだけリフレッシュトークンを発行します。「同意 UI が約束した範囲」と「監査ログに残る範囲」を初期状態から完全に一致させたいなら `op.WithStrictOfflineAccess()` で opt-in してください。ただしその際は、stay-signed-in を求める RP がすべて明示的に `offline_access` を要求する必要があります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
+OIDC Core 1.0 §11 は、ユーザがその場にいなくなった後のアクセスに使う `offline_access` を定義しています。`op.WithStrictOfflineAccess()` を有効にすると、この scope をリフレッシュトークン発行の必須条件にできます。その場合、利用する RP は `offline_access` を明示的に要求する必要があります。`op.WithOpenIDScopeOptional()` との併用をコンストラクタが拒否するのは、ライブラリのポリシーです。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §3</a>。
 :::
 
 ### 「ログイン状態の維持」と通常セッションを TTL で分けたい
@@ -205,7 +211,7 @@ op.WithDPoPNonceSource(src)
 
 ### `dpop_signing_alg_values_supported` に RS256 が含まれていないのはなぜ？
 
-意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。この許可リストは OP が client assertion や JAR request object を**検証する**ときの集合で、DPoP proof はそこから FAPI が推奨する部分集合に絞っています。なお `RS256` は OP 側の署名アルゴリズムでもありません。OP が発行するトークンの署名は `ES256` のみで、これは恒久的な方針であり、未実装の穴ではありません。
+意図的です。DPoP の discovery リストは `ES256, EdDSA, PS256` で、コードベース全体の JOSE 許可リストよりも狭くしています。この許可リストは OP が client assertion や JAR request object を**検証する**ときの集合で、DPoP proof はそこから FAPI が推奨する部分集合に絞っています。なお `RS256` は OP 側の署名アルゴリズムでもありません。本ライブラリが発行するトークンの署名は ES256 のみで、これは実装上の欠落ではなくライブラリの方針です。
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -307,7 +313,7 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 ### CLI の `127.0.0.1:54312/cb` 形式の redirect_uri が拒否された
 
-既定の redirect-URI マッチはバイト完全一致（OAuth 2.1 / FAPI 2.0）です。ループバックのポートワイルドカード（RFC 8252 §7.3）は **クライアント単位でオプトイン** — 登録済みの `redirect_uris` にループバック URI を含めれば、scheme が `http`、登録済 host がループバック形（`127.0.0.1` / `::1`、登録側オプトインがある場合は文字列 `localhost`）、要求側 host が登録 host と一致し、path / query / fragment が完全一致のときに限り、ポート不一致を許容します。文字列 `localhost` の受理は登録時オプトイン（web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`）が前提です。literal IP のみの厳格な構えを保ちたいデプロイは、両方のオプトインを外したままにしておけば従来どおりの挙動になります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §4</a>。
+本ライブラリの既定の redirect-URI マッチはバイト完全一致で、FAPI プロファイルでもこのポリシーを維持します。ループバックのポートワイルドカード（RFC 8252 §7.3）は **クライアント単位でオプトイン** — 登録済みの `redirect_uris` にループバック URI を含めれば、scheme が `http`、登録済 host がループバック形（`127.0.0.1` / `::1`、登録側オプトインがある場合は文字列 `localhost`）、要求側 host が登録 host と一致し、path / query / fragment が完全一致のときに限り、ポート不一致を許容します。文字列 `localhost` の受理は登録時オプトイン（web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`）が前提です。literal IP のみの厳格な構えを保ちたいデプロイは、両方のオプトインを外したままにしておけば従来どおりの挙動になります。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §4</a>。
 
 <div id="observability" class="faq-anchor"></div>
 
@@ -317,7 +323,7 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 ライブラリは `/metrics` を **マウントしません**。`op.WithPrometheus(reg)` は OP が絞り込んで保持するカウンタを、利用者が渡した registry に登録するだけです。
 
-HTTP ルートのマウントはルータ側の責務です — トレーシング（外側で `otelhttp.NewMiddleware` をラップする）も、リクエスト所要時間ヒストグラム（外側でミドルウェアをラップする）も同じ分離方針です。OP は **OIDC 業務系の** カウンタ / スパン / 監査イベントのみを発行し、HTTP ライフサイクルの観測は組み込み側に委ねます。
+HTTP ルートのマウントはルータ側の責務です — トレーシング（外側で `otelhttp.NewMiddleware` をラップする）も、リクエスト所要時間ヒストグラム（外側でミドルウェアをラップする）も同じ分離方針です。OP は **OIDC 業務系の** カウンタ、ログ、監査イベントだけを発行し、OpenTelemetry のスパンは生成しません。HTTP ライフサイクルの観測は組み込み側に委ねます。
 
 詳細は [`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics)。
 
@@ -339,7 +345,7 @@ HTTP ルートのマウントはルータ側の責務です — トレーシン�
 | `account.*` / `federation.*` / `recovery.*` | アカウント管理フィード |
 | `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` | 防御シグナル |
 
-各イベントは `request-id` / `subject` / `client-id` を必ず持ち、加えてカテゴリ別フィールドを持つ `extras` map を運びます。購読は `op.WithAuditLogger(...)`（`*slog.Logger`）経由で行い、構造化ログエントリとしてカタログ名と `extras` 属性が記録されます。
+各イベントには `audit="true"` と識別子の `event` が含まれます。`actor_id`、`client_id`、`request_id` などは設定時だけ出力され、カテゴリ固有の `extras` グループも空なら出力されません。購読には `op.WithAuditLogger(...)`（`*slog.Logger`）を使います。全フィールドは[監査イベントカタログ](/ja/reference/audit-events#共通の属性)を参照してください。
 
 <div id="conformance" class="faq-anchor"></div>
 
@@ -379,7 +385,7 @@ redirect-URI 完全一致に引っかかっています。よくある原因 3 �
 
 ### `invalid_client: alg not allowed`
 
-クライアントの `request_object_signing_alg` / `token_endpoint_auth_signing_alg` がコードベースの許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）に含まれていません。FAPI 2.0 plan ではクライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込んでください — FAPI 2.0 は `RS256` を禁じています。
+クライアントの `request_object_signing_alg` / `token_endpoint_auth_signing_alg` がコードベースの許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）に含まれていません。本ライブラリの `profile.FAPI2Baseline` を使う場合は、クライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込んでください。このライブラリのプロファイルでは `RS256` が拒否されます。
 
 ### `invalid_dpop_proof: jkt mismatch`
 

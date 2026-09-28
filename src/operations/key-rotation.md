@@ -45,15 +45,15 @@ All three are rotated by constructing a new `*Provider` and atomically swapping 
     <text class="fg-t2" x="54" y="176">Then drop the old key</text>
     <text class="fg-xs" x="54" y="194">not before</text>
   </svg>
-  <figcaption class="fig-note">The old key stays published for the whole overlap and only stops signing. Removing it early is the one way to break this: a verifier still holding the previous key set has no way to check a token it already accepted.</figcaption>
+  <figcaption class="fig-note">For a routine rotation, the old key stays published for the whole overlap and only stops signing. Removing it early can break this: a verifier still holding the previous key set has no way to check a token it already accepted. A compromised key is an incident exception and must be removed promptly.</figcaption>
 </figure>
 
 ## Signing key rotation
 
 ### Cadence
 
-- **Routine:** every 60 – 90 days.
-- **Compromised:** immediately, with the retired key dropped from JWKS after every outstanding token has expired (your access-token TTL bound).
+- **Routine:** every 60 – 90 days; retain the retiring key through the normal overlap, then remove it after the token-lifetime and RP-JWKS-cache bounds below.
+- **Compromised:** replace it immediately and rebuild the `Keyset` without the compromised entry so it is removed from JWKS promptly. Do not keep a compromised key for the routine overlap; handle tokens signed with it under your incident-response and revocation procedure.
 
 ### Procedure
 
@@ -167,7 +167,7 @@ After every rotation:
 1. `curl https://op.example.com/jwks` — confirm the new `kid` is present and the retired `kid` is still listed (unless you've completed the drop step).
 2. New token `kid` header points at the new key: `echo "<jwt>" | cut -d. -f1 | base64 -d | jq .kid`.
 3. No `key.retired_kid_presented` audit events fire after the cut-over (the OP emits this event whenever a JWS / JWE arrives carrying a `kid` whose retirement deadline has passed — silence is the success signal).
-4. Browser sessions established before rotation still resolve at the `/userinfo` endpoint (cookie key rotation didn't break decrypt).
+4. A browser session established before rotation can resume an authorization request at `/authorize` without re-authentication (the session cookie still decrypts).
 
 ## Why a new `Provider` instead of a mutate-in-place API
 

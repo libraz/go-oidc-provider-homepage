@@ -50,12 +50,14 @@ pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 <span class="status-pill out">out</span> out-of-scope（設計上、本ライブラリの責務ではない）。<br/>
 <span class="status-pill refused">refused</span> 意図的に拒否しています（例: `alg=none`）。
 
+この区分は実装範囲を示すもので、OpenID Foundation の認証取得を意味しません。`full` とした行も、その行に記した制限やライブラリの対象外事項まで満たすという意味ではありません。
+
 ## OIDC core / discovery
 
 | 仕様 | ステータス | 場所 |
 |---|---|---|
 | **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span>（`response_type` は `code` のみ。Aggregated / Distributed claim types §5.6.2 は emit せず、pairwise sub §8.1 は `op.WithPairwiseSubject` で実装済み。詳細は下の「設計上の対象外」セクション） | `op/`、`internal/authorize`、`internal/tokenendpoint`、`internal/userinfo`、`internal/sector` |
-| **OpenID Connect Discovery 1.0** | <span class="status-pill full">full</span> | `internal/discovery` |
+| **OpenID Connect Discovery 1.0** | <span class="status-pill partial">partial</span>（メタデータエンドポイントを実装。ただし Discovery が必須とする `RS256` を `id_token_signing_alg_values_supported` に含めない） | `internal/discovery` |
 | **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span>（主要フロー、`sector_identifier_uri` の取得、`application_type=web` / `=native` ごとの redirect URI 規則、JWKs / pairwise / response_type のクロスチェック、PUT の予約フィールド拒否、`post_logout_redirect_uris` の往復、5 種の JWE alg/enc encrypted-response メタデータまでを強制。`GET /register/{id}` の応答からは `client_secret` を意図的に除外、`software_statement` も非対応） | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
 | **OpenID Connect Back-Channel Logout 1.0** | <span class="status-pill full">full</span> | `internal/backchannel` |
@@ -86,7 +88,7 @@ pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 | **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill partial">partial</span>（`feature.MTLS` は証明書バインドアクセストークンと `mtls_endpoint_aliases` を接続。token endpoint の `tls_client_auth` / `self_signed_tls_client_auth` 振り分けは未接続） | `internal/mtls` |
 | **RFC 8707** Resource Indicators | <span class="status-pill partial">partial</span>（authorize / token / device / CIBA での正規化と client 許可リスト検証を実装。組み込み grant は現在、多くの発行経路を単一 resource 値に絞る） | `internal/resourceindicator`、`internal/authorize`、`internal/tokenendpoint`、`internal/devicecodeendpoint`、`internal/cibaendpoint` |
 | **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span>（alg 許可リスト、typ チェック） | `internal/jose` |
-| **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill full">full</span> | `internal/tokens` |
+| **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill partial">partial</span>（JWT の発行は ES256 のみですが、§2.1 は RS256 対応を求めます。また、検証側は §2.2 で必須の `jti` を持たないトークンも受け付けます） | `internal/tokens` |
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span>（`feature.JAR` でゲート） | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span>（`feature.PAR` でゲート） | `internal/parendpoint` |
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize`（応答に `iss` パラメータを付与） |
@@ -117,12 +119,14 @@ pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 
 ## FAPI 系
 
+Go の識別子 `FAPI2Baseline` には旧称の *Baseline* が残っています。現行の Final 仕様名は [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) です。ここで参照する OFCS の結果は、名前を明記した Implementer's Draft のテストプランに対するもので、Final 仕様の全要件への適合を示すものではありません。特に本ライブラリはリフレッシュトークンをローテーションしますが、Security Profile §5.3.2.1(9) が認めるのは例外的な事情がある場合だけです。また、本ライブラリは `private_key_jwt` の `aud` としてトークンエンドポイントの URL や配列も受け付けますが、§5.3.2.1(8) は issuer 識別子の文字列だけを受け付けるよう求めます。これらは現行 Final 仕様との適合上の差分です。
+
 | プロファイル | ステータス | 切り替え |
 |---|---|---|
-| **FAPI 2.0 Baseline** | <span class="status-pill full">full</span>（継続回帰検査。[OFCS](/ja/compliance/ofcs) 参照） | `op.WithProfile(profile.FAPI2Baseline)` |
-| **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span>（継続回帰検査） | `op.WithProfile(profile.FAPI2MessageSigning)` |
+| **FAPI 2.0 Security Profile** | <span class="status-pill partial">partial</span>（PAR、PKCE、送信者制約付きトークンを実装。この設定はライブラリ独自の選択として JAR も要求します。上記の Final 仕様との差分と [OFCS](/ja/compliance/ofcs) を参照） | `op.WithProfile(profile.FAPI2Baseline)` |
+| **FAPI 2.0 Message Signing** | <span class="status-pill partial">partial</span>（JAR と JARM を実装。Final 仕様では署名機能ごとの適合が可能で、Security Profile の要件も引き継ぎます） | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | —（FAPI 2.0 を使用） |
-| **FAPI-CIBA** | <span class="status-pill full">full</span>（poll mode。`JAR` + `DPoP\|MTLS` 必須、アクセストークン TTL 10 分上限、FAPI 2.0 client-auth セット、`requested_expiry` ≤ 600 秒、JAR `iss` / `aud` / `exp` / `nbf` 必須、request-object 寿命 ≤ 60 分（FAPI 2.0 Message Signing §5.6）、アクセストークン revocation 必須） | `op.WithProfile(profile.FAPICIBA)` |
+| **FAPI-CIBA** | <span class="status-pill partial">partial</span>（ライブラリの設定: poll モード、`JAR`、DPoP または mTLS、アクセストークンの有効期間の上限 10 分、`requested_expiry` の上限 600 秒、アクセストークンの失効処理。旧 ID1 プランは mTLS を使い、デモも明示的に選びます。リクエストオブジェクトの経過時間 60 分という上限はライブラリの制約です。[OFCS](/ja/compliance/ofcs) を参照） | `op.WithProfile(profile.FAPICIBA)` |
 | **OpenID iGov High** | <span class="status-pill out">out</span> | — |
 
 プロファイル列挙にはもうひとつ `profile.Baseline` があります。これは FAPI プロファイルではなく、OAuth 2.1 / RFC 9700 の姿勢を宣言し、confidential client も含めたすべての authorization-code request に PKCE を要求します。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile) を参照。

@@ -8,7 +8,7 @@ pageClass: pg-use-cases-client-credentials
 
 ## What is the `client_credentials` grant?
 
-OAuth 2.0 has four "grant types" — different ways for a client to obtain an access token. Three involve a human (`authorization_code`, `device_code`, the deprecated `password`); one does not.
+RFC 6749 defines four original grant types — `authorization_code`, `implicit`, `password` (resource owner password credentials), and `client_credentials`. The first three involve a resource owner; `client_credentials` does not. Later specifications add grants such as Device Authorization, and this library also implements refresh-token, CIBA, and token-exchange paths.
 
 **`client_credentials`** (RFC 6749 §4.4) is for the no-human case: service A holds a registered `client_id` + credential and exchanges them directly at `/token` for an access token. The token represents **the service itself**, not an end user — so there is no `id_token`, no `refresh_token` (re-issue is cheap), no consent prompt.
 
@@ -152,14 +152,14 @@ curl -s -d 'grant_type=client_credentials' \
 ```
 
 ::: details FAPI 2.0 client_credentials
-With `op.WithProfile(profile.FAPI2Baseline)`, `client_secret_basic` is filtered out. `private_key_jwt` or mTLS becomes the only acceptable authentication. Stack `feature.DPoP` to additionally bind the issued access token to a client-held key.
+With `op.WithProfile(profile.FAPI2Baseline)`, `client_secret_basic` is filtered out. This library accepts `private_key_jwt` as the token endpoint client-auth method; mTLS can satisfy sender constraint, but RFC 8705 mTLS client authentication is not wired. Stack `feature.DPoP` to additionally bind the issued access token to a client-held key.
 :::
 
 ## Validating on the resource server
 
 Two paths:
 
-1. **Self-validate JWT** (RFC 9068) if you configured JWT access tokens. Service B fetches `/jwks` once, caches it, and verifies signatures locally.
+1. **Self-validate JWT** (RFC 9068) if you configured JWT access tokens. Service B fetches `/jwks`, caches it, and refreshes that cache when key rotation produces an unknown `kid`, then verifies signatures locally.
 2. **Introspect** (RFC 7662) if access tokens are opaque. Service B posts the token to `/introspect` and reads `active`, `scope`, `client_id`, etc. from the JSON response.
 
 ```sh

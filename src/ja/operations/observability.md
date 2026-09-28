@@ -87,7 +87,7 @@ op.New(
 )
 ```
 
-各イベントは、`event` 属性に `"<event.name>"` を持ち、`msg` は人間向けの短いメッセージとして、共通属性（`request_id`、`subject`、`client_id`、`extras`）も持つ JSON 1 行として記録されます。全イベント名は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。`WithAuditLogger` の handler は同期的に request goroutine 上で実行されます。遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。カタログには OP が発火しない予約語もあるため、すべての定数を発火の証拠として扱わないでください。
+各イベントは、`event` 属性に `"<event.name>"` を、`msg` に人間向けの短いメッセージを持つ JSON 1 行として記録されます。正規属性（`actor_id`、`client_id`、`session_id`、`request_id`、`ip`、`user_agent`、`tag`）は設定時だけ出力され、空でない `extras` グループにカテゴリ固有のフィールドが入ります。全イベント名は [監査イベントカタログ](/ja/reference/audit-events) を参照してください。`WithAuditLogger` の handler は呼び出し元の goroutine 上で同期的に実行されます。遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。カタログには OP が発火しない予約語もあるため、すべての定数を発火の証拠として扱わないでください。
 
 ::: tip 1 本のストリームを複数の出力先へ
 1 つの `*slog.Logger` を fan-out 用のハンドラに通せば、ファイル + Loki + Splunk に同時に流せます。OP は自身で `slog.Record` を構築し、logger の `Handler().Handle(...)` に直接渡します。`logger.LogAttrs(...)` でイベントを作り直すことはありません。これにより `WithClock` が供給した監査 timestamp が保たれます。

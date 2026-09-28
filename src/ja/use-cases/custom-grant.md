@@ -147,7 +147,7 @@ func (h *serviceTokenHandler) Handle(ctx context.Context, req op.CustomGrantRequ
 - リクエストが検証済みの証明を提示していれば `cnf.jkt`（DPoP）または `cnf.x5t#S256`（mTLS）を自動で押印。ハンドラがバインディングを自前で通す必要なし
 - `ExtraClaims` をマージ（標準セットとの衝突は `server_error` に集約 — ハンドラのバグが監査ログに浮かび上がるように）
 
-これが多くの組み込み側にとって正しい既定です。その結果、OP は FAPI 2.0 §3.1.4 のバインディング契約を追加コストなしで強制します。
+多くの組み込み側では、この方式が適しています。検証済みの DPoP または mTLS の証明がリクエストにある場合、FAPI 2.0 Security Profile §5.3.2.1(4)–(5) がアクセストークンに求める送信者制約を、この経路で設定します。
 
 ### `AccessToken` — ハンドラが署名
 
@@ -207,7 +207,7 @@ return op.CustomGrantResponse{
 - アクセストークンと同じ grant 識別子を共有させる
 - 同じ DPoP / mTLS 証明にバインドする
 
-そのため、発行されたリフレッシュトークンは通常のローテーション、再利用時の連鎖失効（RFC 9700 §2.2.2）、grant 失効の仕組みに乗ります。
+そのため、発行されたリフレッシュトークンは通常のローテーション、再利用時の連鎖失効（RFC 9700 §4.14.2）、grant 失効の仕組みに乗ります。
 
 `IssueRefreshToken` が true の場合、次の 5 つの gate のいずれかに失敗すると、アクセストークン応答は成功したままリフレッシュトークンだけを落とします:
 
@@ -220,7 +220,7 @@ return op.CustomGrantResponse{
 落とすたびに理由（`provider_grant_disabled`、`client_not_registered`、`empty_subject`、`empty_scope`、`multiple_resource_audience`）付きの `custom_grant.refresh_dropped` を発火します。リフレッシュトークンを落としても、それ自体でアクセストークンや、他の発行条件を満たす ID Token が失敗することはありません。したがって scope が空でも、無効になるのはリフレッシュトークンだけで、正しい応答は拒否されません。
 
 ::: details リフレッシュトークンの親子関係とは
-OP はリフレッシュトークンごとに親を記録するため、ローテーションはチェーン（`A → B → C`）を作ります。そのうちの 1 本が再利用された場合（RFC 9700 §2.2.2）、OP は子孫すべてを一括で失効させられます。`IssueRefreshToken` は custom grant をこの OP 管理のチェーンに入れるためのフラグです。RFC 6749 §6 ではリフレッシュトークンは authorization server が発行する資格情報なので、ハンドラが値を直接渡す形にはしていません。
+OP はリフレッシュトークンごとに親を記録するため、ローテーションはチェーン（`A → B → C`）を作ります。そのうちの 1 本が再利用された場合（RFC 9700 §4.14.2）、OP は子孫すべてを一括で失効させられます。`IssueRefreshToken` は custom grant をこの OP 管理のチェーンに入れるためのフラグです。RFC 6749 §6 ではリフレッシュトークンは authorization server が発行する資格情報なので、ハンドラが値を直接渡す形にはしていません。
 :::
 
 ## OP が拒否すること

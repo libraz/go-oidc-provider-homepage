@@ -12,7 +12,7 @@ description: /.well-known/openid-configuration の中身、browser と client-cr
 - [RFC 8414](https://datatracker.ietf.org/doc/html/rfc8414) — OAuth 2.0 Authorization Server Metadata
 - [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126) — Pushed Authorization Requests
 - [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html)
 :::
 
 ::: tip なぜ存在するか

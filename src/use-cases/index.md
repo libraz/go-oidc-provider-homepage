@@ -66,6 +66,8 @@ Each numbered example isolates one option in 200–500 lines. [`sample/`](https:
 docker compose -f sample/compose.yaml up -d --build
 ```
 
+The Compose file publishes the OP and RP only on `127.0.0.1`. The sample protects application-owned POST routes with a double-submit CSRF token and an `Origin` check; password changes and TOTP enrolment confirmation also require the current password, verified with `op.VerifyPassword`. These protections belong to the application, outside the OP's interaction endpoint.
+
 Its consent page is a worked example of granular per-scope consent, which the [bundled HTML driver](/use-cases/custom-consent-ui) deliberately does not offer. Treat it as a demonstration rather than a template: the schema is one embedder's model, signing and cookie keys are regenerated on every start, and it is not built to be hosted.
 
 ## Index
@@ -85,7 +87,7 @@ Every example folder maps to one of the use-case pages below.
 |---|---|---|
 | Declare OAuth 2.1 or legacy OIDC posture | [`00-security-profile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/00-security-profile) | [Declaring a security profile](/use-cases/security-profile) |
 | Plain OAuth 2.0 alongside OIDC | [`04-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-oauth2-only) | [OAuth 2.0 (no openid)](/use-cases/oauth2-only) |
-| FAPI 2.0 Baseline (PAR + JAR + DPoP) | [`03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) | [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) |
+| FAPI 2.0 Baseline (library PAR + JAR + DPoP default) | [`03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) | [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) |
 | Service-to-service tokens | [`05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) | [client_credentials](/use-cases/client-credentials) |
 | DPoP server nonce flow | [`51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) | [DPoP nonce flow](/use-cases/dpop-nonce) |
 

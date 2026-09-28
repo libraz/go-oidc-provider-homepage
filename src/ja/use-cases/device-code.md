@@ -233,7 +233,7 @@ DPoP または mTLS を使う場合、`/device_authorization` は DPoP 鍵の th
 | 通信路上の応答 | 意味 |
 |---|---|
 | `400 authorization_pending` | ユーザがまだ承認していない。`interval` 秒後に再ポーリング |
-| `400 slow_down` | ポーリングが速すぎた。interval を倍に — RFC 8628 §3.5。OP が新 interval を原子的に永続化するのでマルチレプリカでも強制される。観測値の永続化に失敗した場合は `device_code.poll_observation.failed` を発火し、観測ギャップを見える化する |
+| `400 slow_down` | ポーリングが速すぎた。RFC 8628 §3.5 に従い、今回以降のポーリング間隔に 5 秒を加える。OP が新しい間隔を原子的に永続化するので、複数レプリカでも適用される。観測値の永続化に失敗した場合は `device_code.poll_observation.failed` を発火し、記録できなかったことを確認できる |
 | `400 access_denied` | ユーザが拒否（または総当たり対策がロックアウト、`devicecodekit.Revoke` が呼ばれた）。ポーリングを停止 |
 | `400 expired_token` | `device_code` が `expires_in` を超えた。ポーリングを停止 |
 | `200 { access_token, ... }` | 承認 — 通常の token 応答として処理 |

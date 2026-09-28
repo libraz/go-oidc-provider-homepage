@@ -11,19 +11,19 @@ pageClass: pg-concepts-mtls
 mTLS は既に PKI を運用している環境で特に強みを発揮します。たとえば B2B のサービスメッシュ、オープンバンキング、内部 CA が全関係者に証明書を発行しているバックエンド API などです。結び付きが TLS 層に乗っているため、アプリケーションコードはリクエストごとに何かを署名する必要がありません。代償として、TLS 終端（リバースプロキシ、ロードバランサ）が検証済み証明書を OP まで運ぶよう設定する必要があります。
 
 ::: warning 実装境界
-`feature.MTLS` が接続するのは、証明書結び付けアクセストークン（`cnf.x5t#S256`）と、直接 TLS または信頼済みリバースプロキシのヘッダからの証明書取得です。`tls_client_auth` / `self_signed_tls_client_auth` は token endpoint のクライアント認証方式として広告も振り分けもされません。FAPI のクライアント認証には `private_key_jwt` を使い、mTLS は送信者制約レイヤとして使ってください。
+`feature.MTLS` が接続するのは、証明書結び付けアクセストークン（`cnf.x5t#S256`）と、直接 TLS または信頼済みリバースプロキシのヘッダからの証明書取得です。Final の FAPI 2.0 Security Profile は token endpoint のクライアント認証に mTLS または `private_key_jwt` を許可します。本ライブラリでは `tls_client_auth` / `self_signed_tls_client_auth` は token endpoint の認証方式として広告も振り分けもされないため、その経路には `private_key_jwt` を使い、mTLS は送信者制約レイヤとして使ってください。
 :::
 
 ::: details このページで触れる仕様
 - [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
 - [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800) — Confirmation (`cnf`) claim
 - [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) — X.509 PKI 証明書
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — Final
 :::
 
 ## 証明書を信頼する方法
 
-RFC 8705 は証明書を使うクライアント認証方式を定義していますが、本ライブラリの公開 mTLS seam は送信者制約の経路です。token endpoint は `tls_client_auth` / `self_signed_tls_client_auth` を広告も振り分けも行いません。非対称クライアント認証を要求する profile では、クライアントを `private_key_jwt` で登録してください。
+RFC 8705 は証明書を使うクライアント認証方式を定義していますが、本ライブラリの公開 mTLS seam は送信者制約の経路です。Final の FAPI 2.0 Security Profile は token endpoint の認証に mTLS または `private_key_jwt` を許可します。本ライブラリの token endpoint は `tls_client_auth` / `self_signed_tls_client_auth` を広告も振り分けも行わないため、本ライブラリで非対称クライアント認証を使うときは `private_key_jwt` で登録してください。
 
 `feature.MTLS` を有効にすると、OP は直接 TLS ハンドシェイク、または後述する信頼済みプロキシ経路からクライアント証明書を取得し、RFC 8705 の thumbprint を計算して発行トークンに結び付けます。チェーン検証は通常 TLS 終端側の責務です。OP 自身にもチェーン検証をさせる場合は、nil ではない公開 pool を渡します:
 
@@ -106,7 +106,7 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
   <figcaption class="fig-note">このゲートがセキュリティ上の論拠のすべてです。ヘッダは OP に直接到達できる相手なら誰でも偽造できるため、そのヘッダが載せる証明書は、リクエストが書き込んだプロキシから来たと OP が確認できて初めて意味を持ちます。</figcaption>
 </figure>
 
-本番では OP が自前で TLS を終端することはほぼありません。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが HTTP ヘッダ（`X-SSL-Cert`、`X-Forwarded-Client-Cert` など）で前送りする必要があります。
+本番では OP が自前で TLS を終端しない構成が多くあります。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが HTTP ヘッダ（`X-SSL-Cert`、`X-Forwarded-Client-Cert` など）で前送りする必要があります。
 
 OP は **どのヘッダから読むか** と **どの IP 範囲がそのヘッダを設定してよいか** の両方を知る必要があります。後者を抜くと、インターネット側の任意のクライアントが偽造ヘッダを送って、認証済みクライアントになりすませてしまいます。
 
@@ -142,19 +142,19 @@ op.New(
 
 OP が自前で TLS を終端する環境（テスト、シングルテナント on-prem 等）では、`WithMTLSProxy` 行は省略可能です — ライブラリは `http.Request.TLS.PeerCertificates` から直接証明書を読みます。OP 自身にもチェーン再検証をさせる場合は、CA を追加した `x509.NewCertPool()` と `WithMTLSRootCAs` を渡してください。
 
-`op.WithProfile(profile.FAPI2Baseline)` は `[DPoP, MTLS]` に対する `RequiredAnyOf` を課します。どちらも明示しなければ、プロファイルは DPoP を既定メンバーとして選びます。mTLS の送信者制約を使う構成では `feature.MTLS` を明示してください。その場合は mTLS が制約を満たすため DPoP 既定は追加されません。クライアントの token endpoint 認証には `private_key_jwt` を使います。
+`op.WithProfile(profile.FAPI2Baseline)` は `[DPoP, MTLS]` に対する `RequiredAnyOf` を課します。どちらも明示しなければ、プロファイルは DPoP を既定メンバーとして選びます。mTLS の送信者制約を使う構成では `feature.MTLS` を明示してください。その場合は mTLS が制約を満たすため DPoP 既定は追加されません。本ライブラリのクライアントの token endpoint 認証には `private_key_jwt` を使いますが、Final Security Profile は mTLS も許可しています。
 
 ## 落とし穴
 
 - **TLS 終端が証明書を正しく前送りすること。** プロキシごとにヘッダ名とエンコード（DER / PEM / URL エンコード PEM）が違います。両端で形式と `WithMTLSProxy` のヘッダ名を固定してください。
 - **証明書の更新で binding が変わる。** トークンは発行時の leaf 証明書に結び付いています。証明書を更新したらトークンも再発行してください。新しい証明書では古いトークンの `cnf.x5t#S256` を満たせません。
-- **mTLS クライアント認証を token endpoint method として設定しない。** mTLS は送信者制約レイヤです。FAPI 構成のクライアント認証には `private_key_jwt` を使ってください。
+- **未対応の mTLS クライアント認証方式を token endpoint に設定しない。** Final Security Profile は token endpoint の mTLS を許可しますが、本ライブラリの token endpoint が振り分けるのは `private_key_jwt` です。mTLS は送信者制約レイヤとして利用できます。
 - **多段プロキシでの `RemoteAddr` の意味。** OP の前にプロキシが 2 段ある場合、`RemoteAddr` に乗るのは **直前の** プロキシの IP のみです。その IP が `trustedCIDRs` に入っている必要があります。さらに外側のプロキシはヘッダ許可リストの対象外です（OP が直接見ないため）。
 
 ## mTLS が向いているケース
 
 - **既存 PKI を持つバックエンドサービス** — 全サービスが内部 CA 発行のクライアント証明書を既に持っている環境では、新しい鍵管理面を増やさずに mTLS を導入できます。
-- **オープンバンキング・B2B サービスメッシュ** — 規制やパートナー要件として、ネットワーク層で mTLS が既に必須になっているケースが多くあります。RFC 8705 はその上にトークン結び付けを乗せるだけです。
+- **オープンバンキング・B2B サービスメッシュ** — 制度やパートナー標準によってネットワーク層の mTLS が求められる場合があります。RFC 8705 はその上にトークン結び付けを乗せます。
 - **TLS 終端をすでに運用している運用チーム** — `WithMTLSProxy` の設定は一度きりの作業で、既存の nginx / envoy 設定の隣に自然に収まります。
 - **リクエストごとの署名コストを払いたくない制約クライアント** — 結び付きが TLS 層にあるため、アプリ側は API 呼び出しごとに新規署名を作る必要がありません。
 
@@ -169,5 +169,5 @@ OP が自前で TLS を終端する環境（テスト、シングルテナント
 
 - [DPoP (RFC 9449)](/ja/concepts/dpop) — もう一方の送信者制約方式。クライアント保有鍵に結び付けます。
 - [送信者制約 — 選定ガイド](/ja/concepts/sender-constraint) — 比較表と使い分けの指針。
-- [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアント認証と送信者制約を含む完全な組み込み例。
+- [使い方: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアント認証と送信者制約を含む完全な組み込み例。
 - [設計判断](/ja/security/design-judgments) — 仕様間トレードオフの整理。

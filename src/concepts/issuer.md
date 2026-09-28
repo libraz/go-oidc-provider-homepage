@@ -31,21 +31,21 @@ It is the single string that ties a token, a signing key, and a discovery docume
 
 ## Why canonical form matters
 
-OIDC Discovery 1.0 §4 derives the configuration URL from the issuer identifier by inserting `/.well-known/openid-configuration` between the host and the issuer's path — which for the common pathless issuer is plain concatenation. RFC 9207 then requires the OP to echo the same `iss` on authorization responses so a misrouted code cannot be silently used against the wrong AS — the so-called "mix-up" defence. Both checks rely on the OP and every RP agreeing on **one** canonical spelling.
+OIDC Discovery 1.0 §4 derives the configuration URL by removing any terminating slash from the issuer and inserting `/.well-known/openid-configuration` between the host and the issuer path. RFC 9207 then requires the OP to echo the same `iss` on authorization responses so a misrouted code cannot be silently used against the wrong AS — the so-called "mix-up" defence. Both checks rely on the OP and every RP agreeing on **one** canonical spelling.
 
 Real deployments commonly produce two URIs that look equivalent but are not:
 
 | Drift | Looks like | Why it breaks |
 |---|---|---|
-| Trailing slash | `https://idp.example.com/` vs `https://idp.example.com` | `<issuer>/.well-known/...` would become `https://idp.example.com//.well-known/...` for the first, breaking the configuration URL. |
+| Trailing slash | `https://idp.example.com/` vs `https://idp.example.com` | Discovery strips a terminating slash when constructing the well-known URL, but these are different issuer strings for exact comparison. The library accepts only the latter. |
 | Default port | `https://idp.example.com:443` vs `https://idp.example.com` | The byte-for-byte `iss` comparison on the RP side fails the moment the OP starts emitting one shape and a load balancer rewrites to the other. |
 | Mixed-case scheme | `HTTPS://idp.example.com` | URL parsers normalise inconsistently. Some downcase the scheme during parsing, some do not — an RP that compares the raw string and one that compares the parsed form see two different issuers. |
-| Mixed-case host | `https://Idp.Example.com` | RFC 3986 §3.2.2 / §6.2.2.1 require host case-folding for byte-exact comparison; an RP that does not fold sees a different issuer than one that does. |
-| Non-canonical path | `https://idp.example.com//oidc` or `.../a/../b` | Duplicate slashes, `..`, and `.` segments confuse the issuer concatenation that produces the `.well-known` URL and defeat byte-exact comparison. |
+| Mixed-case host | `https://Idp.Example.com` | Hostnames resolve without regard to case, but exact issuer-string comparisons can disagree if components normalize them differently. |
+| Non-canonical path | `https://idp.example.com//oidc` or `.../a/../b` | Normalizing a path in one component but retaining it in another creates different issuer strings. The library rejects these forms. |
 | Fragment | `https://idp.example.com#main` | A fragment has no role in HTTP request routing; carrying one in `iss` is structurally meaningless. |
 | Query string | `https://idp.example.com?env=prod` | The discovery URL would fold into a malformed concatenation; the spec forbids it. |
 
-A single drift breaks every signature check and every RFC 9207 mix-up validation. The class of bug is usually invisible until production traffic from one RP reaches the OP through a CDN or alternate hostname.
+A spelling mismatch can break exact issuer checks, including RFC 9207 mix-up validation; it does not by itself invalidate a JWT signature. The class of bug is usually invisible until production traffic from one RP reaches the OP through a CDN or alternate hostname.
 
 ## What this library refuses at boot
 
@@ -60,11 +60,11 @@ A single drift breaks every signature check and every RFC 9207 mix-up validation
 - **Host must be all-lowercase.** `https://IDP.example.com` and `https://IDP.EXAMPLE.COM/oidc` are rejected. `u.Host` preserves raw casing, so any uppercase letter in the authority fails the check.
 - **Must omit the default port.** `https://idp.example.com:443`, `https://idp.example.com:443/oidc`, and `http://127.0.0.1:80` are rejected. A redundant default port flips byte-equality the moment a load balancer canonicalises one side and not the other.
 - **Path must be canonical.** `..` segments, `.` segments, and duplicate slashes (`https://idp.example.com/a/../b`, `https://idp.example.com/a/./b`, `https://idp.example.com//oidc`) are rejected. The validator runs `path.Clean` and refuses anything that does not round-trip.
-- **Must use `https`.** The only carve-out is loopback IP literals (`127.0.0.0/8` and `[::1]`), which may use plain `http` so a development boot does not need TLS. The textual host `localhost` is **not** in the default carve-out — it can be DNS-hijacked (RFC 8252 §7.3 reasoning), so production deployments and DNS-rebinding-sensitive setups are forced onto the IP literal. `op.WithAllowLocalhostLoopback()` admits it explicitly, which a local passkey deployment needs: a WebAuthn Relying Party ID must be a domain, so an issuer on `127.0.0.1` has no valid RP ID to pair with. The rebinding reasoning does not stop applying — the opt-in is for a developer machine and nowhere else. Because of it the issuer is validated during `op.New`'s validation pass rather than inside `WithIssuer`, so the carve-out is seen whichever order the options are given in.
+- **Must use `https`.** The only carve-out is loopback IP literals (`127.0.0.0/8` and `[::1]`), which may use plain `http` so a development boot does not need TLS. The textual host `localhost` is **not** in the default carve-out. This is a library development policy; RFC 8252 §7.3 concerns native-app redirect URIs, not issuer URLs. `op.WithAllowLocalhostLoopback()` admits it explicitly, which a local passkey deployment needs: a WebAuthn Relying Party ID must be a domain, so an issuer on `127.0.0.1` has no valid RP ID to pair with. The rebinding reasoning does not stop applying — the opt-in is for a developer machine and nowhere else. Because of it the issuer is validated during `op.New`'s validation pass rather than inside `WithIssuer`, so the carve-out is seen whichever order the options are given in.
 
 These rules together guarantee `iss` is byte-exact across the discovery document, every issued token, and the authorization-response `iss` parameter — the form RPs compare under RFC 9207 mix-up defence.
 
-Anything that passes those checks is accepted as the canonical form. Whatever you pass is the value reused for `iss` in every emitted artefact, for the discovery document's own `issuer` field, and for the `client_assertion` audience checks under FAPI 2.0.
+Anything that passes those checks is accepted as the canonical form. Whatever you pass is the value reused for `iss` in every emitted artefact, for the discovery document's own `issuer` field, and for one of the `client_assertion` audiences this library currently accepts. The final FAPI 2.0 Security Profile §5.3.2.1(8) permits only the issuer identifier as a string; the library also accepts the token endpoint URL or an array, so its preset alone does not establish final-profile conformance.
 
 ## How to set it
 

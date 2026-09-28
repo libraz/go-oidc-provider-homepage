@@ -6,7 +6,7 @@ pageClass: pg-compliance-ofcs
 
 # OFCS conformance status
 
-`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the baseline below is the latest release run at commit [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a), executed end-to-end against a `cmd/op-demo` instance.
+`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the baseline below is the retained release-equivalent run captured immediately before the release tag at commit [`8ee7ca3`](https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd), executed end-to-end against a `cmd/op-demo` instance.
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
@@ -77,6 +77,8 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 | `fapi2-message-signing-id1-test-plan` | + JAR (signed authorization request), JARM (signed authorization response) | FAPI 2.0 Message Signing |
 | `fapi-ciba-id1-test-plan` | Client-Initiated Backchannel Authentication (poll mode), mTLS-bound tokens | FAPI-CIBA |
 
+The `fapi2-security-profile-id2` and `fapi2-message-signing-id1` plans are the Implementer's Draft-era plans bundled with this harness. Their results describe those plans and the corresponding library settings; they do not establish conformance to the current FAPI 2.0 Security Profile Final. In particular, Final §5.3.2.1(9) limits refresh-token rotation to extraordinary circumstances, while the library and these plans exercise rotation by default.
+
 ## Latest baseline
 
 <div class="ofcs-summary">
@@ -104,14 +106,14 @@ This is a personal project maintained by an individual developer. No OpenID Foun
   </ul>
   <p class="ofcs-note">Every FAILED and no-verdict module is a reviewed release exclusion — <a href="#why-six-modules-failed">three causes, none of them an unresolved defect</a>.</p>
   <div class="ofcs-meta">
-    <span><i>Captured</i>2026-09-01T13:48:21Z</span>
-    <span><i>Repository SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a">547b8d1</a></span>
-    <span><i>OFCS image</i>release-v5.2.1</span>
+    <span><i>Captured</i>2026-09-28T13:43:49Z</span>
+    <span><i>Repository SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd">8ee7ca3</a></span>
+    <span><i>OFCS image</i>not recorded in snapshot</span>
   </div>
 </div>
 
 ::: info Snapshot status
-The bars are the raw outcome of all nine plans. The latest release run was captured at the timestamp above; its JSON artifact is a local, gitignored file under `conformance/baselines/`. `make conformance-release-verify` accepted this release snapshot with zero blockers: every raw failure and no-verdict module has a reviewed, expiry-bound entry in `conformance/release-exclusions.json`. That gate result is not an OIDC certification.
+The bars are the raw outcome of all nine plans. The retained run was measured immediately before the release tag and is treated as release-equivalent to OFCS `release-v5.3.1`. Its JSON artifact is a local, gitignored file under `conformance/baselines/`, but it does not record the OFCS image tag or digest. The current `conformance/docker-compose.yml` default is also `release-v5.3.1`. `make conformance-release-verify` accepted this release snapshot with zero blockers: every raw failure and no-verdict module has a reviewed, expiry-bound entry in `conformance/release-exclusions.json`. That gate result is not an OIDC certification.
 :::
 
 ### Why six modules FAILED
@@ -355,7 +357,7 @@ Each OFCS test plan exercises a specific spec profile. The tables below map ever
 | `private_key_jwt` | profile-enforced | [/concepts/client-types](/concepts/client-types) |
 | DPoP or mTLS sender constraint | `op.WithFeature(feature.DPoP)` or `op.WithFeature(feature.MTLS)` (at least one is mandatory under FAPI 2.0) | [/concepts/sender-constraint](/concepts/sender-constraint), [/concepts/dpop](/concepts/dpop), [/concepts/mtls](/concepts/mtls) |
 | `redirect_uri` exact match | profile-enforced | [/concepts/redirect-uri](/concepts/redirect-uri) |
-| Refresh token rotation + reuse detection | enabled by default | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
+| Refresh token rotation + reuse detection | enabled by default for this library and exercised by the checked-in Implementer's Draft-era plan; current FAPI Final §5.3.2.1(9) limits rotation to extraordinary circumstances and requires a time-limited retry path when it is used | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 
 ### `fapi2-message-signing-id1-test-plan` — FAPI 2.0 Message Signing
 
@@ -370,7 +372,7 @@ Message Signing layers signed authorization responses on top of Baseline. Everyt
 
 ### `fapi-ciba-id1-test-plan` — FAPI-CIBA (Client-Initiated Backchannel Authentication)
 
-The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authentication grant: an authentication request initiated by the client, completed asynchronously on the user's authentication device (push notification, IVR, etc.), and consumed back via a polling token request. The OP runs in poll mode, FAPI-CIBA inherits FAPI 1.0's hardcoded `tls_client_certificate_bound_access_tokens` requirement so mTLS sender constraint is mandatory.
+The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authentication grant: an authentication request initiated by the client, completed asynchronously on the user's authentication device (push notification, IVR, etc.), and consumed back via a polling token request. The OP runs in poll mode. The historical FAPI-CIBA-ID1 plan uses mTLS certificate-bound access tokens; the demo explicitly enables `feature.MTLS` to match its `tls_client_certificate_bound_access_tokens` metadata. The library's general `profile.FAPICIBA` preset also permits DPoP and defaults to it when neither binding is chosen, so that preset alone does not reproduce the ID1 plan.
 
 | What it tests | Library option to enable | Doc page |
 |---|---|---|
@@ -378,7 +380,7 @@ The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authenti
 | Hint resolution (`login_hint` / `id_token_hint` / `login_hint_token`) | embedder-supplied `HintResolver` | [/use-cases/ciba](/use-cases/ciba) |
 | Polling discipline (`authorization_pending` / `slow_down`) | enabled by default; `op.WithCIBAPollInterval(...)` overrides advertised interval | [/use-cases/ciba](/use-cases/ciba) |
 | Poll-abuse lockout cap | default `5` strikes; `op.WithCIBAMaxPollViolations(n)` raises or lowers the cap | [/use-cases/ciba](/use-cases/ciba) |
-| `tls_client_certificate_bound_access_tokens` (FAPI-CIBA mandate) | `op.WithProfile(profile.FAPICIBA)` implies `feature.MTLS` | [/concepts/mtls](/concepts/mtls) |
+| Sender-constrained access tokens | `op.WithProfile(profile.FAPICIBA)` permits DPoP or mTLS, defaulting to DPoP; this OFCS demo explicitly enables `feature.MTLS` for the historical ID1 plan | [/concepts/sender-constraint](/concepts/sender-constraint), [/concepts/mtls](/concepts/mtls) |
 | Signed `request` object on `/bc-authorize` | `op.WithFeature(feature.JAR)` (auto under FAPI-CIBA) | [/concepts/fapi](/concepts/fapi) |
 | Bound `request_object` `iat` and `exp` claims (FAPI-CIBA §5.2.2) | profile-enforced | [/concepts/fapi](/concepts/fapi) |
 
@@ -388,7 +390,7 @@ The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authenti
 - <span class="ofcs-dot skip"></span>**SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
 - <span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>**WARNING** — OFCS records this as a non-failed result value: the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. The current snapshot has **0 warnings**.
 - <span class="ofcs-dot fail"></span>**FAILED** — a module did not reach the suite's expected result. In this release run, six failures are reviewed release exclusions: four arise from the permanent ES256-only signing policy and two from the deliberately subject-scoped back-channel logout metadata. The release verifier fails unless each exception is explicitly listed and unexpired.
-- <span class="ofcs-dot noverdict"></span>**No verdict** — the harness could not produce a terminal result. The two current modules require an in-process signing-key rotation or wait for an RS256 request object that the ES256-only OP correctly refuses. Both are reviewed release exclusions.
+- <span class="ofcs-dot noverdict"></span>**No verdict** — the harness could not produce a terminal result. One current module requires an in-process signing-key rotation. The other remains waiting for a callback after an `RS256` request-object flow; the checked-in artifact does not identify which validation or harness boundary prevented that callback. Both are reviewed release exclusions.
 
 ### How to reproduce the conformance run yourself
 
@@ -426,7 +428,7 @@ Two modules the harness could not drive to a terminal result. Both are recorded 
 | Module | Plan | Why there is no verdict |
 |---|---|---|
 | `oidcc-server-rotate-keys` | `oidcc-dynamic` | The module waits for an operator to rotate the signing keys and press Start. The keyset is fixed at `op.New`, and rebuilding the provider mid-plan would drop the in-memory store holding the plan's registered client. The module stays `CONFIGURED` until the runner's idle bound. |
-| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | The module pushes an `RS256`-signed request object and waits for a successful authorization response. The ES256-only OP refuses before redirecting — the correct behaviour — so no callback ever arrives and the suite records no result either way. |
+| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | The module pushes an `RS256`-signed request object and waits for a successful authorization response. The recorded baseline for this run records `WAITING` with an empty result after the runner drove the request. The checked-in artifact does not identify which validation or harness boundary prevented a callback; outbound ES256-only issuance does not by itself determine inbound request-object algorithm handling, so leave the cause unclassified until a request trace is available. |
 
 ## Modules currently in REVIEW
 
@@ -515,15 +517,15 @@ If you set conflicting options after `WithProfile`, `op.New(...)` returns a buil
 |---|---|
 | `conformance/README.md` | Operator runbook |
 | `conformance/plans/*.json` | Plan templates (server / client / resource blocks) |
-| `conformance/docker-compose.yml` | OFCS image pin (`release-v5.2.1`) + JKS truststore wiring |
+| `conformance/docker-compose.yml` | Current OFCS image pin (`release-v5.3.1`) + JKS truststore wiring |
 | `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
 | `tools/conformance/ofcs.py` | REST client + headless drive script |
 | `conformance/baselines/*.json` | Captured snapshots (gitignored — environment-specific) |
 
 ## Caveats worth naming
 
-- **Plan suite version.** OFCS is pinned to `release-v5.2.1`. Tests added or renamed in newer OFCS releases are not covered until the pin is bumped.
-- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. Behaviour is confirmed against v5.2.1 only.
+- **Plan suite version.** The current default pin is `release-v5.3.1`. Because the run was measured immediately before the release tag, this page treats it as release-equivalent to that pin; the retained snapshot does not record the actual image tag or digest.
+- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. The retained snapshot does not record the actual image tag or digest.
 - **No real RP cert.** The mTLS plan slots use generated self-signed certs at `conformance/certs/` so the plan can be instantiated. No real CA chain is exercised.
 - **Single OP instance.** Cross-instance behaviour (e.g. token introspection across two OPs sharing a store) is exercised by `test/scenarios`, not OFCS.
 

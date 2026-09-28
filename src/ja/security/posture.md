@@ -117,7 +117,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 |---|---|---|
 | `__Host-` cookie、AES-256-GCM、double-submit CSRF、Origin/Referer チェック | `internal/cookie`、`internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
 | public / native の authorization-code client、および FAPI プロファイル下の全 authorization-code client に PKCE 必須。`plain` は拒否 | `internal/authorize`、`internal/pkce` | RFC 7636、RFC 9700 |
-| リフレッシュトークンのローテーション + 再利用検知（chain revoke） | `internal/grants/refresh` | RFC 9700 §4.14 |
+| リフレッシュトークンのローテーション + 再利用検知（chain revoke） | `internal/grants/refresh` | RFC 9700 §4.14.2 |
 | 送信者制約付きトークン（DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`） | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
 | 認可応答に `iss` を付与 | `internal/authorize` | RFC 9207 |
 | `redirect_uri` 完全一致（既定で完全一致） | `internal/authorize` | OAuth 2.1、RFC 8252 |
@@ -139,8 +139,8 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 | 改ざん・decode 不能な authorization endpoint の session cookie は持ち越さず、clear して「session なし」と扱う | `internal/authorizeendpoint`、`internal/cookie` | RFC 6265bis |
 | ワンタイム認証 factor（email-OTP、TOTP、recovery code）を atomic な compare-and-set で単回使用化（再提示時は `ErrAlreadyConsumed`）。cross-factor の lockout は atomic に刻む（`StampLock`） | `internal/authn`、`op/store` | — (defence in depth) |
 | TOTP / email-OTP / recovery code の誤入力分岐はすべて共有 retry path と observer を通るため、captcha / lockout gate が second-factor brute-force を観測できる | `internal/authn` | — (defence in depth) |
-| リフレッシュトークンの `id` / `parent_id` を保存時にハッシュ化し、定数時間で参照 | `internal/tokenendpoint`、`op/store` | RFC 9700 §2.2.2 |
-| Refresh-token rotation は child insert と同じ critical section / transaction 内で parent を再確認し、replay revocation が成功済み descendant save と競合して取り逃がすことを防ぐ | `op/storeadapter/sql`、`op/storeadapter/inmem` | RFC 9700 §2.2.2 |
+| リフレッシュトークンの `id` / `parent_id` を保存時にハッシュ化し、定数時間で参照 | `internal/tokenendpoint`、`op/store` | RFC 9700 §4.14.2 |
+| Refresh-token rotation は child insert と同じ critical section / transaction 内で parent を再確認し、replay revocation が成功済み descendant save と競合して取り逃がすことを防ぐ | `op/storeadapter/sql`、`op/storeadapter/inmem` | RFC 9700 §4.14.2 |
 | Token exchange は policy 適用後の決定を再検証し、付与 scope が要求済み subject-token-bounded scope 内、付与 audience が要求済み audience 内に残ることを強制する | `internal/customgrant/tokenexchange` | RFC 8693 |
 | token response の途中で `server_error` になった場合、mint 済みの永続 opaque access token row を revoke し、有効な孤児 token を残さない | `internal/tokenendpoint`、`op/store` | — (defence in depth) |
 
@@ -183,6 +183,6 @@ Go の language baseline と toolchain は core module が宣言しています�
 
 ## 続きはこちら
 
-- **[設計判断](/ja/security/design-judgments)** — RFC 同士の衝突をどう解釈したか（PAR vs `request_uri` 再利用、リフレッシュローテーション vs RFC 9700 grace、alg リスト vs OIDC Core …）。
+- **[設計判断](/ja/security/design-judgments)** — プロトコル上の選択とライブラリ独自の方針（PAR の `request_uri` 再利用、リフレッシュ再試行の猶予期間、OIDC Core と署名アルゴリズムの扱いなど）。
 - **[脆弱性報告](/ja/security/disclosure)** — 脆弱性報告、サポート対象バージョン、CVE 取り扱い。
 - **[OFCS 適合状況](/ja/compliance/ofcs)** — 適合性が証明できること / できないこと。

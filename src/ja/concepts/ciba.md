@@ -17,7 +17,7 @@ CIBA は [device flow](/ja/concepts/device-code) とは別の形の問題を解�
 
 ::: details このページで触れる仕様
 - [OpenID Connect Client-Initiated Backchannel Authentication Flow — Core 1.0](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html) — CIBA Core 仕様
-- [FAPI-CIBA-ID1](https://openid.net/specs/openid-financial-api-ciba-ID1.html) — JAR + DPoP/mTLS + access TTL 10 分上限を必須化する FAPI プロファイル
+- [FAPI-CIBA-ID1](https://openid.net/specs/openid-financial-api-ciba-ID1.html) — FAPI 1.0 を基礎とし、mTLS 時代の送信者制約を使う旧プロファイル。本ライブラリの `profile.FAPICIBA` は DPoP も認めるため、設定だけで ID1 への適合は示せません。
 :::
 
 ::: details 用語の補足

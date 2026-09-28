@@ -17,7 +17,7 @@ The consumption device never asks the user for credentials — it just asks the 
 
 ::: details Specs referenced on this page
 - [OpenID Connect Client-Initiated Backchannel Authentication Flow — Core 1.0](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html) — the CIBA Core spec
-- [FAPI-CIBA-ID1](https://openid.net/specs/openid-financial-api-ciba-ID1.html) — the FAPI profile that pins JAR + DPoP/mTLS + 10-minute access TTL
+- [FAPI-CIBA-ID1](https://openid.net/specs/openid-financial-api-ciba-ID1.html) — the historical profile, based on FAPI 1.0 and mTLS-era sender constraint. This library's `profile.FAPICIBA` also accepts DPoP, so the preset alone does not establish ID1 conformance.
 :::
 
 ::: details Vocabulary refresher

@@ -66,6 +66,8 @@ pageClass: pg-use-cases-index
 docker compose -f sample/compose.yaml up -d --build
 ```
 
+Compose ファイルは OP と RP を `127.0.0.1` だけに公開します。サンプルは、アプリケーションが所有する POST 経路を double-submit 方式の CSRF トークンと `Origin` の確認で保護しています。パスワード変更と TOTP 登録の確定時には、`op.VerifyPassword` で現在のパスワードも確認します。これらの保護は OP の対話エンドポイントの外側にあり、アプリケーション側が担当します。
+
 同意画面は scope 単位の granular consent の実装例になっています。これは[同梱の HTML driver](/ja/use-cases/custom-consent-ui) が意図的に提供していない部分です。ただしテンプレートではなくデモとして扱ってください。スキーマはあくまで一組み込み側のモデルで、署名鍵と cookie key は起動のたびに再生成され、公開ホスティングを想定した作りにもなっていません。
 
 ## 一覧
@@ -85,7 +87,7 @@ docker compose -f sample/compose.yaml up -d --build
 |---|---|---|
 | OAuth 2.1 または既存 OIDC の姿勢を宣言 | [`00-security-profile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/00-security-profile) | [セキュリティプロファイルの宣言](/ja/use-cases/security-profile) |
 | OIDC と並走する純粋 OAuth 2.0 | [`04-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-oauth2-only) | [OAuth 2.0（openid なし）](/ja/use-cases/oauth2-only) |
-| FAPI 2.0 Baseline (PAR + JAR + DPoP) | [`03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) | [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) |
+| FAPI 2.0 Baseline（ライブラリの PAR + JAR + DPoP 既定値） | [`03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) | [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) |
 | Service-to-service token | [`05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) | [client_credentials](/ja/use-cases/client-credentials) |
 | DPoP server nonce flow | [`51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) | [DPoP nonce](/ja/use-cases/dpop-nonce) |
 

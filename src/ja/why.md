@@ -64,13 +64,13 @@ Go でサービスを書いていると、自前で OpenID Connect Provider を�
 
 ### 「FAPI 2.0 をスイッチひとつで有効化したい」
 
-まず PAR を有効化し、後から JAR も必要だと気づき、さらに discovery がまだ `client_secret_basic` を広告していることに気づき、最後にテスト用の経路だけ ID トークンが FAPI 外の alg で署名されていた、という順で発覚しがちです。FAPI では、この種の設定ずれが高くつきます。
+まず PAR を有効化し、後から JAR も必要だと気づき、さらに discovery がまだ `client_secret_basic` を広告していることに気づき、最後にテスト用の経路だけ ID トークンがプロファイルの許可リスト外の alg で署名されていた、という順で発覚しがちです。FAPI では、この種の設定ずれが高くつきます。
 
 ::: details FAPI 2.0 が要求するもの
-FAPI 2.0 Baseline は **PAR**（RFC 9126）、**JAR**（RFC 9101）、**PKCE**（RFC 7636）、**送信者制約付きトークン**（DPoP RFC 9449 もしくは mTLS RFC 8705）、OP 発行物の **ES256** 署名、`redirect_uri` の **完全一致** を必須にしています。Message Signing ではさらに、authorize 応答の非否認性のために **JARM**、DPoP nonce、RS 側の応答署名を求めます。手で組むと、関連オプションが 6〜7 個、discovery の整合を保つべき箇所が 3 か所あります。
+FAPI 2.0 Security Profile（Final）が要求するのは **PAR**（RFC 9126）、**S256 の PKCE**（RFC 7636）、DPoP（RFC 9449）または mTLS（RFC 8705）による**送信者制約付きトークン**です。本ライブラリはポリシーとして `redirect_uri` の完全一致も適用しますが、FAPI 2.0 §5.5 は完全一致する値の事前登録を要求していません。JAR と OP 発行 JWT の ES256 固定は、本ライブラリの `profile.FAPI2Baseline` が採用する設定で、FAPI Security Profile 自体の必須要件ではありません。本ライブラリでは Message Signing が署名付き認可応答の **JARM** を追加します。プロファイルを使うことで、discovery と実装の設定も揃います。
 :::
 
-`op.WithProfile(profile.FAPI2Baseline)` がプロファイル側の処理をまとめて行います。PAR + JAR の自動有効化、mTLS が明示されていない場合の DPoP 既定選択、`token_endpoint_auth_methods_supported` の FAPI 許可リストへの絞り込み、OP 発行 JWT の ES256 固定まで一度に設定します。
+`op.WithProfile(profile.FAPI2Baseline)` が本ライブラリのプロファイル方針をまとめて適用します。PAR + JAR の有効化、mTLS が明示されていない場合の DPoP 既定選択、`token_endpoint_auth_methods_supported` のプロファイル許可リストへの絞り込み、OP 発行 JWT の ES256 固定まで一度に設定します。
 
 ```go
 op.New(
@@ -83,7 +83,7 @@ op.New(
 ```
 
 ::: tip 衝突は起動時に検出
-プロファイルと矛盾するオプションを後から重ねるとコンストラクタが起動を拒否するので、不完全な FAPI 構成が本番に出ることはありません。
+コンストラクタは、起動時に検出できるオプションの矛盾や必要な依存設定の不足を拒否します。ただし、現行の FAPI 2.0 Final 仕様の全要件への適合を保証するものではありません。[RFC 対応表](/ja/compliance/rfc-matrix) を確認してください。
 :::
 
 ### 「ユーザテーブルを奪われたくない」
@@ -173,9 +173,9 @@ op.New(
 
 モバイルアプリが同じリフレッシュ要求を再試行しただけなら、猶予期間内は同じ結果を返すのが望ましい挙動です。一方、古いリフレッシュトークンが後から現れた場合は、連鎖全体を失効させ、その理由を監査ログに残す必要があります。この 2 つを同時に満たすことが目標になります。
 
-リフレッシュトークンは既定でローテーションします。再利用が検知された場合は連鎖全体を無効化します。
+リフレッシュトークンは既定でローテーションし、再利用を検知した場合は系列全体を無効化します。これはライブラリのポリシーです。現行の FAPI 2.0 Security Profile §5.3.2.1(9) は例外的な状況を除く通常のローテーションを禁止しているため、この既定動作だけで Final 仕様への適合は示せません。
 
-- `op.WithRefreshGracePeriod` — 再試行が競合するクライアント向けにローテーション直後の猶予期間を広げる。`FAPI2Baseline` と `FAPI2MessageSigning` では 0 秒から 60 秒まで（60 秒を含む）の明示設定が許容され、60 秒を超える値だけが拒否されます。
+- `op.WithRefreshGracePeriod` — 再試行が競合するクライアント向けにローテーション直後の猶予期間を広げる。本ライブラリの `profile.FAPI2Baseline` と `profile.FAPI2MessageSigning` では 0 秒から 60 秒まで（60 秒を含む）の明示設定が許容され、60 秒を超える値だけが拒否されます。
 - リフレッシュのローテーションでは、提示トークンを消費する前に実効 scope をクライアントの現在の登録と再照合するため、登録を狭めると既存の連鎖にも反映されます。
 - `op.WithRefreshTokenOfflineTTL` — `offline_access` 付きリフレッシュトークン（ログイン状態の維持）の寿命を、通常のローテーションから分離する。
 

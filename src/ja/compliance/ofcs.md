@@ -6,7 +6,7 @@ pageClass: pg-compliance-ofcs
 
 # OFCS 適合状況
 
-`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、コミット [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a) の最新リリース run を `cmd/op-demo` インスタンスへ end-to-end で実行した結果です。
+`go-oidc-provider` は [OpenID Foundation Conformance Suite (OFCS)][ofcs] に対して回帰検査されています。ハーネスはソースリポジトリの [`conformance/`][harness] に置かれており、9 つの OFCS プランを準備します。本ページのベースラインは、リリースタグ直前に取得した保持済みのリリース相当 run です。コミット [`8ee7ca3`](https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd) の `cmd/op-demo` インスタンスに対して end-to-end で実行しました。
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
@@ -77,6 +77,8 @@ pageClass: pg-compliance-ofcs
 | `fapi2-message-signing-id1-test-plan` | + JAR（署名 authorization request）、JARM（署名 authorization response） | FAPI 2.0 Message Signing |
 | `fapi-ciba-id1-test-plan` | Client-Initiated Backchannel Authentication（poll mode）、mTLS バインドトークン | FAPI-CIBA |
 
+`fapi2-security-profile-id2` と `fapi2-message-signing-id1` は、このハーネスに組み込まれた Implementer's Draft 世代の plan です。結果が示すのはこれらの plan と対応するライブラリ設定であり、現行の FAPI 2.0 Security Profile Final への適合を証明するものではありません。特に Final §5.3.2.1(9) は refresh token のローテーションを例外的な状況に限っていますが、ライブラリとこれらの plan は既定でローテーションを実行します。
+
 ## 最新 baseline
 
 <div class="ofcs-summary">
@@ -104,14 +106,14 @@ pageClass: pg-compliance-ofcs
   </ul>
   <p class="ofcs-note">FAILED と未判定の module はすべてレビュー済みの release exclusion です — <a href="#failed-6-件の理由">原因は 3 つだけで、未解決の欠陥はありません</a>。</p>
   <div class="ofcs-meta">
-    <span><i>取得日時</i>2026-09-01T13:48:21Z</span>
-    <span><i>リポジトリ SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a">547b8d1</a></span>
-    <span><i>OFCS イメージ</i>release-v5.2.1</span>
+    <span><i>取得日時</i>2026-09-28T13:43:49Z</span>
+    <span><i>リポジトリ SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd">8ee7ca3</a></span>
+    <span><i>OFCS イメージ</i>snapshot に記録なし</span>
   </div>
 </div>
 
 ::: info スナップショットの状態
-上のバーは 9 plan 全体の raw 結果です。最新の release run は上記時刻に取得され、JSON artifact は `conformance/baselines/` 配下のローカル・gitignore 対象ファイルです。`make conformance-release-verify` は、このリリース snapshot を blocker 0 と判定しました。raw failure と未判定 module はすべて `conformance/release-exclusions.json` のレビュー済み・期限付きエントリと照合されています。この判定は OIDC 認証ではありません。
+上のバーは 9 plan 全体の raw 結果です。保持している run はリリースタグ直前に測定したため、OFCS `release-v5.3.1` と同等のリリース相当結果として扱います。JSON artifact は `conformance/baselines/` 配下のローカル・gitignore 対象ファイルですが、OFCS のイメージ tag や digest は記録されていません。現在の `conformance/docker-compose.yml` の既定 pin も `release-v5.3.1` です。`make conformance-release-verify` は、このリリース snapshot を blocker 0 と判定しました。raw failure と未判定 module はすべて `conformance/release-exclusions.json` のレビュー済み・期限付きエントリと照合されています。この判定は OIDC 認証ではありません。
 :::
 
 ### FAILED 6 件の理由
@@ -355,7 +357,7 @@ OFCS の各テストプランは、それぞれ特定の仕様プロファイル
 | `private_key_jwt` | profile が強制 | [/ja/concepts/client-types](/ja/concepts/client-types) |
 | DPoP または mTLS による送信者制約 | `op.WithFeature(feature.DPoP)` か `op.WithFeature(feature.MTLS)` のいずれか（FAPI 2.0 では少なくとも一方が必須） | [/ja/concepts/sender-constraint](/ja/concepts/sender-constraint)、[/ja/concepts/dpop](/ja/concepts/dpop)、[/ja/concepts/mtls](/ja/concepts/mtls) |
 | `redirect_uri` 完全一致 | プロファイルが強制 | [/ja/concepts/redirect-uri](/ja/concepts/redirect-uri) |
-| リフレッシュトークンのローテーションと再利用検知 | 既定で有効 | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
+| リフレッシュトークンのローテーションと再利用検知 | ライブラリの既定で有効、チェックイン済みの Implementer's Draft 世代 plan でも検証。ただし現行 FAPI Final §5.3.2.1(9) はローテーションを例外的な状況に限り、使う場合は時間制限付き retry 経路を要求 | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
 
 ### `fapi2-message-signing-id1-test-plan` — FAPI 2.0 Message Signing
 
@@ -370,7 +372,7 @@ Message Signing は Baseline に署名認可レスポンスを上乗せします
 
 ### `fapi-ciba-id1-test-plan` — FAPI-CIBA（Client-Initiated Backchannel Authentication）
 
-CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication grant を検証します。クライアントから開始された認証要求が、ユーザの認証デバイス（プッシュ通知、IVR 等）で非同期に完了し、ポーリング型の token 要求で消費される — という流れです。OP は poll mode で動作し、FAPI-CIBA は FAPI 1.0 のハードコード要件を引き継ぎ `tls_client_certificate_bound_access_tokens` を必須にするため、mTLS 送信者制約が必須です。
+CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication grant を検証します。クライアントから開始された認証要求が、ユーザの認証デバイス（プッシュ通知、IVR 等）で非同期に完了し、ポーリング型の token 要求で消費される流れです。OP は poll mode で動作します。旧 FAPI-CIBA-ID1 プランは mTLS 証明書バインドのアクセストークンを使うため、デモは `feature.MTLS` を明示して `tls_client_certificate_bound_access_tokens` のメタデータに合わせています。ライブラリの一般的な `profile.FAPICIBA` 設定は DPoP も認め、どちらも指定しなければ DPoP を選ぶため、この設定だけでは ID1 プランを再現しません。
 
 | 検証範囲 | 有効化に必要なオプション | 解説ページ |
 |---|---|---|
@@ -378,7 +380,7 @@ CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication gra
 | ヒント解決（`login_hint` / `id_token_hint` / `login_hint_token`） | 組み込み側が `HintResolver` を提供 | [/ja/use-cases/ciba](/ja/use-cases/ciba) |
 | ポーリング規律（`authorization_pending` / `slow_down`） | 既定で有効、`op.WithCIBAPollInterval(...)` で advertised interval を上書き可 | [/ja/use-cases/ciba](/ja/use-cases/ciba) |
 | ポーリング濫用ロックアウトの上限 | 既定 `5` strikes、`op.WithCIBAMaxPollViolations(n)` で上下に調整可 | [/ja/use-cases/ciba](/ja/use-cases/ciba) |
-| `tls_client_certificate_bound_access_tokens`（FAPI-CIBA 必須） | `op.WithProfile(profile.FAPICIBA)` が `feature.MTLS` を有効化 | [/ja/concepts/mtls](/ja/concepts/mtls) |
+| 送信者制約付きアクセストークン | `op.WithProfile(profile.FAPICIBA)` は DPoP または mTLS を認め、指定がなければ DPoP を選ぶ。この OFCS デモは旧 ID1 プランに合わせて `feature.MTLS` を明示する | [/ja/concepts/sender-constraint](/ja/concepts/sender-constraint)、[/ja/concepts/mtls](/ja/concepts/mtls) |
 | `/bc-authorize` への署名 `request` object | `op.WithFeature(feature.JAR)`（FAPI-CIBA で自動） | [/ja/concepts/fapi](/ja/concepts/fapi) |
 | `request_object` の `iat` / `exp` クレーム必須化（FAPI-CIBA §5.2.2） | プロファイルが強制 | [/ja/concepts/fapi](/ja/concepts/fapi) |
 
@@ -388,7 +390,7 @@ CIBA プランは OpenID Connect Client-Initiated Backchannel Authentication gra
 - <span class="ofcs-dot skip"></span>**SKIPPED** — テストが依存する機能を、この OP が discovery やクライアントメタデータで宣言していないために OFCS が実行を見送った状態。例えば `RS256` 負例テストは、FAPI クライアントが `PS256` を署名 alg として宣言しているため適用外になる。失敗ではない。
 - <span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>**WARNING** — OFCS が非 failure の result value として記録する状態。主たる assertion は終端 PASS まで到達したが、運用者が対処すべき advisory がログに残っている場合に使われます。現在の snapshot では **0 件** です。
 - <span class="ofcs-dot fail"></span>**FAILED** — module が suite の期待結果に到達しませんでした。この release run の 6 件は、恒久的な ES256-only 署名方針による 4 件と、back-channel logout を意図的に subject 単位に留めていることによる 2 件です。いずれもレビュー済みの release exclusion で、明示的かつ期限内の記録がなければ release verifier は失敗します。
-- <span class="ofcs-dot noverdict"></span>**未判定** — ハーネスが終端結果を得られませんでした。現在の 2 module はプロセス内の署名鍵ローテーションを必要とするものと、ES256-only OP が正しく拒否する RS256 request object を待ち続けるものです。いずれもレビュー済みの release exclusion です。
+- <span class="ofcs-dot noverdict"></span>**未判定** — ハーネスが終端結果を得られませんでした。現在の 1 module はプロセス内の署名鍵ローテーションを必要とします。もう 1 つは `RS256` request object の経路後にコールバックを待ち続けていますが、チェックイン済み artifact からはコールバックを妨げた検証またはハーネス境界を特定できません。いずれもレビュー済みの release exclusion です。
 
 ### 自分で conformance を回すには
 
@@ -426,7 +428,7 @@ conformance suite は意図的にこれらの module を人間の判断にゲー
 | Module | Plan | 判定が出ない理由 |
 |---|---|---|
 | `oidcc-server-rotate-keys` | `oidcc-dynamic` | 運用者が署名鍵をローテーションして Start を押すのを待つ module です。鍵束は `op.New` で確定し、プラン実行中に provider を作り直すと登録済みクライアントを保持する in-memory store が失われます。module は runner の idle 上限まで `CONFIGURED` のまま留まります。 |
-| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | `RS256` 署名の request object を push し、認可レスポンスの成功を待つ module です。ES256-only の OP はリダイレクト前に拒否します — これが正しい挙動であり、コールバックが届かないため suite はどちらの結果も記録できません。 |
+| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | `RS256` 署名の request object を push し、認可レスポンスの成功を待つ module です。今回の記録済み baseline は、runner が要求を駆動した後も結果空欄の `WAITING` を記録しています。チェックイン済み artifact からはコールバックを妨げた検証またはハーネス境界を特定できません。outbound の ES256-only 発行方針だけでは inbound の request object アルゴリズム処理は決まらないため、request trace が得られるまで原因は未分類として扱います。 |
 
 ## 現在 REVIEW の module
 
@@ -515,15 +517,15 @@ ls conformance/baselines/   # JSON スナップショットがここに着地
 |---|---|
 | `conformance/README.md` | 運用 runbook |
 | `conformance/plans/*.json` | プランテンプレート（server / client / resource ブロック） |
-| `conformance/docker-compose.yml` | OFCS イメージのタグ固定（`release-v5.2.1`）+ JKS truststore 実装 |
+| `conformance/docker-compose.yml` | 現在の OFCS イメージ pin（`release-v5.3.1`）+ JKS truststore 実装 |
 | `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
 | `tools/conformance/ofcs.py` | REST クライアント + ヘッドレス drive スクリプト |
 | `conformance/baselines/*.json` | 取得済スナップショット（gitignored — 環境依存） |
 
 ## 明示しておく制限事項
 
-- **プランスイートのバージョン。** OFCS は `release-v5.2.1` で固定しています。新しい OFCS リリースで追加・改名されたテストは、固定バージョンを引き上げるまで対象外です。
-- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。挙動確認は v5.2.1 でしか取れていません。
+- **プランスイートのバージョン。** 現在の既定 pin は `release-v5.3.1` です。run はリリースタグ直前に測定したため、この pin と同等のリリース相当結果として扱います。保持済み snapshot に実際のイメージ tag や digest は記録されていません。
+- **ヘッドレス実行。** 実行スクリプトは OFCS の REST API をリバースエンジニアリングしているもので、OFCS 側にドキュメントはありません。保持済み snapshot に実際のイメージ tag や digest は記録されていません。
 - **本物の RP 証明書なし。** mTLS プラン枠は `conformance/certs/` の生成済み自己署名証明書を使っており、プランをインスタンス化できる程度に整えてあるだけです。本物の CA チェーン検証はしていません。
 - **OP インスタンス 1 個。** インスタンス間挙動（例: ストア共有の OP 2 個でのトークン introspection）は OFCS ではなく `test/scenarios` で検査します。
 

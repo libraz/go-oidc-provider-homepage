@@ -5,7 +5,7 @@ description: Serve OAuth 2.0 alongside OIDC. The same OP issues access-only toke
 
 # Use case — Plain OAuth 2.0
 
-OIDC Core 1.0 §3.1.2.1 requires the `openid` scope on every authorize request — without it, the OP must reject. That's the right default, but you may have non-OIDC RPs that just want a Bearer token to call your API. The library lets the same OP serve **both** shapes via a single relaxation.
+OIDC Core 1.0 §3.1.2.1 requires `openid` in an OIDC authorization request; without it, the request is not an OpenID request and OIDC Core does not define how the OP handles it. This library rejects such requests by default, but one option lets the same OP also serve OAuth-only clients that need an access token without an ID Token.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework
@@ -17,7 +17,7 @@ OIDC Core 1.0 §3.1.2.1 requires the `openid` scope on every authorize request �
 ::: details Vocabulary refresher
 - **OAuth 2.0 vs OIDC** — OAuth 2.0 issues `access_token`s for *delegated API access* — the token says "this client may call this API on this user's behalf". OIDC layers identity on top: when the request includes the `openid` scope, the OP additionally returns an `id_token` that asserts *who* the user is. Without `openid`, the OP behaves as a plain OAuth 2.0 server.
 - **Bearer token** — An access token whose presentation alone proves authorisation (RFC 6750). The resource server validates it (by introspection or by JWT signature) and then enforces the granted scopes.
-- **`/userinfo`** — Defined by OIDC, but callable with any access token whose scopes admit user claims. In OAuth-only mode, it returns whatever the access token's scopes authorise (often nothing useful).
+- **`/userinfo`** — Defined by OIDC for access tokens obtained through OIDC authentication. This library also accepts a subject-bearing OAuth-only authorization-code token when its scopes allow user claims. That behavior is a library extension, not an OAuth 2.0 UserInfo standard; grantless service tokens are rejected.
 :::
 
 > **Source:** [`examples/04-oauth2-only`](https://github.com/libraz/go-oidc-provider/tree/main/examples/04-oauth2-only)
@@ -36,7 +36,7 @@ After this option:
 | Request | Behaviour |
 |---|---|
 | `scope=openid profile email` | Full OIDC: `id_token` + `userinfo` + (when configured) `refresh_token` |
-| `scope=api:read` | Plain OAuth 2.0: `access_token` only, no `id_token` |
+| `scope=api:read` | OAuth 2.0: `access_token`, and a `refresh_token` when the provider and client grant gates pass; no `id_token` |
 | `scope=`(empty) | Rejected — at least one scope must be requested |
 
 The choice is **per request**, not a global toggle. A client whose `Scopes` list includes `openid` can still request it; a client whose `Scopes` list omits `openid` stays in OAuth-only mode permanently.
@@ -46,14 +46,14 @@ The choice is **per request**, not a global toggle. A client whose `Scopes` list
 | Field | OIDC mode | OAuth-only mode |
 |---|---|---|
 | `id_token` in `/token` response | ✅ | ❌ |
-| `/userinfo` callable with the access token | ✅ | ✅ — but returns only what the access token's scopes authorise |
+| `/userinfo` callable with the access token | ✅ | Library extension for subject-bearing authorization-code tokens; claims still depend on granted scopes |
 | Discovery `claims_supported` | populated | unaffected |
 | `nonce` validation | enforced when present | bypassed |
 | `auth_time` claim | included when prompted | n/a |
 
 ## Mutual exclusion
 
-`op.WithOpenIDScopeOptional` is **incompatible** with active FAPI 2.0 profiles. FAPI 2.0 mandates OIDC; the constructor rejects the combination at build time.
+`op.WithOpenIDScopeOptional` is **incompatible** with this library's FAPI 2.0 profile settings: the constructor rejects the combination at build time. This is a library policy. The FAPI 2.0 Security Profile itself can be used for OAuth 2.0 requests without OIDC; OIDC applies when the client needs an authenticated user's identifier.
 
 ```go
 op.New(

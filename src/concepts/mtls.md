@@ -11,19 +11,19 @@ pageClass: pg-concepts-mtls
 mTLS is attractive in deployments that already operate a PKI: B2B service meshes, open-banking environments, and backend-only APIs where every party has a client certificate issued by an internal CA. Because the binding lives at the TLS layer, the application code does not have to sign anything per request; the trade-off is that the TLS terminator (reverse proxy, load balancer) must be configured to expose the verified certificate to the OP.
 
 ::: warning Implementation boundary
-`feature.MTLS` wires certificate-bound access tokens (`cnf.x5t#S256`) and certificate extraction from direct TLS or a trusted reverse-proxy header. It does not make `tls_client_auth` or `self_signed_tls_client_auth` available as token-endpoint client-authentication methods; use `private_key_jwt` for FAPI client authentication and mTLS as the sender-constraint layer.
+`feature.MTLS` wires certificate-bound access tokens (`cnf.x5t#S256`) and certificate extraction from direct TLS or a trusted reverse-proxy header. The Final FAPI 2.0 Security Profile permits mTLS or `private_key_jwt` for token-endpoint client authentication. This library does not dispatch `tls_client_auth` or `self_signed_tls_client_auth` as token-endpoint methods; use `private_key_jwt` for that path and mTLS as the sender-constraint layer.
 :::
 
 ::: details Specs referenced on this page
 - [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
 - [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800) — Confirmation (`cnf`) claim
 - [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) — X.509 PKI certificates
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — Final
 :::
 
 ## Trusting the certificate
 
-RFC 8705 defines certificate client-authentication modes, but this library's public mTLS seam is the sender-constraint path. The token endpoint does not advertise or dispatch `tls_client_auth` / `self_signed_tls_client_auth`; a profile that requires asymmetric client authentication should register the client for `private_key_jwt`.
+RFC 8705 defines certificate client-authentication modes, but this library's public mTLS seam is the sender-constraint path. The Final FAPI 2.0 Security Profile permits mTLS or `private_key_jwt` for token-endpoint authentication; this token endpoint does not advertise or dispatch `tls_client_auth` / `self_signed_tls_client_auth`, so register the client for `private_key_jwt` when using this library.
 
 When `feature.MTLS` is enabled, the OP obtains a client certificate from the direct TLS handshake or from the trusted proxy path described below, computes its RFC 8705 thumbprint, and binds the issued token. Chain validation normally belongs to the TLS terminator. If the OP must validate the chain itself, pass a non-nil public pool:
 
@@ -106,7 +106,7 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
   <figcaption class="fig-note">The gate is the whole security argument. A header is trivially forgeable by anyone who can reach the OP directly, so the certificate it carries is only meaningful once the OP knows the request came from the proxy that wrote it.</figcaption>
 </figure>
 
-The OP almost never terminates TLS itself in production. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header (`X-SSL-Cert`, `X-Forwarded-Client-Cert`, …).
+In many production deployments the OP does not terminate TLS itself. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header (`X-SSL-Cert`, `X-Forwarded-Client-Cert`, …).
 
 The OP needs to know **which header** carries the cert and **which IP ranges** are allowed to set it. Without the second guard, any internet client could send a forged header and impersonate a properly-authenticated client.
 
@@ -142,19 +142,19 @@ op.New(
 
 When the OP terminates TLS itself (test environments, single-tenant on-prem deployments), the `WithMTLSProxy` line can be omitted — the OP reads the certificate directly from `http.Request.TLS.PeerCertificates`. Add `WithMTLSRootCAs(x509.NewCertPool())` populated with the deployment CA when the OP should re-check the chain.
 
-`op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[DPoP, MTLS]`. If neither is explicit, the profile selects DPoP as the default member. Deployments that want mTLS sender constraint should enable `feature.MTLS`; that explicit choice satisfies the constraint and suppresses the DPoP default. Use `private_key_jwt` for the client's token endpoint authentication.
+`op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[DPoP, MTLS]`. If neither is explicit, the profile selects DPoP as the default member. Deployments that want mTLS sender constraint should enable `feature.MTLS`; that explicit choice satisfies the constraint and suppresses the DPoP default. This library uses `private_key_jwt` for the client's token endpoint authentication, although the Final Security Profile also permits mTLS there.
 
 ## Pitfalls
 
 - **TLS terminator must export the cert correctly.** Different proxies use different header names and encodings (DER, PEM, URL-encoded PEM). Lock the format on both ends and pin the header name in `WithMTLSProxy`.
 - **Certificate renewal changes the binding.** A token is bound to the leaf certificate it was issued with. Reissue tokens after certificate rotation; a new certificate cannot satisfy an old token's `cnf.x5t#S256`.
-- **Do not configure mTLS client authentication as the token endpoint method.** mTLS is the sender-constraint layer; `private_key_jwt` is the client-auth method for FAPI deployments.
+- **Do not configure an unsupported mTLS client-authentication method.** The Final Security Profile permits mTLS at the token endpoint, but this library's token endpoint dispatches `private_key_jwt`; mTLS remains available as the sender-constraint layer.
 - **`RemoteAddr` semantics behind multiple proxies.** When the OP sits behind two layers of proxy, only the **innermost** proxy's IP appears in `RemoteAddr` — that is the one that must be in `trustedCIDRs`. Outer proxies are irrelevant to the header allow-list because the OP never sees them directly.
 
 ## When mTLS shines
 
 - **Backend services with existing PKI** — every service already has a client certificate from an internal CA. mTLS reuses the infrastructure; no new key-management surface.
-- **Open banking and B2B service meshes** — many regulators and partner programmes already mandate mTLS at the network layer. Adopting RFC 8705 layers token binding on top without changing the wire.
+- **Open banking and B2B service meshes** — some regulators and partner programmes mandate mTLS at the network layer. Adopting RFC 8705 layers token binding on top without changing the wire.
 - **Operations teams already running TLS terminators** — the `WithMTLSProxy` configuration is a one-time wiring exercise that fits naturally next to existing nginx / envoy configs.
 - **Constrained clients that cannot sign per request** — the binding lives at the TLS layer; the application code does not produce a fresh signature for every API call.
 
@@ -169,5 +169,5 @@ When the OP terminates TLS itself (test environments, single-tenant on-prem depl
 
 - [DPoP (RFC 9449)](/concepts/dpop) — the alternative sender-constraint mechanism, bound to a client-held key.
 - [Sender constraint — selection guide](/concepts/sender-constraint) — comparison table and when to pick which.
-- [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — full wiring with `private_key_jwt` client authentication and sender constraint.
+- [Use case: FAPI 2.0 Security Profile](/use-cases/fapi2-baseline) — full wiring with `private_key_jwt` client authentication and sender constraint.
 - [Design judgments](/security/design-judgments) — resolved tensions in the spec stack.

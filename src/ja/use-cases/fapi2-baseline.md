@@ -1,6 +1,6 @@
 ---
 title: FAPI 2.0 Baseline
-description: 1 つの指定で FAPI 2.0 Baseline の PAR、JAR、DPoP / mTLS、ES256、private_key_jwt、JAR 60 分上限を有効化。
+description: 本ライブラリの FAPI2Baseline プロファイルで、PAR、ライブラリが要求する JAR、DPoP / mTLS、private_key_jwt、ES256 のみの ID Token、JAR 60 分上限を有効化します。
 pageClass: pg-use-cases-fapi2-baseline
 ---
 
@@ -8,16 +8,16 @@ pageClass: pg-use-cases-fapi2-baseline
 
 ## FAPI 2.0 とは
 
-**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 + OIDC のプロファイルです。OAuth / OIDC が任意として残している選択肢のうち、攻撃に使われやすいものを禁じます。たとえば `RS256` を避けて `ES256` / `PS256` を使う、すべての認可で PKCE を必須にする、送信者制約付きトークン（DPoP **または** mTLS）を必須にする、RP の `/auth` 要求を生のクエリ文字列ではなく PAR + JAR で送らせる、といった制約です。既定の mount が `/oidc` なら endpoint は `/oidc/auth` になります。本ライブラリは id_token を `ES256` のみで署名するため、FAPI の `RS256` 禁止要件は構造的に満たされます。
+**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 のセキュリティプロファイル群です。認証済みユーザの識別子が必要な場合には OIDC を使用します。現行の FAPI 2.0 Security Profile は、PAR、`S256` の PKCE、送信者制約付きトークン（DPoP **または** mTLS）、confidential クライアント、`PS256` / `ES256` / `EdDSA` の JWT alg を要求します。Security Profile の要件に JAR は含まれず、ID Token の署名も `ES256` だけに限定していません。既定の mount が `/oidc` なら endpoint は `/oidc/auth` になります。本ライブラリの `profile.FAPI2Baseline` は JAR を追加し、クライアント認証に `private_key_jwt` を使い、現在は ID Token を `ES256` のみで署名します。
 
-銀行・医療・行政の運用では、「安全なオプションを全部覚えているか」ではなく「決まったチェックリストに対して監査できるか」が問われます。FAPI 2.0 は FAPI 1.0（こちらも依然現役）の後継です。FAPI 2.0 Baseline は最低限の安全要件を固定し、FAPI 2.0 Message Signing は JARM + DPoP nonce + RS 側の応答署名を追加します。
+銀行・医療・行政の運用では、「安全なオプションを全部覚えているか」ではなく「決まったチェックリストに対して監査できるか」が問われます。FAPI 2.0 は FAPI 1.0（こちらも依然現役）の後継です。最終版の FAPI 2.0 文書の名称は Security Profile で、本ライブラリはその設定を `profile.FAPI2Baseline` と呼びます。本ライブラリの別の Message Signing 設定は JARM、DPoP nonce source の制約、応答署名の動作を追加します。これらは本ライブラリの設定の挙動であり、最終版の Security Profile の要件ではありません。
 
-本ライブラリは Baseline を **プロファイル 1 つの指定**（`op.WithProfile(profile.FAPI2Baseline)`）として公開します。必要な機能をまとめて有効にし、プロファイルに反する構成では `op.New` 自体が起動を拒否します。
+本ライブラリは Baseline を **プロファイル 1 つの指定**（`op.WithProfile(profile.FAPI2Baseline)`）として公開します。本ライブラリの必要なチェックをまとめて有効にし、ライブラリのプロファイルに反する構成では `op.New` 自体が起動を拒否します。
 
 PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入門](/ja/concepts/fapi) にあります。本ページは構成例を扱います。
 
 ::: details このページで触れる仕様
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html) — Final
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — 最終版（本ライブラリの `profile.FAPI2Baseline` 設定）
 - [RFC 9126](https://datatracker.ietf.org/doc/html/rfc9126) — Pushed Authorization Requests (PAR)
 - [RFC 9101](https://datatracker.ietf.org/doc/html/rfc9101) — JWT-Secured Authorization Request (JAR)
 - [RFC 7636](https://datatracker.ietf.org/doc/html/rfc7636) — PKCE
@@ -28,23 +28,23 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 
 > **ソース:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) はプロファイルのフローを扱います。[`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) は、TLS 1.2 の FAPI 1.0 RW cipher allow-list 用 `op.FAPITLSConfig()` と、client 登録前に private JWK material を取り除く `op.LoadPublicJWKS` を示します。Go は TLS 1.3 の cipher suite allow-list を公開していないため、TLS 1.3 配備では独自の `tls.Config` が必要です。
 
-## FAPI 2.0 Baseline が要求するもの
+## 本ライブラリの `FAPI2Baseline` が強制するもの
 
 | 要件 | RFC | ライブラリの挙動 |
 |---|---|---|
 | Pushed Authorization Requests | RFC 9126 | プロファイルが `feature.PAR` を自動有効化。`/par` で得た `request_uri` を authorize の入口にする。 |
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` 必須、`plain` 拒否。 |
 | 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | このプロファイルでは `profile.RequiredAnyOf` が `{DPoP, MTLS}` を返すため、どちらか一方を満たせばよい。どちらも指定されていなければ、コンストラクタがインフラ前提の少ない DPoP を既定として選ぶ。 |
-| ES256 署名 | RFC 7518 | `id_token_signing_alg_values_supported` は無条件で `["ES256"]`。`RS256` / `none` / `HS*` はそもそも公告しない。 |
-| `redirect_uri` 完全一致 | FAPI 2.0 §5.3 | ワイルドカード無し、バイト一致比較。 |
-| `private_key_jwt` クライアント認証 | FAPI 2.0 §3.1.3 | token endpoint のクライアント認証には `private_key_jwt` を使う。mTLS は送信者制約を満たせますが、mTLS をクライアント認証方式として扱う経路は未接続。 |
+| JWT alg | FAPI 2.0 §5.4.1 | プロファイルが許可するのは `PS256`、`ES256`、`EdDSA` です。本ライブラリの `id_token_signing_alg_values_supported` は `["ES256"]` のままで、`RS256` / `none` / `HS*` は公告しません。 |
+| `redirect_uri` 完全一致 | ライブラリのポリシー | 本ライブラリは事前登録済み URI とのバイト単位の一致を求め、ワイルドカードを認めません。現行の FAPI 2.0 Security Profile は、認証済み PAR リクエストに `redirect_uri` を含めることを求めますが、事前登録は必須としていません。 |
+| クライアント認証 | FAPI 2.0 §5.3.2.1 | FAPI は mTLS または `private_key_jwt` を認めます。本ライブラリが token endpoint のクライアント認証で処理するのは `private_key_jwt` だけです。mTLS は送信者制約を満たせますが、mTLS クライアント認証の経路は未接続です。 |
 
 ## アーキテクチャ
 
 <figure class="fig">
-  <div class="fig-head">FAPI 2.0 Baseline の一連の流れ</div>
+  <div class="fig-head">本ライブラリの FAPI2Baseline の一連の流れ</div>
   <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 412" xmlns="http://www.w3.org/2000/svg">
-    <title id="fapi2-arch-title">FAPI 2.0 Baseline では、RP が認可リクエストを pushed authorization エンドポイントへ送り、request_uri を受け取ります。ブラウザが運ぶのはその参照だけです。トークンリクエストは private_key_jwt で認証され DPoP proof を伴い、返るトークンは DPoP 結び付き付きで ES256 署名です。</title>
+    <title id="fapi2-arch-title">本ライブラリの FAPI2Baseline では、RP が認可リクエストを pushed authorization エンドポイントへ送り、request_uri を受け取ります。ブラウザが運ぶのはその参照だけです。トークンリクエストは private_key_jwt で認証され DPoP proof を伴い、アクセストークンは DPoP にバインドされ、ID Token は本ライブラリの設定により ES256 で署名されます。</title>
     <line class="fg-life" x1="260" y1="62" x2="260" y2="404"/>
     <line class="fg-life fg-life--accent" x1="700" y1="62" x2="700" y2="404"/>
     <rect class="fg-box" x="170" y="16" width="180" height="42" rx="6"/>
@@ -70,11 +70,11 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
     <text class="fg-badge-t fg-badge-t--accent" x="15" y="215" text-anchor="middle">4</text>
     <path class="fg-edge fg-edge--accent" d="M700,204 h30 v16 h-30" marker-end="url(#fg-ac)"/>
     <text class="fg-s" x="742" y="208">プロファイルに照らして検証する</text>
-    <text class="fg-mxs" x="742" y="221">ES256 署名 · redirect_uri の完全一致</text>
+    <text class="fg-mxs" x="742" y="221">ライブラリの ID Token は ES256 · redirect_uri の完全一致</text>
     <circle class="fg-badge" cx="15" cy="258" r="8.5"/>
     <text class="fg-badge-t" x="15" y="261" text-anchor="middle">5</text>
     <rect class="fg-box fg-box--sub" x="170" y="240" width="620" height="36" rx="6"/>
-    <text class="fg-xs" x="480" y="262" text-anchor="middle">interaction エンドポイント経由で、ユーザがログインして同意する</text>
+    <text class="fg-xs" x="480" y="262" text-anchor="middle">interaction エンドポイントが認可判断を得る</text>
     <circle class="fg-badge" cx="15" cy="306" r="8.5"/>
     <text class="fg-badge-t" x="15" y="309" text-anchor="middle">6</text>
     <path class="fg-edge fg-edge--accent" d="M700,306 H260" marker-end="url(#fg-ac)"/>
@@ -90,7 +90,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
     <text class="fg-s" x="480" y="376" text-anchor="middle">200</text>
     <text class="fg-mxs" x="480" y="389" text-anchor="middle">access_token（DPoP 結び付き付き）· id_token（ES256）· refresh_token</text>
   </svg>
-  <figcaption class="fig-note">Baseline が前段に足しているのは手順 1 と 2 です。これ以降ブラウザが運ぶのはリクエスト本体ではなく参照になるため、URL バーに改竄する価値のあるものが残りません。</figcaption>
+  <figcaption class="fig-note">本ライブラリのプロファイルが前段に足しているのは手順 1 と 2 です。これ以降ブラウザが運ぶのはリクエスト本体ではなく参照になるため、URL バーに改竄する価値のあるものが残りません。</figcaption>
 </figure>
 
 ## コード（[`examples/03-fapi2`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) からの抜粋）
@@ -135,11 +135,11 @@ provider, err := op.New(
 
 `PrivateKeyJWTClient` は FAPI クライアント用の型付きクライアント定義で、`token_endpoint_auth_method=private_key_jwt` を自動で設定します。組み込み側でこのフィールドを書く必要はありません。同じ系統の型として `op.PublicClient` と `op.ConfidentialClient` があり、3 つすべてが `op.ClientSeed` を実装し、`WithStaticClients(seeds ...ClientSeed)` に渡せます。
 
-`WithProfile` を指定すると、OP は次のように振る舞います。
+本ライブラリで `WithProfile` を指定すると、OP は次のように振る舞います。
 
 1. `feature.PAR` と `feature.JAR` を自動で有効にします。
-2. `token_endpoint_auth_methods_supported` を FAPI 2.0 §3.1.3 の許可リストと突き合わせて絞り込みます。token endpoint 用のクライアントは `private_key_jwt` で構成してください。
-3. `id_token_signing_alg_values_supported = ["ES256"]` を維持します。OP は ES256 でしか id_token を署名・広告しないため、FAPI 2.0 の `RS256` 禁止要件は構造的に満たされます。
+2. `token_endpoint_auth_methods_supported` を FAPI 2.0 §5.3.2.1 の許可リストと突き合わせて絞り込みます。token endpoint 用のクライアントは `private_key_jwt` で構成してください。
+3. `id_token_signing_alg_values_supported = ["ES256"]` を維持します。OP は ES256 でしか ID Token を署名・広告しません。これは本ライブラリの現在の鍵セットポリシーであり、FAPI 2.0 Security Profile は `PS256` と `EdDSA` も許可します。
 4. `redirect_uri` の完全一致を強制します。ワイルドカードはどこにも許しません。
 5. DPoP または mTLS の送信者制約要件を満たします。`feature.MTLS` が明示されていればそれを尊重し、どちらも選ばれていなければ `feature.DPoP` を追加します。
 
@@ -175,9 +175,11 @@ curl -s http://localhost:8080/.well-known/openid-configuration | jq '{
 }
 ```
 
-`id_token_signing_alg_values_supported` はプロファイルに関係なく `["ES256"]` のみで、OP が発行する id_token はすべて `ES256` 署名です。FAPI 2.0 §6.2.1 の `RS256` 禁止要件は、OP 側の対応 alg に `RS256` が一切含まれないことで構造的に満たされます。`dpop_signing_alg_values_supported` は DPoP proof 受理用で `["ES256", "EdDSA", "PS256"]` です。
+`id_token_signing_alg_values_supported` はプロファイルに関係なく `["ES256"]` のみで、OP が発行する ID Token はすべて `ES256` 署名です。現行の FAPI 2.0 Security Profile は JWT alg として `PS256`、`ES256`、`EdDSA` を許可します（§5.4.1）。本ライブラリの ID Token を ES256 のみにするポリシーは、これより厳しい設定です。`dpop_signing_alg_values_supported` は DPoP proof 受理用で `["ES256", "EdDSA", "PS256"]` です。
 
 ## 適合状況
+
+本ライブラリの `profile.FAPI2Baseline` はポリシー設定であり、現行の最終版 Security Profile の全要件への適合を主張するものではありません。コア実装はリフレッシュトークンをローテーションしますが、FAPI 2.0 Security Profile §5.3.2.1(9) は例外的な状況を除く通常運用でのローテーションを禁止しています。また、クライアントアサーションの検証では `aud` にトークンエンドポイントの URL や配列も受け付けますが、§5.3.2.1(8) は issuer 識別子の文字列だけを求めます。適合を主張する前に、これらの差分を確認してください。
 
 OFCS の [`fapi2-security-profile-id2-test-plan`](/ja/compliance/ofcs) はこの実装を検査します。最新ベースラインでは 48 PASSED / 9 REVIEW（手動レビュー）/ 1 SKIPPED（追加のクライアント鍵が必要な RSA 鍵での負例）/ **0 FAILED** です。
 

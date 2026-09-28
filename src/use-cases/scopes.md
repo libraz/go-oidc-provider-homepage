@@ -9,7 +9,7 @@ description: Split scopes into discovery-visible (public) and admin-only (intern
 
 In OAuth 2.0 (RFC 6749 §3.3), a **scope** is a string the client adds to its `/authorize` request to say *what kind of access it wants* — for example `email`, `profile`, `billing.read`. The OP decides which scopes to grant; the access token carries the granted scopes; the resource server inspects them to authorise API calls.
 
-OIDC Core 1.0 §5.4 reserves the special scope `openid` (which switches the request from plain OAuth to OIDC) and the user-claim scopes `profile`, `email`, `address`, `phone`. Everything else is your own catalogue — and that catalogue is what this page lets you split into a **public** half (advertised + consented) and an **internal** half (usable by allow-listed clients but invisible to discovery).
+OIDC Core 1.0 §3.1.2.1 uses `openid` to identify an OIDC request, while §5.4 maps `profile`, `email`, `address`, and `phone` to user claims. Additional scopes can be defined for your deployment; this page shows how the library separates a **public** catalog (advertised and shown at consent) from an **internal** one (usable by allowed clients but omitted from discovery).
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §3.3 (scope)

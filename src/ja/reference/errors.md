@@ -148,6 +148,8 @@ bearer 検証を行います。RFC 6750 §3.1 + RFC 9449。
 | `use_dpop_nonce` | 401 | DPoP §8 のサーバ nonce が必要 |
 | `invalid_request` | 400 | bearer リクエストが不正（トークン多重指定、誤ったチャネルなど）。リクエストボディがサイズ上限を超えた場合は 413 |
 
+grant store が `store.ErrNotFound` 以外のエラーを返した場合、claim を返さず、通常の HTTP 500 で応答します。`ErrNotFound` は grant の系譜がないことを示します。subject projector がなければトークンの scope に基づいて claim を解決します。pairwise subject projection を使う場合は内部の subject を解決できないため、`401 invalid_token` を返します。
+
 ## Introspection / Revocation(`/introspect`、`/revoke`)
 
 RFC 7662 / RFC 7009。`/token` と同じクライアント認証コードの集合を使います。

@@ -93,7 +93,7 @@ The handler honours `If-None-Match`:
 
 - Exact ETag match → `304 Not Modified` with no body.
 - `*` wildcard → `304 Not Modified`.
-- Weak validator (`W/"..."`) → treated as non-matching.
+- Weak validator (`W/"..."`) with the same opaque tag → also matches (the `If-None-Match` comparison is weak).
 
 The ETag covers the **full marshalled JWKS**, so any `kid` change or key set membership change rolls the value automatically. There is no manual cache-bust step.
 

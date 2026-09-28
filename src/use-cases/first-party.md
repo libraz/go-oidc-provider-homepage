@@ -1,27 +1,27 @@
 ---
 title: First-party consent skip
-description: Explains how to skip the consent prompt for clients you own under the OIDC §3.1.2.4 first-party relationship.
+description: Explains how this library skips interactive consent for clients you own while OIDC Core §3.1.2.4 governs the authorization decision.
 ---
 
 # Use case — First-party consent skip
 
 ## What is "first-party"?
 
-OIDC and OAuth 2.0 are designed for the **third-party** case: an external RP (some SaaS) wants access to the user's data held by your OP, so the user is asked, "Do you authorise SaaS-X to read your email on your behalf?". OIDC Core 1.0 §3.1.2.4 mandates this consent prompt to make the delegation explicit.
+OIDC and OAuth 2.0 are designed for the **third-party** case: an external RP (some SaaS) wants access to the user's data held by your OP, so the user is asked, "Do you authorise SaaS-X to read your email on your behalf?" OIDC Core 1.0 §3.1.2.4 requires the OP to obtain an authorization decision before releasing information. An interactive dialogue is one way to obtain that decision; prior administrative consent or another established processing condition can also suffice.
 
 **First-party** clients are RPs you (the OP operator) own — your own mobile app, your own SPA, your own internal dashboard. The user is already in your trust boundary; asking "do you authorise Acme Corp to read your data" inside Acme Corp's own login flow is busywork.
 
 OAuth 2.0 has long left this exemption to the operator's discretion; the upcoming **OAuth 2.0 for First-Party Applications** draft formalises the pattern. This library exposes it as a per-client allow-list.
 
 ::: details Specs referenced on this page
-- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent prompt)
+- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (authorization decision and consent)
 - [OAuth 2.0 for First-Party Applications](https://datatracker.ietf.org/doc/draft-ietf-oauth-first-party-apps/) — IETF draft formalising the pattern
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html) — §5.3.2.4 (consent required regardless of trust relationship)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — §5.3.2.2 (consent information guidance; the library applies a stricter first-party exclusion)
 :::
 
 ::: details Vocabulary refresher
 - **Third-party vs first-party** — the axis is ownership of the RP: an app someone else runs against your OP, versus one you ship yourself. Nothing about the protocol changes; what changes is whether the user's veto over the delegation is meaningful.
-- **Consent prompt** — The OIDC-defined screen between login and the redirect-back-with-code where the user explicitly authorises a list of scopes for a particular RP. Skipping it for first-party RPs trades a UX win for an explicit trust-boundary decision: an attacker who manages to get their RP onto the first-party list bypasses the user's veto entirely.
+- **Consent decision** — The authorization decision made before the OP releases information. An interactive consent screen is one possible way to obtain it; a prior administrative decision can also establish it. Skipping the screen for first-party RPs trades a UX win for an explicit trust-boundary decision: an attacker who manages to get their RP onto the first-party list bypasses the user's veto entirely.
 :::
 
 > **Source:** [`examples/40-first-party-skip-consent`](https://github.com/libraz/go-oidc-provider/tree/main/examples/40-first-party-skip-consent)
@@ -49,7 +49,7 @@ The library still emits `op.AuditConsentGrantedFirstParty` for every skip, so th
 
 ## Mutual exclusion
 
-`op.WithFirstPartyClients` is **incompatible** with active FAPI 2.0 profiles. FAPI 2.0 §5.3.2.4 mandates explicit consent regardless of trust relationship. The constructor rejects the combination at build time — this is a deliberate trust-boundary decision, not an oversight.
+`op.WithFirstPartyClients` is **incompatible** with active FAPI 2.0 profiles. This is a library policy: the profile constraints reject first-party auto-consent, even though OIDC Core permits an authorization decision established by prior or administrative consent. The constructor rejects the combination at build time so the trust-boundary decision is explicit.
 
 ## Production caveat
 

@@ -76,14 +76,14 @@ The library evaluates four cases on every authorize flow.
 | **First-time grant** — no prior `Grant` for this `(subject, client_id)` pair. | Prompt. The user sees the full scope list. On submit, the library writes a `Grant` row with the approved scopes. |
 | **Scope delta** — a `Grant` exists but the requested scope set adds a scope not previously approved. | Prompt, with the delta highlighted. The user can approve the delta, deny it, or deny everything. On approve, the row is updated. |
 | **Forced re-prompt** — the request carries `prompt=consent`. | Prompt regardless of grant state. OIDC §3.1.2.1 mandates this. |
-| **Existing grant covers the request** — `Grant` row already covers every requested scope and every requested `authorization_details` element, and `prompt` is `none` or `login` (not `consent`). | Skipped. The library proceeds straight to authorization-code emission. There is no dedicated "skipped" audit event. |
+| **Existing grant covers the request** — `Grant` row already covers every requested scope and every requested `authorization_details` element, and `prompt` is absent, `none`, or `login` (never `consent`). | Skipped. The library proceeds straight to authorization-code emission. There is no dedicated "skipped" audit event. |
 
 ::: details `prompt=none`, `prompt=login`, `prompt=consent` — what's the difference?
 - `prompt=none` — "if the user is signed in and consent is already in place, complete the flow silently. Otherwise return an error." Used by SPAs for silent re-auth.
 - `prompt=login` — "force the user to re-authenticate, even if a valid session exists." Does not by itself force a consent re-prompt.
 - `prompt=consent` — "force the consent screen, even if a grant already covers the scopes." Useful when the RP wants the user to re-confirm before a sensitive operation.
 
-The library applies these per OIDC Core 1.0 §3.1.2.1. Combining `prompt=none` with `prompt=login` is rejected as `interaction_required`.
+The library applies these per OIDC Core 1.0 §3.1.2.1. Combining `prompt=none` with `prompt=login` is rejected as `invalid_request`.
 :::
 
 ## Re-checking coverage for the terminal subject

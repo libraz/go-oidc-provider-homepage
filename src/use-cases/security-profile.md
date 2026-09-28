@@ -6,7 +6,7 @@ pageClass: pg-use-cases-security-profile
 
 # Use case — Declaring a security profile
 
-`op.WithProfile` makes the OP's intended security posture explicit. Leaving it unset is also a choice: the OpenID Connect Core 1.0-compatible shape accepts a confidential authorization-code client without PKCE. Use `profile.Baseline` when the deployment follows OAuth 2.1 / RFC 9700 and every authorization-code request must carry PKCE.
+`op.WithProfile` makes the OP's intended security posture explicit. Leaving it unset is also a choice: this library's OpenID Connect Core 1.0-compatible shape accepts a confidential authorization-code client without PKCE. Use `profile.Baseline` when the deployment follows OAuth 2.1 / RFC 9700 and every authorization-code request must carry PKCE.
 
 ```go
 provider, err := op.New(
@@ -15,7 +15,7 @@ provider, err := op.New(
 )
 ```
 
-`profile.Baseline` changes that one rule only. It does not require PAR, cap token lifetimes, restrict client-authentication methods, or require sender-constrained tokens. Those are FAPI requirements; use [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) when that is the target profile.
+`profile.Baseline` changes that one rule only. It does not require PAR, cap token lifetimes, restrict client-authentication methods, or require sender-constrained tokens. Those controls belong to the applicable FAPI profiles; use [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) when that is the target profile.
 
 At successful construction the OP emits `startup.profile` to its audit logger. The event records the declared profiles, features, and grants as well as the resolved policy, including `pkce_required`. Use it to confirm the deployed posture before the first request.
 
@@ -29,7 +29,7 @@ At successful construction the OP emits `startup.profile` to its audit logger. T
 | OAuth 2.1 posture | `op.WithProfile(profile.Baseline)` |
 | Financial-grade API profile | `op.WithProfile(profile.FAPI2Baseline)` or the applicable FAPI profile |
 
-Public and native clients still require PKCE even without `profile.Baseline`; the visible difference is the confidential-client compatibility path.
+In this library, public and native clients still require PKCE even without `profile.Baseline`; the visible difference is the confidential-client compatibility path.
 
 ## Features are supplied, grants are not
 

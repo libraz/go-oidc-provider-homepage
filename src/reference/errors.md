@@ -148,6 +148,8 @@ Bearer-token validation. RFC 6750 §3.1 + RFC 9449.
 | `use_dpop_nonce` | 401 | DPoP §8 server-nonce required |
 | `invalid_request` | 400 | malformed bearer request (multiple tokens, wrong channel); 413 when the request body exceeds the size cap |
 
+A grant-store error other than `store.ErrNotFound` returns plain HTTP 500 without releasing claims. `ErrNotFound` means no grant lineage is available: without a subject projector, claim resolution falls back to the token's scopes; with pairwise subject projection, the request returns `401 invalid_token` because the internal subject cannot be resolved.
+
 ## Introspection / Revocation (`/introspect`, `/revoke`)
 
 RFC 7662 / RFC 7009. Same client-auth code set as `/token`.

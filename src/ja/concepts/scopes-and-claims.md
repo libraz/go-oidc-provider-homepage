@@ -9,9 +9,9 @@ pageClass: pg-concepts-scopes-and-claims
 **scope** と **claim** は OIDC を学び始めた人が最も混同する 2 語です。同じものではありません。
 
 - **scope** はクライアントが authorize 要求で **要求する** もの。OP が `scopes_supported` で公開している小さな識別子集合の中の 1 つです。
-- **claim** は OP が **返す** key-value のペア — ID トークンの中、アクセストークンの中、`/userinfo` 応答の中など。
+- **claim** は OP が **返す** key-value のペアです。構造化された応答、たとえば ID トークン、JWT アクセストークン、`/userinfo` 応答の中に入ります。
 
-scope は要求、claim は応答。scope を grant するから、対応する claim が開示されます。
+scope は要求、claim は応答です。scope を grant すると、claim ソースが値を返せる範囲で、対応する claim を OP が開示できるようになります。
 
 ::: tip 30 秒で頭に入れる相関図
 - scope = 「あなたの email が見たい」 — `scope=openid email`
@@ -29,7 +29,7 @@ scope は要求、claim は応答。scope を grant するから、対応する 
 
 ## scope: クライアントが要求するもの
 
-`/auth` の `scope` パラメータは、半角スペース区切りの不透明な識別子のリストです。ユーザはその集合に同意し、OP は grant された集合を、結果として返す認可コード、アクセストークン、リフレッシュトークン、ID トークンに記録します。OP を `/oidc` に mount した場合の既定 endpoint は `/oidc/auth` です。
+`/auth` の `scope` パラメータは、半角スペース区切りの不透明な識別子のリストです。ユーザはその集合に同意し、OP は grant された集合を認可コードに記録し、アクセストークンとリフレッシュトークンの状態へ引き継ぎます。ID トークンには標準の `scope` claim は入りません。OP を `/oidc` に mount した場合の既定 endpoint は `/oidc/auth` です。
 
 ```
 GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
@@ -37,24 +37,25 @@ GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
 
 初学者が見落としがちな点をいくつか:
 
-- **scope 識別子はプロトコルにとって不透明**。`openid` が特別なのは、OIDC Core §5.4 が「これは OIDC フローである」という意味を割り当てているからにすぎません。それ以外は OP とクライアントの間で合意した文字列です。
+- **scope 識別子は OAuth 2.0 にとって不透明**。`openid` に特別な意味を与えるのは OIDC Core §3.1.2.1 です。それ以外の scope 名は OP とクライアントの合意や拡張仕様で定まります。
 - **scope は case-sensitive**。`openid` は scope ですが、`OpenID` は別物（かつ未認識の）scope です。
 - **`openid` が OAuth を OIDC に変える魔法**。`openid` が要求になければ ID トークンは発行されません。本ライブラリのデフォルトは OIDC（`openid` scope 必須）で、`op.WithOpenIDScopeOptional()` で純 OAuth 2.0 に切り替えられます。
-- **ユーザは一部の scope を辞退できる**。grant された集合は要求された集合の部分集合になり得ます。OP は実際に grant された scope を発行トークン上で示します。
+- **ユーザは一部の scope を辞退できる**。grant された集合は要求された集合の部分集合になり得ます。OP は実際に grant された scope を token 応答とアクセストークンの状態に反映します。
 - **未知の scope は失敗**。`WithScope` で登録されていない（あるいは組み込み OIDC 標準でない）scope が要求されると、OP は RFC 6749 §5.2 の `invalid_scope` を返します。
 
 ## claim: トークンや userinfo 応答の中の key-value
 
-**claim** は OP が署名する（あるいは `/userinfo` の場合は plain で返す）JSON object 内の 1 フィールドです。OIDC Core §5.1 が長いカタログを提供しています。構造的には 2 群に分かれます。
+**claim** は JSON object 内の 1 フィールドです。トークンでは OP が署名し、`/userinfo` では既定で JSON として返ります。要求に応じて署名付きまたは暗号化された JWT になることもあります。OIDC Core §5.1 が長いカタログを提供しています。トークンの metadata claim とユーザ claim は分けて考える必要があります。
 
-- **要求自体に関する標準 claim** — `iss`、`aud`、`exp`、`iat`、`nbf`、`sub`、`nonce`、`auth_time`、`acr`、`amr`、`azp`。これらはトークンの説明であって、ユーザの説明ではありません。OP は grant された scope に関わらず埋めます。
-- **ユーザ claim** — `name`、`family_name`、`email`、`email_verified`、`phone_number`、`address`、`picture` など。これらはエンドユーザに関するものです。OP は scope grant が許可した場合にのみ開示します。
+- **ID トークンの claim** — `iss`、`sub`、`aud`、`iat`、`exp` は必須です。`nonce`、`auth_time`、`acr`、`amr`、`azp`、`at_hash`、`c_hash`、`sid` はフローや要求に応じて入ります。
+- **JWT アクセストークンの claim** — RFC 9068 で `iss`、`sub`、`aud`、`client_id`、`iat`、`exp`、`jti` が必須です。`scope`、`cnf`、`auth_time`、`acr`、`amr` などは条件に応じて入ります。本ライブラリでは opaque アクセストークン、リフレッシュトークン、認可コードは通信路上に claim を持ちません。
+- **ユーザ claim** — `name`、`family_name`、`email`、`email_verified`、`phone_number`、`address`、`picture` など。エンドユーザを説明する値です。grant された scope または明示的な claims request が許可し、claim ソースが値を返せる場合にだけ OP が開示します。
 
-第 1 群はすべてのトークンに乗ります。第 2 群が scope grant の制御対象です。
+ユーザ claim は scope が制御し、トークンの metadata claim はトークンの種類とフローによって決まります。
 
 ## OIDC Core の scope-to-claim 対応
 
-OIDC Core §5.4 が標準 scope に対応する claim を固定しています。本ライブラリはこれをそのまま実装しています。
+OIDC Core §5.4 は `profile`、`email`、`address`、`phone` に対応するユーザ claim を定めています。表には §3.1.2.1 の OIDC リクエストを示す `openid` と、§11 のリフレッシュトークン用同意を扱う `offline_access` も載せています。この 2 つは §5.4 のユーザ claim 群ではありません。
 
 | Scope | Release される claim |
 |---|---|
@@ -67,7 +68,7 @@ OIDC Core §5.4 が標準 scope に対応する claim を固定しています�
 
 `scope=openid email` の要求は、ユーザ claim カタログから `sub`、`email`、`email_verified` を開示します。それ以外は何も開示しません。`scope=openid profile email` なら `profile` 群が丸ごと加わります。
 
-この対応表だけでは、開示された claim が **どこに載るか** までは分かりません。`sub` とトークン自体を説明する claim は ID トークンに載り、scope が開示するユーザ claim は `/userinfo` から返ります。
+この対応表だけでは、開示された claim が **どこに載るか** までは分かりません。通常の scope フローでは、`sub` と ID トークンの metadata claim は ID トークンに載り、`profile`・`email`・`address`・`phone` が開示するユーザ claim は `/userinfo` から返ります。アクセストークンには grant された `scope` が入り、ID トークンには標準の `scope` claim は入りません。
 
 <figure class="fig">
   <div class="fig-head">要求した scope → 開示される claim → 届き先</div>
@@ -110,15 +111,15 @@ OIDC Core §5.4 が標準 scope に対応する claim を固定しています�
     <rect class="fg-box fg-box--accent" x="660" y="44" width="264" height="98" rx="8"/>
     <text class="fg-t fg-accent" x="678" y="68">ID トークン</text>
     <text class="fg-mxs" x="678" y="88">iss · aud · exp · iat · sub</text>
-    <text class="fg-mxs" x="678" y="102">nonce · auth_time · azp</text>
-    <text class="fg-mxs" x="678" y="116">acr · amr · at_hash · sid</text>
+    <text class="fg-mxs" x="678" y="102">任意: nonce · auth_time · azp</text>
+    <text class="fg-mxs" x="678" y="116">任意: acr · amr · at_hash · sid</text>
     <text class="fg-xs" x="678" y="134">OP 自身が埋める</text>
     <path class="fg-edge fg-edge--accent" d="M624,68 H656" marker-end="url(#fg-ac)"/>
     <!-- userinfo -->
     <rect class="fg-box" x="660" y="158" width="264" height="130" rx="8"/>
     <text class="fg-m" x="678" y="182">/userinfo</text>
     <text class="fg-xs" x="678" y="202">RP がアクセストークンを付けて</text>
-    <text class="fg-xs" x="678" y="216">呼び出すと JSON が返る</text>
+    <text class="fg-xs" x="678" y="216">呼び出すと claim が返る（既定は JSON）</text>
     <line class="fg-rule" x1="678" y1="232" x2="906" y2="232"/>
     <text class="fg-xs" x="678" y="252">許可された scope が認めた</text>
     <text class="fg-xs" x="678" y="266">claim だけが載る</text>
@@ -171,7 +172,7 @@ i18n ラベル、claim mapping、consent prompt のレンダリングを含む�
 | 「**別の resource server** で、独自の audience が必要ですか？」 | RFC 8707 を使う。 | projects API 用のアクセストークンと billing API 用のアクセストークン。各 RS の verifier が cross-audience なトークンを拒否できるよう、`aud` を別にしたい。 |
 | 「audience ごとに lifetime / 形式 / revocation ポリシーが違いますか？」 | per-audience format で RFC 8707 を使う。 | 管理 API は opaque（即時失効）にしつつ、read API は JWT（水平スケール）を維持。本ライブラリは `op.WithAccessTokenFormatPerAudience` で実現します。 |
 
-scope は **権限の幅** を、resource indicator は **対象 audience** を表現します。1 つの authorize 要求に両方を載せることもできます — `scope=openid read:projects&resource=https://billing.example.com&resource=https://projects.example.com` は OP に「resource ごとに 1 つずつ、grant された scope 集合を持つアクセストークンを 2 つ発行せよ」と要求します。
+scope は **権限の幅** を、resource indicator は **対象 audience** を表現します。1 つの認可リクエストに両方を載せることもできます。例えば `scope=openid read:projects&resource=https://projects.example.com` と指定すると、本ライブラリは指定した resource 向けにアクセストークンを 1 つ発行します。組み込みの認可フローで `resource` を繰り返すと `invalid_target` で拒否されるため、別のリソースサーバには別のリクエストを使います。
 
 `resource` パラメータを受け付けるすべてのエンドポイントは、まず同じ正規形に落としてから比較します。
 

@@ -31,10 +31,10 @@ The provider sits one level below your router, as a sibling of your own handlers
     <rect class="fg-box fg-box--accent" x="490" y="128" width="374" height="98" rx="8"/>
     <text class="fg-t2 fg-accent" x="510" y="154">op.Provider</text>
     <text class="fg-mxs" x="510" y="180">/oidc/* — whatever prefix you mount it on</text>
-    <text class="fg-mxs" x="510" y="200">/.well-known/openid-configuration</text>
+    <text class="fg-mxs" x="510" y="200">discovery — issuer-dependent path</text>
     <text class="fg-xs" x="510" y="218">one subtree, no global routes</text>
   </svg>
-  <figcaption class="fig-note">The provider claims one subtree and nothing outside it — with the single exception of the discovery document, which the spec fixes at the host root. Everything wrapped around it is yours and keeps working unchanged.</figcaption>
+  <figcaption class="fig-note">The provider claims one subtree and nothing outside it. For a host-only issuer, discovery is at the host root; an issuer with a path also has the discovery locations defined by RFC 8414 and OpenID Connect Discovery. Everything wrapped around it is yours and keeps working unchanged.</figcaption>
 </figure>
 
 ## Mount on net/http, chi, or gin
@@ -70,7 +70,7 @@ op.New(
 )
 ```
 
-The default `/auth` endpoint becomes `/oidc/auth`, `/token` becomes `/oidc/token`, and so on. **Discovery (`/.well-known/openid-configuration`) is always mounted at the root** — OIDC Discovery 1.0 §4 requires it.
+The default `/auth` endpoint becomes `/oidc/auth`, `/token` becomes `/oidc/token`, and so on. `WithMountPrefix` affects these issuer-relative protocol paths; it does not choose the discovery path. For a host-only issuer, discovery is `/.well-known/openid-configuration`. When the issuer includes a path, the provider serves both the RFC 8414 location (`/.well-known/openid-configuration/<issuer-path>`) and the OIDC Discovery 1.0 §4 location (`/<issuer-path>/.well-known/openid-configuration`).
 
 ## Custom endpoint paths
 
@@ -92,14 +92,14 @@ The OP is intentionally narrow about what it puts on your router:
 
 | The OP mounts | The OP does NOT mount |
 |---|---|
-| `/.well-known/openid-configuration` | `/metrics` (you mount with `promhttp`) |
+| discovery (issuer-dependent path) | `/metrics` (you mount with `promhttp`) |
 | `/jwks` | `/healthz`, `/readyz` |
 | `/auth`, `/token`, `/userinfo` | request-duration histogram middleware |
 | `/end_session` | OpenTelemetry HTTP server span middleware |
 | Optional: `/par`, `/introspect`, `/revoke`, `/register`, `/device_authorization`, `/bc-authorize`, `/grant_management` | a `/debug/pprof` mount |
 | Optional: `/interaction/*`, `/session/*` (when SPA driver is used) | a generic per-IP rate limiter |
 
-This is deliberate. The OP emits **business** metrics, traces, and audit events through `op.WithPrometheus`, `op.WithLogger`, and `op.WithAuditLogger` into registries / handlers that you own. **HTTP-lifecycle observation is embedder territory** — you wrap the router with `otelhttp` / `promhttp.InstrumentHandler` according to your SRE conventions.
+This is deliberate. The OP emits **business** metrics and log / audit events through `op.WithPrometheus`, `op.WithLogger`, and `op.WithAuditLogger` into sinks that you own. It does not create OpenTelemetry spans. **HTTP-lifecycle observation is embedder territory** — you wrap the router with `otelhttp` / `promhttp.InstrumentHandler` according to your SRE conventions.
 
 ::: tip TLS / proxies
 The OP expects to run behind a TLS-terminating ingress. Use `op.WithTrustedProxies(cidrs ...)` to allow-list the proxy ranges that supply `X-Forwarded-For`.

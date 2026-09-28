@@ -7,18 +7,18 @@ description: op.WithConsentUI、ロケール bundle、JSON ドライバで、pro
 
 ## OIDC における「同意（consent）」とは
 
-ユーザが認証を済ませたあと、OIDC Core 1.0 §3.1.2.4 は **OP が RP ではなくユーザ本人に対して**「要求された scope（`profile` / `email` 等）の開示を許可するか」を問うことを期待しています。ユーザが「許可」「拒否」を選び、許可されたときだけ OP は code を付けて RP にリダイレクトを返します。同意画面はログインとリダイレクトの **間** に挟まる UI です。
+ユーザが認証を済ませたあと、OIDC Core 1.0 §3.1.2.4 は、情報を開示する前に OP が認可判断を得ることを求めています。要求された scope（`profile` / `email` 等）を **RP ではなくユーザ本人が** 許可または拒否する対話 UI は、その方法の 1 つです。仕様は、事前の管理者同意やその他の確立した条件で判断を示す方法も認めています。本ページでは、ログインとリダイレクトの間でライブラリが表示する対話型同意 UI を扱います。
 
 OP 同梱の同意画面でもひと通り動きますが、実運用では独自ブランド（ロゴ・コピー・プライバシー / 利用規約リンク・i18n）に差し替えたくなります。小さな文言差し替えはロケール bundle、サーバ描画の独自 HTML は `op.WithConsentUI`、SPA での完全制御は JSON ドライバが向いています。
 
 ::: details このページで触れる仕様
-- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4(同意画面)
+- [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4（認可判断と同意）
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §3.1(authorization endpoint)
 - [RFC 9700](https://datatracker.ietf.org/doc/html/rfc9700) — OAuth 2.0 Security Best Current Practice(CSRF 緩和等)
 :::
 
 ::: details 用語の補足
-- **同意画面** — ログインと redirect-back-with-code の間で、ユーザが特定の RP の要求 scope を承認する画面。OP が「何を訊くか」を決め、ユーザが「開示するか」を決めます。
+- **同意画面** — OP が対話形式を使う場合に、ログインと redirect-back-with-code の間でユーザが特定の RP の要求 scope を承認する画面です。OP が「何を訊くか」を決め、ユーザが「開示するか」を決めます。
 - **CSRF トークン** — セッションに紐づく秘密値で、悪意ある第三者サイトが同意画面の「承認」をユーザのブラウザに肩代わりさせる攻撃を防ぎます。発行と検証は OP の責任で、SPA / テンプレート側の役目は POST 本文または `X-CSRF-Token` ヘッダにそのまま戻すことだけです。
 - **Content Security Policy(CSP)** — ページが読み込んでよいリソース種別をブラウザに伝えるレスポンスヘッダ（`Content-Security-Policy: default-src 'none'; ...`）。OP は同梱同意画面を、`<script>`、inline イベントハンドラ、外部アセットを禁じる厳格な既定 CSP で描画するので、悪意ある RP の `client_name` が XSS に化けることはありません。
 :::

@@ -117,7 +117,7 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 |---|---|---|
 | `__Host-` cookies, AES-256-GCM, double-submit CSRF, Origin/Referer check | `internal/cookie`, `internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
 | PKCE required for public / native authorization-code clients and for every authorization-code client under FAPI profiles; `plain` refused | `internal/authorize`, `internal/pkce` | RFC 7636, RFC 9700 |
-| Refresh-token rotation + reuse detection (chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14 |
+| Refresh-token rotation + reuse detection (chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14.2 |
 | Sender-constrained tokens (DPoP `cnf.jkt`, mTLS `cnf.x5t#S256`) | `internal/dpop`, `internal/mtls`, `internal/tokens` | RFC 9449, RFC 8705 |
 | `iss` in authorization response | `internal/authorize` | RFC 9207 |
 | `redirect_uri` exact match (configurable; default exact) | `internal/authorize` | OAuth 2.1, RFC 8252 |
@@ -139,8 +139,8 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | Tampered or undecodable authorization-endpoint session cookies are cleared and treated as no session, instead of being carried forward | `internal/authorizeendpoint`, `internal/cookie` | RFC 6265bis |
 | One-time auth factors (email-OTP, TOTP, recovery codes) single-use via atomic compare-and-set (`ErrAlreadyConsumed` on replay); cross-factor lockout stamped atomically (`StampLock`) | `internal/authn`, `op/store` | — (defence in depth) |
 | Wrong-code branches for TOTP, email-OTP, and recovery codes all increment the shared retry path and observer, so captcha / lockout gates see second-factor brute-force attempts | `internal/authn` | — (defence in depth) |
-| Refresh-token `id` / `parent_id` hashed at rest, looked up in constant time | `internal/tokenendpoint`, `op/store` | RFC 9700 §2.2.2 |
-| Refresh-token rotation re-checks the parent under the same critical section / transaction as the child insert, so replay revocation cannot race a successful descendant save | `op/storeadapter/sql`, `op/storeadapter/inmem` | RFC 9700 §2.2.2 |
+| Refresh-token `id` / `parent_id` hashed at rest, looked up in constant time | `internal/tokenendpoint`, `op/store` | RFC 9700 §4.14.2 |
+| Refresh-token rotation re-checks the parent under the same critical section / transaction as the child insert, so replay revocation cannot race a successful descendant save | `op/storeadapter/sql`, `op/storeadapter/inmem` | RFC 9700 §4.14.2 |
 | Token exchange re-verifies the post-policy decision: granted scope must remain within the requested subject-token-bounded scope, and granted audience must remain within the requested audience | `internal/customgrant/tokenexchange` | RFC 8693 |
 | Persisted opaque access tokens minted during a token response are revoked on post-mint `server_error` paths, so a failed response does not leave a valid orphan token behind | `internal/tokenendpoint`, `op/store` | — (defence in depth) |
 
@@ -183,6 +183,6 @@ If you need any of those for compliance, this library is the wrong choice until 
 
 ## Read next
 
-- **[Design judgments](/security/design-judgments)** — how the library resolves conflicts between RFCs (PAR vs `request_uri` reuse, refresh rotation vs RFC 9700 grace, alg list vs OIDC Core, …).
+- **[Design judgments](/security/design-judgments)** — how the library handles protocol choices (PAR `request_uri` reuse, its own refresh retry grace, algorithm policy alongside OIDC Core, …).
 - **[Disclosure policy](/security/disclosure)** — vulnerability reporting, supported versions, CVE handling.
 - **[OFCS conformance](/compliance/ofcs)** — what conformance does and does not prove.

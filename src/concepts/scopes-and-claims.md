@@ -9,9 +9,9 @@ pageClass: pg-concepts-scopes-and-claims
 **Scope** and **claim** are the two words OIDC newcomers most often confuse. They are not the same thing.
 
 - A **scope** is what the client **asks for** in the authorize request. It is one of a small set of identifiers the OP advertises in `scopes_supported`.
-- A **claim** is a key-value pair the OP **returns** — inside an ID Token, inside an access token, or inside a `/userinfo` response.
+- A **claim** is a key-value pair the OP **returns** in a structured response — for example, inside an ID Token, a JWT access token, or a `/userinfo` response.
 
-Scopes are the request; claims are the response. Granting a scope is what causes the OP to release the matching claims.
+Scopes are the request; claims are the response. Granting a scope authorises the OP to release the matching claims when the claim source can provide them.
 
 ::: tip Mental model in 30 seconds
 - Scope = "I want to see your email." — `scope=openid email`
@@ -29,7 +29,7 @@ Scopes are the request; claims are the response. Granting a scope is what causes
 
 ## Scope: what the client asks for
 
-The `scope` parameter on `/auth` is a **space-separated** list of opaque identifiers. The user consents to the set; the OP records the granted set on the resulting authorization code, then on the access token, refresh token, and ID Token.
+The `scope` parameter on `/auth` is a **space-separated** list of opaque identifiers. The user consents to the set; the OP records the granted set with the resulting authorization code and carries it into the access-token and refresh-token state. An ID Token does not carry a standard `scope` claim.
 
 ```
 GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
@@ -37,24 +37,25 @@ GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
 
 A few observations beginners often miss:
 
-- **Scope identifiers are opaque to the protocol.** `openid` is special only because OIDC Core §5.4 assigns it the meaning "this is an OIDC flow"; the rest are just strings the OP and the client agree on.
+- **Scope identifiers are opaque to OAuth 2.0.** OIDC Core §3.1.2.1 gives `openid` its special meaning; other scope names are agreed between the OP and client or defined by extensions.
 - **Scopes are case-sensitive.** `openid` is the scope; `OpenID` is a different (and unrecognised) scope.
 - **`openid` is the magic that turns OAuth into OIDC.** Without `openid` in the request, no ID Token is issued. The library defaults to OIDC (the `openid` scope is required); `op.WithOpenIDScopeOptional()` flips it to pure OAuth 2.0.
-- **The user can decline some scopes.** The granted set may be a subset of the requested set; the OP advertises which scopes were actually granted on the issued tokens.
-- **Unknown scopes fail.** `op.New` rejects requests for scopes not registered through `WithScope` (or built-in OIDC standard scopes), returning `invalid_scope` per RFC 6749 §5.2.
+- **The user can decline some scopes.** The granted set may be a subset of the requested set; the OP reports the granted scopes in the token response and access-token state.
+- **Unknown scopes fail.** The OP rejects authorization requests for scopes not registered through `WithScope` (or built-in OIDC standard scopes), returning `invalid_scope` per RFC 6749 §5.2.
 
 ## Claim: a key-value in a token or userinfo response
 
-A **claim** is a single field inside a JSON object the OP signs (or, for `/userinfo`, returns plain). OIDC Core §5.1 catalogues a long list. They split structurally into two groups:
+A **claim** is a single field inside a JSON object returned by the OP. Tokens are signed; `/userinfo` returns JSON by default or a signed/encrypted JWT when requested. OIDC Core §5.1 catalogues a long list. Token metadata claims are type-specific; user claims are controlled by scopes and claims requests.
 
-- **Standard claims about the request itself** — `iss`, `aud`, `exp`, `iat`, `nbf`, `sub`, `nonce`, `auth_time`, `acr`, `amr`, `azp`. These describe the token, not the user. The OP fills them in regardless of which scopes were granted.
-- **User claims** — `name`, `family_name`, `email`, `email_verified`, `phone_number`, `address`, `picture`, etc. These are about the end-user. The OP releases them only when the granted scope authorises it.
+- **ID Token claims** — `iss`, `sub`, `aud`, `iat`, and `exp` are required; `nonce`, `auth_time`, `acr`, `amr`, `azp`, `at_hash`, `c_hash`, and `sid` are conditional on the flow and request.
+- **JWT access-token claims** — `iss`, `sub`, `aud`, `client_id`, `iat`, `exp`, and `jti` are required by RFC 9068; `scope`, `cnf`, `auth_time`, `acr`, `amr`, and other extensions appear when applicable. In this library, opaque access tokens, refresh tokens, and authorization codes do not carry claims on the wire.
+- **User claims** — `name`, `family_name`, `email`, `email_verified`, `phone_number`, `address`, `picture`, etc. These describe the end user. The OP releases them only when the granted scope or an explicit claims request authorises them and the claim source supplies a value.
 
-The first group lives on every token. The second group is what scope grants control.
+Scopes control user claims; the token type and the flow determine which token metadata claims are present.
 
 ## OIDC Core scope-to-claim map
 
-OIDC Core §5.4 fixes the mapping for the standard scopes. The library implements it verbatim:
+OIDC Core §5.4 maps `profile`, `email`, `address`, and `phone` to user claims. The table also shows `openid` (the OIDC request marker from §3.1.2.1) and `offline_access` (the refresh-token consent scope from §11); those two are not §5.4 user-claim bundles.
 
 | Scope | Claims released |
 |---|---|
@@ -67,7 +68,7 @@ OIDC Core §5.4 fixes the mapping for the standard scopes. The library implement
 
 A request for `scope=openid email` therefore releases `sub`, `email`, and `email_verified` — and nothing else from the user-claim catalogue. A request for `scope=openid profile email` adds the entire `profile` group.
 
-The map alone does not say *where* a released claim shows up. `sub` and the token-describing claims ride in the ID Token; the user claims a scope releases are served from `/userinfo`.
+The map alone does not say *where* a released claim shows up. In the ordinary scope flow, `sub` and the ID Token's metadata claims ride in the ID Token, while the user claims released by `profile`, `email`, `address`, and `phone` are served from `/userinfo`. The access token carries the granted `scope`; the ID Token does not carry a standard `scope` claim.
 
 <figure class="fig">
   <div class="fig-head">Scope requested → claims released → where they arrive</div>
@@ -110,15 +111,15 @@ The map alone does not say *where* a released claim shows up. `sub` and the toke
     <rect class="fg-box fg-box--accent" x="660" y="44" width="264" height="98" rx="8"/>
     <text class="fg-t fg-accent" x="678" y="68">ID token</text>
     <text class="fg-mxs" x="678" y="88">iss · aud · exp · iat · sub</text>
-    <text class="fg-mxs" x="678" y="102">nonce · auth_time · azp</text>
-    <text class="fg-mxs" x="678" y="116">acr · amr · at_hash · sid</text>
+    <text class="fg-mxs" x="678" y="102">optional: nonce · auth_time · azp</text>
+    <text class="fg-mxs" x="678" y="116">optional: acr · amr · at_hash · sid</text>
     <text class="fg-xs" x="678" y="134">filled in by the OP itself</text>
     <path class="fg-edge fg-edge--accent" d="M624,68 H656" marker-end="url(#fg-ac)"/>
     <!-- userinfo panel -->
     <rect class="fg-box" x="660" y="158" width="264" height="130" rx="8"/>
     <text class="fg-m" x="678" y="182">/userinfo</text>
     <text class="fg-xs" x="678" y="202">the RP calls it with the access</text>
-    <text class="fg-xs" x="678" y="216">token and gets a JSON body back</text>
+    <text class="fg-xs" x="678" y="216">token and gets claims back (JSON by default)</text>
     <line class="fg-rule" x1="678" y1="232" x2="906" y2="232"/>
     <text class="fg-xs" x="678" y="252">it returns only the claims the</text>
     <text class="fg-xs" x="678" y="266">granted scopes authorise</text>
@@ -171,7 +172,7 @@ A common modelling question: do you split a permission with a new scope, or with
 | "Is this a different **resource server** that needs its own audience?" | Use RFC 8707. | An access token for the project API vs an access token for the billing API; both flows want different `aud` values so the RS verifiers reject cross-audience tokens. |
 | "Is the lifetime/format/revocation policy different per audience?" | Use RFC 8707 with per-audience format. | Admin API gets opaque (immediate revocation) while the read API stays JWT (horizontal scale). The library wires this through `op.WithAccessTokenFormatPerAudience`. |
 
-Scopes describe **breadth of permission**; resource indicators describe **target audience**. A single authorize request can carry both — `scope=openid read:projects&resource=https://billing.example.com&resource=https://projects.example.com` asks the OP to mint two access tokens, one per resource, each carrying the granted scope set.
+Scopes describe **breadth of permission**; resource indicators describe **target audience**. A single authorization request can carry both, for example `scope=openid read:projects&resource=https://projects.example.com`. This library issues one access token for the selected resource. Repeating `resource` in a built-in authorization flow is rejected with `invalid_target`; use separate requests for different resource servers.
 
 Every surface that accepts a `resource` parameter reduces it to the same canonical form first:
 

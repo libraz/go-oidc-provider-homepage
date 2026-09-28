@@ -136,13 +136,13 @@ op.WithStaticClients(op.ConfidentialClient{
 - `iss` — OP issuer
 - `aud` — resource server 識別子（型付きクライアント定義の `Resources []string` フィールドで RFC 8707 のリソース識別子を許可する。DCR の場合は同等の `resources` メタデータ）
 - `client_id` — 要求元クライアント
-- `sub = client_id` — RFC 9068 §2.2 / FAPI 2.0 の慣習。クライアント自身が subject(自分自身として動く)
+- `sub = client_id` — RFC 9068 §2.2 は `sub` がクライアントアプリケーションに対応することを SHOULD としています。本ライブラリはクライアント自身を subject にします
 - `scope` — 要求 scope のうち付与された部分集合
 
 `op.WithFeature(feature.MTLS)` または DPoP が設定され、クライアントが送信者制約を提示した場合、トークンには加えて RFC 7800 の `cnf` (Confirmation) claim が入り、鍵または証明書に結び付けられます。
 
 ::: details なぜ `sub = client_id` なのか
-ユーザを伴うフローでは `sub` はエンドユーザの安定識別子です。`client_credentials` にはエンドユーザがいないので、RFC 9068 §2.2 が `sub` を `client_id` に等しくすることを要求しています — *クライアント自身* が subject として動いている、という建付けです。`sub` を見て「誰がやったか」を記録する RS は依然として安定識別子を得られますが、サービストークンの場合の識別子は人ではなく登録済みサービスを指す、という前提を持つ必要があります。よくあるバグは「`sub` は必ず user テーブルの行を指す」と思い込むこと — サービストークンでは *client* テーブルの行を指します。
+ユーザを伴うフローでは `sub` はエンドユーザの安定識別子です。`client_credentials` にはエンドユーザがいないため、RFC 9068 §2.2 は `sub` がクライアントアプリケーションに対応することを SHOULD としています。`sub` と `client_id` を同じ値にすることまでは要求していません。本ライブラリはこの直接的な対応付けを選び、`sub = client_id` とします。`sub` を見て「誰がやったか」を記録する RS は依然として安定識別子を得られますが、サービストークンの場合の識別子は人ではなく登録済みサービスを指す、という前提を持つ必要があります。よくあるバグは「`sub` は必ず user テーブルの行を指す」と思い込むことです。サービストークンでは *client* テーブルの行を指します。
 :::
 
 ::: details `client_credentials` の `aud` — 意味と設定方法

@@ -76,14 +76,14 @@ pageClass: pg-concepts-consent
 | **初回 grant** — その `(subject, client_id)` ペアに対する `Grant` が存在しない。 | プロンプト。ユーザは scope の全リストを目にします。送信時、本ライブラリは承認された scope を含む `Grant` 行を書き込みます。 |
 | **Scope delta** — `Grant` は存在するが、要求された scope 集合に「過去に承認されていない scope」が含まれる。 | プロンプト。差分が強調表示されます。ユーザは差分のみ承認、差分を拒否、全体を拒否のいずれかを選べます。承認時に行が更新されます。 |
 | **強制再プロンプト** — リクエストが `prompt=consent` を持つ。 | grant の状態に関係なくプロンプト。OIDC §3.1.2.1 が要求する挙動です。 |
-| **既存 grant が要求をカバー** — `Grant` 行がすべての要求 scope と、要求されたすべての `authorization_details` 要素をカバーしており、`prompt` が `none` または `login`（`consent` ではない）。 | スキップ。本ライブラリは認可コード発行に直接進みます。スキップ専用の監査イベントはありません。 |
+| **既存 grant が要求をカバー** — `Grant` 行がすべての要求 scope と、要求されたすべての `authorization_details` 要素をカバーしており、`prompt` が省略、`none`、または `login`（`consent` ではない）。 | スキップ。本ライブラリは認可コード発行に直接進みます。スキップ専用の監査イベントはありません。 |
 
 ::: details `prompt=none`、`prompt=login`、`prompt=consent` の違い
 - `prompt=none` — 「ユーザがログイン済みで同意も整っているなら、フローを静かに完了させる。さもなくばエラーを返す」。SPA の静かな再認証で使う。
 - `prompt=login` — 「有効なセッションがあっても、ユーザに再認証させる」。これだけでは同意の再プロンプトは強制されない。
 - `prompt=consent` — 「grant が scope をカバーしていても、同意画面を強制する」。RP が機微な操作の前にユーザに再確認させたいときに有用。
 
-本ライブラリは OIDC Core 1.0 §3.1.2.1 に沿ってこれらを適用します。`prompt=none` と `prompt=login` の併用は `interaction_required` で拒否します。
+本ライブラリは OIDC Core 1.0 §3.1.2.1 に沿ってこれらを適用します。`prompt=none` と `prompt=login` の併用は `invalid_request` で拒否します。
 :::
 
 ## 終端 subject に対する coverage の再確認

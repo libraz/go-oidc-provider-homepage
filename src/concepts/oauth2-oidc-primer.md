@@ -49,7 +49,7 @@ If you're new to authentication and authorization, the standards stack looks lik
 - [RFC 9068](https://datatracker.ietf.org/doc/html/rfc9068) — JWT Profile for OAuth 2.0 Access Tokens
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [OpenID Connect RP-Initiated Logout 1.0](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html)
 :::
 
 ## The three roles
@@ -106,12 +106,12 @@ A single piece of software can wear two hats. Your "backend for frontend" might 
 
 ## OAuth 2.0 vs OpenID Connect
 
-OAuth 2.0 is **delegated authorization** — "Alice's app gets permission to read Alice's data on Service X." OAuth 2.0 by itself does not tell the app **who Alice is**; it only hands out an opaque access token.
+OAuth 2.0 is **delegated authorization** — "Alice's app gets permission to read Alice's data on Service X." OAuth 2.0 by itself does not tell the app **who Alice is**; it defines an access token as a string representing granted authorization without assigning it an identity meaning. The token may be opaque or self-contained, depending on the authorization server's choice.
 
 OpenID Connect (OIDC) is **OAuth 2.0 plus identity**. On top of the access token, the OP issues an **ID Token** — a signed JWT that says "this token was issued for user `sub=alice123`, audience `client_id=myapp`, at this time, and the following claims about her are true." OIDC also adds a userinfo endpoint (`/userinfo`), a discovery document, RP-Initiated Logout, and a back-channel logout notification.
 
 ::: details JWT — what's that?
-A **JWT** (JSON Web Token, RFC 7519) is a string of three base64url chunks joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is what lets a receiver verify the issuer cryptographically using a public key.
+A **signed compact JWT** (JSON Web Token, RFC 7519) is a string of three base64url-encoded parts joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is what lets a receiver verify the issuer cryptographically using a public key. An encrypted JWT uses compact JWE serialization with five parts and can carry a signed JWT inside it.
 
 In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provider` are JWTs by default and can be switched to opaque tokens when you opt in. If you can read JSON and check a signature, you can read the default JWT shape — no proprietary binary format involved.
 :::
@@ -250,7 +250,7 @@ The "+ PKCE" piece (steps highlighted via `code_challenge`/`code_verifier`) is w
 
 ## What FAPI 2.0 adds
 
-If you're building a banking-grade or healthcare-grade OP, you need **FAPI 2.0** on top of OIDC — sender-constrained tokens (DPoP / mTLS), PAR (the authorize request goes server-to-server first), JAR (the request is a signed JWT), and a tighter algorithm allow-list. The library makes this one option:
+If you're building a banking-grade or healthcare-grade OP, you need the **FAPI 2.0 Security Profile** on top of OIDC — sender-constrained tokens (DPoP / mTLS), PAR (the authorization request is pushed server-to-server first), and a tighter algorithm allow-list. JAR (a signed authorization request) is supported by the library but is not mandated by the FAPI 2.0 Security Profile. The library enables its `FAPI2Baseline` configuration with one option:
 
 ```go
 op.WithProfile(profile.FAPI2Baseline)

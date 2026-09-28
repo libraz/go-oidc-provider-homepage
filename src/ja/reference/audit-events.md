@@ -57,7 +57,7 @@ op.New(
 )
 ```
 
-`op.WithAuditLogger` は `*slog.Logger` を受け取ります。各イベントは構造化ログのエントリとして記録されます。`event` 属性はイベント識別子（たとえば `"token.issued"`）を、`msg` は人間向けの短いメッセージを持ちます。残りの属性は `request_id` / `subject` / `client_id` と、カテゴリ固有のフィールドをまとめた `extras` グループです。発火は request goroutine 上で同期的に行われます。handler は遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。
+`op.WithAuditLogger` は `*slog.Logger` を受け取ります。各イベントは構造化ログのエントリとして記録されます。`event` 属性はイベント識別子（たとえば `"token.issued"`）を、`msg` は人間向けの短いメッセージを持ちます。正規フィールドは任意のトップレベル属性です。`actor_id`、`client_id`、`session_id`、`request_id`、`ip`、`user_agent`、`tag` は未設定なら出力されません。空でない `extras` グループにカテゴリ固有のフィールドが入ります。発火は呼び出し元の goroutine 上で同期的に行われます。handler は遅い I/O や無制限 queue で block させず、多数の request から並行して呼ばれても安全にしてください。
 
 `WithAuditLogger` を渡さない場合は、`WithLogger` で設定したロガーに流れます。どちらも渡していない場合、監査イベントは破棄されます。
 
@@ -81,15 +81,23 @@ for _, def := range op.AuditEventCatalog() {
 
 ## 共通の属性
 
-発火したイベントには常に `audit`、`event`、レコード時刻があります。次の属性は emitter が設定したときに出力されます:
+発火したイベントには `audit` と `event` が含まれます。正規フィールドは任意で、未設定なら出力されません。`extras` は空なら出力されません。`slog.JSONHandler` を使うと、レコード時刻、レベル、メッセージも出力されます:
 
 | 属性 | 型 | 補足 |
 |---|---|---|
-| `request_id` | string | リクエスト単位の識別子。未知の場合は出力されません |
-| `actor_id` | string | ユーザ起点のイベントでは subject 識別子、クライアント起点では `client_id`。未知の場合は出力されません |
-| `client_id` | string | OAuth `client_id`。未知の場合は出力されません |
+| `audit` | string | 常に `"true"` |
+| `event` | string | イベント識別子。例: `"token.issued"` |
+| `actor_id` | string | ユーザ起点では subject 識別子、クライアント起点では `client_id`。未設定なら出力されません |
+| `client_id` | string | OAuth `client_id`。未設定なら出力されません |
+| `session_id` | string | 該当する場合の OP session 識別子。未設定なら出力されません |
+| `request_id` | string | リクエストの相関 ID。未設定なら出力されません |
+| `ip` | string | OP のエッジで観測したクライアント IP。未設定なら出力されません |
+| `user_agent` | string | 観測した `User-Agent` の値。未設定なら出力されません |
+| `tag` | string | operator が設定した DCR tag。未設定なら出力されません |
 | `extras` | group | カテゴリ固有のフィールド（各セクションを参照）。空の場合は出力されません |
-| `time` | timestamp | `slog.Record.Time`。`WithClock` に従い、未設定ならシステム時刻を使います |
+| `time` | timestamp | `slog.Record.Time`。`WithClock` またはシステム時刻のレコード時刻です |
+| `level` | string | `slog.Record.Level`。`INFO`、`WARN`、`ERROR` など |
+| `msg` | string | `slog.Record.Message`。人間向けの短いメッセージです |
 
 ## イベントカタログ
 
@@ -294,7 +302,7 @@ interaction driver が応答を commit する前に render に失敗した場合
 | `AuditDeviceCodeUserCodeBruteForce` | `user_code` 提出が外れた。カウンタを増やし、`devicecodekit.MaxUserCodeStrikes`(既定 5)でロックアウト発火 | alert | [使い方: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenIssued` | 承認済 device authorization に対し `/token` がトークンを発行 | info | [使い方: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeTokenRejected` | `/token` が device-code grant を拒否（`access_denied`、`expired_token` など） | warn | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返却。サブストア上のレコードで interval が倍化される | warn | [使い方: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返し、サブストア上のポーリング間隔に 5 秒を加算 | warn | [使い方: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態に遷移させた。`Deps.AccessTokens` が渡されている場合は、ヘルパが発行済みアクセストークンも連鎖失効させ、`revoked_access_tokens` を記録する | info | [使い方: device code](/ja/use-cases/device-code) |
 | `AuditDeviceCodePollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する（best-effort な観測） | warn | [使い方: device code](/ja/use-cases/device-code) |
 

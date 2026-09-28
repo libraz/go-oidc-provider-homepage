@@ -33,7 +33,7 @@ pageClass: pg-concepts-no-browser-flows
 | 主な用途 | TV アプリ、CLI ツール、kiosk、音声アシスタント、入力手段が乏しい IoT | 強力な顧客認証（PSD2 風）、金融 / ヘルスケアでの別経路承認、画面共有なしでアクセスをリセットするカスタマーサポートのフロー |
 | 本ライブラリでの対応 | RFC 8628 — `op.WithGrants(grant.DeviceCode)` と `op.WithDeviceCodeGrant()` で有効化 | OIDC CIBA Core 1.0 — poll モードのみ。Discovery も `poll` だけを広告し、ping / push は実装しない |
 | ブルートフォース対策 | `op/devicecodekit` の opaque attempt-key limiter + レコード単位ロックアウト（`MaxUserCodeStrikes`） | poll-abuse ロックアウト — `auth_req_id` 単位で `/token` 再試行を rate-limit、閾値超過で `AuditCIBAPollAbuseLockout` |
-| FAPI プロファイルとの関係 | FAPI 2.0 には組み込まれていない（RFC 8628 自体で Baseline 相当の構成は十分） | FAPI-CIBA — FAPI 2.0 Baseline / Message Signing とは別プロファイル。JAR + DPoP \| mTLS + access TTL 10 分上限を必須化 |
+| FAPI プロファイルとの関係 | Device Code は FAPI 2.0 Security Profile で分析済みの認可フローには含まれません | FAPI-CIBA は FAPI 2.0 Security Profile / Message Signing とは別のプロファイルです。本ライブラリの CIBA 設定は JAR、DPoP または mTLS、アクセストークンの有効期間の上限 10 分を要求します |
 
 ::: tip 2 つの grant、同じ症状
 両方の grant が存在するのは、正攻法の `authorization_code + PKCE` フローがそもそも「token を欲しがるデバイスにまともなブラウザがある」前提で組まれているからです。その前提は TV、CLI、IoT、音声アシスタント、ユーザの代わりに動くバックエンドサービス、では成り立ちません。RFC 8628 と CIBA は「ブラウザがどこか別の場所にある」という状況の、**異なる 2 つの形** を解いています。
@@ -116,7 +116,7 @@ pageClass: pg-concepts-no-browser-flows
 
 **4. これは規制下の金融 / ヘルスケアで、別経路承認が要件になっているか?**
 
-- **CIBA は元々その目的で設計されています。** FAPI-CIBA プロファイルは CIBA Core の上に JAR、送信者制約付きトークン（DPoP または mTLS）、access TTL 10 分上限を上乗せします。`binding_message` は規制当局が見る audit の根拠（「ユーザは何を承認したのかを正確に見ていた」）です。
+- **CIBA は別経路での認証に対応します。** 旧 FAPI-CIBA-ID1 は FAPI 1.0 と mTLS を基礎としています。本ライブラリの `profile.FAPICIBA` は JAR を要求し、送信者制約として DPoP または mTLS を認め、アクセストークンの有効期間を 10 分以内に制限します。この設定だけで ID1 への適合は示せません。`binding_message` は、ユーザが承認するリクエストを識別する助けになります。
 - **Device Code は汎用的な仕組みです。** 適切に組めば十分機能しますが、規制当局が SCA で名指ししてくる形にはなっていません。
 
 判定木を抜けてもまだ迷うなら、既定としては「画面はあるがブラウザがない」一般消費者向けには **Device Code**、「RP がユーザを把握済みで、別経路で承認だけしてほしい」業務向けには **CIBA** を選んでください。

@@ -50,12 +50,14 @@ Every standard the library actively cites in its code, mapped to the package tha
 <span class="status-pill out">out</span> out-of-scope; structurally not the library's concern.<br/>
 <span class="status-pill refused">refused</span> deliberately rejected (e.g. `alg=none`).
 
+These labels describe implementation coverage, not OpenID Foundation certification. A `full` label does not override requirements outside this library's stated scope; the exceptions in each row still apply.
+
 ## OIDC core / discovery
 
 | Standard | Status | Where |
 |---|---|---|
 | **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span> (`response_type=code` only; Aggregated and Distributed claim types §5.6.2 are not emitted; pairwise sub §8.1 is now wired via `op.WithPairwiseSubject`. See "Out of scope by design" below.) | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo`, `internal/sector` |
-| **OpenID Connect Discovery 1.0** | <span class="status-pill full">full</span> | `internal/discovery` |
+| **OpenID Connect Discovery 1.0** | <span class="status-pill partial">partial</span> (metadata endpoint is implemented, but `id_token_signing_alg_values_supported` omits `RS256`, which Discovery requires) | `internal/discovery` |
 | **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span> (core flow, `sector_identifier_uri` fetch, `application_type=web` / `=native` redirect rules, JWKs / pairwise / response-type cross-checks, PUT reserved-field rejection, `post_logout_redirect_uris` round-trip, and the five JWE alg/enc encrypted-response families are enforced; `client_secret` is intentionally omitted from `GET /register/{id}` responses, `software_statement` is not accepted) | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
 | **OpenID Connect Back-Channel Logout 1.0** | <span class="status-pill full">full</span> | `internal/backchannel` |
@@ -86,7 +88,7 @@ Every standard the library actively cites in its code, mapped to the package tha
 | **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill partial">partial</span> (`feature.MTLS` wires certificate-bound access tokens and `mtls_endpoint_aliases`; token endpoint `tls_client_auth` / `self_signed_tls_client_auth` dispatch is not wired) | `internal/mtls` |
 | **RFC 8707** Resource Indicators | <span class="status-pill partial">partial</span> (canonicalisation and client allow-list enforcement across authorize / token / device / CIBA; built-in grants currently narrow most issuance paths to a single resource value) | `internal/resourceindicator`, `internal/authorize`, `internal/tokenendpoint`, `internal/devicecodeendpoint`, `internal/cibaendpoint` |
 | **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span> (alg allow-list, type checks) | `internal/jose` |
-| **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill full">full</span> | `internal/tokens` |
+| **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill partial">partial</span> (JWT issuance is ES256-only, while §2.1 requires RS256 support; the verifier also accepts tokens without the §2.2 required `jti`) | `internal/tokens` |
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span> (gated by `feature.JAR`) | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span> (gated by `feature.PAR`) | `internal/parendpoint` |
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize` (`iss` parameter on the response) |
@@ -117,12 +119,14 @@ Every standard the library actively cites in its code, mapped to the package tha
 
 ## FAPI family
 
+The `FAPI2Baseline` Go identifier retains the former *Baseline* name. The final specification is [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html). The OFCS results cited here are for the named Implementer's Draft test plans; they do not establish conformity with every requirement of the final specifications. In particular, the library rotates refresh tokens, whereas Security Profile §5.3.2.1(9) allows rotation only in extraordinary circumstances. The library also accepts the token endpoint URL and array values in `private_key_jwt` `aud`; §5.3.2.1(8) requires accepting only the issuer identifier as a string. These are current Final-profile conformance gaps.
+
 | Profile | Status | Switch |
 |---|---|---|
-| **FAPI 2.0 Baseline** | <span class="status-pill full">full</span> (continuously regressed; see [OFCS](/compliance/ofcs)) | `op.WithProfile(profile.FAPI2Baseline)` |
-| **FAPI 2.0 Message Signing** | <span class="status-pill full">full</span> (continuously regressed) | `op.WithProfile(profile.FAPI2MessageSigning)` |
+| **FAPI 2.0 Security Profile** | <span class="status-pill partial">partial</span> (PAR, PKCE and sender-constrained tokens are implemented; this switch also requires JAR as a library choice. See the final-specification limitation above and [OFCS](/compliance/ofcs).) | `op.WithProfile(profile.FAPI2Baseline)` |
+| **FAPI 2.0 Message Signing** | <span class="status-pill partial">partial</span> (JAR and JARM are implemented; the final specification permits separate signing profiles and inherits the Security Profile requirements) | `op.WithProfile(profile.FAPI2MessageSigning)` |
 | **FAPI 1.0 Advanced** | <span class="status-pill out">out</span> | — (use FAPI 2.0) |
-| **FAPI-CIBA** | <span class="status-pill full">full</span> (poll mode; enforces `JAR` + `DPoP\|MTLS`, 10-min access TTL, FAPI 2.0 client-auth set, `requested_expiry` ≤ 600 s, JAR `iss` / `aud` / `exp` / `nbf` required, request-object lifetime ≤ 60 min per FAPI 2.0 Message Signing §5.6, access-token revocation required) | `op.WithProfile(profile.FAPICIBA)` |
+| **FAPI-CIBA** | <span class="status-pill partial">partial</span> (library preset: poll mode, `JAR`, DPoP or mTLS, a 10-minute access-token TTL ceiling, `requested_expiry` ≤ 600 s, and an access-token revocation path. The historical ID1 plan uses mTLS; the demo selects it explicitly. The 60-minute request-object age limit is a library constraint; see [OFCS](/compliance/ofcs).) | `op.WithProfile(profile.FAPICIBA)` |
 | **OpenID iGov High** | <span class="status-pill out">out</span> | — |
 
 The profile enumeration also carries `profile.Baseline`, which is not a FAPI profile: it declares the OAuth 2.1 / RFC 9700 posture and adds PKCE on every authorization-code request, including confidential clients. See [Declaring a security profile](/use-cases/security-profile).

@@ -105,9 +105,11 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 
 ## 1. PAR の `request_uri` — 「one-time use」をいつ適用するか
 
-**仕様**: RFC 9126 §2.2 は `request_uri` を「one-time use only」と要求しています。
+**仕様**: RFC 9126 §2.2 は、クライアントの利用と AS の扱いを分けています。
 
-**衝突**: 「最初の参照で消費する」という文字通りの解釈は、複数段階の interaction(同意 → MFA → ロケール変更など)で同じ `/authorize?request_uri=…` に再リダイレクトが走るケースで壊れます。FAPI 2.0 の OFCS は 2 件のテストケースで挙動を検証しており、認証完了前の再アクセスは *受理*、認証完了後の再アクセスは *拒否* を要求しています。
+> **RFC 9126 §2.2（要約）** クライアントは各 `request_uri` を 1 回だけ使わなければなりません。AS は one-time として扱うことが推奨されますが、ユーザエージェントの再読み込み・更新による重複要求を許容してもかまわず、期限切れの値は拒否しなければなりません。
+
+**衝突**: 「最初の参照で消費する」という文字通りの解釈は、複数段階の interaction(同意 → MFA → ロケール変更など)で同じ `/authorize?request_uri=…` に再リダイレクトが走るケースで壊れます。チェックイン済みの OFCS FAPI plan は 2 件のテストケースで挙動を検証しており、認証完了前の再アクセスは *受理*、認証完了後の再アクセスは *拒否* を要求しています。これらは Implementer's Draft 世代の plan なので、現在の FAPI Final への適合をそれだけで示すものではありません。
 
 ::: tip 選択
 `request_uri` は `/authorize` の入口で `PARs.Find` により参照し、**認可コード発行時点で** `PARs.Consume` で消費します。interaction 中の再アクセスは成功し、コード発行後の再アクセスは `invalid_request_uri` を返します。OFCS module `fapi2-…-par-attempt-reuse-request_uri` がコード発行後の拒否経路を検証します。詳細は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
@@ -117,14 +119,14 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 
 ## 2. リフレッシュトークンのローテーション猶予期間
 
-**仕様**: RFC 9700 §2.2.2 が次のように書いています。
+**仕様**: RFC 9700 §4.14.2 は、公開クライアントについて sender-constrained refresh token またはローテーションで replay を検出するよう AS に求めています。FAPI 2.0 Security Profile Final §5.3.2.1(9) は、refresh token のローテーションを例外的な状況に限り、新しい token を失った場合は旧 token による時間制限付き retry を許容しています。
 
-> **RFC 9700 §2.2.2(訳)** 以前のリフレッシュトークンを無効化してもよいが、新しいリフレッシュトークンがクライアントに届くまでは有効に保たなければならない。
+> **RFC 9700 §4.14.2（要約）** ローテーションでは新しい refresh token を発行して旧 token を無効化し、関係を保持します。再利用で侵害が分かると有効な token を失効させます。
 
-**衝突**: 「厳密な single-use、猶予なし」の解釈は、ローテーションのネットワーク往復が中断されたすべてのクライアント（モバイルのバックグラウンド遷移、TCP 切断、HTTP/2 ストリームのリトライなど）を破壊します。OFCS は、ローテーションと再交換の間に 30 秒待つ形で猶予期間の経路を検証します。
+**衝突**: 「厳密な single-use、猶予なし」の解釈は、ローテーションのネットワーク往復が中断されたすべてのクライアント（モバイルのバックグラウンド遷移、TCP 切断、HTTP/2 ストリームのリトライなど）を破壊します。チェックイン済みの OFCS FAPI plan は、ローテーションと再交換の間に 30 秒待つ形で猶予期間の経路を検証します。これらは Implementer's Draft 世代の plan なので、現在の FAPI Final への適合をそれだけで示すものではありません。
 
 ::: tip 選択
-ローテーション済みのリフレッシュトークンは、`GraceTTL`(既定 60 秒) の間、再利用検知で失効していない限り受理されます。猶予期間内は同じ chain の新トークンが返り、追加のローテーションは発生しません。猶予期間 *を過ぎたあと* の再利用、あるいはすでに失効している chain での再利用は、chain 全体を無効化します（RFC 9700 §4.14）。`op.WithRefreshGracePeriod` は負値を拒否し、明示した 0 は猶予なしとして扱います。FAPI 2.0 profile では 0〜60 秒の明示値を受理し、60 秒を超える値は構築時エラーです。profile は 0 を強制せず、option を省略すれば既定の 60 秒になります。これらの profile 以外では、負でないより長い window も選べます。実装は `internal/grants/refresh.Exchanger.tryGrace` にあり、`store.RefreshToken.Revoked` が「ローテーションで消費済み」と「chain 侵害で失効」を区別します。
+ローテーション済みの refresh token は、ライブラリで設定できる `GraceTTL`（既定 60 秒）の間、chain が replay 検知で失効していない限り受理されます。猶予期間内に旧トークンを提示すると、系列を再度ローテーションせずに保存済みの後継トークンを返します。送信者制約付きの再試行では、アクセストークンを新たにバインドして発行する場合があります。猶予期間 *を過ぎたあと* の再利用、あるいはすでに失効した chain での再利用は、chain 全体を無効化します（RFC 9700 §4.14.2）。既定の 60 秒は、応答を失った場合の限定的な retry 経路に対する実装上の選択であり、RFC の要求ではありません。ローテーションを使う場合の FAPI 2.0 Security Profile Final §5.3.2.1(9) が示す時間制限付き retry の形には合いますが、デプロイメントが同プロファイルの「例外的な状況」という条件を満たすことを示すものではありません。`op.WithRefreshGracePeriod` は負値を拒否し、明示した 0 は猶予なしとして扱います。ライブラリの FAPI 2.0 profile では 0〜60 秒の明示値を受理し、60 秒を超える値は構築時エラーです。option を省略すれば既定の 60 秒になります。これらの profile 以外では、負でないより長い window も選べます。実装は `internal/grants/refresh.Exchanger.tryGrace` にあり、`store.RefreshToken.Revoked` が「ローテーションで消費済み」と「chain 侵害で失効」を区別します。
 :::
 
 <a class="faq-anchor" id="dj-3"></a>
@@ -175,7 +177,7 @@ OIDC Core §11 を厳格に読みたい組み込み側は、`op.WithStrictOfflin
 
 **仕様**: RFC 9101 §10.8 は、`exp` 期限内の request object の replay を拒否することを SHOULD(推奨)と書いています。レジストリの実装そのものは MUST ではありません。
 
-**衝突**: 素直な「検証して受理」は仕様には適合しますが、傍受された request object を `exp` まで何度も `/authorize` に投げ返せてしまいます。FAPI 2.0 Message Signing は、基底仕様で SHOULD だったところを実質的に前提にしています。
+**衝突**: 署名を検証して受理するだけでは、傍受された request object を `exp` まで繰り返し `/authorize` に提示できます。FAPI 2.0 Message Signing は PAR で署名付き request object を求めますが、`jti` による再利用検知を必須にはしていません。以下のキャッシュはライブラリ独自の追加防御です。
 
 ::: tip 選択
 OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で動作します。replay marker は verifier が設定する request の max-age / max-lifetime と clock skew の window に保持し、その OP 側の上限で無条件に clamp します。したがって client が遠い未来の `exp` を指定しても、キャッシュを無期限に占有できません。OP の他の揮発状態と同じ `Sessions` ストレージを使うので、Redis の揮発スライスをすでに運用していれば、そこに乗せるだけで replay 防御が付きます。
@@ -185,12 +187,12 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 
 ## 7. プロファイルの宣言 — feature は自動化し、必要な設定のない grant は拒否する
 
-**仕様**: FAPI profile の要件には、PAR / JAR / JARM のように route へ追加できる feature と、デプロイ側が用意する collaborator を必要とするものがあります。OAuth 2.1 / RFC 9700 はすべての authorization-code request で PKCE を必須にしますが、互換性が必要な配備では OIDC Core の形も残さなければなりません。
+**仕様**: FAPI profile の要件には、PAR / JAR / JARM のように route へ追加できる feature と、デプロイ側が用意する collaborator を必要とするものがあります。RFC 9700 §2.1.1 は public client に PKCE を要求し、confidential client には推奨します。本ライブラリは Baseline と FAPI profile で、これより厳しい「すべての client に適用する」ルールを採用します。互換性が必要な配備では OIDC Core の形も残します。
 
 **衝突**: ハンドラごとに `switch profile` を書くと差分が出ます。すべての要件を自動有効化するのも誤りです。feature は安全に選べますが、store や resolver が設定されていない grant を mount すれば、endpoint だけが生えた中途半端な構成になります。
 
 ::: tip 選択
-**profile はポリシーを重ねますが、feature と grant の扱いを分けます**。`WithProfile` は必要な feature を自動有効化します。FAPI 2.0 Baseline は PAR / JAR を、Message Signing はさらに JARM を選び、FAPI profile は組み込み側が mTLS を明示しない限り DPoP を選びます。`profile.Baseline` は route に関わる feature を追加せず、confidential client を含むすべての authorization-code request で PKCE を必須にします。
+**profile はポリシーを重ねますが、feature と grant の扱いを分けます**。`WithProfile` は必要な feature を自動有効化します。FAPI 2.0 Baseline は PAR / JAR を、Message Signing はさらに JARM を選び、FAPI profile は組み込み側が mTLS を明示しない限り DPoP を選びます。`profile.Baseline` は route に関わる feature を追加しません。`profile.Baseline`、`profile.FAPI2Baseline`、`profile.FAPI2MessageSigning` は、confidential client を含むすべての authorization-code request で PKCE を必須にします。
 
 必要な grant は自動有効化しません。`profile.FAPICIBA` で CIBA grant がなければ `op.New` は失敗し、`WithCIBA(WithCIBAHintResolver(...))` を設定経路として示します。これにより collaborator のない `/bc-authorize` を mount せず、構築時に意味のあるエラーを返せます。解決後の profile、feature、grant、policy は `startup.profile` audit event として 1 回出力されるため、運用者は最初の request より前に実際の posture を確認できます。制約関数は `op/profile/constraints.go`、その適用は `WithProfile` と構築時 validation に集約しています。
 :::
@@ -211,12 +213,12 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 
 ## 9. Issuer 識別子の検証
 
-**仕様**: RFC 9207 は認可応答に `iss` を付けることを必須と規定します。OIDC Discovery 1.0 §3 / RFC 8414 §3 / FAPI 2.0 §5.4 は issuer を OP の正規識別子として扱い、`/.well-known/openid-configuration` とそのまま連結して discovery URL を導出すると規定しています。
+**仕様**: RFC 9207 は認可応答に `iss` を付けることを必須とし、クライアントはその値を期待する issuer と単純な文字列比較で照合します。OIDC Discovery 1.0 §3 と RFC 8414 §2 は issuer を query / fragment のない HTTPS URL と定義し、metadata の `issuer` が設定文書の取得に使った issuer と一致することを要求します。Discovery §4.1（および RFC 8414 §3.1）は、well-known の URL を組み立てる前に path issuer の末尾 `/` を取り除きます。FAPI 2.0 Security Profile Final §5.3.2.1(1) は、その discovery metadata を AS が配布することを要求します。
 
-**衝突**: 実環境では「同等に見えるが、末尾スラッシュ・scheme の大小・host の大小・デフォルトポートの有無で違う 2 つの URI」がよく現れます。RFC 9207 のミックスアップ防御は OP と全 RP のバイト完全一致比較に依存しているので、OP 側と RP 側の正規化が違えば、防御は黙って破綻します。
+**衝突**: URI の構文上は、scheme や host の大文字小文字、デフォルトポートの表記、末尾 `/` が違う表現も許されます。Discovery も well-known URL の組み立て時に末尾 `/` を取り除きます。これらの仕様は、ライブラリがすべての表現を拒否することまでは要求していません。一方、RFC 9207 と metadata 仕様は、照合する境界ごとに 1 つの issuer 値を要求します。OP と RP の正規化が違えば、issuer 検証は失敗します。
 
 ::: tip 選択
-`op.WithIssuer` は、次のいずれかを含む URI を拒否します。
+`op.WithIssuer` は意図的に厳格な正規化ポリシーを適用し、次のいずれかを含む URI を拒否します。
 
 - 末尾スラッシュ
 - scheme の大文字混在
@@ -226,7 +228,7 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 - query
 - 非正規 path（`..`、`.`、`path.Clean` で検出される重複スラッシュ）
 
-同じ正規形を、`iss` を出すすべての場面 — 発行する全アーティファクト、discovery 文書の `issuer` フィールド、認可応答の `iss` パラメタ — で再利用するので、RFC 9207 ミックスアップ防御の byte 完全一致比較が end-to-end で成立します。`op.New` は非正規 issuer では起動せず、ビルド時にエラーを返します。
+query / fragment の拒否は issuer の仕様要件に従いますが、大文字小文字、ポート、末尾スラッシュ、path の規則はライブラリが追加したポリシーです。受理した同じ形を、`iss` を出すすべての場面 — 発行する全アーティファクト、discovery 文書の `issuer` フィールド、認可応答の `iss` パラメタ — で再利用するので、RFC 9207 ミックスアップ防御の単純な文字列比較が end-to-end で同じ値を使います。`op.New` は非正規 issuer では起動せず、ビルド時にエラーを返します。
 :::
 
 <a class="faq-anchor" id="dj-10"></a>
@@ -245,7 +247,7 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 
 ## 11. JOSE の許可リストと ES256 専用の発行
 
-**仕様**: RFC 7518 は `none` と `HS256/384/512` を列挙しています。RFC 8725(JWT BCP)§3.1 は `none` ベースの JWT を信頼してはならないと規定し、§3.2 は HMAC 鍵を公開鍵と取り違える alg confusion について警告を出しています。
+**仕様**: RFC 8725（JWT BCP）§3.1 は、ライブラリが呼び出し側に許可アルゴリズム集合を指定させ、その集合以外を使わないよう求めています。§3.2 は採用アルゴリズムをアプリケーションが決めるものとし、HMAC 鍵と公開鍵の混同を警告します。別の end-to-end 保護がある場合の `none` を一律には禁止しておらず、ライブラリが `none` を生成・消費するのは明示指定がある場合に限るべきだとしています。
 
 **衝突**: 基盤の JOSE ライブラリは、レジストリ全体を既定で受理します。実行時チェックを足すのは壊れやすく、将来 JOSE ライブラリを直接 import する経路ができればすり抜けてしまいます。
 
@@ -259,7 +261,7 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 
 ## 12. Discovery 文書 — プロファイルでの絞り込み
 
-**仕様**: OIDC Discovery 1.0 + RFC 8414 がメタデータフィールドを列挙しています。FAPI 2.0 §3.1.3 は `token_endpoint_auth_methods_supported` を絞ることを要求します。RFC 9101 §10.1 は、JAR 有効時に `request_object_signing_alg_values_supported` を要求します。
+**仕様**: OIDC Discovery 1.0 + RFC 8414 がメタデータフィールドを列挙しています。FAPI 2.0 Security Profile Final §5.3.2.1(6) は AS の client authentication を mTLS または `private_key_jwt` に限定し、その結果 `token_endpoint_auth_methods_supported` も絞られます。RFC 9101 §10.1 は、JAR 有効時に `request_object_signing_alg_values_supported` を要求します。
 
 **衝突**: `_supported` 系のリストは、feature の有効化に応じて作られ、有効プロファイルで絞り込まれ、その後 introspection / revocation の auth-method リストにコピーされます。これをハンドラで毎回やると差分が出ます。構築時に 1 か所で決める方が安定します。
 
@@ -271,19 +273,19 @@ discovery は `op.New` 時に 1 度だけ構築します（`internal/discovery/b
 
 ## 13. `client_assertion` の `aud` — FAPI 2.0 と OIDC Core
 
-**仕様**: RFC 7523 §3 は、JWT bearer assertion の `aud` を「authorization server を識別する値」と要求するだけで、どの識別子かまでは固定していません。OIDC Core 1.0 §9(private_key_jwt)はこれを OP の token endpoint URL と読みます。FAPI 2.0 §5.2.2 は issuer URL と読みます。
+**仕様**: RFC 7523 §3 は、JWT bearer assertion の `aud` を「authorization server を識別する値」と要求するだけで、どの識別子かまでは固定していません。OIDC Core 1.0 §9（`private_key_jwt`）はこれを OP の token endpoint URL と読みます。FAPI 2.0 Security Profile Final §5.3.2.1(8) は認可サーバー側の要件を絞り、issuer identifier の値だけを JSON 文字列として受け入れるよう求めています。FAPI client 側にも §5.3.3.1(5) に同じ形の要件があります。RFC 7519 は一般には `aud` の文字列または配列を許しますが、FAPI はこの形を絞ります。
 
-**衝突**: OIDC Core と FAPI 2.0 プロファイルを同時にサポートする OP では、どちらの形を送ってくるクライアントも認証できなければなりません。「ちょうど 1 つに一致」を厳格に取ると、毎リクエストで半分のクライアントが落ちます。RFC 7523 自体は両方を許容するほど広いので、衝突は RFC をラップしている 2 つのプロファイル仕様の間で起きています。
+**衝突**: ライブラリの互換 verifier は、OIDC Core の token endpoint 形、FAPI の issuer 形、受理済みの値を含む配列を受け入れます。1 つの OP で両方の方言を扱うには便利ですが、token endpoint URL や `aud` 配列を受け入れるため、FAPI 2.0 Security Profile Final §5.3.2.1(8) には適合しません。Final FAPI プロファイルでは、RFC 7523 の広い解釈よりもプロファイルの要件を優先し、より厳格な検証方針が必要です。
 
 ::: tip 選択
-verifier は、主 `Audience`(OIDC Core: token endpoint URL)と `AuxAudiences` のリスト（FAPI 2.0: issuer URL）を併せて受理します。`op.New` はすべての OP で `AuxAudiences` に issuer を入れるので、FAPI 2.0 形のクライアントもデプロイ単位の追加設定なしで認証できます。実装は `internal/clientauth/assertion.go` にあります。`jti` の消費は統合後の経路で 1 回だけ実行されるので、どちらの形でも replay 防御をすり抜けることはできません。
+汎用ライブラリでは、主 `Audience` と `AuxAudiences` を使う互換動作を維持します。`op.New` はすべての OP で `AuxAudiences` に issuer を入れ、`internal/clientauth/assertion.go` は統合後の経路で `jti` を 1 回だけ消費するため、受理したどちらの方言でも replay 防御をすり抜けることはありません。これはライブラリの互換ポリシーであり、FAPI 2.0 Security Profile Final への適合を意味しません。Final FAPI プロファイルでは、issuer identifier を JSON 文字列で指定した形だけを受け入れ、token endpoint 形と配列形を拒否する必要があります。
 :::
 
 <a class="faq-anchor" id="dj-14"></a>
 
 ## 14. PKCE — `S256` のみ、`plain` はポリシーで拒否
 
-**仕様**: RFC 7636 §4.2 は `plain` と `S256` の 2 種を列挙しています。§4.4.1 は SHA-256 を計算できない環境のために `plain` を残しつつ、クライアントには `S256` を推奨しています。OAuth 2.1 (`draft-ietf-oauth-v2-1` §4.1.1)と FAPI 2.0 §3.1.4 は、`plain` を完全に禁止しています。
+**仕様**: RFC 7636 §4.2 は `plain` と `S256` の 2 種を列挙しています。§4.4.1 は SHA-256 を計算できない環境のために `plain` を残しつつ、クライアントには `S256` を推奨しています。OAuth 2.1 (`draft-ietf-oauth-v2-1` §4.1.1)と FAPI 2.0 Security Profile Final §5.3.2.2(5) は、`plain` を完全に禁止しています。
 
 **衝突**: RFC 7636 を素直に読めば、クライアントが要求した側を OP は受理します。OAuth 2.1 / FAPI 2.0 を厳格に読めば拒否です。「プロファイルごとのゲート」アーキテクチャだと、同じクライアントが OIDC Core OP では成功し、同じ OP の FAPI 2.0 プロファイル下では失敗する、という挙動になります。これはコードベース全体で避けるように作っている「気付かれずに進行するプロファイル間のずれ」の典型例です。
 
@@ -372,16 +374,16 @@ JWT と opaque で到達範囲が違う点（JWT は OP のエンドポイント
 
 ## 19. JWT アクセストークン失効戦略 — `jti` 単位レジストリより grant 単位の tombstone
 
-**仕様**: RFC 6749 §4.1.2 は、コード再利用時に AS が「可能であれば失効させるべき」と書いています。RFC 6819 §5.2.1.1 はサーバ側に再利用検出の不変条件を期待します。RFC 7009 §2.2 は、self-contained なトークンに対する revocation を未対応にしてもよいと許容します。FAPI 2.0 SP §5.3.2.2 は、サーバ側の revocation を必須としています。
+**仕様**: RFC 6749 §4.1.2 は、コード再利用時に AS が「可能であれば失効させるべき」と書いています。RFC 6819 §5.2.1.1 はサーバ側に再利用検出の不変条件を期待します。RFC 7009 §2.2 は、self-contained なトークンに対する revocation を未対応にしてもよいと許容します。FAPI 2.0 Security Profile Final §5.3.4(3) は、RS に access token の有効性、完全性、期限、失効状態の検証を要求します。この要件は RS の境界で課され、OP 側の保存方式を規定していません。
 
-**衝突**: 「すべての `jti` を shadow して revocation で行を反転」という素直なモデルは、仕様を満たします。ただし、トランザクションストアに `O(発行レート × AT_TTL)` の行を載せることになり、N 件の AT を持つユーザのログアウトは N 件の UPDATE になります。逆に「失効処理を持たず、JWT は `exp` まで有効のままにする」は、発行のホットパスをきれいにできますが、FAPI 2.0 SP §5.3.2.2 を真っ向から外します。
+**衝突**: 「すべての `jti` を shadow して revocation で行を反転」という素直なモデルは、仕様を満たします。ただし、トランザクションストアに `O(発行レート × AT_TTL)` の行を載せることになり、N 件の AT を持つユーザのログアウトは N 件の UPDATE になります。逆に「失効処理を持たず、JWT は `exp` まで有効のままにする」は、RS に失効状態を確認する手段がない限り、FAPI 2.0 Security Profile Final §5.3.4(3) の要件を満たせません。
 
 中間の解は、JWT を self-contained に保ったまま、**トークンごとではなく grant ごと** にサーバ側の状態を結びつけることです。失効した grant につき 1 行書けば、その grant 配下のすべての AT に効きます。発行時に書く必要はありません。
 
 ::: tip 選択
 **既定は `op.RevocationStrategyGrantTombstone`** です。各 JWT AT は `gid` という private claim(OP 側の GrantID。RFC 7519 §4.3、omitempty)を持ちます。OP のエンドポイント（`/userinfo`、`/introspect`）は検証時、`gid` をキーにして小さな grant 単位の tombstone テーブルを参照します。カスケード（ログアウト、コード再利用、refresh chain 侵害）は、失効した grant 1 件あたり 1 件の tombstone 行を、`/revocation` の単一 AT 失効は失効した `jti` 1 件あたり 1 件の deny-list 行を書きます。既定では `/token` の発行経路でデータベース書き込みは発生しません。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
 
-AT 単位の監査ログが必要な組み込み側は、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)` を選ぶと、`store.AccessTokenRegistry` に発行ごとの shadow 行を残す旧方式に戻せます。どちらの戦略も FAPI 2.0 SP §5.3.2.2 適合です。`op.RevocationStrategyNone` は、RFC 6749 §4.1.2 の「SHOULD」の余地を明示的に受け入れる、非 FAPI デプロイ向けの第 3 の選択肢です。ただし `op.New` は、いずれかの FAPI プロファイル下ではこの選択を拒否します。
+AT 単位の監査ログが必要な組み込み側は、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)` を選ぶと、`store.AccessTokenRegistry` に発行ごとの shadow 行を残す旧方式に戻せます。どちらの戦略も OP が提供する endpoint ではサーバ側の失効状態を参照できますが、OP 側の戦略を選ぶだけでは FAPI Final への適合を示せません。RS は §5.3.4(3) を満たす必要があります。`op.RevocationStrategyNone` は、RFC 6749 §4.1.2 の「SHOULD」の余地を明示的に受け入れる、非 FAPI デプロイ向けの第 3 の選択肢です。ただし `op.New` は、いずれかの FAPI プロファイル下ではこの選択を拒否します。
 
 opaque AT 経路（`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`）は、この戦略選択の影響を受けません。opaque の検証はレコード参照が必要なため、ストレージは本質的にトークン単位だからです。実装は `op/access_token_revocation.go`、`internal/tokens`(gid claim)、`op/store/grant_revocation.go`、および各バックエンドアダプタにあります。
 :::
@@ -517,7 +519,7 @@ IAT-bound 経路は、operator-trusted な広いデフォルトを維持しま�
 
 ## 28. Custom grant のリフレッシュトークン — ハンドラの値か、OP 発行の資格情報か
 
-**仕様**: RFC 6749 §6 は、リフレッシュトークンを authorization server が発行する資格情報として扱います。RFC 9700 §2.2.2 はその前提で、AS がリフレッシュトークンのローテーションと replay を追跡し、再利用時にチェーンを退役させることを期待します。
+**仕様**: RFC 6749 §6 は、リフレッシュトークンを authorization server が発行する資格情報として扱います。RFC 9700 §4.14.2 は、public client のリフレッシュトークン replay を検出するため、sender-constrained refresh token またはローテーションのいずれかを AS に要求します。ローテーションでは新しい token を発行し、旧 token を関係を保持したまま無効化し、再利用で侵害が分かったときは有効な token を失効させます。
 
 **衝突**: custom grant は意図的にハンドラ定義です。`AccessToken` と同じようにハンドラが任意のリフレッシュトークン文字列を返せる設計は一見自然ですが、値と親子関係を OP が作っていない資格情報は、OP がローテーション、バインド、連鎖失効できません。逆にリフレッシュトークンを全面的に拒否すると、長寿命のサービスチェーンを OP 既存のローテーション機構に乗せたい custom grant や token-exchange policy が作れません。
 

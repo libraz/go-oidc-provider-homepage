@@ -87,7 +87,7 @@ pageClass: pg-use-cases-byo-store
 - **`Transactional`** は `store.Tx` を返し、その `AuthorizationCodes()`、`Grants()`、`RefreshTokens()`、`PushedAuthRequests()`、`AccessTokens()`、`OpaqueAccessTokens()`、`GrantRevocations()` は 1 つの下層トランザクションにバインドされます。認可の完了処理は grant、PAR の消費、認可コードの永続化をまとめて commit するため、署名や永続化の失敗が「`request_uri` だけ消費されてコードは出ていない」状態を作れません。トランザクション内の grant 読み出しは行ロック、serializable 分離、または同等の競合検出を `Save` の前に効かせる必要があります。ロックなしの `SELECT` と無条件の `Save` を 1 トランザクションに束ねただけでは、並行する同意更新は失われます。`Sessions`、`Interactions`、`ConsumedJTIs` は意図的に `Tx` から外してあります。
 - **`InteractionStoreCAS`** は、上記の永続化が始まる前に終端インタラクションを不変にします。`CompareAndSwap` は `RawState` が変化していないときだけレコードを置き換え（競合時は `ErrConflict`、不在または期限切れなら `ErrNotFound`）、`DeleteIfUnchanged` は競合が無かった場合にのみ削除します。
 - **`GrantClientLister`** は Back-Channel Logout の一斉通知が使う、上限付きの audience ビューです。`ListClientIDsBySubject(ctx, subject, cursor, limit)` は安定した昇順で最大 `limit` 件の client ID を返し、続きがあれば `NextCursor` を添えます。クエリ自体を `limit+1` 行に制限してください。`ListBySubject` を呼んで結果を切り出す実装では、ログアウト通知 1 件あたりのデータベース負荷と client registry 参照を抑えるという目的が失われます。
-- **`RefreshRetryResponseStore`** は、封緘済みのトークンレスポンスを消費済みの前任トークンに紐づけて保存します。RFC 9700 の配送猶予期間で chain を分岐させず、同じ後継トークンをそのまま再送するためです。`SaveRotationWithRetry` は後継レコードと封緘済み blob を 1 つの操作で書き込む必要があり、それを原子的にできないバックエンドはこのインターフェースを公開してはなりません。blob は不透明な値として扱い、前任トークンの一方向ハッシュを鍵にし、保持期間は前任トークンの寿命を超えないようにします。
+- **`RefreshRetryResponseStore`** は、封緘済みのトークンレスポンスを消費済みの前任トークンに紐づけて保存します。本ライブラリのリフレッシュ再試行の猶予期間中に、系列を分岐させず同じ後継トークンを返すためです。RFC 9700 §4.14.2 はローテーションと再利用検知を扱いますが、この猶予期間は規定していません。`SaveRotationWithRetry` は後継レコードと封緘済み blob を 1 つの操作で書き込む必要があり、それを原子的にできないバックエンドはこのインターフェースを公開してはなりません。blob は不透明な値として扱い、前任トークンの一方向ハッシュを鍵にし、保持期間は前任トークンの寿命を超えないようにします。
 
 次の拡張は任意で、無くても OP は起動を拒否せず機能を縮退させます:
 

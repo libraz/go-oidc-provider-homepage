@@ -9,6 +9,8 @@ pageClass: pg-reference-architecture
 
 `op.New(...)` returns an `http.Handler` backed by an `http.ServeMux`. This page walks through what happens between request arrival and response — the packages involved, the order of validation, and the storage seams the embedder controls.
 
+The RP in the sequence below is a separate application. The OP application embeds go-oidc-provider and owns the `Store` and `LoginFlow` implementations.
+
 ## Package layout
 
 ```
@@ -76,22 +78,22 @@ The most-trodden path. Roughly:
 
 <figure class="fig">
   <div class="fig-head">Authorize → token, with the store and the login flow in view</div>
-  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 700" xmlns="http://www.w3.org/2000/svg">
-    <title id="arch-lifecycle-title">The happy path from the authorize request to the token response, showing which calls reach the store and which reach the configured login flow. The browser drives the first two phases; the third is a direct back-channel exchange between the RP and the OP.</title>
+  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 740" xmlns="http://www.w3.org/2000/svg">
+    <title id="arch-lifecycle-title">The happy path from the authorize request to the token response, showing which calls reach the store and which reach the configured login flow. The RP is a separate application; the OP application embeds go-oidc-provider. The browser drives the first two phases; the third is a direct back-channel exchange between the RP and the OP.</title>
     <rect class="fg-group" x="30" y="68" width="916" height="146" rx="8"/>
     <rect class="fg-group" x="30" y="222" width="916" height="236" rx="8"/>
-    <rect class="fg-group" x="30" y="466" width="916" height="222" rx="8"/>
+    <rect class="fg-group" x="30" y="466" width="916" height="262" rx="8"/>
     <text class="fg-lbl" x="42" y="86">1 · the authorize request</text>
     <text class="fg-lbl" x="42" y="240">2 · interaction</text>
     <text class="fg-lbl" x="42" y="484">3 · redeeming the code</text>
-    <line class="fg-life" x1="106" y1="62" x2="106" y2="688"/>
-    <line class="fg-life" x1="300" y1="62" x2="300" y2="688"/>
-    <line class="fg-life fg-life--accent" x1="510" y1="62" x2="510" y2="688"/>
-    <line class="fg-life" x1="710" y1="62" x2="710" y2="688"/>
-    <line class="fg-life" x1="880" y1="62" x2="880" y2="688"/>
+    <line class="fg-life" x1="106" y1="62" x2="106" y2="728"/>
+    <line class="fg-life" x1="300" y1="62" x2="300" y2="728"/>
+    <line class="fg-life fg-life--accent" x1="510" y1="62" x2="510" y2="728"/>
+    <line class="fg-life" x1="710" y1="62" x2="710" y2="728"/>
+    <line class="fg-life" x1="880" y1="62" x2="880" y2="728"/>
     <rect class="fg-box" x="36" y="16" width="140" height="42" rx="6"/>
     <text class="fg-t" x="106" y="35" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="106" y="49" text-anchor="middle">your app</text>
+    <text class="fg-xs" x="106" y="49" text-anchor="middle">separate app</text>
     <rect class="fg-box" x="230" y="16" width="140" height="42" rx="6"/>
     <text class="fg-t" x="300" y="35" text-anchor="middle">User agent</text>
     <text class="fg-xs" x="300" y="49" text-anchor="middle">browser</text>
@@ -176,27 +178,35 @@ The most-trodden path. Roughly:
     <text class="fg-mxs fg-halo" x="308" y="566" text-anchor="middle">POST /token</text>
     <text class="fg-mxs fg-halo" x="308" y="579" text-anchor="middle">grant_type=authorization_code</text>
     <!-- 15 -->
-    <circle class="fg-badge" cx="15" cy="624" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="627" text-anchor="middle">15</text>
-    <path class="fg-edge" d="M510,624 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="604" text-anchor="middle">AuthorizationCodes.Consume</text>
-    <text class="fg-xs" x="610" y="617" text-anchor="middle">then verify PKCE and client auth</text>
+    <circle class="fg-badge" cx="15" cy="614" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="617" text-anchor="middle">15</text>
+    <path class="fg-edge" d="M510,614 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="598" text-anchor="middle">Clients.GetClient · client authentication</text>
+    <text class="fg-xs" x="610" y="611" text-anchor="middle">before consuming the authorization code</text>
     <!-- 16 -->
-    <circle class="fg-badge" cx="15" cy="654" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="657" text-anchor="middle">16</text>
-    <path class="fg-edge" d="M510,654 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="648" text-anchor="middle">AccessTokens.Register · RefreshTokens.Save</text>
+    <circle class="fg-badge" cx="15" cy="644" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="647" text-anchor="middle">16</text>
+    <path class="fg-edge" d="M510,644 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="636" text-anchor="middle">AuthorizationCodes.Consume</text>
+    <text class="fg-xs" x="610" y="649" text-anchor="middle">then enforce PKCE and redirect_uri</text>
     <!-- 17 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="682" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="685" text-anchor="middle">17</text>
-    <path class="fg-edge fg-edge--accent" d="M510,682 H106" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs fg-halo" x="308" y="676" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+    <circle class="fg-badge" cx="15" cy="674" r="8.5"/>
+    <text class="fg-badge-t" x="15" y="677" text-anchor="middle">17</text>
+    <path class="fg-edge" d="M510,674 H710" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="610" y="668" text-anchor="middle">AccessTokens.Register (JTIRegistry only) · RefreshTokens.Save (eligible)</text>
+    <!-- 18 -->
+    <circle class="fg-badge fg-badge--accent" cx="15" cy="704" r="8.5"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="15" y="707" text-anchor="middle">18</text>
+    <path class="fg-edge fg-edge--accent" d="M510,704 H106" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs fg-halo" x="308" y="698" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
   </svg>
   <figcaption class="fig-note">The two rightmost lanes are yours. Every arrow that reaches them is an interface call, which is what makes the storage backend and the login experience replaceable without touching the protocol path in the middle.</figcaption>
 </figure>
 </div>
 
-`/par` and `/end_session` follow the same general shape; the sequence-diagram is the canonical happy path.
+`/par` and `/end_session` follow the same general shape; the sequence diagram is the canonical happy path.
+
+A JWT access token gets an `AccessTokens` shadow row only when `RevocationStrategyJTIRegistry` is selected. The default `RevocationStrategyGrantTombstone` records a grant tombstone at revocation instead, while `RevocationStrategyNone` disables server-side JWT revocation. A refresh token is saved only when the provider grant, client registration, and scope policy allow it.
 
 <a class="faq-anchor" id="loginflow-internals"></a>
 
@@ -327,7 +337,7 @@ See [Architecture: storage tiering](/use-cases/hot-cold-redis) for production pl
 The discovery handler at `/.well-known/openid-configuration` builds its document from the OP's effective configuration. Every advertised field is the authoritative answer for what the OP will actually do — there is no drift between discovery and behaviour because:
 
 - **`response_types_supported`** is computed from `WithGrants` + the FAPI profile; a client-credentials-only OP advertises an empty list and omits browser authorization/logout surfaces.
-- **`token_endpoint_auth_methods_supported`** is intersected with the FAPI allow-list when `WithProfile(profile.FAPI2Baseline)` / `FAPI2MessageSigning` is active.
+- **`token_endpoint_auth_methods_supported`** is intersected with the library's FAPI allow-list when `WithProfile(profile.FAPI2Baseline)` or `WithProfile(profile.FAPI2MessageSigning)` is active.
 - **`scopes_supported`** is the union of built-in scopes and `WithScope` registrations.
 - **`ui_locales_supported`** is auto-derived from the runtime locale resolver (seed bundles plus `WithLocale` additions) unless `WithDiscoveryMetadata(...).UILocalesSupported` supplies an explicit non-empty override.
 - **`code_challenge_methods_supported`** is always `["S256"]` — `plain` is structurally absent.

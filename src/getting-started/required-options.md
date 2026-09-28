@@ -53,10 +53,10 @@ pageClass: pg-getting-started-required-options
 op.WithIssuer("https://op.example.com")
 ```
 
-::: warning OIDC Discovery 1.0 §3 / FAPI 2.0 §5.4
-The issuer must be `https://`, must not have a trailing slash, must not carry a query string or fragment. The scheme and host must be all-lowercase, no default port may appear (`:443` for https, `:80` for http), and the path must be canonical (no `..`, `.`, or duplicate slashes). Loopback IP literals (`127.0.0.0/8`, `[::1]`) are exempted from the `https://` requirement so localhost dev works; the textual host `localhost` is **not** in the carve-out (DNS hijack risk per RFC 8252 §7.3).
+::: warning Issuer validation: specification and library policy
+OIDC Discovery 1.0 §3 requires an HTTPS issuer URL without a query or fragment and requires its metadata `issuer` value to match exactly. This library additionally rejects trailing slashes, uppercase scheme or host, default ports (`:443` for HTTPS, `:80` for HTTP), and non-canonical paths (`..`, `.`, or duplicate slashes). For local development, it permits plain HTTP only on loopback IP literals (`127.0.0.0/8`, `[::1]`); `localhost` needs an explicit opt-in. The HTTP exception is library policy, not an exception in OIDC Discovery.
 
-`internal/discovery.ValidateIssuer` enforces the shape as defense-in-depth over the option setter. A typo (trailing slash, `:443`, uppercase host, etc.) will fail `op.New`, not silently produce a discovery document RPs reject. The strictness is what makes RFC 9207 byte-exact mix-up defence hold end-to-end. See [Issuer](/concepts/issuer) for the full canonical-form discussion.
+`internal/discovery.ValidateIssuer` enforces the shape as defense-in-depth over the option setter. A typo (trailing slash, `:443`, uppercase host, etc.) will fail `op.New`, not silently produce a discovery document RPs reject. The strictness gives deployments one spelling for the issuer used in RFC 9207 comparisons. See [Issuer](/concepts/issuer) for the full canonical-form discussion.
 :::
 
 ## `WithStore`

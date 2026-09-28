@@ -33,7 +33,7 @@ This page is the selection guide. The mechanics live on the dedicated pages for 
 | Typical use cases | TV apps, CLI tools, kiosks, voice assistants, low-input IoT | Strong customer authentication (PSD2-style), finance / health out-of-band approval, customer-support flows that reset access without sharing a screen |
 | Library status | RFC 8628 — full support, gated by `op.WithGrants(grant.DeviceCode)` plus `op.WithDeviceCodeGrant()` | OIDC CIBA Core 1.0 — poll mode only; discovery advertises `poll` only; ping and push are not implemented |
 | Brute-force defense | `op/devicecodekit` opaque-attempt-key limiter plus record lockout (`MaxUserCodeStrikes`) | Poll-abuse lockout — rate-limited `/token` retries per `auth_req_id`, `AuditCIBAPollAbuseLockout` on crossing the cap |
-| FAPI profile | Not in FAPI 2.0 (RFC 8628 itself is sufficient for Baseline-like deployments) | FAPI-CIBA — a separate FAPI profile from FAPI 2.0 Baseline / Message Signing, pinning JAR + DPoP \| mTLS + 10-minute access TTL |
+| FAPI profile | Device Code is outside the FAPI 2.0 Security Profile's analyzed authorization flows | FAPI-CIBA is a separate profile from FAPI 2.0 Security Profile / Message Signing; this library's CIBA setting requires JAR, DPoP or mTLS, and a 10-minute access-token TTL ceiling |
 
 ::: tip Two grants, one symptom
 Both grants exist because the canonical `authorization_code + PKCE` flow assumes a usable browser on the device that wants the token. That assumption breaks for TVs, CLIs, IoT, voice assistants, and for backend services acting on a user's behalf. RFC 8628 and CIBA solve **two different shapes** of "the browser is somewhere else".
@@ -116,7 +116,7 @@ Run through these four questions in order. The first one usually settles it.
 
 **4. Is this a regulated finance / health context with out-of-band approval requirements?**
 
-- **CIBA is designed for it.** The FAPI-CIBA profile pins JAR, sender constraint (DPoP or mTLS), and a 10-minute access TTL on top of CIBA Core. `binding_message` is the audit primitive regulators look for ("the user saw exactly what they were approving").
+- **CIBA is designed for it.** Historical FAPI-CIBA-ID1 builds on FAPI 1.0 and mTLS. This library's `profile.FAPICIBA` requires JAR, accepts DPoP or mTLS for sender constraint, and caps access-token lifetime at 10 minutes; that preset does not by itself establish ID1 conformance. `binding_message` helps the user recognize the request they are approving.
 - **Device Code is general-purpose.** It can be deployed to good effect, but it is not the shape regulators normally point to for SCA.
 
 If you are still unsure after running the questions: default to **Device Code** for consumer-facing "the device has a screen but no browser" cases, and **CIBA** for "the RP knows the user and just needs them to approve out-of-band".

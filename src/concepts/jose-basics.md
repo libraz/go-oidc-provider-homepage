@@ -181,7 +181,7 @@ Two classes of attack live in the JOSE algorithm registry, and the canonical def
 
 ### Refused algorithms for signing
 
-- **`alg=none`** (RFC 7518 §3.6) — a "signature" that's the empty string. RFC 8725 §3.1 says implementations MUST NOT trust JWTs based on `none`. The library does not include `none` in its algorithm enum at all.
+- **`alg=none`** (RFC 7518 §3.6) — an unsecured JWT has no signature. RFC 8725 §3.1 requires verification to use an application-approved algorithm set; this library excludes `none` from that set entirely.
 - **`HS256` / `HS384` / `HS512`** (HMAC family) — symmetric MACs. The alg-confusion attack class (RFC 8725 §3.2) is a verifier that accepts both asymmetric and symmetric algorithms: an attacker mints a JWS with `alg=HS256` and uses the OP's *public* key as the HMAC secret, and a sloppy verifier validates it. The library does not include any HMAC algorithm in its enum.
 
 ### Permitted algorithms
@@ -189,7 +189,7 @@ Two classes of attack live in the JOSE algorithm registry, and the canonical def
 | Use | Algorithms |
 |---|---|
 | OP issuance (signing outgoing ID Tokens, JWT access tokens, JARM) | `ES256` only. `WithKeyset` rejects non-P-256 signing keys at `op.New`. |
-| Verification (incoming JWS) | `RS256`, `PS256`, `ES256`, `EdDSA`. `RS256` accepted on verify because OIDC Core 1.0 §10.1 makes it MUST-implement for ID Token verification. |
+| Verification (incoming JWS) | `RS256`, `PS256`, `ES256`, `EdDSA`. Inbound `RS256` support is this library's interoperability choice; it does not fix the separate OIDC Core requirement to support `RS256` when signing ID Tokens. |
 
 These four are the closed enum in `internal/jose.Algorithm`. There is no zero-value default for the type, and no fallback to a wider registry. A `depguard` lint rule forbids importing the underlying JOSE package outside `internal/jose/`, so no future code path can re-introduce `none` or `HS*` by accident. See [design judgment #11](/security/design-judgments#dj-11) for the full reasoning.
 

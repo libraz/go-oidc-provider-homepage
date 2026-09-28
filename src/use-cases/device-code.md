@@ -233,7 +233,7 @@ When DPoP or mTLS is used, `/device_authorization` records the DPoP key thumbpri
 | Wire response | Meaning |
 |---|---|
 | `400 authorization_pending` | User has not approved yet. Poll again after `interval` seconds. |
-| `400 slow_down` | Polled too fast. Double the interval — RFC 8628 §3.5. The OP persists the new interval atomically so this is enforced across replicas. If persisting the observation faults, the OP emits `device_code.poll_observation.failed` so the observability gap is visible. |
+| `400 slow_down` | Polled too fast. Add 5 seconds to the polling interval for this and subsequent responses, per RFC 8628 §3.5. The OP persists the new interval atomically so this is enforced across replicas. If persisting the observation faults, the OP emits `device_code.poll_observation.failed` so the observability gap is visible. |
 | `400 access_denied` | User denied (or the brute-force gate locked out, or `devicecodekit.Revoke` was called). Stop polling. |
 | `400 expired_token` | `device_code` outlived `expires_in`. Stop polling. |
 | `200 { access_token, ... }` | Approved — treat as a normal token response. |

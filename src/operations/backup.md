@@ -146,10 +146,9 @@ If you wrote your own `store.Store`, the contract test suite at [`op/store/contr
 
 1. Restore the durable backend from backup.
 2. Bring up the OP against the restored store.
-3. **Optionally**, fan-out an invalidation:
-   - If the backup is more than `WithAccessTokenTTL` old, every issued access token has expired — no action needed.
-   - If the backup is more than the JWKS cache window old, RPs may still verify tokens against keys you've since rotated — issue a manual JWKS refresh (curl from each RP) if you're paranoid.
-4. Notify users that re-login is required for any session established after the backup point.
+3. Restore or verify the signing key material and its JWKS publication independently of the database restore. A database restore does not invalidate already-issued JWT signatures: a JWT remains cryptographically verifiable until `exp` wherever the corresponding public key is available. The restored grant and revocation state can still change whether the OP accepts that token, so check cryptographic verification and server-side state separately. If key rotation happened after the backup, restore the intended keyset and JWKS coherently; a database restore alone does not roll back that rotation.
+4. Confirm that durable state written after the backup point was rolled back, including any grant or token revocation changes covered by the restored store.
+5. Notify users that re-login is required for any session established after the backup point.
 
 ### Total loss of volatile backend (Redis)
 
@@ -181,8 +180,8 @@ There is no recovery path for the cookie key itself. Treat it like a HSM-stored 
 If the signing key is lost:
 
 - New tokens cannot be issued until you provision a fresh `op.Keyset`.
-- Existing tokens still verify against `/jwks` if the public half is recoverable from the JWKS document an RP has cached. The OP itself also verifies its own tokens — losing the key is fatal.
-- Refresh tokens are still mintable as opaque values, but the bound access tokens fail to sign.
+- Losing the private signer does not by itself invalidate existing JWTs: an RP that already cached the corresponding public JWK can verify them until `exp`. The OP cannot recreate the same `op.Keyset` for its own verification paths from a public JWK alone; recover the signer or intentionally replace the key and handle the old tokens.
+- Where the refresh path can still run, opaque refresh tokens may be persisted, but access-token responses that require a new signature fail until a signer is configured.
 
 Mitigation: store the private signing key in a service that has its own backup / replication (KMS, Vault), and never hold the only copy in process memory. The library accepts any `crypto.Signer` — see [JWKS endpoint § HSM / KMS integration](/operations/jwks#hsm-kms-integration).
 
@@ -190,10 +189,12 @@ Mitigation: store the private signing key in a service that has its own backup /
 
 Run a recovery drill before you go live:
 
-1. Take a backup at `t0`.
-2. Issue 100 tokens at `t0 + 1 min`.
-3. Restore the backup.
-4. Confirm the 100 issued tokens are unverifiable (which is the correct behaviour — the chain was rolled back).
-5. Confirm new login + token issuance works.
+1. Take a backup at `t0` and keep the signing key material used at that point available for the drill.
+2. Issue 100 signed JWT access tokens at `t0 + 1 min` and retain the tokens with the corresponding public JWK.
+3. Make a durable state change after `t0` (for example, create a test client or revoke a grant) and record it.
+4. Restore the backup.
+5. Confirm the captured JWT signatures still verify with the intended keyset; restoring the database does not break cryptographic continuity.
+6. Confirm that the post-`t0` durable state change was rolled back, and check the configured revocation behavior separately.
+7. Confirm new login and token issuance works.
 
 A 30-minute drill catches more issues than a written runbook ever will.

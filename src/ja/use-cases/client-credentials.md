@@ -8,7 +8,7 @@ pageClass: pg-use-cases-client-credentials
 
 ## `client_credentials` グラントとは
 
-OAuth 2.0 にはクライアントがアクセストークンを取得するための「grant type」が 4 種類あります。3 つは人間を介し（`authorization_code` / `device_code` / 非推奨の `password`）、1 つは介しません。
+RFC 6749 が定義する当初の grant type は `authorization_code`、`implicit`、`password`（resource owner password credentials）、`client_credentials` の 4 種類です。前 3 つは resource owner を伴い、`client_credentials` は伴いません。後続仕様では Device Authorization などが追加され、本ライブラリにも refresh token、CIBA、token exchange の経路があります。
 
 **`client_credentials`**（RFC 6749 §4.4）は人を介さないケース用です。Service A が登録済みの `client_id` + 認証情報を持ち、`/token` でそれを直接アクセストークンに交換します。トークンは **サービス自身** を表現するため、`id_token` も `refresh_token` も同意画面もありません（再発行は安いので refresh は不要）。
 
@@ -152,14 +152,14 @@ curl -s -d 'grant_type=client_credentials' \
 ```
 
 ::: details FAPI 2.0 の client_credentials
-`op.WithProfile(profile.FAPI2Baseline)` 配下では `client_secret_basic` が除外されます。`private_key_jwt` または mTLS のみが受理。`feature.DPoP` を上乗せすれば発行アクセストークンをクライアント保有鍵に追加バインドできます。
+`op.WithProfile(profile.FAPI2Baseline)` 配下では `client_secret_basic` が除外されます。本ライブラリが token endpoint のクライアント認証で受理するのは `private_key_jwt` です。mTLS は送信者制約を満たせますが、RFC 8705 の mTLS クライアント認証経路は未接続です。`feature.DPoP` を上乗せすれば発行アクセストークンをクライアント保有鍵に追加バインドできます。
 :::
 
 ## resource server 側の検証
 
 2 経路:
 
-1. **JWT 自己検証**（RFC 9068）— JWT アクセストークンを構成済みの場合。Service B は `/jwks` を一度取得しキャッシュ、ローカルで署名検証。
+1. **JWT 自己検証**（RFC 9068）— JWT アクセストークンを構成済みの場合。Service B は `/jwks` を取得してキャッシュし、鍵ローテーションで未知の `kid` が現れたらキャッシュを更新してから、ローカルで署名を検証します。
 2. **Introspect**（RFC 7662）— アクセストークンが opaque な場合。Service B が `/introspect` にトークンを post し、JSON レスポンスから `active`、`scope`、`client_id` 等を読みます。
 
 ```sh

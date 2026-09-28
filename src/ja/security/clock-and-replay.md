@@ -37,7 +37,7 @@ type Clock interface {
 | PAR (RFC 9126) `request_uri` 寿命 | 一回限り、短寿命 | `parendpoint.DefaultTTL = 60 s` | [/ja/concepts/fapi](/ja/concepts/fapi) |
 | Back-Channel Logout token | OP は 1 度だけ署名、RP 側で重複検出 | OP は `jti` キャッシュを持たない（RP 側の責務） | [/ja/use-cases/back-channel-logout](/ja/use-cases/back-channel-logout) |
 | ID トークン | `iat` + `exp` | `exp - iat = defaultIDTokenTTL = 10 分`(固定値。リクエストのアクセストークン TTL とは独立) | [/ja/concepts/tokens](/ja/concepts/tokens) |
-| アクセストークン（JWT または opaque） | `iat` + `exp` | `DefaultAccessTokenTTL = 5 分`、上限 `AccessTokenTTLMax = 24 h`(FAPI プロファイルは 10 分まで) | [/ja/concepts/tokens](/ja/concepts/tokens) |
+| アクセストークン（JWT または opaque） | `iat` + `exp` | `DefaultAccessTokenTTL = 5 分`、上限 `AccessTokenTTLMax = 24 h`（ライブラリはすべての FAPI profile enum に 10 分の上限を適用する。これはライブラリ／legacy profile の制約であり、FAPI 2.0 Security Profile Final §6.1 が一律に 10 分を要求しているわけではない） | [/ja/concepts/tokens](/ja/concepts/tokens) |
 | リフレッシュトークン（絶対寿命） | 発行時の `exp` | `timex.RefreshTokenTTLDefault = 30 日` | [/ja/concepts/refresh-tokens](/ja/concepts/refresh-tokens) |
 | `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` 重複検出、±60 秒の clock leeway | `jti` は `expiresAt = assertion.exp + leeway`(60 秒)で記録。`now + maxAssertionLifetime + leeway` を上限にキャップ | [/ja/concepts/client-types](/ja/concepts/client-types) |
 
@@ -92,7 +92,7 @@ type Clock interface {
     <line class="fg-rule" x1="340" y1="286" x2="900" y2="286"/>
     <text class="fg-s" x="300" y="290" text-anchor="end">アクセストークン</text>
     <circle class="fg-dot--accent" cx="424" cy="286" r="4.5"/>
-    <text class="fg-mxs" x="440" y="290">5 分 · FAPI は 10 分</text>
+    <text class="fg-mxs" x="440" y="290">5 分 · library FAPI の上限 10 分</text>
     <line class="fg-rule" x1="340" y1="316" x2="900" y2="316"/>
     <text class="fg-s" x="300" y="320" text-anchor="end">ID トークン</text>
     <circle class="fg-dot--accent" cx="461" cy="316" r="4.5"/>
@@ -144,7 +144,7 @@ passkey の registration / login は毎回新しい WebAuthn challenge を発行
 
 **トークンリプレイ** — 同じ bearer 形式のクレデンシャルを 2 回提示する形です。認可コードは初回使用時に *消費* されます（`AuthorizationCodeStore` の該当行が使用済みに切り替わります）。リフレッシュトークンは引き換えのたびに *ローテーション* し、猶予期間が閉じた後に直前のトークンを提示すると、リユース検出によって失効カスケードが走ります。DPoP proof は `jti` で *重複検出* されます。まず nonce gate を通し、受理した proof を `ConsumedJTIStore` に commit するため、最初の proof が gate を通過した後に同じ `jti` を持つ proof を送ると `ErrProofReplayed` になります。
 
-**リクエストリプレイ** — 同じ `/authorize` リクエストを同じパラメータで再送信する形です。PAR は一回限りの `request_uri` を発行するため、構造的にこのリプレイを防ぎます。`/authorize` がその URN を消費した時点で、レコードは `PushedAuthRequestStore` から消えます。JAR（`request=` でインライン渡しする request object）は同じ `ConsumedJTIStore` サブストアに対して `jti` 重複検出を行います。`jar:<clientID>:<jti>` 形式のキーは、request object の `exp` を verifier の `max-age` の下限と maximum-lifetime の上限にかけ、clock skew を加えた server-bounded な expiry 計算に従って保持されます。
+**リクエストリプレイ** — 同じ `/authorize` リクエストを同じパラメータで再送信する形です。PAR は一回限りの `request_uri` を発行するため、構造的にこのリプレイを防ぎます。`/authorize` がその URN を消費した時点で、レコードは `PushedAuthRequestStore` から消えます。JAR（`request=` でインライン渡しする request object）は同じ `ConsumedJTIStore` サブストアに対して `jti` 重複検出を行います。`jar:<use>:<clientID>:<jti>` 形式のキーは、request object の `exp` を verifier の `max-age` の下限と maximum-lifetime の上限にかけ、clock skew を加えた server-bounded な expiry 計算に従って保持されます。
 
 **ログアウトリプレイ** — 同じ `logout_token` を RP に対して 2 度 POST する形です。Back-Channel Logout 1.0 §2.6 は重複検出の責務を *RP* 側に置きます。OP は 1 度だけ署名して配送し、各 RP は自分が観測した logout-token の `jti` を必要に応じて記録します。OP 側に logout-token のリプレイキャッシュを持たないのは、重複検出すべき境界が RP 側にあるからです。
 
@@ -152,7 +152,7 @@ passkey の registration / login は毎回新しい WebAuthn challenge を発行
 
 ## 運用上の前提
 
-`ConsumedJTIStore` (`op/store/jti.go` で宣言) は `jti` ベースの防御がすべて経由する契約です。DPoP、JAR、`client_assertion` のいずれも同じサブストアの `Mark(ctx, key, expiresAt)` を呼びます。キーの名前空間（`jar:<clientID>:<jti>` と、DPoP / assertion 用の素の `jti`）によって衝突が避けられています。
+`ConsumedJTIStore` (`op/store/jti.go` で宣言) は `jti` ベースの防御がすべて経由する契約です。DPoP、JAR、`client_assertion` のいずれも同じサブストアの `Mark(ctx, key, expiresAt)` を呼びます。キーは `dpop:<JKT>:<JTI>`、`clientassertion:<clientID>:<jti>`、`jar:<use>:<clientID>:<jti>` と名前空間を分けるため、proof、client、request の用途の間で衝突しません。
 
 複数インスタンス構成では、このサブストアを全インスタンスで共有するか、または特定の `jti` の存続期間中はその `jti` を同じインスタンスへルーティングする必要があります。複数レプリカそれぞれに in-memory 実装を持たせると、この防御は無効化されます。レプリカ A とレプリカ B が同じ proof を 1 度ずつ、合計 2 度受理してしまうためです。Redis / Memcached のような高速な共有キャッシュが標準的な選択肢で、これに伴う揮発 / 永続ストアの分離指針は [/ja/operations/multi-instance](/ja/operations/multi-instance) で扱っています。
 

@@ -105,9 +105,11 @@ Start with the cards for the surface you are changing. Each detailed entry then 
 
 ## 1. PAR `request_uri` — when does "one-time use" apply?
 
-**Spec:** RFC 9126 §2.2 says the `request_uri` "MUST be one-time use only".
+**Spec:** RFC 9126 §2.2 separates client use from AS handling:
 
-**Conflict:** A literal "consume on first sight" interpretation breaks multi-step interaction (consent → MFA → locale change can re-redirect to the same `/authorize?request_uri=…` before the original interaction finishes). FAPI 2.0 OFCS confirms this with two separate negative tests — one that requires the OP to *accept* a re-visit before authentication completes, and one that requires it to *reject* the re-visit afterwards.
+> **RFC 9126 §2.2 (summary)** A client MUST use each `request_uri` only once. An AS SHOULD treat it as one-time, MAY allow duplicates caused by a user-agent reload or refresh, and MUST reject an expired value.
+
+**Conflict:** A literal "consume on first sight" interpretation breaks multi-step interaction (consent → MFA → locale change can re-redirect to the same `/authorize?request_uri=…` before the original interaction finishes). The checked-in OFCS FAPI plans confirm this with two separate negative tests — one that requires the OP to *accept* a re-visit before authentication completes, and one that requires it to *reject* the re-visit afterwards. Those plans are Implementer's Draft-era plans and do not by themselves establish conformance to the current FAPI Final profile.
 
 ::: tip Decision
 `request_uri` is **looked up at `/authorize` entry** (`PARs.Find`) and **consumed at authorization-code issuance** (`PARs.Consume`). Re-visits during interaction succeed; re-visits after the code is emitted are rejected with `invalid_request_uri`. The matching OFCS module `fapi2-…-par-attempt-reuse-request_uri` exercises the post-emission rejection path; see <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
@@ -117,14 +119,14 @@ Start with the cards for the surface you are changing. Each detailed entry then 
 
 ## 2. Refresh-token rotation grace window
 
-**Spec:**
+**Spec:** RFC 9700 §4.14.2 requires an AS to detect refresh-token replay for public clients with sender-constrained refresh tokens or rotation. FAPI 2.0 Security Profile Final §5.3.2.1(9) limits refresh-token rotation to extraordinary circumstances; when rotation is used, it allows a time-limited retry with the previous token after the new token is lost.
 
-> **RFC 9700 §2.2.2** the previous refresh token MAY be invalidated but MUST remain valid until the new refresh token is delivered to the client successfully.
+> **RFC 9700 §4.14.2 (summary)** Rotation issues a new refresh token, invalidates the previous one while retaining the relationship, and revokes the active token when reuse reveals a compromise.
 
-**Conflict:** A strict "single-use, no grace" reading kills any client where the token rotation network round-trip is interrupted (mobile backgrounding, dropped TCP, retried HTTP/2 stream). OFCS asserts the grace path with a 30-second wait between rotation and re-exchange of the previous token.
+**Conflict:** A strict "single-use, no grace" reading kills any client where the token rotation network round-trip is interrupted (mobile backgrounding, dropped TCP, retried HTTP/2 stream). The checked-in OFCS FAPI plans exercise a grace path with a 30-second wait between rotation and re-exchange of the previous token; those plans are Implementer's Draft-era plans and do not by themselves establish conformance to the current FAPI Final profile.
 
 ::: tip Decision
-Rotated refresh tokens stay accepted for `GraceTTL` (default 60 s) when the chain has not been revoked for reuse-detection. Within the grace window, presenting the old refresh token returns a fresh access token but does **not** rotate the chain again. Reuse *after* the grace window — or any reuse on a chain that was already revoked — invalidates the entire chain (RFC 9700 §4.14). `op.WithRefreshGracePeriod` rejects negative values and treats an explicit zero as no grace. Under FAPI 2.0 profiles, explicit values from 0 through 60 seconds are accepted and wider values are construction errors; the profile does not force zero, and omitting the option still resolves to 60 seconds. Deployments without those profiles may choose a wider non-negative window. Implemented in `internal/grants/refresh.Exchanger.tryGrace`; `store.RefreshToken.Revoked` distinguishes "consumed by rotation" from "retired by chain compromise".
+Rotated refresh tokens stay accepted for the library's configurable `GraceTTL` (default 60 s) when the chain has not been revoked for reuse-detection. Within the grace window, presenting the old refresh token returns the saved successor without rotating again; a sender-constrained retry may receive a newly bound access token. Reuse *after* the grace window — or any reuse on a chain that was already revoked — invalidates the entire chain (RFC 9700 §4.14.2). The 60-second default is an implementation choice for a bounded lost-response retry path, not an RFC requirement. It matches the time-limited retry shape in FAPI 2.0 Security Profile Final §5.3.2.1(9) when rotation is used, but does not establish that the deployment meets the profile's extraordinary-circumstance condition. `op.WithRefreshGracePeriod` rejects negative values and treats an explicit zero as no grace. Under the library's FAPI 2.0 profiles, explicit values from 0 through 60 seconds are accepted and wider values are construction errors; omitting the option still resolves to 60 seconds. Deployments without those profiles may choose a wider non-negative window. Implemented in `internal/grants/refresh.Exchanger.tryGrace`; `store.RefreshToken.Revoked` distinguishes "consumed by rotation" from "retired by chain compromise".
 :::
 
 <a class="faq-anchor" id="dj-3"></a>
@@ -175,7 +177,7 @@ Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation
 
 **Spec:** RFC 9101 §10.8 RECOMMENDS rejecting replayed request objects within their `exp` window. It does not mandate a registry.
 
-**Conflict:** A naive "verify and accept" honours the spec but allows a one-shot intercepted request object to be replayed against a fresh `/authorize` until `exp`. FAPI 2.0 Message Signing assumes the OP implements replay defence even though the base spec only says SHOULD.
+**Conflict:** A naive "verify and accept" follows the minimum JAR rules but allows an intercepted request object to be replayed against a fresh `/authorize` until `exp`. FAPI 2.0 Message Signing requires a signed request object at PAR, but does not make `jti` replay detection mandatory. The cache below is a library defense-in-depth choice.
 
 ::: tip Decision
 OP-side `jti` cache, active by default whenever JAR is enabled. A replay marker is retained for the verifier's configured request max-age / max-lifetime window plus clock skew: the retention is clamped unconditionally to that OP-side ceiling, so a client-supplied far-future `exp` cannot pin the cache indefinitely. The cache uses the same `Sessions` storage as the rest of the OP's volatile state, so operators that already plan a Redis volatile slice get replay defence "for free".
@@ -185,12 +187,12 @@ OP-side `jti` cache, active by default whenever JAR is enabled. A replay marker 
 
 ## 7. Profile declaration — auto-enable features, reject unwired grants
 
-**Spec:** FAPI profiles impose a mixture of requirements: some are routable features such as PAR, JAR, and JARM; others require deployment-owned collaborators. OAuth 2.1 / RFC 9700 makes PKCE mandatory for every authorization-code request, while OIDC Core compatibility must remain available for deployments that need it.
+**Spec:** FAPI profiles impose a mixture of requirements: some are routable features such as PAR, JAR, and JARM; others require deployment-owned collaborators. RFC 9700 §2.1.1 requires PKCE for public clients and recommends it for confidential clients. This library applies a stricter all-client rule under its Baseline and FAPI profiles, while OIDC Core compatibility remains available for deployments that need it.
 
 **Conflict:** Open-coded `switch profile` blocks in handlers silently diverge. Auto-enabling every requirement is also wrong: a missing feature can be selected safely, but mounting a grant without its store and resolver collaborators creates a half-wired endpoint.
 
 ::: tip Decision
-**Profiles accumulate their policy, but features and grants resolve differently.** `WithProfile` auto-enables required features. Thus FAPI 2.0 Baseline selects PAR and JAR, Message Signing also selects JARM, and a FAPI profile selects DPoP unless the embedder explicitly chose mTLS. `profile.Baseline` has no routable feature; it makes PKCE mandatory for every authorization-code request, including confidential clients.
+**Profiles accumulate their policy, but features and grants resolve differently.** `WithProfile` auto-enables required features. Thus FAPI 2.0 Baseline selects PAR and JAR, Message Signing also selects JARM, and a FAPI profile selects DPoP unless the embedder explicitly chose mTLS. `profile.Baseline` has no routable feature. The library's `profile.Baseline`, `profile.FAPI2Baseline`, and `profile.FAPI2MessageSigning` policies make PKCE mandatory for every authorization-code request, including confidential clients.
 
 Required grants are never auto-enabled. `profile.FAPICIBA` without the CIBA grant fails `op.New` and names `WithCIBA(WithCIBAHintResolver(...))` as the wiring path. This preserves a useful construction error instead of mounting `/bc-authorize` without its collaborators. The resolved profiles, features, grants, and policy are emitted once as the `startup.profile` audit event, so operators can verify the actual posture before the first request. The constraint functions live in `op/profile/constraints.go`; `WithProfile` and construction validation apply them centrally.
 :::
@@ -211,12 +213,12 @@ A two-layer model — `op/aal.go` for the internal AAL ladder, `op/acr.go` for t
 
 ## 9. Issuer identifier validation
 
-**Spec:** RFC 9207 says the OP MUST emit `iss` on authorization responses. OIDC Discovery 1.0 §3 / RFC 8414 §3 / FAPI 2.0 §5.4 imply the issuer is the OP's canonical identifier — concatenated verbatim with `/.well-known/openid-configuration` to derive the discovery URL.
+**Spec:** RFC 9207 says the OP MUST emit `iss` on authorization responses, and clients compare that value with the expected issuer using simple string comparison. OIDC Discovery 1.0 §3 and RFC 8414 §2 define the issuer as an HTTPS URL without query or fragment components and require the metadata `issuer` to match the issuer used for the configuration request. Discovery §4.1 (and RFC 8414 §3.1) removes a terminating `/` from a path issuer before constructing the well-known request. FAPI 2.0 Security Profile Final §5.3.2.1(1) requires the AS to distribute that discovery metadata.
 
-**Conflict:** Real deployments commonly run with two URIs that look equivalent but differ by trailing slash, scheme case, host case, or default port inclusion. RFC 9207 mix-up defence depends on byte-exact `iss` comparison across the OP and every RP; if the OP normalises the canonical form differently to the RP, mix-up defence fails silently.
+**Conflict:** URI syntax permits representations that differ by scheme or host case, default-port spelling, or a trailing slash, and Discovery explicitly removes a terminating slash when constructing the well-known request. These specifications do not require this library to reject every such representation, but RFC 9207 and the metadata specifications still require one exact issuer value at comparison boundaries. If an OP and an RP canonicalize that value differently, issuer validation fails.
 
 ::: tip Decision
-`op.WithIssuer` rejects a URI carrying any of these:
+`op.WithIssuer` deliberately applies a strict canonicalization policy and rejects a URI carrying any of these:
 
 - a trailing slash
 - a mixed-case scheme
@@ -226,7 +228,7 @@ A two-layer model — `op/aal.go` for the internal AAL ladder, `op/acr.go` for t
 - a query
 - a non-canonical path (`..`, `.`, or duplicate slashes detected via `path.Clean`)
 
-The same canonical form is reused for `iss` in every emitted artifact, in the discovery document's own `issuer` field, and in the authorization-response `iss` parameter — so byte-exact comparison under RFC 9207 mix-up defence holds end-to-end. `op.New` returns a build-time error rather than booting on a non-canonical issuer.
+Query and fragment rejection follows the issuer requirements; the case, port, trailing-slash, and path rules are additional library policy. The same accepted form is reused for `iss` in every emitted artifact, in the discovery document's own `issuer` field, and in the authorization-response `iss` parameter — so simple string comparison under RFC 9207 mix-up defence has one value end-to-end. `op.New` returns a build-time error rather than booting on a non-canonical issuer.
 :::
 
 <a class="faq-anchor" id="dj-10"></a>
@@ -245,7 +247,7 @@ Sessions are routed through a separate substore (`store.SessionStore`) that the 
 
 ## 11. JOSE allow-list and ES256-only issuance
 
-**Spec:** RFC 7518 enumerates `none` and `HS256/384/512`. RFC 8725 ("JWT BCP") §3.1 says implementations MUST NOT trust JWTs based on `none`, and §3.2 warns about HMAC-with-public-key alg confusion.
+**Spec:** RFC 8725 ("JWT BCP") §3.1 requires libraries to let the caller specify an algorithm allow-list and to reject algorithms outside it. Section 3.2 makes algorithm selection an application decision, warns about HMAC/public-key confusion, and does not categorically prohibit `none` when another end-to-end protection exists; libraries SHOULD consume or generate it only when explicitly requested.
 
 **Conflict:** The underlying JOSE library accepts the full registry by default. Adding a runtime check is fragile — a future code path that imports the JOSE library directly bypasses it.
 
@@ -259,7 +261,7 @@ The verification allow-list is deliberately wider than the issuing policy. Clien
 
 ## 12. Discovery document — narrowing on profile
 
-**Spec:** OIDC Discovery 1.0 + RFC 8414 enumerate the metadata fields. FAPI 2.0 §3.1.3 narrows `token_endpoint_auth_methods_supported`. RFC 9101 §10.1 demands `request_object_signing_alg_values_supported` when JAR is on.
+**Spec:** OIDC Discovery 1.0 + RFC 8414 enumerate the metadata fields. FAPI 2.0 Security Profile Final §5.3.2.1(6) restricts AS client authentication to mTLS or `private_key_jwt`, which narrows `token_endpoint_auth_methods_supported`. RFC 9101 §10.1 demands `request_object_signing_alg_values_supported` when JAR is on.
 
 **Conflict:** The `_supported` lists are produced by feature activation, then potentially narrowed by the active profile, then copied into the introspection / revocation auth-method lists. Doing this in handlers re-introduces drift; doing it at construction time forces a single point that must agree.
 
@@ -271,19 +273,19 @@ Discovery is built once at `op.New` time (`internal/discovery/build.go`), profil
 
 ## 13. `client_assertion` audience — FAPI 2.0 vs OIDC Core
 
-**Spec:** RFC 7523 §3 says the JWT bearer assertion's `aud` MUST be "a value identifying the authorization server" — without pinning which identifier. OIDC Core 1.0 §9 (private_key_jwt) reads that as the OP's token endpoint URL. FAPI 2.0 §5.2.2 reads it as the issuer URL.
+**Spec:** RFC 7523 §3 says the JWT bearer assertion's `aud` MUST be "a value identifying the authorization server" — without pinning which identifier. OIDC Core 1.0 §9 (private_key_jwt) reads that as the OP's token endpoint URL. FAPI 2.0 Security Profile Final §5.3.2.1(8) narrows the authorization-server requirement: the AS must accept only the issuer identifier, and that value must be a JSON string. FAPI clients have the matching obligation in §5.3.3.1(5). RFC 7519 generally permits a string or an array for `aud`, but FAPI narrows that shape.
 
-**Conflict:** A single OP that runs OIDC Core *and* a FAPI 2.0 profile simultaneously needs to authenticate clients sending either shape; a strict "match exactly one" verifier rejects half the fleet on every request. RFC 7523 itself is wide enough to admit both, so the disagreement is between the two profile specs that wrap it.
+**Conflict:** The library's compatibility verifier accepts OIDC Core's token-endpoint form, FAPI's issuer form, and an array containing an accepted value. That is useful when one OP serves both dialects, but it is not FAPI 2.0 Security Profile Final conformance: accepting the token endpoint URL or an `aud` array violates §5.3.2.1(8). A Final FAPI profile needs a stricter validation policy; the broad RFC 7523 interpretation does not override the profile requirement.
 
 ::: tip Decision
-The verifier accepts a primary `Audience` (OIDC Core: token endpoint URL) plus a list of `AuxAudiences` (FAPI 2.0: issuer URL). `op.New` populates `AuxAudiences` with the issuer for every OP, so a client using the FAPI 2.0 shape authenticates without any per-deployment knob. Implemented in `internal/clientauth/assertion.go`; `jti` consumption runs once across the merged path so neither dialect can sneak past replay defence.
+Keep the primary `Audience` plus `AuxAudiences` compatibility behavior in the general library. `op.New` populates `AuxAudiences` with the issuer for every OP, and `internal/clientauth/assertion.go` consumes `jti` once across the merged path, so neither accepted dialect can bypass replay defence. Treat this as a library compatibility policy, not as a claim of FAPI 2.0 Security Profile Final conformance. A Final FAPI profile must accept only the issuer identifier encoded as a JSON string and reject the token-endpoint audience and array form.
 :::
 
 <a class="faq-anchor" id="dj-14"></a>
 
 ## 14. PKCE — `S256`-only, `plain` rejected by policy
 
-**Spec:** RFC 7636 §4.2 lists two transformations: `plain` and `S256`. §4.4.1 says clients SHOULD use `S256`, with `plain` retained for environments that cannot compute SHA-256. OAuth 2.1 (`draft-ietf-oauth-v2-1` §4.1.1) and FAPI 2.0 §3.1.4 forbid `plain` outright.
+**Spec:** RFC 7636 §4.2 lists two transformations: `plain` and `S256`. §4.4.1 says clients SHOULD use `S256`, with `plain` retained for environments that cannot compute SHA-256. OAuth 2.1 (`draft-ietf-oauth-v2-1` §4.1.1) and FAPI 2.0 Security Profile Final §5.3.2.2(5) forbid `plain` outright.
 
 **Conflict:** A literal RFC 7636 reading lets the OP accept whichever method the client requests. A strict reading of OAuth 2.1 / FAPI 2.0 requires rejection. A "per-profile gate" architecture would let the same client succeed against an OIDC-Core OP and fail against the same OP under a FAPI 2.0 profile — the kind of silent profile drift the rest of the codebase works hard to avoid.
 
@@ -365,16 +367,16 @@ A single hard-coded default forces every embedder onto one trade-off. Per-audien
 
 ## 19. JWT access-token revocation strategy — grant tombstone over per-`jti` registry
 
-**Spec:** RFC 6749 §4.1.2 says the AS "SHOULD revoke (when possible)" on code re-use. RFC 6819 §5.2.1.1 expects a server-side reuse-detection invariant. RFC 7009 §2.2 lets revocation be unsupported for self-contained tokens. FAPI 2.0 SP §5.3.2.2 mandates server-side revocation.
+**Spec:** RFC 6749 §4.1.2 says the AS "SHOULD revoke (when possible)" on code re-use. RFC 6819 §5.2.1.1 expects a server-side reuse-detection invariant. RFC 7009 §2.2 lets revocation be unsupported for self-contained tokens. FAPI 2.0 Security Profile Final §5.3.4(3) requires resource servers to verify the validity, integrity, expiration, and revocation status of access tokens. That requirement is enforced at the RS boundary; it does not prescribe an OP-side storage strategy.
 
-**Conflict:** The literal "shadow every `jti` so revocation can flip a row" model satisfies every spec but loads `O(issuance_rate × AT_TTL)` rows on the transactional store, and the cascade path on a logged-out user with N outstanding ATs becomes N row updates. The opposite extreme — "no revocation, JWT lives until `exp`" — clears the issuance hot path but fails FAPI 2.0 SP §5.3.2.2 outright.
+**Conflict:** The literal "shadow every `jti` so revocation can flip a row" model satisfies every spec but loads `O(issuance_rate × AT_TTL)` rows on the transactional store, and the cascade path on a logged-out user with N outstanding ATs becomes N row updates. The opposite extreme — "no revocation, JWT lives until `exp`" — leaves a resource server without revocation status unless the deployment supplies another check, so it cannot meet the FAPI 2.0 Security Profile Final §5.3.4(3) requirement.
 
 The middle reading is to keep the JWT self-contained but bind it to a server-side **grant** rather than to a per-token row. One write per revoked grant fans out to every AT under that grant; issuance writes nothing.
 
 ::: tip Decision
 **Default is `op.RevocationStrategyGrantTombstone`.** Every JWT AT carries a `gid` private claim (the OP-side GrantID, RFC 7519 §4.3, omitempty). Verification at OP-served boundaries (`/userinfo`, `/introspect`) consults a small per-grant tombstone table keyed on `gid`. Cascades (logout, code-replay, refresh compromise) write one tombstone row per revoked grant; single-AT `/revocation` writes one deny-list row per revoked `jti`. The default issuance path writes **zero** rows on `/token`. Steady-state row count is `O(revoked grants + revoked JTIs)`, not `O(issued)`.
 
-Embedders who need a per-AT audit trail flip `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)`, which restores the one-row-per-issuance shadow in `store.AccessTokenRegistry`. Both strategies are FAPI 2.0 SP §5.3.2.2 conformant. `op.RevocationStrategyNone` is a third option for non-FAPI deployments that explicitly accept the RFC 6749 §4.1.2 "SHOULD" wiggle; `op.New` rejects it under any FAPI profile.
+Embedders who need a per-AT audit trail flip `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)`, which restores the one-row-per-issuance shadow in `store.AccessTokenRegistry`. Both strategies provide server-side revocation state at the OP-served boundaries, but selecting either OP strategy alone does not establish FAPI Final conformance: resource servers still have to satisfy §5.3.4(3). `op.RevocationStrategyNone` is a third option for non-FAPI deployments that explicitly accept the RFC 6749 §4.1.2 "SHOULD" wiggle; `op.New` rejects it under any FAPI profile.
 
 The opaque AT path (`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`) is unaffected by this enum: opaque verification needs the row, so storage is intrinsically per-token. Implemented in `op/access_token_revocation.go`, `internal/tokens` (gid claim), `op/store/grant_revocation.go`, and the backend adapters.
 :::
@@ -499,7 +501,7 @@ Implemented in `internal/jose/jwe.go`, wired through JAR / PAR verification, and
 
 ## 28. Custom-grant refresh tokens — handler value or OP-issued credential?
 
-**Spec:** RFC 6749 §6 treats a refresh token as a credential issued by the authorization server. RFC 9700 §2.2.2 then relies on the AS tracking refresh-token rotation and replay so reuse can retire the affected chain.
+**Spec:** RFC 6749 §6 treats a refresh token as a credential issued by the authorization server. RFC 9700 §4.14.2 requires the AS to detect refresh-token replay for public clients with either sender-constrained refresh tokens or rotation; rotation issues a new token, invalidates the previous token while retaining the relationship, and revokes the active token when reuse reveals a compromise.
 
 **Conflict:** Custom grants are intentionally handler-defined. Letting a handler return an arbitrary refresh-token string is tempting because it mirrors `AccessToken`, but the OP cannot rotate, bind, or cascade-revoke a credential whose value and lineage it did not create. Rejecting refresh tokens entirely is simpler, but it prevents legitimate custom grants and token-exchange policies from using the OP's existing rotation machinery for long-lived service chains.
 

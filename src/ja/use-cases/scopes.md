@@ -9,7 +9,7 @@ description: scope を「discovery に出す（Public）」と「管理用途で
 
 OAuth 2.0（RFC 6749 §3.3）における **scope** は、クライアントが `/authorize` 要求に付けて *どんな種類のアクセスを要求するか* を表す文字列です（例: `email` / `profile` / `billing.read`）。OP が許可する scope を決め、アクセストークンに許可された scope が乗り、リソースサーバが API 認可判断に使います。
 
-OIDC Core 1.0 §5.4 は特殊な scope として `openid`（リクエストを純 OAuth から OIDC に切り替えるスイッチ）と、ユーザ claim 用の `profile` / `email` / `address` / `phone` を予約しています。それ以外は **OP 独自のカタログ** であり、本ページではこのカタログを **Public**（discovery で広告 + 同意画面に描画）と **Internal**（許可リスト経由でだけ発行・discovery には出さない）に分割する方法を扱います。
+OIDC Core 1.0 §3.1.2.1 では `openid` が OIDC リクエストを示し、§5.4 では `profile`、`email`、`address`、`phone` がユーザ claim に対応します。配備独自の scope も定義できます。このページでは、それらを **公開 scope**（Discovery に掲載し、同意画面にも表示）と **内部 scope**（許可したクライアントだけが使え、Discovery には掲載しない）に分ける方法を説明します。
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework, §3.3（scope）

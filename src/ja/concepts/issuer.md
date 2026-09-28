@@ -31,21 +31,21 @@ description: issuer URL とは何か、なぜひとつの正規形であるこ�
 
 ## なぜ正規形が重要か
 
-OIDC Discovery 1.0 §4 は、issuer 識別子の host と path の**あいだ**に `/.well-known/openid-configuration` を挿入して configuration URL を導出すると規定しています（path を持たない一般的な issuer では、単純な連結と同じ結果になります）。RFC 9207 はさらに、認可応答に同じ `iss` をエコーすることで「混同（mix-up）攻撃」を防ぐよう要求します — 誤って配送された code が別の AS に対して使われないようにするためです。どちらのチェックも、OP と全 RP が **ひとつの** 正規表記で合意していることに依存しています。
+OIDC Discovery 1.0 §4 は、issuer 末尾のスラッシュを除いたうえで、host と path の**あいだ**に `/.well-known/openid-configuration` を挿入して設定 URL を導出します。RFC 9207 はさらに、認可応答に同じ `iss` をエコーすることで「混同（mix-up）攻撃」を防ぐよう要求します — 誤って配送された code が別の AS に対して使われないようにするためです。どちらのチェックも、OP と全 RP が **ひとつの** 正規表記で合意していることに依存しています。
 
 実際のデプロイでは、よく似ているが等価でない URI が並ぶことが多いです。
 
 | 揺れ | 例 | 何が壊れるか |
 |---|---|---|
-| 末尾スラッシュ | `https://idp.example.com/` vs `https://idp.example.com` | 前者では `<issuer>/.well-known/...` が `https://idp.example.com//.well-known/...` になり、configuration URL が壊れます。 |
+| 末尾スラッシュ | `https://idp.example.com/` vs `https://idp.example.com` | Discovery は URL の導出時に末尾のスラッシュを除きますが、issuer の文字列としては別物です。本ライブラリは後者だけを受け付けます。 |
 | デフォルトポート | `https://idp.example.com:443` vs `https://idp.example.com` | OP がどちらか一方の形で `iss` を発行し、ロードバランサがもう一方に書き換えると、RP の byte 単位比較は破綻します。 |
 | scheme の大文字混在 | `HTTPS://idp.example.com` | URL parser によっては parse 中に scheme を小文字化するもの・しないものがあり、生文字列を比較する RP と parse 後を比較する RP では別の issuer に見えてしまいます。 |
-| host の大文字混在 | `https://Idp.Example.com` | RFC 3986 §3.2.2 / §6.2.2.1 は byte 単位比較のために host の case-folding を要求しています。folding しない RP と folding する RP では別の issuer に見えてしまいます。 |
-| 非正規 path | `https://idp.example.com//oidc` や `.../a/../b` | 重複スラッシュ、`..`、`.` セグメントは `.well-known` URL を作る連結を狂わせ、byte 単位比較を破綻させます。 |
+| host の大文字混在 | `https://Idp.Example.com` | ホスト名の解決では大文字小文字を区別しませんが、コンポーネントごとの正規化が異なると issuer 文字列の完全一致に失敗します。 |
+| 非正規 path | `https://idp.example.com//oidc` や `.../a/../b` | コンポーネントによって path の正規化が異なると issuer 文字列が食い違います。本ライブラリはこれらの形を拒否します。 |
 | fragment | `https://idp.example.com#main` | fragment は HTTP リクエストのルーティングに関与しません。`iss` に持たせる構造的意味がありません。 |
 | query string | `https://idp.example.com?env=prod` | discovery URL の連結が壊れた形になります。仕様で禁止されています。 |
 
-ひとつの揺れがすべての署名検証と RFC 9207 の混同防御を壊します。本番トラフィックが CDN や別ホスト名経由で OP に届くまで気付かれない、典型的な失敗パターンです。
+表記の食い違いは RFC 9207 などの issuer 完全一致チェックを失敗させますが、それだけで JWT の署名が無効になるわけではありません。本番トラフィックが CDN や別ホスト名経由で OP に届くまで気付かれない、典型的な失敗パターンです。
 
 ## 本ライブラリが起動時に拒否する形
 
@@ -60,7 +60,7 @@ OIDC Discovery 1.0 §4 は、issuer 識別子の host と path の**あいだ**�
 - **host は全て小文字であること**。`https://IDP.example.com` も `https://IDP.EXAMPLE.COM/oidc` も拒否されます。`u.Host` は生の case を保持するので、authority の中に大文字があれば検査で落ちます。
 - **デフォルトポートを省略すること**。`https://idp.example.com:443`、`https://idp.example.com:443/oidc`、`http://127.0.0.1:80` は拒否されます。冗長なデフォルトポートは、ロードバランサが片側だけ正規化した瞬間に byte 一致を壊します。
 - **path が正規形であること**。`..` セグメント、`.` セグメント、重複スラッシュ（`https://idp.example.com/a/../b`、`https://idp.example.com/a/./b`、`https://idp.example.com//oidc`）は拒否されます。検証は `path.Clean` を通し、round-trip しないものは弾きます。
-- **`https` であること**。唯一の例外は loopback の IP リテラル（`127.0.0.0/8` と `[::1]`）で、開発時の起動が TLS なしで済むよう plain `http` を許容します。テキストの `localhost` は **既定の例外には含まれません** — DNS hijack の対象になるため（RFC 8252 §7.3 の理由）、本番デプロイや DNS rebinding を警戒する環境では IP リテラルでの記述に矯正されます。明示的に許可するには `op.WithAllowLocalhostLoopback()` を使います。ローカルで passkey を扱う場合はこれが必要です。WebAuthn の Relying Party ID はドメインでなければならず、`127.0.0.1` の issuer には対にできる RP ID が存在しないからです。rebinding の懸念が消えるわけではないので、この opt-in は開発マシンの中だけのものです。この例外があるため、issuer の検証は `WithIssuer` の中ではなく `op.New` の検証パスで走ります。オプションをどの順で渡しても例外が効くようにするためです。
+- **`https` であること**。唯一の例外は loopback の IP リテラル（`127.0.0.0/8` と `[::1]`）で、開発時の起動が TLS なしで済むよう plain `http` を許容します。テキストの `localhost` は **既定の例外には含まれません**。これは開発環境向けのライブラリポリシーです。RFC 8252 §7.3 はネイティブアプリのリダイレクト URI を扱い、issuer URL の例外を定めていません。明示的に許可するには `op.WithAllowLocalhostLoopback()` を使います。ローカルで passkey を扱う場合はこれが必要です。WebAuthn の Relying Party ID はドメインでなければならず、`127.0.0.1` の issuer には対にできる RP ID が存在しないからです。rebinding の懸念が消えるわけではないので、この opt-in は開発マシンの中だけのものです。この例外があるため、issuer の検証は `WithIssuer` の中ではなく `op.New` の検証パスで走ります。オプションをどの順で渡しても例外が効くようにするためです。
 
 ```go
 // NG: host の大文字、default port、末尾スラッシュが byte 一致を壊す
@@ -72,7 +72,7 @@ op.WithIssuer("https://idp.example.com/oidc")
 
 これらのルールをまとめて適用することで、discovery 文書、発行する全トークン、認可応答の `iss` パラメタにわたって `iss` が byte 完全一致になることを保証します — RFC 9207 のミックスアップ防御で RP が比較するのはこの形です。
 
-これらをすべて通過した値が正規形として採用されます。渡した値が `iss` の値、discovery 文書内の `issuer` フィールド、FAPI 2.0 配下の `client_assertion` audience チェックの値、すべてに使われます。
+これらをすべて通過した値が正規形として採用されます。渡した値が `iss` の値、discovery 文書内の `issuer` フィールド、`client_assertion` の `aud` については、本ライブラリが受け付ける値の一つとして使われます。現行の FAPI 2.0 Security Profile §5.3.2.1(8) が認めるのは issuer 識別子の文字列だけですが、ライブラリはトークンエンドポイント URL や配列も受け付けます。そのため、設定だけで Final 仕様への適合は示せません。
 
 ## 設定方法
 

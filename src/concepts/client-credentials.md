@@ -136,13 +136,13 @@ A client only succeeds when both checks pass. This lets you run a single OP that
 - `iss` — the OP issuer
 - `aud` — the resource server identifier (the typed seeds carry a `Resources []string` field that lists permitted RFC 8707 resource indicators; with DCR, the equivalent `resources` metadata field)
 - `client_id` — the requesting client
-- `sub = client_id` — RFC 9068 §2.2 / FAPI 2.0 posture: the client is the subject acting on its own behalf
+- `sub = client_id` — RFC 9068 §2.2 says `sub` SHOULD correspond to the client application; this library uses the client itself as the subject
 - `scope` — the granted subset of the requested scopes
 
 When `op.WithFeature(feature.MTLS)` or DPoP is configured and the client presented a sender constraint, the token additionally carries the `cnf` (Confirmation, RFC 7800) claim binding it to that constraint.
 
 ::: details Why `sub = client_id` here?
-In the user-facing flows, `sub` is the end-user's stable identifier. In `client_credentials` there is no end user, so RFC 9068 §2.2 requires the `sub` to equal the `client_id` — the *client itself* is acting as the subject. RSes that read `sub` to log "who did this" still get a stable identifier; they just need to know that for service tokens, that identifier is a registered service rather than a person. A common bug is to assume `sub` always points to a row in the user table; for service tokens it points to a row in the *client* table.
+In the user-facing flows, `sub` is the end-user's stable identifier. In `client_credentials` there is no end user, so RFC 9068 §2.2 says `sub` SHOULD correspond to the client application; it does not require literal equality with `client_id`. This library chooses that direct mapping and sets `sub = client_id`, so the *client itself* acts as the subject. RSes that read `sub` to log "who did this" still get a stable identifier; they just need to know that for service tokens, that identifier is a registered service rather than a person. A common bug is to assume `sub` always points to a row in the user table; for service tokens it points to a row in the *client* table.
 :::
 
 ::: details `aud` for `client_credentials` — what it means and how it's set

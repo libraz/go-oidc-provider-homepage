@@ -213,7 +213,7 @@ RP が ID トークンを検証するなら、両方使ってください。OIDC
 
 - リクエスト全体がブラウザ履歴・サーバログ・referrer に残らない。
 - ユーザエージェント境界での改竄が無効化される — そこに露出するのは `request_uri` だけ。
-- FAPI 2.0 Baseline では必須。それ以外でもオプトインする価値あり。
+- FAPI 2.0 Security Profile では必須です。FAPI 以外の認可コードクライアントにも推奨します。
 
 `op.WithFeature(feature.PAR)` で有効化すると、discovery 文書の `pushed_authorization_request_endpoint` に出ます。
 :::
@@ -257,7 +257,7 @@ PKCE はコードを **正規 RP のみが知る秘密** にバインドしま�
 
 ## 自分でフローを動かす
 
-`examples/03-fapi2` は PAR + JAR + DPoP + PKCE をひとつの構成にまとめた FAPI 2.0 Baseline OP を起動します。OFCS conformance suite は同じシーケンスを 2 つの FAPI plan にわたって約 129 module 実行します。[OFCS 適合状況](/ja/compliance/ofcs) に内訳があります。
+`examples/03-fapi2` は、本ライブラリの `FAPI2Baseline` 設定を使い、PAR、JAR、DPoP、PKCE を有効にします。JAR は本ライブラリが追加で要求するもので、現行の FAPI 2.0 Security Profile の必須要件ではありません。[OFCS の結果](/ja/compliance/ofcs) は、名前を明記した Implementer's Draft のテストプランを対象としています。
 
 ## 次に読むもの
 

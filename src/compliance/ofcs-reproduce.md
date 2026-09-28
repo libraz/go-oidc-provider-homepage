@@ -8,7 +8,7 @@ pageClass: pg-compliance-ofcs-reproduce
 
 This page is the operator's runbook. It complements [OFCS conformance status](/compliance/ofcs), which records *what* the suite saw on the latest run; this page covers *how* to reproduce it on your own machine and *which library options* each OFCS plan exercises.
 
-The status page summarizes the latest release run at core commit [`547b8d1`](https://github.com/libraz/go-oidc-provider/commit/547b8d1395e1c81038f5ed60174baf443976327a), captured at `2026-09-01T13:48:21Z`. Its JSON snapshot is a local, gitignored release artifact; use this runbook to generate a fresh snapshot for your own environment.
+The status page summarizes the retained release-equivalent run captured immediately before the release tag at core commit [`8ee7ca3`](https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd), captured at `2026-09-28T13:43:49Z`. The run is treated as release-equivalent to OFCS `release-v5.3.1` because it was measured immediately before the release tag. Its JSON snapshot is a local, gitignored release artifact and does not record the OFCS image tag or digest. The current `conformance/docker-compose.yml` default is `release-v5.3.1`.
 
 If you are looking for the latest PASS/REVIEW/SKIPPED/WARNING counts, start at [OFCS conformance status](/compliance/ofcs). If you want to understand which `op.With...` options to wire into your own OP so the same OFCS plans pass against it, you are in the right place.
 
@@ -63,10 +63,10 @@ The numbers on this site are reproducible snapshots — this page tells you how 
 
 - **Docker** with Compose v2 (the harness invokes `docker compose`, not `docker-compose`).
 - **OpenSSL** for cert generation (`scripts/conformance.sh certs`).
-- **Go 1.25+**; the release uses the `go1.27.0` toolchain pinned in `go.mod`.
+- **Go 1.26+**; `go.mod` specifies the `go1.27.1` toolchain.
 - `curl` and `python3` for the seed-plans / drive scripts.
 
-The OFCS image is pulled from the OpenID Foundation registry at the tag pinned in [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml). You do not need a separate OFCS checkout or `mvn install` step.
+The OFCS image is pulled from the OpenID Foundation registry at the current default tag `release-v5.3.1` in [`conformance/docker-compose.yml`](https://github.com/libraz/go-oidc-provider/blob/main/conformance/docker-compose.yml). The retained run is treated as release-equivalent to that tag because it was measured immediately before the release tag, although its snapshot does not record the image tag or digest. You do not need a separate OFCS checkout or `mvn install` step.
 
 ## One-command quick start
 
@@ -105,6 +105,8 @@ OFCS test plans differ in which library features they exercise. The table below 
 | `fapi2-message-signing-id1-test-plan` | `OP_PROFILE=fapi2-message-signing make conformance-op-up` | [`cmd/op-demo/profile_fapi2.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi2.go) — `fapi2MessageSigningOptions` |
 | `fapi-ciba-id1-test-plan` | `OP_PROFILE=fapi-ciba make conformance-op-up` | [`cmd/op-demo/profile_fapi_ciba.go`](https://github.com/libraz/go-oidc-provider/blob/main/cmd/op-demo/profile_fapi_ciba.go) — `fapiCIBAOptions` |
 
+The pinned OFCS release calls the Message Signing plan `fapi2-message-signing-id1-test-plan`; the `id1` suffix is an OFCS plan identifier, not a version label for the FAPI 2.0 Message Signing Final specification. Results from that plan describe only the pinned suite coverage and do not establish conformance or certification against every requirement in the current Final specification.
+
 Every per-profile file in `cmd/op-demo/` opens with a comment block enumerating the options that profile activates, the spec sections each option satisfies, and the OFCS modules the wiring is in service of. Read the file for the plan you intend to run before you copy patterns into your own OP.
 
 ## What to wire into your own OP
@@ -132,7 +134,7 @@ The conformance harness enables DCR by default. For the dynamic plans (`oidcc-dy
 Set `OP_PROFILE=fapi2-baseline` when starting `op-demo`. The profile-specific additions, captured in `fapi2BaselineOptions`, are:
 
 - `op.WithProfile(profile.FAPI2Baseline)` — auto-enables PAR (RFC 9126), JAR (RFC 9101), and the FAPI alg lockdown.
-- `op.WithFeature(feature.DPoP)` — sender-constrained access tokens. FAPI 2.0 §3.1.4 requires DPoP **OR** mTLS; the demo picks DPoP because the OFCS templates ship `sender_constrain=dpop` for the fapi2-* plans.
+- `op.WithFeature(feature.DPoP)` — sender-constrained access tokens. The final FAPI 2.0 Security Profile §5.3.2.1(4)–(5) requires DPoP **or** mTLS; the demo picks DPoP because the OFCS templates ship `sender_constrain=dpop` for the fapi2-* plans.
 
 The demo also seeds two `op.PrivateKeyJWTClient` records (`demo-fapi`, `demo-fapi-2`) holding the public halves of the OFCS test client JWKSes. The matching private halves live in [`conformance/plans/fapi2-*.json`](https://github.com/libraz/go-oidc-provider/tree/main/conformance/plans) so OFCS can sign `private_key_jwt` assertions.
 
@@ -144,7 +146,7 @@ Set `OP_PROFILE=fapi2-message-signing`. Everything Baseline does plus:
 
 - `op.WithProfile(profile.FAPI2MessageSigning)` — auto-enables JARM (signed authorization response) on top of PAR / JAR / alg lockdown.
 - `op.WithFeature(feature.DPoP)` — same sender constraint as Baseline.
-- `op.WithDPoPNonceSource(...)` — FAPI 2.0 Message Signing §5.3.4 mandates a server-supplied DPoP nonce. The option layer rejects `op.New` under this profile if no source is wired. The demo uses the in-memory rotator; a multi-instance OP must back the source with a shared store.
+- `op.WithDPoPNonceSource(...)` — when `profile.FAPI2MessageSigning` is active with DPoP, the library requires a source for server-supplied DPoP nonces, enforced by `op/options_validate.go`. This is a library configuration requirement, not a mandate in the FAPI 2.0 Message Signing Final specification: that document has no §5.3.4, and §5.6 covers ID-token signing. If mTLS is explicitly selected instead of DPoP, no DPoP nonce source is needed. The demo uses the in-memory rotator; a multi-instance OP must back the source with a shared store.
 
 ### FAPI-CIBA
 
@@ -254,7 +256,7 @@ A production embedder will replace the `cmd/op-demo` ephemera (in-memory store, 
 
 ## Caveats worth naming
 
-- **Plan suite version.** The pin is set in `conformance/docker-compose.yml`. Tests added or renamed in newer OFCS releases are not covered until the pin is bumped.
-- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. Behaviour is confirmed against the pinned release only.
+- **Plan suite version.** The current default pin is `release-v5.3.1`. The retained run is treated as release-equivalent to that pin because it was measured immediately before the release tag; its snapshot does not record the actual image tag or digest.
+- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. The retained snapshot does not record the actual image tag or digest.
 - **No real RP cert.** The mTLS plan slots use generated self-signed certs at `conformance/certs/` so the plan can be instantiated. No real CA chain is exercised.
 - **Single OP instance.** Cross-instance behaviour (e.g. token introspection across two OPs sharing a store) is exercised by the in-process Spec Scenario Suite under `test/scenarios/`, not OFCS.

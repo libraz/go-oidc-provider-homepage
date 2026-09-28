@@ -2,7 +2,7 @@
 layout: home
 title: go-oidc-provider — OpenID Connect Provider library for Go
 titleTemplate: false
-description: Mount an OIDC Provider (Authorization Server) on any Go http.Handler. Targets FAPI 2.0 Baseline / Message Signing.
+description: Mount an OIDC Provider (Authorization Server) on any Go http.Handler. Supports the library's FAPI 2.0 Baseline and Message Signing profiles.
 pageClass: pg-index
 ---
 
@@ -73,7 +73,7 @@ func main() {
 
 > See [`examples/01-minimal`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal) and [Quick Start](/getting-started/minimal).
 
-### 2. Run a FAPI 2.0 Baseline OP
+### 2. Run the library's FAPI 2.0 Baseline profile
 
 ```go
 st := inmem.New()
@@ -86,7 +86,7 @@ handler, _ := op.New(
   op.WithLoginFlow(op.LoginFlow{
     Primary: op.PrimaryPassword{Store: st.UserPasswords()},
   }),
-  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR, DPoP default, ES256, FAPI narrowing
+  op.WithProfile(profile.FAPI2Baseline), // library profile: PAR + JAR, DPoP default, ES256
   op.WithStaticClients(op.PrivateKeyJWTClient{
     ID: "demo-fapi",
     JWKS: clientJWKS,
@@ -97,7 +97,7 @@ handler, _ := op.New(
 ```
 
 ::: tip Why one switch is enough
-`op.WithProfile(profile.FAPI2Baseline)` enables the features the profile requires (`PAR`, `JAR`) and intersects `token_endpoint_auth_methods_supported` with the FAPI allow-list. It selects DPoP unless you explicitly enabled mTLS, and tightens the discovery surface to match. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
+`op.WithProfile(profile.FAPI2Baseline)` applies this library's FAPI profile policy: it enables `PAR` and `JAR`, intersects `token_endpoint_auth_methods_supported` with the profile allow-list, and selects DPoP unless you explicitly enable mTLS. It also keeps OP-issued JWT signing on ES256. The final FAPI 2.0 Security Profile requires PAR, PKCE with S256, and sender-constrained tokens; JAR and ES256-only signing are choices made by this library's profile. See [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline).
 :::
 
 ### 3. Issue tokens to backend services (no end user)

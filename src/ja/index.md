@@ -2,7 +2,7 @@
 layout: home
 title: go-oidc-provider — Go 用 OpenID Connect Provider ライブラリ
 titleTemplate: false
-description: 既存の Go アプリに http.Handler として OIDC Provider（Authorization Server）を組み込むライブラリ。FAPI 2.0 Baseline / Message Signing に対応します。
+description: 既存の Go アプリに http.Handler として OIDC Provider（Authorization Server）を組み込むライブラリ。本ライブラリの FAPI 2.0 Baseline / Message Signing プロファイルに対応します。
 pageClass: pg-index
 ---
 
@@ -73,7 +73,7 @@ func main() {
 
 > [`examples/01-minimal`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal) と [クイックスタート](/ja/getting-started/minimal) を参照。
 
-### 2. FAPI 2.0 Baseline 対応の OP を動かす
+### 2. 本ライブラリの FAPI 2.0 Baseline プロファイルで OP を動かす
 
 ```go
 st := inmem.New()
@@ -86,7 +86,7 @@ handler, _ := op.New(
   op.WithLoginFlow(op.LoginFlow{
     Primary: op.PrimaryPassword{Store: st.UserPasswords()},
   }),
-  op.WithProfile(profile.FAPI2Baseline), // PAR + JAR、DPoP 既定、ES256、FAPI 絞り込み
+  op.WithProfile(profile.FAPI2Baseline), // 本ライブラリのプロファイル: PAR + JAR、DPoP 既定、ES256
   op.WithStaticClients(op.PrivateKeyJWTClient{
     ID: "demo-fapi",
     JWKS: clientJWKS,
@@ -97,7 +97,7 @@ handler, _ := op.New(
 ```
 
 ::: tip プロファイル 1 行で済む理由
-`op.WithProfile(profile.FAPI2Baseline)` は、プロファイルが必須とする機能（`PAR`、`JAR`）を有効化し、`token_endpoint_auth_methods_supported` を FAPI 許可リストに絞り込みます。mTLS を明示していない場合は DPoP を既定で選び、discovery 文書もそれに合わせて調整します。詳細は [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
+`op.WithProfile(profile.FAPI2Baseline)` は、本ライブラリの FAPI プロファイル方針をまとめて適用します。`PAR` と `JAR` を有効化し、`token_endpoint_auth_methods_supported` をプロファイルの許可リストに絞り込み、mTLS を明示していない場合は DPoP を既定で選びます。OP 発行 JWT の署名は ES256 を使います。FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、送信者制約付きトークンです。JAR と ES256 固定は本ライブラリのプロファイル設定です。詳細は [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
 :::
 
 ### 3. バックエンド向けトークンを発行する（エンドユーザなし）

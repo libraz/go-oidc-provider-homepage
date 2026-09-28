@@ -8,14 +8,14 @@ pageClass: pg-concepts-dpop
 
 **DPoP** (RFC 9449) binds an access token to a key the client holds. Without a fresh proof signed by the same key, a leaked access token is unusable. Every API call carries a small per-request JWT (the *DPoP proof*) that the OP and resource server verify in addition to the token itself.
 
-DPoP is purely an HTTP-layer mechanism. The client does not need TLS client certificates, the OP does not need to know about reverse-proxy header layouts, and the same flow works for SPAs, mobile apps, and backend services. That portability is the reason FAPI 2.0 Baseline lists DPoP as one of the two acceptable sender-constraint mechanisms (the other is [mTLS](/concepts/mtls)).
+DPoP is purely an HTTP-layer mechanism. The client does not need TLS client certificates, the OP does not need to know about reverse-proxy header layouts, and the same flow works for SPAs, mobile apps, and backend services. That portability is the reason the FAPI 2.0 Security Profile lists DPoP as one of the two acceptable sender-constraint mechanisms (the other is [mTLS](/concepts/mtls)). The Security Profile itself applies to confidential clients; the public-client examples later on this page describe the library's general OAuth behavior.
 
 ::: details Specs referenced on this page
 - [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP (Demonstrating Proof of Possession)
 - [RFC 7638](https://datatracker.ietf.org/doc/html/rfc7638) — JWK Thumbprint
 - [RFC 7800](https://datatracker.ietf.org/doc/html/rfc7800) — Confirmation (`cnf`) claim
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
-- [FAPI 2.0 Message Signing](https://openid.net/specs/fapi-2_0-message-signing.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — Final
+- [FAPI 2.0 Message Signing](https://openid.net/specs/fapi-message-signing-2_0.html) — Final
 :::
 
 ## How a DPoP proof works
@@ -82,7 +82,7 @@ A DPoP proof is a JWT (RFC 9449 §4) signed with a private key the client contro
     <text class="fg-badge-t fg-badge-t--accent" x="15" y="243" text-anchor="middle">4</text>
     <path class="fg-edge fg-edge--accent" d="M500,232 h30 v16 h-30" marker-end="url(#fg-ac)"/>
     <text class="fg-s fg-accent" x="542" y="236">bind the key into the token</text>
-    <text class="fg-mxs" x="542" y="249">cnf.jkt = SHA-256(JWK thumbprint)</text>
+    <text class="fg-mxs" x="542" y="249">cnf.jkt = JWK SHA-256 thumbprint</text>
     <!-- 5 -->
     <circle class="fg-badge" cx="15" cy="286" r="8.5"/>
     <text class="fg-badge-t" x="15" y="289" text-anchor="middle">5</text>
@@ -123,7 +123,7 @@ The `DPoP` proof header is single-valued. The OP rejects multiple `DPoP` header 
 
 ## Confirmation claim — `cnf.jkt`
 
-The first proof at `/token` pins the binding. The OP computes a SHA-256 thumbprint of the proof's `jwk` (RFC 7638 fixes the canonical fields that go into the digest) and writes it into the issued access token as `cnf.jkt`. Every subsequent request that uses this access token must carry a proof signed by **the same key**, so the RS can recompute the thumbprint and compare.
+The first proof at `/token` pins the binding. The OP computes the RFC 7638 JWK thumbprint of the proof's `jwk` (the RFC fixes the canonical fields that go into the SHA-256 digest) and writes it into the issued access token as `cnf.jkt`. Every subsequent request that uses this access token must carry a proof signed by **the same key**, so the RS can recompute the thumbprint and compare.
 
 `cnf` is a JSON object; the *member name* tells the RS what kind of binding was used (RFC 7800). For DPoP the member is `jkt`; mTLS uses `x5t#S256`. A token can carry both members. Where both bindings are present, the consuming endpoint must enforce both: the DPoP proof must match `jkt` and the presented certificate must match `x5t#S256`. The library applies this conjunction at `/userinfo`; device-code and CIBA grant binding checks likewise require every recorded method.
 
@@ -148,24 +148,24 @@ The four claims above all come from the client's clock. A short-lived compromise
 
 When a `DPoPNonceSource` is configured, the OP issues a fresh nonce in the `DPoP-Nonce` response header. The next proof must include it as the `nonce` claim. Pre-computed proofs immediately become invalid because the attacker cannot predict the next nonce.
 
-The library ships an in-memory reference implementation (`op.NewInMemoryDPoPNonceSource`) suitable for single-process deployments. Multi-replica HA deployments plug a shared store behind a custom `DPoPNonceSource`. FAPI 2.0 Message Signing forces the nonce on; FAPI 2.0 Baseline allows it.
+The library ships an in-memory reference implementation (`op.NewInMemoryDPoPNonceSource`) suitable for single-process deployments. Multi-replica HA deployments plug a shared store behind a custom `DPoPNonceSource`. DPoP nonces are optional in both the Final FAPI 2.0 Security Profile and Message Signing specification; configuring this library's `DPoPNonceSource` enables the nonce challenge and validation flow. The library validator requires that source when `profile.FAPI2MessageSigning` is used with DPoP, even though the Final Message Signing specification does not.
 
 See [DPoP nonce flow](/use-cases/dpop-nonce) for the full wiring, the rotation pipeline, and the multi-instance considerations.
 
 ## What this library binds
 
-Access tokens are always DPoP-bound when `feature.DPoP` is enabled and the client presents a proof at `/token` (or pre-commits a key via `dpop_jkt` on the authorize / PAR request).
+Access tokens are always DPoP-bound when `feature.DPoP` is enabled and the client presents a proof at `/token` (or pre-commits a key via `dpop_jkt` on the authorize / PAR request). The refresh-token behavior below is library policy; the Final FAPI 2.0 Security Profile prohibits routine refresh-token rotation except in extraordinary circumstances, so normal library refresh behavior must be reviewed before claiming conformance.
 
 Refresh tokens follow [Design judgment #15](/security/design-judgments#dj-15) — bind for public clients, leave unbound for confidential:
 
 - **Public clients** (`token_endpoint_auth_method = "none"`, typically SPAs and native apps) get their refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per RFC 9449 §5.4. A leaked refresh token is useless without the matching key — exactly the threat model RFC 9449 §1 cites.
 - **Confidential clients** (`private_key_jwt`, `client_secret_*`) leave the refresh chain unbound. They can rotate DPoP keys per request (the OFCS plans exercise this) without locking the chain to a single key for its lifetime. The access tokens minted on each refresh are still bound to the key presented on that exchange, so the leak surface is limited to the access token.
 
-The trade-off is explicit: confidential clients gain key-rotation flexibility at the cost of leaving the refresh chain as a raw bearer secret. Confidential clients already authenticate to the token endpoint with a long-lived asymmetric credential, so a refresh-token leak alone does not let an attacker mint new tokens.
+The trade-off is explicit: confidential clients gain key-rotation flexibility at the cost of leaving the refresh chain as a raw bearer secret. Their token-endpoint credential is a separate control and can itself be a shared secret, so a refresh-token leak still deserves protection through storage, transport, and operational controls.
 
 ## `dpop_jkt` request parameter
 
-RFC 9449 §10 lets a public client include `dpop_jkt=<thumbprint>` on the authorize (or PAR) request to pre-commit which DPoP key the issued access token will be bound to. This closes a window where a malicious code-substitution attacker could redeem the code with their own key. FAPI 2.0 Baseline does not require this parameter (mTLS or DPoP at the token endpoint is sufficient); browsers driving public clients with PKCE typically rely on PAR + DPoP at the token endpoint instead.
+RFC 9449 §10 lets a client include `dpop_jkt=<thumbprint>` on the authorize (or PAR) request to pre-commit which DPoP key the issued access token will be bound to. This closes a window where a malicious code-substitution attacker could redeem the code with their own key. The FAPI 2.0 Security Profile does not require clients to send this parameter, but an AS using DPoP must support Authorization Code Binding to DPoP Key. Browsers driving public clients with PKCE typically rely on PAR + DPoP at the token endpoint instead.
 
 The library threads `dpop_jkt` through PAR (`internal/parendpoint/par.go`): if the PAR request carries a DPoP proof, the OP stamps the thumbprint into the snapshot and rejects a `/token` exchange that arrives with a different key.
 
@@ -206,7 +206,7 @@ op.New(
 )
 ```
 
-`op.WithProfile(profile.FAPI2Baseline)` auto-enables PAR and JAR, then imposes a `RequiredAnyOf` constraint over `feature.DPoP` and `feature.MTLS`. When neither sender binding is configured, `op.New` selects DPoP as the default member; if the embedder explicitly enables `feature.MTLS`, that choice satisfies the constraint and DPoP is not added.
+`op.WithProfile(profile.FAPI2Baseline)` auto-enables PAR and JAR as library settings, then imposes a `RequiredAnyOf` constraint over `feature.DPoP` and `feature.MTLS`. JAR is optional in the Final Security Profile. When neither sender binding is configured, `op.New` selects DPoP as the default member; if the embedder explicitly enables `feature.MTLS`, that choice satisfies the constraint and DPoP is not added.
 
 ## When DPoP shines
 

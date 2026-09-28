@@ -6,12 +6,12 @@ pageClass: pg-concepts-tokens
 
 # ID Token, access token, and userinfo
 
-OIDC produces three identity artefacts. They look interchangeable at a glance — all of them carry user info, all of them are produced by the OP. They are not interchangeable. Mixing them up is a classic source of bugs.
+OIDC uses three identity-related artefacts. They look interchangeable at a glance because each belongs to the same OP flow, but they serve different contracts. Mixing them up is a classic source of bugs.
 
 ::: tip Mental model in 30 seconds
 - **ID Token** — a signed receipt for the RP that says "this user logged in here." Audience: the RP. Don't send it to APIs.
-- **Access token** — the bearer credential the RP hands to the API. Audience: the resource server. **Default format is JWT (RFC 9068); opaque is opt-in.**
-- **UserInfo** — `GET /userinfo` with the access token to fetch fresh claims. Not a token at all — a JSON response.
+- **Access token** — the credential the client presents to the API. Audience: the resource server. **Default format is an RFC 9068-shaped JWT; opaque is opt-in.** A DPoP-bound token is presented with `Authorization: DPoP` and a proof.
+- **UserInfo** — `GET /userinfo` with the access token to fetch fresh claims. It is not a token: JSON is the default response, while OIDC also supports signed or signed-and-encrypted JWT responses.
 :::
 
 ::: details Specs referenced on this page
@@ -32,9 +32,9 @@ OIDC produces three identity artefacts. They look interchangeable at a glance �
 :::
 
 ::: details JWT — what's that?
-A **JWT** (JSON Web Token, RFC 7519) is a string of three base64url chunks joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is a cryptographic check that the token came from the holder of the matching private key.
+A **signed compact JWT** (JSON Web Token, RFC 7519) is a string of three base64url-encoded parts joined by dots: `header.payload.signature`. The header and payload are JSON; the signature is a cryptographic check that the token came from the holder of the matching private key. An encrypted JWT uses compact JWE serialization with five parts and can carry a signed JWT inside it.
 
-In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provider` are JWTs by default (RFC 9068), but you can opt into opaque access tokens globally or per audience. UserInfo is not a JWT — it's a plain JSON HTTP response.
+In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provider` are JWTs by default, using the RFC 9068 shape, but you can opt into opaque access tokens globally or per audience. The library's ES256-only issuance and permissive inbound `jti` check mean its RFC 9068 support is [partial](/compliance/rfc-matrix). UserInfo is JSON by default, but this library can return a signed JWT or a signed-and-encrypted nested JWT when the request and client metadata call for it.
 :::
 
 ## At a glance
@@ -42,8 +42,8 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 | Artefact | Format | Audience (`aud`) | Where it goes | Lifetime | Who reads it |
 |---|---|---|---|---|---|
 | **ID Token** | Signed JWT (always) | The RP's `client_id` | OP → RP only | Minutes (default 10) | The RP, to know who logged in. |
-| **Access token** | JWT by default (RFC 9068); opaque when configured — see below | The RS identifier | RP → RS via `Authorization: Bearer` | Minutes | The RS, to authorize an API call. |
-| **UserInfo response** | JSON | n/a (RP's `client_id` implied) | RP → OP `/userinfo` (with access token) → RP | Per-request | The RP, to get fresh claims. |
+| **Access token** | JWT by default; opaque when configured — see below | The RS identifier | Client → RS via `Authorization: Bearer`, or `Authorization: DPoP` plus proof when DPoP-bound | Minutes | The RS, to authorize an API call. |
+| **UserInfo response** | JSON by default; signed JWT or signed-and-encrypted nested JWT when requested/configured | RP (the signed form carries the RP's `client_id` as `aud`) | RP → OP `/userinfo` (with access token) → RP | Per-request | The RP, to get fresh claims. |
 
 <figure class="fig">
   <div class="fig-head">Who issues what, and who checks it</div>
@@ -55,7 +55,7 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
     <text class="fg-t fg-accent" x="160" y="88" text-anchor="middle">OpenID Provider</text>
     <text class="fg-mxs" x="160" y="102" text-anchor="middle">go-oidc-provider</text>
     <line class="fg-rule" x1="54" y1="114" x2="266" y2="114"/>
-    <text class="fg-xs" x="160" y="132" text-anchor="middle">mints and signs every token</text>
+    <text class="fg-xs" x="160" y="132" text-anchor="middle">mints tokens and signs JWTs</text>
     <!-- RP -->
     <rect class="fg-box" x="400" y="44" width="240" height="100" rx="8"/>
     <text class="fg-lbl" x="414" y="64">RP</text>
@@ -82,10 +82,10 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
     <!-- API call -->
     <path class="fg-edge" d="M644,100 H756" marker-end="url(#fg-a)"/>
     <text class="fg-mxs" x="700" y="74" text-anchor="middle">Authorization:</text>
-    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt;</text>
+    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt; (unbound example)</text>
     <!-- userinfo round trip -->
     <path class="fg-edge" d="M520,148 V218 H288" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer</text>
+    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer (unbound)</text>
     <path class="fg-edge fg-edge--accent" d="M284,240 H560 V152" marker-end="url(#fg-ac)"/>
     <text class="fg-mxs" x="420" y="233" text-anchor="middle">200 { claims }</text>
   </svg>
@@ -94,7 +94,7 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 
 ## ID Token — "who logged in"
 
-A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature against the OP's JWKS (RFC 7517) and checks `iss`, `aud`, `exp`, and (if present) `nonce`. Standard claims:
+A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature against the OP's JWKS (RFC 7517) and validates the required claims, including `iss`, `aud`, and `exp`. If the authorization request sent a `nonce`, the ID Token must contain the same value and the RP must compare it. Standard claims:
 
 | Claim | Meaning | Spec |
 |---|---|---|
@@ -109,7 +109,7 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 | `amr` | Authentication Methods References — `pwd`, `otp`, `mfa`, `hwk`, etc. | RFC 8176 |
 
 ::: details `acr` — what's that?
-**`acr`** (Authentication Context Class Reference) is a single string that names *how strong* the login was. Your OP decides the vocabulary; common values are `urn:mace:incommon:iap:silver`, NIST SP 800-63 levels, or the FAPI-style `urn:openbanking:psd2:sca`. The RP requests a minimum with `acr_values=...` on `/auth`; if the user's session can't satisfy it, the OP either re-prompts (step-up, RFC 9470) or rejects the request. Don't confuse it with `amr` — `acr` is the *level*, `amr` is the *methods used to reach that level*.
+**`acr`** (Authentication Context Class Reference) is a string identifying the authentication context. Your OP decides the vocabulary; examples include `urn:mace:incommon:iap:silver` and `urn:openbanking:psd2:sca`. The RP sends `acr_values=...` as an ordered preference list; OIDC Core treats it as a voluntary claim request. For a hard requirement, request `claims.id_token.acr` with `essential: true` and `value` or `values`; this library then steps up or returns an interaction error if the current session does not match. `amr` instead lists the methods used.
 :::
 
 ::: details `amr` — what's that?
@@ -129,17 +129,17 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 :::
 
 ::: warning Don't put the ID Token on `Authorization: Bearer`
-The ID Token's audience is the RP, not the RS. Sending it as a Bearer token to your API works *technically* (it's a JWT) but it's semantically wrong and exposes the RP's secret-equivalent claims (email, etc.) to every API the user touches. **Use the access token for APIs.**
+The ID Token's audience is the RP, not the RS. A correctly configured RS rejects it; an API with incomplete token validation might accept it and expose identity claims such as email. **Use the access token for APIs.**
 :::
 
 ## Access token — "this client may call this API"
 
-The Bearer token your resource server validates (RFC 6750). Two classical formats are described in the OAuth literature:
+The access token your resource server validates. An unbound or mTLS-bound token uses the Bearer authorization scheme (RFC 6750); a DPoP-bound token uses the DPoP scheme plus a proof (RFC 9449 §7.1). Two formats are available:
 
 | Format | Validation | State on the OP |
 |---|---|---|
 | **Opaque** | RS calls `/introspect` (RFC 7662) every request. | OP keeps a row keyed on the token. |
-| **JWT (RFC 9068)** | RS validates signature + `aud` + `exp` locally. | Verification is self-contained; the OP may keep grant tombstones or JTI rows for OP-served revocation. |
+| **JWT (RFC 9068 shape)** | RS verifies signature/allowed algorithm, `typ=at+jwt`, `iss`, `aud`, `exp`, `iat`, and required claims; sender-bound tokens also need proof validation. | Verification is local; the OP may keep grant tombstones or JTI rows for OP-served revocation. |
 
 ### Why this matters: session_end, userinfo, and revocation depend on history
 
@@ -158,11 +158,11 @@ Pages comparing "JWT vs opaque" sometimes gloss over this. In production the tra
 
 ### What `go-oidc-provider` does
 
-The library defaults to JWT (RFC 9068) and offers opaque as opt-in. Both shapes are **revocable on the OP**. The two axes that matter are: **(1) does the RS consult the OP per request?** and **(2) how far does the logout cascade reach?**
+The library defaults to an RFC 9068-shaped JWT and offers opaque as opt-in. Both shapes are **revocable on the OP**. The two axes that matter are: **(1) does the RS consult the OP per request?** and **(2) how far does the logout cascade reach?**
 
-| | **Default — JWT (RFC 9068)** | **Opt-in — Opaque** |
+| | **Default — JWT (RFC 9068 shape)** | **Opt-in — Opaque** |
 |---|---|---|
-| Wire format | base64url JWT (`header.payload.signature`) | random bearer string |
+| Wire format | base64url JWT (`header.payload.signature`) | random opaque string |
 | RS validation | offline against the JWKS | calls `/introspect` per request |
 | OP-side state on issuance | no row under the default grant-tombstone strategy; optional JTI shadow row when selected | hashed row in `store.OpaqueAccessTokenStore` |
 | Revocation reach | OP-served boundaries (`/userinfo`, `/introspect`) | every RS request |
@@ -180,7 +180,7 @@ The library defaults to JWT (RFC 9068) and offers opaque as opt-in. Both shapes 
 An active opaque access-token introspection response includes `iss` alongside the usual `active`, `client_id`, `token_type`, `exp`, `iat`, `sub`, `aud`, and `scope` fields when those values exist. Resource servers should validate `iss` and `aud` as part of their local policy.
 
 ::: details `jti`? `gid`? Tombstones?
-Each access token JWT includes a `jti` (RFC 7519 §4.1.7, unique per-token) and a `gid` private claim (the OP-side GrantID, omitempty, consumed by the OP only — RSes ignore it).
+Each access token JWT issued by this library includes a `jti` (RFC 7519 §4.1.7, unique per-token). Tokens with grant lineage also carry a `gid` private claim (the OP-side GrantID, consumed by the OP only — RSes ignore it); it is omitted when no grant ID exists.
 
 **Default — grant-tombstone strategy.** The OP keeps a small per-grant tombstone table; verification matches the JWT's `gid` against it. A single-AT `/revocation` writes one denylist row keyed on `jti`. Steady state is `O(revoked grants + revoked JTIs)`, not `O(issued)`.
 
@@ -219,11 +219,13 @@ This trade-off applies symmetrically to JWT access tokens with revocation enable
 1. Calls `/introspect` (with one of the cache strategies above), or
 2. Subscribes to the OP audit stream and treats `op.AuditTokenRevoked` as a denylist source for offline JWT verification.
 
-Doing neither — pure offline JWT validation, no introspection, no audit subscription — means revocation propagates only at the next refresh-token rotation. That can be acceptable for low-risk APIs but it is a deliberate trade, not a default that the spec entitles you to.
+Doing neither — pure offline JWT validation, no introspection, no audit subscription — means a previously issued JWT can continue to validate until its `exp`, even after the OP revokes its grant. Revocation reaches that RS only when it consults OP state, receives equivalent denylist state, or the token expires; rotating a refresh token does not retroactively invalidate an already issued JWT. That can be acceptable for low-risk APIs but it is a deliberate trade, not a default that the spec entitles you to.
 
 ## UserInfo — "give me fresh claims for this access token"
 
-A simple `GET /userinfo` (OIDC Core §5.3) with the access token. Returns a JSON document of the user's claims, scoped to whatever the access token's scopes allow.
+By default, `GET /userinfo` (OIDC Core §5.3) with the access token returns a JSON document of the user's claims, scoped to whatever the access token's scopes allow. OIDC also defines a JWT-shaped response; this library returns a signed response when the client sends `Accept: application/jwt`, and registered encryption metadata can make it a nested signed-and-encrypted JWE.
+
+The curl example uses an unbound Bearer token. For a DPoP-bound token, use `Authorization: DPoP` and supply a valid `DPoP` proof header.
 
 ```sh
 curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/userinfo
@@ -240,6 +242,8 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 - **UserInfo** is the live source — call it when you need a value (e.g. display name) that the user might have changed.
 
 For most apps, ID Token claims are enough. UserInfo is for the cases where you need freshness. Behind the scenes, the library verifies the access token and consults the configured OP-side revocation state, so a token revoked between login and the UserInfo call is rejected even though its JWT signature may still be valid.
+
+Before using any UserInfo claim, the RP must check that the response's `sub` exactly matches the `sub` in the ID Token. OIDC Core §5.3.4 requires the RP to discard the UserInfo response if they differ. For a signed UserInfo JWT, verify its signature and claims as well.
 :::
 
 ## Configuration knobs

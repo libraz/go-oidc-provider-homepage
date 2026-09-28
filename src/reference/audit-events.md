@@ -57,7 +57,7 @@ op.New(
 )
 ```
 
-`op.WithAuditLogger` takes a `*slog.Logger`. Each event records as a structured log entry. The `event` attribute contains the event identifier (e.g. `"token.issued"`), and `msg` is the short human-readable message. The remaining attributes carry the request-id, subject, client-id, and an `extras` group with category-specific fields. Emission is synchronous on the request goroutine: the handler must not block on slow I/O or an unbounded queue, and it must be safe for concurrent calls.
+`op.WithAuditLogger` takes a `*slog.Logger`. Each event is recorded as a structured log entry. The `event` attribute contains the event identifier (e.g. `"token.issued"`), and `msg` is the short human-readable message. The canonical fields are optional top-level attributes: `actor_id`, `client_id`, `session_id`, `request_id`, `ip`, `user_agent`, and `tag` are omitted when unset. A non-empty `extras` group carries category-specific fields. Emission is synchronous on the caller's goroutine: the handler must not block on slow I/O or an unbounded queue, and it must be safe for concurrent calls.
 
 If `WithAuditLogger` is not supplied, audit events fall through to the logger configured by `WithLogger`. If neither logger is supplied, audit emission is discarded.
 
@@ -81,15 +81,23 @@ Read it when you need the event set as data rather than as prose — provisionin
 
 ## Common attributes
 
-Each emitted event always carries `audit`, `event`, and the record time. The following attributes appear when the emitter populated them:
+Each emitted event carries `audit` and `event`. Canonical fields are optional and omitted when unset; `extras` is omitted when empty. With `slog.JSONHandler`, the record timestamp, level, and message also appear:
 
 | Attribute | Type | Notes |
 |---|---|---|
-| `request_id` | string | per-request identifier; omitted when unknown |
-| `actor_id` | string | subject identifier for a user-initiated event, or `client_id` for a client-initiated event; omitted when unknown |
-| `client_id` | string | OAuth `client_id`; omitted when unknown |
+| `audit` | string | always `"true"` |
+| `event` | string | event identifier, such as `"token.issued"` |
+| `actor_id` | string | subject identifier for a user-initiated event, or `client_id` for a client-initiated event; omitted when unset |
+| `client_id` | string | OAuth `client_id`; omitted when unset |
+| `session_id` | string | OP session identifier when applicable; omitted when unset |
+| `request_id` | string | request correlation identifier; omitted when unset |
+| `ip` | string | client IP observed at the OP edge; omitted when unset |
+| `user_agent` | string | observed `User-Agent` value; omitted when unset |
+| `tag` | string | operator-supplied DCR tag; omitted when unset |
 | `extras` | group | category-specific fields (see each section); omitted when empty |
-| `time` | timestamp | `slog.Record.Time`; follows `WithClock` (or the system clock when no clock is configured) |
+| `time` | timestamp | `slog.Record.Time`, from `WithClock` or the system clock |
+| `level` | string | `slog.Record.Level`, such as `INFO`, `WARN`, or `ERROR` |
+| `msg` | string | `slog.Record.Message`, the short human-readable message |
 
 ## Event catalog
 
@@ -294,7 +302,7 @@ Fire from `/device_authorization`, the embedder's verification ceremony helpers 
 | `AuditDeviceCodeUserCodeBruteForce` | a `user_code` submission missed; counter incremented (lockout fires after `devicecodekit.MaxUserCodeStrikes`, default 5) | alert | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenIssued` | `/token` minted a token for an approved device authorization | info | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenRejected` | `/token` rejected the device-code grant (`access_denied`, `expired_token`, etc.) | warn | [Use case: device code](/use-cases/device-code) |
-| `AuditDeviceCodeTokenSlowDown` | `/token` returned `slow_down`; the substore row's interval was doubled | warn | [Use case: device code](/use-cases/device-code) |
+| `AuditDeviceCodeTokenSlowDown` | `/token` returned `slow_down`; 5 seconds were added to the substore row's polling interval | warn | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` flipped the row to denied; when `Deps.AccessTokens` is wired, the helper also cascade-revoked issued access tokens and reports `revoked_access_tokens` | info | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodePollObservationFailed` | persisting the `LastPolledAt` stamp on a poll faulted; decision still proceeds (best-effort observability) | warn | [Use case: device code](/use-cases/device-code) |
 

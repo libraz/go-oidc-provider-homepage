@@ -31,10 +31,10 @@ OP は組み込み側のルータの 1 段下、自前のハンドラと並ぶ�
     <rect class="fg-box fg-box--accent" x="490" y="128" width="374" height="98" rx="8"/>
     <text class="fg-t2 fg-accent" x="510" y="154">op.Provider</text>
     <text class="fg-mxs" x="510" y="180">/oidc/* — マウント先の prefix は任意</text>
-    <text class="fg-mxs" x="510" y="200">/.well-known/openid-configuration</text>
+    <text class="fg-mxs" x="510" y="200">discovery — issuer に応じたパス</text>
     <text class="fg-xs" x="510" y="218">占有するのは 1 つの subtree だけ</text>
   </svg>
-  <figcaption class="fig-note">OP が占有するのは 1 つの subtree だけで、その外側には触れません。例外は discovery ドキュメントで、これは仕様がホストのルート直下に固定しています。外側を包む部分はすべて組み込み側のもので、これまでどおり動きます。</figcaption>
+  <figcaption class="fig-note">OP が占有するのは 1 つの subtree だけで、その外側には触れません。ホストだけの issuer では discovery はホストのルートに公開されますが、パスを含む issuer では RFC 8414 と OpenID Connect Discovery が定める場所にも公開されます。外側を包む部分はすべて組み込み側のもので、これまでどおり動きます。</figcaption>
 </figure>
 
 ## net/http、chi、gin で使う
@@ -70,7 +70,7 @@ op.New(
 )
 ```
 
-既定の `/auth` エンドポイントは `/oidc/auth`、`/token` は `/oidc/token` … となります。**Discovery (`/.well-known/openid-configuration`) は常にルートに公開されます** — OIDC Discovery 1.0 §4 の要請です。
+既定の `/auth` エンドポイントは `/oidc/auth`、`/token` は `/oidc/token` … となります。`WithMountPrefix` が変えるのは issuer 相対のプロトコルパスで、discovery のパスは変えません。ホストだけの issuer では discovery は `/.well-known/openid-configuration` です。issuer にパスが含まれる場合は、RFC 8414 の位置（`/.well-known/openid-configuration/<issuer-path>`）と OIDC Discovery 1.0 §4 の位置（`/<issuer-path>/.well-known/openid-configuration`）の両方で公開します。
 
 ## カスタムエンドポイントパス
 
@@ -92,14 +92,14 @@ OP が組み込み側のルータに載せるものは、意図的に絞って�
 
 | OP が公開する | OP が公開しない |
 |---|---|
-| `/.well-known/openid-configuration` | `/metrics`（組み込み側が `promhttp` で公開） |
+| discovery（issuer に応じたパス） | `/metrics`（組み込み側が `promhttp` で公開） |
 | `/jwks` | `/healthz`、`/readyz` |
 | `/auth`、`/token`、`/userinfo` | リクエスト時間の histogram middleware |
 | `/end_session` | OpenTelemetry の HTTP サーバ span middleware |
 | オプション: `/par`、`/introspect`、`/revoke`、`/register`、`/device_authorization`、`/bc-authorize`、`/grant_management` | `/debug/pprof` の公開 |
 | オプション: `/interaction/*`、`/session/*`（SPA driver 使用時） | 汎用の IP 別 rate limiter |
 
-これは意図的です。OP は **業務** メトリクス / トレース / 監査イベントを `op.WithPrometheus`、`op.WithLogger`、`op.WithAuditLogger` 経由で、利用者が所有する registry / handler に流します。
+これは意図的です。OP は **業務** メトリクスとログ / 監査イベントを `op.WithPrometheus`、`op.WithLogger`、`op.WithAuditLogger` 経由で、利用者が所有する sink に流します。OpenTelemetry のスパンは生成しません。
 
 **HTTP ライフサイクルの観測は組み込み側の責務です** — `otelhttp` や `promhttp.InstrumentHandler` などで、自分の SRE 規約に合わせてルータをラップしてください。
 

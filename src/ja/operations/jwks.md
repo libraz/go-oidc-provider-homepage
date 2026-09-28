@@ -93,7 +93,7 @@ JOSE の許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）は OP が **�
 
 - ETag が完全一致 → `304 Not Modified`、ボディなし。
 - `*` ワイルドカード → `304 Not Modified`。
-- weak validator(`W/"..."`) → 不一致扱い。
+- 同じ opaque-tag の weak validator（`W/"..."`） → weak comparison により一致扱い。
 
 ETag は **シリアライズ後の JWKS 全体** に対するハッシュなので、`kid` の変更や鍵集合のメンバー変更が起きると自動で値が変わります。手動でキャッシュを破棄させる手順は不要です。
 

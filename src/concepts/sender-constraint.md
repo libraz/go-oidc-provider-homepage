@@ -6,12 +6,12 @@ pageClass: pg-concepts-sender-constraint
 
 # Sender constraint — DPoP vs mTLS
 
-A bare bearer token is **bearer-authoritative**: whoever has the bytes can call the API. If the token leaks (logs, intermediary proxy, browser extension, third-party SDK) the leaker has full access until the token expires.
+A bare bearer token can be used by whoever has its bytes. If the token leaks (logs, intermediary proxy, browser extension, third-party SDK) the leaker has full access until the token expires.
 
 A **sender-constrained** access token is bound to a key the legitimate client holds. Even if the bytes leak, the leaker cannot use the token without also stealing the key. This page is the selection guide; the mechanics live on the dedicated pages for [DPoP](/concepts/dpop) and [mTLS](/concepts/mtls).
 
 ::: details Token replay — what is it?
-A leaker captures a valid access token (e.g. from a log file or a compromised proxy) and re-sends it from their own machine to call the API. The RS sees a syntactically valid token and serves the request. Sender constraint makes replay structurally impossible — the leaker would also have to present the matching key on the same request.
+A leaker captures a valid access token (e.g. from a log file or a compromised proxy) and re-sends it from their own machine to call the API. The RS sees a syntactically valid token and serves the request. Sender constraint blocks token-only replay — the leaker would also have to present the matching key on the same request.
 :::
 
 ::: details Proof-of-possession — what is it?
@@ -27,10 +27,10 @@ Token leakage is no longer hypothetical:
 - **Compromised intermediaries.** A single compromised CDN edge or proxy gains access to every request flowing through it. Bearer tokens are the most useful artefact to harvest.
 - **Stage-and-fire.** An attacker with brief access to a developer's machine can copy a token and use it later from anywhere on the internet.
 
-The structural fix is to make the bytes alone insufficient. Sender constraint achieves this by tying every request to a key the legitimate client controls. The leak still happens; it just no longer compromises the API.
+The structural fix is to make the bytes alone insufficient. Sender constraint achieves this by tying every request to a key the legitimate client controls. The leak still happens; the token alone no longer compromises the API.
 
 ::: tip Sender constraint vs TLS
-TLS protects the token while it is on the wire. Once the request reaches the application — the OP, the RS, a logging middleware, a debug endpoint — the bearer token is in plaintext and any of those points can leak it. Sender constraint protects the token end-to-end.
+TLS protects the token while it is on the wire. Once the request reaches the application — the OP, the RS, a logging middleware, a debug endpoint — the bearer token is in plaintext and any of those points can leak it. Sender constraint protects against token-only replay after the token reaches those components.
 :::
 
 ## Two ways to bind in this library
@@ -51,17 +51,19 @@ TLS protects the token while it is on the wire. Once the request reaches the app
 | `cnf` member | `cnf.jkt` (JWK thumbprint) | `cnf.x5t#S256` (X.509 thumbprint) |
 | Refresh token binding (default) | Bound for public clients, unbound for confidential ([Design judgment #15](/security/design-judgments#dj-15)) | Access tokens can be certificate-bound; mTLS token-endpoint client authentication is not dispatched |
 | Replay defense beyond binding | `jti` cache, `iat` window, optional server nonce | TLS session reuse + cert thumbprint match |
-| FAPI 2.0 Baseline acceptance | Yes | Yes |
-| FAPI 2.0 Message Signing | Yes (with §8 / §9 nonce) | Yes |
+| FAPI 2.0 Security Profile (confidential clients) | Yes | Yes |
+| FAPI 2.0 Message Signing | Inherits the Security Profile; DPoP nonce is optional | Inherits the Security Profile |
 
-FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; this library accepts both for token binding. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]`. If neither is enabled, construction selects `feature.DPoP` as the default member; if you explicitly enable `feature.MTLS`, that choice satisfies the disjunction and DPoP is not added. Use `private_key_jwt` for token endpoint client authentication even when mTLS supplies the sender constraint.
+The Final FAPI 2.0 Security Profile applies to confidential clients and requires sender-constrained tokens via **one of** these two methods; its Message Signing extension inherits that requirement and does not add a DPoP nonce requirement. This library accepts both for token binding. `op.WithProfile(profile.FAPI2Baseline)` imposes `RequiredAnyOf` over `[feature.DPoP, feature.MTLS]`. If neither is enabled, construction selects `feature.DPoP` as the default member; if you explicitly enable `feature.MTLS`, that choice satisfies the disjunction and DPoP is not added. This library uses `private_key_jwt` for token endpoint client authentication even when mTLS supplies the sender constraint; the Final Security Profile also permits mTLS there.
+
+The selection guide below also covers public-client deployments supported by the library. Public clients are outside the Final Security Profile's client-scope requirement.
 
 ## Choosing between them
 
 <figure class="fig">
   <div class="fig-head">Picking a sender constraint</div>
   <svg class="fig-svg" role="img" aria-labelledby="sc-choice-title" viewBox="0 0 960 466" xmlns="http://www.w3.org/2000/svg">
-    <title id="sc-choice-title">A decision tree for choosing a sender constraint. Browser-driven clients take DPoP, backends that already hold a PKI certificate take mTLS, B2B and regulated estates take mTLS or both, a mixed fleet enables both, and the default when none of these applies is DPoP.</title>
+    <title id="sc-choice-title">A decision tree for choosing a sender constraint. Browser-driven clients usually take DPoP, backends that already hold a PKI certificate can take mTLS, B2B and regulated estates follow their scheme or partner requirements, a mixed fleet enables both, and the default when none of these applies is DPoP.</title>
     <!-- 1 -->
     <rect class="fg-box" x="36" y="24" width="394" height="62" rx="8"/>
     <text class="fg-s" x="56" y="50">Is the client browser-driven?</text>
@@ -87,12 +89,12 @@ FAPI 2.0 Baseline requires sender-constrained tokens via **one of** these two; t
     <!-- 3 -->
     <rect class="fg-box" x="36" y="208" width="394" height="62" rx="8"/>
     <text class="fg-s" x="56" y="234">B2B, open banking, or otherwise regulated?</text>
-    <text class="fg-xs" x="56" y="254">the network layer already mandates client certs</text>
+    <text class="fg-xs" x="56" y="254">the scheme or partner may require client certs</text>
     <path class="fg-edge" d="M434,239 H526" marker-end="url(#fg-a)"/>
     <text class="fg-xs" x="480" y="232" text-anchor="middle">yes</text>
     <rect class="fg-box" x="530" y="208" width="394" height="62" rx="8"/>
     <text class="fg-t2" x="550" y="234">mTLS, or both</text>
-    <text class="fg-xs" x="550" y="254">the choice is usually made for you by the regulator</text>
+    <text class="fg-xs" x="550" y="254">check the scheme or partner standard</text>
     <path class="fg-edge" d="M233,274 V296" marker-end="url(#fg-a)"/>
     <text class="fg-xs" x="243" y="290">no</text>
     <!-- 4 -->
@@ -119,10 +121,10 @@ The decision usually falls out of the existing infrastructure:
 - **SPA, mobile, or any browser-driven client →** DPoP. Browsers cannot reliably present client certificates; mobile certificate provisioning is a poor UX. DPoP keys live in memory or in the platform's secure storage.
 - **First-party API where you control both ends →** DPoP. Lower operational overhead; no PKI required.
 - **Backend services with an established internal CA →** mTLS. Reuse the existing PKI infrastructure rather than introducing a new key-management surface.
-- **B2B service mesh, open banking, regulated environment →** mTLS, often because the regulator already mandates it at the network layer. RFC 8705 layers token binding on top without changing the wire.
+- **B2B service mesh, open banking, regulated environment →** mTLS when the applicable scheme or partner standard requires it. RFC 8705 layers token binding on top without changing the wire.
 - **Heterogeneous estate (some SPAs, some backends) →** Both. Enable both features; the OP advertises them in discovery and each client picks the mechanism it can use.
 
-If you are not sure which one fits, default to DPoP. It carries fewer infrastructure prerequisites and works in every client environment.
+If you are not sure which one fits, default to DPoP. It carries fewer infrastructure prerequisites and fits more client environments.
 
 ## Read more
 
@@ -131,6 +133,6 @@ If you are not sure which one fits, default to DPoP. It carries fewer infrastruc
 
 ## Read next
 
-- [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — full wiring with sender constraint enabled.
+- [Use case: FAPI 2.0 Security Profile](/use-cases/fapi2-baseline) — full wiring with sender constraint enabled.
 - [DPoP nonce flow](/use-cases/dpop-nonce) — RFC 9449 §8 / §9 server-supplied nonce pipeline.
 - [Design judgments](/security/design-judgments) — the public / confidential refresh-binding split and other resolved spec tensions.

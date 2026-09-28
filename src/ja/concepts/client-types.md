@@ -22,7 +22,7 @@ pageClass: pg-concepts-client-types
 - [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
 - [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §9（クライアント認証）
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html) — §3.1.3（推奨される auth method）
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — §5.3.2.1（許可されるクライアント認証方式）
 :::
 
 ## Public client
@@ -82,13 +82,13 @@ confidential client が得られるもの:
 
 ## FAPI grade client
 
-FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: PAR が必須、request object が署名される（JAR / Message Signing）、アクセストークンが送信者制約付き（DPoP または mTLS）、token endpoint 認証は非対称鍵方式です。本ライブラリは token endpoint クライアント認証に `private_key_jwt` を使います。mTLS は送信者制約レイヤとして使えますが、`tls_client_auth` / `self_signed_tls_client_auth` は `/token` では振り分けられません。詳細は[FAPI 2.0 入門](/ja/concepts/fapi)。
+FAPI 2.0 Security Profile は、confidential クライアント、PAR、送信者制約付きアクセストークン（DPoP または mTLS）、mTLS または `private_key_jwt` によるクライアント認証を要求します。署名付きリクエストオブジェクトは、この仕様の必須要件ではありません。本ライブラリの `profile.FAPI2Baseline` 設定は、追加で JAR を要求し、トークンエンドポイントのクライアント認証には `private_key_jwt` を使います。mTLS は送信者制約に利用できますが、`tls_client_auth` と `self_signed_tls_client_auth` は `/token` で処理されません。詳しくは [FAPI 2.0 入門](/ja/concepts/fapi) を参照してください。
 
 プロトコル上「FAPI クライアント種別」が別物として存在するわけではありません — FAPI grade client は追加要件を満たした confidential client です。本ライブラリは構築時およびリクエスト時にその一致を強制します。
 
 ## 認証メソッド
 
-本ライブラリが実装するのは IANA "OAuth Token Endpoint Authentication Methods" レジストリの 6 メソッドです。閉じた集合は `op.AuthMethod` 定数で公開されています。
+本ライブラリは IANA の "OAuth Token Endpoint Authentication Methods" レジストリにある 6 つの方式を `op.AuthMethod` 定数として認識します。そのうち `/token` で選択できるのは 4 方式です。2 つの mTLS クライアント認証方式には内部の検証器がありますが、`/token` の認証方式としては処理されません。
 
 次の決定木は、クライアントの構造から登録する `token_endpoint_auth_method` の値までを辿ります — public client は `none`、confidential client は `client_secret_*` 系、FAPI grade client は非対称メソッドに落ちます。
 
@@ -135,7 +135,7 @@ FAPI 2.0 Baseline は confidential client の要件を一段引き上げます: 
 | `none` | — | — | 不可 | public client（SPA、native、CLI）+ PKCE。 |
 | `client_secret_basic` | あり | — | 不可 | 共有シークレット保持のバックエンド。HTTP Basic で送る。confidential client の既定。 |
 | `client_secret_post` | あり | — | 不可 | 同じシークレットを form body で送る。新規デプロイには非推奨 — Basic が標準的な通信路上の形式。 |
-| `private_key_jwt` | — | あり | 可 | バックエンドが自分の秘密鍵で短寿命 JWT assertion に署名し、OP が登録 JWKS で検証。FAPI が推奨するメソッド。 |
+| `private_key_jwt` | — | あり | 可 | バックエンドが自分の秘密鍵で短寿命の JWT アサーションに署名し、OP が登録済み JWKS で検証。本ライブラリの FAPI 設定で使う方式。 |
 | `tls_client_auth` | — | あり（PKI） | RFC 検証器のみ | RFC 8705 検証器は内部にありますが、`/token` のクライアント認証方式としては振り分けられません。 |
 | `self_signed_tls_client_auth` | — | あり（pin） | RFC 検証器のみ | RFC 8705 検証器は内部にありますが、`/token` のクライアント認証方式としては振り分けられません。 |
 

@@ -37,7 +37,7 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | PAR (RFC 9126) `request_uri` lifetime | one-time, short-lived | `parendpoint.DefaultTTL = 60 s` | [/concepts/fapi](/concepts/fapi) |
 | Back-Channel Logout token | OP signs once, RP dedups | OP does not enforce a `jti` cache; RP-side responsibility | [/use-cases/back-channel-logout](/use-cases/back-channel-logout) |
 | ID Token | `iat` + `exp` | `exp - iat = defaultIDTokenTTL = 10 min` (fixed, independent of the request's access-token TTL) | [/concepts/tokens](/concepts/tokens) |
-| Access token (JWT or opaque) | `iat` + `exp` | `DefaultAccessTokenTTL = 5 min`, capped at `AccessTokenTTLMax = 24 h` (FAPI profile caps at 10 min) | [/concepts/tokens](/concepts/tokens) |
+| Access token (JWT or opaque) | `iat` + `exp` | `DefaultAccessTokenTTL = 5 min`, capped at `AccessTokenTTLMax = 24 h` (the library caps every FAPI profile enum at 10 min; this is a library / legacy-profile constraint, not a 10-minute requirement in FAPI 2.0 Security Profile Final §6.1) | [/concepts/tokens](/concepts/tokens) |
 | Refresh token (absolute lifetime) | `exp` from issuance | `timex.RefreshTokenTTLDefault = 30 days` | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
 | `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
 
@@ -92,7 +92,7 @@ The same selected windows, drawn to scale on a logarithmic time axis, show the b
     <line class="fg-rule" x1="340" y1="286" x2="900" y2="286"/>
     <text class="fg-s" x="300" y="290" text-anchor="end">Access token</text>
     <circle class="fg-dot--accent" cx="424" cy="286" r="4.5"/>
-    <text class="fg-mxs" x="440" y="290">5 min · FAPI 10 min</text>
+    <text class="fg-mxs" x="440" y="290">5 min · library FAPI cap 10 min</text>
     <line class="fg-rule" x1="340" y1="316" x2="900" y2="316"/>
     <text class="fg-s" x="300" y="320" text-anchor="end">ID token</text>
     <circle class="fg-dot--accent" cx="461" cy="316" r="4.5"/>
@@ -144,7 +144,7 @@ Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cac
 
 **Token replay** — the same bearer-shaped credential is presented twice. Authorization codes are *consumed* on first use (the row is marked spent in `AuthorizationCodeStore`). Refresh tokens *rotate* on every redemption and reuse-detection cascades a revoke when the previous token is presented after the grace window closes. DPoP proofs are *deduped* by `jti`: the nonce gate runs first, then the accepted proof is committed to `ConsumedJTIStore`, so a second proof carrying the same `jti` returns `ErrProofReplayed` once the first proof has passed the gate.
 
-**Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: once `/authorize` consumes the URN it is gone from `PushedAuthRequestStore`. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore. Markers use `jar:<clientID>:<jti>` keys and follow the server-bounded expiry calculation: the request's `exp` is subject to the verifier's `max-age` floor and maximum-lifetime ceiling, plus clock skew.
+**Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: once `/authorize` consumes the URN it is gone from `PushedAuthRequestStore`. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore. Markers use `jar:<use>:<clientID>:<jti>` keys and follow the server-bounded expiry calculation: the request's `exp` is subject to the verifier's `max-age` floor and maximum-lifetime ceiling, plus clock skew.
 
 **Logout replay** — the same `logout_token` is POSTed to the RP a second time. Back-Channel Logout 1.0 §2.6 places the dedup responsibility on the *RP*, not the OP: the OP signs and delivers once, and each RP is expected to track recently-seen logout-token `jti` values for its own purposes. The OP does not maintain a logout-token replay cache because the relevant boundary is the RP.
 
@@ -152,7 +152,7 @@ Read these three together as the model: the artifact's *use* defines the defense
 
 ## Recommended deployment knobs
 
-`ConsumedJTIStore` (declared in `op/store/jti.go`) is the contract every `jti`-based defense routes through. DPoP, JAR, and `client_assertion` all call `Mark(ctx, key, expiresAt)` on the same substore; the namespacing of the key (`jar:<clientID>:<jti>`, the bare `jti` for DPoP and assertions) keeps them from colliding.
+`ConsumedJTIStore` (declared in `op/store/jti.go`) is the contract every `jti`-based defense routes through. DPoP, JAR, and `client_assertion` all call `Mark(ctx, key, expiresAt)` on the same substore; keys are namespaced as `dpop:<JKT>:<JTI>`, `clientassertion:<clientID>:<jti>`, and `jar:<use>:<clientID>:<jti>`, so proofs, clients, and request uses cannot collide.
 
 For multi-instance deployments, the substore must be shared across instances or every instance must be sticky-routed for the lifetime of a given `jti`. Backing it with the in-memory implementation across multiple replicas defeats the defense — replica A and replica B will each accept the same proof exactly once. A fast shared cache (Redis, Memcached) is the typical choice; the deployment guidance in [/operations/multi-instance](/operations/multi-instance) discusses the volatile / durable split that this implies.
 

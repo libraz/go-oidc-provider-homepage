@@ -49,7 +49,7 @@ pageClass: pg-concepts-oauth2-oidc-primer
 - [RFC 9068](https://datatracker.ietf.org/doc/html/rfc9068) — JWT Profile for OAuth 2.0 Access Tokens
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [OpenID Connect RP-Initiated Logout 1.0](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html)
 :::
 
 ## 3 つの役割
@@ -106,14 +106,14 @@ pageClass: pg-concepts-oauth2-oidc-primer
 
 ## OAuth 2.0 と OpenID Connect の違い
 
-OAuth 2.0 は **認可の委任** を担う規格です — 「Alice のアプリが、サービス X 上の Alice のデータを読む許可をもらう」。OAuth 2.0 単独では、アプリ側に **Alice が誰なのか** は伝わりません。あくまで不透明なアクセストークンを渡すだけです。
+OAuth 2.0 は **認可の委任** を担う規格です — 「Alice のアプリが、サービス X 上の Alice のデータを読む許可をもらう」。OAuth 2.0 単独では、アプリ側に **Alice が誰なのか** は伝わりません。アクセストークンを認可の表現として定義しますが、形式は規定せず、ユーザの識別情報としての意味も持たせません。opaque にするか JWT などの自己完結型にするかは、認可サーバー側の選択です。
 
 OpenID Connect（OIDC）は **OAuth 2.0 + 認証結果** を扱う規格です。OP はアクセストークンに加えて **ID トークン**（署名付き JWT）を発行し、「このトークンはユーザ `sub=alice123`、audience `client_id=myapp` 向けに、この時刻に発行された。Alice について次の claim が真である」と表明します。
 
 OIDC はさらに userinfo エンドポイント（`/userinfo`）、discovery、RP-Initiated Logout、Back-Channel Logout 通知も追加します。
 
 ::: details JWT とは
-**JWT**（JSON Web Token、RFC 7519）は `header.payload.signature` の 3 つを `.` で繋いだ base64url 文字列です。header と payload は JSON で、signature は受け手が公開鍵で発行者を暗号学的に検証するための部分です。
+**署名付き compact JWT**（JSON Web Token、RFC 7519）は、3 つの base64url エンコード部分を `.` で繋いだ文字列です（`header.payload.signature`）。header と payload は JSON で、signature は受け手が公開鍵で発行者を暗号学的に検証するための部分です。暗号化された JWT は 5 つの部分を持つ compact JWE で、署名済み JWT をその中に包むこともできます。
 
 OIDC では **ID トークンは常に JWT** です。本ライブラリのアクセストークンも既定では JWT で、必要な場合は opaque 形式に切り替えられます。JSON が読めて署名が検証できるなら、既定の JWT 形式は読めます — 独自バイナリ形式は登場しません。
 :::
@@ -266,7 +266,7 @@ Authorization: Bearer eyJ...access_token...
 
 ## FAPI 2.0 が追加するもの
 
-金融グレード・医療グレードの OP を作るなら、OIDC の上に **FAPI 2.0** の要求を重ねる必要があります。送信者制約付きトークン（DPoP / mTLS）、PAR（authorize 要求を先にサーバ間で送る）、JAR（要求自体を署名 JWT にする）、より絞られた alg 許可リストが要求されます。本ライブラリではプロファイル指定 1 行で有効化できます。
+金融グレード・医療グレードの OP を作るなら、OIDC の上に **FAPI 2.0 Security Profile** の要求を重ねる必要があります。送信者制約付きトークン（DPoP / mTLS）、PAR（認可要求を先にサーバ間で送る）、より絞られた alg 許可リストが要求されます。JAR（認可要求に署名する仕組み）は本ライブラリでサポートしていますが、FAPI 2.0 Security Profile 自体は JAR を必須にしていません。本ライブラリでは `FAPI2Baseline` 設定を 1 行で有効化できます。
 
 ```go
 op.WithProfile(profile.FAPI2Baseline)

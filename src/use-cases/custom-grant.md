@@ -147,7 +147,7 @@ When the handler does not have an out-of-band signing key, hand back a `BoundAcc
 - Stamps `cnf.jkt` (DPoP) or `cnf.x5t#S256` (mTLS) automatically when the request presented a verified proof — the handler does not need to thread the binding through itself.
 - Merges `ExtraClaims` (collisions with the standard set yield `server_error` so the bug surfaces in audit).
 
-This is the right default for most embedders. As a result, the OP enforces FAPI 2.0 §3.1.4's binding contract for free.
+This is the right default for most embedders. When the request carries a verified DPoP or mTLS proof, this path applies the sender constraint that the FAPI 2.0 Security Profile §5.3.2.1(4)–(5) requires for access tokens.
 
 ### `AccessToken` — handler signs
 
@@ -207,7 +207,7 @@ The OP owns the refresh-token credential:
 - shares the access token's grant identity
 - binds it to the same DPoP / mTLS proof
 
-That means the issued refresh token uses the normal rotation, replay cascade (RFC 9700 §2.2.2), and revocation machinery.
+That means the issued refresh token uses the normal rotation, replay cascade (RFC 9700 §4.14.2), and revocation machinery.
 
 When `IssueRefreshToken` is true, the refresh token is dropped (while the access-token response still succeeds) if any of these five gates fails:
 
@@ -220,7 +220,7 @@ When `IssueRefreshToken` is true, the refresh token is dropped (while the access
 Each drop emits `custom_grant.refresh_dropped` with the policy reason (`provider_grant_disabled`, `client_not_registered`, `empty_subject`, `empty_scope`, or `multiple_resource_audience`). Dropping the refresh token does not by itself fail the access token or an otherwise eligible ID token; an empty scope therefore suppresses only the refresh token and does not reject an otherwise valid response.
 
 ::: details Refresh-token lineage — what's that?
-The OP records each refresh token's parent so a rotation produces a chain (`A → B → C`); when one of those tokens is replayed (RFC 9700 §2.2.2), the OP can revoke every descendant in one shot. `IssueRefreshToken` keeps custom grants inside that OP-owned chain. A handler cannot provide a refresh-token value directly because RFC 6749 §6 treats the refresh token as an authorization-server-issued credential.
+The OP records each refresh token's parent so a rotation produces a chain (`A → B → C`); when one of those tokens is replayed (RFC 9700 §4.14.2), the OP can revoke every descendant in one shot. `IssueRefreshToken` keeps custom grants inside that OP-owned chain. A handler cannot provide a refresh-token value directly because RFC 6749 §6 treats the refresh token as an authorization-server-issued credential.
 :::
 
 ## What the OP refuses

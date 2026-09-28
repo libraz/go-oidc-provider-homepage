@@ -22,7 +22,7 @@ A **client** is the application that asks the OP for tokens. Clients fall into t
 - [RFC 8705](https://datatracker.ietf.org/doc/html/rfc8705) — Mutual-TLS Client Authentication and Certificate-Bound Access Tokens
 - [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) — DPoP
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §9 (client authentication)
-- [FAPI 2.0 Baseline](https://openid.net/specs/fapi-2_0-baseline.html) — §3.1.3 (preferred auth methods)
+- [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-security-profile-2_0.html) — §5.3.2.1 (permitted client authentication methods)
 :::
 
 ## Public clients
@@ -65,13 +65,13 @@ A confidential client gets:
 
 ## FAPI-grade clients
 
-FAPI 2.0 Baseline raises the bar on a confidential client: PAR is required, the request object is signed (JAR / Message Signing), the access token is sender-constrained (DPoP or mTLS), and the token-endpoint auth method is asymmetric. This library uses `private_key_jwt` for token-endpoint client authentication; mTLS is available as the sender-constraint layer, while `tls_client_auth` / `self_signed_tls_client_auth` are not dispatched at `/token` — see [FAPI 2.0 primer](/concepts/fapi).
+The FAPI 2.0 Security Profile requires confidential clients, PAR, sender-constrained access tokens (DPoP or mTLS), and either mTLS client authentication or `private_key_jwt`. It does not require a signed request object. This library's `profile.FAPI2Baseline` setting additionally requires JAR and uses `private_key_jwt` for token-endpoint client authentication. mTLS is available for sender constraint, but `tls_client_auth` and `self_signed_tls_client_auth` are not dispatched at `/token`. See the [FAPI 2.0 primer](/concepts/fapi).
 
 There is no separate "FAPI client type" in the protocol; a FAPI-grade client is a confidential client that has met the additional requirements. The library enforces that match at construction and at request time.
 
 ## Authentication methods
 
-The library implements six methods, all from the IANA "OAuth Token Endpoint Authentication Methods" registry. The closed set is exposed as `op.AuthMethod` constants.
+The library recognizes six method names from the IANA "OAuth Token Endpoint Authentication Methods" registry as `op.AuthMethod` constants. Four are selectable at `/token`; the two mTLS client-auth methods have internal verifiers but are not dispatched there.
 
 The decision tree traces each client shape down to the `token_endpoint_auth_method` value it registers — a public client lands on `none`, a confidential client on a `client_secret_*` method, and a FAPI-grade client on an asymmetric method.
 
@@ -118,7 +118,7 @@ The decision tree traces each client shape down to the `token_endpoint_auth_meth
 | `none` | — | — | No | Public clients (SPA, native, CLI) with PKCE. |
 | `client_secret_basic` | yes | — | No | Backend services with a shared secret, sent as HTTP Basic. The default for confidential clients. |
 | `client_secret_post` | yes | — | No | Same secret in the form body. Discouraged for new deployments — Basic is the canonical wire format. |
-| `private_key_jwt` | — | yes | Yes | Backend signs a short-lived JWT assertion with its own private key; OP verifies against the registered JWKS. The FAPI-preferred method. |
+| `private_key_jwt` | — | yes | Yes | Backend signs a short-lived JWT assertion with its own private key; OP verifies against the registered JWKS. The method this library uses for its FAPI profile. |
 | `tls_client_auth` | — | yes (PKI) | RFC verifier only | RFC 8705 verifier exists internally, but this is not dispatched as a `/token` client-auth method. |
 | `self_signed_tls_client_auth` | — | yes (pinned) | RFC verifier only | RFC 8705 verifier exists internally, but this is not dispatched as a `/token` client-auth method. |
 

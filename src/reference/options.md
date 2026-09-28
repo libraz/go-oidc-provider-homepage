@@ -40,7 +40,7 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
     <text class="fg-xs" x="480" y="130" text-anchor="middle">yes</text>
     <rect class="fg-box fg-box--accent" x="530" y="108" width="394" height="58" rx="8"/>
     <text class="fg-m fg-accent" x="550" y="134">op.WithProfile(…)</text>
-    <text class="fg-xs" x="550" y="154">pins every mandate the profile requires at once</text>
+    <text class="fg-xs" x="550" y="154">applies the profile's settings at once</text>
     <path class="fg-edge" d="M233,170 V188" marker-end="url(#fg-a)"/>
     <text class="fg-xs" x="243" y="184">no</text>
     <!-- 3 -->
@@ -95,8 +95,8 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
 </figure>
 
 - **You're booting a fresh OP for the first time** → start with [`WithIssuer`](/getting-started/required-options#withissuer), [`WithStore`](/getting-started/required-options#withstore), [`WithKeyset`](/getting-started/required-options#withkeyset), and usually [`WithCookieKeys`](/getting-started/required-options#withcookiekeys). `WithCookieKeys` is required when `authorization_code` is enabled, which is the default grant set. See [Required options](/getting-started/required-options) and the [minimal OP walkthrough](/use-cases/minimal-op).
-- **You want to declare OAuth 2.1 posture without adopting FAPI** → `WithProfile(profile.Baseline)` requires PKCE on every authorization-code request and otherwise keeps the OIDC Core defaults. For FAPI 2.0, use `profile.FAPI2Baseline` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`); these profiles auto-select DPoP unless you explicitly enable mTLS. A profile that needs a grant you did not wire fails `op.New` rather than mounting the endpoint for you — `profile.FAPICIBA` requires `grant.CIBA`. See [Declaring a security profile](/use-cases/security-profile), [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
-- **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. Public and native clients always require PKCE; FAPI profiles require it for every authorization-code client. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
+- **You want to declare OAuth 2.1 posture without adopting FAPI** → this library's `WithProfile(profile.Baseline)` requires PKCE on every authorization-code request and otherwise keeps the OIDC Core defaults. For this library's FAPI 2.0 profiles, use `profile.FAPI2Baseline` (or `profile.FAPI2MessageSigning`, `profile.FAPICIBA`); these profiles auto-select DPoP unless you explicitly enable mTLS. A profile that needs a grant you did not wire fails `op.New` rather than mounting the endpoint for you — `profile.FAPICIBA` requires `grant.CIBA`. See [Declaring a security profile](/use-cases/security-profile), [Use case: FAPI 2.0 Baseline](/use-cases/fapi2-baseline) and [Concepts: FAPI](/concepts/fapi).
+- **You want a single feature without committing to a profile** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`. Public and native clients always require PKCE; this library's FAPI profiles require it for every authorization-code client. Dynamic Registration, RAR, and Grant Management are enabled through their dedicated options because they need extra configuration.
 - **You want to restrict the grant types accepted at `/token`** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`. The convenience options `WithDeviceCodeGrant()`, `WithCIBA(...)`, `WithCustomGrant(...)`, and `RegisterTokenExchange(...)` mount the additional endpoints those grants need.
 - **You want sender-constrained access tokens** → DPoP path: `WithFeature(feature.DPoP)` plus optional `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`. mTLS path: `WithFeature(feature.MTLS)` plus optional `WithMTLSProxy(headerName, trustedCIDRs)`. See [Concepts: sender-constrained tokens](/concepts/sender-constraint), [DPoP](/concepts/dpop), [mTLS](/concepts/mtls), and [Use case: DPoP nonce](/use-cases/dpop-nonce).
 - **You want JWT versus opaque access tokens** → `WithAccessTokenFormat(...)` for the OP-wide default and `WithAccessTokenFormatPerAudience(...)` for RFC 8707 resource-scoped overrides. See [Concepts: access-token format](/concepts/access-token-format).
@@ -127,7 +127,7 @@ This page is a flat reference of the public `op.New` options. With 70+ options t
 
 | Option | Value | Section | Default |
 |---|---|---|---|
-| `WithProfile` | `profile.Profile` | declares `profile.Baseline` (OAuth 2.1: PKCE on every authorization-code request) or a FAPI profile. FAPI profiles select DPoP when they require DPoP-or-mTLS and mTLS was not explicitly enabled. Missing features a profile requires are switched on for you; a missing **grant** fails `op.New` instead, with the error naming the option that activates it. | none |
+| `WithProfile` | `profile.Profile` | declares this library's `profile.Baseline` (OAuth 2.1: PKCE on every authorization-code request) or a FAPI profile. FAPI profiles select DPoP when they require DPoP-or-mTLS and mTLS was not explicitly enabled. Missing features a profile requires are switched on for you; a missing **grant** fails `op.New` instead, with the error naming the option that activates it. | none |
 | `WithFeature` | `feature.Flag` (one per call; repeatable) | enables PAR / DPoP / mTLS / JAR / JARM / introspect / revoke individually | conservative defaults |
 | `WithGrants` | `...grant.Type` (variadic) | restricts the grant types accepted at `/token`; may be called at most once, so compose the full set before passing options to `op.New` | `authorization_code`, `refresh_token` |
 | `WithScope` | `op.Scope` (one per call; use the `op.PublicScope` / `op.InternalScope` constructors) | extends the scope catalog | `openid`, `profile`, `email`, `address`, `phone`, `offline_access` |
@@ -192,12 +192,12 @@ Ceremony origins must be same-site with the issuer. An issuer sibling such as `l
 | `WithAccessTokenTTL` | `time.Duration` | access token lifetime | 5 min |
 | `WithRefreshTokenTTL` | `time.Duration` | refresh token lifetime (non-offline) | 30 days |
 | `WithRefreshTokenOfflineTTL` | `time.Duration` | refresh token lifetime when `offline_access` granted | inherits `WithRefreshTokenTTL` (zero value defers) |
-| `WithRefreshGracePeriod` | `time.Duration` (zero disables; negative rejected; FAPI 2.0 profiles accept 0–60 s) | rotation grace window | 60 s |
+| `WithRefreshGracePeriod` | `time.Duration` (zero disables; negative rejected; this library's FAPI 2.0 profiles accept 0–60 s) | rotation grace window | 60 s |
 | `WithDPoPNonceSource` | `op.DPoPNonceSource` (interface) | server-supplied DPoP nonce store (`op.NewInMemoryDPoPNonceSource` provides one) | none |
 
 `WithInMemoryDPoPNonceLogger` is a helper option for `op.NewInMemoryDPoPNonceSource`, not an `op.New` option. Use it only when you use the bundled in-memory nonce source.
 
-With `FAPI2Baseline` or `FAPI2MessageSigning`, the refresh-grace window is capped at 60 seconds: an explicit value from 0 through 60 seconds is accepted, while a wider value is a construction error. The profile does not force zero; omitting the option still resolves to the 60-second default. Without those profiles, the option accepts any non-negative duration.
+With this library's `profile.FAPI2Baseline` or `profile.FAPI2MessageSigning`, the refresh-grace window is capped at 60 seconds: an explicit value from 0 through 60 seconds is accepted, while a wider value is a construction error. The profile does not force zero; omitting the option still resolves to the 60-second default. This is a library option limit, not a final FAPI conformance rule: Security Profile §5.3.2.1(9) prohibits routine refresh-token rotation except under extraordinary circumstances. Without those profiles, the option accepts any non-negative duration.
 
 `WithAccessTokenFormat` and `WithAccessTokenFormatPerAudience` govern the access tokens issued by the built-in grant paths. A custom grant's `BoundAccessToken` is always minted as an RFC 9068 JWT, regardless of either option; a custom grant that needs an opaque value must mint it itself and return it as `AccessToken`.
 
@@ -206,7 +206,7 @@ With `FAPI2Baseline` or `FAPI2MessageSigning`, the refresh-grace window is cappe
 | Option | Value | Section | Default |
 |---|---|---|---|
 | `WithEndpoints` | `op.Endpoints` (struct: per-endpoint path overrides) | overrides default endpoint paths | spec defaults |
-| `WithMountPrefix` | `string` (must start with `/`; pass `/` for root) | embeds an issuer-relative path prefix | `/oidc` |
+| `WithMountPrefix` | `string` (must start with `/`; pass `/` for root) | embeds an issuer-relative path prefix for protocol endpoints; discovery paths are derived from the issuer separately | `/oidc` |
 | `WithClaimsSupported` | `...string` (variadic) | populates `claims_supported` in discovery | omitted |
 | `WithClaimsParameterSupported` | `bool` | toggles `claims_parameter_supported`; `false` rejects malformed JSON but suppresses the claims projection and ignores valid `claims` payloads at authorize / PAR | true |
 | `WithACRValuesSupported` | `...string` (variadic) | publishes `acr_values_supported`; when non-empty, the same allow-list is enforced on `/authorize`, `/par`, and CIBA `/bc-authorize` | empty (omitted from discovery; no allow-list) |
@@ -296,7 +296,7 @@ See [Use case: JWE encryption](/use-cases/jwe-encryption).
 
 These are deliberate non-options — see the linked design rationale for why each is fixed:
 
-- **JOSE verification allow-list** — incoming client assertions, JAR request objects, and DPoP proofs use the fixed `RS256` / `PS256` / `ES256` / `EdDSA` verification set. OP-issued JWTs are signed with `ES256` only. No flag widens either surface. See [Security posture §2](/security/posture#_2-the-jose-alg-list-is-a-closed-type).
+- **JOSE verification allow-list** — incoming client assertions, JAR request objects, and DPoP proofs use the fixed `RS256` / `PS256` / `ES256` / `EdDSA` verification set. This library's OP-issued JWTs are signed with `ES256` only. No flag widens either surface. See [Security posture §2](/security/posture#_2-the-jose-alg-list-is-a-closed-type).
 - **PKCE method** — `S256` only. `plain` is structurally rejected.
 - **Cookie scheme** — `__Host-` prefix, AES-256-GCM, double-submit CSRF always on. See [Required options §WithCookieKeys](/getting-started/required-options#withcookiekeys).
 - **Random source** — `crypto/rand` only; `math/rand` is forbidden by lint.

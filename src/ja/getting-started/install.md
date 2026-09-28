@@ -17,7 +17,7 @@ go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v1.2.0
 go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.2.0
 ```
 
-本モジュールが要求する Go のバージョンは **1.25 以上** です（`go.mod` の directive は `go 1.25.0`）。リリース自体は `toolchain go1.27.0` に固定してビルド・テストしています。プロジェクト CI と同じ TLS / 依存関係のセキュリティ基準に揃えたい場合は、この toolchain 以上を使ってください。
+本モジュールは **Go 1.26.0 以上**を要求します（`go.mod` は `go 1.26.0` を宣言）。リリースは `toolchain go1.27.1` に固定してビルド・テストしています。プロジェクト CI と同じ TLS / 依存関係のセキュリティ基準に揃えたい場合は、この toolchain 以上を使ってください。
 
 ## モジュールとサブモジュール
 

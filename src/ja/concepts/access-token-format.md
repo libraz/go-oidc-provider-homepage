@@ -6,7 +6,9 @@ pageClass: pg-concepts-access-token-format
 
 # アクセストークンの形式 — JWT と opaque
 
-`go-oidc-provider` は **JWT（RFC 9068）形式のアクセストークンを既定で発行** し、**opaque 形式は明示時のみ** 選べます。通信路上はどちらも `Authorization: Bearer …` という同じ形で運ばれますが、違うのは **誰がトークンを検証するか**、そして **revocation がどこまで届くか** です。
+`go-oidc-provider` は **RFC 9068 に沿った形の JWT アクセストークンを既定で発行** し、**opaque 形式は明示時のみ** 選べます。形式によって **検証する主体** と **失効の伝わり方** が変わります。提示方法は送信者制約によって決まり、制約なし・mTLS バインドでは `Authorization: Bearer`、DPoP バインドでは `Authorization: DPoP` と DPoP proof ヘッダーを使います。
+
+本ライブラリは JWT アクセストークンを ES256 のみで署名しますが、RFC 9068 §2.1 は RS256 対応を求めます。また、検証側は §2.2 で必須の `jti` がなくても受け付けます。完全適合を判断する際は [RFC 対応表](/ja/compliance/rfc-matrix) を参照してください。
 
 これはライブラリ側で決められない設計判断で、組み込み側が選ぶことになります。RS（リソースサーバ）が OP に対してどの位置にいるか、即時失効をどこまで要求するか、負荷をどう分散したいかで答えが変わります。
 
@@ -32,14 +34,14 @@ pageClass: pg-concepts-access-token-format
 
 ## 同じ通信路上の枠に 2 つの形式
 
-通信路上の見た目は同一です。RS は `Authorization: Bearer <token>` を読み、リクエストを通すか判断します。違いは **RS がその判断にどう辿り着くか** です。
+同じ送信者制約の下では、どちらの形式も同じ認可方式で提示します。制約なし・mTLS バインドなら `Bearer`、DPoP バインドなら proof ヘッダーを添えた `DPoP` です。ここでの違いは **RS がトークンをどう検証するか** です。図は制約なしの Bearer トークンを例にしています。
 
 ### JWT（RFC 9068） — RS がローカルで検証
 
 <figure class="fig">
   <div class="fig-head">JWT — リソースサーバが自分で判断する</div>
   <svg class="fig-svg" role="img" aria-labelledby="atf-jwt-title" viewBox="0 30 960 140" xmlns="http://www.w3.org/2000/svg">
-    <title id="atf-jwt-title">JWT アクセストークンでは、リソースサーバが署名・audience・有効期限を自分で検証します。鍵は OP から一度取得してキャッシュしたものを使い、OP はリクエストの処理経路に入りません。</title>
+    <title id="atf-jwt-title">JWT アクセストークンでは、リソースサーバが署名、typ、issuer、audience、有効期間、必須 claim をキャッシュ済みの OP 鍵で検証し、必要に応じて鍵を更新します。DPoP バインド時は proof も検証します。通常のリクエスト経路に OP は入りません。</title>
     <rect class="fg-box" x="36" y="54" width="190" height="68" rx="8"/>
     <text class="fg-t" x="56" y="84">RP</text>
     <text class="fg-xs" x="56" y="104">アクセストークンを保持する</text>
@@ -47,7 +49,7 @@ pageClass: pg-concepts-access-token-format
     <text class="fg-mxs" x="273" y="89" text-anchor="middle">Bearer &lt;JWT&gt;</text>
     <rect class="fg-box" x="320" y="48" width="320" height="98" rx="8"/>
     <text class="fg-t" x="340" y="80">RS</text>
-    <text class="fg-xs" x="340" y="102">署名・aud・exp を自分で検証する</text>
+    <text class="fg-xs" x="340" y="102">JWT claim とバインドの証明を検証</text>
     <text class="fg-xs" x="340" y="120">問い合わせる相手も待ち時間も無い</text>
     <text class="fg-mxs fg-ok" x="340" y="138">リクエストあたりのネットワーク呼び出し 0 回</text>
     <path class="fg-edge fg-edge--muted" d="M644,96 H730" marker-end="url(#fg-am)"/>
@@ -59,7 +61,7 @@ pageClass: pg-concepts-access-token-format
   <figcaption class="fig-note">高速で、しかもオフラインで完結します。それが同時に難点でもあり、発行後に OP が行ったことは、トークン自身の <code>exp</code> が過ぎるまでこのリソースサーバには届きません。</figcaption>
 </figure>
 
-RS は JWKS をキャッシュし、JWT 署名をオフライン検証して `aud` / `exp` をチェックし、リクエストに応えます。OP は **リクエストの処理経路に入りません**。JWT 自体が claim（`sub`、`scope`、`aud`、`auth_time`、`acr`、`cnf` …）を運ぶので、RS に必要な情報は全て揃っています。
+RS はキャッシュした JWKS の鍵で署名と許可アルゴリズムを検証し、`typ=at+jwt`、期待する `iss` と `aud`、`exp` と `iat`、`sub`・`client_id`・`jti` などの必須 claim を確認します。送信者制約付きなら `cnf` を proof またはクライアント証明書と照合します。通常のリクエスト経路に OP は入りません。新しい署名鍵の `kid` が現れたら JWKS を更新します。
 
 ### Opaque — RS は毎回 OP に問い合わせる
 
@@ -106,7 +108,7 @@ opaque access token が active のとき、RFC 7662 response には利用可能�
 :::
 
 ::: tip 通信路上の見た目だけでは RS は形式を判別できない
-両形式とも `Authorization: Bearer <opaque-string>` として届きます。RFC 6750 は形式を区別しません。RS は audience や配備側の取り決めで「この audience は opaque」「この audience は JWT」を知っている前提です — JWKS をどれと信じるかと同じ仕組みです。本ライブラリの discovery 文書は形式を **広告しません**。
+`Bearer` と `DPoP` のどちらの認可方式も、JWT と opaque の形式を示しません。RS は通常、audience ごとの配備ポリシーで期待する形式を決めます。DPoP バインド時は形式を問わず `Authorization: DPoP` と別の proof を使います。本ライブラリの Discovery 文書は形式を **広告しません**。
 :::
 
 ## トレードオフ
@@ -262,9 +264,9 @@ JWT 経路にはもうひとつの調整ポイントがあります — **OP が
 
 | 戦略 | 発行時の書き込み | 失効時の書き込み | 定常状態の行数 | 備考 |
 |---|---|---|---|---|
-| **`RevocationStrategyGrantTombstone`**（既定） | **0 件** | 1（tombstone 行） | `O(失効した grant 数 + 失効した jti 数)` | OP は各 JWT に `gid` という private claim（GrantID）を含め、検証時に grant ごとの tombstone テーブルを参照します。FAPI 2.0 SP §5.3.2.2 適合。 |
-| `RevocationStrategyJTIRegistry` | 1（shadow 行） | N（grant 配下の AT ごとに 1 件 UPDATE） | `O(発行レート × AT_TTL)` | 発行された AT 1 本ごとに `store.AccessTokenRegistry` の shadow 行が 1 件作られます。AT 単位の監査ログが規制要件のときに固定推奨。FAPI 2.0 SP §5.3.2.2 適合。 |
-| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` は RFC 7009 §2.2 のとおり 200 を冪等に返しますが、実体としては何もしません。JWT AT は `exp` まで有効なままです。**FAPI プロファイル下では `op.New` が拒否します**（FAPI 2.0 SP §5.3.2.2 がサーバ側 revocation を必須としているため）。 |
+| **`RevocationStrategyGrantTombstone`**（既定） | **0 件** | 1（tombstone 行） | `O(失効した grant 数 + 失効した jti 数)` | OP は grant に紐づく JWT に `gid` という private claim（GrantID）を含め、自身の検証エンドポイントで grant ごとの tombstone テーブルを参照します。 |
+| `RevocationStrategyJTIRegistry` | 1（shadow 行） | N（grant 配下の AT ごとに 1 件 UPDATE） | `O(発行レート × AT_TTL)` | 発行された AT 1 本ごとに `store.AccessTokenRegistry` の shadow 行が 1 件作られます。AT 単位の監査ログが規制要件のときに選択できます。 |
+| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` は RFC 7009 §2.2 のとおり 200 を冪等に返しますが、実体としては何もしません。JWT AT は `exp` まで有効なままです。**本ライブラリの FAPI プロファイル下では `op.New` が拒否します**。これはライブラリのポリシーです。 |
 
 ::: tip 既定は発行時に何も書きません
 既定戦略では `/token` の処理経路がデータベースに触れません。代わりに、grant が失効するとき（ログアウト、コード再利用カスケード、リフレッシュトークン連鎖の侵害）に grant ID をキーにした tombstone 行を 1 件だけ書き込みます。`/userinfo` と `/introspect` は JWT の `gid` を tombstone と突き合わせるので、失効した grant の JWT は OP のエンドポイントで即座に拒否されます。
@@ -273,7 +275,7 @@ JWT 経路にはもうひとつの調整ポイントがあります — **OP が
 :::
 
 ::: info `gid` claim は private
-JWT アクセストークンは `gid` という private claim（RFC 7519 §4.3、omitempty）に OP 側の GrantID を持たせます。OP だけが解釈する claim であり、リソースサーバは無視しなければなりません。既存の RFC 9068 検証器はそのまま動作します（この claim を参照しない実装には影響しません）。
+grant に紐づく JWT アクセストークンは、`gid` という private claim（RFC 7519 §4.3、omitempty）に OP 側の GrantID を持たせます。OP だけが解釈する claim であり、リソースサーバは無視できます。既存の RFC 9068 検証器でこの claim を参照しない場合、動作には影響しません。
 :::
 
 ::: details 戦略の選択方法
@@ -291,7 +293,7 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 :::
 
 ::: warning FAPI は構築時に `RevocationStrategyNone` を拒否します
-いずれかの FAPI プロファイルと併用して `RevocationStrategyNone` を選ぶと `op.New` が失敗します。FAPI 2.0 Security Profile §5.3.2.2 はサーバ側の revocation を必須としており、本ライブラリは失効処理を無効化した構成での起動を拒否します。
+本ライブラリのいずれかの FAPI プロファイルと併用して `RevocationStrategyNone` を選ぶと、`op.New` が失敗します。これはライブラリの安全策です。現行の FAPI 2.0 Security Profile §5.3.4(3) はリソースサーバにアクセストークンの失効状態の検証を求めており、OP 内部の失効戦略だけでリソースサーバの適合性は決まりません。
 :::
 
 ::: warning サブストアの存在は `op.New` で強制されます（BREAKING）
@@ -427,7 +429,7 @@ opaque サブストアはリフレッシュトークン store と同じ「保存
 
 ## RS 側のコードへの影響
 
-- **JWT 形式。** RS のコードは普通の RFC 9068 検証器のままで動きます。JWKS をキャッシュし、署名 + `aud` + `exp` を検証し、claim を取り出すだけ。OP 呼び出しはありません。**セッション境界の即時カスケードが必須なパスにだけ `/introspect` を強制してください。**
+- **JWT 形式。** JWKS をキャッシュ・更新し、署名と許可アルゴリズム、`typ=at+jwt`、期待する `iss` と `aud`、`exp` と `iat`、必須 claim（`sub`、`client_id`、`jti`）を検証します。DPoP または mTLS の場合は `cnf` を proof や証明書と照合します。通常の検証では OP への問い合わせは不要です。即時の失効確認が必要な経路では `/introspect` を使います。
 - **Opaque 形式。** RS のコードは毎リクエスト（あるいはキャッシュミスのたび）に `POST /introspect` を呼び出します。introspect 応答は RFC 9068 JWT が運ぶのと同じ `sub` / `scope` / `aud` / `cnf` を持つので、RS のパイプライン全体は変える必要はありません — 検証ステップだけが変わります。
 
 送信者制約（DPoP RFC 9449、mTLS RFC 8705）はどちらの形式でも伝播します: JWT 経路は `cnf` claim を直接埋め込み、opaque 経路は OP 側のレコードから `cnf` を再構成するので、RS が見る proof の要件は変わりません。

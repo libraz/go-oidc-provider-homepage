@@ -17,7 +17,7 @@ go get github.com/libraz/go-oidc-provider/op/storeadapter/redis@v1.2.0
 go get github.com/libraz/go-oidc-provider/op/storeadapter/dynamodb@v1.2.0
 ```
 
-The module needs **Go 1.25 or newer** (the `go.mod` directive is `go 1.25.0`). The release itself is built and tested with the pinned `toolchain go1.27.0`. Use that toolchain or newer if you want the same TLS and dependency security baseline the project CI runs on.
+The module needs **Go 1.26.0 or newer** (the `go.mod` directive is `go 1.26.0`). The release itself is built and tested with the pinned `toolchain go1.27.1`. Use that toolchain or newer if you want the same TLS and dependency security baseline the project CI runs on.
 
 ## Modules and sub-modules
 

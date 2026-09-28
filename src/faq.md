@@ -125,32 +125,34 @@ A single non-canonical character on either side of an RP's verification flips by
 
 ### What does `op.WithProfile(profile.FAPI2Baseline)` actually flip?
 
-In one call, it tightens six knobs the spec mandates:
+In one call, it applies this library's FAPI profile policy across six areas:
 
 | Knob | Effect |
 |---|---|
-| Feature flags | enables `feature.PAR` and `feature.JAR`; selects `feature.DPoP` unless `feature.MTLS` is explicitly enabled |
-| Client auth | narrows `token_endpoint_auth_methods_supported` to `private_key_jwt` |
-| Alg constraints | locks signature algorithms to the FAPI subset |
+| Feature flags | enables `feature.PAR` and this library's JAR setting; selects `feature.DPoP` unless `feature.MTLS` is explicitly enabled |
+| Client auth | narrows `token_endpoint_auth_methods_supported` to `private_key_jwt`, the method implemented by this library profile |
+| Alg constraints | narrows client-signed request and assertion algorithms to the profile allow-list |
 | `redirect_uri` | enforces exact match (no wildcarding) |
-| PKCE | required on every code request |
+| PKCE | requires S256 on every code request |
 | `state` / `nonce` | one of the two required on every authorize request |
 
+The final FAPI 2.0 Security Profile requires PAR, PKCE with S256, and sender-constrained tokens. The exact `redirect_uri` row is this library's policy; FAPI 2.0 §5.5 does not require pre-registration of exact values. JAR, this library's algorithm narrowing, and ES256-only OP signing are library profile settings, not requirements of the FAPI Security Profile.
+
 ::: warning Subsequent options that contradict the profile cause `op.New` to return an error.
-The profile is intentionally rigid — silently relaxing it would break the audit guarantee FAPI 2.0 buys you.
+The profile is intentionally rigid, so it cannot be partially relaxed by accident.
 :::
 
 ### Baseline vs Message Signing — when do I need each?
 
-Message Signing is Baseline plus JARM. Pick it when your RP needs **non-repudiation** of the authorization request and response — an open-banking style audit chain, for example. Otherwise Baseline is enough.
+In this library, Message Signing is `profile.FAPI2Baseline` plus JARM. Pick it when your RP needs **non-repudiation** of the authorization request and response — an open-banking style audit chain, for example. Otherwise the library's Baseline profile is enough.
 
-| Baseline | Message Signing |
+| `FAPI2Baseline` (library profile) | Message Signing |
 |---|---|
-| PAR + JAR + PKCE + DPoP / mTLS | + JARM (signed authorization response) |
+| PAR + JAR (library setting) + PKCE (S256) + DPoP / mTLS | + JARM (signed authorization response) |
 
 ### Can I run FAPI 2.0 without DPoP?
 
-Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring the proxy certificate header with `op.WithMTLSProxy(...)`. FAPI 2.0 §3.1.4 mandates "DPoP **or** mTLS"; the FAPI client still uses `private_key_jwt` for `/token` client authentication.
+Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring the proxy certificate header with `op.WithMTLSProxy(...)`. FAPI 2.0 §5.3.2.1(4)–(5) requires "DPoP **or** mTLS"; this library's FAPI profile still uses `private_key_jwt` for `/token` client authentication.
 
 <div id="tokens" class="faq-anchor"></div>
 
@@ -158,23 +160,27 @@ Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring
 
 ### My refresh-token retry returns `invalid_grant` — but the request was already in flight.
 
-That's the **rotation grace window**. The default is 60 seconds: if the rotation network round-trip dropped, presenting the previous refresh token within the window mints a fresh access token without rotating again. After the window, or if the chain was already revoked for reuse-detection, you get `invalid_grant`.
+That's the **rotation grace window**. The default is 60 seconds: if the rotation network round-trip dropped, presenting the previous refresh token within the window returns the saved successor without rotating again. A sender-constrained retry may receive a newly bound access token. After the window, or if the chain was already revoked for reuse detection, you get `invalid_grant`.
 
 ::: details Tune the window
-For a non-FAPI profile, `op.WithRefreshGracePeriod(90 * time.Second)` widens it. Under `profile.FAPI2Baseline` or `profile.FAPI2MessageSigning`, explicit values from `0` through `60s` (inclusive; the default) are accepted and only a value above `60s` is rejected. `op.WithRefreshGracePeriod(0)` disables grace entirely (strict single-use); negative values are rejected at the option site. See <a class="doc-ref" href="/security/design-judgments">Design judgments §2</a>.
+For a non-FAPI profile, `op.WithRefreshGracePeriod(90 * time.Second)` widens it. Under this library's `profile.FAPI2Baseline` or `profile.FAPI2MessageSigning`, explicit values from `0` through `60s` (inclusive; the default) are accepted and only a value above `60s` is rejected. `op.WithRefreshGracePeriod(0)` disables grace entirely (strict single-use); negative values are rejected at the option site. See <a class="doc-ref" href="/security/design-judgments">Design judgments §2</a>.
+
+This window is a library setting, not a final FAPI conformance rule. FAPI 2.0 Security Profile §5.3.2.1(9) prohibits routine refresh-token rotation except under extraordinary circumstances.
 :::
 
 ### Why didn't I get a refresh token?
 
-By default two conditions must both hold:
+The built-in authorization-code response issues a refresh token only when all of these conditions hold:
 
-1. The granted scope contains `openid`.
+1. The provider's grant set accepts `grant.RefreshToken` (it is enabled by default; `WithGrants` replaces the default set).
 2. The client's `GrantTypes` includes `refresh_token`.
+3. The granted scope contains `openid`, unless `op.WithOpenIDScopeOptional()` is enabled.
+4. When `op.WithStrictOfflineAccess()` is enabled, the granted scope also contains `offline_access`.
 
-Drop either and the token endpoint succeeds with `access_token` + `id_token` and no `refresh_token`. On the default (lax) reading of OIDC Core 1.0 §11, `offline_access` is **not** required to receive a refresh token — it selects the offline TTL bucket and shapes the consent/audit surface.
+If the provider or client grant is missing while `openid` is present, the token endpoint succeeds with `access_token` + `id_token` and no `refresh_token`. Without `openid`, no ID Token is issued. With `op.WithOpenIDScopeOptional()`, an OAuth-only request can receive an access token and a refresh token when the grant gates pass. Under this library's default policy, `offline_access` is **not** required to receive a refresh token — it selects the offline TTL bucket and shapes the consent/audit surface.
 
 ::: details Making `offline_access` a hard requirement
-OIDC Core 1.0 §11 also permits the strict reading, where a refresh token is issued only when `offline_access` is in the granted scope. Opt in with `op.WithStrictOfflineAccess()` when you want the consent prompt and the audit trail to agree byte-for-byte on what the user authorised; every RP that wants stay-signed-in behaviour must then request `offline_access` explicitly. See <a class="doc-ref" href="/security/design-judgments">Design judgments §3</a>.
+OIDC Core 1.0 §11 defines `offline_access` for access after the user is no longer present. Opt in with `op.WithStrictOfflineAccess()` to make that scope a hard refresh-token issuance gate; every RP that wants this behavior must then request `offline_access` explicitly. The constructor rejects combining this option with `op.WithOpenIDScopeOptional()` as a library policy. See <a class="doc-ref" href="/security/design-judgments">Design judgments §3</a>.
 :::
 
 ### Where do I split "stay signed in" from regular sessions?
@@ -205,7 +211,7 @@ A process-local nonce source breaks across replicas. For HA, plug a shared store
 
 ### `dpop_signing_alg_values_supported` — RS256 missing?
 
-Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the codebase JOSE allow-list, which the OP applies when it *verifies* a client assertion or JAR request object. DPoP proofs are restricted to the FAPI-recommended subset. Note that `RS256` is not an OP signing algorithm either: tokens the OP issues are signed with `ES256` only, and that is a permanent policy rather than a gap.
+Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the codebase JOSE allow-list, which the OP applies when it *verifies* a client assertion or JAR request object. DPoP proofs are restricted to the FAPI-recommended subset. Note that `RS256` is not an OP signing algorithm either: this library issues tokens with `ES256` only, as a library policy rather than an implementation gap.
 
 <div id="storage" class="faq-anchor"></div>
 
@@ -307,7 +313,7 @@ The `/end_session` handler snapshots each subject from the OP session before it 
 
 ### My CLI's `127.0.0.1:54312/cb` redirect_uri got rejected.
 
-Default redirect-URI matching is byte-exact (OAuth 2.1 / FAPI 2.0). Loopback port wildcarding (RFC 8252 §7.3) is **opt-in per client**: the registered `redirect_uris` list must contain a loopback URI, and the OP will then ignore port mismatch when scheme is `http`, the registered hostname is a loopback shape (`127.0.0.1`, `::1`, or — when registration-side opt-in is on — the textual `localhost`), the requested host matches the registered one, and path / query / fragment exact-match. The textual `localhost` is admitted only when the embedder opted in at registration time (`op.WithAllowLocalhostLoopback()` for web clients, `application_type=native` for native clients); deployments that need the strict literal-IP-only posture leave both opt-ins off. See <a class="doc-ref" href="/security/design-judgments">Design judgments §4</a>.
+This library's default redirect-URI matching is byte-exact, and its FAPI profiles keep that policy. Loopback port wildcarding (RFC 8252 §7.3) is **opt-in per client**: the registered `redirect_uris` list must contain a loopback URI, and the OP will then ignore port mismatch when scheme is `http`, the registered hostname is a loopback shape (`127.0.0.1`, `::1`, or — when registration-side opt-in is on — the textual `localhost`), the requested host matches the registered one, and path / query / fragment exact-match. The textual `localhost` is admitted only when the embedder opted in at registration time (`op.WithAllowLocalhostLoopback()` for web clients, `application_type=native` for native clients); deployments that need the strict literal-IP-only posture leave both opt-ins off. See <a class="doc-ref" href="/security/design-judgments">Design judgments §4</a>.
 
 <div id="observability" class="faq-anchor"></div>
 
@@ -315,7 +321,7 @@ Default redirect-URI matching is byte-exact (OAuth 2.1 / FAPI 2.0). Loopback por
 
 ### Where's `/metrics`? I configured `op.WithPrometheus(...)`.
 
-The library does **not** mount `/metrics`. `op.WithPrometheus(reg)` registers the OP's curated counter set on the registry you pass; the HTTP route is your router's job. Same separation for tracing (`otelhttp.NewMiddleware` is yours) and request duration histograms. This is a deliberate scope decision — the OP emits **OIDC business** counters / spans / audit events only; HTTP-lifecycle observation is embedder territory.
+The library does **not** mount `/metrics`. `op.WithPrometheus(reg)` registers the OP's curated counter set on the registry you pass; the HTTP route is your router's job. The same separation applies to tracing (`otelhttp.NewMiddleware` is yours) and request-duration histograms. This is a deliberate scope decision — the OP emits **OIDC business** counters, logs, and audit events only; it does not create OpenTelemetry spans. HTTP-lifecycle observation is embedder territory.
 
 [`examples/52-prometheus-metrics`](https://github.com/libraz/go-oidc-provider/tree/main/examples/52-prometheus-metrics).
 
@@ -337,7 +343,7 @@ A finite catalog (search `op.Audit*` constants in `op/audit.go`):
 | `account.*` / `federation.*` / `recovery.*` | account-management feed |
 | `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` | defensive signals |
 
-Every event carries `request-id`, `subject`, `client-id`, plus an `extras` map for category-specific fields. Subscribe via `op.WithAuditLogger(...)` (a `*slog.Logger`) — each event records as a structured log entry with the catalog name and `extras` attributes.
+Every event carries `audit="true"` and its `event` identifier. Fields such as `actor_id`, `client_id`, and `request_id` appear only when set; the category-specific `extras` group is omitted when empty. Subscribe through `op.WithAuditLogger(...)` (a `*slog.Logger`). See the [audit event catalog](/reference/audit-events#common-attributes) for the full record shape.
 
 <div id="conformance" class="faq-anchor"></div>
 
@@ -377,7 +383,7 @@ You hit redirect-URI exact-match. Three usual causes:
 
 ### `invalid_client: alg not allowed`
 
-The client's `request_object_signing_alg` / `token_endpoint_auth_signing_alg` is not in the codebase allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`). For FAPI 2.0 plans, narrow each client to `PS256` (or `ES256` / `EdDSA`); FAPI 2.0 forbids `RS256` per spec.
+The client's `request_object_signing_alg` / `token_endpoint_auth_signing_alg` is not in the codebase allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`). If you use this library's `profile.FAPI2Baseline`, narrow each client to `PS256` (or `ES256` / `EdDSA`); that library profile rejects `RS256`.
 
 ### `invalid_dpop_proof: jkt mismatch`
 

@@ -213,7 +213,7 @@ The `redirect_uri` on `/authorize` is checked **byte-for-byte** against the clie
 
 - The full request never appears in browser history, server logs, or referrer headers.
 - Tampering at the user-agent boundary is moot — only the `request_uri` is exposed there.
-- Required by FAPI 2.0 Baseline. Optional (but worth opting in) elsewhere.
+- Required by the FAPI 2.0 Security Profile. Also recommended for authorization-code clients outside FAPI.
 
 Wire it via `op.WithFeature(feature.PAR)` and the discovery document advertises `pushed_authorization_request_endpoint`.
 :::
@@ -257,7 +257,7 @@ This works even when the RP can't store a client secret (SPA / native).
 
 ## Run the flow yourself
 
-`examples/03-fapi2` runs a FAPI 2.0 Baseline OP that demands PAR + JAR + DPoP + PKCE in one wiring. The OFCS conformance suite drives this exact sequence through ~129 modules in two FAPI plans; [OFCS status](/compliance/ofcs) shows the breakdown.
+`examples/03-fapi2` runs this library's `FAPI2Baseline` setting with PAR, JAR, DPoP, and PKCE. JAR is an additional library requirement here; the final FAPI 2.0 Security Profile does not require it. The [OFCS results](/compliance/ofcs) cover the named Implementer's Draft plans.
 
 ## Read next
 

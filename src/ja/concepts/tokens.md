@@ -6,12 +6,12 @@ pageClass: pg-concepts-tokens
 
 # ID トークン / アクセストークン / userinfo
 
-OIDC は 3 種の ID 関連データを扱います。一見どれもユーザ情報を持ち、どれも OP が発行または返却するので交換可能に見えますが、別物です。これを混同するのはバグの典型例です。
+OIDC は 3 種の ID 関連データを扱います。同じ OP のフローで登場するため一見交換可能に見えますが、それぞれ契約が異なります。これを混同するのはバグの典型例です。
 
 ::: tip 30 秒で頭に入れる相関図
 - **ID トークン** — 「このユーザがこの RP にログインした」という署名付きの認証結果。audience は RP。API には送らない。
-- **アクセストークン** — RP が API に渡す Bearer 資格情報。audience はリソースサーバ。**既定形式は JWT（RFC 9068）、opaque は明示時のみ。**
-- **UserInfo** — `GET /userinfo` にアクセストークンを載せて最新 claim を取りに行くエンドポイント。トークンではなく JSON レスポンス。
+- **アクセストークン** — クライアントが API に提示する資格情報。audience はリソースサーバ。**既定形式は RFC 9068 に沿った形の JWT、opaque は明示時のみ。** DPoP バインド時は `Authorization: DPoP` と proof を使います。
+- **UserInfo** — `GET /userinfo` にアクセストークンを載せて最新 claim を取得するエンドポイント。トークンではありません。既定の応答は JSON ですが、OIDC では署名付き、または署名後に暗号化した JWT 応答も使えます。
 :::
 
 ::: details このページで触れる仕様
@@ -32,9 +32,9 @@ OIDC は 3 種の ID 関連データを扱います。一見どれもユーザ�
 :::
 
 ::: details JWT とは
-**JWT**（JSON Web Token、RFC 7519）は `header.payload.signature` の 3 つを `.` で繋いだ base64url 文字列です。header と payload は JSON、signature は対応する秘密鍵の保有者から来たものであることを暗号学的に検証する部分です。
+**署名付き compact JWT**（JSON Web Token、RFC 7519）は、3 つの base64url エンコード部分を `.` で繋いだ文字列です（`header.payload.signature`）。header と payload は JSON で、signature は対応する秘密鍵の保有者から来たものであることを暗号学的に検証する部分です。暗号化された JWT は 5 つの部分を持つ compact JWE で、署名済み JWT をその中に包むこともできます。
 
-OIDC では **ID トークンは常に JWT** です。本ライブラリのアクセストークンは既定では JWT（RFC 9068）ですが、OP 全体または audience ごとに opaque 形式へ切り替えられます。UserInfo は JWT ではなく、ただの JSON HTTP レスポンスです。
+OIDC では **ID トークンは常に JWT** です。本ライブラリのアクセストークンは既定では RFC 9068 に沿った形の JWT ですが、OP 全体または audience ごとに opaque 形式へ切り替えられます。発行時の ES256 限定と入力での `jti` 検査の緩さにより、RFC 9068 への対応は [一部](/ja/compliance/rfc-matrix) です。UserInfo は既定では JSON ですが、要求とクライアント登録に応じて、署名付き JWT または署名後に暗号化した nested JWT を返せます。
 :::
 
 ## 一覧
@@ -42,8 +42,8 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | 要素 | 形式 | Audience (`aud`) | 行き先 | 寿命 | 読む人 |
 |---|---|---|---|---|---|
 | **ID トークン** | 署名 JWT（常に） | RP の `client_id` | OP → RP のみ | 数分（既定 10 分） | RP（誰がログインしたか確認） |
-| **アクセストークン** | 既定は JWT（RFC 9068）。設定により opaque — 詳細は後述 | RS 識別子 | RP → RS（`Authorization: Bearer`） | 数分 | RS（API 呼び出しを認可するか判断） |
-| **UserInfo 応答** | JSON | n/a（RP の `client_id` 暗黙） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
+| **アクセストークン** | 既定は JWT。設定により opaque — 詳細は後述 | RS 識別子 | クライアント → RS（通常は `Authorization: Bearer`、DPoP バインド時は `Authorization: DPoP` と proof） | 数分 | RS（API 呼び出しを認可するか判断） |
+| **UserInfo 応答** | 既定は JSON。要求・登録に応じて署名付き JWT または署名後に暗号化した nested JWT | RP（JWT 形式では RP の `client_id` が `aud` に入る） | RP → OP `/userinfo`（アクセストークン付き） → RP | リクエスト毎 | RP（最新 claim 取得） |
 
 <figure class="fig">
   <div class="fig-head">誰が何を発行し、誰が検証するか</div>
@@ -55,7 +55,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
     <text class="fg-t fg-accent" x="160" y="88" text-anchor="middle">OpenID Provider</text>
     <text class="fg-mxs" x="160" y="102" text-anchor="middle">go-oidc-provider</text>
     <line class="fg-rule" x1="54" y1="114" x2="266" y2="114"/>
-    <text class="fg-xs" x="160" y="132" text-anchor="middle">すべてのトークンを発行し署名する</text>
+    <text class="fg-xs" x="160" y="132" text-anchor="middle">トークンを発行し JWT に署名する</text>
     <!-- RP -->
     <rect class="fg-box" x="400" y="44" width="240" height="100" rx="8"/>
     <text class="fg-lbl" x="414" y="64">RP</text>
@@ -82,10 +82,10 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
     <!-- API 呼び出し -->
     <path class="fg-edge" d="M644,100 H756" marker-end="url(#fg-a)"/>
     <text class="fg-mxs" x="700" y="74" text-anchor="middle">Authorization:</text>
-    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt;</text>
+    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt;（制約なしの例）</text>
     <!-- userinfo の往復 -->
     <path class="fg-edge" d="M520,148 V218 H288" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer</text>
+    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer（制約なし）</text>
     <path class="fg-edge fg-edge--accent" d="M284,240 H560 V152" marker-end="url(#fg-ac)"/>
     <text class="fg-mxs" x="420" y="233" text-anchor="middle">200 { claims }</text>
   </svg>
@@ -94,7 +94,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 ## ID トークン —「誰がログインしたか」
 
-**OIDC Core 1.0 §2** で定義される署名付き JWT です。RP は OP の JWKS（RFC 7517）で署名を検証し、`iss`、`aud`、`exp`、（あれば）`nonce` を確認します。標準 claim:
+**OIDC Core 1.0 §2** で定義される署名付き JWT です。RP は OP の JWKS（RFC 7517）で署名を検証し、`iss`、`aud`、`exp` などの必須 claim を確認します。認可リクエストで `nonce` を送った場合は、ID トークンにも同じ値が必須で、RP は一致を検証します。標準 claim:
 
 | Claim | 意味 | 仕様 |
 |---|---|---|
@@ -109,7 +109,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | `amr` | Authentication Methods References — `pwd`、`otp`、`mfa`、`hwk` 等。 | RFC 8176 |
 
 ::: details `acr` とは
-**`acr`**（Authentication Context Class Reference）は「ログインの強度」を表す 1 本の文字列です。語彙は OP 側で決めて構わず、`urn:mace:incommon:iap:silver`、NIST SP 800-63 のレベル、FAPI 系の `urn:openbanking:psd2:sca` などが代表例です。RP は `/auth` の `acr_values=...` で最低水準を要求し、ユーザのセッションがそれを満たせない場合、OP は再認証を促す（step-up、RFC 9470）か要求を拒否します。`amr` と混同しないでください — `acr` は *水準*、`amr` は *その水準に到達するために使った手段* です。
+**`acr`**（Authentication Context Class Reference）は認証コンテキストを示す文字列です。語彙は OP 側で決め、`urn:mace:incommon:iap:silver` や `urn:openbanking:psd2:sca` などを使えます。RP が `/auth` で送る `acr_values=...` は優先順位付きの希望値で、OIDC Core では任意の claim 要求です。必須条件にするには `claims.id_token.acr` に `essential: true` と `value` または `values` を指定します。本ライブラリでは、現在のセッションが合わないときにステップアップするか、対話できなければエラーを返します。`amr` は使用した認証手段を列挙します。
 :::
 
 ::: details `amr` とは
@@ -129,7 +129,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 :::
 
 ::: warning ID トークンを `Authorization: Bearer` に乗せない
-ID トークンの audience は RP であって RS ではありません。Bearer として API に送ると *技術的には* 通ってしまいます（JWT なので）が、意味的には誤りで、RP のシークレット相当 claim（email など）をユーザが触る全 API に晒すことになります。**API にはアクセストークンを使ってください。**
+ID トークンの audience は RP であって RS ではありません。正しく検証する RS は拒否しますが、検証が不十分な API に送ると誤受理や email などの情報の露出につながります。**API にはアクセストークンを使ってください。**
 
 ```http
 # NG: aud が RP の client_id なので、RS が受け取るトークンではない
@@ -146,12 +146,12 @@ Authorization: Bearer eyJ...access_token...
 
 ## アクセストークン —「このクライアントはこの API を呼べる」
 
-リソースサーバ（RS）が検証する Bearer トークン（RFC 6750）。OAuth の文献では古典的に 2 つの形式が並べられます:
+リソースサーバ（RS）が検証するアクセストークンです。制約なし・mTLS バインド時は Bearer 方式（RFC 6750）、DPoP バインド時は proof を伴う DPoP 方式（RFC 9449 §7.1）で提示します。形式は次の 2 種類です:
 
 | 形式 | 検証方法 | OP 側の状態 |
 |---|---|---|
 | **Opaque** | RS が毎回 `/introspect`（RFC 7662）を呼ぶ。 | OP がトークンに対応する行を保持。 |
-| **JWT (RFC 9068)** | RS が署名 + `aud` + `exp` をローカルで検証。 | 検証は自己完結するが、OP は OP 経由の失効のために grant tombstone や JTI 行を保持することがある。 |
+| **JWT（RFC 9068 に沿った形）** | RS が署名と許可アルゴリズム、`typ=at+jwt`、`iss`、`aud`、`exp`、`iat`、必須 claim を検証する。送信者制約付きなら proof も検証する。 | ローカルで検証できるが、OP は自身のエンドポイントでの失効判定に grant tombstone や JTI 行を持つ場合がある。 |
 
 ### ここが本題: session_end / userinfo / revocation はトークン履歴に依存する
 
@@ -170,11 +170,11 @@ RS は OP に問い合わせず JWT を検証できますが、その経路で�
 
 ### 本ライブラリの設計
 
-本ライブラリは JWT（RFC 9068）を既定とし、opaque は明示時だけ使えるようにしています。どちらの形式も **OP 側で revoke 可能** です。意味があるのは次の 2 軸: **(1) RS は毎リクエスト OP に問い合わせる必要があるか?** と **(2) ログアウトカスケードはどこまで届くか?** です。
+本ライブラリは RFC 9068 に沿った形の JWT を既定とし、opaque は明示時だけ使えるようにしています。どちらの形式も **OP 側で失効できます**。検討する点は、**RS が毎リクエスト OP に問い合わせるか**、そして **ログアウトによる失効がどこまで届くか** です。
 
-| | **既定 — JWT（RFC 9068）** | **明示時のみ — Opaque** |
+| | **既定 — JWT（RFC 9068 に沿った形）** | **明示時のみ — Opaque** |
 |---|---|---|
-| 通信路上の形式 | base64url JWT（`header.payload.signature`） | ランダムな bearer 文字列 |
+| 通信路上の形式 | base64url JWT（`header.payload.signature`） | ランダムな opaque 文字列 |
 | RS 側の検証 | JWKS でオフライン検証 | リクエスト毎に `/introspect` を呼ぶ |
 | 発行時の OP 側状態 | 既定の grant-tombstone 戦略では行なし。JTI registry を選んだ場合だけ JTI shadow 行を作る | `store.OpaqueAccessTokenStore` にハッシュ化した行 |
 | カスケードの到達範囲 | OP が経由する境界（`/userinfo`、`/introspect`） | RS の全リクエスト |
@@ -194,7 +194,7 @@ RS は OP に問い合わせず JWT を検証できますが、その経路で�
 active な opaque access token の introspection response には、値が存在する場合、通常の `active`、`client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope` に加えて `iss` も含まれます。RS はローカルポリシーの一部として `iss` と `aud` を検証してください。
 
 ::: details `jti` / `gid` / tombstone とは
-各アクセストークン JWT は `jti`（RFC 7519 §4.1.7、トークンごとの一意 ID）と `gid` という private claim（OP 側の GrantID、omitempty）を含みます。`gid` は OP だけが解釈する claim で、RS は無視します。
+本ライブラリが発行するアクセストークン JWT は `jti`（RFC 7519 §4.1.7、トークンごとの一意 ID）を含みます。grant の系譜があるトークンには `gid` という private claim（OP 側の GrantID）も入り、grant ID がない場合は省略されます。`gid` は OP だけが解釈する claim で、RS は無視します。
 
 **既定 — grant-tombstone 戦略。** OP は grant ごとの小さな tombstone テーブルを保持し、検証時に JWT の `gid` を tombstone と突き合わせます。単一 AT の `/revocation` は `jti` をキーにした拒否リスト行を 1 件書き込みます。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
 
@@ -233,11 +233,13 @@ active な opaque access token の introspection response には、値が存在�
 1. `/introspect` を呼ぶ（上記いずれかのキャッシュ戦略と組み合わせて）
 2. OP の監査ストリームを購読して、`op.AuditTokenRevoked` をオフライン JWT 検証用の拒否リストの入力として扱う
 
-どちらもしない — 純粋オフライン JWT 検証、introspection なし、監査購読なし — を選ぶと、失効はリフレッシュトークンの次回ローテーション時にしか伝播しません。低リスク API では受容可能な選択ですが、これは意図的なトレードオフであって、仕様が暗黙に保証してくれる既定値ではありません。
+どちらもしない — 純粋オフライン JWT 検証、introspection なし、監査購読なし — を選ぶと、OP が grant を失効させた後も、以前に発行した JWT が `exp` まで検証に通り続けることがあります。その RS に失効が届くのは、RS が OP の状態を参照するか、同等の拒否リストを受け取るか、トークンが期限切れになったときです。リフレッシュトークンをローテーションしても、すでに発行した JWT は遡って無効になりません。低リスク API では受容可能な選択ですが、これは意図的なトレードオフであって、仕様が暗黙に保証してくれる既定値ではありません。
 
 ## UserInfo —「このアクセストークンに対する最新 claim をくれ」
 
-`GET /userinfo`（OIDC Core §5.3）にアクセストークンを載せて呼ぶだけ。アクセストークンの scope の範囲でユーザ claim の JSON を返します。
+既定では、`GET /userinfo`（OIDC Core §5.3）にアクセストークンを載せると、アクセストークンの scope の範囲でユーザ claim の JSON が返ります。OIDC では JWT 形式の応答も定義されています。本ライブラリでは `Accept: application/jwt` で署名付き応答を要求でき、クライアントに暗号化応答メタデータを登録すると、署名後に暗号化した nested JWE が返ります。
+
+以下の curl は制約なしの Bearer トークンの例です。DPoP バインドされたトークンでは `Authorization: DPoP` と有効な `DPoP` proof ヘッダーを使います。
 
 ```sh
 curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/userinfo
@@ -254,6 +256,8 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 - **UserInfo** は最新値の参照経路 — ユーザが変えうる値（表示名など）が必要なら呼びます。
 
 ほとんどのアプリは ID トークン claim で足ります。UserInfo は最新性が必要なときに使ってください。実装上は、ライブラリがアクセストークンを検証して設定された OP 側の失効状態を確認するので、ログインから UserInfo 呼び出しまでの間に revoke されたトークンは、JWT の署名が通っていても拒否されます。
+
+UserInfo の claim を使う前に、RP はレスポンスの `sub` が ID トークンの `sub` と完全一致することを確認しなければなりません。OIDC Core §5.3.4 は、不一致なら UserInfo レスポンスを使用しないよう求めています。署名付き UserInfo JWT の場合は、署名と claim も検証します。
 :::
 
 ## 設定オプション

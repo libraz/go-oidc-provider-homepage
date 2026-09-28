@@ -6,7 +6,9 @@ pageClass: pg-concepts-access-token-format
 
 # Access token format — JWT vs opaque
 
-`go-oidc-provider` issues **JWT (RFC 9068) access tokens by default**, with **opaque access tokens as an opt-in**. Both shapes pass through the same `Authorization: Bearer …` header on the wire; the difference is **who validates the token** and **how revocation propagates**.
+`go-oidc-provider` issues **RFC 9068-shaped JWT access tokens by default**, with **opaque access tokens as an opt-in**. Token format determines **who validates the token** and **how revocation propagates**. Presentation depends on sender constraint: unbound and mTLS-bound tokens use `Authorization: Bearer`, while DPoP-bound tokens use `Authorization: DPoP` with a DPoP proof header.
+
+The library signs JWT access tokens with ES256 only, while RFC 9068 §2.1 requires RS256 support; its verifier also accepts a missing `jti` even though §2.2 requires it. See the [RFC status matrix](/compliance/rfc-matrix) before claiming full RFC 9068 conformance.
 
 This is a judgment the library cannot make for you — it is yours to make as the embedder. The right answer depends on where the resource server (RS) sits relative to the OP, what your immediate-revocation requirements look like, and how you want load distributed.
 
@@ -32,14 +34,14 @@ This is a judgment the library cannot make for you — it is yours to make as th
 
 ## Two shapes for the same wire slot
 
-The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token>` and decides whether to honour the call. What changes is **how the RS reaches that decision**.
+For a given sender-constraint mode, either format uses the same authorization scheme: `Bearer` for unbound or mTLS-bound tokens, or `DPoP` plus a proof header for DPoP-bound tokens. The difference here is **how the RS validates the token**. The diagrams show an unbound Bearer example.
 
 ### JWT (RFC 9068) — the RS validates locally
 
 <figure class="fig">
   <div class="fig-head">JWT — the resource server decides on its own</div>
   <svg class="fig-svg" role="img" aria-labelledby="atf-jwt-title" viewBox="0 30 960 140" xmlns="http://www.w3.org/2000/svg">
-    <title id="atf-jwt-title">With a JWT access token the resource server verifies the signature, the audience and the expiry itself, against a key set it fetched from the OP once and cached. The OP is not on the request path.</title>
+    <title id="atf-jwt-title">With a JWT access token the resource server validates its signature, type, issuer, audience, lifetime, and required claims against cached OP keys, refreshing those keys when needed. A DPoP-bound token also requires proof verification. The OP is not on the routine request path.</title>
     <rect class="fg-box" x="36" y="54" width="190" height="68" rx="8"/>
     <text class="fg-t" x="56" y="84">RP</text>
     <text class="fg-xs" x="56" y="104">holds the access token</text>
@@ -47,7 +49,7 @@ The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token
     <text class="fg-mxs" x="273" y="89" text-anchor="middle">Bearer &lt;JWT&gt;</text>
     <rect class="fg-box" x="320" y="48" width="320" height="98" rx="8"/>
     <text class="fg-t" x="340" y="80">RS</text>
-    <text class="fg-xs" x="340" y="102">verifies the signature, aud and exp itself</text>
+    <text class="fg-xs" x="340" y="102">verifies JWT claims and binding proof</text>
     <text class="fg-xs" x="340" y="120">nothing to ask, nothing to wait for</text>
     <text class="fg-mxs fg-ok" x="340" y="138">0 network calls per request</text>
     <path class="fg-edge fg-edge--muted" d="M644,96 H730" marker-end="url(#fg-am)"/>
@@ -59,7 +61,7 @@ The on-the-wire surface is identical. The RS reads `Authorization: Bearer <token
   <figcaption class="fig-note">Fast, and offline — which is also the catch: nothing the OP does after issuance reaches this resource server until the token's own <code>exp</code> passes.</figcaption>
 </figure>
 
-The RS holds a cached JWKS, validates the JWT signature offline, checks `aud` and `exp`, and serves the request. The OP is **not on the request hot path**. The JWT itself carries the claims (`sub`, `scope`, `aud`, `auth_time`, `acr`, `cnf`, …) so the RS has everything it needs.
+The RS uses cached JWKS keys to verify the signature and allowed algorithm, then checks `typ=at+jwt`, the expected `iss` and `aud`, `exp` and `iat`, and required claims including `sub`, `client_id`, and `jti`. For a sender-constrained token it also checks `cnf` against the presented proof or client certificate. The OP is **not on the routine request path**. Refresh the JWKS cache when a new signing `kid` appears.
 
 ### Opaque — the RS asks the OP every time
 
@@ -106,7 +108,7 @@ A library-private JWT claim that holds the **GrantID** — the OP-side identifie
 :::
 
 ::: tip The wire shape gives the RS no hint
-Both formats arrive as `Authorization: Bearer <opaque-string>`. RFC 6750 makes no distinction. The RS knows which format to expect because the deployment told it — typically by audience, the same way the RS already knows which JWKS to trust. The library's discovery document does **not** advertise the format.
+Neither the `Bearer` nor the `DPoP` authorization scheme identifies JWT versus opaque format. The RS knows which format to expect from deployment policy, typically by audience. DPoP-bound tokens use `Authorization: DPoP` and a separate proof regardless of token format. The library's discovery document does **not** advertise the format.
 :::
 
 ## The trade-off
@@ -256,9 +258,9 @@ Storage-layer vocabulary that shows up when discussing revocation strategies.
 
 | Strategy | Writes per AT issuance | Writes per grant revoke | Steady-state row count | Notes |
 |---|---|---|---|---|
-| **`RevocationStrategyGrantTombstone`** (default) | **0** | 1 (tombstone row) | `O(revoked grants + revoked JTIs)` | The OP embeds a `gid` private claim (the GrantID) in every JWT and consults a per-grant tombstone table at verification. FAPI 2.0 SP §5.3.2.2 conformant. |
-| `RevocationStrategyJTIRegistry` | 1 (shadow row) | N (one UPDATE per AT under the grant) | `O(issuance_rate × AT_TTL)` | Every issued AT is shadowed by a row in `store.AccessTokenRegistry`. Pin this when per-AT audit trails are a regulatory requirement. FAPI 2.0 SP §5.3.2.2 conformant. |
-| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` returns 200 idempotently (RFC 7009 §2.2) but is a no-op. JWT ATs live until `exp`. **Rejected at `op.New` under any FAPI profile** (FAPI 2.0 SP §5.3.2.2 mandates server-side revocation). |
+| **`RevocationStrategyGrantTombstone`** (default) | **0** | 1 (tombstone row) | `O(revoked grants + revoked JTIs)` | The OP embeds a `gid` private claim (the GrantID) in JWTs with grant lineage and consults a per-grant tombstone table at its verification endpoints. |
+| `RevocationStrategyJTIRegistry` | 1 (shadow row) | N (one UPDATE per AT under the grant) | `O(issuance_rate × AT_TTL)` | Every issued AT is shadowed by a row in `store.AccessTokenRegistry`. Pin this when per-AT audit trails are a regulatory requirement. |
+| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` returns 200 idempotently (RFC 7009 §2.2) but is a no-op. JWT ATs live until `exp`. **Rejected at `op.New` under this library's FAPI profiles** as a library policy. |
 
 ::: tip The default writes nothing on issuance
 The hot path of `/token` does not touch the database under the default strategy. Instead, when a grant is revoked (logout, code-replay cascade, refresh chain compromise), the OP writes one tombstone row keyed on the grant ID. Verification at `/userinfo` and `/introspect` checks the gid against the tombstone table, so a revoked grant's JWTs are rejected immediately at OP-served boundaries.
@@ -267,7 +269,7 @@ A single-AT `/revocation` (RFC 7009) by `jti` writes one denylist row under the 
 :::
 
 ::: info The `gid` claim is private
-JWT access tokens carry a `gid` private claim (RFC 7519 §4.3, omitempty) that holds the OP-side GrantID. It is consumed by the OP only — resource servers MUST ignore it. Existing RFC 9068 verifiers keep working unchanged; the claim is invisible to anything that doesn't look for it.
+JWT access tokens with grant lineage carry a `gid` private claim (RFC 7519 §4.3, omitempty) that holds the OP-side GrantID. It is consumed by the OP only; resource servers can ignore it. Existing RFC 9068 verifiers keep working unchanged when they ignore this private claim.
 :::
 
 ::: details Selecting a strategy
@@ -287,7 +289,7 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 :::
 
 ::: warning FAPI rejects `RevocationStrategyNone` at construction time
-Selecting `RevocationStrategyNone` together with any FAPI profile fails at `op.New`. FAPI 2.0 Security Profile §5.3.2.2 mandates server-side revocation; the library refuses to boot a configuration that disables it.
+Selecting `RevocationStrategyNone` together with any library FAPI profile fails at `op.New`. This is a library safeguard. The final FAPI 2.0 Security Profile §5.3.4(3) requires resource servers to verify access-token revocation status; the OP's local revocation strategy alone cannot establish a resource server's compliance.
 :::
 
 ::: warning Substore presence is enforced at `op.New` (BREAKING)
@@ -423,7 +425,7 @@ The wire bytes carry no prefix and no checksum — leaking a brand prefix would 
 
 ## What this means for resource-server code
 
-- **JWT format.** RS code looks like any RFC 9068 verifier: cache the JWKS, validate signature + `aud` + `exp`, project the claims. No call back to the OP. **Mandate `/introspect` only on the paths where you cannot tolerate a session-bounded cascade gap.**
+- **JWT format.** Cache and refresh the JWKS; verify the signature and allowed algorithm, `typ=at+jwt`, expected `iss` and `aud`, `exp` and `iat`, and required claims (`sub`, `client_id`, `jti`). For DPoP or mTLS, verify `cnf` against the proof or certificate. Routine validation needs no call back to the OP. Use `/introspect` where you cannot tolerate a revocation gap.
 - **Opaque format.** RS code calls `POST /introspect` for every token presentation (or every "cache miss" if the operator allows short-lived caching). The introspection response carries the same `sub` / `scope` / `aud` / `cnf` an RFC 9068 JWT would, so the rest of the RS pipeline does not need to change shape — only the validation step does.
 
 Both shapes propagate sender constraints (DPoP RFC 9449, mTLS RFC 8705): the JWT path embeds `cnf` directly, the opaque path re-emits `cnf` from the OP-side record so the RS sees the same proof requirement.

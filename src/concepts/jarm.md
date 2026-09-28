@@ -45,13 +45,13 @@ By default the OP returns the authorization response (`code`, `state`, `iss`, �
   <figcaption class="fig-note">On the left, an attacker who can rewrite the query string can swap one parameter and leave the rest intact. On the right there is nothing to swap — the values are inside a document that only the OP's key can produce.</figcaption>
 </figure>
 
-JARM is one of the two protections FAPI 2.0 Message Signing layers on top of FAPI 2.0 Baseline. The other is response-side signing at the resource server. Together they give full non-repudiation: every authorization request and every authorization response is signed by an identifiable party.
+JARM is the signed-authorization-response method defined by FAPI 2.0 Message Signing. The same specification treats signed authorization requests and signed introspection responses as separate methods; it does not define a signature wrapper for every resource-server API request and response. Each method has its own conformance option, so a deployment can choose the messages it needs.
 
 ::: details Specs referenced on this page
 - [OAuth 2.0 JARM](https://openid.net/specs/oauth-v2-jarm.html) — JWT Secured Authorization Response Mode
 - [RFC 9101](https://datatracker.ietf.org/doc/html/rfc9101) — JAR (cross-references JARM in §10.2)
 - [RFC 9207](https://datatracker.ietf.org/doc/html/rfc9207) — `iss` parameter on the authorization response
-- [FAPI 2.0 Message Signing](https://openid.net/specs/fapi-2_0-message-signing.html)
+- [FAPI 2.0 Message Signing](https://openid.net/specs/fapi-message-signing-2_0.html) — Final
 - [OIDC Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)
 :::
 
@@ -64,7 +64,7 @@ The classic redirect carries `code` and `state` as query parameters. Two attack 
 
 > **OAuth 2.0 JARM §1 (paraphrased)** the authorization response is cryptographically protected so that neither the issuer of the response nor the values it carries can be tampered with after the OP signs it.
 
-[RFC 9207](https://datatracker.ietf.org/doc/html/rfc9207) (the `iss` parameter on the authorization response) is the lightweight defence: the OP appends its issuer URL to the redirect, the RP rejects any redirect whose `iss` does not match the OP it sent the user to. That stops the mix-up class without a JWT round-trip, and FAPI 2.0 Baseline mandates it. JARM is the heavyweight option, used when the response itself must carry a portable signature — for audit trails, for on-the-wire forwarding through brokers, or for FAPI 2.0 Message Signing's full non-repudiation contract.
+[RFC 9207](https://datatracker.ietf.org/doc/html/rfc9207) (the `iss` parameter on the authorization response) is the lightweight defence: the OP appends its issuer URL to the redirect, the RP rejects any redirect whose `iss` does not match the OP it sent the user to. That stops the mix-up class without a JWT round-trip, and the FAPI 2.0 Security Profile mandates it. JARM is the heavyweight option, used when the response itself must carry a portable signature — for audit trails, for on-the-wire forwarding through brokers, or when the signed-authorization-response method is selected from FAPI 2.0 Message Signing.
 
 ## Wire format
 
@@ -105,8 +105,10 @@ There is no `authorization_signed_response_alg` per-client override. Discovery a
 
 `alg=none`, `RS256`, and the `HS*` family are structurally absent from the type — see [Design judgments #11](/security/design-judgments#dj-11) for the closed-enum rationale that applies uniformly to every JOSE surface in the library.
 
+This ES256-only behavior is a library choice. The Final FAPI 2.0 Security Profile and Message Signing specification allow the FAPI JWT algorithm set (`PS256`, `ES256`, and `EdDSA`) where their respective signed objects use JWT signatures.
+
 ::: details Why a single alg and not a negotiable list?
-JOSE alg negotiation is the historical source of `alg=none` and the HMAC-with-public-key ("alg confusion") class of bugs. The library refuses to negotiate: the wire-side allow-list and the type-level enum agree, and any input naming an alg outside the list is rejected before the bytes reach a verifier. It uses ES256 to stay compatible with FAPI 2.0 Message Signing's required set without expanding the surface.
+JOSE alg negotiation is the historical source of `alg=none` and the HMAC-with-public-key ("alg confusion") class of bugs. The library refuses to negotiate: the wire-side allow-list and the type-level enum agree, and any input naming an alg outside the list is rejected before the bytes reach a verifier. Its ES256-only JARM signer is an implementation choice, not an ES256-only requirement of the FAPI specifications.
 :::
 
 ## Encryption
@@ -138,12 +140,12 @@ Once those checks pass, the client extracts `code`, `state`, and the optional `e
 
 | Profile / context | JARM status |
 |---|---|
-| **FAPI 2.0 Message Signing** | required (`feature.JARM` is auto-enabled by `op.WithProfile(profile.FAPI2MessageSigning)`) — see [FAPI 2.0](/concepts/fapi) |
-| **FAPI 2.0 Baseline** | optional (RFC 9207 `iss` parameter is sufficient for Baseline) |
+| **FAPI 2.0 Message Signing** | required when the signed-authorization-response method is selected (`feature.JARM` is auto-enabled by `op.WithProfile(profile.FAPI2MessageSigning)`) — see [FAPI 2.0](/concepts/fapi) |
+| **FAPI 2.0 Security Profile** | optional (RFC 9207 `iss` parameter is sufficient) |
 | **FAPI-CIBA** | not applicable — CIBA has no front-channel authorization response |
 | **Plain OIDC / OAuth** | pure choice — most deployments rely on RFC 9207 `iss` and skip JARM |
 
-JARM is never the only mitigation against a particular CVE class. The role it plays is **cryptographic auditability of the authorization response**, which matters most when the response is forwarded out-of-band (broker architectures, regulator-mandated logs) or when a deployment wants the strongest possible integrity contract on every protocol message.
+JARM is never the only mitigation against a particular CVE class. The role it plays is **cryptographic auditability of the authorization response**, which matters most when the response is forwarded out-of-band (broker architectures or logs) or when a deployment selects signed responses as part of its message-integrity contract.
 
 ## Wiring this library
 
@@ -190,14 +192,14 @@ Both fields can be supplied at static seed time (the `op.ClientSeed` / `store.Cl
 
 ## JARM and DPoP / mTLS
 
-JARM signs the authorization response. [DPoP](/concepts/dpop) and [mTLS](/concepts/mtls) bind issued tokens to a key the legitimate client holds. The two layers are orthogonal — JARM protects the **handshake step that delivers the code**, sender constraint protects the **tokens issued in exchange for that code** — and FAPI 2.0 Message Signing requires both.
+JARM signs the authorization response. [DPoP](/concepts/dpop) and [mTLS](/concepts/mtls) bind issued tokens to a key the legitimate client holds. The two layers are orthogonal — JARM protects the **handshake step that delivers the code**, sender constraint protects the **tokens issued in exchange for that code** — and the FAPI 2.0 Security Profile requires one sender-constraint method. Message Signing inherits that requirement.
 
-A request that uses JARM almost always also uses [PAR](/use-cases/fapi2-baseline) and [JAR](https://datatracker.ietf.org/doc/html/rfc9101). The four together give a fully signed authorization request and a fully signed authorization response, with sender-constrained tokens at the end. The library auto-enables PAR, JAR, and JARM under `op.WithProfile(profile.FAPI2MessageSigning)` and imposes the DPoP-or-mTLS `RequiredAnyOf` constraint; DPoP is selected by default unless mTLS is explicitly enabled.
+The library's `op.WithProfile(profile.FAPI2MessageSigning)` combines PAR, JAR, and JARM and imposes the DPoP-or-mTLS `RequiredAnyOf` constraint; DPoP is selected by default unless mTLS is explicitly enabled. When DPoP is active, the library also requires a configured DPoP nonce source. In the Final Message Signing specification, those signing methods remain independently selectable and a DPoP nonce is not required.
 
 ## Read next
 
-- [FAPI 2.0](/concepts/fapi) — where JARM fits in the FAPI 2.0 Baseline / Message Signing split.
+- [FAPI 2.0](/concepts/fapi) — where JARM fits in the FAPI 2.0 Security Profile / Message Signing split.
 - [Sender constraint — selection guide](/concepts/sender-constraint) — DPoP vs mTLS for the token-binding layer that runs alongside JARM.
-- [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) — full wiring for the Baseline profile, the starting point before adding JARM.
+- [FAPI 2.0 Security Profile](/use-cases/fapi2-baseline) — full wiring for the Security Profile, the starting point before adding JARM.
 - [JWE encryption](/use-cases/jwe-encryption) — encrypted JARM, encrypted ID Token, encrypted userinfo, encrypted introspection (one keyset, four targets).
 - [Design judgments](/security/design-judgments) — closed alg enum (#11) and other resolved spec tensions that JARM inherits.

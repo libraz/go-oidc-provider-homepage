@@ -116,7 +116,7 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 | 応答 | 意味 | デバイスのふるまい |
 |---|---|---|
 | `400 authorization_pending` | ユーザがまだ承認（または拒否）していない | `interval` 秒待って再 poll |
-| `400 slow_down` | poll が速すぎた | interval を倍にする（RFC 8628 §3.5: "MUST honor the new value"）。OP は新しい interval を `LastPolledAt` と一緒に原子的に永続化するので、マルチレプリカ構成でも元に戻らない |
+| `400 slow_down` | poll が速すぎた | その後のすべての要求で interval を 5 秒延ばす（RFC 8628 §3.5）。OP は新しい interval を `LastPolledAt` と一緒に原子的に永続化するので、マルチレプリカ構成でも元に戻らない |
 | `400 access_denied` | ユーザが verification ページで **拒否** をクリック（または組み込み側の revocation hook が発火） | poll を停止し「サインインがキャンセルされました」と表示 |
 | `400 expired_token` | `device_code` が `expires_in`（既定 600 秒）を超えた | poll を停止。再試行はフローからやり直す |
 | `200 { access_token, ... }` | ユーザが承認 | 通常の token 応答として処理 |
