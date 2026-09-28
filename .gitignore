@@ -18,3 +18,4 @@ node_modules
 *.claude.md
 CLAUDE.md
 AGENT.md
+.serena
