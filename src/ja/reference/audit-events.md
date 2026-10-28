@@ -11,39 +11,41 @@ OP は `op/audit.go` で閉じたカタログとして定義された、構造�
 
 <figure class="fig">
   <div class="fig-head">閉じたカタログ 1 つ、届き先 3 つ</div>
-  <svg class="fig-svg" role="img" aria-labelledby="audit-flow-title" viewBox="0 0 960 244" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="audit-flow-title" viewBox="0 0 960 368" xmlns="http://www.w3.org/2000/svg">
     <title id="audit-flow-title">OP の各処理パスは、閉じた 1 つのカタログから監査イベントを発火します。各イベントは文脈を extras に載せ、構造化ログ、SOC パイプライン、Prometheus のカウンタへ届きます。</title>
-    <text class="fg-lbl" x="40" y="26">発火元</text>
-    <text class="fg-lbl" x="640" y="26">届き先</text>
-    <rect class="fg-box" x="36" y="40" width="230" height="42" rx="6"/>
-    <text class="fg-t2" x="54" y="58">login / MFA</text>
-    <text class="fg-xs" x="54" y="74">要素の判定結果、ステップアップ</text>
-    <rect class="fg-box" x="36" y="92" width="230" height="42" rx="6"/>
-    <text class="fg-t2" x="54" y="110">token / grant</text>
-    <text class="fg-xs" x="54" y="126">発行、ローテーション、失効</text>
-    <rect class="fg-box" x="36" y="144" width="230" height="42" rx="6"/>
-    <text class="fg-t2" x="54" y="162">DCR / device</text>
-    <text class="fg-xs" x="54" y="178">動的登録、デバイスの承認</text>
-    <path class="fg-leader" d="M270,61 H300 M270,113 H300 M270,165 H300 M300,61 V165"/>
-    <path class="fg-edge fg-edge--accent" d="M300,113 H336" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="340" y="66" width="256" height="94" rx="8"/>
-    <text class="fg-t2 fg-accent" x="360" y="92">監査イベント</text>
-    <text class="fg-mxs" x="360" y="114">op.Audit* — 閉じた集合</text>
-    <text class="fg-xs" x="360" y="134">文脈は extras に載せて運び、</text>
-    <text class="fg-xs" x="360" y="150">整形済みメッセージには入れない</text>
-    <path class="fg-leader" d="M600,113 H632 M632,61 V165"/>
-    <path class="fg-edge fg-edge--thin" d="M632,61 H692" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M632,113 H692" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M632,165 H692" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="696" y="40" width="228" height="42" rx="6"/>
-    <text class="fg-t2" x="714" y="58">slog の JSON</text>
-    <text class="fg-xs" x="714" y="74">イベント 1 件につき 1 オブジェクト</text>
-    <rect class="fg-box" x="696" y="92" width="228" height="42" rx="6"/>
-    <text class="fg-t2" x="714" y="110">SOC / SIEM</text>
-    <text class="fg-xs" x="714" y="126">イベント名で検索できる</text>
-    <rect class="fg-box" x="696" y="144" width="228" height="42" rx="6"/>
-    <text class="fg-t2" x="714" y="162">Prometheus</text>
-    <text class="fg-xs" x="714" y="178">結果をラベルにしたカウンタ</text>
+    <text class="fg-lbl" x="32" y="40">発火元</text>
+    <text class="fg-lbl" x="680" y="40">届き先</text>
+    <!-- emitters -->
+    <rect class="fg-box" x="32" y="64" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="92">login / MFA</text>
+    <text class="fg-xs" x="48" y="116">要素の判定、ステップアップ</text>
+    <rect class="fg-box" x="32" y="168" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="196">token / grant</text>
+    <text class="fg-xs" x="48" y="220">発行、ローテーション、失効</text>
+    <rect class="fg-box" x="32" y="272" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="300">DCR / device</text>
+    <text class="fg-xs" x="48" y="324">動的登録、デバイスの承認</text>
+    <path class="fg-leader" d="M288,100 H320 M288,204 H320 M288,308 H320 M320,100 V308"/>
+    <path class="fg-edge fg-edge--accent" d="M320,204 H360" marker-end="url(#fg-ac)"/>
+    <!-- catalog -->
+    <rect class="fg-box fg-box--accent" x="360" y="156" width="256" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="376" y="184">監査イベント</text>
+    <text class="fg-mxs" x="376" y="208">op.Audit* — 閉じた集合</text>
+    <text class="fg-xs" x="376" y="232">文脈は extras に載せる</text>
+    <path class="fg-leader" d="M616,204 H648 M648,100 V308"/>
+    <path class="fg-edge fg-edge--thin" d="M648,100 H680" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M648,204 H680" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M648,308 H680" marker-end="url(#fg-a)"/>
+    <!-- destinations -->
+    <rect class="fg-box" x="680" y="64" width="248" height="72" rx="8"/>
+    <text class="fg-t2" x="696" y="92">slog の JSON</text>
+    <text class="fg-xs" x="696" y="116">1 イベント 1 オブジェクト</text>
+    <rect class="fg-box" x="680" y="168" width="248" height="72" rx="8"/>
+    <text class="fg-t2" x="696" y="196">SOC / SIEM</text>
+    <text class="fg-xs" x="696" y="220">イベント名で検索できる</text>
+    <rect class="fg-box" x="680" y="272" width="248" height="72" rx="8"/>
+    <text class="fg-t2" x="696" y="300">Prometheus</text>
+    <text class="fg-xs" x="696" y="324">結果ごとのカウンタ</text>
   </svg>
   <figcaption class="fig-note">右の列が成立するのは、カタログが閉じているからです。イベント名の集合が固定されバージョン管理されているため、アラートをイベント名で組めます。呼び出し箇所のフォーマット文字列から組み立てているのではありません。</figcaption>
 </figure>
@@ -67,7 +69,7 @@ op.New(
 
 ## コードからカタログを列挙する
 
-以下のカタログは OP 自身が使うレジストリから起こしたもので、そのレジストリは公開されています。`op.AuditEventCatalog()` は安定イベント全件のコピーを `[]op.AuditEventDefinition` として返します:
+OP が使う監査イベントのレジストリは公開されています。`op.AuditEventCatalog()` は全イベントのコピーを `[]op.AuditEventDefinition` として返します:
 
 ```go
 for _, def := range op.AuditEventCatalog() {
@@ -138,22 +140,23 @@ for _, def := range op.AuditEventCatalog() {
 
 ### ログイン / MFA / step-up {#login-mfa-step-up}
 
-`login.*` と `mfa.*` は、primary または additional factor が解決したあとに authenticator chain から発火します。`login.failed` / `mfa.failed` は通常レベルの探索シグナルで、レートが恒常的に上がるようなら credential stuffing の典型的な兆候です。`AuditMFARequired`、`AuditStepUpRequired`、`AuditStepUpSuccess` は **予約** であり、OP は発火しません。step-up は resource server が決め、OP には通常の authorize request が届きます。
+`login.*` と `mfa.*` は、factor が解決したあとに authenticator chain から発火します。chain の最初の factor は `login.*`、2 つ目以降は `mfa.*` で報告されます。既存セッションでの step-up も `mfa.*` で、セッションが持つ過去の認証方式は完了済みとして数えられます。`login.failed` / `mfa.failed` は通常レベルの探索シグナルで、レートが恒常的に上がるようなら credential stuffing の典型的な兆候です。`WithAuthnLockoutStore` を使っている場合、ロックアウトを発動させた失敗した試行も、これらの失敗イベントとして報告されます。`AuditMFARequired`、`AuditStepUpRequired`、`AuditStepUpSuccess` は **予約** であり、OP は発火しません。step-up は resource server が決め、OP には通常の authorize request が届きます。
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditLoginSuccess` | プライマリ credential の検証が成功し、subject が確定した | info | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditLoginFailed` | プライマリ credential が拒否された | warn | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditLockoutStalled` | cross-factor lockout の CAS 競合で失敗試行をカウントせず中断した | alert | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditMFARequired` | **予約** — OP は requirement 専用イベントを発火しない | info | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditMFASuccess` | 第 2 factor が受理された | info | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditMFAFailed` | 第 2 factor が拒否された | warn | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditStepUpRequired` | **予約** — resource server の判断であり、OP は発火しない | info | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
-| `AuditStepUpSuccess` | **予約** — resource server の結果であり、OP は発火しない | info | [使い方: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditLoginSuccess` | プライマリ credential の検証が成功し、subject が確定した | info | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditLoginFailed` | プライマリ credential が拒否された | warn | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditLockoutStalled` | cross-factor lockout の CAS 競合で失敗試行をカウントせず中断した。その subject の失敗回数の枠は進まない | alert | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditMFARequired` | **予約** — OP は requirement 専用イベントを発火しない | info | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditMFASuccess` | 第 2 factor が受理された | info | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditMFAFailed` | 第 2 factor が拒否された | warn | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditStepUpRequired` | **予約** — resource server の判断であり、OP は発火しない | info | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
+| `AuditStepUpSuccess` | **予約** — resource server の結果であり、OP は発火しない | info | [ユースケース: MFA / step-up](/ja/use-cases/mfa-step-up) |
 
 ::: details extras
 - `factor` — `password`、`passkey`、`totp`、`email_otp`、`captcha`、`recovery_code`、または user-defined Step kind
-- login/MFA イベントは `aal`、`acr`、`amr_values` を自動的には持ちません
+
+login/MFA イベントは `aal`、`acr`、`amr_values` を持ちません。
 :::
 
 ### 同意
@@ -163,14 +166,15 @@ for _, def := range op.AuditEventCatalog() {
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
 | `AuditConsentGranted` | ユーザが同意画面で同意した | info | [ガイド: consent](/ja/concepts/consent) |
-| `AuditConsentGrantedFirstParty` | ファーストパーティの自動同意を適用した（同意画面なし） | info | [使い方: ファーストパーティ consent](/ja/use-cases/first-party) |
+| `AuditConsentGrantedFirstParty` | ファーストパーティの自動同意を適用した（同意画面なし） | info | [ユースケース: ファーストパーティ consent](/ja/use-cases/first-party) |
 | `AuditConsentGrantedDelta` | **予約** — 追加 scope は通常の `AuditConsentGranted` として発火 | info | [ガイド: consent](/ja/concepts/consent) |
 | `AuditConsentSkippedExisting` | **予約** — 保存済み同意の再利用は発火しない | info | [ガイド: consent](/ja/concepts/consent) |
 | `AuditConsentRevoked` | **予約** — Grant Management の取り下げは `AuditGrantManagementRevoked` を発火 | info | [ガイド: consent](/ja/concepts/consent) |
 
 ::: details extras
-- `scopes_granted`、`scopes_requested` — 文字列スライス
-- `audience` — audience 単位 scope の場合
+- `grant_id` — consent を記録した grant
+- `scope` — コードを発行したときの scope
+- `completion_id` — ブラウザが RP へ運ぶ認可コードの不可逆な fingerprint
 :::
 
 ### code / token のライフサイクル
@@ -183,8 +187,8 @@ for _, def := range op.AuditEventCatalog() {
 | `AuditCodeConsumed` | `/token` で code を消費した | info | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
 | `AuditCodeReplayDetected` | 認可コードが二度提示された — chain を失効させる | alert | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
 | `AuditTokenIssued` | grant に対する最初の refresh token を永続化した（すべての access token 発行を数えるイベントではない） | info | [ガイド: tokens](/ja/concepts/tokens) |
-| `AuditTokenRefreshed` | リフレッシュトークンをローテーションし、新しいアクセストークンを発行した | info | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
-| `AuditTokenRevoked` | `/revoke` または grant cascade で失効させた | info | [ガイド: tokens](/ja/concepts/tokens) |
+| `AuditTokenRefreshed` | リフレッシュトークンをローテーションし、そのローテーションが永続化された。並行する提示にコミット時に負けた refresh やロールバックした refresh では記録されない | info | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
+| `AuditTokenRevoked` | `/revoke` がトークンを失効させた。対象 grant の subject がすでに存在しないため `/token` が引き換えを拒否したときにも、warn レベルで記録される | info | [ガイド: tokens](/ja/concepts/tokens) |
 | `AuditTokenRevokeFailed` | 失効処理がサブストアの障害を観測。RFC 7009 §2.2 により、通信路上の応答は 200 のまま | alert | [ガイド: tokens](/ja/concepts/tokens) |
 | `AuditRefreshReplayDetected` | リフレッシュトークンがローテーション猶予を超過して提示された — chain を失効させる | alert | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
 | `AuditRefreshChainRevokeFailed` | replay 検出時の連鎖失効でサブストアの障害を観測 | alert | [ガイド: リフレッシュトークン](/ja/concepts/refresh-tokens) |
@@ -195,11 +199,13 @@ for _, def := range op.AuditEventCatalog() {
 
 ::: details extras
 - `refresh_origin` — refresh chain に記録された型付き origin。`authorization_code`、`device_code`、`ciba`、`custom_grant` のいずれかで、欠落または閉じた集合外は metrics bridge が `unknown` に投影します。任意の request `grant_type` label ではなく、実際に chain を発行した grant を表します
-- `format` — アクセストークンの `jwt` / `opaque`
-- `offline_access` — bool。`offline_access` chain なら true
-- `cnf` — sender-bound のとき、`dpop_jkt` または `mtls_x5t#S256`
-- `surface` — `token.revoke_failed` で障害を観測した呼び出し元。`/revoke` は `jwt_access_token` / `refresh_chain` / `opaque_access_token`、token endpoint では認可コード再利用に伴う AT カスケードが失敗したときに `code_replay_jwt_access_tokens`
-- `grant_id` — `token.revoke_failed`(token endpoint)と `refresh.grant_revoke_failed` で、tombstone 書き込みに失敗した grant
+- `grant_id` — `token.issued`・`token.refreshed`・`token.revoked`・`code.*` では、そのクレデンシャルが属する grant。`token.revoke_failed`(token endpoint)と `refresh.grant_revoke_failed` では、teardown に失敗した grant
+- `scope` — `code.issued` と `code.consumed` で、コードの scope
+- `code_id` — `code.*` で、認可コードの不可逆な fingerprint
+- `offline_access` — `token.issued` と `token.refreshed` で、bool。`offline_access` chain なら true
+- `ttl_bucket` — `token.issued` と `token.refreshed` で、どの refresh token 有効期間が適用されたか
+- `surface` — `token.revoked` では `jwt_access_token`、`opaque_access_token`、`refresh_chain`、`refresh_grant`（chain の起点を解決できず、`/revoke` が grant の refresh token の失効に切り替えた）。subject が存在しないため引き換えを拒否した場合は `subject_deprovisioned`。`token.revoke_failed` では障害を観測した段階で、たとえば `refresh_chain_walk`、`refresh_chain`、`refresh_grant`、`opaque_access_token_lookup`。token endpoint は連鎖失効の名前を前置し、`code_replay_jwt_access_tokens` のようになる
+- `jti` — JWT アクセストークンの `token.revoked` で
 - `reason` — `refresh.chain_revoke_failed` / `refresh.grant_revoke_failed` で、サブストアから返ったエラー文字列
 - `err` — `token.revoke_failed` で、サブストアから返ったエラー文字列
 - `failure_stage`、`retryable` — `refresh.prior_access_token_revoke_failed` の値
@@ -218,11 +224,11 @@ for _, def := range op.AuditEventCatalog() {
 | `AuditLogoutClientLookupFailed` | RP 起点ログアウトの解決中に client registry の store lookup が失敗した。通信路上の応答は汎用的なまま | alert | [ガイド: sessions and logout](/ja/concepts/sessions-and-logout) |
 | `AuditLogoutRPInitiated` | **予約** — RP が要求したことだけを示す marker は発火しない | info | [ガイド: sessions and logout](/ja/concepts/sessions-and-logout) |
 | `AuditLogoutTokenRevokeFailed` | logout token またはログアウト cascade の失効で store 障害になった | alert | [ガイド: sessions and logout](/ja/concepts/sessions-and-logout) |
-| `AuditLogoutBackChannelDelivered` | Back-Channel logout token を RP に配送した | info | [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
-| `AuditLogoutBackChannelFailed` | Back-Channel 配送に失敗（HTTP エラー / タイムアウト / 検証失敗） | warn | [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
-| `AuditLogoutBackChannelResolveFailed` | grant ベースの通知先解決に失敗した | alert | [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
-| `AuditLogoutBackChannelOverflow` | 上限付き通知先解決が overflow した | warn | [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
-| `AuditBCLNoSessionsForSubject` | session-bearing `/end_session` notice で grant 由来の RP 対象が 0 件（通知する RP がない） | info | [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
+| `AuditLogoutBackChannelDelivered` | Back-Channel logout token を RP に配送した | info | [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
+| `AuditLogoutBackChannelFailed` | Back-Channel 配送に失敗（HTTP エラー / タイムアウト / 検証失敗） | warn | [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
+| `AuditLogoutBackChannelResolveFailed` | grant ベースの通知先解決に失敗した | alert | [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
+| `AuditLogoutBackChannelOverflow` | 上限付き通知先解決が overflow した | warn | [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
+| `AuditBCLNoSessionsForSubject` | session-bearing `/end_session` notice で grant 由来の RP 対象が 0 件（通知する RP がない） | info | [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) |
 
 ::: details `bcl.no_sessions_for_subject` の意図
 このイベントは `Notice.SessionID` があり、grant ベースの audience 解決で RP 対象が 0 件になった場合だけ発火します。coordinator が `SessionStore` を辿った、または session が追い出されたことを意味しません。`SessionStore` が `/end_session` の snapshot 前に行を失うと、handler は detached fan-out を起動せず、このイベントも発火しません。grant 由来の対象 0 件は通常の no-op でも起きるため INFO レベルとし、SOC ツールは個別イベントではなく発生レートの上昇に対してアラートを張ります。設定された `WithSessionDurabilityPosture` の値は trigger / snapshot の喪失と対象 0 件を解釈する文脈として含まれます。
@@ -239,7 +245,7 @@ for _, def := range op.AuditEventCatalog() {
 | `AuditPKCEViolation` | **予約** — PKCE 拒否は通信路上で返し、OP 監査イベントは発火しない | alert | [ガイド: 認可コード + PKCE](/ja/concepts/authorization-code-pkce) |
 | `AuditRedirectURIMismatch` | **予約** — redirect 拒否は通信路上で返し、OP 監査イベントは発火しない | warn | [ガイド: redirect URI](/ja/concepts/redirect-uri) |
 | `AuditAlgLegacyUsed` | **予約** — 旧 alg の telemetry を発火する OP パスはない | warn | [ガイド: JOSE basics](/ja/concepts/jose-basics) |
-| `AuditCORSPreflightAllowed` | CORS preflight が厳格な許可リストに合致した | info | [使い方: SPA 向け CORS](/ja/use-cases/cors-spa) |
+| `AuditCORSPreflightAllowed` | CORS preflight が厳格な許可リストに合致した | info | [ユースケース: SPA 向け CORS](/ja/use-cases/cors-spa) |
 | `AuditDPoPLooseMethodCaseAdmitted` | **条件付き** — loose method-case bridge を設定した verifier のみ発火。標準 `op.New` は strict | info | [ガイド: DPoP](/ja/concepts/dpop) |
 | `AuditKeyRetiredKidPresented` | リクエストが JWKS の猶予期間を過ぎた kid を提示 — verifier で拒否 | warn | [運用: 鍵ローテーション](/ja/operations/key-rotation) |
 
@@ -249,7 +255,7 @@ interaction driver が応答を commit する前に render に失敗した場合
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditInteractionRenderFailed` | interaction driver の render が応答 commit 前に失敗した。OP は汎用の `server_error` ページを返す | alert | [使い方: SPA 向け対話のカスタマイズ](/ja/use-cases/spa-custom-interaction) |
+| `AuditInteractionRenderFailed` | interaction driver の render が応答 commit 前に失敗した。OP は汎用の `server_error` ページを返す | alert | [ユースケース: SPA 向け対話のカスタマイズ](/ja/use-cases/spa-custom-interaction) |
 
 ### introspection
 
@@ -273,20 +279,20 @@ interaction driver が応答を commit する前に render に失敗した場合
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
-| `AuditDCRIATConsumed` | Initial Access Token を消費した | info | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRIATExpired` | TTL 超過の IAT を提示した | warn | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRIATInvalid` | IAT の signature / format が不正 | warn | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCROpenRegistrationUsed` | open(IAT 不要)登録を受理した | info | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRClientRegistered` | 新規 client を作成した | info | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRClientMetadataRead` | RAT 持ちの GET on `/register/{client_id}` | info | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRClientMetadataUpdated` | RAT 持ちの PUT on `/register/{client_id}` | info | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRClientDeleted` | RAT 持ちの DELETE on `/register/{client_id}` | info | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRRATInvalid` | Registration Access Token を拒否した | warn | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRMetadataValidation` | メタデータペイロードがポリシー違反 | warn | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRCascadeRefreshRevokeFailed` | client 削除時に refresh-token 行の失効に失敗 | alert | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRCascadeGrantRevokeFailed` | client 削除時に grant の失効に失敗 | alert | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRCascadeAccessTokenRevokeFailed` | client 削除時に JWT access-token 行の失効に失敗 | alert | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
-| `AuditDCRCascadeOpaqueAccessTokenRevokeFailed` | client 削除時に opaque access-token 行の失効に失敗 | alert | [使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRIATConsumed` | Initial Access Token を消費した | info | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRIATExpired` | TTL 超過の IAT を提示した | warn | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRIATInvalid` | IAT の signature / format が不正 | warn | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCROpenRegistrationUsed` | open(IAT 不要)登録を受理した | info | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRClientRegistered` | 新規 client を作成した | info | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRClientMetadataRead` | RAT 持ちの GET on `/register/{client_id}` | info | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRClientMetadataUpdated` | RAT 持ちの PUT on `/register/{client_id}` | info | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRClientDeleted` | RAT 持ちの DELETE on `/register/{client_id}` | info | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRRATInvalid` | Registration Access Token を拒否した | warn | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRMetadataValidation` | メタデータペイロードがポリシー違反 | warn | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRCascadeRefreshRevokeFailed` | client 削除時に refresh-token 行の失効に失敗 | alert | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRCascadeGrantRevokeFailed` | client 削除時に grant の失効に失敗 | alert | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRCascadeAccessTokenRevokeFailed` | client 削除時に JWT access-token 行の失効に失敗 | alert | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
+| `AuditDCRCascadeOpaqueAccessTokenRevokeFailed` | client 削除時に opaque access-token 行の失効に失敗 | alert | [ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) |
 
 ### Device Code (RFC 8628)
 
@@ -297,14 +303,14 @@ interaction driver が応答を commit する前に render に失敗した場合
 | `AuditDeviceAuthorizationIssued` | `/device_authorization` が新しい `device_code` + `user_code` ペアを返却 | info | [ガイド: device code](/ja/concepts/device-code) |
 | `AuditDeviceAuthorizationRejected` | `/device_authorization` がリクエストを拒否（未知 client、scope 拒否など） | warn | [ガイド: device code](/ja/concepts/device-code) |
 | `AuditDeviceAuthorizationUnboundRejected` | DPoP / mTLS の証明が必要だが `/device_authorization` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
-| `AuditDeviceCodeVerificationApproved` | 組み込み側の verification ページがユーザの承認を報告 | info | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeVerificationDenied` | 組み込み側の verification ページがユーザ拒否を報告（またはレコード単位の総当たり対策がロックアウト） | warn | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeUserCodeBruteForce` | `user_code` 提出が外れた。カウンタを増やし、`devicecodekit.MaxUserCodeStrikes`(既定 5)でロックアウト発火 | alert | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeTokenIssued` | 承認済 device authorization に対し `/token` がトークンを発行 | info | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeTokenRejected` | `/token` が device-code grant を拒否（`access_denied`、`expired_token` など） | warn | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返し、サブストア上のポーリング間隔に 5 秒を加算 | warn | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態に遷移させた。`Deps.AccessTokens` が渡されている場合は、ヘルパが発行済みアクセストークンも連鎖失効させ、`revoked_access_tokens` を記録する | info | [使い方: device code](/ja/use-cases/device-code) |
-| `AuditDeviceCodePollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する（best-effort な観測） | warn | [使い方: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeVerificationApproved` | 組み込み側の verification ページがユーザの承認を報告 | info | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeVerificationDenied` | 組み込み側の verification ページがユーザ拒否を報告（またはレコード単位の総当たり対策がロックアウト） | warn | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeUserCodeBruteForce` | `user_code` 提出が外れた。カウンタを増やし、`devicecodekit.MaxUserCodeStrikes`(既定 5)でロックアウト発火 | alert | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeTokenIssued` | 承認済 device authorization に対し `/token` がトークンを発行 | info | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeTokenRejected` | `/token` が device-code grant を拒否（`access_denied`、`expired_token` など） | warn | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeTokenSlowDown` | `/token` が `slow_down` を返し、サブストア上のポーリング間隔に 5 秒を加算 | warn | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` がレコードを拒否状態に遷移させた。ヘルパは device flow が確保した grant 配下で連鎖失効させる。extras には試行した面ごとの結果（`cascade_complete`、`revoked_access_tokens`、`grant_tombstone_written`、`revoked_opaque_access_tokens`、`refresh_token_cascade_complete`）が入り、任意の `Deps.Grants` を渡した場合は `grant_record_deleted` も入る | info | [ユースケース: device code](/ja/use-cases/device-code) |
+| `AuditDeviceCodePollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する（best-effort な観測） | warn | [ユースケース: device code](/ja/use-cases/device-code) |
 
 ### CIBA
 
@@ -315,36 +321,36 @@ interaction driver が応答を commit する前に render に失敗した場合
 | `AuditCIBAAuthorizationIssued` | `/bc-authorize` が新しい `auth_req_id` を返却 | info | [ガイド: CIBA](/ja/concepts/ciba) |
 | `AuditCIBAAuthorizationRejected` | `/bc-authorize` がリクエストを拒否（未知ユーザ、hint resolver 失敗、scope 拒否） | warn | [ガイド: CIBA](/ja/concepts/ciba) |
 | `AuditCIBAAuthorizationUnboundRejected` | DPoP / mTLS の証明が必要だが `/bc-authorize` に無かった | warn | [ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint) |
-| `AuditCIBAAuthDeviceApproved` | **予約** — 組み込み側 callback が直接 `Approve` を呼ぶため OP は観測しない | info | [使い方: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBAAuthDeviceDenied` | **予約** — 組み込み側 callback が直接 `Deny` を呼ぶため OP は観測しない | warn | [使い方: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBAPollAbuseLockout` | ポーリング間隔が交渉済みの interval を大きく下回り続け、リクエストをロックアウト | alert | [使い方: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBATokenIssued` | 承認済 CIBA リクエストに対し `/token` がトークンを発行 | info | [使い方: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBATokenRejected` | `/token` が CIBA grant を拒否（`access_denied`、`expired_token`、`authorization_pending`） | warn | [使い方: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBATokenSlowDown` | `/token` が `slow_down` を返却。クライアントが交渉 interval より速くポーリングした | warn | [使い方: CIBA](/ja/use-cases/ciba) |
-| `AuditCIBAPollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する（best-effort な観測） | warn | [使い方: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBAAuthDeviceApproved` | **予約** — 組み込み側 callback が直接 `Approve` を呼ぶため OP は観測しない | info | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBAAuthDeviceDenied` | **予約** — 組み込み側 callback が直接 `Deny` を呼ぶため OP は観測しない | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBAPollAbuseLockout` | ポーリング間隔が交渉済みの interval を大きく下回り続け、リクエストをロックアウト | alert | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBATokenIssued` | 承認済 CIBA リクエストに対し `/token` がトークンを発行。引き換えは grant を記録するため、同じ scope への次回以降のリクエストは consent 画面を省略する | info | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBATokenRejected` | `/token` が CIBA grant を拒否（`access_denied`、`expired_token`、`authorization_pending`） | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBATokenSlowDown` | `/token` が `slow_down` を返却。クライアントが交渉 interval より速くポーリングした | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
+| `AuditCIBAPollObservationFailed` | ポーリングの `LastPolledAt` 永続化が失敗。判定自体は続行する（best-effort な観測） | warn | [ユースケース: CIBA](/ja/use-cases/ciba) |
 
 ### Token Exchange (RFC 8693)
 
-同梱の `RegisterTokenExchange` ハンドラから発火します。`requested` は parse と構造検証より前の handler 入口で発火するため、構造上の拒否も含みます。成功時は `requested` + `granted` を発火し、後段の拒否時は `requested` + 失敗系イベント 1 つを発火します。`policy_denied` / `scope_inflation_blocked` / `audience_blocked` が、SOC ダッシュボードで通常追うポリシー判定シグナルです。
+同梱の `RegisterTokenExchange` ハンドラから発火します。`requested` は parse と構造検証より前の handler 入口で発火するため、構造上の拒否も含みます。成功時は `requested` + `granted` を発火します。`granted` と `refresh_issued` は発行に成功したあとにだけ記録し、発行に失敗した場合は代わりに `custom_grant.failed` を記録します。後段の拒否時は `requested` + 失敗系イベント 1 つを発火します。`policy_denied` / `scope_inflation_blocked` / `audience_blocked` が、SOC ダッシュボードで通常追うポリシー判定シグナルです。
 
 | event 定数 | 発火タイミング | 想定シビアリティ | 関連ページ |
 |---|---|---|---|
 | `AuditTokenExchangeRequested` | `/token` が RFC 8693 の試行を exchange handler に dispatch した。parse と構造検証より前 | info | [ガイド: token exchange](/ja/concepts/token-exchange) |
-| `AuditTokenExchangeGranted` | exchange を許可し、新しいアクセストークン（任意で refresh）を発行 | info | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangePolicyDenied` | 組み込み側の `TokenExchangePolicy` が拒否（deny）を返却 | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangePolicyError` | ポリシーが拒否（deny）以外のエラーを返却（一過性のインフラ障害など） | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeScopeInflationBlocked` | 要求 scope が subject_token の scope または client 許可リストを超えた | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeAudienceBlocked` | 要求 audience がポリシーの許可リストの外だった | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeTTLCapped` | 発行 TTL を（ハンドラの希望、subject_token の残り、グローバル上限）の最小値で切り詰めた | info | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeActChainTooDeep` | ネストした act チェーンの深さが上限を超えた | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeEmptyScopeRejected` | scope subset を空集合に解決して拒否 | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeActorEqualsSubject` | actor_token が subject_token と同じ subject に解決（委譲なし） | info | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeSubjectTokenExternal` | subject_token がローカルレジストリで解決できず、外部発行の opaque トークンとして扱った | info | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeActorTokenExternal` | actor_token がローカルレジストリで解決できず、外部発行の opaque トークンとして扱った | info | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeSubjectTokenInvalid` | subject_token の検証に失敗（signature / TTL / cnf 不一致） | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeSubjectTokenRegistryError` | レジストリの参照（lookup）が `NotFound` 以外の障害を観測。通信路上の応答は `invalid_grant` のまま | alert | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeRefreshIssued` | exchange が refresh 発行を明示した（`IssueRefreshToken=op.PtrBool(true)`） | info | [使い方: token exchange](/ja/use-cases/token-exchange) |
-| `AuditTokenExchangeSelfExchange` | exchange の宛先が呼び出し client 自身（受動的なトークン replay シナリオ） | warn | [使い方: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeGranted` | exchange を許可し、発行も成功した。トークンの発行後にだけ記録する | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangePolicyDenied` | 組み込み側の `TokenExchangePolicy` が拒否（deny）を返却 | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangePolicyError` | ポリシーが拒否（deny）以外のエラーを返却（一過性のインフラ障害など） | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeScopeInflationBlocked` | 要求 scope が subject_token の scope または client 許可リストを超えた | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeAudienceBlocked` | 要求 audience がポリシーの許可リストの外だった | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeTTLCapped` | 発行 TTL を（ハンドラの希望、subject_token の残り、グローバル上限）の最小値で切り詰めた | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeActChainTooDeep` | subject_token のネストした `act` チェーンが 5 段の深さ上限を超えた。policy の実行前に検査する | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeEmptyScopeRejected` | scope subset を空集合に解決して拒否 | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeActorEqualsSubject` | actor_token が subject_token と同じ subject に解決。exchange は `invalid_request` で拒否 | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeSubjectTokenExternal` | subject_token がローカルレジストリで解決できず、外部発行の opaque トークンとして扱った | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeActorTokenExternal` | actor_token がローカルレジストリで解決できず、外部発行の opaque トークンとして扱った | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeSubjectTokenInvalid` | subject_token の検証に失敗（signature / TTL / cnf 不一致） | warn | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeSubjectTokenRegistryError` | レジストリの参照（lookup）が `NotFound` 以外の障害を観測。通信路上の応答は `invalid_grant` のまま | alert | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeRefreshIssued` | exchange が refresh 発行を明示し（`IssueRefreshToken=op.PtrBool(true)`）、refresh token を発行した | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
+| `AuditTokenExchangeSelfExchange` | `actor_token` なしで、subject_token の発行先が呼び出し client 自身（self-exchange。`act` claim は付かない） | info | [ユースケース: token exchange](/ja/use-cases/token-exchange) |
 
 ### Custom Grant
 
@@ -352,9 +358,9 @@ dispatcher は登録済みの custom handler に到達したすべての dispatc
 
 | イベント | 意味 | レベル | 参照 |
 |---|---|---|---|
-| `AuditCustomGrantRequested` (`custom_grant.requested`) | 登録済み custom handler に到達したすべての dispatch 試行（handler 前の gate 失敗も含む） | info | [使い方: custom grant](/ja/use-cases/custom-grant) |
-| `AuditCustomGrantFailed` (`custom_grant.failed`) | custom grant の dispatch または handler が失敗した。panic を recover した場合も、試行ごとに 1 回だけ発火します | warn | [使い方: custom grant](/ja/use-cases/custom-grant) |
-| `AuditCustomGrantRefreshDropped` (`custom_grant.refresh_dropped`) | ハンドラが `IssueRefreshToken` でリフレッシュトークン発行を求めたが、クライアントが `refresh_token` grant に登録されていない。アクセストークン応答自体は成功する | info | [使い方: custom grant](/ja/use-cases/custom-grant) |
+| `AuditCustomGrantRequested` (`custom_grant.requested`) | 登録済み custom handler に到達したすべての dispatch 試行（handler 前の gate 失敗も含む） | info | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
+| `AuditCustomGrantFailed` (`custom_grant.failed`) | custom grant の dispatch または handler が失敗した。panic を recover した場合も、試行ごとに 1 回だけ発火します | warn | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
+| `AuditCustomGrantRefreshDropped` (`custom_grant.refresh_dropped`) | ハンドラが `IssueRefreshToken` でリフレッシュトークン発行を求めたが、クライアントが `refresh_token` grant に登録されていない。アクセストークン応答自体は成功する | info | [ユースケース: custom grant](/ja/use-cases/custom-grant) |
 
 ### Grant management
 
@@ -362,8 +368,8 @@ OAuth 2.0 Grant Management endpoint のイベントです。認証済み revoke 
 
 | イベント定数 | 発火タイミング | severity の目安 | リンク先 |
 |---|---|---|---|
-| `AuditGrantManagementRevoked` | grant management エンドポイントへの `DELETE` が grant を失効させ、トークンをカスケードした | info | [使い方: grant management](/ja/use-cases/grant-management) |
-| `AuditGrantManagementRevokeFailed` | `DELETE` の認証後、grant の失効副作用が失敗した | alert | [使い方: grant management](/ja/use-cases/grant-management) |
+| `AuditGrantManagementRevoked` | grant management エンドポイントへの `DELETE` が grant を失効させ、トークンをカスケードした | info | [ユースケース: grant management](/ja/use-cases/grant-management) |
+| `AuditGrantManagementRevokeFailed` | `DELETE` の認証後、grant の失効副作用が失敗した | alert | [ユースケース: grant management](/ja/use-cases/grant-management) |
 
 ## 安定性
 

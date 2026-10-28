@@ -11,39 +11,41 @@ The OP emits structured audit events from a closed catalog defined in `op/audit.
 
 <figure class="fig">
   <div class="fig-head">One closed catalog, three destinations</div>
-  <svg class="fig-svg" role="img" aria-labelledby="audit-flow-title" viewBox="0 0 960 244" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="audit-flow-title" viewBox="0 0 960 368" xmlns="http://www.w3.org/2000/svg">
     <title id="audit-flow-title">Every code path in the OP emits from one closed catalog of audit events. Each emission carries its context in extras and reaches structured logs, whatever SOC pipeline consumes them, and the Prometheus counters.</title>
-    <text class="fg-lbl" x="40" y="26">emitted from</text>
-    <text class="fg-lbl" x="640" y="26">lands in</text>
-    <rect class="fg-box" x="36" y="40" width="230" height="42" rx="6"/>
-    <text class="fg-t2" x="54" y="58">login / MFA</text>
-    <text class="fg-xs" x="54" y="74">factor outcomes, step-ups</text>
-    <rect class="fg-box" x="36" y="92" width="230" height="42" rx="6"/>
-    <text class="fg-t2" x="54" y="110">token / grant</text>
-    <text class="fg-xs" x="54" y="126">issuance, rotation, revocation</text>
-    <rect class="fg-box" x="36" y="144" width="230" height="42" rx="6"/>
-    <text class="fg-t2" x="54" y="162">DCR / device</text>
-    <text class="fg-xs" x="54" y="178">registration, device approvals</text>
-    <path class="fg-leader" d="M270,61 H300 M270,113 H300 M270,165 H300 M300,61 V165"/>
-    <path class="fg-edge fg-edge--accent" d="M300,113 H336" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="340" y="66" width="256" height="94" rx="8"/>
-    <text class="fg-t2 fg-accent" x="360" y="92">Audit event</text>
-    <text class="fg-mxs" x="360" y="114">op.Audit* — a closed set</text>
-    <text class="fg-xs" x="360" y="134">the context travels in extras,</text>
-    <text class="fg-xs" x="360" y="150">never in a formatted message</text>
-    <path class="fg-leader" d="M600,113 H632 M632,61 V165"/>
-    <path class="fg-edge fg-edge--thin" d="M632,61 H692" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M632,113 H692" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M632,165 H692" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="696" y="40" width="228" height="42" rx="6"/>
-    <text class="fg-t2" x="714" y="58">slog, as JSON</text>
-    <text class="fg-xs" x="714" y="74">one object per event</text>
-    <rect class="fg-box" x="696" y="92" width="228" height="42" rx="6"/>
-    <text class="fg-t2" x="714" y="110">SOC / SIEM</text>
-    <text class="fg-xs" x="714" y="126">queryable by event name</text>
-    <rect class="fg-box" x="696" y="144" width="228" height="42" rx="6"/>
-    <text class="fg-t2" x="714" y="162">Prometheus</text>
-    <text class="fg-xs" x="714" y="178">counters, labelled by outcome</text>
+    <text class="fg-lbl" x="32" y="40">emitted from</text>
+    <text class="fg-lbl" x="680" y="40">lands in</text>
+    <!-- emitters -->
+    <rect class="fg-box" x="32" y="64" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="92">login / MFA</text>
+    <text class="fg-xs" x="48" y="116">factor outcomes, step-ups</text>
+    <rect class="fg-box" x="32" y="168" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="196">token / grant</text>
+    <text class="fg-xs" x="48" y="220">issue, rotate, revoke</text>
+    <rect class="fg-box" x="32" y="272" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="300">DCR / device</text>
+    <text class="fg-xs" x="48" y="324">registration, approvals</text>
+    <path class="fg-leader" d="M288,100 H320 M288,204 H320 M288,308 H320 M320,100 V308"/>
+    <path class="fg-edge fg-edge--accent" d="M320,204 H360" marker-end="url(#fg-ac)"/>
+    <!-- catalog -->
+    <rect class="fg-box fg-box--accent" x="360" y="156" width="256" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="376" y="184">Audit event</text>
+    <text class="fg-mxs" x="376" y="208">op.Audit* — closed set</text>
+    <text class="fg-xs" x="376" y="232">context rides in extras</text>
+    <path class="fg-leader" d="M616,204 H648 M648,100 V308"/>
+    <path class="fg-edge fg-edge--thin" d="M648,100 H680" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M648,204 H680" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M648,308 H680" marker-end="url(#fg-a)"/>
+    <!-- destinations -->
+    <rect class="fg-box" x="680" y="64" width="248" height="72" rx="8"/>
+    <text class="fg-t2" x="696" y="92">slog, as JSON</text>
+    <text class="fg-xs" x="696" y="116">one object per event</text>
+    <rect class="fg-box" x="680" y="168" width="248" height="72" rx="8"/>
+    <text class="fg-t2" x="696" y="196">SOC / SIEM</text>
+    <text class="fg-xs" x="696" y="220">queryable by event name</text>
+    <rect class="fg-box" x="680" y="272" width="248" height="72" rx="8"/>
+    <text class="fg-t2" x="696" y="300">Prometheus</text>
+    <text class="fg-xs" x="696" y="324">counters by outcome</text>
   </svg>
   <figcaption class="fig-note">The catalog being closed is what makes the right-hand column possible. An alert can key on an event name because the set of names is fixed and versioned, not assembled from a format string at the call site.</figcaption>
 </figure>
@@ -67,7 +69,7 @@ A curated subset of these events is mirrored onto Prometheus counters when [`Wit
 
 ## Enumerating the catalog in code
 
-The page below is generated from the same registry the OP itself uses, and that registry is public. `op.AuditEventCatalog()` returns a copy of every stable event as `[]op.AuditEventDefinition`:
+The OP's own registry of audit events is public. `op.AuditEventCatalog()` returns a copy of every event as `[]op.AuditEventDefinition`:
 
 ```go
 for _, def := range op.AuditEventCatalog() {
@@ -138,13 +140,13 @@ The catalog is regrouped by feature area. Each group opens with a short note on 
 
 ### Login, MFA, step-up
 
-`login.*` and `mfa.*` are emitted by the authenticator chain after a primary or additional factor resolves. `login.failed` and `mfa.failed` are the routine probing signals; sustained increases on either are the canonical credential-stuffing tell. `AuditMFARequired`, `AuditStepUpRequired`, and `AuditStepUpSuccess` are **Reserved**: the OP does not emit them. Step-up is decided by the resource server and an ordinary authorization request reaches the OP.
+`login.*` and `mfa.*` are emitted by the authenticator chain after a factor resolves. The first factor of a chain is reported as `login.*`; every later factor is `mfa.*`. That includes a step-up on a reused session, where the session's earlier methods already count as completed. `login.failed` and `mfa.failed` are the routine probing signals; sustained increases on either are the canonical credential-stuffing tell. Under `WithAuthnLockoutStore`, the failed guess that engages the lockout is reported as one of these failure events too. `AuditMFARequired`, `AuditStepUpRequired`, and `AuditStepUpSuccess` are **Reserved**: the OP does not emit them. Step-up is decided by the resource server and an ordinary authorization request reaches the OP.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditLoginSuccess` | primary credential verified, subject bound | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditLoginFailed` | primary credential rejected | warn | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
-| `AuditLockoutStalled` | cross-factor lockout CAS contention abandoned a failed attempt without counting it | alert | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
+| `AuditLockoutStalled` | cross-factor lockout CAS contention abandoned a failed attempt without counting it, so the subject's failure budget did not advance | alert | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditMFARequired` | **Reserved** — catalog vocabulary; the OP does not emit a separate requirement event | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditMFASuccess` | second factor accepted | info | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
 | `AuditMFAFailed` | second factor rejected | warn | [Use case: MFA / step-up](/use-cases/mfa-step-up) |
@@ -153,7 +155,8 @@ The catalog is regrouped by feature area. Each group opens with a short note on 
 
 ::: details extras
 - `factor` — `password`, `passkey`, `totp`, `email_otp`, `captcha`, `recovery_code`, or a user-defined Step kind
-- `aal`, `acr`, `amr_values` — not automatically carried by these login/MFA events
+
+`aal`, `acr` and `amr_values` are not carried by these events.
 :::
 
 ### Consent
@@ -169,8 +172,9 @@ The catalog is regrouped by feature area. Each group opens with a short note on 
 | `AuditConsentRevoked` | **Reserved** — Grant Management withdrawal emits `AuditGrantManagementRevoked` | info | [Concepts: consent](/concepts/consent) |
 
 ::: details extras
-- `scopes_granted`, `scopes_requested` — string slices
-- `audience` — when scope is per-audience
+- `grant_id` — the grant the consent was recorded under
+- `scope` — the scopes the code was minted with
+- `completion_id` — irreversible fingerprint of the authorization code the browser is about to carry to the RP
 :::
 
 ### Code and token lifecycle
@@ -183,8 +187,8 @@ Fire from the authorize-code path and the token endpoint. The replay-detection e
 | `AuditCodeConsumed` | code redeemed at `/token` | info | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditCodeReplayDetected` | code presented twice — chain revoked | alert | [Concepts: authorization code + PKCE](/concepts/authorization-code-pkce) |
 | `AuditTokenIssued` | a first refresh token is persisted for a grant (the event is not a counter for every access token) | info | [Concepts: tokens](/concepts/tokens) |
-| `AuditTokenRefreshed` | refresh token rotated; new access token minted | info | [Concepts: refresh tokens](/concepts/refresh-tokens) |
-| `AuditTokenRevoked` | token revoked via `/revoke` or grant cascade | info | [Concepts: tokens](/concepts/tokens) |
+| `AuditTokenRefreshed` | refresh token rotated and the rotation is durable; a refresh that lost a concurrent presentation at commit, or rolled back, records nothing | info | [Concepts: refresh tokens](/concepts/refresh-tokens) |
+| `AuditTokenRevoked` | `/revoke` revoked a token; also recorded at warn level when `/token` refuses a redemption because the grant's subject no longer exists | info | [Concepts: tokens](/concepts/tokens) |
 | `AuditTokenRevokeFailed` | revocation attempt observed a substore fault; wire still 200 per RFC 7009 §2.2 | alert | [Concepts: tokens](/concepts/tokens) |
 | `AuditRefreshReplayDetected` | refresh token presented past rotation grace — chain revoked | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
 | `AuditRefreshChainRevokeFailed` | cascade revoke from a replay observed a substore fault | alert | [Concepts: refresh tokens](/concepts/refresh-tokens) |
@@ -195,11 +199,13 @@ Fire from the authorize-code path and the token endpoint. The replay-detection e
 
 ::: details extras
 - `refresh_origin` — the typed origin recorded on the refresh chain: `authorization_code`, `device_code`, `ciba`, or `custom_grant`; an unknown or missing origin is projected as `unknown` by the metrics bridge. This is the grant that actually minted the refresh chain, not an arbitrary request `grant_type` label.
-- `format` — `jwt` or `opaque` for the access token
-- `offline_access` — bool; true on `offline_access` chain
-- `cnf` — `dpop_jkt` or `mtls_x5t#S256` when sender-bound
-- `surface` — on `token.revoke_failed`: which call site observed the fault. `/revoke` emits `jwt_access_token`, `refresh_chain`, or `opaque_access_token`; the token endpoint emits `code_replay_jwt_access_tokens` when the AT cascade after authorization-code replay errors out
-- `grant_id` — on `token.revoke_failed` (token endpoint) and `refresh.grant_revoke_failed`: the grant whose tombstone write failed
+- `grant_id` — on `token.issued`, `token.refreshed`, `token.revoked` and `code.*`: the grant the credential belongs to; on `token.revoke_failed` (token endpoint) and `refresh.grant_revoke_failed`: the grant whose teardown failed
+- `scope` — on `code.issued` and `code.consumed`: the scope of the code
+- `code_id` — on `code.*`: irreversible fingerprint of the authorization code
+- `offline_access` — on `token.issued` and `token.refreshed`: bool; true on an `offline_access` chain
+- `ttl_bucket` — on `token.issued` and `token.refreshed`: which refresh-token lifetime applied
+- `surface` — on `token.revoked`: `jwt_access_token`, `opaque_access_token`, `refresh_chain`, or `refresh_grant` (the chain root could not be resolved, so `/revoke` fell back to revoking the grant's refresh tokens); `subject_deprovisioned` for a refused redemption. On `token.revoke_failed`: which step observed the fault, for example `refresh_chain_walk`, `refresh_chain`, `refresh_grant`, `opaque_access_token_lookup`; the token endpoint prefixes the cascade name, as in `code_replay_jwt_access_tokens`
+- `jti` — on `token.revoked` for a JWT access token
 - `reason` — on `refresh.chain_revoke_failed` / `refresh.grant_revoke_failed`: stringified error from the substore
 - `err` — on `token.revoke_failed`: stringified error from the substore
 - `failure_stage`, `retryable` — on `refresh.prior_access_token_revoke_failed`
@@ -303,7 +309,7 @@ Fire from `/device_authorization`, the embedder's verification ceremony helpers 
 | `AuditDeviceCodeTokenIssued` | `/token` minted a token for an approved device authorization | info | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenRejected` | `/token` rejected the device-code grant (`access_denied`, `expired_token`, etc.) | warn | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodeTokenSlowDown` | `/token` returned `slow_down`; 5 seconds were added to the substore row's polling interval | warn | [Use case: device code](/use-cases/device-code) |
-| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` flipped the row to denied; when `Deps.AccessTokens` is wired, the helper also cascade-revoked issued access tokens and reports `revoked_access_tokens` | info | [Use case: device code](/use-cases/device-code) |
+| `AuditDeviceCodeRevoked` | `op/devicecodekit.Revoke` flipped the row to denied; the helper cascades under the grant the device flow allocated; extras report each surface it attempted (`cascade_complete`, `revoked_access_tokens`, `grant_tombstone_written`, `revoked_opaque_access_tokens`, `refresh_token_cascade_complete`), and `grant_record_deleted` when the optional `Deps.Grants` is set | info | [Use case: device code](/use-cases/device-code) |
 | `AuditDeviceCodePollObservationFailed` | persisting the `LastPolledAt` stamp on a poll faulted; decision still proceeds (best-effort observability) | warn | [Use case: device code](/use-cases/device-code) |
 
 ### CIBA
@@ -318,33 +324,33 @@ Fire from `/bc-authorize` and the token-endpoint CIBA grant. `ciba.poll_abuse.lo
 | `AuditCIBAAuthDeviceApproved` | **Reserved** — embedder authentication-device callback; the OP does not observe the direct `Approve` call | info | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBAAuthDeviceDenied` | **Reserved** — embedder authentication-device callback; the OP does not observe the direct `Deny` call | warn | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBAPollAbuseLockout` | poll cadence sustained well below the negotiated interval; the request was locked out | alert | [Use case: CIBA](/use-cases/ciba) |
-| `AuditCIBATokenIssued` | `/token` minted a token for an approved CIBA request | info | [Use case: CIBA](/use-cases/ciba) |
+| `AuditCIBATokenIssued` | `/token` minted a token for an approved CIBA request; the redemption records a grant, so later requests for the same scopes skip the consent screen | info | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBATokenRejected` | `/token` rejected the CIBA grant (`access_denied`, `expired_token`, `authorization_pending`) | warn | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBATokenSlowDown` | `/token` returned `slow_down` because the client polled faster than the negotiated interval | warn | [Use case: CIBA](/use-cases/ciba) |
 | `AuditCIBAPollObservationFailed` | persisting the `LastPolledAt` stamp on a poll faulted; decision still proceeds (best-effort observability) | warn | [Use case: CIBA](/use-cases/ciba) |
 
 ### Token Exchange (RFC 8693)
 
-Fire from the in-tree `RegisterTokenExchange` handler. `requested` is emitted at handler entry, before parsing and structural validation, so structurally rejected attempts are included. Every successful exchange then emits `requested` + `granted`; later rejections emit `requested` + one of the failure-class events. `policy_denied`, `scope_inflation_blocked`, and `audience_blocked` are the policy-decision signals SOC dashboards usually want.
+Fire from the in-tree `RegisterTokenExchange` handler. `requested` is emitted at handler entry, before parsing and structural validation, so structurally rejected attempts are included. Every successful exchange then emits `requested` + `granted`, with `granted` and `refresh_issued` recorded only once issuance has succeeded; an issuance failure records `custom_grant.failed` instead. Later rejections emit `requested` + one of the failure-class events. `policy_denied`, `scope_inflation_blocked`, and `audience_blocked` are the policy-decision signals SOC dashboards usually want.
 
 | Event constant | When it fires | Severity hint | Linked doc |
 |---|---|---|---|
 | `AuditTokenExchangeRequested` | `/token` dispatched an RFC 8693 attempt to the exchange handler, before parsing and structural validation | info | [Concepts: token exchange](/concepts/token-exchange) |
-| `AuditTokenExchangeGranted` | exchange admitted; new access token (and optionally refresh) minted | info | [Use case: token exchange](/use-cases/token-exchange) |
+| `AuditTokenExchangeGranted` | exchange admitted and issuance succeeded; recorded only after the tokens are minted | info | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyDenied` | the embedder-supplied `TokenExchangePolicy` returned a deny | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangePolicyError` | the policy returned a non-deny error (transient infrastructure failure) | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeScopeInflationBlocked` | requested scope exceeded the subject_token's scope or the client's allow-list | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeAudienceBlocked` | requested audience was not in the policy's allow-list | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeTTLCapped` | issued TTL was clipped against (handler request, subject_token remaining, global ceiling) | info | [Use case: token exchange](/use-cases/token-exchange) |
-| `AuditTokenExchangeActChainTooDeep` | nested act chain exceeded the configured depth limit | warn | [Use case: token exchange](/use-cases/token-exchange) |
+| `AuditTokenExchangeActChainTooDeep` | the subject_token's nested `act` chain exceeded the five-level depth limit; checked before the policy runs | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeEmptyScopeRejected` | exchange requested a non-empty scope subset that resolved to the empty set | warn | [Use case: token exchange](/use-cases/token-exchange) |
-| `AuditTokenExchangeActorEqualsSubject` | actor_token resolved to the same subject as subject_token (no delegation) | info | [Use case: token exchange](/use-cases/token-exchange) |
+| `AuditTokenExchangeActorEqualsSubject` | actor_token resolved to the same subject as subject_token; the exchange is rejected as `invalid_request` | info | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeSubjectTokenExternal` | subject_token did not resolve in the local registry; treated as opaque external | info | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeActorTokenExternal` | actor_token did not resolve in the local registry; treated as opaque external | info | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeSubjectTokenInvalid` | subject_token verification failed (signature / TTL / cnf mismatch) | warn | [Use case: token exchange](/use-cases/token-exchange) |
 | `AuditTokenExchangeSubjectTokenRegistryError` | registry lookup observed a non-`NotFound` fault (transient outage); wire stays `invalid_grant` | alert | [Use case: token exchange](/use-cases/token-exchange) |
-| `AuditTokenExchangeRefreshIssued` | exchange opted into refresh issuance (`IssueRefreshToken=op.PtrBool(true)`) | info | [Use case: token exchange](/use-cases/token-exchange) |
-| `AuditTokenExchangeSelfExchange` | exchange targeted the calling client (passive token replay scenario) | warn | [Use case: token exchange](/use-cases/token-exchange) |
+| `AuditTokenExchangeRefreshIssued` | exchange opted into refresh issuance (`IssueRefreshToken=op.PtrBool(true)`) and the refresh token was issued | info | [Use case: token exchange](/use-cases/token-exchange) |
+| `AuditTokenExchangeSelfExchange` | no `actor_token` was sent and the subject_token was issued to the calling client itself (a self-exchange; no `act` claim is added) | info | [Use case: token exchange](/use-cases/token-exchange) |
 
 ### Custom Grant
 

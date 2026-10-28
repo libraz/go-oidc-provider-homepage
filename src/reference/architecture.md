@@ -15,12 +15,15 @@ The RP in the sequence below is a separate application. The OP application embed
 
 ```
 op/                         ← public API surface (this is what you import)
-op/profile/                 ← FAPI 2.0 / future profiles
-op/feature/                 ← PAR / DPoP / mTLS / introspect / revoke / DCR / JAR
-op/grant/                   ← authorization_code, refresh_token, client_credentials
+op/profile/                 ← Baseline / FAPI 2.0 / FAPI-CIBA profiles
+op/feature/                 ← PAR / JAR / JARM / DPoP / mTLS / introspect / revoke / DCR / RAR / Grant Management
+op/grant/                   ← authorization_code, refresh_token, client_credentials, device_code, CIBA
 op/store/                   ← Store interface (substores) + contract test suite
-op/storeadapter/{inmem,sql,redis,composite}
+op/storeadapter/{inmem,sql,redis,dynamodb,composite}
 op/interaction/             ← HTML / JSON driver seam for login UI
+op/devicecodekit, op/passkeykit, op/totpkit, op/recoverykit
+                            ← helpers for the parts the embedder owns (device verification page, factor enrollment)
+op/testkit/                 ← a ready-made provider for tests
 
 internal/                   ← cannot be imported externally (Go visibility)
   authn/                    ← LoginFlow orchestrator, Authenticator runtime
@@ -37,20 +40,24 @@ The boundary is enforced structurally: external code cannot reach into `internal
 
 ## Routes
 
-`op.New` constructs a `*http.ServeMux` and mounts one handler per configured path. The defaults, and the package behind each one:
+`op.New` constructs a `*http.ServeMux` and mounts one handler per configured path. The paths below are the defaults. Every protocol endpoint sits under the issuer's path plus the mount prefix (`/oidc` unless `WithMountPrefix` says otherwise), so `/token` on issuer `https://idp.example.com` is `https://idp.example.com/oidc/token`; `WithEndpoints` renames individual paths. Discovery and protected-resource metadata are the exceptions: they live at their well-known locations, outside the prefix.
 
 | Path | Handler package | What it serves | Mounted |
 |---|---|---|---|
 | `/.well-known/openid-configuration` | `internal/discovery` | the OP's effective configuration as a discovery document | always |
 | `/jwks` | `internal/jwks` | the public half of the signing keyset (plus `use=enc` keys when configured) | always |
+| `/.well-known/oauth-protected-resource` (+ path suffix) | `internal/protectedresource` | RFC 9728 metadata for each declared protected resource | `WithProtectedResources` |
 | `/auth` | `internal/authorizeendpoint` | request parsing, client and `redirect_uri` validation, the redirect into interaction | when the `authorization_code` grant is enabled |
-| `/interaction/{uid}` | `internal/authorizeendpoint` + the `op/interaction` driver | the login and consent ceremony, rendered as HTML or served as JSON to an SPA | with `/auth` |
+| `/interaction/{uid}` | `internal/authorizeendpoint` + the `op/interaction` driver | the login and consent ceremony, rendered as HTML or served as JSON to an SPA. With `WithSPAUI` the route moves to `LoginMount` | with `/auth` |
 | `/par` | `internal/parendpoint` | pushed authorization requests, returning a one-time `request_uri` | `feature.PAR` |
 | `/token` | `internal/tokenendpoint` | client authentication, code and refresh redemption, token issuance | always |
 | `/userinfo` | `internal/userinfo` | claims for the subject behind a presented access token | always |
 | `/revoke` | `internal/revokeendpoint` | RFC 7009 revocation of a refresh or access token | `feature.Revoke` |
 | `/introspect` | `internal/introspectendpoint` | RFC 7662 token state for an authorized resource server | `feature.Introspect` |
-| `/end_session` | `internal/endsession` | RP-initiated logout, including the back-channel fan-out | when a session manager is configured |
+| `/device_authorization` | `internal/devicecodeendpoint` | RFC 8628 device authorization: returns a `device_code` and `user_code` | device-code grant |
+| `/bc-authorize` | `internal/cibaendpoint` | CIBA backchannel authentication request, returns an `auth_req_id` | CIBA grant |
+| `/grant_management/{grant_id}` | `internal/grantmgmtendpoint` | query or revoke one grant | `WithGrantManagement` |
+| `/end_session` | `internal/endsession` | RP-initiated logout, including the back-channel fan-out | with `/auth` (the `authorization_code` grant) |
 | `/register` | `internal/registrationendpoint` | dynamic client registration and the per-client management routes | `WithDynamicRegistration` |
 
 Back-channel logout has no row of its own because it is not a mounted endpoint. It is an outbound fan-out that `/end_session` triggers: the OP POSTs a logout token to each RP's registered `backchannel_logout_uri`. The discovery document advertises only the endpoints that are actually mounted, so a deployment that leaves `feature.Introspect` off never announces `/introspect`.
@@ -77,136 +84,171 @@ The most-trodden path. Roughly:
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
 <figure class="fig">
-  <div class="fig-head">Authorize → token, with the store and the login flow in view</div>
-  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 740" xmlns="http://www.w3.org/2000/svg">
-    <title id="arch-lifecycle-title">The happy path from the authorize request to the token response, showing which calls reach the store and which reach the configured login flow. The RP is a separate application; the OP application embeds go-oidc-provider. The browser drives the first two phases; the third is a direct back-channel exchange between the RP and the OP.</title>
-    <rect class="fg-group" x="30" y="68" width="916" height="146" rx="8"/>
-    <rect class="fg-group" x="30" y="222" width="916" height="236" rx="8"/>
-    <rect class="fg-group" x="30" y="466" width="916" height="262" rx="8"/>
-    <text class="fg-lbl" x="42" y="86">1 · the authorize request</text>
-    <text class="fg-lbl" x="42" y="240">2 · interaction</text>
-    <text class="fg-lbl" x="42" y="484">3 · redeeming the code</text>
-    <line class="fg-life" x1="106" y1="62" x2="106" y2="728"/>
-    <line class="fg-life" x1="300" y1="62" x2="300" y2="728"/>
-    <line class="fg-life fg-life--accent" x1="510" y1="62" x2="510" y2="728"/>
-    <line class="fg-life" x1="710" y1="62" x2="710" y2="728"/>
-    <line class="fg-life" x1="880" y1="62" x2="880" y2="728"/>
-    <rect class="fg-box" x="36" y="16" width="140" height="42" rx="6"/>
-    <text class="fg-t" x="106" y="35" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="106" y="49" text-anchor="middle">separate app</text>
-    <rect class="fg-box" x="230" y="16" width="140" height="42" rx="6"/>
-    <text class="fg-t" x="300" y="35" text-anchor="middle">User agent</text>
-    <text class="fg-xs" x="300" y="49" text-anchor="middle">browser</text>
-    <rect class="fg-box fg-box--accent" x="430" y="16" width="160" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="510" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="510" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="640" y="16" width="140" height="42" rx="6"/>
-    <text class="fg-t" x="710" y="35" text-anchor="middle">Store</text>
-    <text class="fg-xs" x="710" y="49" text-anchor="middle">yours</text>
-    <rect class="fg-box" x="812" y="16" width="136" height="42" rx="6"/>
-    <text class="fg-t" x="880" y="35" text-anchor="middle">LoginFlow</text>
-    <text class="fg-xs" x="880" y="49" text-anchor="middle">yours</text>
-    <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M106,102 H300" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="203" y="96" text-anchor="middle">redirect to /authorize?…</text>
-    <!-- 2 -->
-    <circle class="fg-badge" cx="15" cy="132" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="135" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M300,132 H510" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="405" y="126" text-anchor="middle">GET /authorize</text>
-    <!-- 3 -->
-    <circle class="fg-badge" cx="15" cy="164" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="167" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M510,164 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="158" text-anchor="middle">Clients.GetClient · exact-match redirect_uri</text>
-    <!-- 4 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="196" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="199" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M510,188 h28 v16 h-28" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="550" y="200">PKCE · scope · response_type checks</text>
-    <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="266" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="269" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M510,266 H300" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="405" y="260" text-anchor="middle">302 → /interaction/{uid}</text>
-    <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="298" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="301" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M300,298 H510" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="405" y="292" text-anchor="middle">POST /interaction/{uid} — login</text>
-    <!-- 7 -->
-    <circle class="fg-badge" cx="15" cy="330" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="333" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M510,330 H880" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="695" y="324" text-anchor="middle">Begin / Continue — the Step chain</text>
-    <!-- 8 -->
-    <circle class="fg-badge" cx="15" cy="362" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="365" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M880,362 H510" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="695" y="356" text-anchor="middle">Result — subject · AAL · AMR</text>
-    <!-- 9 -->
-    <circle class="fg-badge" cx="15" cy="394" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="397" text-anchor="middle">9</text>
-    <path class="fg-edge fg-edge--accent" d="M510,394 H300" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="405" y="388" text-anchor="middle">200 consent page</text>
-    <!-- 10 -->
-    <circle class="fg-badge" cx="15" cy="424" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="427" text-anchor="middle">10</text>
-    <path class="fg-edge" d="M300,424 H510" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="405" y="418" text-anchor="middle">POST /interaction/{uid} — consent</text>
-    <!-- 11 -->
-    <circle class="fg-badge" cx="15" cy="452" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="455" text-anchor="middle">11</text>
-    <path class="fg-edge" d="M510,452 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="446" text-anchor="middle">AuthorizationCodes.Save — code + PKCE</text>
-    <!-- 12 -->
-    <circle class="fg-badge" cx="15" cy="514" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="517" text-anchor="middle">12</text>
-    <path class="fg-edge fg-edge--accent" d="M510,514 H300" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="405" y="508" text-anchor="middle">302 → redirect_uri?code&amp;state&amp;iss</text>
-    <!-- 13 -->
-    <circle class="fg-badge" cx="15" cy="544" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="547" text-anchor="middle">13</text>
-    <path class="fg-edge" d="M300,544 H106" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="203" y="538" text-anchor="middle">arrives carrying the code</text>
-    <!-- 14 -->
-    <circle class="fg-badge" cx="15" cy="586" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="589" text-anchor="middle">14</text>
-    <path class="fg-edge" d="M106,586 H510" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="308" y="566" text-anchor="middle">POST /token</text>
-    <text class="fg-mxs fg-halo" x="308" y="579" text-anchor="middle">grant_type=authorization_code</text>
-    <!-- 15 -->
-    <circle class="fg-badge" cx="15" cy="614" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="617" text-anchor="middle">15</text>
-    <path class="fg-edge" d="M510,614 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="598" text-anchor="middle">Clients.GetClient · client authentication</text>
-    <text class="fg-xs" x="610" y="611" text-anchor="middle">before consuming the authorization code</text>
-    <!-- 16 -->
-    <circle class="fg-badge" cx="15" cy="644" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="647" text-anchor="middle">16</text>
-    <path class="fg-edge" d="M510,644 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="636" text-anchor="middle">AuthorizationCodes.Consume</text>
-    <text class="fg-xs" x="610" y="649" text-anchor="middle">then enforce PKCE and redirect_uri</text>
-    <!-- 17 -->
-    <circle class="fg-badge" cx="15" cy="674" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="677" text-anchor="middle">17</text>
-    <path class="fg-edge" d="M510,674 H710" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="610" y="668" text-anchor="middle">AccessTokens.Register (JTIRegistry only) · RefreshTokens.Save (eligible)</text>
-    <!-- 18 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="704" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="707" text-anchor="middle">18</text>
-    <path class="fg-edge fg-edge--accent" d="M510,704 H106" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs fg-halo" x="308" y="698" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+  <div class="fig-head">Authorize and interaction: where the OP calls your code</div>
+  <svg class="fig-svg" role="img" aria-labelledby="arch-lifecycle-title" viewBox="0 0 960 952" xmlns="http://www.w3.org/2000/svg">
+    <title id="arch-lifecycle-title">The browser drives the authorize request and the interaction. The OP looks up the client and checks the request, hands the login to your LoginFlow, and saves the authorization code to your store; those calls all land in the right-hand lane, which is your code.</title>
+    <!-- band: authorize request -->
+    <rect class="fg-group" x="32" y="104" width="896" height="264" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">authorize request</text>
+    <!-- band: interaction -->
+    <rect class="fg-group" x="32" y="392" width="896" height="536" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="420">interaction</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">User agent</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">browser</text>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="928"/>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="928"/>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Your code</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">Store · LoginFlow</text>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="928"/>
+    <!-- GET /auth -->
+    <path class="fg-edge" d="M192,172 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="162" text-anchor="middle">GET /auth</text>
+    <!-- client lookup -->
+    <path class="fg-edge" d="M512,244 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="210" text-anchor="middle">Clients.GetClient</text>
+    <text class="fg-xs" x="668" y="232" text-anchor="middle">exact-match redirect_uri</text>
+    <!-- request checks -->
+    <path class="fg-edge fg-edge--accent" d="M512,276 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="568" y="282">Check the request</text>
+    <text class="fg-mxs" x="568" y="304">PKCE · scope</text>
+    <text class="fg-mxs" x="568" y="326">response_type</text>
+    <!-- redirect to interaction -->
+    <path class="fg-edge fg-edge--accent" d="M512,460 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="450" text-anchor="middle">302 → /interaction/{uid}</text>
+    <!-- login post -->
+    <path class="fg-edge" d="M192,532 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="498" text-anchor="middle">POST /interaction/{uid}</text>
+    <text class="fg-xs" x="352" y="520" text-anchor="middle">login</text>
+    <!-- step chain -->
+    <path class="fg-edge" d="M512,604 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="570" text-anchor="middle">Begin / Continue</text>
+    <text class="fg-xs" x="668" y="592" text-anchor="middle">the Step chain</text>
+    <!-- result -->
+    <path class="fg-edge fg-edge--muted" d="M824,676 H512" marker-end="url(#fg-am)"/>
+    <text class="fg-m" x="668" y="642" text-anchor="middle">Result</text>
+    <text class="fg-mxs" x="668" y="664" text-anchor="middle">subject · AAL · AMR</text>
+    <!-- consent page -->
+    <path class="fg-edge fg-edge--accent" d="M512,748 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="738" text-anchor="middle">200 consent page</text>
+    <!-- consent post -->
+    <path class="fg-edge" d="M192,820 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="786" text-anchor="middle">POST /interaction/{uid}</text>
+    <text class="fg-xs" x="352" y="808" text-anchor="middle">consent</text>
+    <!-- save code -->
+    <path class="fg-edge" d="M512,892 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="858" text-anchor="middle">AuthorizationCodes.Save</text>
+    <text class="fg-xs" x="668" y="880" text-anchor="middle">code + PKCE challenge</text>
   </svg>
-  <figcaption class="fig-note">The two rightmost lanes are yours. Every arrow that reaches them is an interface call, which is what makes the storage backend and the login experience replaceable without touching the protocol path in the middle.</figcaption>
+  <figcaption class="fig-note">The right-hand lane is yours. Every arrow that reaches it is an interface call, which is what makes the storage backend and the login experience replaceable without touching the protocol path in the middle.</figcaption>
+</figure>
+</div>
+
+<div style="display:flex;justify-content:center;margin:1.5rem 0">
+
+<figure class="fig">
+  <div class="fig-head">Redeeming the code: client auth comes before consume</div>
+  <svg class="fig-svg" role="img" aria-labelledby="arch-token-title" viewBox="0 0 960 760" xmlns="http://www.w3.org/2000/svg">
+    <title id="arch-token-title">The authorization code returns to the RP through the browser, then the RP redeems it directly at /token. The OP authenticates the client, consumes the code, registers or saves the tokens in your store, and answers with the token response.</title>
+    <!-- band: code returns -->
+    <rect class="fg-group" x="32" y="104" width="896" height="128" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">the code returns via the browser</text>
+    <!-- band: redeeming -->
+    <rect class="fg-group" x="32" y="256" width="896" height="480" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="284">redeeming the code</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">separate app</text>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="736"/>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="736"/>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Store</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">yours</text>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="736"/>
+    <!-- redirect with code -->
+    <path class="fg-edge fg-edge--accent" d="M512,192 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="158" text-anchor="middle">302 → redirect_uri</text>
+    <text class="fg-mxs" x="352" y="180" text-anchor="middle">code · state · iss</text>
+    <!-- token request -->
+    <path class="fg-edge" d="M192,344 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="310" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="352" y="332" text-anchor="middle">grant_type=authorization_code</text>
+    <!-- client auth -->
+    <path class="fg-edge" d="M512,416 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="382" text-anchor="middle">Clients.GetClient</text>
+    <text class="fg-xs" x="668" y="404" text-anchor="middle">authenticate the client first</text>
+    <!-- consume -->
+    <path class="fg-edge" d="M512,488 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="454" text-anchor="middle">AuthorizationCodes.Consume</text>
+    <text class="fg-xs" x="668" y="476" text-anchor="middle">then PKCE and redirect_uri</text>
+    <!-- register access token -->
+    <path class="fg-edge" d="M512,560 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="526" text-anchor="middle">AccessTokens.Register</text>
+    <text class="fg-xs" x="668" y="548" text-anchor="middle">only with JTIRegistry</text>
+    <!-- save refresh token -->
+    <path class="fg-edge" d="M512,632 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="598" text-anchor="middle">RefreshTokens.Save</text>
+    <text class="fg-xs" x="668" y="620" text-anchor="middle">when eligible</text>
+    <!-- token response -->
+    <path class="fg-edge fg-edge--accent" d="M512,704 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="670" text-anchor="middle">200 · access_token · id_token</text>
+    <text class="fg-xs" x="352" y="692" text-anchor="middle">+ refresh_token when eligible</text>
+  </svg>
+  <figcaption class="fig-note">The code travels through the browser but is redeemed on a direct back channel. Client authentication happens before the code is consumed, and PKCE and redirect_uri are enforced after it.</figcaption>
 </figure>
 </div>
 
 `/par` and `/end_session` follow the same general shape; the sequence diagram is the canonical happy path.
 
+Each authorization carries its own authentication state. The code, the refresh chain it starts and the access tokens it issues record the `auth_time`, `acr`, `amr`, `authorization_details` and OIDC `claims` request of the authorization that created them, rather than reading the one grant per (subject, client) that every later authorization rewrites. A second login by the same user does not change what an earlier code reports in its ID token, and revoking or rotating one refresh chain leaves the user's other sessions on the same client alone.
+
 A JWT access token gets an `AccessTokens` shadow row only when `RevocationStrategyJTIRegistry` is selected. The default `RevocationStrategyGrantTombstone` records a grant tombstone at revocation instead, while `RevocationStrategyNone` disables server-side JWT revocation. A refresh token is saved only when the provider grant, client registration, and scope policy allow it.
+
+### Requests served from an existing session
+
+`/auth` does not always run the chain. It can mint straight from a live session when a cached grant covers the request or the first-party consent skip applies. `LoginFlow` rules and the `Decider` still apply on that path:
+
+<figure class="fig">
+  <div class="fig-head">An authorize request served from an existing session</div>
+  <svg class="fig-svg" role="img" aria-labelledby="arch-reuse-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+    <title id="arch-reuse-title">When /auth can mint from a live session, the LoginFlow rules and the Decider are evaluated first, as if the primary step had just completed. If nothing demands another step the code is minted. If a step is demanded, prompt=none answers interaction_required, and any other request runs the chain from the session's subject before minting.</title>
+    <!-- session -->
+    <rect class="fg-box" x="32" y="124" width="232" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="152">Session reused</text>
+    <text class="fg-xs" x="48" y="176">a cached grant covers it</text>
+    <text class="fg-xs" x="48" y="200">first-party consent skip</text>
+    <path class="fg-edge" d="M264,172 H312" marker-end="url(#fg-a)"/>
+    <!-- evaluation -->
+    <rect class="fg-box fg-box--accent" x="312" y="124" width="272" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="328" y="152">Rules and Decider</text>
+    <text class="fg-xs" x="328" y="176">as if Primary just completed</text>
+    <text class="fg-xs" x="328" y="200">earlier factors do not count</text>
+    <path class="fg-leader" d="M584,172 H616 M616,68 V276"/>
+    <path class="fg-edge fg-edge--thin" d="M616,68 H648" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M616,172 H648" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M616,276 H648" marker-end="url(#fg-a)"/>
+    <!-- outcomes -->
+    <rect class="fg-box fg-box--ok" x="648" y="32" width="280" height="72" rx="8"/>
+    <text class="fg-t2" x="664" y="60">Mint the code</text>
+    <text class="fg-xs" x="664" y="84">no step demanded</text>
+    <rect class="fg-box fg-box--warn" x="648" y="136" width="280" height="72" rx="8"/>
+    <text class="fg-m" x="664" y="164">interaction_required</text>
+    <text class="fg-xs" x="664" y="188">step demanded, prompt=none</text>
+    <rect class="fg-box" x="648" y="240" width="280" height="72" rx="8"/>
+    <text class="fg-t2" x="664" y="268">Run the chain</text>
+    <text class="fg-xs" x="664" y="292">step demanded, prompt is not none</text>
+  </svg>
+  <figcaption class="fig-note">Risk-driven rules fire only inside the chain, so they never trigger on this path. The chain starts from the session's subject, and a factor that returns a different subject than the one already bound ends it with a server error.</figcaption>
+</figure>
+
+A `Rule` predicate or `Decider` that panics fails closed: a panicking `Rule.When` counts as a match so the step is still demanded, and a panicking `Decider` denies. A `Decider` that returns nil or an unknown shape also denies.
 
 <a class="faq-anchor" id="loginflow-internals"></a>
 
@@ -228,54 +270,49 @@ internal/authn/CompiledLoginFlow
 <div style="display:flex;justify-content:center;margin:1.5rem 0">
 
 <figure class="fig">
-  <div class="fig-head">LoginFlow — declared once, compiled once, driven per request</div>
-  <svg class="fig-svg" role="img" aria-labelledby="loginflow-title" viewBox="0 0 960 344" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">LoginFlow: declared once, compiled once, driven per request</div>
+  <svg class="fig-svg" role="img" aria-labelledby="loginflow-title" viewBox="0 0 960 472" xmlns="http://www.w3.org/2000/svg">
     <title id="loginflow-title">What you pass to WithLoginFlow is a specification. It is compiled once into a CompiledLoginFlow, which the orchestrator then drives in a loop for each request: begin the primary factor, prompt, bind an identity, evaluate the decider and the rules, and repeat until no rule fires.</title>
-    <text class="fg-lbl" x="40" y="26">declared</text>
-    <text class="fg-lbl fg-accent" x="334" y="26">compiled once</text>
-    <text class="fg-lbl" x="620" y="26">driven per request</text>
-    <rect class="fg-box" x="36" y="38" width="234" height="192" rx="8"/>
-    <text class="fg-t2" x="56" y="64">LoginFlow</text>
-    <text class="fg-xs" x="56" y="82">what you hand to WithLoginFlow</text>
-    <line class="fg-rule" x1="56" y1="94" x2="250" y2="94"/>
-    <text class="fg-m" x="56" y="120">Primary</text>
-    <text class="fg-xs" x="56" y="136">the first factor</text>
-    <text class="fg-m" x="56" y="164">Rules[]</text>
-    <text class="fg-xs" x="56" y="180">when to ask for more</text>
-    <text class="fg-m" x="56" y="208">Decider · Risk</text>
-    <text class="fg-xs" x="56" y="224">AAL policy and signals</text>
-    <path class="fg-edge" d="M274,134 H326" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="300" y="127" text-anchor="middle">compile</text>
-    <rect class="fg-box fg-box--accent" x="330" y="38" width="244" height="192" rx="8"/>
-    <text class="fg-t2 fg-accent" x="350" y="64">CompiledLoginFlow</text>
-    <text class="fg-mxs" x="350" y="82">internal/authn</text>
-    <line class="fg-rule" x1="350" y1="94" x2="554" y2="94"/>
-    <text class="fg-mxs" x="350" y="120">primary</text>
-    <text class="fg-mxs" x="350" y="146">rules</text>
-    <text class="fg-mxs" x="350" y="172">decider</text>
-    <text class="fg-mxs" x="350" y="198">risk</text>
-    <text class="fg-xs" x="350" y="222">resolved and validated at op.New</text>
-    <path class="fg-edge fg-edge--accent" d="M578,134 H610" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="616" y="38" width="284" height="48" rx="6"/>
-    <text class="fg-mxs" x="634" y="58">Primary.Begin → Step</text>
-    <text class="fg-xs" x="634" y="76">once, at the start of the chain</text>
-    <path class="fg-edge fg-edge--thin" d="M758,88 V96" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="616" y="98" width="284" height="48" rx="6"/>
-    <text class="fg-mxs" x="634" y="118">prompt → the user submits</text>
-    <text class="fg-xs" x="634" y="136">one Step at a time</text>
-    <path class="fg-edge fg-edge--thin" d="M758,148 V156" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="616" y="158" width="284" height="48" rx="6"/>
-    <text class="fg-mxs" x="634" y="178">Result binds an Identity</text>
-    <text class="fg-xs" x="634" y="196">subject · AAL · AMR</text>
-    <path class="fg-edge fg-edge--thin" d="M758,208 V216" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="616" y="218" width="284" height="48" rx="6"/>
-    <text class="fg-mxs" x="634" y="238">LoginContext → Decider, then Rules</text>
-    <text class="fg-xs" x="634" y="256">a rule fires → another Step</text>
-    <path class="fg-edge" d="M904,242 H930 V122 H904" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M758,268 V276" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="616" y="278" width="284" height="48" rx="6"/>
-    <text class="fg-t2 fg-accent" x="634" y="298">No rule fires</text>
-    <text class="fg-xs" x="634" y="316">the session is issued</text>
+    <text class="fg-lbl" x="32" y="40">declared</text>
+    <text class="fg-lbl fg-accent" x="376" y="40">compiled once</text>
+    <text class="fg-lbl" x="640" y="40">driven per request</text>
+    <!-- declared -->
+    <rect class="fg-frame" x="32" y="64" width="248" height="352" rx="8"/>
+    <text class="fg-lbl" x="56" y="92">LoginFlow</text>
+    <rect class="fg-box" x="56" y="112" width="200" height="72" rx="8"/>
+    <text class="fg-m" x="72" y="140">Primary</text>
+    <text class="fg-xs" x="72" y="164">the first factor</text>
+    <rect class="fg-box" x="56" y="216" width="200" height="72" rx="8"/>
+    <text class="fg-m" x="72" y="244">Rules[]</text>
+    <text class="fg-xs" x="72" y="268">when to ask for more</text>
+    <rect class="fg-box" x="56" y="320" width="200" height="72" rx="8"/>
+    <text class="fg-m" x="72" y="348">Decider · Risk</text>
+    <text class="fg-xs" x="72" y="372">AAL policy and signals</text>
+    <path class="fg-edge" d="M280,240 H376" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="328" y="230" text-anchor="middle">compile</text>
+    <!-- compiled -->
+    <rect class="fg-box fg-box--accent" x="376" y="192" width="208" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="392" y="220">CompiledLoginFlow</text>
+    <text class="fg-mxs" x="392" y="244">internal/authn</text>
+    <text class="fg-xs" x="392" y="268">resolved at op.New</text>
+    <path class="fg-edge fg-edge--accent" d="M584,240 H612 V100 H640" marker-end="url(#fg-ac)"/>
+    <!-- driven per request -->
+    <rect class="fg-box" x="640" y="64" width="256" height="72" rx="8"/>
+    <text class="fg-m" x="656" y="92">Primary.Begin → Step</text>
+    <text class="fg-xs" x="656" y="116">once, at the start of the chain</text>
+    <rect class="fg-box" x="640" y="168" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="656" y="196">Prompt, the user submits</text>
+    <text class="fg-xs" x="656" y="220">binds subject · AAL · AMR</text>
+    <rect class="fg-box" x="640" y="272" width="256" height="72" rx="8"/>
+    <text class="fg-t2" x="656" y="300">Decider, then Rules</text>
+    <text class="fg-xs" x="656" y="324">a rule fires → another Step</text>
+    <rect class="fg-box fg-box--accent" x="640" y="376" width="256" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="656" y="404">No rule fires</text>
+    <text class="fg-xs" x="656" y="428">the session is issued</text>
+    <path class="fg-edge fg-edge--thin" d="M768,136 V168" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M768,240 V272" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M768,344 V376" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge" d="M896,308 H920 V204 H896" marker-end="url(#fg-a)"/>
   </svg>
   <figcaption class="fig-note">Compiling up front is what makes a misconfigured flow a start-up error rather than a runtime one. By the time a request arrives there is nothing left to interpret — only a chain to walk.</figcaption>
 </figure>
@@ -287,7 +324,7 @@ For each authorize request:
 2. UI driver (HTML or React) renders the prompt; the user submits.
 3. `Primary.Continue` advances to a `Result` carrying the bound `Identity`.
 4. Orchestrator builds a `LoginContext` (subject, scopes, completed steps, cached risk score, ACR values).
-5. `Decider` runs (if non-nil); a non-`Pass` decision short-circuits.
+5. `Decider` runs (if non-nil); a non-`Pass` decision short-circuits. A factor that returns a different subject than the one already bound ends the chain with a server error, and the AAL3 user-verification check applies to a factor that completes in `Begin` without a prompt as well.
 6. Otherwise `Rules` evaluate in order; the first matching rule whose `Step.Kind()` is not in `CompletedSteps` fires.
 7. Loop until no rule fires; the session is then issued. `LoginFlow.Risk` is consulted at most once for the chain and its outcome is cached. A provider-level `WithRiskAssessor` is the alternative seam; combining it with `LoginFlow.Risk` is rejected at construction rather than choosing silently.
 
@@ -301,17 +338,17 @@ The library never reads or writes the embedder's `users` table directly. It talk
 |---|---|---|
 | `Clients` | OAuth client registry | typically durable |
 | `Users` | subjects + claims | embedder-implemented; commonly maps to existing users table |
-| `AuthorizationCodes` | one-shot codes (PKCE challenge, scope) | durable |
-| `RefreshTokens` | refresh chains, rotation history | durable |
-| `AccessTokens` | JWT id-side / opaque tokens | durable |
-| `OpaqueAccessTokens` | opaque AT lookup | durable |
-| `Grants` | consented scopes per (user, client) | durable |
-| `GrantRevocations` | tombstones for revoked grants | durable |
+| `AuthorizationCodes` | one-shot codes (PKCE challenge, scope, per-authorization auth state) | durable |
+| `RefreshTokens` | refresh chains (each with a `ChainID`), rotation history | durable |
+| `AccessTokens` | per-`jti` registry for JWT access tokens, used by `RevocationStrategyJTIRegistry` | durable |
+| `OpaqueAccessTokens` | opaque access-token records (each with the `ChainID` of the chain that minted it) | durable |
+| `Grants` | consented scopes per (user, client), including the grants that device-code, CIBA and token-exchange redemptions record | durable |
+| `GrantRevocations` | tombstones for revoked grants, optionally scoped to access tokens only | durable |
 | `Sessions` | browser session records | volatile-eligible |
 | `Interactions` | per-attempt interaction state | volatile-eligible |
-| `ConsumedJTIs` | JAR / DPoP `jti` replay set | volatile-eligible |
-| `PARs` | pushed authorization requests | durable when PAR participates in an authorization-code transaction |
-| `IATs` / `RATs` | DCR Initial / Registration Access Tokens | durable |
+| `ConsumedJTIs` | JAR / DPoP `jti` replay set | durable, or a Redis instance set to `noeviction` |
+| `PushedAuthRequests` | pushed authorization requests | durable when PAR participates in an authorization-code transaction |
+| `InitialAccessTokens` / `RegistrationAccessTokens` | DCR Initial / Registration Access Tokens | durable |
 | `DeviceCodes` | RFC 8628 device-authorization records | durable |
 | `CIBARequests` | OpenID Connect CIBA backchannel-authentication records | durable |
 | `Metadata` | OP-internal key/value state (e.g. the `subject_mode` marker) | durable, may be absent (nil) |
@@ -327,6 +364,27 @@ Volatile-eligible substores can live in a Redis tier behind the [`composite`](/u
 - grant-revocation tombstones
 
 Other kinds may use separate backends. Invalid kinds, missing routes, a split cluster, a non-comparable cluster backend, and a non-transactional anchor are reported as construction errors.
+
+### Revocation scope and optional store interfaces
+
+A grant is shared by every session of one subject on one client, so a revocation that works per grant would end sessions the caller never meant to touch. Two optional interfaces let a store keep revocation narrower:
+
+| Interface | On | What it adds |
+|---|---|---|
+| `store.OpaqueAccessTokenChainRevoker` | `OpaqueAccessTokens()` | `RevokeByChain`: retire the opaque access tokens of one refresh chain |
+| `store.IssuanceRevocationChecker` | `GrantRevocations()` | `IsIssuanceRevoked`: an access-token-only tombstone (`GrantTombstone.AccessTokensOnly`) does not refuse refresh or code redemption |
+
+The in-memory, SQL and DynamoDB adapters implement both. A bring-your-own store that implements neither, or that drops `ChainID` / `AccessTokensOnly`, keeps the grant-wide behaviour. The same holds for `AuthorizationRecorded` on codes, refresh tokens and opaque access tokens: a row without the per-authorization fields falls back to the grant. What each trigger reaches:
+
+| Trigger | Refresh tokens | Access tokens | Further issuance under the grant |
+|---|---|---|---|
+| refresh rotation | the predecessor retires; the chain continues | opaque tokens of that chain only (the grant's, when the store lacks the chain revoker) | open |
+| `/revoke` on a refresh token | that chain (the grant's refresh tokens when the chain root cannot be resolved) | every access token of the grant | open: other chains and unredeemed codes still redeem |
+| replayed refresh token | the replayed chain | every access token of the grant | closed |
+| replayed authorization code | every refresh token of the grant | every access token of the grant | closed |
+| grant revoke (`RevokeSubject`, Grant Management revoke, `/end_session` teardown) | all | all | closed |
+
+A SQL deployment applies the `ALTER TABLE` statements in `op/storeadapter/sql/schema/MIGRATIONS.md` before upgrading, because `Store.Migrate` refuses to start without the new columns.
 
 MFA factor stores (`EmailOTPStore`, `TOTPStore`, `PasskeyStore`, `RecoveryStore`, `AuthnLockoutStore`) are not substores of `store.Store`. They are supplied directly to the matching login-flow values (`StepEmailOTP.Store`, `StepTOTP.Store`, `PrimaryPasskey.Store`, `StepRecoveryCode.Store`, and `WithAuthnLockoutStore`) when the embedder builds the `LoginFlow`. In-memory, SQL, and DynamoDB adapters expose these stores with matching accessors. [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) uses the shipped SQL factor stores with the core OP tables in one database; custom backends implement the same contracts themselves.
 

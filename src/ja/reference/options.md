@@ -7,7 +7,7 @@ pageClass: pg-reference-options
 
 # オプション一覧
 
-`op.New` に渡せる公開オプションを、設定対象ごとに分類しました。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須です。`WithCookieKeys` は `authorization_code` grant を有効にしている場合に必須で、既定 grant 集合では有効です。それ以外は既定を上書きする任意オプションです。
+`op.New` に渡せる公開オプションを、設定対象ごとに分類しました。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須です。`WithCookieKeys` と、ログインの仕組み（`WithLoginFlow` または `WithAuthenticators`）は `authorization_code` grant を有効にしている場合に必須で、既定 grant 集合では有効です。それ以外は既定を上書きする任意オプションです。
 
 ::: tip このページの読み方
 オプション名のリンクから詳細ページに進めます。「セクション」列は、そのオプションが影響する discovery 文書やエンドポイントの範囲を示します。「既定」が空欄のオプションは組み込みの初期値を持っておらず、明示的に渡したときだけ機能が有効になります。
@@ -18,100 +18,111 @@ pageClass: pg-reference-options
 このページは、`op.New` に渡せる公開オプションを並べた一覧です。70 以上のオプションがあるため、目的が決まった状態で表を眺めると目的の項目を探しにくいことがあります。下の判定図で関連する領域を見つけ、表の該当セクションへ進んでください。
 
 <figure class="fig">
-  <div class="fig-head">どのオプションが要るのか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="options-decision-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
-    <title id="options-decision-title">設定の目的を、それを担う op.New のオプションへ振り分ける判定図。新規に OP を立ち上げる、FAPI を有効化する、機能を 1 つ有効化する、grant を絞る、送信者制約を加える、トークン形式を選ぶ、のいずれにも当たらなければ、下の全オプション表へ進みます。</title>
-    <!-- 1 -->
-    <rect class="fg-box" x="36" y="24" width="394" height="58" rx="8"/>
-    <text class="fg-s" x="56" y="50">OP を新規に立ち上げる</text>
-    <text class="fg-xs" x="56" y="70">まだ何も動いていない段階</text>
-    <path class="fg-edge" d="M434,53 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="46" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="24" width="394" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="48">必須オプション</text>
-    <text class="fg-xs" x="550" y="70">issuer · store · keyset、認可コードグラントなら cookie 鍵も</text>
-    <path class="fg-edge" d="M233,86 V104" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="100">いいえ</text>
-    <!-- 2 -->
-    <rect class="fg-box" x="36" y="108" width="394" height="58" rx="8"/>
-    <text class="fg-s" x="56" y="134">FAPI 2.0 を 1 行で有効化する</text>
-    <text class="fg-xs" x="56" y="154">個別の設定ではなくプロファイル全体が欲しい</text>
-    <path class="fg-edge" d="M434,137 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="130" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="108" width="394" height="58" rx="8"/>
-    <text class="fg-m fg-accent" x="550" y="134">op.WithProfile(…)</text>
-    <text class="fg-xs" x="550" y="154">プロファイルの設定を一括で適用する</text>
-    <path class="fg-edge" d="M233,170 V188" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="184">いいえ</text>
-    <!-- 3 -->
-    <rect class="fg-box" x="36" y="192" width="394" height="58" rx="8"/>
-    <text class="fg-s" x="56" y="218">プロファイルなしで機能を 1 つだけ有効化する</text>
-    <text class="fg-xs" x="56" y="238">PAR、JAR、JARM、grant management など</text>
-    <path class="fg-edge" d="M434,221 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="214" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="192" width="394" height="58" rx="8"/>
-    <text class="fg-m" x="550" y="218">op.WithFeature(…)</text>
-    <text class="fg-xs" x="550" y="238">機能 1 つを単独で有効にする</text>
-    <path class="fg-edge" d="M233,254 V272" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="268">いいえ</text>
-    <!-- 4 -->
-    <rect class="fg-box" x="36" y="276" width="394" height="58" rx="8"/>
-    <text class="fg-s" x="56" y="302">/token が受け付ける grant を絞る</text>
-    <text class="fg-xs" x="56" y="322">client credentials を一切発行しない OP にする、など</text>
-    <path class="fg-edge" d="M434,305 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="298" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="276" width="394" height="58" rx="8"/>
-    <text class="fg-m" x="550" y="302">op.WithGrants(…)</text>
-    <text class="fg-xs" x="550" y="322">列挙していない grant はエンドポイントで拒否される</text>
-    <path class="fg-edge" d="M233,338 V356" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="352">いいえ</text>
-    <!-- 5 -->
-    <rect class="fg-box" x="36" y="360" width="394" height="58" rx="8"/>
-    <text class="fg-s" x="56" y="386">送信者制約付きアクセストークンにする</text>
-    <text class="fg-xs" x="56" y="406">漏れたトークン単体では使えない状態にしたい</text>
-    <path class="fg-edge" d="M434,389 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="382" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="360" width="394" height="58" rx="8"/>
-    <text class="fg-m" x="550" y="386">op.WithFeature(DPoP) · op.WithFeature(MTLS)</text>
-    <text class="fg-xs" x="550" y="406">どちらでも、両方でも。登録時に各クライアントが選ぶ</text>
-    <path class="fg-edge" d="M233,422 V440" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="436">いいえ</text>
-    <!-- 6 -->
-    <rect class="fg-box" x="36" y="444" width="394" height="58" rx="8"/>
-    <text class="fg-s" x="56" y="470">JWT と opaque のどちらにするか決める</text>
-    <text class="fg-xs" x="56" y="490">audience 単位で決める判断</text>
-    <path class="fg-edge" d="M434,473 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="466" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="444" width="394" height="58" rx="8"/>
-    <text class="fg-m" x="550" y="470">op.WithAccessTokenFormat(…)</text>
-    <text class="fg-xs" x="550" y="490">失効の到達範囲とレイテンシの取引になる</text>
-    <path class="fg-edge" d="M233,506 V524" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="520">いいえ</text>
-    <!-- 該当なし -->
-    <rect class="fg-box fg-box--muted" x="36" y="528" width="888" height="34" rx="8"/>
-    <text class="fg-t2" x="56" y="550">どれにも当てはまらない — 下の全オプション表へ</text>
+  <div class="fig-head">まず全体を左右するオプションから</div>
+  <svg class="fig-svg" role="img" aria-labelledby="options-decision-title" viewBox="0 0 960 432" xmlns="http://www.w3.org/2000/svg">
+    <title id="options-decision-title">設定の目的を、それを担う op.New のオプションへ振り分ける判定図の前半。新規に OP を立ち上げる、FAPI のプロファイルを有効化する、機能を 1 つ有効化する、のいずれか。どれにも当たらなければ次の図へ進みます。</title>
+    <!-- row 1 -->
+    <rect class="fg-box" x="32" y="24" width="392" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="52">OP を新規に立ち上げる</text>
+    <text class="fg-xs" x="48" y="76">まだ何も動いていない段階</text>
+    <path class="fg-edge" d="M424,60 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="50" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="536" y="24" width="392" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="552" y="52">必須オプション</text>
+    <text class="fg-xs" x="552" y="76">issuer · store · keyset · cookie 鍵 · ログイン</text>
+    <path class="fg-edge fg-edge--thin" d="M228,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="240" y="121">いいえ</text>
+    <!-- row 2 -->
+    <rect class="fg-box" x="32" y="136" width="392" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="164">FAPI 2.0 を 1 行で有効化する</text>
+    <text class="fg-xs" x="48" y="188">個別の設定ではなくプロファイル全体が欲しい</text>
+    <path class="fg-edge" d="M424,172 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="162" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="536" y="136" width="392" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="552" y="164">WithProfile(…)</text>
+    <text class="fg-xs" x="552" y="188">プロファイルの設定を一括で適用する</text>
+    <path class="fg-edge fg-edge--thin" d="M228,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="240" y="233">いいえ</text>
+    <!-- row 3 -->
+    <rect class="fg-box" x="32" y="248" width="392" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="276">プロファイルなしで機能を 1 つ有効化する</text>
+    <text class="fg-xs" x="48" y="300">PAR、JAR、JARM、grant management など</text>
+    <path class="fg-edge" d="M424,284 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="274" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="536" y="248" width="392" height="72" rx="8"/>
+    <text class="fg-m" x="552" y="276">WithFeature(…)</text>
+    <text class="fg-xs" x="552" y="300">機能 1 つを単独で有効にする</text>
+    <path class="fg-edge fg-edge--thin" d="M228,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="240" y="345">いいえ</text>
+    <!-- fall through -->
+    <rect class="fg-box fg-box--muted" x="32" y="360" width="392" height="48" rx="8"/>
+    <text class="fg-s" x="48" y="388">まだ当てはまらない場合は下へ</text>
   </svg>
-  <figcaption class="fig-note">上から下へ読む順序が、そのまま設定する順序でもあります。プロファイルは後段の設定をいくつか自動的に確定させるため、先に設定すると個別に選んだあとで衝突に気付く事態を避けられます。</figcaption>
+  <figcaption class="fig-note">プロファイルは後段の設定をいくつか自動的に確定させるため、機能の質問より先にプロファイルの質問をします。</figcaption>
 </figure>
 
-- **これから新規に OP を立ち上げる** → まず [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、そして通常は [`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys) を渡します。`WithCookieKeys` は `authorization_code` grant が有効な場合に必須で、既定 grant 集合では有効です。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
-- **FAPI を採用せず OAuth 2.1 の姿勢を明示したい** → 本ライブラリの `WithProfile(profile.Baseline)` はすべての authorization-code request に PKCE を要求し、それ以外は OIDC Core の既定を保ちます。FAPI 2.0 には本ライブラリの `profile.FAPI2Baseline`（または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`）を使います。これらのプロファイルは mTLS が明示されていなければ DPoP を既定選択します。プロファイルが必要とする grant が組み込まれていない場合、OP はエンドポイントを勝手に mount せず `op.New` が失敗します（`profile.FAPICIBA` は `grant.CIBA` を必要とします）。[使い方: セキュリティプロファイルの宣言](/ja/use-cases/security-profile)、[使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
+<figure class="fig">
+  <div class="fig-head">次に grant・送信者制約・トークン形式を絞る</div>
+  <svg class="fig-svg" role="img" aria-labelledby="options-decision-2-title" viewBox="0 0 960 432" xmlns="http://www.w3.org/2000/svg">
+    <title id="options-decision-2-title">判定図の後半。/token が受け付ける grant を絞る、送信者制約を加える、アクセストークンの形式を選ぶ、のいずれか。どれにも当たらなければ下の全オプション表へ進みます。</title>
+    <!-- row 1 -->
+    <rect class="fg-box" x="32" y="24" width="392" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="52">/token が受け付ける grant を絞る</text>
+    <text class="fg-xs" x="48" y="76">例: client credentials は発行しない</text>
+    <path class="fg-edge" d="M424,60 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="50" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="536" y="24" width="392" height="72" rx="8"/>
+    <text class="fg-m" x="552" y="52">WithGrants(…)</text>
+    <text class="fg-xs" x="552" y="76">列挙外の grant は拒否される</text>
+    <path class="fg-edge fg-edge--thin" d="M228,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="240" y="121">いいえ</text>
+    <!-- row 2 -->
+    <rect class="fg-box" x="32" y="136" width="392" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="164">送信者制約付きアクセストークンにする</text>
+    <text class="fg-xs" x="48" y="188">漏れたトークン単体では使えない状態にしたい</text>
+    <path class="fg-edge" d="M424,172 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="162" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="536" y="136" width="392" height="72" rx="8"/>
+    <text class="fg-m" x="552" y="164">WithFeature(DPoP) · WithFeature(MTLS)</text>
+    <text class="fg-xs" x="552" y="188">どちらでも両方でも。各クライアントが選ぶ</text>
+    <path class="fg-edge fg-edge--thin" d="M228,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="240" y="233">いいえ</text>
+    <!-- row 3 -->
+    <rect class="fg-box" x="32" y="248" width="392" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="276">JWT と opaque のどちらにするか決める</text>
+    <text class="fg-xs" x="48" y="300">audience 単位で決める判断</text>
+    <path class="fg-edge" d="M424,284 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="480" y="274" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="536" y="248" width="392" height="72" rx="8"/>
+    <text class="fg-m" x="552" y="276">WithAccessTokenFormat(…)</text>
+    <text class="fg-xs" x="552" y="300">失効の到達範囲とレイテンシの取引</text>
+    <path class="fg-edge fg-edge--thin" d="M228,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-xs" x="240" y="345">いいえ</text>
+    <!-- fall through -->
+    <rect class="fg-box fg-box--muted" x="32" y="360" width="392" height="48" rx="8"/>
+    <text class="fg-s" x="48" y="388">どれにも当てはまらない — 下の全オプション表へ</text>
+  </svg>
+  <figcaption class="fig-note">2 つの図を上から下へ読む順序が、そのまま設定する順序でもあります。当てはまらないものは下の全オプション表にあります。</figcaption>
+</figure>
+
+- **これから新規に OP を立ち上げる** → まず [`WithIssuer`](/ja/getting-started/required-options#withissuer)、[`WithStore`](/ja/getting-started/required-options#withstore)、[`WithKeyset`](/ja/getting-started/required-options#withkeyset)、[`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys)、[`WithLoginFlow`](/ja/getting-started/required-options#withloginflow) を渡します。後ろの 2 つは `authorization_code` grant が有効な場合に必須で、既定 grant 集合では有効です。詳しくは[必須オプション](/ja/getting-started/required-options) と[最小 OP の組み立て](/ja/use-cases/minimal-op)。
+- **FAPI を採用せず OAuth 2.1 の姿勢を明示したい** → 本ライブラリの `WithProfile(profile.Baseline)` はすべての authorization-code request に PKCE を要求し、それ以外は OIDC Core の既定を保ちます。FAPI 2.0 には本ライブラリの `profile.FAPI2Baseline`（または `profile.FAPI2MessageSigning`、`profile.FAPICIBA`）を使います。これらのプロファイルは mTLS が明示されていなければ DPoP を既定選択します。プロファイルが必要とする grant が組み込まれていない場合、OP はエンドポイントを勝手に mount せず `op.New` が失敗します（`profile.FAPICIBA` は `grant.CIBA` を必要とします）。[ユースケース: セキュリティプロファイルの宣言](/ja/use-cases/security-profile)、[ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline)、[ガイド: FAPI](/ja/concepts/fapi) を参照。
 - **プロファイル全体ではなく、機能を 1 つだけ有効にしたい** → `WithFeature(feature.PAR)` / `JAR` / `JARM` / `DPoP` / `MTLS` / `Introspect` / `Revoke`。public / native client は常に PKCE 必須で、FAPI プロファイル下ではすべての認可コードクライアントに PKCE が必須です。Dynamic Registration、RAR、Grant Management は追加設定が必要なので、それぞれ専用オプションから有効化します。
 - **`/token` で受け付ける grant の集合を絞りたい** → `WithGrants(grant.AuthorizationCode, grant.RefreshToken, grant.ClientCredentials, grant.DeviceCode, grant.CIBA)`。`WithDeviceCodeGrant()` / `WithCIBA(...)` / `WithCustomGrant(...)` / `RegisterTokenExchange(...)` は、それぞれ追加で必要なエンドポイントもまとめて公開します。
-- **送信者制約付きのアクセストークンにしたい** → DPoP 系: `WithFeature(feature.DPoP)` + 必要に応じて `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`。mTLS 系: `WithFeature(feature.MTLS)` + 必要に応じて `WithMTLSProxy(headerName, trustedCIDRs)`。詳しくは[ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint)、[DPoP](/ja/concepts/dpop)、[mTLS](/ja/concepts/mtls)、[使い方: DPoP nonce](/ja/use-cases/dpop-nonce)。
+- **送信者制約付きのアクセストークンにしたい** → DPoP 系: `WithFeature(feature.DPoP)` + 必要に応じて `WithDPoPNonceSource(op.NewInMemoryDPoPNonceSource(...))`。mTLS 系: `WithFeature(feature.MTLS)` + 必要に応じて `WithMTLSProxy(headerName, trustedCIDRs)`。詳しくは[ガイド: 送信者制約付きトークン](/ja/concepts/sender-constraint)、[DPoP](/ja/concepts/dpop)、[mTLS](/ja/concepts/mtls)、[ユースケース: DPoP nonce](/ja/use-cases/dpop-nonce)。
 - **アクセストークンを JWT / opaque で切り替えたい** → OP 全体の既定は `WithAccessTokenFormat(...)`、RFC 8707 リソースごとに分けたいときは `WithAccessTokenFormatPerAudience(...)`。[ガイド: アクセストークンの形式](/ja/concepts/access-token-format) を参照。
-- **sector ごとに pairwise `sub` にしたい** → `WithPairwiseSubject(salt)`(32 byte 以上の salt)。[使い方: pairwise subject](/ja/use-cases/pairwise-subject) を参照。
+- **sector ごとに pairwise `sub` にしたい** → `WithPairwiseSubject(salt)`(32 byte 以上の salt)。[ユースケース: pairwise subject](/ja/use-cases/pairwise-subject) を参照。
 - **起動時にクライアントを静的に投入したい** → `WithStaticClients(op.PublicClient(...), op.ConfidentialClient(...), op.PrivateKeyJWTClient(...))`。[ガイド: クライアントの種類](/ja/concepts/client-types) を参照。
-- **Dynamic Client Registration を使いたい** → `WithDynamicRegistration(...)`。[使い方: Dynamic Client Registration](/ja/use-cases/dynamic-registration) を参照。
+- **Dynamic Client Registration を使いたい** → `WithDynamicRegistration(...)`。[ユースケース: Dynamic Client Registration](/ja/use-cases/dynamic-registration) を参照。
 - **introspection / revocation エンドポイントを公開したい** → `WithFeature(feature.Introspect)` および / または `WithFeature(feature.Revoke)`。細かな調整は下の「プロファイル / feature / grant」表を参照。
-- **scope カタログを拡張したい** → discovery に出す scope は `WithScope(op.PublicScope("name", "label"))`、内部用は `WithScope(op.InternalScope("name"))`。[ガイド: scope と claim](/ja/concepts/scopes-and-claims)、[使い方: scope](/ja/use-cases/scopes) を参照。
-- **独自の `grant_type` を生やしたい** → `WithCustomGrant(handler)`。[使い方: custom grant](/ja/use-cases/custom-grant) を参照。
-- **i18n(国際化)対応をしたい** → `WithDefaultLocale(...)`、`WithLocale(bundle)`、`WithPreferredLocaleStore(...)`。[使い方: i18n](/ja/use-cases/i18n) を参照。
-- **JWE request object を復号したい** → OP が受け取る JWE の鍵に `WithEncryptionKeyset(...)` を指定し、必要なら `WithSupportedEncryptionAlgs(algs, encs)` で既定の許可リストを狭めます。外向きの JWE 応答は受信側 client の JWKS の鍵で暗号化します。[使い方: JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
-- **SPA クライアント向けに CORS を開けたい** → `WithCORSOrigins(...)`。[使い方: SPA 向け CORS](/ja/use-cases/cors-spa) を参照。
-- **Prometheus メトリクスを出したい** → `WithPrometheus(registry)`。ライブラリは `/metrics` を公開しないため、ハンドラの公開はルータ側で行います。[使い方: Prometheus メトリクス](/ja/use-cases/prometheus) を参照。
+- **scope カタログを拡張したい** → discovery に出す scope は `WithScope(op.PublicScope("name", "label"))`、内部用は `WithScope(op.InternalScope("name"))`。[ガイド: scope と claim](/ja/concepts/scopes-and-claims)、[ユースケース: scope](/ja/use-cases/scopes) を参照。
+- **独自の `grant_type` を追加したい** → `WithCustomGrant(handler)`。[ユースケース: custom grant](/ja/use-cases/custom-grant) を参照。
+- **i18n(国際化)対応をしたい** → `WithDefaultLocale(...)`、`WithLocale(bundle)`、`WithPreferredLocaleStore(...)`。[ユースケース: i18n](/ja/use-cases/i18n) を参照。
+- **JWE request object を復号したい** → OP が受け取る JWE の鍵に `WithEncryptionKeyset(...)` を指定し、必要なら `WithSupportedEncryptionAlgs(algs, encs)` で既定の許可リストを狭めます。外向きの JWE 応答は受信側 client の JWKS の鍵で暗号化します。[ユースケース: JWE 暗号化](/ja/use-cases/jwe-encryption) を参照してください。
+- **SPA クライアント向けに CORS を開けたい** → `WithCORSOrigins(...)`。[ユースケース: SPA 向け CORS](/ja/use-cases/cors-spa) を参照。
+- **Prometheus メトリクスを出したい** → `WithPrometheus(registry)`。ライブラリは `/metrics` を公開しないため、ハンドラの公開はルータ側で行います。[ユースケース: Prometheus メトリクス](/ja/use-cases/prometheus) を参照。
 - **監査ログをアプリログとは別の出力先に流したい** → `WithAuditLogger(*slog.Logger)`。[Audit イベントカタログ](/ja/reference/audit-events) を参照。
-- **SPA 向けに対話レイヤをまるごと差し替えたい** → `WithInteractionDriver(interaction.Driver)`。[使い方: SPA 向け対話のカスタマイズ](/ja/use-cases/spa-custom-interaction) を参照。
+- **SPA 向けに対話レイヤをまるごと差し替えたい** → `WithInteractionDriver(interaction.Driver)`。[ユースケース: SPA 向け対話のカスタマイズ](/ja/use-cases/spa-custom-interaction) を参照。
 
 ## 必須と条件付き必須
 
@@ -122,6 +133,7 @@ pageClass: pg-reference-options
 | `WithUserStore` | `store.UserStore` | `WithStore` のバックエンドをラップせず、アプリケーション所有の user store から ID トークンと `/userinfo` の claim を読む | `WithStore(...).Users()` |
 | [`WithKeyset`](/ja/getting-started/required-options#withkeyset) | `op.Keyset`(P-256 / ES256) | JWKS / JWS 署名 | — |
 | [`WithCookieKeys`](/ja/getting-started/required-options#withcookiekeys) | 32 byte の鍵 | session / CSRF cookie の AES-256-GCM | `authorization_code` 有効時に必須 |
+| [`WithLoginFlow`](/ja/getting-started/required-options#withloginflow)（または `WithAuthenticators`） | `op.LoginFlow` | ユーザのサインイン方法 | `authorization_code` 有効時に必須 |
 
 ## プロファイル / feature / grant
 
@@ -138,7 +150,7 @@ pageClass: pg-reference-options
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithStaticClients` | `...op.ClientSeed`(`op.PublicClient` / `op.ConfidentialClient` / `op.PrivateKeyJWTClient` を渡す) | 起動時にクライアントレジストリを初期投入 | 空 |
+| `WithStaticClients` | `...op.ClientSeed`(`op.PublicClient` / `op.ConfidentialClient` / `op.PrivateKeyJWTClient` を渡す) | 起動時にクライアントレジストリを初期投入。`client_id` の重複、`Secret` も `SecretHash` もない `ConfidentialClient`、`jwks` と `jwks_uri` を両方持つシードは `op.New` が拒否する | 空 |
 | `WithHighEntropyClientSecrets` | _(引数なし)_ | OP 全体の client-secret 検証を high-entropy keyed-hash 形式へ切り替える。既存の Argon2 client hash は後から変換できないため、有効化前に全クライアントを再プロビジョニングする | Argon2 互換の client secret |
 | `WithFirstPartyClients` | `...string`(client ID) | ファーストパーティ同意スキップの対象 | なし |
 | `WithDynamicRegistration` | `op.RegistrationOption` | `/register` を公開（RFC 7591 / 7592） | 無効 |
@@ -147,10 +159,10 @@ pageClass: pg-reference-options
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithLoginFlow` | `op.LoginFlow` | `Step` + `Rule` の宣言的 DAG(推奨) | なし |
+| `WithLoginFlow` | `op.LoginFlow` | `Step` + `Rule` の宣言的 DAG(推奨)。`LoginFlow.Primary` は subject を確定させる step でなければならない。`PrimaryPasskey`・`StepTOTP`・`StepEmailOTP`・`StepRecoveryCode` は既知の subject を前提とするため、subject を確定する primary の後に `Rule` の step として置く。違反すると `op.New` が失敗する | なし |
 | `WithAuthenticators` | `...op.Authenticator`(可変長) | 低レイヤ API(`WithLoginFlow` とは排他) | なし |
 | `WithInteractionDriver` | `interaction.Driver` | 対話レイヤのトランスポート全体を差し替え（HTML ドライバ / SPA ドライバ / 独自実装） | 同梱の HTML ドライバ |
-| `WithInteractions` | `...op.Interaction`(可変長) | ドライバの上に重ねる、資格情報以外の追加画面（T&C、KYC など） | consent のみ |
+| `WithInteractions` | `...op.Interaction`(可変長) | ドライバの上に重ねる、資格情報以外の追加画面（T&C、KYC など）。`consent` と `chooser` は組み込み画面の名前で、この名前の要素は `op.New` が拒否する | consent のみ |
 | `WithCaptchaVerifier` | `op.CaptchaVerifier` | `StepCaptcha` の上流 captcha プロバイダ | なし |
 | `WithRiskAssessor` | `op.RiskAssessor` | risk score の供給元。`WithAuthenticators` では factor 前後、`WithLoginFlow` では flow assessor として chain ごとに 1 回実行される。non-nil な `LoginFlow.Risk` と同時に設定すると `op.New` が失敗する | なし |
 | `WithLoginAttemptObserver` | `op.LoginAttemptObserver` | `RuleAfterFailedAttempts` 用の失敗回数集計 | なし |
@@ -201,7 +213,9 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 
 本ライブラリの `profile.FAPI2Baseline` または `profile.FAPI2MessageSigning` では、リフレッシュの猶予期間に 60 秒の上限があります。0〜60 秒の明示値は受理され、60 秒を超える値は構築時エラーになります。profile が 0 を強制するわけではなく、option を省略すれば既定の 60 秒になります。これはライブラリの設定上限であり、現行 FAPI 仕様への適合条件ではありません。Security Profile §5.3.2.1(9) は、例外的な状況を除く通常のリフレッシュトークンローテーションを禁止しています。これらの profile 以外では、負でない duration を指定できます。
 
-`WithAccessTokenFormat` と `WithAccessTokenFormatPerAudience` が制御するのは、組み込み grant path が発行するアクセストークンです。custom grant の `BoundAccessToken` は、どちらの option を指定しても常に RFC 9068 JWT として mint されます。custom grant で opaque 値が必要な場合は、handler 自身で mint して `AccessToken` として返してください。
+`WithAccessTokenFormat` と `WithAccessTokenFormatPerAudience` が制御するのは、組み込み grant path が発行するアクセストークンです。custom grant の `BoundAccessToken` は、どちらの option を指定しても常に RFC 9068 JWT として mint されます。custom grant で opaque 値が必要な場合は、handler 自身で mint して `AccessToken` として返してください。送信者制約付きにしたい場合も、`cnf` は handler 自身が付与します。
+
+認可コードおよびその refresh chain から発行される JWT アクセストークンには、`userinfo_claims` という private claim が入ります。値は OIDC `claims` リクエストの `userinfo` メンバーで、リクエストになければ `{}` です。`/userinfo` はこの claim から返す claim を決めます。リソースサーバは無視してかまいません。この名前は予約済みで、custom grant の extra claims からは設定できません。
 
 ## Discovery / エンドポイント
 
@@ -211,9 +225,9 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 | `WithMountPrefix` | `string`(`/` で始める。ルートに置くなら `/`) | プロトコルエンドポイントに issuer 相対のパス接頭辞を設定。discovery のパスは issuer から別に決まる | `/oidc` |
 | `WithClaimsSupported` | `...string`(可変長) | discovery の `claims_supported` を埋める | 省略 |
 | `WithClaimsParameterSupported` | `bool` | `claims_parameter_supported` を切り替える。`false` の場合、malformed JSON は拒否するが、正しい `claims` payload の投影は抑止して authorize / PAR では無視する | true |
-| `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。空でない場合、同じ許可リストを `/authorize`、`/par`、CIBA の `/bc-authorize` でも強制する | 空（discovery に出ず、許可リストなし） |
+| `WithACRValuesSupported` | `...string`(可変長) | `acr_values_supported` を公開。空でない場合、同じ許可リストを `/auth`、`/par`、CIBA の `/bc-authorize` でも強制する | 空（discovery に出ず、許可リストなし） |
 | `WithDiscoveryMetadata` | `op.DiscoveryMetadata`(型付きの `service_documentation` / policy / TOS / UI locale / mTLS alias フィールド + `Extra map[string]any`) | OP が所有しない RFC 8414 / OIDC Discovery メタデータを discovery 文書に追加。`UILocalesSupported` は非空時に自動導出された locale list を上書きし、OP 管理フィールドと衝突する `Extra` key は拒否 | なし |
-| `WithPARLifetime` | `time.Duration` | `/par` が発行する `request_uri` の寿命を上書き。失効判定はブラウザが `/authorize` に URI を提示した時点で行い、その後の code 発行では単回使用性だけを強制 | 60 秒 |
+| `WithPARLifetime` | `time.Duration` | `/par` が発行する `request_uri` の寿命を上書き。失効判定はブラウザが `/auth` に URI を提示した時点で行い、その後の code 発行では単回使用性だけを強制 | 60 秒 |
 | `WithJWKSRotationActive` | `func() bool` | ローテーション期間中だけ JWKS の `Cache-Control` を短期キャッシュに切り替える述語 | 常に長期キャッシュ |
 
 ## subject 戦略
@@ -223,7 +237,7 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 | `WithSubjectGenerator` | `op.SubjectGenerator`(interface) | `sub` claim の導出を上書き。同梱の `op/subject.UUIDv7` が既定。generator は各 projection で呼ばれ、同じ input に deterministic で surprise I/O を行ってはならない | UUIDv7 をそのまま使用 |
 | `WithPairwiseSubject` | `[]byte` salt(32 byte 以上) | OIDC Core §8.1 の sector ごと pairwise sub 導出を有効化。途中で戦略を切り替えると `op.New` が拒否する | public(UUIDv7) |
 
-詳細は [使い方: pairwise subject](/ja/use-cases/pairwise-subject)。
+詳細は [ユースケース: pairwise subject](/ja/use-cases/pairwise-subject)。
 
 ## grant — Device Code / CIBA / Custom / Token Exchange
 
@@ -233,18 +247,20 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 | `WithDeviceVerificationURI` | `string`(絶対 URL) | デバイス画面に表示する verification URI を上書き（既定は `<issuer>/device`） | 自動導出 |
 | `WithDeviceCodeExpiry` | `time.Duration` | 新規 `device_code` レコードの `expires_in` 寿命を上書き。アクセストークン TTL とは独立 | 10 分 |
 | `WithDeviceCodePollInterval` | `time.Duration` | 広告する poll `interval` を上書き。これより速い poll は `slow_down` | 5 秒 |
-| `WithCIBA` | `...op.CIBAOption` | CIBA poll mode を有効化。`/bc-authorize` を公開し CIBA URN を登録。サブオプション: `WithCIBAHintResolver`(必須)、`WithCIBADefaultExpiresIn`、`WithCIBAMaxExpiresIn`、`WithCIBAPollInterval`、`WithCIBAMaxPollViolations` | 無効 |
+| `WithCIBA` | `...op.CIBAOption` | CIBA poll mode を有効化。`/bc-authorize` を公開し CIBA URN を登録。サブオプション: `WithCIBAHintResolver`(必須)、`WithCIBADefaultExpiresIn`、`WithCIBAMaxExpiresIn`、`WithCIBAPollInterval`、`WithCIBAMaxPollViolations`。負の有効期限や間隔は `op.New` が拒否する。`profile.FAPICIBA` では、既定と最大の有効期限を 10 分までに制限する | 無効 |
 | `WithCustomGrant` | `op.CustomGrantHandler` | 組み込み側が定義する `grant_type` URN を `/token` に登録。custom name の重複と組み込み grant type との collision は構築時に拒否される。handler はアクセストークンをそのまま返すか、`BoundAccessToken` 要求として返して OP に署名させる | なし |
 | `RegisterTokenExchange` | `op.TokenExchangePolicy` | RFC 8693 token-exchange grant を有効化。ポリシーがリクエスト単位で受理可否（admission）を判断し、OP の既定値をさらに狭めることもできる | 無効 |
 
-`WithDeviceCodeExpiry` と `WithDeviceCodePollInterval` は `WithAccessTokenTTL` から導出されません。アクセストークンを短命にしても、TV / CLI のペアリング手順までユーザがセカンドスクリーンに移る前に失効しないようにするためです。詳細は [使い方: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
+device-code・CIBA・token exchange の各 grant が発行する credential は、記録された grant の配下に置かれます。そのため grant の失効、ユーザ削除、pairwise `sub` の解決がこれらにも届きます。custom grant は、handler が grant を記録した場合にだけ grant に紐づきます。custom grant 自身の refresh rotation が発行するアクセストークンは常に JWT です。
+
+`WithDeviceCodeExpiry` と `WithDeviceCodePollInterval` は `WithAccessTokenTTL` から導出されません。アクセストークンを短命にしても、TV / CLI のペアリング手順までユーザがセカンドスクリーンに移る前に失効しないようにするためです。詳細は [ユースケース: device code](/ja/use-cases/device-code)、[CIBA](/ja/use-cases/ciba)、[Custom grant](/ja/use-cases/custom-grant)、[Token exchange](/ja/use-cases/token-exchange)。
 
 ## 認可機能 — RAR / Grant Management / Protected Resource Metadata
 
 | オプション | 値 | 説明 | 既定 |
 |---|---|---|---|
-| `WithAuthorizationDetailTypes` | `...op.AuthorizationDetailType` | RFC 9396 Rich Authorization Requests を有効化。受理する `type` を validator とともに登録する。`authorization_details` は `/authorize`、`/par`、`/token` で検証され、grant に永続化され、JWT アクセストークンと introspection に反映され、discovery で公開される。nil の `Validate` は `op.New` で拒否される | 無効 |
-| `WithGrantManagement` | `(actions []op.GrantManagementAction, actionRequired bool)` | OAuth 2.0 Grant Management draft を有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントを公開し、token 応答に `grant_id` を載せ、設定した action 集合を discovery で公開する。Experimental（IETF draft 追跡） | 無効 |
+| `WithAuthorizationDetailTypes` | `...op.AuthorizationDetailType` | RFC 9396 Rich Authorization Requests を有効化。受理する `type` を validator とともに登録する。`authorization_details` は `/auth`、`/par`、`/token` で検証され、grant に永続化され、JWT アクセストークンと introspection に反映され、discovery で公開される。nil の `Validate` は `op.New` で拒否される | 無効 |
+| `WithGrantManagement` | `(actions []op.GrantManagementAction, actionRequired bool)` | OAuth 2.0 Grant Management draft を有効化。`grant_management_action` / `grant_id` を処理し、query / revoke エンドポイントを公開し、token 応答に `grant_id` を載せ、設定した action 集合を discovery で公開する。Experimental（IETF draft 追跡）。1 回だけ呼べる（2 回目は `op.New` が失敗する） | 無効 |
 | `WithProtectedResources` | `...op.ProtectedResource` | 登録した各リソースについて RFC 9728 protected-resource メタデータを `/.well-known/oauth-protected-resource` とリソース path の接尾辞で公開し、`authorization_servers` に issuer を載せる。`ProtectedResource.IntrospectionClients` はその resource を audience とする access token を指定 confidential caller が introspect するための委譲であり、refresh token には適用されない | なし |
 
 `op.StepUpChallenge(realm, acrValues, maxAge)` は `op.New` のオプションではなく独立したヘルパで、組み込み側のリソースサーバが返す RFC 9470 の `WWW-Authenticate: Bearer` challenge を組み立てます。OP 自身はこれを発行しません。
@@ -255,10 +271,10 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 
 | Option | 値 | セクション | 既定 |
 |---|---|---|---|
-| `WithEncryptionKeyset` | `op.EncryptionKeyset`(RSA 2048 bit 以上 / EC P-256/384/521 の秘密鍵、`use=enc`) | OP の inbound 復号用 JWK を公開し、`/authorize` と `/par` の JWE request object を復号。outbound JWE 応答は受信側 client の JWKS を使う | なし |
-| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | 既定の許可リスト（`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`）を **狭める** だけ。広げることはできない | 既定の許可リスト全体 |
+| `WithEncryptionKeyset` | `op.EncryptionKeyset`(RSA 2048 bit 以上 / EC P-256/384/521 の秘密鍵、`use=enc`) | OP の inbound 復号用 JWK を公開し、`/auth` と `/par` の JWE request object を復号。outbound JWE 応答は受信側 client の JWKS を使う | なし |
+| `WithSupportedEncryptionAlgs` | `(algs []string, encs []string)` | 既定の許可リスト（`RSA-OAEP-256` / `ECDH-ES{,+A128KW,+A256KW}` × `A{128,256}GCM`）を **狭める** だけ。広げることはできない。`algs` と `encs` はそれぞれ 1 回だけ狭められる | 既定の許可リスト全体 |
 
-詳細は [使い方: JWE 暗号化](/ja/use-cases/jwe-encryption)。
+詳細は [ユースケース: JWE 暗号化](/ja/use-cases/jwe-encryption)。
 
 ## mTLS / プロキシ / ネットワーク
 
@@ -294,6 +310,25 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 | `WithSessionDurabilityPosture` | `op.SessionDurabilityPosture` | Back-Channel Logout の監査ログに方針を注釈付け（SOC 用途） | volatile |
 | `WithClock` | `op.Clock` | token の有効期限、監査レコードの timestamp、レート制限 window に使う時刻ソース（テスト用に注入） | `time.Now` |
 
+## `op.New` が拒否する構成
+
+必須オプションの欠落以外にも、次の組み合わせは「受け取って無視する」のではなく、`op.New` が設定エラーとして返します。
+
+| 構成 | 拒否する理由 |
+|---|---|
+| `store.Store` が返す substore が typed-nil（nil ポインタを持つ interface） | 単純な `nil` 判定を通り抜け、初回利用時に panic する |
+| `WithLoginFlow` と `WithAuthenticators` の併用、または `WithLoginFlow` の 2 回指定 | 1 つのプロバイダにログインの仕組みは 1 つだけ |
+| `WithRiskAssessor` と非 nil の `LoginFlow.Risk` の併用 | risk の供給元が 2 つあり、どちらを使うか決める規則がない |
+| すでに確定した subject を前提とする `LoginFlow.Primary` | primary の step が動く時点では subject がまだ決まっていない |
+| `consent` / `chooser` という名前の `WithInteractions` 要素 | 組み込み画面の名前として予約済み |
+| `WithGrantManagement` の 2 回指定、`WithSupportedEncryptionAlgs` で同じ側を 2 回狭めること | 後の呼び出しが前の設定を黙って置き換えてしまう |
+| `WithSPAUI` と `WithConsentUI` の併用 | どちらも consent 画面を所有する |
+| 負の `WithCIBADefaultExpiresIn` / `WithCIBAPollInterval`、`profile.FAPICIBA` で 10 分を超える CIBA の既定・最大有効期限 | 許容範囲外 |
+| secret のない `ConfidentialClient` シード、`jwks` と `jwks_uri` を両方持つクライアントレコード | RFC 7591 §2 が両者の併用を禁じており、空の secret ハッシュは空の `client_secret` を受理してしまう |
+| 必要な grant が有効でない `WithProfile` | エラーに、その grant を有効にするオプション名が出る |
+
+`NewEmailOTPAuthenticator` も、typed-nil の `Mailer`・`Store`・`Users`・`Clock` を拒否します。どれも最初のリクエストまで待たずに失敗します。
+
 ## ここでは設定**しない**もの
 
 意図的にオプションにしていない項目です。理由は各リンク先の設計判断を参照してください。
@@ -302,24 +337,18 @@ ceremony の origin は issuer と same-site でなければなりません。`l
 - **PKCE method** — `S256` のみ。`plain` は構造的に拒否されます。
 - **Cookie scheme** — `__Host-` プリフィックス、AES-256-GCM、double-submit CSRF が常に有効です。[必須オプション § WithCookieKeys](/ja/getting-started/required-options#withcookiekeys) を参照。
 - **乱数源** — `crypto/rand` のみ。`math/rand` は lint で禁止しています。
-- **`/metrics` の公開** — ライブラリではなくルータ側の責務です。[使い方: Prometheus](/ja/use-cases/prometheus) を参照。
+- **`/metrics` の公開** — ライブラリではなくルータ側の責務です。[ユースケース: Prometheus](/ja/use-cases/prometheus) を参照。
 
 ## このリストの裏取り
 
-カタログはライブラリ本体から grep で生成しています。自分で監査するには:
+カタログはライブラリ本体のソースから取っています。自分で監査するには:
 
 ```sh
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
-grep -rhE '^func With[A-Z]|^func RegisterTokenExchange' \
-  op/options.go op/options_authn.go op/options_clients.go \
-  op/options_ciba.go op/options_customgrant.go op/options_devicecode.go \
-  op/options_discovery.go op/options_encryption.go op/options_features.go \
-  op/options_fapi_proxy.go op/options_protocol.go op/options_session.go \
-  op/options_subject.go op/access_token_revocation.go op/i18n.go \
-  op/registration.go op/authorization_details.go op/grant_management.go \
-  op/protected_resource.go \
-  | sort -u
+grep -hE '^func (With[A-Z]|RegisterTokenExchange)' $(ls op/*.go | grep -v _test.go) | sort -u
 ```
+
+出力には `WithInMemoryDPoPNonceLogger` と `...ForTest` 系も含まれますが、これらは `op.NewInMemoryDPoPNonceSource` 用のヘルパーで、`op.New` のオプションではありません。
 
 関数名と受け取る型のシグネチャが正典であり、各関数の godoc コメントが契約の正本です。
