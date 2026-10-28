@@ -6,7 +6,7 @@ pageClass: pg-security-posture
 
 # Security posture
 
-This page lays out **how** the library tries to stay safe, and — equally important — **what kind of assurance it does and does not give you**.
+This page covers two things: **how** the library tries to stay safe, and **what kind of assurance it does and does not give you**. "OP" means OpenID Provider, the authorization server this library implements; "OFCS" is the OpenID Foundation conformance suite.
 
 ::: warning Set expectations
 go-oidc-provider is an OSS library maintained by a single individual developer in their spare time. It has **not** been independently audited, **not** received a paid pentest, and **not** been formally certified by the OpenID Foundation. The properties below describe what the codebase actively defends against; they are not equivalent to a third-party audit report.
@@ -28,45 +28,40 @@ When someone asks "is this safe?", the honest answer needs five sub-answers:
 
 <figure class="fig">
   <div class="fig-head">Five separate properties behind "is this safe?"</div>
-  <svg class="fig-svg" role="img" aria-labelledby="posture-five-title" viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="posture-five-title" viewBox="0 0 960 328" xmlns="http://www.w3.org/2000/svg">
     <title id="posture-five-title">Conformance, correctness, security, supply chain and operational assurance are five separate properties. Each is evidenced differently, and a claim about one says nothing about the others.</title>
-    <rect class="fg-box" x="36" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="56" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="56" y="49" text-anchor="middle">1</text>
-    <text class="fg-t2" x="76" y="50">Conformance</text>
-    <line class="fg-rule" x1="52" y1="64" x2="188" y2="64"/>
-    <text class="fg-mxs" x="52" y="84">OFCS</text>
-    <text class="fg-xs" x="52" y="100">run against the suite</text>
-    <rect class="fg-box" x="216" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="236" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="236" y="49" text-anchor="middle">2</text>
-    <text class="fg-t2" x="256" y="50">Correctness</text>
-    <line class="fg-rule" x1="232" y1="64" x2="368" y2="64"/>
-    <text class="fg-mxs" x="232" y="84">tests · fuzzing</text>
-    <text class="fg-xs" x="232" y="100">does it do what it says</text>
-    <rect class="fg-box" x="396" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="416" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="416" y="49" text-anchor="middle">3</text>
-    <text class="fg-t2" x="436" y="50">Security</text>
-    <line class="fg-rule" x1="412" y1="64" x2="548" y2="64"/>
-    <text class="fg-mxs" x="412" y="84">structural defenses</text>
-    <text class="fg-xs" x="412" y="100">not a list of checks</text>
-    <rect class="fg-box" x="576" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="596" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="596" y="49" text-anchor="middle">4</text>
-    <text class="fg-t2" x="616" y="50">Supply chain</text>
-    <line class="fg-rule" x1="592" y1="64" x2="728" y2="64"/>
-    <text class="fg-mxs" x="592" y="84">govulncheck · depguard</text>
-    <text class="fg-xs" x="592" y="100">enforced in CI</text>
-    <rect class="fg-box" x="756" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="776" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="776" y="49" text-anchor="middle">5</text>
-    <text class="fg-t2" x="796" y="50">Operational</text>
-    <line class="fg-rule" x1="772" y1="64" x2="908" y2="64"/>
-    <text class="fg-mxs" x="772" y="84">SECURITY.md · GHSA</text>
-    <text class="fg-xs" x="772" y="100">what happens on a report</text>
+    <rect class="fg-box" x="32" y="24" width="896" height="280" rx="8"/>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="64" cy="52" r="12"/><text class="fg-badge-t" x="64" y="57.5" text-anchor="middle">1</text>
+    <text class="fg-t2" x="96" y="58">Conformance</text>
+    <text class="fg-m" x="288" y="58">OFCS</text>
+    <text class="fg-s" x="592" y="58">run against the suite</text>
+    <line class="fg-rule" x1="48" y1="80" x2="912" y2="80"/>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="64" cy="108" r="12"/><text class="fg-badge-t" x="64" y="113.5" text-anchor="middle">2</text>
+    <text class="fg-t2" x="96" y="114">Correctness</text>
+    <text class="fg-m" x="288" y="114">tests · fuzzing</text>
+    <text class="fg-s" x="592" y="114">does it do what it says</text>
+    <line class="fg-rule" x1="48" y1="136" x2="912" y2="136"/>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="64" cy="164" r="12"/><text class="fg-badge-t" x="64" y="169.5" text-anchor="middle">3</text>
+    <text class="fg-t2" x="96" y="170">Security</text>
+    <text class="fg-m" x="288" y="170">structural defenses</text>
+    <text class="fg-s" x="592" y="170">not a list of checks</text>
+    <line class="fg-rule" x1="48" y1="192" x2="912" y2="192"/>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="64" cy="220" r="12"/><text class="fg-badge-t" x="64" y="225.5" text-anchor="middle">4</text>
+    <text class="fg-t2" x="96" y="226">Supply chain</text>
+    <text class="fg-m" x="288" y="226">govulncheck · depguard</text>
+    <text class="fg-s" x="592" y="226">enforced in CI</text>
+    <line class="fg-rule" x1="48" y1="248" x2="912" y2="248"/>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="64" cy="276" r="12"/><text class="fg-badge-t" x="64" y="281.5" text-anchor="middle">5</text>
+    <text class="fg-t2" x="96" y="282">Operational</text>
+    <text class="fg-m" x="288" y="282">SECURITY.md · GHSA</text>
+    <text class="fg-s" x="592" y="282">what happens on a report</text>
   </svg>
-  <figcaption class="fig-note">They are listed in the order they should be read, not in order of importance. A passing conformance run says nothing about the fourth box, and a clean dependency scan says nothing about the third.</figcaption>
+  <figcaption class="fig-note">They are listed in the order they should be read, not in order of importance. A passing conformance run says nothing about the fourth row, and a clean dependency scan says nothing about the third.</figcaption>
 </figure>
 
 ## Structural defenses (what the codebase enforces by shape)
@@ -76,6 +71,13 @@ These are not "we remembered to validate"; they are decisions made at the type /
 ### 1. The constructor refuses zero-value boots
 
 `op.New(...)` returns `error` — not a "use defaults" handler — when a required option is missing. `WithIssuer`, `WithStore`, and `WithKeyset` are unconditionally required; `WithCookieKeys` is required whenever the `authorization_code` grant is enabled, including the default grant set. There is no usable zero-value `Provider`.
+
+Construction also refuses settings that would otherwise be ignored or fail on first use:
+
+- a `LoginFlow.Primary` that needs an already-bound subject (`PrimaryPasskey`, `StepTOTP`, `StepEmailOTP`, `StepRecoveryCode` belong after a subject-binding primary, as `Rule` steps);
+- a statically seeded confidential client with no secret under `client_secret_basic` or `client_secret_post`, which would otherwise accept an empty `client_secret`;
+- a typed-nil substore, a second `WithGrantManagement`, and a `WithInteractions` entry named `consent` or `chooser` (reserved for the built-ins);
+- a negative CIBA expiry or poll interval, and under FAPI-CIBA an expiry above 10 minutes.
 
 ::: details Why this matters
 Most "default-on" framework libraries silently boot on missing config. This shape closes the class of "OP came up with no signing key / guessable cookie key / wrong issuer" errors before a single request is served. See `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` for the build-time errors emitted on absence.
@@ -97,7 +99,7 @@ A repository-wide rule bans `math/rand`. The lint configuration backs it up. Eve
 
 ### 4. `time.Now()` is funnelled through `internal/timex/`
 
-Direct `time.Now()` calls are blocked by the `forbidigo` lint, so every wall-clock read flows through `internal/timex.Clock`. The single canonical site is `internal/timex.systemClock.Now()`, with one documented carve-out in `op/storeadapter/redis` — a sub-module that cannot import `internal/timex`; embedders override that sub-module's fallback with `WithClock`. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
+Direct `time.Now()` calls are blocked by the `forbidigo` lint, so every wall-clock read flows through `internal/timex.Clock`. The single canonical site is `internal/timex.systemClock.Now()`, with one documented carve-out in each of the separately versioned `op/storeadapter/redis`, `sql` and `dynamodb` modules, which cannot import `internal/timex`; embedders override a module's fallback with its `WithClock` option. A `Clock` abstraction makes time injection at the boundary explicit and prevents replay-window tests from passing accidentally because clocks drift differently in tests.
 
 ### 5. Errors go through a typed catalog
 
@@ -116,33 +118,39 @@ The library never embeds an ORM (no GORM, no ent, no xo). Storage is through sma
 | Defence | Source of truth | Spec |
 |---|---|---|
 | `__Host-` cookies, AES-256-GCM, double-submit CSRF, Origin/Referer check | `internal/cookie`, `internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
-| PKCE required for public / native authorization-code clients and for every authorization-code client under FAPI profiles; `plain` refused | `internal/authorize`, `internal/pkce` | RFC 7636, RFC 9700 |
-| Refresh-token rotation + reuse detection (chain revoke) | `internal/grants/refresh` | RFC 9700 §4.14.2 |
+| PKCE required for public / native authorization-code clients and for every authorization-code client under the `Baseline` and FAPI 2.0 profiles; `plain` refused | `internal/authorize`, `internal/pkce` | RFC 7636, RFC 9700 |
+| Refresh-token rotation + reuse detection: a replay retires the chain and the grant's access tokens, while a rotation or `/revoke` stays scoped to its own chain so the user's other sessions on the same client are untouched | `internal/grants/refresh`, `internal/grants/teardown` | RFC 9700 §4.14.2 |
 | Sender-constrained tokens (DPoP `cnf.jkt`, mTLS `cnf.x5t#S256`) | `internal/dpop`, `internal/mtls`, `internal/tokens` | RFC 9449, RFC 8705 |
 | `iss` in authorization response | `internal/authorize` | RFC 9207 |
 | `redirect_uri` exact match (configurable; default exact) | `internal/authorize` | OAuth 2.1, RFC 8252 |
 | Loopback redirect hardening | `internal/registrationendpoint`, `internal/authorize` | RFC 8252 |
-| Outbound HTTP envelope (allowed schemes, body cap, accept content-types, timeout, redirect, cache) on JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout — dial-time deny-list (loopback / link-local / RFC 1918 / IPv6 ULA), URL-gate fallback when `BaseTransport` is not `*http.Transport` | `internal/securefetch`, `internal/netsec` | OWASP SSRF, OIDC Back-Channel Logout 1.0 |
+| Outbound HTTP envelope (allowed schemes, body cap, accept content-types, timeout, redirect, cache) on JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout — dial-time deny-list (loopback / link-local / RFC 1918 / IPv6 ULA), URL-gate fallback when `BaseTransport` is not `*http.Transport`; a fetch through a proxy is URL-checked against the target host first, the proxy address must itself pass the deny-list, and environment proxy variables are not honoured | `internal/securefetch`, `internal/netsec` | OWASP SSRF, OIDC Back-Channel Logout 1.0 |
 | OP-side request_object replay (`jti`) | `internal/jar` | RFC 9101 §10.8 |
 | Algorithm allow-list at every verify path | `internal/jose` | RFC 8725 |
 | Issuer canonicalisation / no trailing slash drift | `op/options_validate.go` | RFC 9207 |
-| Resource indicator canonicalisation (lowercase scheme + host, default port stripped, trailing slash normalised, fragment / userinfo refused) on `/authorize`, `/token`, `/device_authorization`, `/bc-authorize`, and the `WithAccessTokenFormatPerAudience` allow-list | `internal/resourceindicator` | RFC 8707 §2 |
+| Resource indicator canonicalisation (lowercase scheme + host, default port stripped, trailing slash normalised, fragment / userinfo refused) on `/auth`, `/token`, `/device_authorization`, `/bc-authorize`, and the `WithAccessTokenFormatPerAudience` allow-list | `internal/resourceindicator` | RFC 8707 §2 |
 | Duplicate single-valued parameters refused on `/token`, `/bc-authorize`, `/end_session` (RFC 8707 `resource=` excepted); credentials presented in more than one location refused at `clientauth.Parse` | `internal/httpx`, `internal/clientauth`, `internal/tokenendpoint`, `internal/cibaendpoint`, `internal/endsession` | RFC 6749 §3.2.1, OIDC RP-Initiated Logout 1.0 §3 |
 | Argon2id parameters above the OWASP Password Storage Cheat Sheet floor (memory ≥ 19 MiB, time ≥ 2) for `client_secret`, end-user passwords, and recovery codes; recovery-code batch verification capped at 16; duplicate parameter segments in encoded hashes refused | `internal/argon2id`, `internal/authn/password`, `internal/authn/recovery`, `internal/clientauth/secret` | OWASP Password Storage Cheat Sheet |
-| Trailing JSON documents refused on the DCR metadata decoder and the interaction JSON driver | `internal/registrationendpoint`, `op/interaction` | RFC 7591 §2 |
+| Data after the first JSON value (a stray `}`) refused on every JSON-reading endpoint and driver | `internal/httpx`, `internal/registrationendpoint`, `op/interaction` | RFC 7591 §2 |
 | `op.New` rejects configurations whose enabled grants / features need a substore the wired store does not expose | `op/options_validate.go`, `op/storeadapter/redis` | — (defence in depth) |
 | Client verification keys (`client_assertion`, JAR request objects) held to the OP key-shape floor: RSA ≥ 2048 bits, EC curve matches the declared `alg` | `internal/clientauth`, `internal/jar`, `internal/jose` (`AssertAlgKeyShape`) | RFC 7518 §3.3, RFC 8725 §3.2 |
 | `private_key_jwt` clients using `jwks_uri` recover from legitimate RP key rotation by doing one throttled cache-bypassing refetch on unknown `kid`; random unknown kids cannot amplify outbound fetches | `internal/clientauth`, `internal/jar` | RFC 7523, OIDC Dynamic Registration |
 | `private_key_jwt` assertion verification selects by JWS `kid`, caps trial verifications even when `kid` is absent, equalises the no-keys rejection path, and memoizes client lookup per request | `internal/clientauth` | RFC 7515 §4.1.4, RFC 7523 |
 | JWKS parsing rejects private and symmetric keys before verification paths see them | `internal/clientauth`, `internal/jar`, `internal/jose` | RFC 8725 |
+| A client record carrying both `jwks` and `jwks_uri` is refused on every key-reading surface (request objects, `private_key_jwt`, response encryption); a `jwks_uri` used by several surfaces is fetched and cached once | `internal/clientauth`, `internal/jar`, `internal/clientencjwks` | RFC 7591 §2 |
 | DPoP-bound access tokens presented under the `Bearer` scheme are rejected at `/userinfo`; sender-constrained tokens must use the `DPoP` scheme | `internal/endpointsupport`, `internal/userinfo` | RFC 9449 §7.1 |
 | Tampered or undecodable authorization-endpoint session cookies are cleared and treated as no session, instead of being carried forward | `internal/authorizeendpoint`, `internal/cookie` | RFC 6265bis |
-| One-time auth factors (email-OTP, TOTP, recovery codes) single-use via atomic compare-and-set (`ErrAlreadyConsumed` on replay); cross-factor lockout stamped atomically (`StampLock`) | `internal/authn`, `op/store` | — (defence in depth) |
+| One-time auth factors (email-OTP, TOTP, recovery codes) single-use via atomic compare-and-set (`ErrAlreadyConsumed` on replay); cross-factor lockout state advanced by compare-and-swap (`AuthnLockoutStore.CompareAndSwap`) | `internal/authn`, `op/store` | — (defence in depth) |
 | Wrong-code branches for TOTP, email-OTP, and recovery codes all increment the shared retry path and observer, so captcha / lockout gates see second-factor brute-force attempts | `internal/authn` | — (defence in depth) |
 | Refresh-token `id` / `parent_id` hashed at rest, looked up in constant time | `internal/tokenendpoint`, `op/store` | RFC 9700 §4.14.2 |
 | Refresh-token rotation re-checks the parent under the same critical section / transaction as the child insert, so replay revocation cannot race a successful descendant save | `op/storeadapter/sql`, `op/storeadapter/inmem` | RFC 9700 §4.14.2 |
 | Token exchange re-verifies the post-policy decision: granted scope must remain within the requested subject-token-bounded scope, and granted audience must remain within the requested audience | `internal/customgrant/tokenexchange` | RFC 8693 |
 | Persisted opaque access tokens minted during a token response are revoked on post-mint `server_error` paths, so a failed response does not leave a valid orphan token behind | `internal/tokenendpoint`, `op/store` | — (defence in depth) |
+| An authorization code presented by the wrong client, or failing the `redirect_uri` or PKCE check, is refused without consuming the code or tearing down the legitimate holder's grant; only a genuine replay does | `internal/tokenendpoint` | RFC 6749 §4.1.2, RFC 9700 |
+| Each code, refresh chain and access token carries the `auth_time`, `acr`, `amr`, claims request and `authorization_details` of the authorization that issued it, not those of the shared grant | `op/store`, `internal/tokenendpoint` | OIDC Core 1.0 §2, RFC 9396 (see [#32](/security/design-judgments#dj-32)) |
+| `LoginFlow` rules and the `Decider` also run on authorizations served from an existing session, and fail closed on a panic or a malformed verdict | `internal/authorizeendpoint`, `op` | RFC 9470 (see [#33](/security/design-judgments#dj-33)) |
+| `id_token_hint` accepts only `typ` absent or `JWT`, so a logout token or access token cannot stand in for an ID token at `/end_session` or for CIBA | `internal/idtokenhint` | RFC 8725 §3.11 |
+| Password login takes the same time for an account whose stored hash is below the Argon2id policy, or in another encoding, as for any other failed login | `internal/authn/password` | CWE-208 |
 
 ## Tooling
 

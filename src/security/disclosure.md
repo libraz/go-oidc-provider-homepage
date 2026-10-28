@@ -36,39 +36,54 @@ The rough flow once a report lands:
 
 <figure class="fig">
   <div class="fig-head">What happens after you send a report</div>
-  <svg class="fig-svg" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 960 424" xmlns="http://www.w3.org/2000/svg">
     <title id="disclosure-flow-title">The pipeline a vulnerability report travels: received, acknowledged, triaged, and then either closed with a stated reason or fixed, disclosed on an agreed window, released, and published as a GHSA.</title>
-    <rect class="fg-box" x="280" y="24" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="48">Report received</text>
-    <text class="fg-xs" x="300" y="68">privately, through the channel in SECURITY.md</text>
-    <path class="fg-edge fg-edge--thin" d="M480,80 V88" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="280" y="90" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="114">Acknowledged</text>
-    <text class="fg-xs" x="300" y="134">when I am next online — this is a personal project</text>
-    <path class="fg-edge fg-edge--thin" d="M480,146 V154" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="280" y="156" width="400" height="54" rx="8"/>
-    <text class="fg-t2 fg-accent" x="300" y="180">Triage</text>
-    <text class="fg-xs" x="300" y="200">reproduced and classified</text>
-    <path class="fg-edge fg-edge--muted" d="M684,183 H760" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="722" y="176" text-anchor="middle">out of scope</text>
-    <rect class="fg-box fg-box--muted" x="764" y="156" width="160" height="54" rx="8"/>
-    <text class="fg-t2" x="782" y="180">Closed</text>
-    <text class="fg-xs" x="782" y="200">with the reason stated</text>
-    <path class="fg-edge fg-edge--thin" d="M480,212 V220" marker-end="url(#fg-a)"/>
-    <text class="fg-xs fg-ok" x="496" y="222">confirmed</text>
-    <rect class="fg-box" x="280" y="222" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="246">Fix, or a mitigation plan</text>
-    <text class="fg-xs" x="300" y="266">severity drives the priority, not the reporter</text>
-    <path class="fg-edge fg-edge--thin" d="M480,278 V286" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="280" y="288" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="312">Coordinated disclosure</text>
-    <text class="fg-xs" x="300" y="332">on a window agreed with the reporter</text>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M480,344 V352" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="280" y="354" width="400" height="54" rx="8"/>
-    <text class="fg-t2 fg-accent" x="300" y="378">Patched release, then a GHSA</text>
-    <text class="fg-xs" x="300" y="398">with a CVE requested where it applies</text>
+    <!-- received -->
+    <rect class="fg-box" x="32" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="52">Report received</text>
+    <text class="fg-s" x="48" y="76">privately, through the channel</text>
+    <text class="fg-s" x="48" y="100">named in SECURITY.md</text>
+    <path class="fg-edge fg-edge--thin" d="M304,72 H344" marker-end="url(#fg-a)"/>
+    <!-- acknowledged -->
+    <rect class="fg-box" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="52">Acknowledged</text>
+    <text class="fg-s" x="360" y="76">when I am next online;</text>
+    <text class="fg-s" x="360" y="100">this is a personal project</text>
+    <path class="fg-edge fg-edge--thin" d="M616,72 H656" marker-end="url(#fg-a)"/>
+    <!-- triage -->
+    <rect class="fg-box" x="656" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="672" y="52">Triage</text>
+    <text class="fg-s" x="672" y="76">reproduced and classified</text>
+    <text class="fg-s" x="672" y="100">valid, or out of scope</text>
+    <!-- branches -->
+    <path class="fg-leader" d="M792,120 V144 M168,144 H792"/>
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M168,144 V168" marker-end="url(#fg-ao)"/>
+    <text class="fg-s fg-ok" x="180" y="162">confirmed</text>
+    <path class="fg-edge fg-edge--muted fg-edge--thin" d="M792,144 V168" marker-end="url(#fg-am)"/>
+    <text class="fg-s fg-dim" x="804" y="162">out of scope</text>
+    <!-- fix -->
+    <rect class="fg-box" x="32" y="168" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="196">Fix or mitigation plan</text>
+    <text class="fg-s" x="48" y="220">severity sets the priority,</text>
+    <text class="fg-s" x="48" y="244">not the reporter</text>
+    <!-- closed -->
+    <rect class="fg-box fg-box--muted" x="656" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t2" x="672" y="196">Closed</text>
+    <text class="fg-s" x="672" y="220">with the reason stated</text>
+    <path class="fg-edge fg-edge--thin" d="M168,264 V304" marker-end="url(#fg-a)"/>
+    <!-- disclosure -->
+    <rect class="fg-box" x="32" y="304" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="332">Coordinated disclosure</text>
+    <text class="fg-s" x="48" y="356">on a window agreed</text>
+    <text class="fg-s" x="48" y="380">with the reporter</text>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M304,352 H344" marker-end="url(#fg-ac)"/>
+    <!-- release -->
+    <rect class="fg-box fg-box--accent" x="344" y="304" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="332">Patched release, GHSA</text>
+    <text class="fg-s" x="360" y="356">with a CVE requested</text>
+    <text class="fg-s" x="360" y="380">where it applies</text>
   </svg>
-  <figcaption class="fig-note">Only the acknowledgement step has a soft timeline, and it says so plainly. Everything below it is fixed: nothing is published before the agreed window, and nothing is quietly patched without one.</figcaption>
+  <figcaption class="fig-note">Only the acknowledgement step has a soft timeline, and it says so plainly. Every step after it is fixed: nothing is published before the agreed window, and nothing is quietly patched without one.</figcaption>
 </figure>
 
 Realistic timing: acknowledgement usually takes a few days; severe issues get worked on right away, lower-severity ones may wait until I have a weekend free. If a week goes by without a reply, please ping again — it's not rudeness, just a missed notification or a busy stretch.
@@ -80,6 +95,7 @@ Realistic timing: acknowledgement usually takes a few days; severe issues get wo
 | Version | Supported |
 |---------|-----------|
 | `v1.x` | latest minor + previous minor |
+| `v0.x` | unsupported |
 
 ::: tip Upgrade cadence
 Pin to a tag in `go.mod` and read the [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) on each bump. The v1 public API follows Semantic Versioning; APIs marked `Experimental:` remain outside that promise. Security fixes land in supported v1 minors.
@@ -92,7 +108,7 @@ The project follows **coordinated disclosure** — nothing about that is adversa
 1. Reporter and maintainer agree on a target patch date that fits both schedules.
 2. A fix is developed in a private branch or GitHub Security Advisory draft.
 3. The fix lands in `main` and a release tag is cut.
-4. The advisory is published. CVE assignment is requested from GitHub's CNA when the issue meets the criteria; defence-in-depth hardening with no exploit path tends to ship as a GHSA without a CVE.
+4. The advisory is published (a GHSA, GitHub's own advisory ID). A CVE is requested through GitHub's CNA (CVE Numbering Authority) when the issue meets the criteria; defence-in-depth hardening with no exploit path tends to ship as a GHSA without a CVE.
 5. Subscribers of the GitHub repository (Watch → Releases / Security advisories) receive a notification.
 
 ## Current advisory state
@@ -120,6 +136,8 @@ In scope (please report):
 - Token forgery, ID-token signature bypass, or `iss` mix-up paths.
 - PKCE / nonce / state replay paths beyond what the relevant RFC permits.
 - Refresh-token reuse without chain revocation.
+- A credential that stays usable after the revocation, sign-out or subject deletion that should have retired it (refresh, access, device-code, CIBA or token-exchange tokens).
+- A `LoginFlow` rule or `Decider` that an existing session lets a request skip.
 - CSRF on consent / logout / interaction POSTs.
 - Cookie-handling regressions (loss of `__Host-`, `Secure`, AES-256-GCM AEAD).
 - Back-channel logout SSRF (private-network address bypassing the RFC 1918 deny-list).

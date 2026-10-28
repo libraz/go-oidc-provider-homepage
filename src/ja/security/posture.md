@@ -6,7 +6,7 @@ pageClass: pg-security-posture
 
 # セキュリティ方針
 
-このページでは、本ライブラリが **どうやって** 安全性を保とうとしているかと、同じくらい大事な **どんな保証は与えていないか** を整理します。
+このページでは、本ライブラリが **どうやって** 安全性を保とうとしているかと、**どこまでの保証を与え、どこから先は与えていないか** を整理します。「OP」は OpenID Provider、つまり本ライブラリが実装する認可サーバのこと、「OFCS」は OpenID Foundation の適合性テストスイートのことです。
 
 ::: warning 期待値の合わせ方
 go-oidc-provider は個人開発者が空き時間で維持している OSS ライブラリです。第三者による独立監査、有償ペネトレーションテスト、OpenID Foundation の公式認証 — いずれも受けていません。下記の性質はコードベースが能動的に防いでいるものを書き出したものであって、第三者監査レポートと同等のものではありません。
@@ -28,43 +28,38 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 <figure class="fig">
   <div class="fig-head">「これは安全か」を支える 5 つの独立した性質</div>
-  <svg class="fig-svg" role="img" aria-labelledby="posture-five-title" viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="posture-five-title" viewBox="0 0 960 328" xmlns="http://www.w3.org/2000/svg">
     <title id="posture-five-title">適合性・正しさ・セキュリティ・サプライチェーン・運用の保証は、それぞれ独立した性質です。裏付けの取り方も別々で、ひとつについての主張が他のことを保証するわけではありません。</title>
-    <rect class="fg-box" x="36" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="56" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="56" y="49" text-anchor="middle">1</text>
-    <text class="fg-t2" x="76" y="50">適合性</text>
-    <line class="fg-rule" x1="52" y1="64" x2="188" y2="64"/>
-    <text class="fg-mxs" x="52" y="84">OFCS</text>
-    <text class="fg-xs" x="52" y="100">適合スイートで実行する</text>
-    <rect class="fg-box" x="216" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="236" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="236" y="49" text-anchor="middle">2</text>
-    <text class="fg-t2" x="256" y="50">正しさ</text>
-    <line class="fg-rule" x1="232" y1="64" x2="368" y2="64"/>
-    <text class="fg-mxs" x="232" y="84">テスト · fuzzing</text>
-    <text class="fg-xs" x="232" y="100">仕様どおりに動くか</text>
-    <rect class="fg-box" x="396" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="416" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="416" y="49" text-anchor="middle">3</text>
-    <text class="fg-t2" x="436" y="50">セキュリティ</text>
-    <line class="fg-rule" x1="412" y1="64" x2="548" y2="64"/>
-    <text class="fg-mxs" x="412" y="84">構造的な防御</text>
-    <text class="fg-xs" x="412" y="100">チェック項目の羅列ではない</text>
-    <rect class="fg-box" x="576" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="596" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="596" y="49" text-anchor="middle">4</text>
-    <text class="fg-t2" x="616" y="50">サプライチェーン</text>
-    <line class="fg-rule" x1="592" y1="64" x2="728" y2="64"/>
-    <text class="fg-mxs" x="592" y="84">govulncheck · depguard</text>
-    <text class="fg-xs" x="592" y="100">CI で強制する</text>
-    <rect class="fg-box" x="756" y="24" width="168" height="88" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="776" cy="46" r="10"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="776" y="49" text-anchor="middle">5</text>
-    <text class="fg-t2" x="796" y="50">運用</text>
-    <line class="fg-rule" x1="772" y1="64" x2="908" y2="64"/>
-    <text class="fg-mxs" x="772" y="84">SECURITY.md · GHSA</text>
-    <text class="fg-xs" x="772" y="100">報告が来たときに何が起きるか</text>
+    <rect class="fg-box" x="32" y="24" width="896" height="280" rx="8"/>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="64" cy="52" r="12"/><text class="fg-badge-t" x="64" y="57.5" text-anchor="middle">1</text>
+    <text class="fg-t2" x="96" y="58">適合性</text>
+    <text class="fg-m" x="288" y="58">OFCS</text>
+    <text class="fg-s" x="592" y="58">適合スイートで実行する</text>
+    <line class="fg-rule" x1="48" y1="80" x2="912" y2="80"/>
+    <!-- 2 -->
+    <circle class="fg-badge" cx="64" cy="108" r="12"/><text class="fg-badge-t" x="64" y="113.5" text-anchor="middle">2</text>
+    <text class="fg-t2" x="96" y="114">正しさ</text>
+    <text class="fg-m" x="288" y="114">テスト · fuzzing</text>
+    <text class="fg-s" x="592" y="114">仕様どおりに動くか</text>
+    <line class="fg-rule" x1="48" y1="136" x2="912" y2="136"/>
+    <!-- 3 -->
+    <circle class="fg-badge" cx="64" cy="164" r="12"/><text class="fg-badge-t" x="64" y="169.5" text-anchor="middle">3</text>
+    <text class="fg-t2" x="96" y="170">セキュリティ</text>
+    <text class="fg-m" x="288" y="170">構造的な防御</text>
+    <text class="fg-s" x="592" y="170">チェック項目の羅列ではない</text>
+    <line class="fg-rule" x1="48" y1="192" x2="912" y2="192"/>
+    <!-- 4 -->
+    <circle class="fg-badge" cx="64" cy="220" r="12"/><text class="fg-badge-t" x="64" y="225.5" text-anchor="middle">4</text>
+    <text class="fg-t2" x="96" y="226">サプライチェーン</text>
+    <text class="fg-m" x="288" y="226">govulncheck · depguard</text>
+    <text class="fg-s" x="592" y="226">CI で強制する</text>
+    <line class="fg-rule" x1="48" y1="248" x2="912" y2="248"/>
+    <!-- 5 -->
+    <circle class="fg-badge" cx="64" cy="276" r="12"/><text class="fg-badge-t" x="64" y="281.5" text-anchor="middle">5</text>
+    <text class="fg-t2" x="96" y="282">運用</text>
+    <text class="fg-m" x="288" y="282">SECURITY.md · GHSA</text>
+    <text class="fg-s" x="592" y="282">報告が来たときに何が起きるか</text>
   </svg>
   <figcaption class="fig-note">並び順は読む順序であって、重要度の順ではありません。適合スイートが通ったことは 4 番目について何も語りませんし、依存関係のスキャンが綺麗なことは 3 番目について何も語りません。</figcaption>
 </figure>
@@ -75,10 +70,17 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 ### 1. コンストラクタはゼロ値起動を拒否する
 
-`op.New(...)` は `error` を返します — 必須オプションが欠けるとエラーで弾かれます。`WithIssuer`、`WithStore`、`WithKeyset` は無条件で必須、`WithCookieKeys` は `authorization_code` grant が有効な場合（デフォルトの grant 集合を含む）に必須です。利用可能なゼロ値の `Provider` は存在しません。
+`op.New(...)` は `error` を返します — 必須オプションが欠けるとエラーで弾かれます。`WithIssuer`、`WithStore`、`WithKeyset` は無条件で必須、`WithCookieKeys` は `authorization_code` grant が有効な場合（既定の grant 集合を含む）に必須です。利用可能なゼロ値の `Provider` は存在しません。
+
+そのほか、設定が無視されたり初回利用時に失敗したりする構成も、構築時に拒否します。
+
+- 束縛済みの subject を前提とする要素（`PrimaryPasskey`、`StepTOTP`、`StepEmailOTP`、`StepRecoveryCode`）を `LoginFlow.Primary` に置いた構成。これらは subject を束縛する primary の後ろに `Rule` のステップとして置きます。
+- `client_secret_basic` または `client_secret_post` を使う、静的に登録した confidential client に secret がない構成。そのままでは空の `client_secret` を受理してしまいます。
+- typed-nil のサブストア、2 回目の `WithGrantManagement`、組み込みのために予約された `consent` / `chooser` という名前の `WithInteractions` エントリ。
+- 負の CIBA 有効期限や poll 間隔、および FAPI-CIBA での 10 分を超える有効期限。
 
 ::: details なぜ重要か
-多くの「デフォルト ON」型のフレームワークは設定不足でも気付かれずに起動します。本ライブラリの設計では「OP が立ち上がったが署名鍵がない / 推測可能な cookie 鍵 / 誤った issuer」といった種類のバグを、最初の 1 リクエストが届く前に閉じます。詳細は `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` の不在時に出るビルド時エラーを参照してください。
+多くの「既定 ON」型のフレームワークは設定不足でも気付かれずに起動します。本ライブラリの設計では「OP が立ち上がったが署名鍵がない / 推測可能な cookie 鍵 / 誤った issuer」といった種類のバグを、最初の 1 リクエストが届く前に閉じます。詳細は `op.WithIssuer` / `op.WithKeyset` / `op.WithCookieKeys` / `op.WithStore` の不在時に出るビルド時エラーを参照してください。
 :::
 
 ### 2. JOSE の alg リストは閉じた型 {#jose-alg-list}
@@ -97,7 +99,7 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 ### 4. `time.Now()` は `internal/timex/` 経由のみ
 
-`time.Now()` の直接呼び出しは `forbidigo` lint でブロックされ、すべての wall-clock 読みは `internal/timex.Clock` を経由します。唯一の正規呼び出し点は `internal/timex.systemClock.Now()` で、`internal/timex` を import できない `op/storeadapter/redis` サブモジュールに限り、明示的な例外がもう 1 箇所あります（embedder は `WithClock` でその fallback を上書きできます）。`Clock` 抽象により、時刻注入を境界で明示し、テスト時に時刻がずれて replay 検証窓のテストが偶然通ってしまう事故を防いでいます。
+`time.Now()` の直接呼び出しは `forbidigo` lint でブロックされ、すべての wall-clock 読みは `internal/timex.Clock` を経由します。唯一の正規呼び出し点は `internal/timex.systemClock.Now()` で、別モジュールとして版管理される `op/storeadapter/redis`、`sql`、`dynamodb` は `internal/timex` を import できないため、各モジュールに明示的な例外が 1 箇所ずつあります（組み込み側は各モジュールの `WithClock` オプションで fallback を上書きできます）。`Clock` 抽象により、時刻注入を境界で明示し、テスト時に時刻がずれて replay 検証窓のテストが偶然通ってしまう事故を防いでいます。
 
 ### 5. エラーは型付きカタログ経由のみ
 
@@ -111,38 +113,44 @@ go-oidc-provider は個人開発者が空き時間で維持している OSS ラ�
 
 ライブラリは ORM（GORM、ent、xo など）を埋め込みません。ストレージは小さな `store.*Store` interface を介します。呼び出し側は使い慣れたものを実装するだけです。副作用として「気付かぬうちに DB がマイグレーションされる」事態が起きません。
 
-## デフォルトで有効な防御機能
+## 既定で有効な防御機能
 
 | 防御 | ソース | 仕様 |
 |---|---|---|
 | `__Host-` cookie、AES-256-GCM、double-submit CSRF、Origin/Referer チェック | `internal/cookie`、`internal/csrf` | OWASP ASVS L1 / RFC 6265bis |
-| public / native の authorization-code client、および FAPI プロファイル下の全 authorization-code client に PKCE 必須。`plain` は拒否 | `internal/authorize`、`internal/pkce` | RFC 7636、RFC 9700 |
-| リフレッシュトークンのローテーション + 再利用検知（chain revoke） | `internal/grants/refresh` | RFC 9700 §4.14.2 |
+| public / native の authorization-code client、および `Baseline` と FAPI 2.0 プロファイル下の全 authorization-code client に PKCE 必須。`plain` は拒否 | `internal/authorize`、`internal/pkce` | RFC 7636、RFC 9700 |
+| リフレッシュトークンのローテーション + 再利用検知。replay は chain と grant のアクセストークンを失効させ、ローテーションと `/revoke` は自分の chain に範囲を限るため、同じ client 上の他のセッションには触れない | `internal/grants/refresh`、`internal/grants/teardown` | RFC 9700 §4.14.2 |
 | 送信者制約付きトークン（DPoP `cnf.jkt`、mTLS `cnf.x5t#S256`） | `internal/dpop`、`internal/mtls`、`internal/tokens` | RFC 9449、RFC 8705 |
 | 認可応答に `iss` を付与 | `internal/authorize` | RFC 9207 |
 | `redirect_uri` 完全一致（既定で完全一致） | `internal/authorize` | OAuth 2.1、RFC 8252 |
 | ループバック redirect の制約強化 | `internal/registrationendpoint`、`internal/authorize` | RFC 8252 |
-| 外向き HTTP fetch の制約（許可 scheme、body 上限、Accept、timeout、redirect、cache）を JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout 配送に適用。dial 段階で loopback / link-local / RFC 1918 / IPv6 ULA を拒否し、`BaseTransport` が `*http.Transport` 以外なら URL ゲートでフォールバック | `internal/securefetch`、`internal/netsec` | OWASP SSRF、OIDC Back-Channel Logout 1.0 |
+| 外向き HTTP fetch の制約（許可 scheme、body 上限、Accept、timeout、redirect、cache）を JAR JWKS / client-encryption JWKS / `sector_identifier_uri` / back-channel logout 配送に適用。dial 段階で loopback / link-local / RFC 1918 / IPv6 ULA を拒否し、`BaseTransport` が `*http.Transport` 以外なら URL ゲートでフォールバック。proxy 経由の fetch は、引き渡す前に宛先ホストを URL として検査し、proxy のアドレス自体も拒否リストを通る必要があり、環境変数の proxy 設定は参照しない | `internal/securefetch`、`internal/netsec` | OWASP SSRF、OIDC Back-Channel Logout 1.0 |
 | OP 側の request_object replay 対策（`jti`） | `internal/jar` | RFC 9101 §10.8 |
 | 各検証経路でのアルゴリズム許可リスト | `internal/jose` | RFC 8725 |
 | Issuer 正規化（末尾スラッシュなどの揺れを防ぐ） | `op/options_validate.go` | RFC 9207 |
-| Resource indicator の正規化（scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否）を `/authorize`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の許可リストに適用 | `internal/resourceindicator` | RFC 8707 §2 |
+| Resource indicator の正規化（scheme と host を小文字化、default port 除去、末尾スラッシュ揃え、fragment / userinfo 拒否）を `/auth`、`/token`、`/device_authorization`、`/bc-authorize`、`WithAccessTokenFormatPerAudience` の許可リストに適用 | `internal/resourceindicator` | RFC 8707 §2 |
 | `/token`、`/bc-authorize`、`/end_session` で単一値パラメータの重複を拒否（RFC 8707 の `resource=` のみ例外）。認証情報を 2 か所以上に提示したリクエストは `clientauth.Parse` で拒否 | `internal/httpx`、`internal/clientauth`、`internal/tokenendpoint`、`internal/cibaendpoint`、`internal/endsession` | RFC 6749 §3.2.1、OIDC RP-Initiated Logout 1.0 §3 |
 | Argon2id パラメータを OWASP Password Storage Cheat Sheet のベースライン（memory ≥ 19 MiB、time ≥ 2）で強制（`client_secret`、エンドユーザパスワード、リカバリコード）。リカバリコード一括検証は 16 件で打ち切り。エンコード済み hash の重複パラメータセグメントは拒否 | `internal/argon2id`、`internal/authn/password`、`internal/authn/recovery`、`internal/clientauth/secret` | OWASP Password Storage Cheat Sheet |
-| DCR メタデータデコーダと interaction JSON ドライバが末尾の余分な JSON ドキュメントを拒否 | `internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
+| 最初の JSON 値の後ろに残ったデータ（余分な `}` など）を、JSON を読むすべての endpoint とドライバで拒否 | `internal/httpx`、`internal/registrationendpoint`、`op/interaction` | RFC 7591 §2 |
 | 有効化した grant / feature が要求するサブストアを、設定済み store が公開しない構成を `op.New` が拒否 | `op/options_validate.go`、`op/storeadapter/redis` | — (defence in depth) |
 | クライアント検証鍵（`client_assertion`、JAR request object）を OP の鍵 shape 最低水準に保持: RSA は 2048 bit 以上、EC 曲線は宣言された `alg` と一致 | `internal/clientauth`、`internal/jar`、`internal/jose`（`AssertAlgKeyShape`） | RFC 7518 §3.3、RFC 8725 §3.2 |
 | `jwks_uri` を使う `private_key_jwt` クライアントは、未知の `kid` を見たときに 1 回だけ throttle 付きでキャッシュを迂回して再取得し、正当な RP 鍵ローテーションから復帰する。ランダムな未知 `kid` は外向き fetch を増幅できない | `internal/clientauth`、`internal/jar` | RFC 7523、OIDC Dynamic Registration |
 | `private_key_jwt` assertion 検証は JWS `kid` で鍵を選択し、`kid` 無しでも試行検証数を上限付きにし、鍵無し拒否のタイミングを均し、リクエスト内の client lookup を 1 回にまとめる | `internal/clientauth` | RFC 7515 §4.1.4、RFC 7523 |
 | JWKS parse 時に秘密鍵と対称鍵を拒否し、検証経路へ渡さない | `internal/clientauth`、`internal/jar`、`internal/jose` | RFC 8725 |
+| `jwks` と `jwks_uri` の両方を持つクライアントレコードを、鍵を読むすべての経路（request object、`private_key_jwt`、response 暗号化）で拒否。複数の経路が使う `jwks_uri` は 1 回だけ fetch してキャッシュする | `internal/clientauth`、`internal/jar`、`internal/clientencjwks` | RFC 7591 §2 |
 | DPoP-bound access token を `Bearer` scheme で `/userinfo` に提示した場合は拒否。送信者制約付き token は `DPoP` scheme が必須 | `internal/endpointsupport`、`internal/userinfo` | RFC 9449 §7.1 |
 | 改ざん・decode 不能な authorization endpoint の session cookie は持ち越さず、clear して「session なし」と扱う | `internal/authorizeendpoint`、`internal/cookie` | RFC 6265bis |
-| ワンタイム認証 factor（email-OTP、TOTP、recovery code）を atomic な compare-and-set で単回使用化（再提示時は `ErrAlreadyConsumed`）。cross-factor の lockout は atomic に刻む（`StampLock`） | `internal/authn`、`op/store` | — (defence in depth) |
+| ワンタイム認証 factor（email-OTP、TOTP、recovery code）を atomic な compare-and-set で単回使用化（再提示時は `ErrAlreadyConsumed`）。cross-factor の lockout は compare-and-swap で更新する（`AuthnLockoutStore.CompareAndSwap`） | `internal/authn`、`op/store` | — (defence in depth) |
 | TOTP / email-OTP / recovery code の誤入力分岐はすべて共有 retry path と observer を通るため、captcha / lockout gate が second-factor brute-force を観測できる | `internal/authn` | — (defence in depth) |
 | リフレッシュトークンの `id` / `parent_id` を保存時にハッシュ化し、定数時間で参照 | `internal/tokenendpoint`、`op/store` | RFC 9700 §4.14.2 |
 | Refresh-token rotation は child insert と同じ critical section / transaction 内で parent を再確認し、replay revocation が成功済み descendant save と競合して取り逃がすことを防ぐ | `op/storeadapter/sql`、`op/storeadapter/inmem` | RFC 9700 §4.14.2 |
 | Token exchange は policy 適用後の決定を再検証し、付与 scope が要求済み subject-token-bounded scope 内、付与 audience が要求済み audience 内に残ることを強制する | `internal/customgrant/tokenexchange` | RFC 8693 |
-| token response の途中で `server_error` になった場合、mint 済みの永続 opaque access token row を revoke し、有効な孤児 token を残さない | `internal/tokenendpoint`、`op/store` | — (defence in depth) |
+| token response の途中で `server_error` になった場合、mint 済みの永続 opaque access token row を失効させ、有効な孤児 token を残さない | `internal/tokenendpoint`、`op/store` | — (defence in depth) |
+| 別の client が提示した認可コード、または `redirect_uri` / PKCE の検証に失敗した認可コードは、コードを消費せず、正当な保持者の grant も失効させずに拒否。失効させるのは本物の replay だけ | `internal/tokenendpoint` | RFC 6749 §4.1.2、RFC 9700 |
+| 認可コード、リフレッシュ chain、アクセストークンが、共有 grant ではなく自分を発行した認可の `auth_time`、`acr`、`amr`、claims リクエスト、`authorization_details` を持つ | `op/store`、`internal/tokenendpoint` | OIDC Core 1.0 §2、RFC 9396（[#32](/ja/security/design-judgments#dj-32) 参照） |
+| `LoginFlow` のルールと `Decider` を、既存セッションから返す認可にも適用し、panic や不正な判定結果では拒否側に倒す | `internal/authorizeendpoint`、`op` | RFC 9470（[#33](/ja/security/design-judgments#dj-33) 参照） |
+| `id_token_hint` は `typ` が未設定または `JWT` のものだけ受理し、logout token やアクセストークンが `/end_session` や CIBA で ID token の代わりになることを防ぐ | `internal/idtokenhint` | RFC 8725 §3.11 |
+| ストアされた hash が Argon2id ポリシーを下回るアカウントや別エンコードのアカウントでも、パスワードログインの所要時間を他のログイン失敗と揃える | `internal/authn/password` | CWE-208 |
 
 ## ツールチェーン
 

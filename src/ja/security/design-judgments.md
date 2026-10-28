@@ -10,26 +10,30 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 
 <figure class="fig">
   <div class="fig-head">設計判断の読み方</div>
-  <svg class="fig-svg" role="img" aria-labelledby="dj-shape-title" viewBox="0 0 960 226" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="dj-shape-title" viewBox="0 0 960 232" xmlns="http://www.w3.org/2000/svg">
     <title id="dj-shape-title">各設計判断は、関係する仕様文、2 つの文書が食い違う箇所、本ライブラリが採用した規則を示し、その規則がどこで実際に強制されるかまで述べます。</title>
-    <rect class="fg-box" x="36" y="42" width="260" height="92" rx="8"/>
-    <text class="fg-t2" x="56" y="68">仕様文</text>
-    <text class="fg-mxs" x="56" y="92">MUST · SHOULD · MAY</text>
-    <text class="fg-xs" x="56" y="114">節番号を添えて引用する</text>
-    <path class="fg-edge" d="M300,88 H336" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--warn" x="340" y="42" width="260" height="92" rx="8"/>
-    <text class="fg-t2" x="360" y="68">食い違う箇所</text>
-    <text class="fg-xs" x="360" y="92">同じリクエストに対して 2 つの</text>
-    <text class="fg-xs" x="360" y="112">文書が別の答えを与えている</text>
-    <path class="fg-edge" d="M604,88 H640" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="644" y="42" width="280" height="92" rx="8"/>
-    <text class="fg-t2 fg-accent" x="664" y="68">本ライブラリが採用した規則</text>
-    <text class="fg-xs" x="664" y="92">厳しい側の解釈を採り、</text>
-    <text class="fg-xs" x="664" y="112">その理由を書き残す</text>
-    <path class="fg-edge fg-edge--accent" d="M784,138 V166" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--sub" x="36" y="170" width="888" height="42" rx="8"/>
-    <text class="fg-lbl" x="56" y="196">強制する場所</text>
-    <text class="fg-mxs" x="180" y="196">op.New の構築時検証 · ストアの契約 · internal の実装</text>
+    <!-- spec text -->
+    <rect class="fg-box" x="32" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="52">仕様文</text>
+    <text class="fg-m" x="48" y="76">MUST · SHOULD · MAY</text>
+    <text class="fg-s" x="48" y="100">節番号を添えて引用する</text>
+    <path class="fg-edge" d="M304,72 H344" marker-end="url(#fg-a)"/>
+    <!-- conflict -->
+    <rect class="fg-box fg-box--warn" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="52">食い違う箇所</text>
+    <text class="fg-s" x="360" y="76">同じリクエストに対して 2 つの</text>
+    <text class="fg-s" x="360" y="100">文書が別の答えを与えている</text>
+    <path class="fg-edge" d="M616,72 H656" marker-end="url(#fg-a)"/>
+    <!-- adopted rule -->
+    <rect class="fg-box fg-box--accent" x="656" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="672" y="52">本ライブラリが採用した規則</text>
+    <text class="fg-s" x="672" y="76">採る解釈を 1 つ決め、</text>
+    <text class="fg-s" x="672" y="100">その理由を書き残す</text>
+    <path class="fg-edge fg-edge--accent" d="M792,120 V160" marker-end="url(#fg-ac)"/>
+    <!-- enforcement -->
+    <rect class="fg-box fg-box--sub" x="32" y="160" width="896" height="48" rx="8"/>
+    <text class="fg-lbl" x="48" y="189">強制する場所</text>
+    <text class="fg-m" x="192" y="189">op.New の構築時検証 · ストアの契約 · internal の実装</text>
   </svg>
   <figcaption class="fig-note">判断と意見を分けるのが最後の行です。どこかで具体的に強制されていない規則は規則ではなく、作者がこう考えたという注記にすぎません。</figcaption>
 </figure>
@@ -40,7 +44,7 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
     <p class="dj-lede">このページは「その挙動が偶然なのか、仕様間の折衷なのか、意図したセキュリティ姿勢なのか」を確認するための索引です。各項目で、衝突した仕様、採用した規則、それを強制する実装面を示します。</p>
   </div>
   <div class="dj-stats" aria-label="設計判断の概要">
-    <span><strong>31</strong> 判断</span>
+    <span><strong>33</strong> 判断</span>
     <span><strong>5</strong> 領域</span>
     <span><strong>構築時拒否</strong> 既定</span>
   </div>
@@ -48,6 +52,15 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 
 ::: tip このページの読み方
 まず変更対象の領域に近いカードから入ってください。各エントリはその後で「**仕様の文言**」「**衝突の中身**」「**本ライブラリの選択**」の 3 段構成にしています。強調された callout が実際の規則で、引用された `op/` / `internal/` 配下のパッケージが実装の参照先です。
+:::
+
+::: details このページで使う用語
+- **OP**（OpenID Provider）: 本ライブラリが実装する認可サーバ。
+- **RP**（Relying Party）: OP を通じてユーザをサインインさせるクライアントアプリケーション。
+- **RS**（リソースサーバ）: アクセストークンを受け付ける API。
+- **grant**: 1 人の subject が 1 つの client に与えた同意を、OP が記録したもの。1 つの grant の配下に、複数のセッションやトークンが並びます。[同意](/ja/concepts/consent) を参照してください。
+- **chain**: リフレッシュトークンと、ローテーションで生まれるその後継の連なり。[リフレッシュトークン](/ja/concepts/refresh-tokens) を参照してください。
+- **tombstone**: トークンごとの行を持たずに JWT を拒否するための、grant（または `jti`）をキーにした小さな失効レコード。
 :::
 
 ## 判断マップ
@@ -68,12 +81,13 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
     <a href="#dj-3"><strong>#3</strong><span><code>offline_access</code> は既定で UX / TTL シグナル。厳格モードではゲート。</span></a>
     <a href="#dj-15"><strong>#15</strong><span>DPoP リフレッシュ chain は public では束縛、confidential では未束縛。</span></a>
     <a href="#dj-16"><strong>#16</strong><span>confidential 限定の introspection は resource audience 経由だけ委譲する。</span></a>
-    <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> は必要サブストアがあればアクセストークン失効をカスケードする。</span></a>
+    <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> は subject の grant 配下に発行されたものをクラスごとに失効させる。</span></a>
     <a href="#dj-18"><strong>#18</strong><span>アクセストークンは JWT 既定。opaque は opt-in で resource ごとに選べる。</span></a>
     <a href="#dj-19"><strong>#19</strong><span>JWT 失効は grant tombstone 既定。FAPI では no-revocation を拒否。</span></a>
     <a href="#dj-28"><strong>#28</strong><span>Custom grant は refresh 発行の意図だけを示し、値と親子関係は OP が持つ。</span></a>
-    <a href="#dj-29"><strong>#29</strong><span><code>devicecodekit.Revoke</code> はレジストリがあれば連鎖失効まで行う。</span></a>
+    <a href="#dj-29"><strong>#29</strong><span><code>devicecodekit.Revoke</code> は連鎖失効と grant レコードの削除まで行う。</span></a>
     <a href="#dj-31"><strong>#31</strong><span>Grant Management は draft が不安定な間、明示的な有効化に限定する。</span></a>
+    <a href="#dj-32"><strong>#32</strong><span>認可コード、リフレッシュ chain、アクセストークンは、発行元の認可の状態を自分で持つ。</span></a>
   </section>
   <section class="dj-group">
     <h3>登録、issuer、外向き fetch</h3>
@@ -90,11 +104,12 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
     <a href="#dj-5"><strong>#5</strong><span>iframe logout 系仕様は未実装。BCL と RP-Initiated Logout を提供する。</span></a>
     <a href="#dj-10"><strong>#10</strong><span>セッションはトランザクションクラスタ外へ置ける。揮発 BCL は best-effort。</span></a>
     <a href="#dj-30"><strong>#30</strong><span>CookieKeys は条件付き必須。ブラウザ認可を有効にしたときだけ必要。</span></a>
+    <a href="#dj-33"><strong>#33</strong><span>ステップアップのルールは、既存セッションから認可を返す場合にも適用する。</span></a>
   </section>
   <section class="dj-group">
     <h3>JOSE と request object</h3>
     <a href="#dj-1"><strong>#1</strong><span>PAR <code>request_uri</code> は入口で参照し、認可コード発行時に消費する。</span></a>
-    <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> replay 防御は OP 側 <code>jti</code> cache で既定 ON。</span></a>
+    <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> は、<code>jti</code> を持つものを OP 側のキャッシュで重複排除する。</span></a>
     <a href="#dj-11"><strong>#11</strong><span><code>none</code> と <code>HS*</code> を除外し、OP 発行の成果物は ES256 のみ。</span></a>
     <a href="#dj-14"><strong>#14</strong><span>PKCE は全プロファイルで <code>S256</code> のみ。</span></a>
     <a href="#dj-27"><strong>#27</strong><span>JWE alg は許可リスト、JOSE nesting は上限付き。</span></a>
@@ -109,10 +124,10 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 
 > **RFC 9126 §2.2（要約）** クライアントは各 `request_uri` を 1 回だけ使わなければなりません。AS は one-time として扱うことが推奨されますが、ユーザエージェントの再読み込み・更新による重複要求を許容してもかまわず、期限切れの値は拒否しなければなりません。
 
-**衝突**: 「最初の参照で消費する」という文字通りの解釈は、複数段階の interaction(同意 → MFA → ロケール変更など)で同じ `/authorize?request_uri=…` に再リダイレクトが走るケースで壊れます。チェックイン済みの OFCS FAPI plan は 2 件のテストケースで挙動を検証しており、認証完了前の再アクセスは *受理*、認証完了後の再アクセスは *拒否* を要求しています。これらは Implementer's Draft 世代の plan なので、現在の FAPI Final への適合をそれだけで示すものではありません。
+**衝突**: 「最初の参照で消費する」という文字通りの解釈は、複数段階の interaction(同意 → MFA → ロケール変更など)で同じ `/auth?request_uri=…` に再リダイレクトが走るケースで壊れます。チェックイン済みの OFCS FAPI plan は 2 件のテストケースで挙動を検証しており、認証完了前の再アクセスは *受理*、認証完了後の再アクセスは *拒否* を要求しています。これらは Implementer's Draft 世代の plan なので、現在の FAPI Final への適合をそれだけで示すものではありません。
 
 ::: tip 選択
-`request_uri` は `/authorize` の入口で `PARs.Find` により参照し、**認可コード発行時点で** `PARs.Consume` で消費します。interaction 中の再アクセスは成功し、コード発行後の再アクセスは `invalid_request_uri` を返します。OFCS module `fapi2-…-par-attempt-reuse-request_uri` がコード発行後の拒否経路を検証します。詳細は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
+`request_uri` は `/auth` の入口で `PARs.Find` により参照し、**認可コード発行時点で** `PARs.Consume` で消費します。interaction 中の再アクセスは成功し、コード発行後の再アクセスは `invalid_request_uri` を返します。OFCS module `fapi2-…-par-attempt-reuse-request_uri` がコード発行後の拒否経路を検証します。詳細は <a class="doc-ref" href="/ja/compliance/ofcs">OFCS 適合状況</a> を参照してください。
 :::
 
 <a class="faq-anchor" id="dj-2"></a>
@@ -126,7 +141,11 @@ OP が触れる仕様には、MUST、SHOULD、MAY が幾重にも層をなして
 **衝突**: 「厳密な single-use、猶予なし」の解釈は、ローテーションのネットワーク往復が中断されたすべてのクライアント（モバイルのバックグラウンド遷移、TCP 切断、HTTP/2 ストリームのリトライなど）を破壊します。チェックイン済みの OFCS FAPI plan は、ローテーションと再交換の間に 30 秒待つ形で猶予期間の経路を検証します。これらは Implementer's Draft 世代の plan なので、現在の FAPI Final への適合をそれだけで示すものではありません。
 
 ::: tip 選択
-ローテーション済みの refresh token は、ライブラリで設定できる `GraceTTL`（既定 60 秒）の間、chain が replay 検知で失効していない限り受理されます。猶予期間内に旧トークンを提示すると、系列を再度ローテーションせずに保存済みの後継トークンを返します。送信者制約付きの再試行では、アクセストークンを新たにバインドして発行する場合があります。猶予期間 *を過ぎたあと* の再利用、あるいはすでに失効した chain での再利用は、chain 全体を無効化します（RFC 9700 §4.14.2）。既定の 60 秒は、応答を失った場合の限定的な retry 経路に対する実装上の選択であり、RFC の要求ではありません。ローテーションを使う場合の FAPI 2.0 Security Profile Final §5.3.2.1(9) が示す時間制限付き retry の形には合いますが、デプロイメントが同プロファイルの「例外的な状況」という条件を満たすことを示すものではありません。`op.WithRefreshGracePeriod` は負値を拒否し、明示した 0 は猶予なしとして扱います。ライブラリの FAPI 2.0 profile では 0〜60 秒の明示値を受理し、60 秒を超える値は構築時エラーです。option を省略すれば既定の 60 秒になります。これらの profile 以外では、負でないより長い window も選べます。実装は `internal/grants/refresh.Exchanger.tryGrace` にあり、`store.RefreshToken.Revoked` が「ローテーションで消費済み」と「chain 侵害で失効」を区別します。
+ローテーション済みの refresh token は、ライブラリで設定できる `GraceTTL`（既定 60 秒）の間、chain が replay 検知で失効していない限り受理されます。猶予期間内に旧トークンを提示すると、連鎖を再度ローテーションせずに保存済みの後継トークンを返します。送信者制約付きの再試行では、アクセストークンを新たにバインドして発行する場合があります。猶予期間 *を過ぎたあと* の再利用、あるいはすでに失効した chain での再利用は、chain 全体を無効化し、その grant のアクセストークンも失効させます（RFC 9700 §4.14.2）。
+
+既定の 60 秒は、応答を失った場合の限定的な retry 経路に対する実装上の選択であり、RFC の要求ではありません。ローテーションを使う場合の FAPI 2.0 Security Profile Final §5.3.2.1(9) が示す時間制限付き retry の形には合いますが、デプロイメントが同プロファイルの「例外的な状況」という条件を満たすことを示すものではありません。
+
+`op.WithRefreshGracePeriod` は負値を拒否し、明示した 0 は猶予なしとして扱います。ライブラリの FAPI 2.0 profile では 0〜60 秒の明示値を受理し、60 秒を超える値は構築時エラーです。option を省略すれば既定の 60 秒になります。これらの profile 以外では、負でないより長い window も選べます。ローテーションが触れるのは、その chain だけです。後継トークンは置き換えるトークンの scope を引き継ぐため、refresh リクエストが 1 回分のアクセストークンのために `scope` を絞っても、後継は絞られません。ローテーションが失効させる opaque アクセストークンは同じ chain から発行されたものに限るので、同じ client 上のユーザの他のセッションのトークンは生き残ります。実装は `internal/grants/refresh.Exchanger.tryGrace` にあり、`store.RefreshToken.Revoked` が「ローテーションで消費済み」と「chain 侵害で失効」を区別し、`store.RefreshToken.ChainID` が chain を識別します。
 :::
 
 <a class="faq-anchor" id="dj-3"></a>
@@ -156,7 +175,7 @@ OIDC Core §11 を厳格に読みたい組み込み側は、`op.WithStrictOfflin
 **衝突**: 構造的な矛盾です。CLI ツールは OS が割り当てる動的ポートを事前登録できないため、完全一致を厳密に適用するとネイティブアプリの標準的なフローが壊れます。
 
 ::: tip 選択
-既定は完全一致（OAuth 2.1 を厳格に解釈）です。RFC 8252 §7.3 の緩和は **クライアント単位のオプトイン** とし、登録済みの `redirect_uris` にループバック URI が含まれる場合に限って有効になります。ポート不一致だけを許容するのは、次の 4 条件がすべて成り立つときです。scheme が `http` であること、登録済 host がループバック形（`127.0.0.1` / `::1` / 文字列 `localhost`）のいずれかであること、要求側 host が登録 host と一致すること、そして path / query / fragment が完全一致すること。文字列 `localhost` は、authorize 側の判定を OIDC Registration の native client 向け loopback carve-out と揃えるために受理します。これがないと、`http://localhost/cb` で登録した native アプリが登録は通るのに、OS から動的ポートを受け取った瞬間に `/authorize` で弾かれます。この `localhost` の受理は、登録側で組み込み側がオプトイン（web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`）している場合にだけ意味を持つため、DNS rebinding を懸念するデプロイは登録側のオプトインを外しておけば従来どおり literal IP のみの厳格な構えを保てます。HTTPS ループバックは対象外です（`127.0.0.1` 向けの ACME 証明書を発行する経路がないため）。
+既定は完全一致（OAuth 2.1 を厳格に解釈）です。RFC 8252 §7.3 の緩和は **クライアント単位のオプトイン** とし、登録済みの `redirect_uris` にループバック URI が含まれる場合に限って有効になります。ポート不一致だけを許容するのは、次の 4 条件がすべて成り立つときです。scheme が `http` であること、登録済 host がループバック形（`127.0.0.1` / `::1` / 文字列 `localhost`）のいずれかであること、要求側 host が登録 host と一致すること、そして path / query / fragment が完全一致すること。文字列 `localhost` は、authorize 側の判定を OIDC Registration の native client 向け loopback carve-out と揃えるために受理します。これがないと、`http://localhost/cb` で登録した native アプリが登録は通るのに、OS から動的ポートを受け取った瞬間に `/auth` で弾かれます。この `localhost` の受理は、登録側で組み込み側がオプトイン（web クライアントは `op.WithAllowLocalhostLoopback()`、native クライアントは `application_type=native`）している場合にだけ意味を持つため、DNS rebinding を懸念するデプロイは登録側のオプトインを外しておけば従来どおり literal IP のみの厳格な構えを保てます。HTTPS ループバックは対象外です（`127.0.0.1` 向けの ACME 証明書を発行する経路がないため）。
 :::
 
 <a class="faq-anchor" id="dj-5"></a>
@@ -177,10 +196,12 @@ OIDC Core §11 を厳格に読みたい組み込み側は、`op.WithStrictOfflin
 
 **仕様**: RFC 9101 §10.8 は、`exp` 期限内の request object の replay を拒否することを SHOULD(推奨)と書いています。レジストリの実装そのものは MUST ではありません。
 
-**衝突**: 署名を検証して受理するだけでは、傍受された request object を `exp` まで繰り返し `/authorize` に提示できます。FAPI 2.0 Message Signing は PAR で署名付き request object を求めますが、`jti` による再利用検知を必須にはしていません。以下のキャッシュはライブラリ独自の追加防御です。
+**衝突**: 署名を検証して受理するだけでは、傍受された request object を `exp` まで繰り返し `/auth` に提示できます。FAPI 2.0 Message Signing は PAR で署名付き request object を求めますが、`jti` による再利用検知を必須にはしていません。以下のキャッシュはライブラリ独自の追加防御です。
 
 ::: tip 選択
-OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で動作します。replay marker は verifier が設定する request の max-age / max-lifetime と clock skew の window に保持し、その OP 側の上限で無条件に clamp します。したがって client が遠い未来の `exp` を指定しても、キャッシュを無期限に占有できません。OP の他の揮発状態と同じ `Sessions` ストレージを使うので、Redis の揮発スライスをすでに運用していれば、そこに乗せるだけで replay 防御が付きます。
+**`jti` を持つ request object は重複排除します**。OP は `jar:<use>:<clientID>:<jti>` を `ConsumedJTIStore` に記録し、verifier の max-age / max-lifetime に clock skew を足した時間幅のあいだ保持します。保持期間は OP 側の上限で切り詰めるため、client が遠い未来の `exp` を指定しても marker を無期限に占有できません。ストアは DPoP 証明や client assertion が使うものと同じなので、複数インスタンスで共有すれば 3 つの防御がそろいます。
+
+`jti` のない request object は、`/auth` と `/par` では受理します。RFC 9101 §6.1 がこの claim を任意としており、OFCS の FAPI message signing plan も `jti` のない request object を送るためです。FAPI-CIBA は `/bc-authorize` で `jti` を必須に引き上げ、欠けていれば拒否します（`ErrJTIMissing`）。256 byte を超える `jti` は不正な request object として扱います。
 :::
 
 <a class="faq-anchor" id="dj-7"></a>
@@ -215,7 +236,7 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 
 **仕様**: RFC 9207 は認可応答に `iss` を付けることを必須とし、クライアントはその値を期待する issuer と単純な文字列比較で照合します。OIDC Discovery 1.0 §3 と RFC 8414 §2 は issuer を query / fragment のない HTTPS URL と定義し、metadata の `issuer` が設定文書の取得に使った issuer と一致することを要求します。Discovery §4.1（および RFC 8414 §3.1）は、well-known の URL を組み立てる前に path issuer の末尾 `/` を取り除きます。FAPI 2.0 Security Profile Final §5.3.2.1(1) は、その discovery metadata を AS が配布することを要求します。
 
-**衝突**: URI の構文上は、scheme や host の大文字小文字、デフォルトポートの表記、末尾 `/` が違う表現も許されます。Discovery も well-known URL の組み立て時に末尾 `/` を取り除きます。これらの仕様は、ライブラリがすべての表現を拒否することまでは要求していません。一方、RFC 9207 と metadata 仕様は、照合する境界ごとに 1 つの issuer 値を要求します。OP と RP の正規化が違えば、issuer 検証は失敗します。
+**衝突**: URI の構文上は、scheme や host の大文字小文字、既定ポートの表記、末尾 `/` が違う表現も許されます。Discovery も well-known URL の組み立て時に末尾 `/` を取り除きます。これらの仕様は、ライブラリがすべての表現を拒否することまでは要求していません。一方、RFC 9207 と metadata 仕様は、照合する境界ごとに 1 つの issuer 値を要求します。OP と RP の正規化が違えば、issuer 検証は失敗します。
 
 ::: tip 選択
 `op.WithIssuer` は意図的に厳格な正規化ポリシーを適用し、次のいずれかを含む URI を拒否します。
@@ -223,7 +244,7 @@ OP 側で `jti` キャッシュを保持し、JAR が有効なときは既定で
 - 末尾スラッシュ
 - scheme の大文字混在
 - host の大文字混在
-- デフォルトポート（https は `:443`、http は `:80`）
+- 既定ポート（https は `:443`、http は `:80`）
 - fragment
 - query
 - 非正規 path（`..`、`.`、`path.Clean` で検出される重複スラッシュ）
@@ -240,7 +261,7 @@ query / fragment の拒否は issuer の仕様要件に従いますが、大文�
 **衝突**: セッションを認可コード / リフレッシュトークン / クライアントと同じ SQL クラスタに置くと、セッションの書き込みレイテンシがトランザクション経路に直結します。Redis に置くと耐久性が下がります。ただし、セッション喪失はユーザの再ログインで回復できますが、認可コード喪失は RP のループを壊してしまいます。
 
 ::: tip 選択
-セッションは別サブストア（`store.SessionStore`）としてルーティングでき、揮発ストア（Redis / Memcached）に置くこともできます。`/end_session` は削除前にセッション snapshot を取得し、BCL coordinator は `GrantStore.ListClientIDsBySubject` による grant 起点の client ID から audience を解決します。snapshot 取得前に eviction が起きると fan-out は開始されず、BCL の no-sessions event も発火しません。`op.AuditBCLNoSessionsForSubject` は、セッションを伴う logout notice が coordinator に届いたものの、eligible な grant 起点 RP target が 0 件だったことを意味します。`op.SessionDurabilityPosture` は embedder が宣言した耐久性を記録し、event を eviction の直接シグナルとせず、logout trigger / snapshot 保持リスクを運用側が解釈できるようにします。
+セッションは別サブストア（`store.SessionStore`）としてルーティングでき、Redis などの揮発ストアに置くこともできます。`/end_session` は削除前にセッション snapshot を取得し、BCL coordinator は `GrantStore.ListClientIDsBySubject` による grant 起点の client ID から audience を解決します。snapshot 取得前に eviction が起きると fan-out は開始されず、BCL の no-sessions event も発火しません。`op.AuditBCLNoSessionsForSubject` は、セッションを伴う logout notice が coordinator に届いたものの、eligible な grant 起点 RP target が 0 件だったことを意味します。`op.SessionDurabilityPosture` は embedder が宣言した耐久性を記録し、event を eviction の直接シグナルとせず、logout trigger / snapshot 保持リスクを運用側が解釈できるようにします。
 :::
 
 <a class="faq-anchor" id="dj-11"></a>
@@ -252,7 +273,7 @@ query / fragment の拒否は issuer の仕様要件に従いますが、大文�
 **衝突**: 基盤の JOSE ライブラリは、レジストリ全体を既定で受理します。実行時チェックを足すのは壊れやすく、将来 JOSE ライブラリを直接 import する経路ができればすり抜けてしまいます。
 
 ::: tip 選択
-`internal/jose.Algorithm` を閉じた列挙型（`RS256`、`PS256`、`ES256`、`EdDSA`）とします。`none` と `HS*` は **そもそも型に存在しません**。`depguard`(lint)が `internal/jose/` 外からの JOSE パッケージの直接 import を禁止しているので、将来のコードがレジストリ全体に到達することはありません。
+`internal/jose.Algorithm` を閉じた列挙型（`RS256`、`PS256`、`ES256`、`EdDSA`）とします。`none` と `HS*` は **そもそも型に存在しません**。`depguard`(lint)は、生のハンドルをすでに扱っている少数の `internal/` パッケージ（`jose`、`keys`、`dpop`、`jar`、`jarm`、`mtls`、`clientauth` など）以外から JOSE パッケージを直接 import することを禁止しています。新しいコードが使うには、このリストへ意図して追加する必要があります。
 
 検証側の許可リストと発行側の方針は意図的に異なります。client assertion と request object は許可された非対称アルゴリズムを受け取れますが、OP が署名する成果物 — ID Token、JWT access token、署名付き UserInfo、JARM response — は P-256 鍵による ES256 だけを使います。この発行方針は固定です。OP 発行 token に RS256 / PS256 を求める RP は対象外です。発行を検証済みの 1 曲線に絞ることで、client assertion を標準どおり受けつつ、alg 交渉と downgrade path をなくします。
 :::
@@ -273,7 +294,7 @@ discovery は `op.New` 時に 1 度だけ構築します（`internal/discovery/b
 
 ## 13. `client_assertion` の `aud` — FAPI 2.0 と OIDC Core
 
-**仕様**: RFC 7523 §3 は、JWT bearer assertion の `aud` を「authorization server を識別する値」と要求するだけで、どの識別子かまでは固定していません。OIDC Core 1.0 §9（`private_key_jwt`）はこれを OP の token endpoint URL と読みます。FAPI 2.0 Security Profile Final §5.3.2.1(8) は認可サーバー側の要件を絞り、issuer identifier の値だけを JSON 文字列として受け入れるよう求めています。FAPI client 側にも §5.3.3.1(5) に同じ形の要件があります。RFC 7519 は一般には `aud` の文字列または配列を許しますが、FAPI はこの形を絞ります。
+**仕様**: RFC 7523 §3 は、JWT bearer assertion の `aud` を「authorization server を識別する値」と要求するだけで、どの識別子かまでは固定していません。OIDC Core 1.0 §9（`private_key_jwt`）はこれを OP の token endpoint URL と読みます。FAPI 2.0 Security Profile Final §5.3.2.1(8) は認可サーバ側の要件を絞り、issuer identifier の値だけを JSON 文字列として受け入れるよう求めています。FAPI client 側にも §5.3.3.1(5) に同じ形の要件があります。RFC 7519 は一般には `aud` の文字列または配列を許しますが、FAPI はこの形を絞ります。
 
 **衝突**: ライブラリの互換 verifier は、OIDC Core の token endpoint 形、FAPI の issuer 形、受理済みの値を含む配列を受け入れます。1 つの OP で両方の方言を扱うには便利ですが、token endpoint URL や `aud` 配列を受け入れるため、FAPI 2.0 Security Profile Final §5.3.2.1(8) には適合しません。Final FAPI プロファイルでは、RFC 7523 の広い解釈よりもプロファイルの要件を優先し、より厳格な検証方針が必要です。
 
@@ -306,7 +327,7 @@ discovery は `op.New` 時に 1 度だけ構築します（`internal/discovery/b
 **衝突**: 「MAY 束縛」は本当に両義的です。**常に束縛** にすると、confidential クライアントは chain が存続している間ずっと 1 つの DPoP 鍵に固定されることになり、refresh のたびに DPoP 鍵をローテーションする FAPI 2.0 OFCS のプランと衝突します。**常に未束縛** にすると、public クライアント（SPA、ネイティブアプリ）のリフレッシュトークンが保護のない bearer のまま残ります。これはまさに RFC 9449 §1 が sender constraint を導入する動機として挙げる脅威モデルそのものです。
 
 ::: tip 選択
-**public は束縛、confidential は未束縛** とします。`TokenEndpointAuthMethod` が `"none"`(public クライアントのシグナル) のクライアントは、初回発行時にリフレッシュ chain を DPoP 鍵にバインドし、§5.4 に従ってローテーションを跨いでバインドを保ちます。confidential クライアント（`private_key_jwt`、`client_secret_*`）は chain を未束縛にし、refresh ごとに DPoP 鍵をローテーションできるようにします。ただし、refresh のたびに発行されるアクセストークンは、提示された DPoP 鍵にバインドされます。そのため、アクセストークンを保持する側には依然として対応する秘密鍵が必要です。実装は `internal/tokenendpoint.refreshDPoPJKT` です。chain がいったんバインドされると §5.4 のバインド維持ルールが適用され、後付けで便宜的にアップグレードして鍵ローテーションをロックすることはできません。
+**public は束縛、confidential は未束縛** とします。`TokenEndpointAuthMethod` が `"none"`(public クライアントのシグナル) のクライアントは、初回発行時にリフレッシュ chain を DPoP 鍵にバインドし、§5.4 に従ってローテーションを跨いでバインドを保ちます。confidential クライアント（`private_key_jwt`、`client_secret_*`）は chain を未束縛にし、refresh ごとに DPoP 鍵をローテーションできるようにします。ただし、refresh のたびに発行されるアクセストークンは、提示された DPoP 鍵にバインドされます。そのため、アクセストークンを保持する側には依然として対応する秘密鍵が必要です。実装は `internal/tokenendpoint.refreshDPoPJKT` です。chain がいったんバインドされると §5.4 のバインド維持ルールが適用され、後付けで便宜的にアップグレードして鍵ローテーションをロックすることはできません。この分割は DPoP だけの話です。mTLS にバインドされたリクエストで発行したリフレッシュ chain は、クライアント種別を問わずクライアント証明書にバインドされ、リフレッシュのたびに同じ証明書の提示が必要です（`requireMTLSMatch`）。
 :::
 
 <a class="faq-anchor" id="dj-16"></a>
@@ -328,7 +349,7 @@ discovery は `op.New` 時に 1 度だけ構築します（`internal/discovery/b
 解釈 2 は応答の形からトークン存在の情報を漏らします。攻撃者は応答の形の違いを観測することで、推測したトークンが *どこかの* 有効な grant に属するかを検出できてしまいます。
 
 ::: tip 選択
-**`/introspect` は confidential caller だけに開きます**。public client、または token endpoint 認証方式が `none` の client は token 解決より前に `401 invalid_client` を受け取ります。confidential client は自分に発行された access token / refresh token を introspect できます。別 client の access token は、token の audience が示す protected resource の `IntrospectionClients` に caller が登録されている場合だけ委譲されます。この audience 境界を越えた委譲はなく、refresh token は常に委譲されません。認められない cross-client access-token lookup は unknown / expired / revoked と同じ `{"active": false}` 形を返します。active な opaque response には `iss` も含まれます。実装は `internal/introspectendpoint` と protected-resource 設定にあり、confidential gate、audience 委譲、refresh-token 拒否をテストで固定しています。
+**`/introspect` は confidential caller だけに開きます**。public client、または token endpoint 認証方式が `none` の client は token 解決より前に `401 invalid_client` を受け取ります。confidential client は自分に発行された access token / refresh token を introspect できます。別 client の access token は、token の audience が示す protected resource の `IntrospectionClients` に caller が登録されている場合だけ委譲されます。この audience 境界を越えた委譲はなく、refresh token は常に委譲されません。認められない cross-client access-token lookup は unknown / expired / revoked と同じ `{"active": false}` 形を返します。active な opaque response には `iss` も含まれます。active な refresh token の応答には `token_type` を含めません。RFC 7662 §2.2 がこのメンバーをアクセストークンの種別と定めているためです。実装は `internal/introspectendpoint` と protected-resource 設定にあり、confidential gate、audience 委譲、refresh-token 拒否をテストで固定しています。
 :::
 
 <a class="faq-anchor" id="dj-17"></a>
@@ -343,12 +364,12 @@ Back-Channel Logout 1.0 §2.3 は RP 側の fan-out を規定するだけで、A
 
 **衝突**: 「MAY」を素直に読むと、「cookie だけ消して立ち去る」から「subject が保有する grant をすべて失効させる」まで幅広く取れます。それぞれ影響範囲が違います:
 
-- **cookie のみ** — 流出中のアクセストークンは `exp` まで有効なままです。`/userinfo` を経由しない JWT トークンは引き戻しが効きません。
-- **レジストリの行を revoked に切り替え + opaque tombstone** — OP のエンドポイント（`/userinfo`、`/introspect`）はその場で inactive を返します。introspect する RS や `/userinfo` を呼び出す RS も同じ結果を観測します。
-- **opaque トークン** はさらに先まで届きます。任意の RS が次の bearer 提示で inactive を観測します。通信路上の形式にオフライン検証経路がないためです。
+- **cookie のみ**: 発行済みのアクセストークンは `exp` まで有効なままです。OP に戻ってこない JWT は引き戻せません。
+- **OP のエンドポイントで失効させる**: `/userinfo` と `/introspect` はその場で inactive を返します。JWT をオフラインで検証する RS には届きません。
+- **opaque トークン** はあらゆる RS に届きます。オフライン検証の経路がないので、次の introspection で inactive になります。
 
 ::: tip 選択
-**既定でカスケードします**。組み込み側が `Grants` と `AccessTokens` サブストアを設定していれば、`/end_session` は subject が保有する grant をすべて列挙し、grant ごとの access-token shadow row を失効させます。対応する opaque AT レコードも、同じカスケードで revoked に切り替わります。明示的に「cookie のみ」の方針を取りたい組み込み側は、`Grants` / `AccessTokens` を nil のまま残してください。カスケードは何もせず短絡し、AT は自然失効を待ちます。
+**既定でカスケードします**。`/end_session` は subject が保有する grant をすべて列挙し、それぞれの配下に発行されたものを失効させます。対象は JWT アクセストークン（失効戦略に従い、既定は grant tombstone）、opaque アクセストークン、リフレッシュトークンです。tombstone 戦略では、その grant への以後の発行も止めます。各クラスは、設定した `Store` が公開するサブストアを通して失効させます。サブストアがないクラスは飛ばし、`Grants` を公開しない store では「cookie のみ」の方針になって、アクセストークンは自然失効を待ちます。失敗したクラスは audit に記録しますが、サインアウト自体は止めません。他の失効契機との到達範囲の比較は <a href="#dj-19">#19</a> の表にあります。
 
 JWT と opaque で到達範囲が違う点（JWT は OP のエンドポイントのみ、opaque は introspection 経由ですべての RS まで）は、<a class="doc-ref" href="/ja/concepts/access-token-format">access-token-format</a> ページに切り出してあります。この差が問題になる組み込み側は、どちらの形式を発行するかを選ぶことで対処できます。
 :::
@@ -381,26 +402,36 @@ JWT と opaque で到達範囲が違う点（JWT は OP のエンドポイント
 中間の解は、JWT を self-contained に保ったまま、**トークンごとではなく grant ごと** にサーバ側の状態を結びつけることです。失効した grant につき 1 行書けば、その grant 配下のすべての AT に効きます。発行時に書く必要はありません。
 
 ::: tip 選択
-**既定は `op.RevocationStrategyGrantTombstone`** です。各 JWT AT は `gid` という private claim(OP 側の GrantID。RFC 7519 §4.3、omitempty)を持ちます。OP のエンドポイント（`/userinfo`、`/introspect`）は検証時、`gid` をキーにして小さな grant 単位の tombstone テーブルを参照します。カスケード（ログアウト、コード再利用、refresh chain 侵害）は、失効した grant 1 件あたり 1 件の tombstone 行を、`/revocation` の単一 AT 失効は失効した `jti` 1 件あたり 1 件の deny-list 行を書きます。既定では `/token` の発行経路でデータベース書き込みは発生しません。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
+**既定は `op.RevocationStrategyGrantTombstone`** です。各 JWT AT は `gid` という private claim(OP 側の GrantID。RFC 7519 §4.3、omitempty)を持ちます。OP のエンドポイント（`/userinfo`、`/introspect`）は検証時、`gid` をキーにして小さな grant 単位の tombstone テーブルを参照します。カスケード（ログアウト、コード再利用、refresh chain 侵害）は、失効した grant 1 件あたり 1 件の tombstone 行を、`/revoke` の単一 AT 失効は失効した `jti` 1 件あたり 1 件の deny-list 行を書きます。既定では `/token` の発行経路でデータベース書き込みは発生しません。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
 
-AT 単位の監査ログが必要な組み込み側は、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)` を選ぶと、`store.AccessTokenRegistry` に発行ごとの shadow 行を残す旧方式に戻せます。どちらの戦略も OP が提供する endpoint ではサーバ側の失効状態を参照できますが、OP 側の戦略を選ぶだけでは FAPI Final への適合を示せません。RS は §5.3.4(3) を満たす必要があります。`op.RevocationStrategyNone` は、RFC 6749 §4.1.2 の「SHOULD」の余地を明示的に受け入れる、非 FAPI デプロイ向けの第 3 の選択肢です。ただし `op.New` は、いずれかの FAPI プロファイル下ではこの選択を拒否します。
+AT 単位の監査ログが必要な組み込み側は、`op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)` を選ぶと、`store.AccessTokenRegistry` に発行ごとの shadow 行を残します。どちらの戦略も OP が提供する endpoint ではサーバ側の失効状態を参照できますが、OP 側の戦略を選ぶだけでは FAPI Final への適合を示せません。RS は §5.3.4(3) を満たす必要があります。`op.RevocationStrategyNone` は、RFC 6749 §4.1.2 の「SHOULD」の余地を明示的に受け入れる、非 FAPI デプロイ向けの第 3 の選択肢です。ただし `op.New` は、いずれかの FAPI プロファイル下ではこの選択を拒否します。
 
 opaque AT 経路（`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`）は、この戦略選択の影響を受けません。opaque の検証はレコード参照が必要なため、ストレージは本質的にトークン単位だからです。実装は `op/access_token_revocation.go`、`internal/tokens`(gid claim)、`op/store/grant_revocation.go`、および各バックエンドアダプタにあります。
 :::
 
+すべての契機は 1 つの所有者（`internal/grants/teardown`）を通り、契機ごとの影響範囲が型で決まります。grant は 1 人の subject が 1 つの client 上に持つすべてのセッションで共有されるため、ほとんどの契機は意図的に grant 全体までは広げません。
+
+| 契機 | 失効させるリフレッシュトークン | 失効させるアクセストークン | grant への以後の発行 |
+|---|---|---|---|
+| `/end_session`（subject が持つ各 grant について） | grant のすべて | grant のすべて（JWT と opaque） | 止める |
+| 認可コードの replay | grant のすべて | grant のすべて | 止める |
+| リフレッシュトークンの replay（猶予期間後の再利用） | replay された chain。chain の根を解決できなければ grant のすべて | grant のすべて | 止める |
+| リフレッシュトークンの `/revoke` | その chain。chain の根を解決できなければ grant のすべて | grant のすべて | 止めない（他の chain と未使用の認可コードは引き換え可能） |
+| リフレッシュのローテーション | 直前のトークン | 同じ chain から発行された opaque のもの | 止めない |
+
+「止める」は tombstone 戦略での挙動です。tombstone が、その grant のリフレッシュトークンと認可コードの引き換えも拒否します。`/revoke` の行はアクセストークンだけを対象にした tombstone（`store.GrantTombstone.AccessTokensOnly`）を書きます。store が任意のインターフェース `store.IssuanceRevocationChecker` を実装していれば、token endpoint は chain や認可コードがまだ発行できるかの判定でこの種別を無視できます。ローテーション時の chain 単位の opaque 失効には `store.OpaqueAccessTokenChainRevoker` が必要です。どちらも実装しない store や `ChainID` を保持しない store は grant 全体の挙動に戻ります。これは失効が足りなくなる方向ではなく、多すぎる方向のずれです。`/revoke` は `token.revoked` を記録し、`surface` には `refresh_chain` を、grant のリフレッシュトークンへ切り替えた場合は `refresh_grant` を入れます。
+
+別の client が提示した認可コードやリフレッシュトークン、`redirect_uri` や PKCE の検証に失敗したものは replay ではありません。何も消費せず、何も失効させません。上の表が動くのは、本物の replay だけです。
 <a class="faq-anchor" id="dj-20"></a>
 
 ## 20. DCR の `client_secret` 保存と再開示
 
 **仕様**: RFC 7591 §3.2.1 は、登録応答における `client_secret` を optional とします。RFC 7592 §2.1(読み取り)と §2.2(更新)も、応答ボディに `client_secret` を再掲することを許可しますが、要求はしていません。
 
-**衝突**: 「平文を保存しておいて GET ごとに再開示する」読みは、最も実装が単純で、歴史的に一部の OP がそうしてきました。しかしこれは、ストアに永続的に復号可能な平文を残すことになり、登録レコードを DB 上で最も機密度の高い行に押し上げます。逆に「POST 時点で hash 化し、それ以降は再開示しない」読みは、OP 内の他のクレデンシャルすべての保存方式に揃い、復号可能な接面を完全に消せますが、POST 応答（平文を 1 度だけ取得可能）と GET 応答（平文は永久に取得不可）の間に非対称が生じます。
+**衝突**: 「平文を保存しておいて GET ごとに再開示する」読みは、最も実装が単純で、歴史的に一部の OP がそうしてきました。しかしこれは、ストアに永続的に復号可能な平文を残すことになり、登録レコードを DB 上で最も機密度の高い行に押し上げます。逆に「POST 時点で hash 化し、それ以降は再開示しない」読みは、OP 内の他のクレデンシャルすべての保存方式に揃い、平文を復号できる状態で残す場所を完全になくせますが、POST 応答（平文を 1 度だけ取得可能）と GET 応答（平文は永久に取得不可）の間に非対称が生じます。
 
 ::: tip 選択
-**保存は hash のみ。平文は `POST /register` で 1 回だけ応答に乗せ、`PUT /register/{client_id}` でも次のいずれかの場合にだけ再掲します**:
-
-- (a) `token_endpoint_auth_method` が `none` から confidential 方式に昇格された場合
-- (b) 組み込み側が明示的にローテーションを要求した場合
+**保存は hash のみ。平文は `POST /register` で 1 回だけ応答に乗せ、`PUT /register/{client_id}` では `token_endpoint_auth_method` が `none` から confidential 方式に変わったときにだけ再掲します**。confidential から confidential への更新は既存の hash を保つので、メタデータの編集で secret が勝手に入れ替わることはありません。
 
 `GET /register/{client_id}` では `client_secret` を再開示しません。平文へのアクセスが復号可能な形で必要な組み込み側は、最初の POST 応答の時点で自前のコピーを保管します。OP は平文の一次保管者にはならない方針です。実装は `internal/registrationendpoint/manage.go` および `internal/registrationendpoint/register.go` にあります。ストレージは `op/store/client.go` の `SecretHash` のみで管理されるので、すべての `store.ClientStore` 実装に同じ方針が適用されます。
 :::
@@ -418,11 +449,11 @@ opaque AT 経路（`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`）は�
 **衝突**: 第 1 文を厳密に読むと、PUT で `grant_types` が省略されたら「`grant_types` を削除する」を意味することになります。結果として、クライアントが grant 能力を持たなくなり、その後の `/token` 要求がすべて壊れます。第 2 文の MAY 句は、参照実装が揃ってこのフットガンを避けるために使う逃げ道ですが、エコシステムは単一の置換ポリシーに収束していません。
 
 ::: tip 選択
-**省略された *デフォルト付き* フィールドは、サーバデフォルトにリセットし、省略された *任意* フィールドは空値にします**。デフォルト付きの集合は `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` で、PUT で省略された場合はレコードから消えるのではなく、OP のドキュメント化されたデフォルトに戻ります。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`contacts` ほか）は、省略によって素直に空値になります。
+**省略された *既定値付き* フィールドは、サーバの既定値にリセットし、省略された *任意* フィールドは空値にします**。既定値付きの集合は `grant_types`、`response_types`、`token_endpoint_auth_method`、`application_type`、`subject_type`、`id_token_signed_response_alg` で、PUT で省略された場合はレコードから消えるのではなく、OP のドキュメント化された既定に戻ります。任意メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`contacts` ほか）は、省略によって素直に空値になります。
 
 サーバ管理のフィールド — `registration_access_token`、`registration_client_uri`、`client_secret_expires_at`、`client_id_issued_at` — はボディに存在すれば `400 invalid_request` で拒否し、認証中のクライアントの `client_secret` と一致しない値を送った場合も同様に拒否します。
 
-「クライアントが意図的に省略したのか、サーバがデフォルトを埋めたのか」を区別する sparse な永続化ビットは保持しません。デフォルト付きフィールドの通信路上の挙動は、どちらの読みでも同一になるためです。実装は `internal/registrationendpoint/manage.go` (`validateManageUpdateRequest`)と `internal/registrationendpoint/metadata.go`(`applyMetadataDefaults`) にあります。
+「クライアントが意図的に省略したのか、サーバが既定値を埋めたのか」を区別する sparse な永続化ビットは保持しません。既定値付きフィールドの通信路上の挙動は、どちらの読みでも同一になるためです。実装は `internal/registrationendpoint/manage.go` (`validateManageUpdateRequest`)と `internal/registrationendpoint/metadata.go`(`applyMetadataDefaults`) にあります。
 :::
 
 <a class="faq-anchor" id="dj-22"></a>
@@ -435,7 +466,7 @@ opaque AT 経路（`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`）は�
 
 timeout もボディサイズも、仕様には書かれていません。OIDC Registration §2 は、`application_type=native` の loopback host として `localhost`、`127.0.0.1`、`[::1]` を列挙します。RFC 8252 §8.3 は、DNS rebinding を理由に、`localhost` を IP リテラルより劣後（NOT RECOMMENDED）と書いています。
 
-**衝突**: 「言語デフォルトで fetch」は、実質「上流が応答するまで goroutine を保持し続ける」を意味し、応答ボディも無制限です。登録時にこのままはどちらもフットガンです。`localhost` については、OIDC Registration §2 と RFC 8252 §8.3 が一致しません。OIDC 側は native でこれを認めるのに対し、OAuth 側は推奨しません。Web クライアントの `http://localhost/cb` 登録は、native クライアントの同じ登録とは別問題です。
+**衝突**: 「言語の既定で fetch」は、実質「上流が応答するまで goroutine を保持し続ける」を意味し、応答ボディも無制限です。登録時にこのままはどちらもフットガンです。`localhost` については、OIDC Registration §2 と RFC 8252 §8.3 が一致しません。OIDC 側は native でこれを認めるのに対し、OAuth 側は推奨しません。Web クライアントの `http://localhost/cb` 登録は、native クライアントの同じ登録とは別問題です。
 
 ::: tip 選択
 **取得は 5 秒のタイムアウト、64 KiB のボディ上限、HTTPS 限定、リダイレクト禁止、24 時間の成功キャッシュに制限します**。失敗はキャッシュしません。キャッシュヒット時も、その時点で登録しようとしているクライアントの redirect URI 集合に対して包含チェックを再実行するため、同じ sector 配下の別クライアントに許可範囲が広がることはありません。
@@ -456,7 +487,7 @@ authorize 時の loopback ポートワイルドカードは、クライアント
 **衝突**: conformance runner、内部 CA、public trust に載っていない RP network では custom transport が必要になります。一方、HTTP client 全体を差し替え可能にすると、呼び出し側が意図せず dial-time の SSRF guard まで外してしまえます。custom transport を拒否すれば guard は単純ですが、正当な deployment まで動かなくなります。
 
 ::: tip 選択
-**外向き trust と外向き到達性を別の knob に分けます**。`op.WithJWKSHTTPTransport` は RP JWKS fetch 用の TLS trust / transport 設定を組み込み側に渡させますが、package 側で transport の `DialContext` を差し替えるため、接続時の SSRF deny-list は引き続き発火します。private network の許可は `WithAllowPrivateNetworkJWKS` / `WithAllowPrivateNetworkJAR` 系の明示 policy knob が担い、custom transport 単体では network 境界を広げません。
+**外向き trust と外向き到達性を別の knob に分けます**。`op.WithJWKSHTTPTransport` は RP JWKS fetch 用の TLS trust / transport 設定を組み込み側に渡させますが、`*http.Transport` であれば package 側で dial 関数を gate 付き dialer に差し替えるため、接続時の SSRF deny-list は引き続き発火します。それ以外の `http.RoundTripper` は、各リクエストとリダイレクトの URL だけを検査するので、DNS rebinding を仕掛ける相手は防げません。proxy 経由では、接続時の gate が見るのは proxy のアドレスで、宛先 URL は引き渡す前に 1 回検査します。private network の許可は `WithAllowPrivateNetworkJWKS` / `WithAllowPrivateNetworkJAR` 系の明示 policy knob が担い、custom transport 単体では network 境界を広げません。
 
 JAR JWKS、client-auth JWKS、`sector_identifier_uri`、Back-Channel Logout destination には同じ bounded-fetch posture を適用します。まず URL 形状を検証し、次に dial-time network check を行い、最後に bounded response handling を行います。実装は `op/options_session.go`、`internal/netsec`、`internal/securefetch`、`internal/jar`、`internal/endpointsupport/clientauth.go`、`internal/registrationendpoint/sector_identifier.go` にあります。
 :::
@@ -467,12 +498,12 @@ JAR JWKS、client-auth JWKS、`sector_identifier_uri`、Back-Channel Logout dest
 
 **仕様**: RFC 7591 は、登録メタデータの `scope` を optional とします。IAT-bound な登録では、Initial Access Token の発行者は operator code であり、明示的な `AllowedScopes` policy を付与できます。Open registration には、その operator 発行の per-request envelope がありません。
 
-**衝突**: 省略された `scope` を「public scope すべて」と扱うと、body の薄い open-registration POST が予想以上に強い client を作ります。逆に「scope なし」と扱う方が安全ですが、従来の OP-wide default を期待する client は scope を明示するか、組み込み側が代替 default を設定する必要があります。
+**衝突**: 省略された `scope` を「public scope すべて」と扱うと、body の薄い open-registration POST が予想以上に強い client を作ります。逆に「scope なし」と扱う方が安全ですが、client は scope を明示するか、組み込み側が default を設定する必要があります。
 
 ::: tip 選択
-**Open registration では、省略された `scope` を空の登録 scope set として保存します**。その後の `/authorize` で client が登録していない scope を要求した場合は、`invalid_scope` で拒否します。public default を意図的に持たせたい組み込み側は、`RegistrationOption.OpenRegistrationDefaultScopes` でオプトインします。この値は構築時に OP の scope レジストリに対して検証されます。
+**Open registration では、省略された `scope` を空の登録 scope set として保存します**。その後の `/auth` で client が登録していない scope を要求した場合は、`invalid_scope` で拒否します。public default を意図的に持たせたい組み込み側は、`RegistrationOption.OpenRegistrationDefaultScopes` でオプトインします。この値は構築時に OP の scope レジストリに対して検証されます。
 
-IAT-bound 経路は、operator-trusted な広いデフォルトを維持します。IAT に `AllowedScopes` がなければ、public scope レジストリからデフォルトを取れます。実装は `op/registration.go`、`op/options_validate.go`、`internal/registrationendpoint/handler.go`、`internal/registrationendpoint/register.go`、`internal/registrationendpoint/metadata_validate.go` にあります。
+IAT-bound 経路は、operator-trusted な広い既定を維持します。IAT に `AllowedScopes` がなければ、public scope レジストリから既定を取れます。実装は `op/registration.go`、`op/options_validate.go`、`internal/registrationendpoint/handler.go`、`internal/registrationendpoint/register.go`、`internal/registrationendpoint/metadata_validate.go` にあります。
 :::
 
 <a class="faq-anchor" id="dj-25"></a>
@@ -496,7 +527,7 @@ IAT-bound 経路は、operator-trusted な広いデフォルトを維持しま�
 **衝突**: 上限のない poll ladder は、client が `slow_down` を無視して `auth_req_id` の期限まで高速 poll し続けられる状態を作ります。低い上限を hard-code すれば本番保護にはなりますが、反復 poll を意図的に行う OFCS module を壊す場合があります。また、`/bc-authorize` から詳細な JAR parser error をそのまま出すと debug には便利ですが、CIBA endpoint が期待する `invalid_request` ではなく JOSE 固有の taxonomy が通信路に漏れます。
 
 ::: tip 選択
-**本ライブラリは CIBA poll mode のみを実装し、slow_down strike counter に上限を置きます**。既定上限は 5 回です。`op.WithCIBAMaxPollViolations(n)` で上げ下げでき、`0` はライブラリ既定、`255` は counter が `uint8` であるため実質的に lockout 無効化を意味します。本番 deployment では有限の上限を推奨します。
+**本ライブラリは CIBA poll mode のみを実装し、slow_down strike counter に上限を置きます**。既定上限は 5 回です。`op.WithCIBAMaxPollViolations(n)` で上げ下げでき、`0` はライブラリ既定、`255` は counter が `uint8` であるため実質的に lockout 無効化を意味します。本番 deployment では有限の上限を推奨します。`op.New` は、負の `WithCIBADefaultExpiresIn` と `WithCIBAPollInterval` も拒否し、FAPI-CIBA では既定または最大の有効期限が 10 分を超える設定も拒否します。
 
 `/bc-authorize` では single-valued parameter の重複を拒否し、request object の失敗は CIBA Core §13 に合わせて `invalid_request` に写像します。FAPI-CIBA では JAR verifier が `iat` を要求し、request object lifetime を 60 分に制限し、RP JWKS は OP の他の箇所と同じ SSRF-bounded fetcher で取得します。実装は `op/options_ciba.go`、`internal/ciba/polling.go`、`internal/cibaendpoint`、`internal/jar`、`op/op_builders.go` にあります。
 :::
@@ -526,7 +557,9 @@ IAT-bound 経路は、operator-trusted な広いデフォルトを維持しま�
 ::: tip 選択
 **ハンドラは意図だけを示し、リフレッシュトークン値は OP が所有します**。`CustomGrantResponse.IssueRefreshToken` は、OP に `RefreshTokenStore` 経由でリフレッシュトークンを生成・永続化させるフラグです。レコードは発行アクセストークンと同じ grant 識別子と DPoP / mTLS confirmation を共有するため、通常のローテーション、再利用時の連鎖失効、grant 失効、introspection の意味論に乗ります。ハンドラがリフレッシュトークン文字列を直接渡す経路はありません。
 
-発行は 5 つの gate で決まります。provider が `refresh_token` を提供していること、client が登録していること、response の subject が空でないこと、response の scope が空でないこと、response の audience が 1 件以下であることです。いずれかに失敗してもアクセストークン応答と、他の発行条件を満たす ID Token は成功し、リフレッシュトークンだけが省略され、`custom_grant.refresh_dropped` が理由を記録します。scope が空の場合も、落ちるのはリフレッシュトークンだけです。実装は `internal/tokenendpoint/customgrant.go` にあり、token-exchange も `TokenExchangeDecision.IssueRefreshToken` で同じ方針を通します。
+発行は 5 つの gate で決まります。provider が `refresh_token` を提供していること、client が登録していること、response の subject（または束縛されたアクセストークンの subject）が空でないこと、response の scope が空でないこと、response の audience が 1 件以下であることです。いずれかに失敗してもアクセストークン応答と、他の発行条件を満たす ID Token は成功し、リフレッシュトークンだけが省略され、`custom_grant.refresh_dropped` が理由を記録します。scope が空の場合も、落ちるのはリフレッシュトークンだけです。実装は `internal/tokenendpoint/customgrant.go` にあり、token-exchange も `TokenExchangeDecision.IssueRefreshToken` で同じ方針を通します。
+
+一般的な custom grant の資格情報について、subject を保証するのは grant レコードではなくハンドラです。そのため、ハンドラが grant を記録しない限り、`Provider.RevokeSubject` はそれらを失効させず、期限切れか個別の失効まで生きたままです。pairwise subject 下の `/userinfo` は、それらに `invalid_token` を返します。アカウント削除時の失効は、ハンドラの責任です。token exchange は違います。その資格情報は `subject_token` の grant 配下に置かれるので、その grant を失効させればまとめて失効し、exchange で得たリフレッシュトークンも、subject の削除後はローテーションされなくなります。
 :::
 
 <a class="faq-anchor" id="dj-29"></a>
@@ -538,9 +571,9 @@ IAT-bound 経路は、operator-trusted な広いデフォルトを維持しま�
 **衝突**: 失効が device-code 行を拒否状態にするだけなら、以後のポーリングは止まりますが、既に発行されたアクセストークンは `exp` まで動き続けます。一方、組み込み側が監査イベントを購読して `RevokeByGrant` を自前で呼ぶ設計にすると、デプロイごとの別経路の接続コードを忘れないことに安全性が依存します。
 
 ::: tip 選択
-**レジストリがある場合、公開ヘルパが連鎖失効まで所有します**。`devicecodekit.Revoke` はまず device-code 行を拒否状態にし、`Deps.AccessTokens` が nil 以外なら `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` を呼びます。device-code grant から発行されたアクセストークンはすべて device-code ID を grant 識別子として持つため、既存の grant 単位失効処理で発行済み集合をまとめて退役できます。
+**公開ヘルパが連鎖失効まで所有します**。`devicecodekit.Revoke` はまず device-code 行を拒否状態にします。次に、device flow がその device code 用に割り当てた grant 識別子を再計算し（device-code ID からの一方向の導出なので、device code そのものは再び公開されません）、その grant 配下に発行されたものを失効させます。JWT アクセストークンは `Deps.RevocationStrategy` に従い、opaque アクセストークンは `Deps.OpaqueAccessTokens` があれば、リフレッシュトークンの chain は `Deps.RefreshTokens` があれば対象です。`Deps.Grants` を設定していれば、連鎖失効が完了したあとで最後に同意レコードを削除するので、その同意が以後の認可リクエストを満たすことはなくなります。どれかのクラスが失敗しても、残りは試行します。部分的な失敗は結合したエラーを返し、`cascade_complete=false` を記録します。同じ呼び出しを繰り返せば、残りを完了できます。
 
-JWT stateless 構成や、別経路で失効を流す構成では nil レジストリも正当です。その場合、行は拒否状態になり監査イベントも発火しますが、ヘルパはアクセストークン連鎖失効が実行されたとは主張しません。レジストリがある場合は `device_code.revoked` に `revoked_access_tokens` が入り、想定外に少ない連鎖失効や失敗を運用側で検知できます。実装は `op/devicecodekit.Revoke` と各 `store.AccessTokenRegistry` アダプタにあります。
+nil のまま残したサブストアは飛ばします。JWT のみの構成や、失効を別経路で流す構成でも、行は拒否状態になり監査イベントも発火しますが、ヘルパは飛ばした連鎖失効が実行されたとは主張しません。`device_code.revoked` には、試行したクラスごとに 1 つずつ extra（`revoked_access_tokens`、`grant_tombstone_written`、`revoked_opaque_access_tokens`、`refresh_token_cascade_complete`、`grant_record_deleted`）と `cascade_complete` が入り、連鎖失効が想定に届かなかった場合を運用側で検知できます。実装は `op/devicecodekit.Revoke` にあります。
 :::
 
 <a class="faq-anchor" id="dj-30"></a>
@@ -555,7 +588,7 @@ JWT stateless 構成や、別経路で失効を流す構成では nil レジス�
 - **ブラウザ認可が有効なときだけ要求する** — サービス間通信専用の構成には正確で扱いやすい一方、どの grant が暗号化 cookie を必要とするかを、ハンドラがマウントされる前に option 層で判断する必要があります。
 
 ::: tip 選択
-`WithIssuer`、`WithStore`、`WithKeyset` は無条件の構築要件です。`WithCookieKeys` は、有効な grant 集合に `authorization_code` が含まれる場合だけ必須です。デフォルトの grant 集合には `authorization_code` が含まれるため、通常のブラウザフローでは必要になります。authorization-code flow はブラウザの interaction state を session / CSRF cookie で束縛するため、ここには暗号化鍵が必要です。一方、`authorization_code` を明示的に外した `client_credentials` 専用デプロイは cookie key 無しで起動できます。
+`WithIssuer`、`WithStore`、`WithKeyset` は無条件の構築要件です。`WithCookieKeys` は、有効な grant 集合に `authorization_code` が含まれる場合だけ必須です。既定の grant 集合には `authorization_code` が含まれるため、通常のブラウザフローでは必要になります。authorization-code flow はブラウザの interaction state を session / CSRF cookie で束縛するため、ここには暗号化鍵が必要です。一方、`authorization_code` を明示的に外した `client_credentials` 専用デプロイは cookie key 無しで起動できます。
 
 この規則は `validateCookieKeysRequired` に集約しています。将来、authorize endpoint の cookie を必要とする grant が増えた場合も、ハンドラ側ではなくこの検証に追加できます。個々の鍵は AES-256-GCM に合わせて 32 byte ちょうどでなければなりません。実装は `op/options_validate.go`、ドキュメントは [必須オプション](/ja/getting-started/required-options) にあります。
 :::
@@ -566,10 +599,40 @@ JWT stateless 構成や、別経路で失効を流す構成では nil レジス�
 
 **仕様**: OAuth 2.0 Grant Management はまだ IETF draft です。安定した `grant_id` と、`create`、`replace`、`merge`、`query`、`revoke` の 5 action を定義しますが、公開 RFC になるまでに通信路上の形が変わる可能性があります。
 
-**衝突**: 長命な consent を扱う OP では、grant に名前を付け、クライアントが後で query / revoke できることに明確な価値があります。一方、draft 機能を既定で有効化すると、全デプロイに変動中の通信契約を露出し、運用者がまだ支える準備のない意味論を discovery に広告してしまいます。
+**衝突**: 長命な consent を扱う OP では、grant に名前を付け、クライアントが後で query や失効ができることに明確な価値があります。一方、draft 機能を既定で有効化すると、全デプロイに変動中の通信契約を露出し、運用者がまだ支える準備のない意味論を discovery に広告してしまいます。
 
 ::: tip 選択
 Grant Management は **既定では無効で、明示的に experimental として扱います**。`op.WithGrantManagement(actions, actionRequired)` は OP が受け付ける action set を正確に列挙し、その同じ集合を discovery で広告し、PAR / authorize-time (`create` / `replace` / `merge`) と endpoint-time (`query` / `revoke`) の両方で強制します。未知 action、重複 action、空の action set、action と `grant_id` の不整合は、構築時またはリクエスト検証時に拒否します。
 
 有効化すると token 応答に `grant_id` を載せ、`/grant_management` の query / revoke endpoint をマウントします。存在しないこと、または別 client の所有であることが確定した grant には `404` を返しますが、存在を判断できない store 障害は cascade を試みず `500 server_error` を返します。cascade の失敗も `500` と失敗監査イベントになり、grant は再試行・照会できる状態に残ります。別リクエストが先に削除した最終 delete だけは冪等な `204` です。draft の面はこの option の背後に隔離しているため、将来、通信互換性を壊す draft 更新が来ても、偶発的な既定変更ではなく明示的な移行として扱えます。実装は `op/grant_management.go`、`internal/parendpoint`、`internal/authorizeendpoint`、`internal/grantmgmtendpoint`、`internal/tokenendpoint` にあります。
+:::
+
+<a class="faq-anchor" id="dj-32"></a>
+
+## 32. 認可ごとの状態 — grant から読まず、資格情報に持たせる
+
+**仕様**: OIDC Core 1.0 は `auth_time`、`acr`、`amr` を ID Token の背後にある認証イベントの性質と定め、`claims` リクエスト（§5.5）はそれを運んだ認可リクエストに紐づけています。RFC 9396 は `authorization_details` を、そのリクエストでリソースオーナーが許可した内容に結びつけます。
+
+**衝突**: ライブラリは (subject, client) の組ごとに `store.Grant` を 1 つ持ち、同意を引き継ぐために認可をまたいで再利用します。資格情報を使う時点でこの共有レコードから `auth_time`、claims、details を読むと、後の認可が先の認可の報告内容を書き換えてしまいます。同じユーザが 2 回目にログインしたあとで引き換えた認可コードは、ID Token に 2 回目のログインを示し、2 回目のリクエストが求めた claims を開示し、許可していない `authorization_details` まで拾います。
+
+::: tip 選択
+**資格情報は、自分を発行した認可の状態を持ちます**。`store.AuthorizationCode`、`store.RefreshToken`、`store.OpaqueAccessToken` が `AuthTime`、`ACR`、`AMR`、`AuthorizationDetails`、claims リクエストを保持します。リフレッシュのローテーションはそれらを後継に引き継ぐので、chain の ID Token、アクセストークン、introspection 応答は、その chain 自身の認可を表します。Grant Management の `replace` は、生きているトークンからの details の取り下げを反映しますが、後の認可が足した内容がそれらに届くことはありません。`claims` パラメータなしでユーザ操作を挟まずに返した認可は、自分のリクエストが求めた claims だけを開示し、同じ grant 上の以前のリクエストが求めた claims は開示しません。
+
+認可コードやその refresh chain から発行する JWT アクセストークンは、`userinfo_claims` という private claim も持ちます。値は claims リクエストの `userinfo` メンバー、リクエストがなければ `{}` です。`/userinfo` はここから claims を開示します。リソースサーバは無視してかまいません。この名前は予約されているので、custom grant が extra claims で設定することはできません。
+
+`AuthorizationRecorded` が、状態を持つ行の目印です。目印のない行（たとえば、これらのフィールドを永続化しない store が書いた行）は grant の値に戻るため、独自 store はフィールドを永続化するまで共有 grant の挙動のままで動作します。実装は `internal/tokenendpoint`、`internal/tokens`、`op/store` にあります。
+:::
+
+<a class="faq-anchor" id="dj-33"></a>
+
+## 33. 再利用されたセッションでのステップアップルール
+
+**仕様**: OIDC Core 1.0 §3.1.2.1 は `prompt` と `max_age` を、RFC 9470 は `acr_values` によるステップアップを定義しています。ユーザがすでにセッションを持つシングルサインオンの場面で、OP 自身のポリシールールがどう働くかは、どちらも規定していません。
+
+**衝突**: `RuleClient` や `RuleScope` などの `LoginFlow` ルールは、特定の client や scope を追加の factor の背後に置きます。ルールを factor chain の実行中にしか評価しないと、primary factor だけで確立したセッションが、要求を覆うキャッシュ済み grant や first-party の同意スキップを通って、ルールに一度も会わないまま保護された client や scope に届いてしまいます。
+
+::: tip 選択
+**セッションから発行する前に、ルールと `Decider` を評価します**。chain がちょうど `Primary` を完了したものとして扱います。どれかがステップを要求すれば、`/auth` は発行せず、セッションの subject から chain を実行します。`prompt=none` なら `interaction_required` を返します。セッションの以前のログインで通った factor は、ルールの判定に数えません。同意画面経路と同じ扱いです。リスクに基づくルールは chain の中だけで発火します。
+
+ステップアップ後に発行するトークンは、ステップアップした factor だけでなく、セッションの `acr`、`amr`、`auth_time` を保ちます。リスク評価器は `AMRSoFar` でセッションの認証方式を参照でき、ステップアップの factor は `login.*` ではなく `mfa.*` イベントとして audit されます。評価は拒否側に倒します。`Rule.When` が panic すれば一致とみなし、`Decider` が panic する、nil・nil ポインタ・未知の形を返す場合は拒否します。factor の `interaction.Result` が、先行する factor やアカウントチューザが束縛した subject と別の subject を示した場合は、chain をサーバエラーで終わらせます。この検査は、プロンプトなしで `Begin` の中で完了する factor にも及びます。実装は `internal/authorizeendpoint`、`op/rule.go`、`op/decider.go` にあります。
 :::

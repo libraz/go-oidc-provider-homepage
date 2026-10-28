@@ -36,39 +36,54 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 
 <figure class="fig">
   <div class="fig-head">報告を送ったあと何が起きるか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="disclosure-flow-title" viewBox="0 0 960 424" xmlns="http://www.w3.org/2000/svg">
     <title id="disclosure-flow-title">脆弱性報告が辿る流れ。受領し、受領確認を返し、triage したうえで、スコープ外なら理由を添えてクローズし、有効なら修正・合意した期間での協調開示・リリースを経て GHSA を公開します。</title>
-    <rect class="fg-box" x="280" y="24" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="48">報告を受領</text>
-    <text class="fg-xs" x="300" y="68">SECURITY.md に記載の窓口から非公開で</text>
-    <path class="fg-edge fg-edge--thin" d="M480,80 V88" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="280" y="90" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="114">受領確認</text>
-    <text class="fg-xs" x="300" y="134">オンラインに戻り次第。個人開発のため即応は約束しない</text>
-    <path class="fg-edge fg-edge--thin" d="M480,146 V154" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="280" y="156" width="400" height="54" rx="8"/>
-    <text class="fg-t2 fg-accent" x="300" y="180">triage</text>
-    <text class="fg-xs" x="300" y="200">再現して分類する</text>
-    <path class="fg-edge fg-edge--muted" d="M684,183 H760" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="722" y="176" text-anchor="middle">スコープ外</text>
-    <rect class="fg-box fg-box--muted" x="764" y="156" width="160" height="54" rx="8"/>
-    <text class="fg-t2" x="782" y="180">クローズ</text>
-    <text class="fg-xs" x="782" y="200">理由を明示して返す</text>
-    <path class="fg-edge fg-edge--thin" d="M480,212 V220" marker-end="url(#fg-a)"/>
-    <text class="fg-xs fg-ok" x="496" y="222">有効と確認</text>
-    <rect class="fg-box" x="280" y="222" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="246">修正、または緩和策の計画</text>
-    <text class="fg-xs" x="300" y="266">優先順位を決めるのは重大度で、報告者の属性ではない</text>
-    <path class="fg-edge fg-edge--thin" d="M480,278 V286" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="280" y="288" width="400" height="54" rx="8"/>
-    <text class="fg-t2" x="300" y="312">協調開示</text>
-    <text class="fg-xs" x="300" y="332">報告者と合意した調整期間に沿って進める</text>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M480,344 V352" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="280" y="354" width="400" height="54" rx="8"/>
-    <text class="fg-t2 fg-accent" x="300" y="378">修正版のリリースと GHSA の公開</text>
-    <text class="fg-xs" x="300" y="398">該当する場合は CVE も申請する</text>
+    <!-- received -->
+    <rect class="fg-box" x="32" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="52">報告を受領</text>
+    <text class="fg-s" x="48" y="76">SECURITY.md に記載の</text>
+    <text class="fg-s" x="48" y="100">窓口から非公開で</text>
+    <path class="fg-edge fg-edge--thin" d="M304,72 H344" marker-end="url(#fg-a)"/>
+    <!-- acknowledged -->
+    <rect class="fg-box" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="52">受領確認</text>
+    <text class="fg-s" x="360" y="76">オンラインに戻り次第。</text>
+    <text class="fg-s" x="360" y="100">個人開発で即応は約束しない</text>
+    <path class="fg-edge fg-edge--thin" d="M616,72 H656" marker-end="url(#fg-a)"/>
+    <!-- triage -->
+    <rect class="fg-box" x="656" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="672" y="52">triage</text>
+    <text class="fg-s" x="672" y="76">再現して分類する</text>
+    <text class="fg-s" x="672" y="100">有効か、スコープ外か</text>
+    <!-- branches -->
+    <path class="fg-leader" d="M792,120 V144 M168,144 H792"/>
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M168,144 V168" marker-end="url(#fg-ao)"/>
+    <text class="fg-s fg-ok" x="180" y="162">有効と確認</text>
+    <path class="fg-edge fg-edge--muted fg-edge--thin" d="M792,144 V168" marker-end="url(#fg-am)"/>
+    <text class="fg-s fg-dim" x="804" y="162">スコープ外</text>
+    <!-- fix -->
+    <rect class="fg-box" x="32" y="168" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="196">修正、または緩和策の計画</text>
+    <text class="fg-s" x="48" y="220">優先順位は重大度で決まる</text>
+    <text class="fg-s" x="48" y="244">報告者の属性では決まらない</text>
+    <!-- closed -->
+    <rect class="fg-box fg-box--muted" x="656" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t2" x="672" y="196">クローズ</text>
+    <text class="fg-s" x="672" y="220">理由を明示して返す</text>
+    <path class="fg-edge fg-edge--thin" d="M168,264 V304" marker-end="url(#fg-a)"/>
+    <!-- disclosure -->
+    <rect class="fg-box" x="32" y="304" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="332">協調開示</text>
+    <text class="fg-s" x="48" y="356">報告者と合意した</text>
+    <text class="fg-s" x="48" y="380">調整期間に沿って進める</text>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M304,352 H344" marker-end="url(#fg-ac)"/>
+    <!-- release -->
+    <rect class="fg-box fg-box--accent" x="344" y="304" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="332">修正版リリースと GHSA</text>
+    <text class="fg-s" x="360" y="356">該当する場合は</text>
+    <text class="fg-s" x="360" y="380">CVE も申請する</text>
   </svg>
-  <figcaption class="fig-note">期限に幅があるのは受領確認の段階だけで、それも明示しています。それより下は固定です。合意した期間より前に公開することはありませんし、合意なしに黙って修正することもありません。</figcaption>
+  <figcaption class="fig-note">期限に幅があるのは受領確認の段階だけで、それも明示しています。それ以降の段階は固定です。合意した期間より前に公開することはありませんし、合意なしに黙って修正することもありません。</figcaption>
 </figure>
 
 現実的な目安として、受領確認には通常数日かかります。重大な問題はすぐに着手しますが、軽微なものは余暇が確保できる週末まで持ち越すこともあります。1 週間返信がない場合は遠慮なく再度連絡してください。無視しているわけではなく、通知の取りこぼしか単に手が回らない時期である可能性が高いです。
@@ -80,6 +95,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 | バージョン | サポート |
 |---|---|
 | `v1.x` | 最新 minor + 1 つ前の minor |
+| `v0.x` | サポート対象外 |
 
 ::: tip 更新の方針
 `go.mod` ではバージョンタグを固定し、更新のたびに [CHANGELOG](https://github.com/libraz/go-oidc-provider/blob/main/CHANGELOG.md) を確認してください。v1 の公開 API は Semantic Versioning に従います。`Experimental:` マーカー付き API はこの約束の例外です。セキュリティ修正はサポート対象の v1 minor に入ります。
@@ -92,7 +108,7 @@ go-oidc-provider は本業の合間に個人で維持しているプロジェク
 1. 報告者とメンテナ双方の都合に合わせて、パッチの目標日を合意します。
 2. プライベートブランチまたは GitHub Security Advisory のドラフトで修正を開発します。
 3. 修正を `main` にマージし、リリースタグを切ります。
-4. Advisory を公開します。GitHub の CNA が CVE を発番する条件に該当する場合は CVE を申請します。実体が exploit 経路を持たない defense-in-depth ハードニングに留まる場合は、CVE 無しの GHSA として公開することが多いです。
+4. Advisory を公開します（GitHub 独自の ID が GHSA です）。条件に該当する場合は、GitHub の CNA（CVE 採番機関）を通じて CVE を申請します。実体が exploit 経路を持たない defense-in-depth ハードニングに留まる場合は、CVE 無しの GHSA として公開することが多いです。
 5. リポジトリを Watch（Releases / Security advisories）している方には自動で通知が届きます。
 
 ## 現在の Advisory 状況
@@ -120,6 +136,8 @@ govulncheck ./...
 - トークン偽造、ID トークンの署名バイパス、`iss` ミックスアップ経路。
 - 関連 RFC が許容する範囲を超える PKCE / nonce / state replay 経路。
 - chain revocation を伴わないリフレッシュトークンの再利用。
+- 失効、サインアウト、subject の削除で無効になるはずなのに、使えたままの資格情報（リフレッシュ、アクセス、device-code、CIBA、token exchange のトークン）。
+- 既存セッションを使えば素通りできてしまう `LoginFlow` のルールや `Decider`。
 - 同意 / ログアウト / interaction POST に対する CSRF。
 - Cookie 周りのリグレッション（`__Host-`、`Secure`、AES-256-GCM AEAD のいずれかが失われるもの）。
 - Back-Channel Logout 経由の SSRF（RFC 1918 の deny-list をすり抜けてプライベートネットワーク宛に送信できてしまうもの）。

@@ -10,26 +10,30 @@ Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authoriza
 
 <figure class="fig">
   <div class="fig-head">How to read a design judgment</div>
-  <svg class="fig-svg" role="img" aria-labelledby="dj-shape-title" viewBox="0 0 960 226" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="dj-shape-title" viewBox="0 0 960 232" xmlns="http://www.w3.org/2000/svg">
     <title id="dj-shape-title">Each design judgment names the specification text involved, the point where two documents disagree, and the rule this library adopted — then says where that rule is actually enforced.</title>
-    <rect class="fg-box" x="36" y="42" width="260" height="92" rx="8"/>
-    <text class="fg-t2" x="56" y="68">The spec text</text>
-    <text class="fg-mxs" x="56" y="92">MUST · SHOULD · MAY</text>
-    <text class="fg-xs" x="56" y="114">quoted, with the section</text>
-    <path class="fg-edge" d="M300,88 H336" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--warn" x="340" y="42" width="260" height="92" rx="8"/>
-    <text class="fg-t2" x="360" y="68">Where they conflict</text>
-    <text class="fg-xs" x="360" y="92">two documents give different</text>
-    <text class="fg-xs" x="360" y="112">answers to the same request</text>
-    <path class="fg-edge" d="M604,88 H640" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="644" y="42" width="280" height="92" rx="8"/>
-    <text class="fg-t2 fg-accent" x="664" y="68">The rule adopted here</text>
-    <text class="fg-xs" x="664" y="92">the stricter reading wins,</text>
-    <text class="fg-xs" x="664" y="112">and the reasoning is written down</text>
-    <path class="fg-edge fg-edge--accent" d="M784,138 V166" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--sub" x="36" y="170" width="888" height="42" rx="8"/>
-    <text class="fg-lbl" x="56" y="196">enforced in</text>
-    <text class="fg-mxs" x="160" y="196">op.New construction checks · the store contract · the internal implementation</text>
+    <!-- spec text -->
+    <rect class="fg-box" x="32" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="52">The spec text</text>
+    <text class="fg-m" x="48" y="76">MUST · SHOULD · MAY</text>
+    <text class="fg-s" x="48" y="100">quoted, with the section</text>
+    <path class="fg-edge" d="M304,72 H344" marker-end="url(#fg-a)"/>
+    <!-- conflict -->
+    <rect class="fg-box fg-box--warn" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="52">Where they conflict</text>
+    <text class="fg-s" x="360" y="76">two documents give different</text>
+    <text class="fg-s" x="360" y="100">answers to the same request</text>
+    <path class="fg-edge" d="M616,72 H656" marker-end="url(#fg-a)"/>
+    <!-- adopted rule -->
+    <rect class="fg-box fg-box--accent" x="656" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="672" y="52">The rule adopted here</text>
+    <text class="fg-s" x="672" y="76">one reading is chosen,</text>
+    <text class="fg-s" x="672" y="100">and the reason is recorded</text>
+    <path class="fg-edge fg-edge--accent" d="M792,120 V160" marker-end="url(#fg-ac)"/>
+    <!-- enforcement -->
+    <rect class="fg-box fg-box--sub" x="32" y="160" width="896" height="48" rx="8"/>
+    <text class="fg-lbl" x="48" y="189">enforced in</text>
+    <text class="fg-m" x="192" y="189">op.New checks · the store contract · the internals</text>
   </svg>
   <figcaption class="fig-note">The last row is what separates a judgment from an opinion. If a rule is not enforced somewhere concrete, it is not a rule — it is a note about what the author intended.</figcaption>
 </figure>
@@ -40,7 +44,7 @@ Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authoriza
     <p class="dj-lede">Use this page when you need to know whether a behaviour is an accident, a spec compromise, or a deliberate security posture. Each entry names the conflict, the chosen rule, and the implementation surface that enforces it.</p>
   </div>
   <div class="dj-stats" aria-label="Design judgment summary">
-    <span><strong>31</strong> decisions</span>
+    <span><strong>33</strong> decisions</span>
     <span><strong>5</strong> surfaces</span>
     <span><strong>fail-fast</strong> defaults</span>
   </div>
@@ -48,6 +52,15 @@ Every spec the OP touches is a layered set of MUSTs, SHOULDs, and "the authoriza
 
 ::: tip How to read this page
 Start with the cards for the surface you are changing. Each detailed entry then follows the same shape: **the spec text**, **the conflict**, and **what this library does**. The highlighted callout is the operative rule; cited package paths under `op/` and `internal/` point to the implementation.
+:::
+
+::: details Terms used on this page
+- **OP** (OpenID Provider): the authorization server this library implements.
+- **RP** (Relying Party): the client application that signs users in through the OP.
+- **RS** (resource server): the API that accepts access tokens.
+- **Grant**: the OP's record of one subject's consent to one client. Several sessions and tokens can sit under one grant; see [Consent](/concepts/consent).
+- **Chain**: a refresh token and every successor produced by rotation; see [Refresh tokens](/concepts/refresh-tokens).
+- **Tombstone**: a small revocation record keyed by grant (or by `jti`), which lets a JWT be rejected without keeping a row per token.
 :::
 
 ## Decision map
@@ -68,12 +81,13 @@ Start with the cards for the surface you are changing. Each detailed entry then 
     <a href="#dj-3"><strong>#3</strong><span><code>offline_access</code> is a UX / TTL signal by default; strict mode makes it a gate.</span></a>
     <a href="#dj-15"><strong>#15</strong><span>DPoP refresh-token chains bind for public clients, not confidential clients.</span></a>
     <a href="#dj-16"><strong>#16</strong><span>Confidential-only introspection delegates across clients only through the resource audience.</span></a>
-    <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> cascades access-token revocation when substores are wired.</span></a>
+    <a href="#dj-17"><strong>#17</strong><span><code>/end_session</code> retires everything issued under the subject's grants, class by class.</span></a>
     <a href="#dj-18"><strong>#18</strong><span>JWT access tokens are the default; opaque is opt-in and can vary by resource.</span></a>
     <a href="#dj-19"><strong>#19</strong><span>JWT revocation uses grant tombstones by default; FAPI rejects no-revocation.</span></a>
     <a href="#dj-28"><strong>#28</strong><span>Custom grants ask for refresh tokens; the OP owns value and lineage.</span></a>
-    <a href="#dj-29"><strong>#29</strong><span><code>devicecodekit.Revoke</code> owns the cascade when a registry is available.</span></a>
+    <a href="#dj-29"><strong>#29</strong><span><code>devicecodekit.Revoke</code> owns the cascade, grant record included.</span></a>
     <a href="#dj-31"><strong>#31</strong><span>Grant Management stays explicit while the draft surface is unstable.</span></a>
+    <a href="#dj-32"><strong>#32</strong><span>Codes, refresh chains and access tokens carry the state of the authorization that issued them.</span></a>
   </section>
   <section class="dj-group">
     <h3>Registration, issuer, and outbound fetch</h3>
@@ -90,11 +104,12 @@ Start with the cards for the surface you are changing. Each detailed entry then 
     <a href="#dj-5"><strong>#5</strong><span>Iframe logout specs are not implemented; BCL and RP-Initiated Logout are.</span></a>
     <a href="#dj-10"><strong>#10</strong><span>Sessions may live outside the transactional cluster; volatile BCL is best-effort.</span></a>
     <a href="#dj-30"><strong>#30</strong><span>Cookie keys are conditional: required only when browser authorization is enabled.</span></a>
+    <a href="#dj-33"><strong>#33</strong><span>Step-up rules also apply when an authorization is served from an existing session.</span></a>
   </section>
   <section class="dj-group">
     <h3>JOSE and request objects</h3>
     <a href="#dj-1"><strong>#1</strong><span>PAR <code>request_uri</code> is looked up at entry and consumed when a code is emitted.</span></a>
-    <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> replay defence is default-on with an OP-side <code>jti</code> cache.</span></a>
+    <a href="#dj-6"><strong>#6</strong><span>JAR <code>request=</code> objects that carry a <code>jti</code> are deduplicated by an OP-side cache.</span></a>
     <a href="#dj-11"><strong>#11</strong><span><code>none</code> and <code>HS*</code> are excluded; OP-issued artifacts are ES256 only.</span></a>
     <a href="#dj-14"><strong>#14</strong><span>PKCE is <code>S256</code> only across all profiles.</span></a>
     <a href="#dj-27"><strong>#27</strong><span>JWE algorithms are allow-listed and JOSE nesting is capped.</span></a>
@@ -109,10 +124,10 @@ Start with the cards for the surface you are changing. Each detailed entry then 
 
 > **RFC 9126 §2.2 (summary)** A client MUST use each `request_uri` only once. An AS SHOULD treat it as one-time, MAY allow duplicates caused by a user-agent reload or refresh, and MUST reject an expired value.
 
-**Conflict:** A literal "consume on first sight" interpretation breaks multi-step interaction (consent → MFA → locale change can re-redirect to the same `/authorize?request_uri=…` before the original interaction finishes). The checked-in OFCS FAPI plans confirm this with two separate negative tests — one that requires the OP to *accept* a re-visit before authentication completes, and one that requires it to *reject* the re-visit afterwards. Those plans are Implementer's Draft-era plans and do not by themselves establish conformance to the current FAPI Final profile.
+**Conflict:** A literal "consume on first sight" interpretation breaks multi-step interaction (consent → MFA → locale change can re-redirect to the same `/auth?request_uri=…` before the original interaction finishes). The checked-in OFCS FAPI plans confirm this with two separate negative tests — one that requires the OP to *accept* a re-visit before authentication completes, and one that requires it to *reject* the re-visit afterwards. Those plans are Implementer's Draft-era plans and do not by themselves establish conformance to the current FAPI Final profile.
 
 ::: tip Decision
-`request_uri` is **looked up at `/authorize` entry** (`PARs.Find`) and **consumed at authorization-code issuance** (`PARs.Consume`). Re-visits during interaction succeed; re-visits after the code is emitted are rejected with `invalid_request_uri`. The matching OFCS module `fapi2-…-par-attempt-reuse-request_uri` exercises the post-emission rejection path; see <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
+`request_uri` is **looked up at `/auth` entry** (`PARs.Find`) and **consumed at authorization-code issuance** (`PARs.Consume`). Re-visits during interaction succeed; re-visits after the code is emitted are rejected with `invalid_request_uri`. The matching OFCS module `fapi2-…-par-attempt-reuse-request_uri` exercises the post-emission rejection path; see <a class="doc-ref" href="/compliance/ofcs">OFCS conformance</a>.
 :::
 
 <a class="faq-anchor" id="dj-2"></a>
@@ -126,7 +141,13 @@ Start with the cards for the surface you are changing. Each detailed entry then 
 **Conflict:** A strict "single-use, no grace" reading kills any client where the token rotation network round-trip is interrupted (mobile backgrounding, dropped TCP, retried HTTP/2 stream). The checked-in OFCS FAPI plans exercise a grace path with a 30-second wait between rotation and re-exchange of the previous token; those plans are Implementer's Draft-era plans and do not by themselves establish conformance to the current FAPI Final profile.
 
 ::: tip Decision
-Rotated refresh tokens stay accepted for the library's configurable `GraceTTL` (default 60 s) when the chain has not been revoked for reuse-detection. Within the grace window, presenting the old refresh token returns the saved successor without rotating again; a sender-constrained retry may receive a newly bound access token. Reuse *after* the grace window — or any reuse on a chain that was already revoked — invalidates the entire chain (RFC 9700 §4.14.2). The 60-second default is an implementation choice for a bounded lost-response retry path, not an RFC requirement. It matches the time-limited retry shape in FAPI 2.0 Security Profile Final §5.3.2.1(9) when rotation is used, but does not establish that the deployment meets the profile's extraordinary-circumstance condition. `op.WithRefreshGracePeriod` rejects negative values and treats an explicit zero as no grace. Under the library's FAPI 2.0 profiles, explicit values from 0 through 60 seconds are accepted and wider values are construction errors; omitting the option still resolves to 60 seconds. Deployments without those profiles may choose a wider non-negative window. Implemented in `internal/grants/refresh.Exchanger.tryGrace`; `store.RefreshToken.Revoked` distinguishes "consumed by rotation" from "retired by chain compromise".
+Rotated refresh tokens stay accepted for the library's configurable `GraceTTL` (default 60 s) when the chain has not been revoked for reuse-detection. Within the grace window, presenting the old refresh token returns the saved successor without rotating again; a sender-constrained retry may receive a newly bound access token. Reuse *after* the grace window — or any reuse on a chain that was already revoked — invalidates the entire chain (RFC 9700 §4.14.2) and retires the access tokens of its grant.
+
+The 60-second default is an implementation choice for a bounded lost-response retry path, not an RFC requirement. It matches the time-limited retry shape in FAPI 2.0 Security Profile Final §5.3.2.1(9) when rotation is used, but does not establish that the deployment meets the profile's extraordinary-circumstance condition.
+
+`op.WithRefreshGracePeriod` rejects negative values and treats an explicit zero as no grace. Under the library's FAPI 2.0 profiles, explicit values from 0 through 60 seconds are accepted and wider values are construction errors; omitting the option still resolves to 60 seconds. Deployments without those profiles may choose a wider non-negative window.
+
+A rotation touches only its own chain. The successor keeps the scope of the token it replaces, even when the refresh request narrowed `scope` for that one access token, and the rotation retires only the opaque access tokens minted from the same chain, so the user's other sessions on the same client keep theirs. Implemented in `internal/grants/refresh.Exchanger.tryGrace`; `store.RefreshToken.Revoked` distinguishes "consumed by rotation" from "retired by chain compromise", and `store.RefreshToken.ChainID` names the chain.
 :::
 
 <a class="faq-anchor" id="dj-3"></a>
@@ -156,7 +177,7 @@ Embedders that want the strict §11 reading pass `op.WithStrictOfflineAccess()`.
 **Conflict:** The two readings disagree by construction. A CLI tool cannot pre-register every ephemeral OS-assigned port; a strict exact-match policy breaks the canonical native-app flow.
 
 ::: tip Decision
-Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation is **opt-in per client** via the registered `redirect_uris` listing a loopback URI. The OP then ignores a port mismatch when four conditions hold: the scheme is `http`; the registered hostname is one of the loopback shapes (`127.0.0.1`, `::1`, or the textual `localhost`); the requested host matches the registered host; and path, query, and fragment match exactly. The textual `localhost` is admitted to keep the authorize-side rule aligned with OIDC Registration's native-client loopback carve-out; without it, a native app that registered `http://localhost/cb` would pass registration but fail at `/authorize` once the OS handed it an ephemeral port. The `localhost` admission still depends on the embedder having opted in at registration via `op.WithAllowLocalhostLoopback()` for web clients (or `application_type=native` for native clients), so DNS-rebinding-sensitive deployments keep the strict literal-IP-only posture by leaving both opt-ins off. HTTPS loopback is not relaxed (no ACME on `127.0.0.1`).
+Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation is **opt-in per client** via the registered `redirect_uris` listing a loopback URI. The OP then ignores a port mismatch when four conditions hold: the scheme is `http`; the registered hostname is one of the loopback shapes (`127.0.0.1`, `::1`, or the textual `localhost`); the requested host matches the registered host; and path, query, and fragment match exactly. The textual `localhost` is admitted to keep the authorize-side rule aligned with OIDC Registration's native-client loopback carve-out; without it, a native app that registered `http://localhost/cb` would pass registration but fail at `/auth` once the OS handed it an ephemeral port. The `localhost` admission still depends on the embedder having opted in at registration via `op.WithAllowLocalhostLoopback()` for web clients (or `application_type=native` for native clients), so DNS-rebinding-sensitive deployments keep the strict literal-IP-only posture by leaving both opt-ins off. HTTPS loopback is not relaxed (no ACME on `127.0.0.1`).
 :::
 
 <a class="faq-anchor" id="dj-5"></a>
@@ -177,10 +198,12 @@ Default is exact-match (the strict OAuth 2.1 reading). RFC 8252 §7.3 relaxation
 
 **Spec:** RFC 9101 §10.8 RECOMMENDS rejecting replayed request objects within their `exp` window. It does not mandate a registry.
 
-**Conflict:** A naive "verify and accept" follows the minimum JAR rules but allows an intercepted request object to be replayed against a fresh `/authorize` until `exp`. FAPI 2.0 Message Signing requires a signed request object at PAR, but does not make `jti` replay detection mandatory. The cache below is a library defense-in-depth choice.
+**Conflict:** A naive "verify and accept" follows the minimum JAR rules but allows an intercepted request object to be replayed against a fresh `/auth` until `exp`. FAPI 2.0 Message Signing requires a signed request object at PAR, but does not make `jti` replay detection mandatory. The cache below is a library defense-in-depth choice.
 
 ::: tip Decision
-OP-side `jti` cache, active by default whenever JAR is enabled. A replay marker is retained for the verifier's configured request max-age / max-lifetime window plus clock skew: the retention is clamped unconditionally to that OP-side ceiling, so a client-supplied far-future `exp` cannot pin the cache indefinitely. The cache uses the same `Sessions` storage as the rest of the OP's volatile state, so operators that already plan a Redis volatile slice get replay defence "for free".
+**A request object that carries a `jti` is deduplicated.** The OP marks `jar:<use>:<clientID>:<jti>` in `ConsumedJTIStore` for the verifier's max-age / max-lifetime window plus clock skew. The retention is clamped to that OP-side ceiling, so a client-supplied far-future `exp` cannot pin a marker indefinitely. The store is the one DPoP proofs and client assertions already use, so a deployment that shares it across instances gets all three defences.
+
+A request object without `jti` is accepted at `/auth` and `/par`: RFC 9101 §6.1 marks the claim optional, and the OFCS FAPI message-signing plans send request objects without one. FAPI-CIBA promotes `jti` to required at `/bc-authorize`, where a missing value is rejected (`ErrJTIMissing`). A `jti` longer than 256 bytes is a malformed request object.
 :::
 
 <a class="faq-anchor" id="dj-7"></a>
@@ -240,7 +263,7 @@ Query and fragment rejection follows the issuer requirements; the case, port, tr
 **Conflict:** Putting sessions in the same SQL cluster as auth codes / refresh tokens / clients (the transactional store) couples session mutation latency to the transactional path. Putting them on Redis loses durability — but session loss is recoverable (the user logs in again), whereas authorization-code loss is not (the RP loop breaks).
 
 ::: tip Decision
-Sessions are routed through a separate substore (`store.SessionStore`) that the embedder may serve from a volatile store (Redis / Memcached). `/end_session` takes the session snapshot before deleting it, and the BCL coordinator resolves its audience from grant-derived client IDs via `GrantStore.ListClientIDsBySubject`. If eviction happens before that snapshot, no fan-out starts and no BCL no-sessions event is emitted. `op.AuditBCLNoSessionsForSubject` instead means that a session-bearing logout notice reached the coordinator but resolved to zero eligible grant-derived RP targets; `op.SessionDurabilityPosture` records the embedder's declared durability so operators can interpret logout-trigger and snapshot-retention risk without treating the event as a direct eviction signal.
+Sessions are routed through a separate substore (`store.SessionStore`) that the embedder may serve from a volatile store such as Redis. `/end_session` takes the session snapshot before deleting it, and the BCL coordinator resolves its audience from grant-derived client IDs via `GrantStore.ListClientIDsBySubject`. If eviction happens before that snapshot, no fan-out starts and no BCL no-sessions event is emitted. `op.AuditBCLNoSessionsForSubject` instead means that a session-bearing logout notice reached the coordinator but resolved to zero eligible grant-derived RP targets; `op.SessionDurabilityPosture` records the embedder's declared durability so operators can interpret logout-trigger and snapshot-retention risk without treating the event as a direct eviction signal.
 :::
 
 <a class="faq-anchor" id="dj-11"></a>
@@ -252,7 +275,7 @@ Sessions are routed through a separate substore (`store.SessionStore`) that the 
 **Conflict:** The underlying JOSE library accepts the full registry by default. Adding a runtime check is fragile — a future code path that imports the JOSE library directly bypasses it.
 
 ::: tip Decision
-`internal/jose.Algorithm` is a closed enum: `RS256`, `PS256`, `ES256`, `EdDSA`. `none` and `HS*` are **not in the type at all**. `depguard` (lint) forbids importing the underlying JOSE package outside `internal/jose/`, so no future code path can reach the broader registry.
+`internal/jose.Algorithm` is a closed enum: `RS256`, `PS256`, `ES256`, `EdDSA`. `none` and `HS*` are **not in the type at all**. `depguard` (lint) forbids importing the underlying JOSE package outside a short list of `internal/` packages that already hold raw handles (`jose`, `keys`, `dpop`, `jar`, `jarm`, `mtls`, `clientauth`, and a few more), so a new code path has to be added to that list on purpose.
 
 The verification allow-list is deliberately wider than the issuing policy. Client assertions and request objects may use the accepted asymmetric algorithms, but every artifact the OP signs — ID Tokens, JWT access tokens, signed UserInfo, and JARM responses — uses ES256 with a P-256 key. This issuing policy is fixed: an RP that requires RS256 or PS256 for OP-issued tokens is unsupported. Keeping issuance to one vetted curve removes algorithm negotiation and its downgrade paths without making the OP reject standards-compliant client assertions.
 :::
@@ -302,7 +325,7 @@ The OP rejects `plain` **regardless of profile**. `internal/pkce.Method` is the 
 **Conflict:** "MAY bind" is genuinely two-handed. **Always-bind** locks confidential clients to a single DPoP key for the chain's lifetime, which clashes with FAPI 2.0 OFCS plans that explicitly rotate the DPoP key across refresh requests. **Never-bind** leaves public-client refresh tokens (SPAs, native apps) as raw bearer secrets — exactly the threat model RFC 9449 §1 cites as motivating sender constraints.
 
 ::: tip Decision
-**Bind for public clients, leave unbound for confidential.** A client whose `TokenEndpointAuthMethod` is `"none"` (the public-client signal) gets its refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per §5.4. Confidential clients (`private_key_jwt`, `client_secret_*`) leave the refresh chain unbound, free to rotate DPoP keys per request — but the access tokens minted on each refresh are still bound to whatever key was presented, so any holder of those access tokens still needs the matching private key. Implemented in `internal/tokenendpoint.refreshDPoPJKT`; once a chain is bound, the §5.4 persistence rule kicks in and prevents an opportunistic upgrade from locking later key rotation.
+**Bind for public clients, leave unbound for confidential.** A client whose `TokenEndpointAuthMethod` is `"none"` (the public-client signal) gets its refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per §5.4. Confidential clients (`private_key_jwt`, `client_secret_*`) leave the refresh chain unbound, free to rotate DPoP keys per request — but the access tokens minted on each refresh are still bound to whatever key was presented, so any holder of those access tokens still needs the matching private key. Implemented in `internal/tokenendpoint.refreshDPoPJKT`; once a chain is bound, the §5.4 persistence rule kicks in and prevents an opportunistic upgrade from locking later key rotation. The split applies to DPoP only: a refresh chain issued to an mTLS-bound request is bound to the client certificate for every client type, and each refresh must present the same certificate (`requireMTLSMatch`).
 :::
 
 <a class="faq-anchor" id="dj-16"></a>
@@ -323,7 +346,7 @@ The OP rejects `plain` **regardless of profile**. `internal/pkce.Method` is the 
 Reading 2 leaks token-existence information through the response shape: a curious client can probe whether a guessed token belongs to *some* live grant.
 
 ::: tip Decision
-**Only confidential callers may use `/introspect`.** A public client or a client whose token-endpoint authentication method is `none` receives `401 invalid_client` before token resolution. A confidential client may introspect its own access or refresh token. Cross-client access-token introspection is allowed only when the calling client is listed in the token audience's protected resource `IntrospectionClients`; the audience check is the delegation boundary. Refresh tokens are never delegated across clients. An unauthorized cross-client access-token lookup returns the same `{"active": false}` shape as an unknown, expired, or revoked token. Active opaque responses include `iss`. Implemented in `internal/introspectendpoint` and the protected-resource configuration; tests cover the confidential gate, audience delegation, and refresh-token refusal.
+**Only confidential callers may use `/introspect`.** A public client or a client whose token-endpoint authentication method is `none` receives `401 invalid_client` before token resolution. A confidential client may introspect its own access or refresh token. Cross-client access-token introspection is allowed only when the calling client is listed in the token audience's protected resource `IntrospectionClients`; the audience check is the delegation boundary. Refresh tokens are never delegated across clients. An unauthorized cross-client access-token lookup returns the same `{"active": false}` shape as an unknown, expired, or revoked token. Active opaque responses include `iss`. An active refresh-token response omits `token_type`, because RFC 7662 §2.2 defines that member as the access-token type. Implemented in `internal/introspectendpoint` and the protected-resource configuration; tests cover the confidential gate, audience delegation, and refresh-token refusal.
 :::
 
 <a class="faq-anchor" id="dj-17"></a>
@@ -338,12 +361,12 @@ Back-Channel Logout 1.0 §2.3 governs RP-side fan-out but is silent on AT revoca
 
 **Conflict:** A literal "MAY" admits postures from "delete the cookie and walk away" to "revoke every grant the subject holds". The blast radius differs:
 
-- **Cookie-only** — outstanding access tokens remain valid until their `exp`. JWT tokens that never round-trip through `/userinfo` cannot be retracted at all.
-- **Registry flip + opaque tombstone** — every OP-served boundary (`/userinfo`, `/introspect`) sees the token as inactive immediately, and resource servers that introspect or hit `/userinfo` get the same view.
-- **Opaque tokens** go further — every RS sees inactive on the very next bearer-presentation, because the wire form has no offline verification path.
+- **Cookie-only**: outstanding access tokens remain valid until their `exp`. A JWT that never returns to the OP cannot be retracted at all.
+- **Revoke at the OP-served boundaries**: `/userinfo` and `/introspect` see the token as inactive at once. A resource server that validates a JWT offline does not.
+- **Opaque tokens** reach every resource server: the token has no offline verification path, so the next introspection reports it inactive.
 
 ::: tip Decision
-**Cascade by default.** When the embedder wires the `Grants` and `AccessTokens` substores, `/end_session` enumerates every grant the subject holds and revokes the per-grant access-token shadow rows; the matching opaque-AT records flip to revoked through the same cascade. Embedders that explicitly want the cookie-only posture leave `Grants` / `AccessTokens` nil — the cascade short-circuits silently and ATs expire naturally. The cascade-reach gap between JWT and opaque tokens (JWT → OP-served boundaries only, opaque → every RS via introspection) is documented separately on the <a class="doc-ref" href="/concepts/access-token-format">access-token-format</a> page; the choice of which form to issue is the lever embedders pull when this gap matters.
+**Cascade by default.** `/end_session` lists every grant the subject holds and retires what was issued under each: JWT access tokens (by the configured revocation strategy, a grant tombstone by default), opaque access tokens and refresh tokens. Under the tombstone strategy the grant is also closed to further issuance. Each class goes through the substore the configured `Store` exposes; a class whose substore is absent is skipped, and a store that exposes no `Grants` leaves the cookie-only posture, where access tokens expire naturally. A failed class is reported in the audit stream and does not block the sign-out. The table in <a href="#dj-19">#19</a> compares this reach with the other revocation triggers. The cascade-reach gap between JWT and opaque tokens (JWT → OP-served boundaries only, opaque → every RS via introspection) is documented separately on the <a class="doc-ref" href="/concepts/access-token-format">access-token-format</a> page; the choice of which form to issue is the lever embedders pull when this gap matters.
 :::
 
 <a class="faq-anchor" id="dj-18"></a>
@@ -374,12 +397,26 @@ A single hard-coded default forces every embedder onto one trade-off. Per-audien
 The middle reading is to keep the JWT self-contained but bind it to a server-side **grant** rather than to a per-token row. One write per revoked grant fans out to every AT under that grant; issuance writes nothing.
 
 ::: tip Decision
-**Default is `op.RevocationStrategyGrantTombstone`.** Every JWT AT carries a `gid` private claim (the OP-side GrantID, RFC 7519 §4.3, omitempty). Verification at OP-served boundaries (`/userinfo`, `/introspect`) consults a small per-grant tombstone table keyed on `gid`. Cascades (logout, code-replay, refresh compromise) write one tombstone row per revoked grant; single-AT `/revocation` writes one deny-list row per revoked `jti`. The default issuance path writes **zero** rows on `/token`. Steady-state row count is `O(revoked grants + revoked JTIs)`, not `O(issued)`.
+**Default is `op.RevocationStrategyGrantTombstone`.** Every JWT AT carries a `gid` private claim (the OP-side GrantID, RFC 7519 §4.3, omitempty). Verification at OP-served boundaries (`/userinfo`, `/introspect`) consults a small per-grant tombstone table keyed on `gid`. Cascades (logout, code-replay, refresh compromise) write one tombstone row per revoked grant; single-AT `/revoke` writes one deny-list row per revoked `jti`. The default issuance path writes **zero** rows on `/token`. Steady-state row count is `O(revoked grants + revoked JTIs)`, not `O(issued)`.
 
-Embedders who need a per-AT audit trail flip `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)`, which restores the one-row-per-issuance shadow in `store.AccessTokenRegistry`. Both strategies provide server-side revocation state at the OP-served boundaries, but selecting either OP strategy alone does not establish FAPI Final conformance: resource servers still have to satisfy §5.3.4(3). `op.RevocationStrategyNone` is a third option for non-FAPI deployments that explicitly accept the RFC 6749 §4.1.2 "SHOULD" wiggle; `op.New` rejects it under any FAPI profile.
+Embedders who need a per-AT audit trail flip `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)`, which keeps one shadow row per issuance in `store.AccessTokenRegistry`. Both strategies provide server-side revocation state at the OP-served boundaries, but selecting either OP strategy alone does not establish FAPI Final conformance: resource servers still have to satisfy §5.3.4(3). `op.RevocationStrategyNone` is a third option for non-FAPI deployments that explicitly accept the RFC 6749 §4.1.2 "SHOULD" wiggle; `op.New` rejects it under any FAPI profile.
 
 The opaque AT path (`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`) is unaffected by this enum: opaque verification needs the row, so storage is intrinsically per-token. Implemented in `op/access_token_revocation.go`, `internal/tokens` (gid claim), `op/store/grant_revocation.go`, and the backend adapters.
 :::
+
+Every trigger routes through one owner (`internal/grants/teardown`), which states the blast radius per trigger. A grant is shared by all of one subject's sessions on one client, so most triggers deliberately stop short of the whole grant:
+
+| Trigger | Refresh tokens retired | Access tokens retired | Grant closed to further issuance |
+|---|---|---|---|
+| `/end_session`, for each grant the subject holds | all of the grant's | all of the grant's, JWT and opaque | yes |
+| Authorization-code replay | all of the grant's | all of the grant's | yes |
+| Refresh-token replay (reuse after the grace window) | the replayed chain; all of the grant's if the chain root cannot be resolved | all of the grant's | yes |
+| `/revoke` of a refresh token | that chain; all of the grant's if the chain root cannot be resolved | all of the grant's | no: other chains and unredeemed codes keep redeeming |
+| Refresh rotation | the previous token | the opaque ones minted from the same chain | no |
+
+"Closed" holds under the tombstone strategy: the tombstone also refuses the grant's refresh and code redemption. The `/revoke` row writes an access-token-only tombstone (`store.GrantTombstone.AccessTokensOnly`), and a store that implements the optional `store.IssuanceRevocationChecker` lets the token endpoint ignore that kind when it decides whether a chain or code may still mint. The chain-wide opaque retirement on rotation needs `store.OpaqueAccessTokenChainRevoker`. A store that implements neither, or drops `ChainID`, falls back to grant-wide behaviour, which over-revokes rather than under-revokes. `/revoke` records `token.revoked` with `surface` `refresh_chain`, or `refresh_grant` when it fell back to the grant's refresh tokens.
+
+A code or refresh token presented by the wrong client, or one failing the `redirect_uri` or PKCE check, is not a replay: it consumes nothing and tears down nothing. Only a genuine replay triggers the rows above.
 
 <a class="faq-anchor" id="dj-20"></a>
 
@@ -390,7 +427,7 @@ The opaque AT path (`op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)`) is u
 **Conflict:** A "store the cleartext so we can re-emit it on every GET" reading is the simplest implementation and matches what some historic OPs do, but it places the cleartext in a recoverable form forever and turns the registration record into the most sensitive row in the database. A "hash on POST and never re-emit" reading matches how every other credential in the OP is stored and removes the recoverable surface entirely, at the cost of asymmetry between the POST response (plaintext available once) and the GET response (plaintext gone forever).
 
 ::: tip Decision
-**Hash-only at rest. Plaintext returned exactly once on `POST /register`, and again only on `PUT /register/{client_id}` when either (a) `token_endpoint_auth_method` is upgraded from `none` to a confidential method, or (b) the embedder explicitly requests rotation. `GET /register/{client_id}` never re-emits `client_secret`.** Embedders that need recoverable access to the plaintext keep their own copy at the moment of the original POST response; the OP refuses to be the system of record for the cleartext. Implemented in `internal/registrationendpoint/manage.go` and `internal/registrationendpoint/register.go`. Storage is governed by `op/store/client.go` (`SecretHash`-only), so the same posture applies to every `store.ClientStore` adapter.
+**Hash-only at rest. Plaintext returned exactly once on `POST /register`, and again only on `PUT /register/{client_id}` when `token_endpoint_auth_method` changes from `none` to a confidential method. `GET /register/{client_id}` never re-emits `client_secret`.** A confidential-to-confidential update keeps the existing hash, so editing metadata never rotates the secret. Embedders that need recoverable access to the plaintext keep their own copy at the moment of the original POST response; the OP refuses to be the system of record for the cleartext. Implemented in `internal/registrationendpoint/manage.go` and `internal/registrationendpoint/register.go`. Storage is governed by `op/store/client.go` (`SecretHash`-only), so the same posture applies to every `store.ClientStore` adapter.
 :::
 
 <a class="faq-anchor" id="dj-21"></a>
@@ -438,7 +475,7 @@ For loopback hosts, the registration layer splits on `application_type`. Web cli
 **Conflict:** A deployment often needs a custom transport for conformance runners, internal CAs, or RP networks that are not publicly trusted. Letting a caller replace the HTTP client wholesale would also let them accidentally remove the dial-time SSRF guard. Refusing custom transports keeps the guard simple but makes otherwise valid deployments impossible.
 
 ::: tip Decision
-**Outbound trust and outbound reachability are separate knobs.** `op.WithJWKSHTTPTransport` lets embedders supply TLS trust and transport settings for RP JWKS fetches, but the package rewires the transport's `DialContext` so the SSRF deny-list still runs at connect time. Private-network admission remains controlled by the explicit `WithAllowPrivateNetworkJWKS` / `WithAllowPrivateNetworkJAR` style policy knobs; a custom transport alone never widens the network boundary.
+**Outbound trust and outbound reachability are separate knobs.** `op.WithJWKSHTTPTransport` lets embedders supply TLS trust and transport settings for RP JWKS fetches, but for an `*http.Transport` the package replaces its dial functions with the gated dialer, so the SSRF deny-list still runs at connect time. Any other `http.RoundTripper` is checked on the request URL of every request and redirect hop only, which does not stop a DNS-rebinding peer; through a proxy, the dial-time gate sees the proxy's address and the target URL is checked once before the hand-off. Private-network admission remains controlled by the explicit `WithAllowPrivateNetworkJWKS` / `WithAllowPrivateNetworkJAR` style policy knobs; a custom transport alone never widens the network boundary.
 
 The same bounded-fetch posture is used for JAR JWKS, client-auth JWKS, `sector_identifier_uri`, and Back-Channel Logout destinations: URL-shape validation first, dial-time network checks second, bounded response handling third. Implemented in `op/options_session.go`, `internal/netsec`, `internal/securefetch`, `internal/jar`, `internal/endpointsupport/clientauth.go`, and `internal/registrationendpoint/sector_identifier.go`.
 :::
@@ -449,10 +486,10 @@ The same bounded-fetch posture is used for JAR JWKS, client-auth JWKS, `sector_i
 
 **Spec:** RFC 7591 makes `scope` optional in registration metadata. In an IAT-bound registration flow, the issuer of the Initial Access Token is operator code and may attach an explicit `AllowedScopes` policy. In open registration, there is no such operator-issued per-request envelope.
 
-**Conflict:** Treating omitted `scope` as "all public scopes" makes a no-body open-registration POST surprisingly powerful. Treating it as "no scopes" is safer, but clients that expect the historical OP-wide default must now ask for scope explicitly or the embedder must configure a replacement default.
+**Conflict:** Treating omitted `scope` as "all public scopes" makes a no-body open-registration POST surprisingly powerful. Treating it as "no scopes" is safer, but a client then has to ask for scope explicitly, or the embedder has to configure a default.
 
 ::: tip Decision
-**Open registration defaults omitted `scope` to an empty registered scope set.** A later `/authorize` request that asks for scopes the client did not register is rejected as `invalid_scope`. Embedders that intentionally want a public default opt in via `RegistrationOption.OpenRegistrationDefaultScopes`, which is validated against the OP scope registry at construction time.
+**Open registration defaults omitted `scope` to an empty registered scope set.** A later `/auth` request that asks for scopes the client did not register is rejected as `invalid_scope`. Embedders that intentionally want a public default opt in via `RegistrationOption.OpenRegistrationDefaultScopes`, which is validated against the OP scope registry at construction time.
 
 The IAT-bound path keeps the broader operator-trusted default: if the IAT has no `AllowedScopes`, the request can default from the public scope registry. Implemented in `op/registration.go`, `op/options_validate.go`, `internal/registrationendpoint/handler.go`, `internal/registrationendpoint/register.go`, and `internal/registrationendpoint/metadata_validate.go`.
 :::
@@ -478,7 +515,7 @@ The IAT-bound path keeps the broader operator-trusted default: if the IAT has no
 **Conflict:** A strict poll ladder without a cap lets a client ignore `slow_down` until `auth_req_id` expiry. A hard-coded low cap protects production but can break OFCS modules that intentionally exercise repeated polling. Separately, surfacing detailed JAR parser errors from `/bc-authorize` would be helpful for debugging but leaks a JOSE-specific taxonomy through a CIBA endpoint that expects `invalid_request`.
 
 ::: tip Decision
-**The library implements CIBA poll mode only and applies a bounded slow-down strike counter.** The default cap is 5 violations; `op.WithCIBAMaxPollViolations(n)` raises or lowers it, `0` means the library default, and `255` effectively disables lockout because the counter is `uint8`. Production deployments should keep a finite cap.
+**The library implements CIBA poll mode only and applies a bounded slow-down strike counter.** The default cap is 5 violations; `op.WithCIBAMaxPollViolations(n)` raises or lowers it, `0` means the library default, and `255` effectively disables lockout because the counter is `uint8`. Production deployments should keep a finite cap. `op.New` also refuses a negative `WithCIBADefaultExpiresIn` or `WithCIBAPollInterval`, and under FAPI-CIBA a default or maximum expiry above 10 minutes.
 
 At `/bc-authorize`, duplicate single-valued parameters are rejected and request-object failures map to `invalid_request` per CIBA Core §13. Under FAPI-CIBA, the JAR verifier requires `iat`, caps request-object lifetime at 60 minutes, and accepts RP JWKS fetched through the same SSRF-bounded fetcher as the rest of the OP. Implemented in `op/options_ciba.go`, `internal/ciba/polling.go`, `internal/cibaendpoint`, `internal/jar`, and `op/op_builders.go`.
 :::
@@ -508,7 +545,9 @@ Implemented in `internal/jose/jwe.go`, wired through JAR / PAR verification, and
 ::: tip Decision
 **Handlers signal intent; the OP owns the refresh-token value.** `CustomGrantResponse.IssueRefreshToken` asks the OP to mint and persist the refresh token through `RefreshTokenStore`. The record shares the issued access token's grant identity and DPoP / mTLS confirmation, so the normal rotation, replay cascade, grant revocation, and introspection semantics apply. A handler never supplies the refresh-token string directly.
 
-Issuance is a five-gate decision: the provider must serve `refresh_token`, the client must be registered for it, the response subject must be non-empty, the response scope must be non-empty, and the response may contain at most one audience. If any gate fails, the access-token response and any otherwise eligible ID Token still succeed, the refresh token is omitted, and `custom_grant.refresh_dropped` records the drop reason. An empty scope therefore drops only the refresh token. Implemented in `internal/tokenendpoint/customgrant.go`, with token-exchange carrying the same policy shape through `TokenExchangeDecision.IssueRefreshToken`.
+Issuance is a five-gate decision: the provider must serve `refresh_token`, the client must be registered for it, the response subject (or the bound access token's subject) must be non-empty, the response scope must be non-empty, and the response may contain at most one audience. If any gate fails, the access-token response and any otherwise eligible ID Token still succeed, the refresh token is omitted, and `custom_grant.refresh_dropped` records the drop reason. An empty scope therefore drops only the refresh token. Implemented in `internal/tokenendpoint/customgrant.go`, with token-exchange carrying the same policy shape through `TokenExchangeDecision.IssueRefreshToken`.
+
+The handler, not a grant record, vouches for the subject of a generic custom grant's credentials. `Provider.RevokeSubject` therefore leaves them live until they expire or are revoked individually, and pairwise `/userinfo` answers `invalid_token` for them, unless the handler records a grant. Revoking them when an account is removed is the handler's job. Token exchange differs: its credentials live under the `subject_token`'s grant, so revoking that grant revokes them, and a refresh token obtained through exchange stops rotating once the subject is deleted.
 :::
 
 <a class="faq-anchor" id="dj-29"></a>
@@ -520,9 +559,9 @@ Issuance is a five-gate decision: the provider must serve `refresh_token`, the c
 **Conflict:** If revocation only flips the device-code row to denied, future polls stop but already-issued access tokens remain usable until `exp`. If every embedder must subscribe to an audit event and run `RevokeByGrant` itself, the security posture depends on remembering out-of-band glue code in each deployment.
 
 ::: tip Decision
-**The public helper owns the cascade when the registry is available.** `devicecodekit.Revoke` first denies the device-code row, then calls `AccessTokenRegistry.RevokeByGrant(deviceCodeID)` when `Deps.AccessTokens` is non-nil. Every access token issued from a device-code grant carries the device-code ID as its grant identity, so the existing per-grant revocation primitive covers the whole issued set.
+**The public helper owns the cascade.** `devicecodekit.Revoke` first denies the device-code row. It then recomputes the grant identity the device flow allocated for it, a one-way derivation of the device-code ID so the device code itself is never republished, and retires what was issued under that grant: JWT access tokens through `Deps.RevocationStrategy`, opaque access tokens when `Deps.OpaqueAccessTokens` is set, and refresh-token chains when `Deps.RefreshTokens` is set. When `Deps.Grants` is set it deletes the consent record last, after the cascade completed, so that consent no longer satisfies a later authorization request. Every class is attempted even if an earlier one fails. A partial failure returns a joined error and records `cascade_complete=false`, and repeating the call finishes the job.
 
-A nil registry is still valid for JWT-stateless deployments or deployments that drive revocation out of band: the row is denied and the audit event fires, but the helper does not pretend an access-token cascade happened. When the registry is wired, `device_code.revoked` includes `revoked_access_tokens` so operators can alert on unexpectedly low or failed cascades. Implemented in `op/devicecodekit.Revoke` and the `store.AccessTokenRegistry` adapters.
+A substore left nil is skipped. JWT-only deployments, and deployments that drive revocation out of band, still get the denied row and the audit event, and the helper does not pretend the skipped cascade happened. `device_code.revoked` carries one extra per attempted class (`revoked_access_tokens`, `grant_tombstone_written`, `revoked_opaque_access_tokens`, `refresh_token_cascade_complete`, `grant_record_deleted`) plus `cascade_complete`, so operators can alert on a cascade that fell short. Implemented in `op/devicecodekit.Revoke`.
 :::
 
 <a class="faq-anchor" id="dj-30"></a>
@@ -554,4 +593,34 @@ The rule is centralised in `validateCookieKeysRequired`, so future grants that n
 Grant Management is **off by default and explicitly marked experimental**. `op.WithGrantManagement(actions, actionRequired)` must name the exact action set the OP accepts; the same set is advertised in discovery and enforced at PAR / authorize-time (`create` / `replace` / `merge`) and endpoint-time (`query` / `revoke`). Unknown actions, duplicate actions, an empty action set, or an action/`grant_id` mismatch fail at construction or request validation.
 
 When enabled, token responses carry `grant_id` and the `/grant_management` query / revoke endpoint is mounted. Query or revoke returns `404` for a confirmed missing or foreign grant, but a store error that leaves existence uncertain returns `500 server_error` without attempting a cascade. A cascade failure also returns `500`, emits the failure audit event, and leaves the grant retryable/queryable; a final delete racing with another successful delete is the idempotent `204` case. The draft remains isolated behind this option so a future wire-incompatible draft bump can be handled as an explicit migration rather than an accidental default change. Implemented in `op/grant_management.go`, `internal/parendpoint`, `internal/authorizeendpoint`, `internal/grantmgmtendpoint`, and `internal/tokenendpoint`.
+:::
+
+<a class="faq-anchor" id="dj-32"></a>
+
+## 32. Per-authorization state — copied onto the credential, not read from the grant
+
+**Spec:** OIDC Core 1.0 defines `auth_time`, `acr` and `amr` as properties of the authentication event behind an ID Token, and scopes a `claims` request (§5.5) to the authorization request that carried it. RFC 9396 ties `authorization_details` to what the resource owner granted in that request.
+
+**Conflict:** The library keeps one `store.Grant` per (subject, client) pair and reuses it across authorizations, because it carries the consent. Reading `auth_time`, claims or details from that shared record when a credential is used lets a later authorization rewrite what an earlier one reports. A code redeemed after a second login by the same user would show the second login in its ID Token, release the claims the second request asked for, and pick up `authorization_details` it was never granted.
+
+::: tip Decision
+**The credential carries the state of the authorization that issued it.** `store.AuthorizationCode`, `store.RefreshToken` and `store.OpaqueAccessToken` hold `AuthTime`, `ACR`, `AMR`, `AuthorizationDetails` and the claims request. A refresh rotation copies them forward, so the ID Token, access token and introspection response of a chain describe its own authorization. A Grant Management `replace` still withdraws details from live tokens; nothing a later authorization adds reaches them. An authorization served silently without a `claims` parameter releases only what its own request asked for, never what an earlier request on the same grant asked for.
+
+JWT access tokens issued from a code or its refresh chain also carry a `userinfo_claims` private claim: the `userinfo` member of the claims request, or `{}` when it requested none. `/userinfo` releases claims from it; resource servers should ignore it. The name is reserved, so a custom grant cannot set it through its extra claims.
+
+`AuthorizationRecorded` marks a row that carries the state. A row without the marker, such as one written by a store that does not persist these fields, falls back to the grant, so a bring-your-own store keeps working with the shared-grant behaviour until it persists them. Implemented in `internal/tokenendpoint`, `internal/tokens` and `op/store`.
+:::
+
+<a class="faq-anchor" id="dj-33"></a>
+
+## 33. Step-up rules on a reused session
+
+**Spec:** OIDC Core 1.0 §3.1.2.1 defines `prompt` and `max_age`, and RFC 9470 defines step-up through `acr_values`. Neither says how an OP's own policy rules interact with single sign-on, where the user already holds a session.
+
+**Conflict:** A `LoginFlow` rule such as `RuleClient` or `RuleScope` guards a client or scope behind an extra factor. If rules are evaluated only while the factor chain runs, a session established with the primary factor alone reaches the guarded client or scope through a cached grant that covers the request, or through the first-party consent skip, without ever meeting the rule.
+
+::: tip Decision
+**Rules and the `Decider` are evaluated before minting from a session**, as if the chain had just completed `Primary`. When one demands a step, `/auth` runs the chain from the session's subject instead of minting, and `prompt=none` answers `interaction_required`. Factors from the session's earlier login do not count toward a rule, matching the consent-screen path; risk-driven rules still fire only inside the chain.
+
+After a step-up, the issued tokens keep the session's `acr`, `amr` and `auth_time` rather than reporting only the step-up factors. Risk assessors see the session's methods in `AMRSoFar`, and step-up factors are audited as `mfa.*` events rather than `login.*`. The evaluation fails closed: a panicking `Rule.When` counts as a match, and a `Decider` that panics, returns nil, a nil pointer or an unknown shape denies. A factor whose `interaction.Result` names a subject other than the one an earlier factor or the account chooser bound ends the chain with a server error, and the same check covers a factor that completes in `Begin` without a prompt. Implemented in `internal/authorizeendpoint`, `op/rule.go` and `op/decider.go`.
 :::

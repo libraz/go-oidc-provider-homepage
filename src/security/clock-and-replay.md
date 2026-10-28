@@ -20,7 +20,7 @@ type Clock interface {
 }
 ```
 
-Production deployments leave the field unset and the library installs a system-clock implementation. Test suites and deterministic replay harnesses pass a fake `Clock` so token TTLs, audit timestamps, and rate-limit windows all advance under their control. Freshness decisions in the core use the clock seam; an adapter that cannot import the seam documents its own fallback and can expose an override. Keep the clock boundary singular in an embedder rather than adding ad-hoc `time.Now()` checks around protocol decisions.
+Production deployments omit `op.WithClock` and the library installs a system-clock implementation. Test suites and deterministic replay harnesses pass a fake `Clock` through `op.WithClock` so token TTLs, audit timestamps, and rate-limit windows all advance under their control. Freshness decisions in the core use the clock seam; an adapter that cannot import the seam documents its own fallback and can expose an override. Keep the clock boundary singular in an embedder rather than adding ad-hoc `time.Now()` checks around protocol decisions.
 
 The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its own wall clock to compare `iat` and `exp` against the current instant. A machine whose clock has drifted by minutes will silently accept proofs that the issuing client believes are stale, or reject proofs that the issuing client just signed. Run an OP only on hosts with disciplined time sync.
 
@@ -39,7 +39,7 @@ The implication for embedders: **NTP / chronyd is mandatory**. The OP trusts its
 | ID Token | `iat` + `exp` | `exp - iat = defaultIDTokenTTL = 10 min` (fixed, independent of the request's access-token TTL) | [/concepts/tokens](/concepts/tokens) |
 | Access token (JWT or opaque) | `iat` + `exp` | `DefaultAccessTokenTTL = 5 min`, capped at `AccessTokenTTLMax = 24 h` (the library caps every FAPI profile enum at 10 min; this is a library / legacy-profile constraint, not a 10-minute requirement in FAPI 2.0 Security Profile Final §6.1) | [/concepts/tokens](/concepts/tokens) |
 | Refresh token (absolute lifetime) | `exp` from issuance | `timex.RefreshTokenTTLDefault = 30 days` | [/concepts/refresh-tokens](/concepts/refresh-tokens) |
-| `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
+| `client_assertion` (private_key_jwt) | `iat` + `exp` + `jti` dedup, ±60 s leeway; an empty or over-256-byte `jti` is rejected as malformed | jti marked with `expiresAt = assertion.exp + leeway` (60 s), capped at `now + maxAssertionLifetime + leeway` | [/concepts/client-types](/concepts/client-types) |
 
 The constants in the "Default window" column are the source of truth for the current core. For JAR, the request object's `exp` does not control retention by itself: the verifier's maximum lifetime ceiling (when configured) and its `max-age` floor bound the marker, with clock skew added. The table intentionally does not turn every application-configurable TTL into a promise: `With*` options and active profiles can narrow or replace many defaults. Recheck the linked source and tests when upgrading the core.
 
@@ -47,74 +47,83 @@ The same selected windows, drawn to scale on a logarithmic time axis, show the b
 
 <figure class="fig">
   <div class="fig-head">Every clock and replay window, to scale</div>
-  <svg class="fig-svg" role="img" aria-labelledby="clock-windows-title" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="clock-windows-title" viewBox="0 0 960 440" xmlns="http://www.w3.org/2000/svg">
     <title id="clock-windows-title">A logarithmic comparison of every clock and replay window the library enforces, from the sixty-second replay band up to the thirty-day absolute refresh-token lifetime. Filled circles are clock and TTL freshness checks; hollow squares are store-backed replay deduplication.</title>
-    <text class="fg-lbl" x="36" y="24">window length after issuance · logarithmic axis</text>
-    <circle class="fg-dot--accent" cx="560" cy="20" r="4.5"/>
-    <text class="fg-xs" x="572" y="24">clock / TTL freshness</text>
-    <rect class="fg-dot--hollow" x="712" y="15.5" width="9" height="9" rx="1"/>
-    <text class="fg-xs" x="729" y="24">store-backed replay dedup</text>
+    <text class="fg-lbl" x="32" y="32">window after issuance · log axis</text>
+    <circle class="fg-dot--accent" cx="584" cy="28" r="5"/>
+    <text class="fg-xs" x="600" y="33">clock / TTL check</text>
+    <rect class="fg-dot--hollow" x="760" y="23" width="10" height="10" rx="1"/>
+    <text class="fg-xs" x="786" y="33">replay dedup</text>
     <!-- decade grid -->
-    <line class="fg-rule fg-rule--dashed" x1="340" y1="60" x2="340" y2="360"/>
-    <line class="fg-rule fg-rule--dashed" x1="461" y1="60" x2="461" y2="360"/>
-    <line class="fg-rule fg-rule--dashed" x1="555" y1="60" x2="555" y2="360"/>
-    <line class="fg-rule fg-rule--dashed" x1="721" y1="60" x2="721" y2="360"/>
-    <line class="fg-rule fg-rule--dashed" x1="900" y1="60" x2="900" y2="360"/>
-    <!-- rows -->
-    <line class="fg-rule" x1="340" y1="76" x2="900" y2="76"/>
-    <text class="fg-s" x="300" y="80" text-anchor="end">Authorization code</text>
-    <rect class="fg-dot--hollow" x="335.5" y="71.5" width="9" height="9" rx="1"/>
-    <text class="fg-mxs" x="356" y="80">60 s</text>
-    <line class="fg-rule" x1="340" y1="106" x2="900" y2="106"/>
-    <text class="fg-s" x="300" y="110" text-anchor="end">PAR request_uri</text>
-    <rect class="fg-dot--hollow" x="335.5" y="101.5" width="9" height="9" rx="1"/>
-    <text class="fg-mxs" x="356" y="110">60 s</text>
-    <line class="fg-rule" x1="340" y1="136" x2="900" y2="136"/>
-    <text class="fg-s" x="300" y="140" text-anchor="end">Refresh token — grace</text>
-    <circle class="fg-dot--accent" cx="340" cy="136" r="4.5"/>
-    <text class="fg-mxs" x="356" y="140">60 s</text>
-    <line class="fg-rule" x1="340" y1="166" x2="900" y2="166"/>
-    <text class="fg-s" x="300" y="170" text-anchor="end">DPoP proof — iat</text>
-    <circle class="fg-dot--accent" cx="340" cy="166" r="4.5"/>
-    <text class="fg-mxs" x="356" y="170">±60 s</text>
-    <line class="fg-rule" x1="340" y1="196" x2="900" y2="196"/>
-    <text class="fg-s" x="300" y="200" text-anchor="end">JAR — future skew</text>
-    <circle class="fg-dot--accent" cx="340" cy="196" r="4.5"/>
-    <text class="fg-mxs" x="356" y="200">60 s</text>
-    <line class="fg-rule" x1="340" y1="226" x2="900" y2="226"/>
-    <text class="fg-s" x="300" y="230" text-anchor="end">client_assertion</text>
-    <rect class="fg-dot--hollow" x="335.5" y="221.5" width="9" height="9" rx="1"/>
-    <text class="fg-mxs" x="356" y="230">±60 s</text>
-    <line class="fg-rule" x1="340" y1="256" x2="900" y2="256"/>
-    <text class="fg-s" x="300" y="260" text-anchor="end">DPoP proof — jti cache</text>
-    <rect class="fg-dot--hollow" x="371.5" y="251.5" width="9" height="9" rx="1"/>
-    <text class="fg-mxs" x="392" y="260">≈120 s</text>
-    <line class="fg-rule" x1="340" y1="286" x2="900" y2="286"/>
-    <text class="fg-s" x="300" y="290" text-anchor="end">Access token</text>
-    <circle class="fg-dot--accent" cx="424" cy="286" r="4.5"/>
-    <text class="fg-mxs" x="440" y="290">5 min · library FAPI cap 10 min</text>
-    <line class="fg-rule" x1="340" y1="316" x2="900" y2="316"/>
-    <text class="fg-s" x="300" y="320" text-anchor="end">ID token</text>
-    <circle class="fg-dot--accent" cx="461" cy="316" r="4.5"/>
-    <text class="fg-mxs" x="477" y="320">10 min</text>
-    <line class="fg-rule" x1="340" y1="346" x2="900" y2="346"/>
-    <text class="fg-s" x="300" y="350" text-anchor="end">Refresh token — absolute</text>
-    <circle class="fg-dot--accent" cx="900" cy="346" r="4.5"/>
-    <text class="fg-mxs" x="888" y="350" text-anchor="end">30 days</text>
+    <line class="fg-rule fg-rule--dashed" x1="320" y1="64" x2="320" y2="392"/>
+    <line class="fg-rule fg-rule--dashed" x1="448" y1="64" x2="448" y2="392"/>
+    <line class="fg-rule fg-rule--dashed" x1="544" y1="64" x2="544" y2="392"/>
+    <line class="fg-rule fg-rule--dashed" x1="712" y1="64" x2="712" y2="392"/>
+    <line class="fg-rule fg-rule--dashed" x1="896" y1="64" x2="896" y2="392"/>
+    <!-- code -->
+    <line class="fg-rule" x1="320" y1="88" x2="896" y2="88"/>
+    <text class="fg-s" x="296" y="93" text-anchor="end">Authorization code</text>
+    <rect class="fg-dot--hollow" x="315" y="83" width="10" height="10" rx="1"/>
+    <text class="fg-mxs" x="336" y="93">60 s</text>
+    <!-- par -->
+    <line class="fg-rule" x1="320" y1="120" x2="896" y2="120"/>
+    <text class="fg-s" x="296" y="125" text-anchor="end">PAR request_uri</text>
+    <rect class="fg-dot--hollow" x="315" y="115" width="10" height="10" rx="1"/>
+    <text class="fg-mxs" x="336" y="125">60 s</text>
+    <!-- rg -->
+    <line class="fg-rule" x1="320" y1="152" x2="896" y2="152"/>
+    <text class="fg-s" x="296" y="157" text-anchor="end">Refresh token — grace</text>
+    <circle class="fg-dot--accent" cx="320" cy="152" r="5"/>
+    <text class="fg-mxs" x="336" y="157">60 s</text>
+    <!-- iat -->
+    <line class="fg-rule" x1="320" y1="184" x2="896" y2="184"/>
+    <text class="fg-s" x="296" y="189" text-anchor="end">DPoP proof — iat</text>
+    <circle class="fg-dot--accent" cx="320" cy="184" r="5"/>
+    <text class="fg-mxs" x="336" y="189">±60 s</text>
+    <!-- jar -->
+    <line class="fg-rule" x1="320" y1="216" x2="896" y2="216"/>
+    <text class="fg-s" x="296" y="221" text-anchor="end">JAR — future skew</text>
+    <circle class="fg-dot--accent" cx="320" cy="216" r="5"/>
+    <text class="fg-mxs" x="336" y="221">60 s</text>
+    <!-- ca -->
+    <line class="fg-rule" x1="320" y1="248" x2="896" y2="248"/>
+    <text class="fg-s" x="296" y="253" text-anchor="end">client_assertion</text>
+    <rect class="fg-dot--hollow" x="315" y="243" width="10" height="10" rx="1"/>
+    <text class="fg-mxs" x="336" y="253">±60 s</text>
+    <!-- jti -->
+    <line class="fg-rule" x1="320" y1="280" x2="896" y2="280"/>
+    <text class="fg-s" x="296" y="285" text-anchor="end">DPoP proof — jti cache</text>
+    <rect class="fg-dot--hollow" x="355" y="275" width="10" height="10" rx="1"/>
+    <text class="fg-mxs" x="376" y="285">≈120 s</text>
+    <!-- at -->
+    <line class="fg-rule" x1="320" y1="312" x2="896" y2="312"/>
+    <text class="fg-s" x="296" y="317" text-anchor="end">Access token</text>
+    <circle class="fg-dot--accent" cx="408" cy="312" r="5"/>
+    <text class="fg-mxs" x="424" y="317">5 min · library FAPI cap 10 min</text>
+    <!-- id -->
+    <line class="fg-rule" x1="320" y1="344" x2="896" y2="344"/>
+    <text class="fg-s" x="296" y="349" text-anchor="end">ID token</text>
+    <circle class="fg-dot--accent" cx="448" cy="344" r="5"/>
+    <text class="fg-mxs" x="464" y="349">10 min</text>
+    <!-- rabs -->
+    <line class="fg-rule" x1="320" y1="376" x2="896" y2="376"/>
+    <text class="fg-s" x="296" y="381" text-anchor="end">Refresh token — absolute</text>
+    <circle class="fg-dot--accent" cx="896" cy="376" r="5"/>
+    <text class="fg-mxs" x="880" y="381" text-anchor="end">30 days</text>
     <!-- axis -->
-    <line class="fg-rule fg-rule--strong" x1="320" y1="366" x2="912" y2="366"/>
-    <text class="fg-mxs" x="340" y="384" text-anchor="middle">1 min</text>
-    <text class="fg-mxs" x="461" y="384" text-anchor="middle">10 min</text>
-    <text class="fg-mxs" x="555" y="384" text-anchor="middle">1 h</text>
-    <text class="fg-mxs" x="721" y="384" text-anchor="middle">1 day</text>
-    <text class="fg-mxs" x="900" y="384" text-anchor="middle">30 days</text>
+    <line class="fg-rule fg-rule--strong" x1="304" y1="392" x2="912" y2="392"/>
+    <text class="fg-mxs" x="320" y="416" text-anchor="middle">1 min</text>
+    <text class="fg-mxs" x="448" y="416" text-anchor="middle">10 min</text>
+    <text class="fg-mxs" x="544" y="416" text-anchor="middle">1 h</text>
+    <text class="fg-mxs" x="712" y="416" text-anchor="middle">1 day</text>
+    <text class="fg-mxs" x="896" y="416" text-anchor="middle">30 days</text>
   </svg>
   <figcaption class="fig-note">Six of the ten sit on the leftmost gridline. That clustering is the design: anything an attacker could replay is measured in seconds, and only the things a user would notice losing are measured in days.</figcaption>
 </figure>
 
 ## Reauthentication freshness
 
-`prompt=login` and a violated `max_age` are freshness requirements, not display hints. At `/authorize` entry, `prompt=login` sets the reauthentication flag unconditionally. `max_age` compares the request's non-negative integer seconds with the session's recorded `auth_time`, and `max_age=0` always requires a new factor. The comparison stays in integer-second arithmetic instead of converting an untrusted value to `time.Duration`, so very large values cannot wrap and reverse the freshness decision. The existing browser session or consent grant cannot satisfy a violated freshness requirement. The interaction state carries the decision to the authenticator orchestrator, whose terminal guard rejects a factor-less result with `ErrReauthNotPerformed`; a completed factor stamps a new `auth_time` on the resulting session and grant.
+`prompt=login` and a violated `max_age` are freshness requirements, not display hints. At `/auth` entry, `prompt=login` sets the reauthentication flag unconditionally. `max_age` compares the request's non-negative integer seconds with the session's recorded `auth_time`, and `max_age=0` always requires a new factor. The comparison stays in integer-second arithmetic instead of converting an untrusted value to `time.Duration`, so very large values cannot wrap and reverse the freshness decision. The existing browser session or consent grant cannot satisfy a violated freshness requirement, and neither can a lone risk-required second factor. Choosing a stale or weaker session in the account chooser prompts for reauthentication rather than ending the request in an error. The interaction state carries the decision to the authenticator orchestrator, whose terminal guard rejects a factor-less result with `ErrReauthNotPerformed`; a completed factor stamps a new `auth_time` on the resulting session and grant.
 
 ## JWT `jti` and clock tolerance
 
@@ -136,7 +145,9 @@ Relying-party JWKS fetched from a registered `jwks_uri` is bounded on five axes:
 | declared keys | 64 |
 | distinct URL loads in flight, process-wide | 64 |
 
-Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cache cardinality is capped at 256 positive/negative URL entries, and a negative fetch result is cached for five seconds. These are core safety limits, not a guarantee that a deployment's upstream JWKS will remain available; allow a key rotation strategy that works within them.
+Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cache cardinality is capped at 256 positive/negative URL entries, and a negative fetch result is cached for five seconds.
+
+When the in-flight bound is hit or a fetch fails transiently, the fault is the OP's and retryable: client authentication answers `503 server_error` instead of `invalid_client`, and request objects at `/auth`, `/par` and `/bc-authorize` answer 503 too. A client-store outage during client authentication answers `500 server_error`. These are core safety limits, not a guarantee that a deployment's upstream JWKS will remain available; allow a key rotation strategy that works within them.
 
 ## What "replay" means here
 
@@ -144,17 +155,25 @@ Unknown-`kid` forced refreshes are throttled to once per URL per 20 seconds. Cac
 
 **Token replay** — the same bearer-shaped credential is presented twice. Authorization codes are *consumed* on first use (the row is marked spent in `AuthorizationCodeStore`). Refresh tokens *rotate* on every redemption and reuse-detection cascades a revoke when the previous token is presented after the grace window closes. DPoP proofs are *deduped* by `jti`: the nonce gate runs first, then the accepted proof is committed to `ConsumedJTIStore`, so a second proof carrying the same `jti` returns `ErrProofReplayed` once the first proof has passed the gate.
 
-**Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: once `/authorize` consumes the URN it is gone from `PushedAuthRequestStore`. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore. Markers use `jar:<use>:<clientID>:<jti>` keys and follow the server-bounded expiry calculation: the request's `exp` is subject to the verifier's `max-age` floor and maximum-lifetime ceiling, plus clock skew.
+**Request replay** — the same authorize request is submitted again with the same parameters. PAR makes this structurally impossible by issuing a one-time `request_uri`: the URN is consumed when `/auth` emits the authorization code, and it is gone from `PushedAuthRequestStore` afterwards. JAR (request objects passed inline as `request=`) defends with `jti` dedup against the same `ConsumedJTIStore` substore, for request objects that carry a `jti`. Markers use `jar:<use>:<clientID>:<jti>` keys and follow the server-bounded expiry calculation: the request's `exp` is subject to the verifier's `max-age` floor and maximum-lifetime ceiling, plus clock skew.
 
 **Logout replay** — the same `logout_token` is POSTed to the RP a second time. Back-Channel Logout 1.0 §2.6 places the dedup responsibility on the *RP*, not the OP: the OP signs and delivers once, and each RP is expected to track recently-seen logout-token `jti` values for its own purposes. The OP does not maintain a logout-token replay cache because the relevant boundary is the RP.
 
-Read these three together as the model: the artifact's *use* defines the defense. Codes are spent, refresh tokens rotate, DPoP / JAR / `client_assertion` carry an explicit `jti` and rely on a shared dedup table, and logout tokens delegate dedup to the receiver.
+The artifact's *use* defines the defense:
+
+| Artifact | Defense | Where the state lives |
+|---|---|---|
+| Authorization code | spent on first use | `AuthorizationCodeStore` |
+| Refresh token | rotated on every redemption; reuse after the grace window revokes the chain | `RefreshTokenStore` |
+| PAR `request_uri` | consumed when a code is emitted | `PushedAuthRequestStore` |
+| DPoP proof, `client_assertion`, JAR request object | explicit `jti`, deduplicated | `ConsumedJTIStore` |
+| Back-Channel `logout_token` | dedup left to the receiving RP | the RP |
 
 ## Recommended deployment knobs
 
-`ConsumedJTIStore` (declared in `op/store/jti.go`) is the contract every `jti`-based defense routes through. DPoP, JAR, and `client_assertion` all call `Mark(ctx, key, expiresAt)` on the same substore; keys are namespaced as `dpop:<JKT>:<JTI>`, `clientassertion:<clientID>:<jti>`, and `jar:<use>:<clientID>:<jti>`, so proofs, clients, and request uses cannot collide.
+`ConsumedJTIStore` (declared in `op/store/jti.go`) is the contract every `jti`-based defense routes through. DPoP, JAR, and `client_assertion` all call `Mark(ctx, key, expiresAt)` on the same substore; keys are namespaced as `dpop:<JKT>:<JTI>`, `clientassertion:<clientID>:<jti>`, and `jar:<use>:<clientID>:<jti>`, with `:` and `%` in the client ID percent-escaped, so proofs, clients, and request uses cannot collide.
 
-For multi-instance deployments, the substore must be shared across instances or every instance must be sticky-routed for the lifetime of a given `jti`. Backing it with the in-memory implementation across multiple replicas defeats the defense — replica A and replica B will each accept the same proof exactly once. A fast shared cache (Redis, Memcached) is the typical choice; the deployment guidance in [/operations/multi-instance](/operations/multi-instance) discusses the volatile / durable split that this implies.
+For multi-instance deployments, the substore must be shared across instances or every instance must be sticky-routed for the lifetime of a given `jti`. Backing it with the in-memory implementation across multiple replicas defeats the defense — replica A and replica B will each accept the same proof exactly once. A shared Redis is the typical choice, run with `noeviction` or routed to a durable backend: a cache that evicts live markers under memory pressure reopens the replay window on every eviction cycle, not once. the deployment guidance in [/operations/multi-instance](/operations/multi-instance) discusses the volatile / durable split that this implies.
 
 `ConsumedJTIStore` is explicitly outside the transactional cluster (see `op/store/tx.go`). The operations are idempotent ("first writer wins; subsequent writers see already-consumed"). A total cache flush reopens replay only until each artifact's own acceptance boundary. The DPoP marker is retained through the proof's allowable `iat` range. JAR markers retain through the server-bounded `exp` / `max-age` / maximum-lifetime calculation (plus skew), and client assertions use their own bounded expiry. Token lifetimes and browser interaction state are separate budgets and are intentionally longer.
 
