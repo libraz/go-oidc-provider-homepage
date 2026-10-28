@@ -21,7 +21,7 @@ The "sector" is the unit pairwise groups RPs into. By default it is the host of 
 :::
 
 ::: details UUIDv7 default — what's that?
-When pairwise is **not** enabled, the OP's default subject generator mints a fresh UUIDv7 per user (time-ordered random). UUIDv7 is preferred over UUIDv4 because it is sortable by issue time, which makes index locality on the user table much better. Public mode does not use HMAC; it just remembers the UUID for each user. Pairwise mode bypasses this entirely and recomputes `sub` deterministically for each (sector, user) pair.
+When pairwise is **not** enabled, the OP's default subject generator mints a fresh UUIDv7 per user (time-ordered random). UUIDv7 is preferred over UUIDv4 because it is sortable by issue time, which makes index locality on the user table much better. Public mode hashes nothing; it just remembers the UUID for each user. Pairwise mode bypasses this entirely and recomputes `sub` deterministically for each (sector, user) pair.
 :::
 
 ## When you want pairwise
@@ -37,7 +37,6 @@ If your RPs are all first-party (you own them all and they share databases anywa
 ```go
 import (
   "github.com/libraz/go-oidc-provider/op"
-  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
 
@@ -50,7 +49,6 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
   op.WithLoginFlow(loginFlow),
-  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
 
   op.WithPairwiseSubject(pairwiseSalt), // pairwiseSalt: []byte, ≥ 32 bytes
 )
@@ -61,9 +59,10 @@ Activating the option:
 - Adds `pairwise` to discovery's `subject_types_supported` (alongside `public`).
 - Permits clients to register `subject_type=pairwise` (via static seeds or DCR).
 - Per-client opt-in: clients with `subject_type=public` (or unset → public) keep the default UUIDv7 sub. Pairwise is per-client, not per-OP.
+- Gives every client that opts in a pairwise `sub` in the ID Token, at `/userinfo` and in introspection, for every grant type that records a grant (authorization code, device code, CIBA, token exchange). The internal user id is never exposed. A custom grant gets the pairwise `sub` at `/userinfo` only if its handler records the grant.
 
 ::: warning Salt requirements
-The salt MUST be at least 32 bytes / 256 bits. Embedders SHOULD pull it from a KMS / Vault / Secrets Manager. A salt baked into the source tree or a `.env` file is treated as low-trust. Re-using the salt across deployments is intentional — pairwise sub values are deterministic across processes that share the salt — but **rotating the salt invalidates every previously-issued sub**. The library refuses to boot when grants exist that were issued under a different salt (enforced by the construction-time subject-mode immutability gate).
+The salt MUST be at least 32 bytes / 256 bits. Embedders SHOULD pull it from a KMS / Vault / Secrets Manager. A salt baked into the source tree or a `.env` file is treated as low-trust. Re-using the salt across deployments is intentional, since pairwise sub values are deterministic across processes that share the salt. **Rotating the salt changes every `sub`.** The library does not detect a changed salt at start-up (the construction-time gate guards the subject *mode*, see below), so treat the salt as immutable for the life of the issuer.
 :::
 
 ## How sub is derived
@@ -71,19 +70,19 @@ The salt MUST be at least 32 bytes / 256 bits. Embedders SHOULD pull it from a K
 The OP computes:
 
 ```
-sub = base64url( HMAC-SHA256(salt, sector_identifier || internal_user_id) )
+sub = base64url-no-pad( SHA-256( salt || ":" || sector || ":" || internal_user_id ) )
 ```
 
-::: details HMAC-SHA256 derivation — what's that?
-HMAC is a keyed hash — it takes a secret key (here, the salt) and an input (here, sector + user id) and produces a fixed-size output. SHA-256 is the underlying hash. Two properties matter for pairwise: (1) the same inputs always produce the same output, so a process restart still computes Alice's `sub` for sector A correctly; (2) without the salt, an attacker cannot recompute `sub` from the user id even if they observe many issued sub values. The OP base64url-encodes the 256-bit output so it fits the JWT `sub` string slot.
+::: details Salted SHA-256 derivation — what's that?
+SHA-256 is a one-way hash: it turns any input into a fixed 256-bit value that cannot be run backwards. Prefixing the input with a secret (the salt) gives the two properties pairwise needs. (1) The same inputs always give the same output, so a restart still computes Alice's `sub` for sector A correctly. (2) Without the salt, an attacker who holds some issued `sub` values and a guess at the internal user id cannot check the guess. The `:` separators keep (sector, user) pairs unambiguous even when a value contains a colon. The OP base64url-encodes the 256-bit output so it fits the JWT `sub` string slot.
 :::
 
 ::: details Salt — what's that?
-A high-entropy secret (≥ 256 bits) shared across every replica of the OP. It is the keying material for the HMAC; rotating it invalidates every previously-issued `sub`, which is why the library refuses to start when grants exist that were issued under a different salt. Operators should pull it from KMS / Vault rather than checking it into source — anyone with the salt can recompute every user's `sub` for every sector.
+A high-entropy secret (≥ 256 bits) shared across every replica of the OP. It is the secret input to the hash above; changing it changes every `sub`. Operators should pull it from KMS / Vault rather than checking it into source, because anyone with the salt can recompute every user's `sub` for every sector.
 :::
 
 ::: details Subject mode — what's that?
-"Public" or "pairwise". The OP records the active subject mode in its metadata substore (the `__op_init` sentinel) at first construction. Every subsequent boot must match — switching strategies on a non-empty store would silently re-key every issued grant, breaking refresh-token rotation and JWT introspection consistency. Mid-life switching is treated as a hard configuration error.
+"Public", "pairwise" or "custom" (a generator supplied with `op.WithSubjectGenerator`). The OP records the active mode in its metadata substore (under `store.SubjectModeKey`, next to the `__op_init` sentinel) at first construction, and every later boot must match. Switching strategies on a non-empty store would silently re-key every issued grant, breaking refresh-token rotation and introspection consistency, so a mismatch fails `op.New` with `ErrSubjectModeMismatch`. A store without a metadata substore skips the check and logs a warning.
 :::
 
 ::: info Reusing the generator outside the OP
@@ -92,59 +91,72 @@ A high-entropy secret (≥ 256 bits) shared across every replica of the OP. It i
 When `WithPairwiseSubject` is enabled, issuance still decides per client: `subject_type=pairwise` uses pairwise derivation, while `public` or unset uses the default UUIDv7 subject. Out-of-band code that needs the exact issued `sub` must inspect the client's `SubjectType` before calling the generator.
 :::
 
-Where `sector_identifier` is:
+Where `sector` is a lower-cased hostname without port:
 
 1. The host of the client's `sector_identifier_uri` (when registered).
-2. **Or** the host of the client's single registered redirect URI host (when the URI is empty).
+2. **Or** the host of the client's single registered redirect URI (when `sector_identifier_uri` is empty).
 
-A client with multiple redirect-URI hosts and no `sector_identifier_uri` produces an unresolvable sector — the issuance fails with `server_error`. Operators MUST require `sector_identifier_uri` for clients that fan out across hosts.
+A client whose redirect URIs span several hosts and that has no `sector_identifier_uri` has no resolvable sector. Registration (and a static seed at `op.New`) rejects it; a record that reaches the store another way fails at issuance with `server_error`. Operators MUST require `sector_identifier_uri` for clients that span hosts.
 
 <figure class="fig">
   <div class="fig-head">One user, a different subject per sector</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-pairwise-title" viewBox="0 0 960 292" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-pairwise-title" viewBox="0 0 960 352" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-pairwise-title">A single internal user id derives a different subject for each RP sector. The sector comes from the client's sector_identifier_uri, and the salt never leaves the OP, so two relying parties cannot correlate the same person across them.</title>
-    <rect class="fg-box" x="36" y="60" width="200" height="66" rx="8"/>
-    <text class="fg-t2" x="56" y="86">One user</text>
-    <text class="fg-mxs" x="56" y="108">internal_user_id</text>
-    <rect class="fg-box fg-box--sub" x="36" y="140" width="200" height="66" rx="8"/>
-    <text class="fg-t2" x="56" y="166">A salt</text>
-    <text class="fg-xs" x="56" y="188">from your KMS or Vault</text>
-    <path class="fg-leader" d="M240,93 H272 M240,173 H272 M272,93 V173"/>
-    <path class="fg-edge fg-edge--accent" d="M272,96 H316" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--accent" d="M272,170 H316" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="320" y="60" width="270" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="340" y="86">The OP derives a sub</text>
-    <text class="fg-mxs" x="340" y="110">sector = a.example.com</text>
-    <rect class="fg-box fg-box--accent" x="320" y="140" width="270" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="340" y="166">The OP derives a sub</text>
-    <text class="fg-mxs" x="340" y="190">sector = b.example.com</text>
-    <path class="fg-edge fg-edge--accent" d="M594,96 H638" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--accent" d="M594,176 H638" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="642" y="60" width="282" height="72" rx="8"/>
-    <text class="fg-t2" x="662" y="84">RP A</text>
-    <text class="fg-xs" x="662" y="102">sector_identifier_uri → a.example.com</text>
-    <text class="fg-mxs fg-accent" x="662" y="122">sub = 7bQ…Xa</text>
-    <rect class="fg-box" x="642" y="140" width="282" height="72" rx="8"/>
-    <text class="fg-t2" x="662" y="164">RP B</text>
-    <text class="fg-xs" x="662" y="182">sector_identifier_uri → b.example.com</text>
-    <text class="fg-mxs fg-accent" x="662" y="202">sub = k9P…Zb</text>
-    <text class="fg-mxs" x="36" y="248">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
-    <text class="fg-xs fg-ok" x="642" y="248">sub_A ≠ sub_B — and neither RP can compute the other</text>
+    <!-- inputs -->
+    <rect class="fg-box" x="32" y="36" width="224" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="64">One user</text>
+    <text class="fg-mxs" x="48" y="88">internal_user_id</text>
+    <rect class="fg-box fg-box--sub" x="32" y="164" width="224" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="192">salt</text>
+    <text class="fg-s" x="48" y="216">from your KMS or Vault</text>
+    <path class="fg-leader" d="M256,72 H280 M256,200 H280 M280,72 V200"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M280,72 H312" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M280,200 H312" marker-end="url(#fg-ac)"/>
+    <!-- sector a -->
+    <rect class="fg-box fg-box--accent" x="312" y="36" width="288" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="328" y="64">The OP derives a sub</text>
+    <text class="fg-mxs" x="328" y="88">sector = a.example.com</text>
+    <path class="fg-edge fg-edge--accent" d="M600,72 H640" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="640" y="24" width="288" height="96" rx="8"/>
+    <text class="fg-t2" x="656" y="52">RP A</text>
+    <text class="fg-mxs" x="656" y="76">sector_identifier_uri</text>
+    <text class="fg-mxs fg-accent" x="656" y="100">sub = 7bQ…Xa</text>
+    <!-- sector b -->
+    <rect class="fg-box fg-box--accent" x="312" y="164" width="288" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="328" y="192">The OP derives a sub</text>
+    <text class="fg-mxs" x="328" y="216">sector = b.example.com</text>
+    <path class="fg-edge fg-edge--accent" d="M600,200 H640" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="640" y="152" width="288" height="96" rx="8"/>
+    <text class="fg-t2" x="656" y="180">RP B</text>
+    <text class="fg-mxs" x="656" y="204">sector_identifier_uri</text>
+    <text class="fg-mxs fg-accent" x="656" y="228">sub = k9P…Zb</text>
+    <!-- formula -->
+    <rect class="fg-box fg-box--sub" x="32" y="280" width="624" height="48" rx="8"/>
+    <text class="fg-m" x="48" y="310">sub = base64url( SHA-256( salt : sector : internal_user_id ) )</text>
+    <rect class="fg-pill fg-pill--ok" x="696" y="288" width="232" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="812" y="309" text-anchor="middle">sub_A ≠ sub_B</text>
   </svg>
-  <figcaption class="fig-note">The salt is what makes this one-way. Without it, an RP holding a subject and a guess at the internal id could confirm the guess; with it, the same derivation is unavailable to anyone but the OP.</figcaption>
+  <figcaption class="fig-note">The salt is what makes this one-way. Without it, an RP holding a subject and a guess at the internal id could confirm the guess; with it, the same derivation is unavailable to anyone but the OP, so neither RP can compute the other's subject.</figcaption>
 </figure>
 
 ### `sector_identifier_uri` resolution
 
-When a client registers a `sector_identifier_uri`, the OP fetches it (HTTPS-only, RFC 1918 / loopback / link-local rejected, redirect targets re-validated, body-size + timeout caps, 24-hour success cache) and confirms every redirect URI on the client is listed in the document. The document must be a single JSON array with no trailing bytes. If the remote document changes content, the resolver evicts the stale cache entry and recovers on the next successful fetch without an OP restart. This binds the sector to a published manifest the OP can audit.
+Deriving `sub` needs only the host of `sector_identifier_uri`, a plain URL parse. The fetch happens once, at registration, to prove the RP controls the sector. The OP downloads the document and confirms every redirect URI of the client is listed in it.
+
+- The fetch is HTTPS-only, refuses redirects, rejects RFC 1918, loopback and link-local addresses, and caps the body at 64 KiB and the request at 5 seconds.
+- The document must be a single JSON array of strings with no trailing bytes.
+- A successful fetch is cached for 24 hours; a failure is cached for 5 seconds so a burst of registrations cannot become a burst of outbound requests.
+- If the document's content changes after the cache entry expires, registration fails with `invalid_client_metadata` (`sector_identifier_uri document changed since last fetch`) instead of silently widening the trusted set.
+
+This binds the sector to a published manifest the OP can audit.
 
 ## Mid-life switching is rejected
 
-The library refuses to boot if you switch between subject strategies on a non-empty grant store. Switching from `public` to `pairwise` (or vice versa) without a salt-aware migration would silently re-key every issued grant — every refresh-token rotation would re-issue with a new `sub`, every JWT introspection would return a different identifier than the one in the original token.
+`op.New` fails with `ErrSubjectModeMismatch` if you switch between subject strategies on a populated store. Switching from `public` to `pairwise` (or the reverse) without a migration would silently re-key every issued grant: every refresh-token rotation would re-issue with a new `sub`, and every introspection would return a different identifier than the one in the original token.
 
-The construction-time subject-mode immutability gate consults the metadata substore for an `__op_init` sentinel (written on every successful construction) so a re-used store whose subject-mode marker was wiped (manual cleanup, truncate) still rejects a non-public switch on the next `op.New` call.
+The gate also consults the `__op_init` sentinel, which every successful construction writes. A re-used store whose subject-mode marker was wiped (manual cleanup, truncate) therefore still rejects a switch to a non-public mode on the next `op.New`.
 
-If you genuinely need to migrate, plan a maintenance window where you migrate every issued grant (rebind via your own subject-mapping table), then start the OP under the new strategy.
+The gate compares modes, not salts. If you genuinely need to switch strategy or salt, plan a maintenance window: migrate every issued grant (rebind through your own subject-mapping table), then start the OP under the new strategy. The alternative is to provision a new issuer.
 
 ## Per-client opt-in via DCR
 
@@ -162,7 +174,7 @@ curl -s -X POST \
   https://op.example.com/oidc/register
 ```
 
-For statically-provisioned clients, set the field on the `Client` record directly via the `op.PublicClient` / `op.ConfidentialClient` seed.
+For statically provisioned clients, set `SubjectType: "pairwise"` on the `op.PublicClient` / `op.ConfidentialClient` seed. Without `op.WithPairwiseSubject`, `op.New` rejects a static `pairwise` client. The typed seeds have no `sector_identifier_uri` field, so a static pairwise client must use a single redirect host; clients that span hosts register through DCR.
 
 ## What pairwise does *not* do
 
@@ -172,7 +184,7 @@ For statically-provisioned clients, set the field on the `Client` record directl
 ::: details Cross-RP correlation — what's that?
 When two RPs separately observe an authenticated user and compare notes, they can ask "are these the same person?". The most direct signal is `sub` — if both RPs see `sub=abc123` for their user, they know it is the same person at the OP. Pairwise removes this signal; each RP sees a different opaque identifier. RPs can still attempt correlation via email, phone, IP address, login timestamp, or browser fingerprint — pairwise only closes the OP-handed-them-the-key channel.
 :::
-- **Does not work without `sector_identifier_uri`** for multi-host clients. The OP refuses issuance, so you find out at boot rather than seeing drift in production.
+- **Does not work without `sector_identifier_uri`** for multi-host clients. Registration and `op.New` refuse them, so you find out at setup rather than seeing drift in production.
 
 ## See it run
 

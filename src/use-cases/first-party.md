@@ -41,20 +41,37 @@ op.New(
 )
 ```
 
-For listed client IDs, `/authorize` redirects back to the RP **immediately** after the login chain succeeds — no consent screen. A third-party client (not listed) still sees the consent prompt as normal. If a first-party client sends `prompt=consent`, the explicit prompt request wins and the skip is not applied.
+`op.New` checks the list at construction. Every ID must also be registered through `WithStaticClients`, otherwise it fails with `unknown client_id`. Clients created by [Dynamic Client Registration](/use-cases/dynamic-registration) are never first-party, whatever the list says.
+
+For a listed client, `/auth` creates the consent grant on the user's behalf and issues the code with no consent screen. A client that is not listed still sees the consent prompt. With `prompt=none`, a listed client gets a code where an unlisted one would get `consent_required`.
+
+### When the skip applies
+
+The skip is deliberately narrow. It applies only when all of these hold; otherwise the user sees the normal consent screen.
+
+| Condition | Why |
+|---|---|
+| The client is on the list | The operator's decision. |
+| The user already has a session | The skip never invents a subject to bind the grant to. |
+| The request does not carry `prompt=consent` | An explicit prompt from the RP wins over the OP's posture. |
+| The scope does not include `offline_access` | A long-lived refresh grant is always confirmed by the user. |
+| The request carries no `authorization_details` and no Grant Management action | Rich authorization requests and grant changes always get an explicit ceremony. |
+| The browser reports a same-origin request, or a same-site one whose `Origin` or `Referer` matches the origin of the `redirect_uri` | `Sec-Fetch-Site` guards against a cross-site page triggering the auto-grant. A cross-site navigation, or a client that sends no Fetch Metadata headers, gets the consent screen. |
+
+The skip replaces only the consent screen. `LoginFlow` rules and the `Decider` are still evaluated before the code is issued, so a rule that guards the client or a scope can demand a step-up (or answer `interaction_required` under `prompt=none`), and interactions registered with `op.TriggerBeforeToken` still run.
 
 ## Audit
 
-The library still emits `op.AuditConsentGrantedFirstParty` for every skip, so the audit trail records "consent was implicit, the client is on the first-party list" rather than "consent silently happened". SOC dashboards split first-party from third-party grants on the event type.
+Every skip emits `op.AuditConsentGrantedFirstParty`, so the audit trail records "consent was implicit, the client is on the first-party list" instead of an unexplained grant. Dashboards can tell first-party grants from third-party ones by the event type.
 
 ## Mutual exclusion
 
-`op.WithFirstPartyClients` is **incompatible** with active FAPI 2.0 profiles. This is a library policy: the profile constraints reject first-party auto-consent, even though OIDC Core permits an authorization decision established by prior or administrative consent. The constructor rejects the combination at build time so the trust-boundary decision is explicit.
+`op.WithFirstPartyClients` cannot be combined with a FAPI 2.0 profile. This is a library policy: the profiles reject first-party auto-consent, even though OIDC Core permits an authorization decision established by prior or administrative consent. `op.New` rejects the combination, so the trust-boundary decision is explicit.
 
 ## Production caveat
 
 ::: danger Trust extension
-Listing a client in `WithFirstPartyClients` is a deliberate trust extension. Production embedders MUST gate the list on a registry of clients owned by the embedder's organisation — typically a column on the client table consulted at boot, not a hard-coded slice. If a third-party client somehow gets onto the list, you've removed the user's veto.
+Listing a client in `WithFirstPartyClients` is a deliberate trust extension. Production embedders MUST build the list from a registry of clients owned by the embedder's organisation, typically a column on the client table read at boot, not a hard-coded slice. If a third-party client gets onto the list, the user's veto is gone.
 :::
 
 ## Read next

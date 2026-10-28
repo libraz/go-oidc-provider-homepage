@@ -19,59 +19,51 @@ pageClass: pg-use-cases-client-onboarding
 
 <figure class="fig">
   <div class="fig-head">Five ways in, on one trust spectrum</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-onboarding-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
-    <title id="uc-onboarding-title">Five client-onboarding patterns, arranged from fully operator-controlled at one end to nothing trusted on the wire at the other. The middle three are gated by something a caller carries; the two ends are gated by who has access to the deployment.</title>
-    <text class="fg-lbl" x="36" y="26">fully operator-controlled</text>
-    <text class="fg-lbl" x="924" y="26" text-anchor="end">nothing trusted on the wire</text>
-    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
-    <rect class="fg-box fg-box--accent" x="36" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="56" cy="74" r="9"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="56" y="77" text-anchor="middle">1</text>
-    <text class="fg-t2" x="76" y="78">Static</text>
-    <text class="fg-lbl" x="52" y="104">gated by</text>
-    <text class="fg-xs" x="52" y="124">the operator's own</text>
-    <text class="fg-xs" x="52" y="140">configuration</text>
-    <line class="fg-rule" x1="52" y1="152" x2="188" y2="152"/>
-    <text class="fg-mxs" x="52" y="174">WithStaticClients</text>
-    <rect class="fg-box" x="216" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge" cx="236" cy="74" r="9"/>
-    <text class="fg-badge-t" x="236" y="77" text-anchor="middle">2</text>
-    <text class="fg-t2" x="256" y="78">IaC / GitOps</text>
-    <text class="fg-lbl" x="232" y="104">gated by</text>
-    <text class="fg-xs" x="232" y="124">the operator's CI</text>
-    <text class="fg-xs" x="232" y="140">pipeline</text>
-    <line class="fg-rule" x1="232" y1="152" x2="368" y2="152"/>
-    <text class="fg-mxs" x="232" y="174">store.ClientRegistry</text>
-    <rect class="fg-box" x="396" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge" cx="416" cy="74" r="9"/>
-    <text class="fg-badge-t" x="416" y="77" text-anchor="middle">3</text>
-    <text class="fg-t2" x="436" y="78">DCR</text>
-    <text class="fg-lbl fg-warn" x="412" y="104">gated by</text>
-    <text class="fg-xs" x="412" y="124">a minted IAT, then a</text>
-    <text class="fg-xs" x="412" y="140">per-client RAT</text>
-    <line class="fg-rule" x1="412" y1="152" x2="548" y2="152"/>
-    <text class="fg-mxs" x="412" y="174">/register</text>
-    <rect class="fg-box" x="576" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge" cx="596" cy="74" r="9"/>
-    <text class="fg-badge-t" x="596" y="77" text-anchor="middle">4</text>
-    <text class="fg-t2" x="616" y="78">Admin API</text>
-    <text class="fg-lbl fg-warn" x="592" y="104">gated by</text>
-    <text class="fg-xs" x="592" y="124">a management token</text>
-    <text class="fg-xs" x="592" y="140">— scope plus claim</text>
-    <line class="fg-rule" x1="592" y1="152" x2="728" y2="152"/>
-    <text class="fg-mxs" x="592" y="174">store.ClientRegistry</text>
-    <rect class="fg-box fg-box--accent" x="756" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="776" cy="74" r="9"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="776" y="77" text-anchor="middle">5</text>
-    <text class="fg-t2" x="796" y="78">CLI</text>
-    <text class="fg-lbl" x="772" y="104">gated by</text>
-    <text class="fg-xs" x="772" y="124">nothing on the wire —</text>
-    <text class="fg-xs" x="772" y="140">it is never on one</text>
-    <line class="fg-rule" x1="772" y1="152" x2="908" y2="152"/>
-    <text class="fg-mxs" x="772" y="174">RegisterClient</text>
-    <path class="fg-leader" d="M396,206 H744 M396,206 V214 M744,206 V214"/>
-    <text class="fg-lbl fg-warn" x="570" y="230" text-anchor="middle">these two carry their trust on the wire</text>
-    <text class="fg-xs" x="570" y="250" text-anchor="middle">everything else is decided by who can reach the deployment at all</text>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-onboarding-title" viewBox="0 0 960 456" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-onboarding-title">Five client-onboarding patterns, arranged from fully operator-controlled at one end to nothing trusted on the wire at the other. The middle two are gated by a credential the caller carries; the other three are gated by who can reach the deployment.</title>
+    <text class="fg-lbl" x="32" y="36">fully operator-controlled</text>
+    <text class="fg-lbl" x="928" y="36" text-anchor="end">nothing trusted on the wire</text>
+    <line class="fg-rule fg-rule--strong" x1="32" y1="48" x2="928" y2="48"/>
+    <rect class="fg-box" x="32" y="72" width="896" height="360" rx="8"/>
+    <!-- row 1 -->
+    <text class="fg-t2" x="48" y="100">Static</text>
+    <text class="fg-mxs" x="48" y="124">WithStaticClients</text>
+    <text class="fg-lbl" x="336" y="100">gated by</text>
+    <text class="fg-s" x="336" y="124">the operator's own configuration</text>
+    <rect class="fg-pill" x="672" y="92" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-dim" x="792" y="113" text-anchor="middle">access to the deployment</text>
+    <!-- row 2 -->
+    <line class="fg-rule" x1="32" y1="144" x2="928" y2="144"/>
+    <text class="fg-t2" x="48" y="172">IaC / GitOps</text>
+    <text class="fg-mxs" x="48" y="196">store.ClientRegistry</text>
+    <text class="fg-lbl" x="336" y="172">gated by</text>
+    <text class="fg-s" x="336" y="196">the operator's CI pipeline</text>
+    <rect class="fg-pill" x="672" y="164" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-dim" x="792" y="185" text-anchor="middle">access to the deployment</text>
+    <!-- row 3 -->
+    <line class="fg-rule" x1="32" y1="216" x2="928" y2="216"/>
+    <text class="fg-t2" x="48" y="244">DCR</text>
+    <text class="fg-mxs" x="48" y="268">/register</text>
+    <text class="fg-lbl fg-warn" x="336" y="244">gated by</text>
+    <text class="fg-s" x="336" y="268">a minted IAT, then a per-client RAT</text>
+    <rect class="fg-pill fg-pill--warn" x="672" y="236" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-warn" x="792" y="257" text-anchor="middle">credential in the request</text>
+    <!-- row 4 -->
+    <line class="fg-rule" x1="32" y1="288" x2="928" y2="288"/>
+    <text class="fg-t2" x="48" y="316">Admin API</text>
+    <text class="fg-mxs" x="48" y="340">store.ClientRegistry</text>
+    <text class="fg-lbl fg-warn" x="336" y="316">gated by</text>
+    <text class="fg-s" x="336" y="340">a management token: scope plus claim</text>
+    <rect class="fg-pill fg-pill--warn" x="672" y="308" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-warn" x="792" y="329" text-anchor="middle">credential in the request</text>
+    <!-- row 5 -->
+    <line class="fg-rule" x1="32" y1="360" x2="928" y2="360"/>
+    <text class="fg-t2" x="48" y="388">CLI</text>
+    <text class="fg-mxs" x="48" y="412">RegisterClient</text>
+    <text class="fg-lbl" x="336" y="388">gated by</text>
+    <text class="fg-s" x="336" y="412">nothing: it never touches the wire</text>
+    <rect class="fg-pill" x="672" y="380" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-dim" x="792" y="401" text-anchor="middle">access to the deployment</text>
   </svg>
   <figcaption class="fig-note">The two middle patterns are the only ones where a stranger can start the conversation, which is why they are the only ones that need a credential in the request. The ends need none because there is no request.</figcaption>
 </figure>
@@ -120,9 +112,9 @@ provider, err := op.New(
 )
 ```
 
-The seed projection enforces the same redirect-URI shape rules at `op.New` time that DCR enforces at `POST /register`, so a malformed seed fails the constructor instead of leaking through to runtime. `ConfidentialClient.Secret` is hashed via `op.HashClientSecret` (argon2id) before the record reaches the store; the plaintext never persists.
+The seed projection enforces the same redirect-URI shape rules at `op.New` time that DCR enforces at `POST /register`, so a malformed seed fails the constructor instead of leaking through to runtime. `ConfidentialClient.Secret` is hashed via `op.HashClientSecret` (argon2id) before the record reaches the store; the plaintext never persists. A `client_secret_basic` or `client_secret_post` client must carry either `Secret` or a pre-computed `SecretHash` (not both); `op.New` refuses one with neither, because an empty secret would otherwise authenticate an empty `client_secret`. Under `op.WithHighEntropyClientSecrets()` provision `SecretHash` from `op.NewClientSecret` or `op.HashHighEntropyClientSecret`, since `Secret` always hashes with argon2id.
 
-Against a persistent backend the seeds are applied as **one atomic, idempotent batch** through `store.StaticClientReconciler`: missing records are inserted, records already equivalent are left alone, and a record that diverges from a stored one — or collides with a dynamically registered client — fails with `ErrConflict`. The reconciliation runs after every other fallible build step, so a boot that fails for an unrelated reason never leaves half the roster written. Restarting an OP with an unchanged seed list is therefore a no-op rather than a rewrite.
+Against a persistent backend the seeds are applied as **one atomic, idempotent batch** through `store.StaticClientReconciler`: missing records are inserted, records already equivalent are left alone, and a record that diverges from a stored one — or collides with a dynamically registered client — fails with `ErrConflict`. The reconciliation runs after every other fallible build step, so a boot that fails for an unrelated reason never leaves half the roster written. Restarting an OP with an unchanged seed list is therefore a no-op rather than a rewrite. The reconciliation never deletes a stored static client that has dropped out of the list, so retire clients and rotate their secrets through pattern 2 or 5 before changing the seed.
 
 This is the right pattern when the RP roster is short, owned by the same team that runs the OP, and changes through the same deployment pipeline as any other config.
 
@@ -159,7 +151,7 @@ for _, plan := range desired {
 }
 ```
 
-`store.ClientSourceAdmin` is the right discriminator here: it leaves the record eligible for first-party auto-consent (same as `ClientSourceStatic`) but is distinguishable in audit-log analysis from records the OP itself created via `/register`. The provisioning binary is responsible for shape validation before the write — `RegisterClient` is a raw store write and does not run the registration handler's rule set. If the OP holds a long-running in-memory client cache, plan for invalidation (a SIGHUP-driven reload, a small admin endpoint your binary calls, or the natural cache expiry your backend exposes).
+`store.ClientSourceAdmin` is the right discriminator here: it leaves the record eligible for first-party auto-consent (same as `ClientSourceStatic`) but is distinguishable in audit-log analysis from records the OP itself created via `/register`. The provisioning binary is responsible for shape validation before the write — `RegisterClient` is a raw store write and does not run the registration handler's rule set. Do not write a record that carries both `jwks` and `jwks_uri`: the OP refuses it at use time on every surface that reads client keys (request objects, `private_key_jwt`, response encryption). If the OP holds a long-running in-memory client cache, plan for invalidation (a SIGHUP-driven reload, a small admin endpoint your binary calls, or the natural cache expiry your backend exposes).
 
 Treat the secret material in the manifest the way you treat any other deploy-time credential: encrypted state, narrow read scope on the CI principal, no echo in CI logs.
 

@@ -17,7 +17,7 @@ provider, err := op.New(
 
 `profile.Baseline` changes that one rule only. It does not require PAR, cap token lifetimes, restrict client-authentication methods, or require sender-constrained tokens. Those controls belong to the applicable FAPI profiles; use [FAPI 2.0 Baseline](/use-cases/fapi2-baseline) when that is the target profile.
 
-At successful construction the OP emits `startup.profile` to its audit logger. The event records the declared profiles, features, and grants as well as the resolved policy, including `pkce_required`. Use it to confirm the deployed posture before the first request.
+At successful construction the OP emits `startup.profile` to its audit logger. The event records the declared profiles, features, and grants, and the resolved policy: `pkce_required`, `par_required`, `sender_constrained`, `client_auth_methods`, the token lifetimes and more. Use it to confirm the deployed posture before the first request.
 
 > **Source:** [`examples/00-security-profile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/00-security-profile) runs an unprofiled OP and a `profile.Baseline` OP side by side, then sends both the same confidential-client request without a `code_challenge`.
 
@@ -31,31 +31,46 @@ At successful construction the OP emits `startup.profile` to its audit logger. T
 
 In this library, public and native clients still require PKCE even without `profile.Baseline`; the visible difference is the confidential-client compatibility path.
 
+## What each profile requires
+
+| Profile | PKCE | Features switched on | Sender-constrained tokens | Grant required | Other limits |
+|---|---|---|---|---|---|
+| `profile.Baseline` | Required | none | not required | none | none |
+| `profile.FAPI2Baseline` | Required | PAR, JAR | DPoP or mTLS (DPoP if neither is configured) | none | Access token lifetime ≤ 10 minutes; PAR `expires_in` below 600 seconds |
+| `profile.FAPI2MessageSigning` | Required | PAR, JAR, JARM | DPoP or mTLS | none | The `FAPI2Baseline` limits |
+| `profile.FAPICIBA` | Not applicable (no `/auth` redirect) | JAR | DPoP or mTLS | `grant.CIBA` | The `FAPI2Baseline` limits |
+
+Source: `RequiredFeatures`, `RequiredAnyOf`, `RequiredGrants`, `RequiresPKCE`, `MaxAccessTokenTTL` and `PARLifetimeCeiling` in `op/profile`.
+
 ## Features are supplied, grants are not
 
 A profile constrains its two neighbouring declaration axes differently, and the asymmetry is deliberate.
 
 <figure class="fig">
   <div class="fig-head">A profile supplies features, never grants</div>
-  <svg class="fig-svg" role="img" aria-labelledby="profile-supply-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="profile-supply-title" viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg">
     <title id="profile-supply-title">Declaring a profile switches on the feature flags it needs. It never adds a grant: a grant the profile requires and the deployment did not declare makes op.New fail instead of quietly enabling it.</title>
-    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="44" rx="8"/>
+    <!-- profile -->
+    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="48" rx="8"/>
     <text class="fg-m fg-accent" x="480" y="52" text-anchor="middle">op.WithProfile(…)</text>
-    <path class="fg-leader" d="M480,72 V88 M253,88 H707"/>
-    <path class="fg-edge fg-edge--ok" d="M253,88 V106" marker-end="url(#fg-ao)"/>
-    <path class="fg-edge fg-edge--danger" d="M707,88 V106" marker-end="url(#fg-ad)"/>
-    <rect class="fg-box fg-box--ok" x="36" y="110" width="434" height="108" rx="8"/>
-    <text class="fg-t2" x="56" y="138">Features — supplied</text>
-    <text class="fg-mxs" x="56" y="160">feature.PAR · feature.JAR · feature.JARM · …</text>
-    <line class="fg-rule" x1="56" y1="172" x2="450" y2="172"/>
-    <text class="fg-xs" x="56" y="192">policy the profile is entitled to decide on its own</text>
-    <text class="fg-xs fg-ok" x="56" y="208">not declared → the profile switches it on</text>
-    <rect class="fg-box fg-box--danger" x="490" y="110" width="434" height="108" rx="8"/>
-    <text class="fg-t2" x="510" y="138">Grants — never supplied</text>
-    <text class="fg-mxs" x="510" y="160">grant.AuthorizationCode · grant.CIBA · …</text>
-    <line class="fg-rule" x1="510" y1="172" x2="904" y2="172"/>
-    <text class="fg-xs" x="510" y="192">only the embedder can supply the collaborators they need</text>
-    <text class="fg-xs fg-danger" x="510" y="208">not declared → op.New fails</text>
+    <!-- branches -->
+    <path class="fg-leader" d="M480,72 V96 M248,96 H712"/>
+    <path class="fg-edge fg-edge--thin fg-edge--ok" d="M248,96 V120" marker-end="url(#fg-ao)"/>
+    <path class="fg-edge fg-edge--thin fg-edge--danger" d="M712,96 V120" marker-end="url(#fg-ad)"/>
+    <!-- features -->
+    <rect class="fg-box fg-box--ok" x="32" y="120" width="432" height="144" rx="8"/>
+    <text class="fg-t2" x="48" y="148">Features: supplied</text>
+    <text class="fg-mxs" x="48" y="172">feature.PAR · feature.JAR · …</text>
+    <text class="fg-s" x="48" y="196">policy the profile can decide alone</text>
+    <rect class="fg-pill fg-pill--ok" x="48" y="216" width="400" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="248" y="237" text-anchor="middle">not declared → the profile enables it</text>
+    <!-- grants -->
+    <rect class="fg-box fg-box--danger" x="496" y="120" width="432" height="144" rx="8"/>
+    <text class="fg-t2" x="512" y="148">Grants: never supplied</text>
+    <text class="fg-mxs" x="512" y="172">grant.AuthorizationCode · grant.CIBA · …</text>
+    <text class="fg-s" x="512" y="196">only you can supply what they need</text>
+    <rect class="fg-pill fg-pill--danger" x="512" y="216" width="400" height="32" rx="16"/>
+    <text class="fg-s fg-danger" x="712" y="237" text-anchor="middle">not declared → op.New fails</text>
   </svg>
   <figcaption class="fig-note">The asymmetry is deliberate. A feature is a rule the profile can enforce on its own; a grant needs an authenticator, a store, sometimes a notification channel — things only you can provide, so silently enabling one would produce an OP that answers requests it cannot complete.</figcaption>
 </figure>
@@ -69,10 +84,9 @@ Either way, the resolved policy is recorded in the `startup.profile` audit event
 ```go
 provider, err := op.New(
   // …
-  op.WithGrants(grant.CIBA),
   op.WithProfile(profile.FAPICIBA),
   op.WithCIBA(op.WithCIBAHintResolver(resolver)),
 )
 ```
 
-The error names both the grant the profile requires and the option that activates it, so the fix is readable off the message. `WithCIBA` takes CIBA options such as `op.WithCIBAHintResolver`; it does not replace the explicit `op.WithGrants(grant.CIBA)` declaration. Every profile other than `profile.FAPICIBA` requires no grant of its own.
+`op.WithCIBA` is the option that activates the grant: it adds `grant.CIBA` to the grant set and takes CIBA options such as `op.WithCIBAHintResolver`. The store must also provide a CIBA request substore. Declaring `profile.FAPICIBA` without it fails `op.New`, and the error names both the grant the profile requires and the option that activates it, so the fix can be read off the message. Listing `grant.CIBA` in `op.WithGrants` alone does not help, because it leaves the hint resolver unwired and moves the failure to the next check. Every profile other than `profile.FAPICIBA` requires no grant of its own.

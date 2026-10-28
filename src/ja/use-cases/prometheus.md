@@ -3,7 +3,7 @@ title: Prometheus メトリクス
 description: issuer を固定ラベルに持つ業務メトリクスを組み込み側の registry に登録 — OP は /metrics をマウントしません。
 ---
 
-# 使い方 — Prometheus メトリクス
+# ユースケース — Prometheus メトリクス
 
 OIDC 業務系メトリクス（トークン発行、refresh rotation、監査イベント数）を既存 Prometheus スタックに乗せたい。ただしライブラリが `/metrics` を勝手にマウントするのは避けたい — それは利用者側のルータの仕事です。
 
@@ -51,7 +51,7 @@ mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 | カテゴリ | counter / label |
 |---|---|
 | Token endpoint | `oidc_token_issued_total{issuer,grant_type,client_id}`、`oidc_tokens_refreshed_total{issuer,client_id}`、refresh / authorization-code replay 検知、method / reason 別の client-auth 失敗 |
-| 認証 | `oidc_login_attempts_total{issuer,factor,result}`。primary login と MFA の試行を `factor` で区別 |
+| 認証 | `oidc_login_attempts_total{issuer,factor,result}`。primary login と MFA の試行を `factor` で区別し、`result` は `success` か `failed` |
 | 拡張フロー | DCR、Device Authorization、Device Code、CIBA、Token Exchange のイベントカウンタ。label は audit event の sub-name |
 | Logout / revocation | back-channel 配送結果、grant 由来の eligible RP target が 0 件になった session を伴う logout 通知（`bcl.no_sessions_for_subject`）、token / refresh-chain / grant revocation の副作用失敗 |
 | 運用シグナル | introspection 認証エラー、DPoP loose-method-case bridge の受理、retired JWKS `kid` の提示 |

@@ -15,29 +15,31 @@ Both directions use a closed algorithm allow-list.
 
 <figure class="fig">
   <div class="fig-head">The JWE encloses the JWS</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-jwe-title" viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-jwe-title" viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-jwe-title">The OP signs the claims into a JWS, then encrypts that JWS inside a JWE addressed to the relying party's encryption key. The RP decrypts the outer layer first and only then verifies the signature inside it.</title>
-    <rect class="fg-box" x="36" y="66" width="200" height="96" rx="8"/>
-    <text class="fg-t2" x="56" y="94">OP</text>
-    <text class="fg-xs" x="56" y="116">assembles the claims</text>
-    <text class="fg-xs" x="56" y="134">and signs them</text>
-    <path class="fg-edge fg-edge--accent" d="M240,114 H286" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="290" y="42" width="342" height="144" rx="10"/>
-    <text class="fg-lbl fg-accent" x="310" y="66">outer · JWE</text>
-    <text class="fg-xs" x="310" y="86">encrypted to the RP's use=enc JWK</text>
-    <rect class="fg-box fg-box--sub" x="310" y="100" width="302" height="70" rx="8"/>
-    <text class="fg-lbl" x="330" y="124">inner · JWS</text>
-    <text class="fg-xs" x="330" y="144">the signed claims — unchanged,</text>
-    <text class="fg-xs" x="330" y="160">and unreadable until the outer layer is off</text>
-    <path class="fg-edge fg-edge--accent" d="M636,114 H696" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="666" y="107" text-anchor="middle">on the wire</text>
-    <rect class="fg-box" x="700" y="66" width="224" height="96" rx="8"/>
-    <text class="fg-t2" x="720" y="94">RP</text>
-    <text class="fg-xs" x="720" y="116">decrypt the outer JWE,</text>
-    <text class="fg-xs" x="720" y="134">then verify the inner JWS</text>
-    <text class="fg-xs" x="36" y="216">signing proves who issued it; encrypting decides who can read it — the two answer different questions and both are needed here</text>
+    <!-- OP -->
+    <rect class="fg-box" x="32" y="68" width="240" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="96">OP</text>
+    <text class="fg-s" x="48" y="120">assembles the claims</text>
+    <text class="fg-s" x="48" y="144">and signs them</text>
+    <path class="fg-edge fg-edge--accent" d="M272,116 H312" marker-end="url(#fg-ac)"/>
+    <!-- outer JWE -->
+    <rect class="fg-box fg-box--accent" x="312" y="24" width="336" height="184" rx="8"/>
+    <text class="fg-lbl fg-accent" x="336" y="52">outer · JWE</text>
+    <text class="fg-s" x="336" y="76">encrypted to the RP's use=enc JWK</text>
+    <!-- inner JWS -->
+    <rect class="fg-box fg-box--sub" x="336" y="96" width="288" height="96" rx="8"/>
+    <text class="fg-lbl" x="352" y="124">inner · JWS</text>
+    <text class="fg-s" x="352" y="148">the signed claims, unchanged</text>
+    <text class="fg-s" x="352" y="172">unreadable until decrypted</text>
+    <path class="fg-edge fg-edge--accent" d="M648,116 H688" marker-end="url(#fg-ac)"/>
+    <!-- RP -->
+    <rect class="fg-box" x="688" y="68" width="240" height="96" rx="8"/>
+    <text class="fg-t2" x="704" y="96">RP</text>
+    <text class="fg-s" x="704" y="120">decrypts the JWE,</text>
+    <text class="fg-s" x="704" y="144">then verifies the JWS</text>
   </svg>
-  <figcaption class="fig-note">The order matters in both directions. Signing first means the signature covers the claims and not the ciphertext; decrypting first means the RP never verifies a signature over something it could not read.</figcaption>
+  <figcaption class="fig-note">The order matters in both directions. Signing first means the signature covers the claims and not the ciphertext; decrypting first means the RP never verifies a signature over something it could not read. Signing proves who issued the token, encrypting decides who can read it, and this setup needs both.</figcaption>
 </figure>
 
 ::: details JWS vs JWE — what's the difference?
@@ -87,7 +89,7 @@ What is **permanently rejected**:
 
 - `RSA1_5` — CVE-2017-11424 padding oracle. Never shipped.
 
-`op.WithSupportedEncryptionAlgs(algs, encs)` can **narrow** the advertised set further (e.g. ECDH-ES + A256GCM only) but cannot extend it. Out-of-allow-list values yield a configuration error at `op.New`.
+`op.WithSupportedEncryptionAlgs(algs, encs)` can **narrow** the set further (e.g. ECDH-ES + A256GCM only) but cannot extend it. The narrowing is enforced, not just advertised: an inbound request object naming an excluded `alg` or `enc` is rejected before any key is touched, a client registered (by DCR or static seed) for an excluded pair is refused, and no outbound response is encrypted with one. Out-of-allow-list values yield a configuration error at `op.New`, and each half (`algs`, `encs`) may be narrowed by only one call.
 
 ## Wiring the encryption keyset
 
@@ -152,7 +154,7 @@ The OP encrypts an outbound response **only when** the client's metadata names a
 |---|---|
 | id_token | `id_token_encrypted_response_alg`, `id_token_encrypted_response_enc` |
 | userinfo (JWT) | `userinfo_encrypted_response_alg`, `userinfo_encrypted_response_enc` |
-| request_object (inbound, JAR / PAR) | `request_object_encryption_alg_values_supported` (server-side) |
+| request_object (inbound, JAR / PAR) | none: the OP advertises `request_object_encryption_alg_values_supported` and decrypts what the client sends |
 | authorization (JARM) | `authorization_encrypted_response_alg`, `authorization_encrypted_response_enc` |
 | introspection (RFC 9701) | `introspection_encrypted_response_alg`, `introspection_encrypted_response_enc` |
 
@@ -164,13 +166,13 @@ JWT Secured Authorization Response Mode (OpenID Foundation FAPI WG). Instead of 
 RFC 9701 ("OAuth 2.0 JWT Response for Introspection"). The classic `/introspect` endpoint (RFC 7662) returns a plain JSON document; RFC 9701 lets the resource server ask for a signed (and optionally encrypted) JWT instead. Useful when the RS wants a non-repudiable record of "the AS told me this token belonged to alice at this time", or when the introspection response itself crosses a trust boundary.
 :::
 
-The DCR mount validates these via `internal/jose.ParseJWEAlg` / `ParseJWEEnc`, the same allow-list source used by the runtime, so registration and request handling stay aligned.
+Registration checks these values against the same allow-list the runtime uses, so what `/register` admits is what the OP can later encrypt with.
 
 ::: warning Half-pair registrations are rejected
 DCR rejects asymmetric submissions like `id_token_encrypted_response_alg=RSA-OAEP-256` without `id_token_encrypted_response_enc` with `invalid_client_metadata` at registration. Both empty is admit (the client opts out of encryption for that response type); both populated is admit; only one populated is reject. This stops the failure mode where registration succeeds but the first encrypted response fails at runtime.
 :::
 
-The client also publishes a `jwks` (or `jwks_uri`) with `use=enc` keys; the OP fetches and resolves the right key per RP-side rotation.
+The client also publishes a `jwks` (or `jwks_uri`) with `use=enc` keys; the OP fetches and resolves the right key per RP-side rotation. A client record must carry exactly one of the two: one with both is refused when the OP goes to encrypt.
 
 ## Discovery exposure
 
@@ -184,7 +186,7 @@ Without `op.WithEncryptionKeyset`, request-object encryption fields are absent a
 
 ## userinfo signing — always on
 
-Independent of the encryption keyset, `userinfo_signing_alg_values_supported` now publishes `["ES256"]` unconditionally. The JWT-shape userinfo path is always available via `Accept: application/jwt`. RPs that want signed userinfo do not need to register encryption metadata.
+Independent of the encryption keyset, `userinfo_signing_alg_values_supported` publishes `["ES256"]` unconditionally. The JWT-shape userinfo path is always available via `Accept: application/jwt`. RPs that want signed userinfo do not need to register encryption metadata.
 
 ## See it run
 

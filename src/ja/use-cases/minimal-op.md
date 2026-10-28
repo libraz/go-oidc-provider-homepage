@@ -4,9 +4,9 @@ description: 動く最小の OP+RP のペア — OP の必須オプション、�
 pageClass: pg-use-cases-minimal-op
 ---
 
-# 使い方 — 最小構成 OP
+# ユースケース — 最小構成 OP
 
-最小オプション数で Authorization Code + PKCE のラウンドトリップを最後まで動かしたい。同梱の例は OP と対になる RP を同一プロセスで起動するので、外部準備なしにブラウザでフロー全体を動かせます。
+このページの例は、ライブラリが受け付ける最短のオプション列で [Authorization Code + PKCE](/ja/concepts/authorization-code-pkce) のラウンドトリップを動かします。OP と、それを使ってユーザをサインインさせる RP を同じプロセスで起動するので、ほかに何も用意しなくてもブラウザでフロー全体を試せます。
 
 > **ソース:** [`examples/01-minimal/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal)
 
@@ -14,37 +14,39 @@ pageClass: pg-use-cases-minimal-op
 
 <figure class="fig">
   <div class="fig-head">Go プロセス 1 つ、他には何も要らない</div>
-  <svg class="fig-svg" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 0 960 232" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="minimal-op-arch-title" viewBox="0 0 960 304" xmlns="http://www.w3.org/2000/svg">
     <title id="minimal-op-arch-title">ブラウザが同梱の RP を操作し、その RP が同一プロセス内の OP と OIDC で通信します。OP は in-memory ストアを読み書きし、揮発鍵で署名します。データベースも鍵管理も用意する必要がありません。</title>
-    <rect class="fg-box fg-box--ext" x="36" y="90" width="160" height="60" rx="8"/>
-    <text class="fg-t2" x="116" y="114" text-anchor="middle">ブラウザ</text>
-    <text class="fg-xs" x="116" y="134" text-anchor="middle">手元の環境</text>
-    <path class="fg-edge" d="M200,120 H258" marker-end="url(#fg-a)"/>
-    <rect class="fg-frame" x="236" y="40" width="688" height="172" rx="10"/>
-    <text class="fg-lbl" x="252" y="62">単一の Go プロセス</text>
-    <rect class="fg-box" x="266" y="76" width="200" height="70" rx="8"/>
-    <text class="fg-t2" x="366" y="104" text-anchor="middle">rpkit RP</text>
-    <text class="fg-mxs" x="366" y="124" text-anchor="middle">:9090</text>
-    <path class="fg-edge" d="M470,111 H512" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="491" y="104" text-anchor="middle">OIDC</text>
-    <rect class="fg-box fg-box--accent" x="516" y="76" width="200" height="70" rx="8"/>
-    <text class="fg-m fg-accent" x="616" y="104" text-anchor="middle">op.New(…)</text>
-    <text class="fg-mxs" x="616" y="124" text-anchor="middle">:8080</text>
-    <path class="fg-edge fg-edge--thin" d="M720,97 H752" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M720,151 H752" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--sub" x="756" y="76" width="148" height="42" rx="6"/>
-    <text class="fg-mxs" x="772" y="94">inmem.Store</text>
-    <text class="fg-xs" x="772" y="110">再起動で消える</text>
-    <rect class="fg-box fg-box--sub" x="756" y="130" width="148" height="54" rx="6"/>
-    <text class="fg-mxs" x="772" y="148">Keyset</text>
-    <text class="fg-xs" x="772" y="164">揮発鍵</text>
-    <text class="fg-xs" x="772" y="178">ECDSA P-256</text>
-    <text class="fg-xs" x="252" y="196">データベースも鍵管理も設定ファイルも不要 — 上のすべてが起動時に生成される</text>
+    <!-- browser -->
+    <rect class="fg-box fg-box--ext" x="32" y="132" width="144" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="160">ブラウザ</text>
+    <text class="fg-s" x="48" y="184">手元の環境</text>
+    <path class="fg-edge" d="M176,168 H216" marker-end="url(#fg-a)"/>
+    <!-- process -->
+    <rect class="fg-frame" x="216" y="24" width="712" height="256" rx="8"/>
+    <text class="fg-lbl" x="240" y="52">単一の Go プロセス</text>
+    <rect class="fg-box" x="240" y="132" width="144" height="72" rx="8"/>
+    <text class="fg-t2" x="256" y="160">rpkit RP</text>
+    <text class="fg-mxs" x="256" y="184">:9090</text>
+    <path class="fg-edge" d="M384,168 H456" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="420" y="158" text-anchor="middle">OIDC</text>
+    <rect class="fg-box fg-box--accent" x="456" y="132" width="160" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="472" y="160">op.New(…)</text>
+    <text class="fg-mxs" x="472" y="184">:8080</text>
+    <path class="fg-leader" d="M616,168 H640 M640,116 V220"/>
+    <path class="fg-edge fg-edge--thin" d="M640,116 H672" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M640,220 H672" marker-end="url(#fg-a)"/>
+    <!-- throwaway parts -->
+    <rect class="fg-box fg-box--sub" x="672" y="80" width="232" height="72" rx="8"/>
+    <text class="fg-m" x="688" y="108">inmem.Store</text>
+    <text class="fg-s" x="688" y="132">再起動で消える</text>
+    <rect class="fg-box fg-box--sub" x="672" y="184" width="232" height="72" rx="8"/>
+    <text class="fg-m" x="688" y="212">Keyset</text>
+    <text class="fg-s" x="688" y="236">揮発鍵 ECDSA P-256</text>
   </svg>
-  <figcaption class="fig-note">右側の 2 つは意図的に使い捨てです。再起動するとセッションも鍵もすべて失われますが、フローが成立するかどうかを確かめている段階では、それがちょうどよい性質です。</figcaption>
+  <figcaption class="fig-note">右側の 2 つは意図的に使い捨てです。データベースも鍵管理も設定ファイルも不要で、枠の中のものはすべて起動時に生成されます。再起動するとセッションも鍵もすべて失われますが、フローが成立するかどうかを確かめている段階では、それがちょうどよい性質です。</figcaption>
 </figure>
 
-プロセスは 1 つ、ストアは in-memory、鍵は起動時に生成します。例ではデモユーザ（`demo`/`demo`）1 件を seed し、`redirect_uri` を埋め込み RP に向けた public client を登録しています。
+ストアは in-memory で、鍵は起動時に生成します。例ではデモユーザ（`demo` / `demo`）を 1 件 seed し、`redirect_uri` を埋め込み RP に向けた [public クライアント](/ja/concepts/client-types)を登録しています。
 
 ## コード（要点）
 
@@ -63,12 +65,9 @@ func main() {
   keys := /* 例では devkeys.MustEphemeral("minimal-1") */
   st := inmem.New()
   // seedUser は op.HashPassword で "demo"/"demo" をハッシュし、
-  // *store.User を st.UserPasswords() に PUT する（実装は example を参照）。
+  // st.PutUserWithPassword で *store.User を登録する（実装は example を参照）。
 
-  // upstream の例は examples/internal/opkit の opkit.DefaultLoginFlow(st.UserPasswords())
-  // を使っています。これは下と同じ値を構築する thin wrapper で、公開 API は下の
-  // LoginFlow 構造体です。opkit を import するのは example のソースを読むときだけで、
-  // 本番コードで使うものではありません。
+  // Primary を 1 つだけ置き、rule を持たない構成が、パスワードのみのログインの全体です。
   flow := op.LoginFlow{
     Primary: op.PrimaryPassword{Store: st.UserPasswords()},
   }
@@ -95,7 +94,7 @@ func main() {
 }
 ```
 
-`WithIssuer`、`WithStore`、`WithKeyset` だけでも `/oidc/.well-known/openid-configuration` と `/oidc/jwks` は応答します。`WithCookieKeys` は authorization-code grant を有効にした時点で必須になり、通常のブラウザフローでは既定で必要です。ユーザに依存するエンドポイント（authorize / token / userinfo）には、さらに `WithLoginFlow` と `WithStaticClients` のペアが必要です。discovery のみの構成は [`getting-started/minimal`](/ja/getting-started/minimal) を参照してください。
+`WithIssuer`、`WithStore`、`WithKeyset` があれば、`/.well-known/openid-configuration` と `/oidc/jwks` は応答します。`WithCookieKeys` と `WithLoginFlow`（または `WithAuthenticators`）は authorization-code grant を有効にすると必須になり、この grant は既定で有効なので、実際に動く OP の入力は 5 つです。`op.LoginFlow` は `Experimental:` と明記されています（[インストール: 安定性](/ja/getting-started/install#安定性)）。ユーザが関わるエンドポイント（authorize / token / userinfo）には、さらに 1 件以上のクライアント（`WithStaticClients`）が必要です。各必須オプションが要る理由は [はじめに: 最小構成の OP](/ja/getting-started/minimal) にまとめています。
 
 ## OP が公開するもの
 
@@ -103,27 +102,27 @@ func main() {
 
 | Path | 目的 |
 |---|---|
-| `/.well-known/openid-configuration` | Discovery（OIDC Discovery 1.0 §4 によりルート固定） |
+| `/.well-known/openid-configuration` | [Discovery](/ja/concepts/discovery)（OIDC Discovery 1.0 §4 によりルート固定） |
 | `/oidc/jwks` | ID トークン / JWT アクセストークン検証用の公開 JWKS |
 | `/oidc/auth` | Authorization endpoint |
 | `/oidc/token` | Token endpoint |
 | `/oidc/userinfo` | UserInfo（RFC 6749 + OIDC Core §5.3） |
 | `/oidc/end_session` | RP-Initiated Logout 1.0 |
 
-オプションエンドポイント（`/par`、`/introspect`、`/revoke`、`/register`、`/interaction/*`、`/session/*`）は対応 feature が有効なときのみマウントされます。
+オプションのエンドポイント（`/par`、`/introspect`、`/revoke`、`/register` など）は、対応する feature や grant を有効にしたときだけマウントされます。
 
 ## 本番運用に足りないもの
 
 | ギャップ | 対処 |
 |---|---|
-| デモユーザ 1 件をハードコード | 自前の管理面でユーザを登録し、`store.User` を PUT する。 |
-| 揮発鍵 → 再起動で ID トークンが検証不能 | vault / KMS / ファイルからロード。 |
-| in-memory ストア → 再起動で状態消失 | `op/storeadapter/sql` または `op/storeadapter/composite` に切替。 |
+| デモユーザ 1 件をハードコード | 自前の管理面でユーザを登録するか、既存のユーザテーブルを投影する（[既存ユーザストアの投影](/ja/use-cases/byo-userstore)）。 |
+| 揮発鍵: 再起動すると既発行の ID トークンを検証できなくなる | vault、KMS、ファイルから鍵を読み込む。 |
+| in-memory ストア: 再起動で状態が消える | `op/storeadapter/sql` または `op/storeadapter/composite` に切り替える（[SQL ストア](/ja/use-cases/sql-store)）。 |
 | 平文 HTTP リスナ（`http://127.0.0.1`） | TLS 終端 ingress の背後に置き、issuer も `https://` に切り替える。 |
 | 単一要素（パスワードのみ） | `RuleAlways(StepTOTP{...})` を追加 — [MFA / step-up](/ja/use-cases/mfa-step-up) を参照。 |
 | `examples/internal/rpkit` のデモ RP | 本番 RP は `golang.org/x/oauth2` + `github.com/coreos/go-oidc/v3` を直接使う。 |
 
-[`examples/02-bundle`](https://github.com/libraz/go-oidc-provider/tree/main/examples/02-bundle) が「総合的な組み込み側」のリファレンスとしてこれらを埋めています。
+[`examples/02-bundle`](https://github.com/libraz/go-oidc-provider/tree/main/examples/02-bundle) はこれらの一部を埋めています。[Comprehensive bundle](/ja/use-cases/bundle) を参照してください。
 
 ## 動かす
 
@@ -131,6 +130,12 @@ func main() {
 git clone https://github.com/libraz/go-oidc-provider.git
 cd go-oidc-provider
 (cd examples/01-minimal && GOWORK=off go run -tags example .)
-# 別ターミナル:
-curl -s http://localhost:8080/.well-known/openid-configuration | jq
 ```
+
+そのあとブラウザで次の順に試します。
+
+1. `http://127.0.0.1:9090/`（RP）を開き、「Log in via the OP」を選びます。
+2. `demo` / `demo` でサインインし、同意画面を承認します。
+3. RP が `/me` に遷移し、検証済みの ID トークンの claim を表示します。`iss` は `http://127.0.0.1:8080` です。
+
+OP のメタデータを見るには `curl -s http://127.0.0.1:8080/.well-known/openid-configuration | jq` を実行します。ラウンドトリップが止まったらプロセスを再起動してください。鍵は揮発なので、再起動すると途中のセッションはすべて無効になります。

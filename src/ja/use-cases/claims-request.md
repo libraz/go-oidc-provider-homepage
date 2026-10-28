@@ -4,7 +4,7 @@ description: OIDC Core 1.0 §5.5 — RP が `claims` で claim を指定し、cl
 pageClass: pg-use-cases-claims-request
 ---
 
-# 使い方 — Claims リクエストパラメータ
+# ユースケース — Claims リクエストパラメータ
 
 ## `claims` パラメータとは
 
@@ -19,32 +19,38 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 この 2 つの仕組みは返却先が異なります。認可コードフローでは、標準の `profile`、`email`、`address`、`phone` scope は `/userinfo` で返す claim を要求します。`claims` パラメータでは、個別の claim と返却先を指定します。アクセストークンを発行しない ID トークンのみのレスポンスでは、scope に対応する claim は ID トークンに入ります。
 
 <figure class="fig">
-  <div class="fig-head">要求ごとの出力先</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 258" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">要求はそれぞれ 1 か所に出力される</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-claims-title">認可コードフローでは、claims パラメータの id_token メンバーは ID トークン、userinfo メンバーと標準の profile scope は UserInfo の claim を要求します。</title>
-    <text class="fg-lbl" x="40" y="26">何で要求するか</text>
-    <text class="fg-lbl" x="644" y="26">どこに出るか</text>
-    <rect class="fg-box" x="36" y="38" width="330" height="52" rx="6"/>
-    <text class="fg-mxs" x="54" y="60">claims["id_token"]</text>
-    <text class="fg-xs" x="54" y="78">指定した claim だけ</text>
-    <rect class="fg-box fg-box--accent" x="36" y="102" width="330" height="52" rx="6"/>
-    <text class="fg-mxs fg-accent" x="54" y="124">scope</text>
-    <text class="fg-xs" x="54" y="142">OIDC Core §5.4 が定める束のすべて</text>
-    <rect class="fg-box" x="36" y="166" width="330" height="52" rx="6"/>
-    <text class="fg-mxs" x="54" y="188">claims["userinfo"]</text>
-    <text class="fg-xs" x="54" y="206">指定した claim だけ</text>
-    <path class="fg-edge fg-edge--thin" d="M370,64 H600" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V192 H600" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--thin" d="M370,192 H600" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="604" y="38" width="320" height="52" rx="6"/>
-    <text class="fg-mxs" x="622" y="60">ID トークン</text>
-    <text class="fg-xs" x="622" y="78">JWT に署名されて載り、RP が読む</text>
-    <rect class="fg-box" x="604" y="166" width="320" height="52" rx="6"/>
-    <text class="fg-mxs" x="622" y="188">GET /userinfo</text>
-    <text class="fg-xs" x="622" y="206">レスポンスで返す</text>
-    <text class="fg-xs" x="36" y="246">2 つのメンバーは別々の要求です。片方に書いた claim がもう片方に現れることはありません</text>
+    <text class="fg-lbl" x="32" y="36">何で要求するか</text>
+    <text class="fg-lbl" x="568" y="36">どこに出るか</text>
+    <!-- claims["id_token"] -->
+    <rect class="fg-box" x="32" y="56" width="376" height="72" rx="8"/>
+    <text class="fg-m" x="48" y="84">claims["id_token"]</text>
+    <text class="fg-s" x="48" y="108">指定した claim だけ</text>
+    <!-- claims["userinfo"] -->
+    <rect class="fg-box" x="32" y="160" width="376" height="72" rx="8"/>
+    <text class="fg-m" x="48" y="188">claims["userinfo"]</text>
+    <text class="fg-s" x="48" y="212">指定した claim だけ</text>
+    <!-- scope -->
+    <rect class="fg-box fg-box--accent" x="32" y="264" width="376" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="292">scope</text>
+    <text class="fg-s" x="48" y="316">OIDC Core §5.4 が定める束のすべて</text>
+    <!-- edges -->
+    <path class="fg-edge" d="M408,92 H568" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M408,196 H568" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--accent" d="M408,300 H568" marker-end="url(#fg-ac)"/>
+    <!-- ID token -->
+    <rect class="fg-box" x="568" y="56" width="360" height="72" rx="8"/>
+    <text class="fg-t2" x="584" y="84">ID トークン</text>
+    <text class="fg-s" x="584" y="108">JWT に署名されて載り、RP が読む</text>
+    <!-- UserInfo -->
+    <rect class="fg-box" x="568" y="160" width="360" height="176" rx="8"/>
+    <text class="fg-t2" x="584" y="188">UserInfo</text>
+    <text class="fg-m" x="584" y="212">GET /userinfo</text>
+    <text class="fg-s" x="584" y="236">レスポンスで返す</text>
   </svg>
-  <figcaption class="fig-note">図は認可コードフローの場合です。<code>claims["userinfo"]</code> だけで要求した claim は、ID トークン用には要求されません。</figcaption>
+  <figcaption class="fig-note">図は認可コードフローの場合です。<code>claims["userinfo"]</code> だけで要求した claim は、ID トークン用には要求されません。2 つのメンバーは別々の要求です。</figcaption>
 </figure>
 
 `essential` を付けても返却先は変わりません。通常の claim では、その値が認可の判断に重要であることを OP に伝えますが、値がない場合のエラーは要求しません。必要な値を指定した essential な `acr` には特別な一致規則があり、再認証につながる場合があります。
@@ -68,23 +74,24 @@ OIDC Core 1.0 §5.5 はもっと細かい仕組みを追加します: RP は `cl
 ```go
 op.New(
   /* 必須オプション */
+  op.WithClaimsParameterSupported(true), // 既定値。分かりやすさのために明示
   op.WithClaimsSupported(
-    "sub", "iss", "aud", "exp", "iat",
+    "sub", "iss", "aud", "exp", "iat", "auth_time", "nonce",
+    "name", "given_name", "family_name", "preferred_username",
     "email", "email_verified",
-    "name", "given_name", "family_name",
-    "locale", "zoneinfo",
+    "locale",
   ),
 )
 ```
 
-`claims_parameter_supported` の既定は `true` です。`op.WithClaimsParameterSupported(false)` を渡すと、この広告を止め、正しい形式の `claims` payload を無視します。scope から導出する claim は変わらず、壊れた JSON はリクエスト境界で拒否されます。
+`claims_parameter_supported` の既定は `true` です。`op.WithClaimsParameterSupported(false)` を渡すと、この広告を止め、正しい形式の `claims` payload を無視します。scope から導出する claim は変わらず、壊れた JSON はリクエスト境界で拒否されます。`WithClaimsSupported` が埋めるのは discovery の `claims_supported` だけです（未指定なら省略）。OP が開示できる claim を制限するものではありません。
 
 discovery 文書はこう公開します:
 
 ```json
 {
   "claims_parameter_supported": true,
-  "claims_supported": ["sub", "iss", "aud", "exp", "iat", "email", "email_verified", "name", "given_name", "family_name", "locale", "zoneinfo"]
+  "claims_supported": ["sub", "iss", "aud", "exp", "iat", "auth_time", "nonce", "name", "given_name", "family_name", "preferred_username", "email", "email_verified", "locale"]
 }
 ```
 
@@ -151,11 +158,18 @@ curl -G --data-urlencode "claims=$CLAIMS" \
 
 ライブラリは両方の形（query パラメータ、JAR 内）を同じマージ経路で処理します。
 
-## サイレント認可と既存の projection
+## 認可ごとに要求を保持する
 
-既存の grant を使って返却される subject をサイレント認可（`prompt=none`）するとき、そのリクエストに `claims` パラメータがあれば、OP は新しい認可コードを発行する前に grant に保存した projection を更新します。そのため、先の grant が別の projection を保持していても、後続の ID Token と UserInfo はサイレント認可で要求した claim を反映します。リクエストが `claims` を省略した場合は既存の projection を保持します。省略は「合意済みの内容を残す」という意味であり、「消去」ではありません。
+`claims` リクエストは、それを運んだ認可に属します。認可コードがリクエストを記録し、そのコードから派生するリフレッシュトークンとアクセストークンが引き継ぎます。JWT アクセストークンは `userinfo` メンバーを private claim の `userinfo_claims` に載せ（要求に指定がなければ `{}`）、`/userinfo` はこの claim から開示する claim を決めます。リソースサーバはこの claim を無視してください。名前は予約されており、custom grant は設定できません。
 
-claims サポートを無効にすると、既存の grant に保存された要求 claim の投影も黙って抑止します。ID Token と UserInfo の両方が対象で、refresh rotation から派生したトークンも同じです。scope が公開する claim には影響せず、grant の書き換え、再プロンプト、エラーも発生しません。再び有効にすると、検証済みの要求を保持している grant では投影が戻ります。
+同じユーザが同じクライアントを 2 回認可した場合、次のようになります。
+
+- 1 回目の認可で得たトークンは、1 回目のリクエストが求めた claim をそのまま開示し続けます。あとから claim を増やす認可や減らす認可があっても、変わりません。
+- サイレントに処理した認可（`prompt=none`、またはリクエストを満たすキャッシュ済み grant）で `claims` パラメータがない場合、開示するのは scope 由来の claim だけです。同じ grant 上の過去の認可が持っていた `claims` リクエストは引き継ぎません。必要な認可のたびに `claims` を送り直してください。
+
+リフレッシュのローテーションは、置き換える側のトークンが持つリクエストを引き継ぎます。認可ごとのフィールドを永続化しない自前ストア（`store.AuthorizationCode`、`store.RefreshToken`、`store.OpaqueAccessToken` の `AuthorizationRecorded` を参照）は、grant に最後に保存されたリクエストにフォールバックします。
+
+claims サポートを無効にすると、OP はすべてのトークンで要求 claim の開示を止めます。有効だった間に発行したトークンや、そこから派生したリフレッシュチェーンも対象です。ID Token と UserInfo の両方に及びます。scope が公開する claim には影響せず、書き換え、再プロンプト、エラーも発生しません。記録された要求は残るので、再び有効にすると投影が戻ります。
 
 ## Authorization Details（RFC 9396）
 

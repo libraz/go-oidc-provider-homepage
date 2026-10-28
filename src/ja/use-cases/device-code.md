@@ -4,53 +4,51 @@ description: RFC 8628 device authorization を有効化 — /device_authorizatio
 pageClass: pg-use-cases-device-code
 ---
 
-# 使い方 — Device Code（RFC 8628）
+# ユースケース — Device Code（RFC 8628）
 
-device flow がどういうものか、いつ選ぶべきか、なぜ `slow_down` / `expired_token` が要るのか、といった概念的な背景は [Device Code 入門](/ja/concepts/device-code) を先に読んでください。このページは組み込み手順を扱います。
+device flow は、使いやすいキーボードやブラウザを持たない機器（TV、CLI、プリンタなど）が、ユーザの手元の別の端末で承認してもらうことでトークンを得る仕組みです。どんなときに選ぶのか、なぜ `slow_down` や `expired_token` があるのかといった概念は、先に [Device Code 入門](/ja/concepts/device-code) を読んでください。このページは組み込み手順を扱います。
 
 <figure class="fig">
   <div class="fig-head">片方の画面に出たコードを、もう片方に打ち込む</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-devicecode-title" viewBox="0 0 960 306" xmlns="http://www.w3.org/2000/svg">
-    <title id="uc-devicecode-title">入力しづらいデバイスが OP に device_code と短い user_code を要求し、コードを画面に表示してトークンエンドポイントを poll します。ユーザはその画面のコードを読み取り、自分のスマホや PC で入力して承認します。</title>
-    <rect class="fg-box" x="36" y="76" width="220" height="108" rx="8"/>
-    <text class="fg-t2" x="146" y="106" text-anchor="middle">デバイス</text>
-    <text class="fg-xs" x="146" y="128" text-anchor="middle">TV · CLI · プリンタ</text>
-    <line class="fg-rule" x1="56" y1="140" x2="236" y2="140"/>
-    <text class="fg-xs" x="146" y="160" text-anchor="middle">入力が難しい —</text>
-    <text class="fg-xs" x="146" y="174" text-anchor="middle">まともに打てるキーボードが無い</text>
-    <rect class="fg-box fg-box--accent" x="320" y="46" width="320" height="168" rx="8"/>
-    <text class="fg-t fg-accent" x="480" y="74" text-anchor="middle">OP</text>
-    <line class="fg-rule" x1="340" y1="86" x2="620" y2="86"/>
-    <text class="fg-mxs" x="340" y="112">/device_authorization</text>
-    <text class="fg-xs" x="340" y="130">2 種類のコードを発行する</text>
-    <text class="fg-mxs" x="340" y="158">DeviceCodeStore</text>
-    <text class="fg-xs" x="340" y="176">承認まで保持する</text>
-    <text class="fg-mxs" x="340" y="200">/token</text>
-    <rect class="fg-box" x="704" y="76" width="220" height="108" rx="8"/>
-    <text class="fg-t2" x="814" y="106" text-anchor="middle">ユーザ自身の端末</text>
-    <text class="fg-xs" x="814" y="128" text-anchor="middle">スマホ · PC</text>
-    <line class="fg-rule" x1="724" y1="140" x2="904" y2="140"/>
-    <text class="fg-xs" x="814" y="160" text-anchor="middle">信頼できるブラウザと</text>
-    <text class="fg-xs" x="814" y="174" text-anchor="middle">キーボードがある</text>
-    <path class="fg-edge" d="M260,96 H316" marker-end="url(#fg-a)"/>
-    <circle class="fg-badge" cx="288" cy="84" r="8.5"/>
-    <text class="fg-badge-t" x="288" y="87" text-anchor="middle">1</text>
-    <path class="fg-edge fg-edge--accent" d="M316,126 H260" marker-end="url(#fg-ac)"/>
-    <circle class="fg-badge" cx="288" cy="140" r="8.5"/>
-    <text class="fg-badge-t" x="288" y="143" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--muted" d="M146,188 V232 H814 V188" marker-end="url(#fg-am)"/>
-    <circle class="fg-badge" cx="480" cy="232" r="8.5"/>
-    <text class="fg-badge-t" x="480" y="235" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M700,96 H648" marker-end="url(#fg-a)"/>
-    <circle class="fg-badge" cx="672" cy="84" r="8.5"/>
-    <text class="fg-badge-t" x="672" y="87" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M260,166 H316" marker-end="url(#fg-a)"/>
-    <circle class="fg-badge" cx="288" cy="180" r="8.5"/>
-    <text class="fg-badge-t" x="288" y="183" text-anchor="middle">5</text>
-    <text class="fg-xs" x="36" y="266">1 · デバイスが device_code と user_code を要求する</text>
-    <text class="fg-xs" x="36" y="284">2 · OP が両方と、開くべき URL を返す</text>
-    <text class="fg-xs" x="500" y="266">3 · ユーザが画面の短いコードを読み取る</text>
-    <text class="fg-xs" x="500" y="284">4 · 入力して承認する · 5 · デバイスは /token を poll する</text>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-devicecode-title" viewBox="0 0 960 616" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-devicecode-title">入力しづらいデバイスが OP に device_code と短い user_code を要求し、コードを画面に表示してトークンエンドポイントを poll します。ユーザはその画面のコードを読み取り、自分のスマホや PC で入力して承認し、次の poll でトークンが返ります。</title>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="592"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="592"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="592"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">デバイス</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">TV · CLI · プリンタ</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">ユーザ自身の端末</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">スマホ · PC</text>
+    <!-- ask -->
+    <path class="fg-edge" d="M192,136 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="126" text-anchor="middle">POST /device_authorization</text>
+    <!-- codes -->
+    <path class="fg-edge fg-edge--accent" d="M512,208 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="174" text-anchor="middle">200 OK</text>
+    <text class="fg-mxs" x="352" y="196" text-anchor="middle">device_code · user_code · URL</text>
+    <!-- show -->
+    <path class="fg-edge" d="M192,256 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="262">user_code と URL を</text>
+    <text class="fg-s" x="248" y="284">画面に表示する</text>
+    <!-- human -->
+    <path class="fg-edge fg-edge--muted" d="M192,352 H824" marker-end="url(#fg-am)"/>
+    <text class="fg-s fg-halo" x="504" y="342" text-anchor="middle">人が画面のコードを読み、別の端末に打ち込む</text>
+    <!-- approve -->
+    <path class="fg-edge" d="M824,424 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="414" text-anchor="middle">コードを入力して承認する</text>
+    <!-- poll -->
+    <path class="fg-edge" d="M192,496 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="486" text-anchor="middle">POST /token · poll</text>
+    <!-- tokens -->
+    <path class="fg-edge fg-edge--accent" d="M512,568 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="352" y="558" text-anchor="middle">承認後にトークンを返す</text>
   </svg>
   <figcaption class="fig-note">破線はネットワークではなく人間です。この経路がフローに渡すのは短いコード 1 つだけで、推測されにくさよりも読みやすさと入力しやすさを優先して選ばれています。秘密として扱われるのは、デバイスが保持する <code>device_code</code> の側です。</figcaption>
 </figure>
@@ -64,7 +62,7 @@ device flow がどういうものか、いつ選ぶべきか、なぜ `slow_down
 :::
 
 ::: details `interval` とポーリングとは
-RFC 8628 では、デバイスはユーザがスマホなどで承認するのを待つあいだ `/token` を繰り返し呼び出します。`interval`（秒）は、OP が指定するポーリング間の最小待ち時間です。デバイスがそれより速く呼び出した場合、OP は `slow_down` を返し、デバイス側に保存された interval を引き上げます。全レプリカが新しい下限を尊重します。既定は 5 秒です。短くするのは、デバイス群の障害時の後始末が十分速く回る構成で、5 秒の待ち時間が実際にボトルネックになっているときだけにしてください。
+RFC 8628 では、デバイスはユーザがスマホなどで承認するのを待つあいだ、`/token` を繰り返し呼び出します。`interval`（秒）は、OP が求めるポーリング間隔の最小値です。デバイスがそれより速く呼び出すと、OP は `slow_down` を返して保存済みの interval を引き上げます。新しい最小値はすべてのレプリカに適用されます。既定は 5 秒です。
 :::
 
 ## grant を有効化
@@ -84,6 +82,9 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  // grant.DeviceCode を挙げると、既定の {authorization_code, refresh_token} は
+  // 外れます。デバイスにブラウザはないためです。WithDeviceCodeGrant は
+  // /device_authorization を公開し、DeviceCodes サブストアを必須にします。
   op.WithGrants(grant.DeviceCode),
   op.WithDeviceCodeGrant(),
   op.WithDeviceCodeExpiry(10*time.Minute),       // 任意。既定 10 分
@@ -104,25 +105,60 @@ provider, err := op.New(
 2. device-code URN（`urn:ietf:params:oauth:grant-type:device_code`）を `/token` に登録
 3. discovery 文書に `device_authorization_endpoint` を出し、`grant_types_supported` に URN を追加
 
-device-code サブストア（`store.DeviceCodeStore`）は必須です。in-memory と SQL の両アダプタが同梱しています — SQL アダプタは sqlite / mysql / postgres で `oidc_device_codes` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis のみの構成では composite アダプタで `DeviceCodes` を durable な層（SQL か in-memory）にルーティングしてください。
+device-code サブストア（`store.DeviceCodeStore`）は必須です。in-memory、SQL、DynamoDB の各アダプタが同梱しており、SQL アダプタは sqlite / mysql / postgres の `oidc_device_codes` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis を使う構成では composite アダプタで `DeviceCodes` を永続的な層（SQL か in-memory）に振り分けてください。
 
-::: warning サブストアの存在は op.New で強制
-構成した store が nil 以外の `DeviceCodes()` を返さない場合、`op.New` は構成エラーを返します。最初のポーリングで panic にはなりません。専用の `op.WithDeviceCodeGrant()` 経由で grant を有効化しても、`op.WithGrants(grant.DeviceCode, ...)` 経由でも、同じ構成検査が働きます。どちらの経路でもサブストアは必須です。
+::: warning サブストアの有無は op.New で検査
+構成した store が `DeviceCodes()` に nil を返すと、`op.New` は構成エラーで失敗します。最初のポーリングで panic することはありません。`op.WithDeviceCodeGrant()` で有効にした場合も、`op.WithGrants(grant.DeviceCode, ...)` で有効にした場合も同じ検査が働きます。
 :::
 
 ## verification ページ
 
-`/device_authorization` は `verification_uri` を返しますが、そのページが指す URL は **ライブラリではなく組み込み側がホストします** — 設計上の意図です。verification を組み込み側の責務にしているのは:
+`/device_authorization` は、ユーザが承認するページを指す `verification_uri` を返します。**このページをライブラリはホストしません**。理由は 2 つです。
 
-1. **ブランドと UX**: ページを既存サインイン UI の隣に置けるため
-2. **不正対策ポリシー**: レコード単位の総当たり制御、IP rate limit、CAPTCHA、監査 triage は組み込み側の既存不正対策スタックに属するため
+1. **ブランドと UX**: ページは既存のサインイン UI の隣に置くのが自然です。
+2. **不正対策**: レコード単位の総当たり制限、IP の rate limit、CAPTCHA、監査対応は、組み込み側の既存の不正対策に属します。
 
-既定の URI は `<issuer>/device`。verification ページが別の場所にあるなら `op.WithDeviceVerificationURI("https://acme.com/connect")` で上書きします。
+既定の URI は `<issuer>/device` です。verification ページが別の場所にあるなら、`op.WithDeviceVerificationURI("https://acme.com/connect")` で上書きします（絶対 URL が必要です）。
 
-`expires_in` と `interval` には専用の knob があります: `op.WithDeviceCodeExpiry(...)` と `op.WithDeviceCodePollInterval(...)` です。これらは `op.WithAccessTokenTTL` からは導出されません。アクセストークンを 30 秒や 60 秒にしている deployment でも、ユーザがスマホに移り、コードを入力し、承認するための 10 分をそのまま残せます。
+`expires_in` と `interval` には専用のオプション `op.WithDeviceCodeExpiry(...)` と `op.WithDeviceCodePollInterval(...)` があり、`op.WithAccessTokenTTL` とは独立しています。アクセストークンを 30 秒や 60 秒にしている構成でも、ユーザがスマホに移ってコードを入力し、承認するまでの 10 分を確保できます。
 
-::: warning user_code は構造的に総当たり可能
-短いコードは入力しやすい一方で、総当たりを受けやすくなります。verification ページを自前で作る組み込み側のために、本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で総当たり対策を同梱しています。最初の手入力では opaque なサーバ側 ceremony key を渡して `VerifyUserCodeByAttemptKey` を呼び、認証と同意の後に `ApproveUserCode` を呼んでください。raw `user_code` を attempt key に使ってはなりません。
+<figure class="fig">
+  <div class="fig-head">device authorization レコードの状態と、遷移させる主体</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dc-state-title" viewBox="0 0 960 456" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-dc-state-title">device authorization は Pending で始まります。verification ページが Approved か Denied に遷移させ、総当たり制限も Denied に遷移させます。トークンのポーリングに成功すると Approved から Consumed になります。Revoke は Pending / Approved を Denied にし、expires_in を過ぎたレコードには expired_token を返します。</title>
+    <rect class="fg-box fg-box--accent" x="32" y="32" width="288" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="60">Pending</text>
+    <text class="fg-mxs" x="48" y="84">/device_authorization</text>
+    <rect class="fg-box" x="32" y="176" width="288" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="204">Approved</text>
+    <text class="fg-s" x="48" y="228">subject と auth_time を記録</text>
+    <rect class="fg-box fg-box--sub" x="32" y="320" width="288" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="348">Consumed</text>
+    <text class="fg-s" x="48" y="372">トークンは 1 回だけ発行</text>
+    <rect class="fg-box fg-box--danger" x="544" y="176" width="288" height="72" rx="8"/>
+    <text class="fg-t2" x="560" y="204">Denied</text>
+    <text class="fg-s" x="560" y="228">ポーリングは access_denied</text>
+    <!-- Pending to Approved -->
+    <path class="fg-edge fg-edge--accent" d="M176,104 V176" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="188" y="144">ApproveUserCode</text>
+    <!-- Approved to Consumed -->
+    <path class="fg-edge" d="M176,248 V320" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="188" y="288">/token ポーリング成功</text>
+    <!-- Pending to Denied -->
+    <path class="fg-edge fg-edge--danger" d="M320,68 H688 V176" marker-end="url(#fg-ad)"/>
+    <text class="fg-m" x="504" y="34" text-anchor="middle">DenyUserCode</text>
+    <text class="fg-mxs" x="504" y="56" text-anchor="middle">ロックアウト · Revoke</text>
+    <!-- Approved to Denied -->
+    <path class="fg-edge fg-edge--danger" d="M320,212 H544" marker-end="url(#fg-ad)"/>
+    <text class="fg-mxs" x="432" y="202" text-anchor="middle">Revoke</text>
+    <!-- note -->
+    <text class="fg-xs" x="32" y="432">expires_in を過ぎたレコードには expired_token を返します。</text>
+  </svg>
+  <figcaption class="fig-note">Pending から先の 2 つの遷移は、組み込み側のページが担当します。最後の遷移は OP の担当で、1 つのレコードにつき最大 1 回しか起きません。</figcaption>
+</figure>
+
+::: warning user_code は総当たりされうる
+`user_code` は手で打てる長さでなければならないため、verification ページが試行回数を制限しないと推測されてしまいます。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) で、この制限を同梱しています。最初の手入力では、サーバ側の ceremony key（opaque な値）を渡して `VerifyUserCodeByAttemptKey` を呼び、認証と同意の後に `ApproveUserCode` を呼んでください。入力された `user_code` そのものを attempt key に使ってはいけません。
 :::
 
 ### 提出された user_code を検証する
@@ -144,11 +180,16 @@ deps := &devicecodekit.Deps{
     AuditLogger: auditLogger, // 任意。helper の監査レコードを受け取る
 }
 
-// attempt key は認証済みのサーバ側 ceremony を識別する opaque 値。
-// ユーザが入力した user_code を使ってはならない。
+// attempt key は 1 つのサーバ側 ceremony（たとえば verification ページに
+// サインインしたブラウザのセッション）を識別する値。ceremony の開始時に
+// 1 度だけ作り、同じ ceremony の提出ではすべて再利用する。limiter はこの
+// key に対して試行を数えるので、提出のたびに作り直すと、推測のたびに
+// 新しい試行枠を与えることになる。opaque な値にし、ユーザが入力した
+// user_code を使ってはならない。
 var rawAttemptKey [32]byte
 if _, err := rand.Read(rawAttemptKey[:]); err != nil { /* 500 として処理 */ }
 attemptKey := base64.RawURLEncoding.EncodeToString(rawAttemptKey[:])
+// ... attemptKey を ceremony のサーバ側セッションに保存する ...
 
 matched, err := devicecodekit.VerifyUserCodeByAttemptKey(ctx, deps, attemptKey, submittedUserCode)
 switch {
@@ -158,6 +199,9 @@ case errors.Is(err, devicecodekit.ErrAlreadyDecided):
     // レコードはすでに承認 / 拒否済。「使用済」と表示
 case errors.Is(err, devicecodekit.ErrUnknownDeviceCode), errors.Is(err, devicecodekit.ErrAttemptLocked):
     // 不明 / malformed / 予算超過。どれかは表示しない
+case errors.Is(err, devicecodekit.ErrAttemptLimiterSaturated):
+    // 組み込みの limiter が有効な key で満杯。この key への判定ではなく
+    // 過負荷の合図なので、少し待って再試行するよう案内する
 default:
     // 想定外 — log して汎用エラーを返す
 }
@@ -168,19 +212,19 @@ if matched {
 }
 ```
 
-ヘルパが行うこと:
+ヘルパは次のように動きます。
 
-- 提出文字列を **正規化**（大文字小文字の正規化、ハイフン除去）
-- 保存値と **constant-time 比較**
-- normalization と lookup の前に opaque attempt key を消費するため、malformed / 不明な入力も同じ bounded budget を消費します。不一致は `Deps.AuditLogger` を設定していれば `device_code.verification.user_code_brute_force` 監査イベントになります
-- 既定 limiter はプロセスローカルで bounded です。複数 OP インスタンスでは、`Deps.AttemptLimiter` に共有 atomic `AttemptLimiter` を注入してください。read と increment を分けた実装は安全ではありません
-- レコード単位の既存 helper は `devicecodekit.MaxUserCodeStrikes`（既定 5）を適用します。`ApproveUserCode` はストアの遷移後に `Deps.AuditLogger` 経由で `device_code.verification.approved` を発火します
+- 提出された文字列を **正規化** します（大文字小文字の統一、ハイフンの除去）。
+- 保存値と **定数時間で比較** します。
+- 正規化と検索の前に opaque な attempt key の試行枠を消費するので、形式の崩れた入力や存在しない入力も、同じ上限つきの枠を消費します。不一致のたびに、`Deps.AuditLogger` が設定されていれば `device_code.verification.user_code_brute_force` の監査イベントを出します。
+- 組み込みの limiter はプロセス内に閉じていて、保持数に上限があります。OP を複数インスタンスで動かす場合は、`Deps.AttemptLimiter` に共有の atomic な `AttemptLimiter` を渡してください。読み取りと加算を別々に行う実装は安全ではありません。
+- レコード単位のヘルパ（`VerifyUserCode`、`VerifyUserCodeByUserCode`）は、レコードごとの上限 `devicecodekit.MaxUserCodeStrikes`（5 回）をそのまま適用します。超えると、レコードは理由 `user_code_lockout` で Denied になります。
 
-ユーザが打ち間違いではなく **拒否** をクリックした場合は、`devicecodekit.DenyUserCode(ctx, deps, submittedUserCode, devicecodekit.DenyReasonUserDenied)`、または既知の device-code id に対して `devicecodekit.Revoke` を呼んでください。helper は `Deps.AuditLogger` 経由で対応する監査イベントを発火し、手入力の不一致としてはカウントしません。
+ユーザが打ち間違いではなく **拒否** を押した場合は、`devicecodekit.DenyUserCode(ctx, deps, submittedUserCode, devicecodekit.DenyReasonUserDenied)` を呼びます。device-code の id がわかっているなら `devicecodekit.Revoke` でも構いません。どちらも `Deps.AuditLogger` に監査イベントを出し、手入力の不一致としては数えません。
 
 ### 承認後
 
-consent が取れたら、ハンドラは同じ `*devicecodekit.Deps` pointer で `ApproveUserCode` を呼び、レコードを **Approved** に遷移させます:
+ユーザの認証と同意が済んだら、ハンドラは同じ `*devicecodekit.Deps` のポインタで `ApproveUserCode` を呼び、レコードを **Approved** にします。ストアが遷移を受理した後に、`device_code.verification.approved` を記録します。
 
 ```go
 // `deps` は VerifyUserCodeByAttemptKey に渡した retained pointer。
@@ -190,7 +234,7 @@ consent が取れたら、ハンドラは同じ `*devicecodekit.Deps` pointer �
 err := devicecodekit.ApproveUserCode(ctx, deps, submittedUserCode, approvedSubject, time.Now())
 ```
 
-デバイスからの次の `/token` ポーリングが成功します。
+デバイスからの次の `/token` ポーリングは成功します。
 
 ## `/device_authorization` の応答
 
@@ -210,55 +254,64 @@ curl -s -d 'client_id=tv-app&scope=openid profile' \
 }
 ```
 
-デバイスは `user_code` + `verification_uri` を表示します。QR コードを描画できるなら `verification_uri_complete` を encode しましょう — ユーザはコードを打たずに済みます。
+デバイスは `user_code` と `verification_uri` を表示します。QR コードを描画できるなら、`verification_uri_complete` を QR コードにするとユーザがコードを打たずに済みます。
+
+クライアントの `GrantTypes` に `urn:ietf:params:oauth:grant-type:device_code` がないと、このエンドポイントは `400 unauthorized_client` を返します。クライアントの登録済みスコープにない `scope` は `400 invalid_scope` です。`scope` を省略すると、クライアントの登録済みスコープすべてが使われます。
 
 ## RFC 8707 `resource=`
 
-デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。ハンドラは `/auth` / `/token` と同じ検査を適用します:
+デバイスは `/device_authorization` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。エンドポイントは `/auth`、`/token` と同じ規則を適用します。
 
 - 値は絶対 URI でなければなりません（RFC 8707 §2）。相対 URI は `400 invalid_target` で拒否します。
-- 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます — OP が発行する AT の `aud` に乗せられるのは登録済 `Resources` だけです。
-- `resource=` を複数指定すると `400 invalid_target` で拒否されます。発行パイプラインは audience を 1 つだけ受け付けるため、ハンドラは「黙って切り捨てる」入力を受け付けません。
+- 正規化後の値（scheme と host を小文字にし、末尾の `/` を除いたもの）がクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに未登録の resource は `400 invalid_target` で拒否されます。OP が `aud` に入れる値は、登録済みの `Resources` だけです。
+- 空でない `resource=` を複数指定すると `400 invalid_target` で拒否されます。device authorization が持てる audience は 1 つだけで、OP は残りを黙って捨てないためです。
 
-::: warning 未登録 resource は拒否されます
-OP が audience として発行できるのは、クライアントの `Resources` に登録済みの値だけです。組み込み側は device flow で使うリソースサーバ URI を、`resource=` として送る前にクライアントシードまたは dynamic registration のメタデータへ追加してください。
-:::
+デバイスが要求しうるリソースサーバの URI は、あらかじめクライアントの `Resources`（クライアントのシードまたは dynamic registration のメタデータ）に追加しておきます。
 
 ## 送信者制約付きの device record
 
-DPoP または mTLS を使う場合、`/device_authorization` は DPoP 鍵の thumbprint と mTLS 証明書の thumbprint を record に保存します。`/token` では発行前に、record に存在する binding をすべて再検証します。両方を持つ record には、一致する DPoP proof と mTLS 証明書の両方が必要で、片方だけでは redeem できません。proof が無い、または一致しない場合は redemption に失敗します。成功時に発行する token の `cnf` には、OP が再検証したすべての binding を反映します。
+DPoP や mTLS を使う場合、`/device_authorization` は DPoP 鍵の thumbprint と mTLS 証明書の thumbprint をレコードに保存します。`/token` では、トークンを発行する前に、レコードにあるすべての binding を再検証します。両方の binding があるレコードでは、一致する DPoP proof と mTLS 証明書の両方が必要で、片方だけでは引き換えられません。proof がない、または一致しない場合、引き換えは失敗します。成功すると、発行されるトークンの `cnf` には OP が再検証したすべての binding が入ります。送信者制約を必須とするプロファイル（FAPI 2.0）では、どちらもない要求を `/device_authorization` 自体が拒否します。
 
 ## ポーリング応答
 
 | 通信路上の応答 | 意味 |
 |---|---|
 | `400 authorization_pending` | ユーザがまだ承認していない。`interval` 秒後に再ポーリング |
-| `400 slow_down` | ポーリングが速すぎた。RFC 8628 §3.5 に従い、今回以降のポーリング間隔に 5 秒を加える。OP が新しい間隔を原子的に永続化するので、複数レプリカでも適用される。観測値の永続化に失敗した場合は `device_code.poll_observation.failed` を発火し、記録できなかったことを確認できる |
-| `400 access_denied` | ユーザが拒否（または総当たり対策がロックアウト、`devicecodekit.Revoke` が呼ばれた）。ポーリングを停止 |
-| `400 expired_token` | `device_code` が `expires_in` を超えた。ポーリングを停止 |
-| `200 { access_token, ... }` | 承認 — 通常の token 応答として処理 |
+| `400 slow_down` | ポーリングが速すぎた。RFC 8628 §3.5 に従い、今回以降の間隔に 5 秒を加える。OP は新しい間隔を保存するので、どのレプリカでも適用される。ポーリングの記録に失敗した場合は `device_code.poll_observation.failed` を記録するが、ポーリング自体には応答する |
+| `400 access_denied` | ユーザが拒否した、`user_code` の試行制限でレコードがロックされた、`devicecodekit.Revoke` が呼ばれた、または間隔より速いポーリングを続けて poll-abuse の上限でレコードが拒否された。ポーリングを止める |
+| `400 expired_token` | `device_code` が `expires_in` を超えた、未知である、または引き換え済み。ポーリングを止める |
+| `400 invalid_grant` | `device_code` が別のクライアントのもの、またはレコードの DPoP / mTLS binding が欠けている・一致しない |
+| `200 { access_token, ... }` | 承認済み。通常のトークン応答として扱う |
 
-## デバイス登録解除（unenroll）時の連鎖失効
+ポーリングに成功すると、`access_token` が返ります。付与スコープに `openid` を含めば `id_token` も返ります。クライアントが `refresh_token` grant に登録済みで、`WithGrants` に `refresh_token` があり、スコープに `openid`（`op.WithStrictOfflineAccess` を使う場合は `offline_access` も）を含めば `refresh_token` も返ります。引き換えの際に、そのクライアントとユーザの同意の記録（grant）が作られます。このためトークンは introspection や `/userinfo` で subject を解決でき（pairwise のクライアントなら pairwise の値）、同じスコープでの次の `/auth` は同意画面を省略できます。
 
-組み込み側がデバイスの authorization を失効させるとき（ユーザがアカウント設定で「この TV を削除」をクリックなど）は、そのレコードから発行されたアクセストークンも同時に失効すべきです。`devicecodekit.Deps.AccessTokens` を渡しておくと `devicecodekit.Revoke` がその連鎖失効まで実行します:
+## ユーザがデバイスを削除したときの失効
 
-::: details cascade revocation とは
-「親」レコード（ここではデバイス authorization）が失効されたとき、そこから発行された「子」の資格情報も同時に失効させる考え方です。device-code では、`GrantID` がそのデバイスコード id を指すアクセストークンが該当します。連鎖失効が無いと、ユーザが「この TV を削除」を押しても、TV のメモリ上のアクセストークンは TTL 満了まで動き続け、失効が静かに不完全になります。本ライブラリは発行するトークンに `GrantID` を付けているため、ヘルパがこの走査を 1 クエリで回せます。
+ユーザがアカウント設定で「この TV を削除」を押したときは、そのデバイスに発行済みのトークンも同時に使えなくなるべきです。`devicecodekit.Revoke` は、authorization レコードを Denied にしたうえで、そのレコードから発行されたすべての資格情報を失効させます。
+
+::: details 連鎖失効（cascade revocation）とは
+親にあたるレコード（ここでは device authorization）を失効させるとき、そこから発行された資格情報もまとめて失効させることです。これがないと、「この TV を削除」の後も TV にはまだ使えるアクセストークンとリフレッシュトークンが残ります。OP は、device authorization から発行するすべての資格情報を、device code から導出した 1 つの grant 識別子の下に置きます。`Revoke` はその識別子を、渡された各ストアについてたどります。
 :::
 
 ```go
 deps := &devicecodekit.Deps{
-    DeviceCodes:  st.DeviceCodes(),
-    AccessTokens: st.AccessTokens(), // 任意。nil なら連鎖失効をスキップ
-    AuditLogger:  auditLogger, // 任意。revoke 監査レコードを受け取る
+    DeviceCodes:        st.DeviceCodes(),
+    AccessTokens:       st.AccessTokens(),       // JWT アクセストークンのレジストリ / フォールバック
+    GrantRevocations:   st.GrantRevocations(),   // grant の tombstone（JWT の既定の方式）
+    OpaqueAccessTokens: st.OpaqueAccessTokens(), // opaque アクセストークン
+    RefreshTokens:      st.RefreshTokens(),      // リフレッシュトークンのチェーン
+    Grants:             st.Grants(),             // 同意の記録を最後に削除
+    AuditLogger:        auditLogger,
 }
 
 if err := devicecodekit.Revoke(ctx, deps, deviceCodeID, devicecodekit.DenyReasonUserRevokedDevice); err != nil {
-    // log + 運用者に見える失敗として扱う
+    // レコードはすでに Denied。連鎖失効は途中までの場合がある。Revoke は繰り返し呼んでも安全
 }
 ```
 
-`AccessTokens` を渡した場合、`device_code.revoked` 監査イベントには `revoked_access_tokens` が入ります。JWT stateless 構成や組み込み側が別経路で連鎖失効を回す構成では nil のままで構いません。その場合でも authorization 行は拒否状態に遷移し、監査イベントは発火します。
+資格情報を実際に発行しているストアを渡してください。nil のフィールドに対応する失効はスキップされます。`Deps.RevocationStrategy` は `op.WithAccessTokenRevocationStrategy` と揃えます。既定の grant tombstone 方式では、`GrantRevocations` に tombstone を書き込みます（`GrantRevocations` が nil なら `AccessTokens` にフォールバックします）。tombstone が対象のトークンより長く残るよう、`Deps.AccessTokenTTL` は provider のアクセストークン TTL に合わせます。JTI レジストリ方式では `AccessTokens` が必須で、`None` 方式では JWT 用のバックエンドは不要です。選んだ方式の書き込み先がなければ、`Revoke` は `ErrMissingRevocationBackend` を返します。
+
+`Revoke` は、途中のストアが失敗しても残りのストアすべてを試し、すべて成功した後にだけ grant の記録を削除します。失敗があれば、まとめたエラーを返します。`device_code.revoked` の監査イベントには、`cascade_complete` と、試行したストアごとの件数またはフラグが入ります。
 
 ## 動かしてみる
 
@@ -272,5 +325,5 @@ OP を起動し、枠付きの `user_code` パネルと `verification_uri_comple
 
 ## 続きはこちら
 
-- [Device Code 入門](/ja/concepts/device-code) — Netflix スタイルでフローを解説
+- [Device Code 入門](/ja/concepts/device-code) — デバイス側の視点からフローを解説
 - [CIBA の組み込み](/ja/use-cases/ciba) — ユーザが別の利用面にいるが、コード表示は合わない場合

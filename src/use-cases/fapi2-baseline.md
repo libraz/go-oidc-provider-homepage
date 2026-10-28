@@ -1,6 +1,6 @@
 ---
 title: FAPI 2.0 Baseline
-description: Enable this library's FAPI2Baseline profile with PAR, library-required JAR, DPoP-or-mTLS, private_key_jwt, ES256-only ID Tokens, and the 60-minute JAR request-object age bound.
+description: Enable this library's FAPI2Baseline profile with PAR, JAR support, DPoP-or-mTLS, private_key_jwt, ES256-only ID Tokens, a 10-minute access token cap and the 60-minute request-object age bound.
 pageClass: pg-use-cases-fapi2-baseline
 ---
 
@@ -8,9 +8,9 @@ pageClass: pg-use-cases-fapi2-baseline
 
 ## What is FAPI 2.0?
 
-**FAPI** ("Financial-grade API") is a family of OAuth 2.0 security profiles maintained by the OpenID Foundation; OIDC applies when the client needs an authenticated user's identifier. The current FAPI 2.0 Security Profile requires PAR, PKCE with `S256`, sender-constrained tokens (DPoP **or** mTLS), confidential clients, and JWT algorithms from `PS256`, `ES256`, or `EdDSA`. It does not require JAR as part of the Security Profile or restrict ID Token signing to `ES256`. The authorize endpoint is `/auth` under the configured mount prefix, so the default `/oidc` mount serves it at `/oidc/auth`. This library's `profile.FAPI2Baseline` adds JAR, uses `private_key_jwt` for client authentication, and currently signs ID Tokens with `ES256` only.
+**FAPI** ("Financial-grade API") is a family of OAuth 2.0 security profiles maintained by the OpenID Foundation. The current FAPI 2.0 Security Profile requires PAR, PKCE with `S256`, sender-constrained tokens (DPoP **or** mTLS), confidential clients, and JWT algorithms from `PS256`, `ES256`, or `EdDSA`. It does not require JAR or restrict ID Token signing to `ES256`, and it is an OAuth profile: OIDC applies when the client needs an authenticated user's identifier. This library's `profile.FAPI2Baseline` goes further in three places. It switches on JAR support, it uses `private_key_jwt` for client authentication, and it signs ID Tokens with `ES256` only. The authorization endpoint is `/auth` under the mount prefix, so the default `/oidc` mount serves it at `/oidc/auth`.
 
-The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0 (which is still in use). The final FAPI 2.0 document is titled Security Profile; this library calls its preset `profile.FAPI2Baseline`. The library's separate Message Signing preset adds JARM, a DPoP nonce-source constraint, and response-signing behavior; those are library preset behaviors, not requirements of the final Security Profile.
+The bar exists because banking, healthcare, and government deployments need a profile that can be audited against a checklist instead of "did you remember to set every flag?". FAPI 2.0 supersedes FAPI 1.0, which is still in use. The final document is titled Security Profile; this library names its preset `profile.FAPI2Baseline`. The separate `profile.FAPI2MessageSigning` preset adds JARM, a DPoP nonce-source constraint and response signing; those are library preset behaviours, not requirements of the final Security Profile.
 
 This library exposes Baseline as a **single profile switch** (`op.WithProfile(profile.FAPI2Baseline)`) that enables its required checks and refuses to start in any combination that would silently violate the library profile.
 
@@ -26,7 +26,7 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 - [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518) — JOSE algorithms
 :::
 
-> **Sources:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) covers the profile flow. [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) shows `op.FAPITLSConfig()` for the TLS 1.2 FAPI 1.0 RW cipher allow-list and `op.LoadPublicJWKS`, which strips private JWK material before client registration. TLS 1.3 deployments need their own `tls.Config`, because Go does not expose a TLS 1.3 cipher-suite allow-list.
+> **Sources:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) covers the profile flow. [`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) shows `op.FAPITLSConfig()` and `op.LoadPublicJWKS`. `FAPITLSConfig` sets TLS 1.2 as the minimum and holds TLS 1.2 to the FAPI 1.0 RW cipher allow-list (RSA-keyed AEAD suites, so it needs an RSA server certificate); TLS 1.3 is still negotiated when the client offers it, since Go exposes no TLS 1.3 cipher-suite allow-list. `LoadPublicJWKS` strips private JWK material before client registration.
 
 ## What the library's `FAPI2Baseline` enforces
 
@@ -36,6 +36,9 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` required; `plain` rejected. |
 | Sender-constrained tokens (DPoP **or** mTLS) | RFC 9449 / RFC 8705 | `profile.RequiredAnyOf` returns `{DPoP, MTLS}` for this profile, so either one satisfies the requirement; if neither is configured, the constructor auto-selects DPoP as the no-infrastructure default. |
 | JWT algorithms | FAPI 2.0 §5.4.1 | The profile permits `PS256`, `ES256`, and `EdDSA`. This library's `id_token_signing_alg_values_supported` remains `["ES256"]`; `RS256` / `none` / HS* are never advertised. |
+| Short-lived access tokens | Library policy | `op.New` rejects an access token lifetime above 10 minutes (`profile.MaxAccessTokenTTL`). |
+| PAR lifetime | FAPI 2.0 §5.3.2.2 | `op.New` rejects `op.WithPARLifetime` at or above 600 seconds. |
+| Signed request objects | RFC 9101 | `feature.JAR` is auto-enabled, so `request` is accepted at `/par` and `/auth` but not mandatory (`profile.FAPI2MessageSigning` makes it so). When a request object is used, it replaces the unsigned query or form parameters instead of being merged with them. `RS256` is rejected for request objects and client assertions. |
 | `redirect_uri` exact match | Library policy | The library requires a pre-registered URI and compares it byte-for-byte, without wildcards. The final FAPI 2.0 Security Profile instead requires `redirect_uri` in the authenticated PAR request; it does not mandate pre-registration. |
 | Client authentication | FAPI 2.0 §5.3.2.1 | FAPI allows mTLS or `private_key_jwt`. This library dispatches only `private_key_jwt` for token endpoint client authentication; mTLS can satisfy sender constraint, but mTLS client-auth dispatch is not wired. |
 
@@ -43,52 +46,51 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 
 <figure class="fig">
   <div class="fig-head">The library's FAPI2Baseline path, end to end</div>
-  <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 412" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 672" xmlns="http://www.w3.org/2000/svg">
     <title id="fapi2-arch-title">With the library's FAPI2Baseline profile, the RP pushes its authorization request to the pushed-authorization endpoint and receives a request_uri; the browser only ever carries that reference. The token request is authenticated with private_key_jwt and carries a DPoP proof, and the returned access token is DPoP-bound while the library's ID Token is signed with ES256.</title>
-    <line class="fg-life" x1="260" y1="62" x2="260" y2="404"/>
-    <line class="fg-life fg-life--accent" x1="700" y1="62" x2="700" y2="404"/>
-    <rect class="fg-box" x="170" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="260" y="35" text-anchor="middle">RP / client</text>
-    <text class="fg-mxs" x="260" y="49" text-anchor="middle">private_key_jwt + DPoP</text>
-    <rect class="fg-box fg-box--accent" x="600" y="16" width="200" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="700" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="700" y="49" text-anchor="middle">go-oidc-provider</text>
-    <circle class="fg-badge" cx="15" cy="104" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="107" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M260,104 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="480" y="84" text-anchor="middle">POST /par</text>
-    <text class="fg-mxs" x="480" y="97" text-anchor="middle">client_assertion=&lt;private_key_jwt&gt; · code_challenge=S256</text>
-    <circle class="fg-badge" cx="15" cy="140" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="143" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M700,140 H260" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="480" y="134" text-anchor="middle">201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
-    <circle class="fg-badge" cx="15" cy="176" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="179" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M260,176 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="480" y="170" text-anchor="middle">GET /authorize?request_uri=urn:…&amp;client_id</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="212" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="215" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M700,204 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="742" y="208">validate against the profile</text>
-    <text class="fg-mxs" x="742" y="221">library ID Token ES256 · redirect_uri exact match</text>
-    <circle class="fg-badge" cx="15" cy="258" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="261" text-anchor="middle">5</text>
-    <rect class="fg-box fg-box--sub" x="170" y="240" width="620" height="36" rx="6"/>
-    <text class="fg-xs" x="480" y="262" text-anchor="middle">the interaction endpoints obtain an authorization decision</text>
-    <circle class="fg-badge" cx="15" cy="306" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="309" text-anchor="middle">6</text>
-    <path class="fg-edge fg-edge--accent" d="M700,306 H260" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="480" y="300" text-anchor="middle">302 redirect_uri?code=…&amp;state=…</text>
-    <circle class="fg-badge" cx="15" cy="352" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="355" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M260,352 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="480" y="332" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-    <text class="fg-mxs" x="480" y="345" text-anchor="middle">code · code_verifier · client_assertion</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="396" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="399" text-anchor="middle">8</text>
-    <path class="fg-edge fg-edge--accent" d="M700,396 H260" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="480" y="376" text-anchor="middle">200</text>
-    <text class="fg-mxs" x="480" y="389" text-anchor="middle">access_token (DPoP-bound) · id_token (ES256) · refresh_token</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="648"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="648"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">private_key_jwt</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="32" cy="144" r="12"/>
+    <text class="fg-badge-t" x="32" y="149.5" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M192,144 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="110" text-anchor="middle">POST /par</text>
+    <text class="fg-mxs" x="508" y="132" text-anchor="middle">client_assertion · code_challenge=S256</text>
+    <!-- 2 -->
+    <circle class="fg-badge fg-badge--accent" cx="32" cy="200" r="12"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="32" y="205.5" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M824,200 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="508" y="190" text-anchor="middle">201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
+    <!-- 3 -->
+    <path class="fg-edge" d="M192,256 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="508" y="246" text-anchor="middle">GET /auth?request_uri=urn:…&amp;client_id</text>
+    <!-- validate -->
+    <path class="fg-edge fg-edge--accent" d="M824,296 h-40 v24 h40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="768" y="302" text-anchor="end">validate against the profile</text>
+    <text class="fg-mxs" x="768" y="324" text-anchor="end">redirect_uri exact match</text>
+    <text class="fg-mxs" x="768" y="346" text-anchor="end">library ID Token: ES256</text>
+    <!-- interaction -->
+    <rect class="fg-box fg-box--sub" x="232" y="392" width="560" height="48" rx="8"/>
+    <text class="fg-xs" x="248" y="421">the interaction endpoints obtain an authorization decision</text>
+    <!-- code -->
+    <path class="fg-edge fg-edge--accent" d="M824,496 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="508" y="486" text-anchor="middle">302 redirect_uri?code=…&amp;state=…</text>
+    <!-- token -->
+    <path class="fg-edge" d="M192,568 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="534" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <text class="fg-mxs" x="508" y="556" text-anchor="middle">code · code_verifier · client_assertion</text>
+    <!-- tokens -->
+    <path class="fg-edge fg-edge--accent" d="M824,640 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="606" text-anchor="middle">200</text>
+    <text class="fg-mxs" x="508" y="628" text-anchor="middle">access_token (DPoP-bound) · id_token · refresh_token</text>
   </svg>
   <figcaption class="fig-note">Steps 1 and 2 are what the library's profile adds up front. After them the browser carries a reference rather than the request itself, so nothing in the URL bar is worth tampering with.</figcaption>
 </figure>
@@ -99,7 +101,6 @@ A primer with each acronym (PAR, JAR, JARM, DPoP, mTLS, ES256) walked through is
 import (
   "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/feature"
-  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -119,7 +120,6 @@ provider, err := op.New(
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKeys(opKeys.CookieKey),
   op.WithLoginFlow(loginFlow),
-  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithProfile(profile.FAPI2Baseline), // <--- the profile switch
   op.WithFeature(feature.DPoP),
   op.WithStaticClients(op.PrivateKeyJWTClient{
@@ -134,6 +134,8 @@ provider, err := op.New(
 ```
 
 `PrivateKeyJWTClient` is the typed seed for FAPI clients — it forces `token_endpoint_auth_method=private_key_jwt` automatically, so the embedder never has to spell that field out. The companion typed seeds are `op.PublicClient` and `op.ConfidentialClient`; all three implement `op.ClientSeed` and feed `WithStaticClients(seeds ...ClientSeed)`.
+
+The paired RP in the example (`rpkit.NewFAPI2`) pushes the request to `/par` with a `private_key_jwt` assertion and sends a DPoP proof at `/token`, so the whole flow can be driven from a browser at `http://127.0.0.1:9090/`. The default grant set is already `authorization_code` plus `refresh_token`, so the example does not call `op.WithGrants`.
 
 The library's `WithProfile` call:
 

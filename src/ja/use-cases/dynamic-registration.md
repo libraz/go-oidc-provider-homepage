@@ -4,7 +4,7 @@ description: RFC 7591 / RFC 7592 に沿ってクライアントを動的に登�
 pageClass: pg-use-cases-dynamic-registration
 ---
 
-# 使い方 — 動的クライアント登録
+# ユースケース — 動的クライアント登録
 
 ## 動的クライアント登録とは
 
@@ -30,74 +30,66 @@ pageClass: pg-use-cases-dynamic-registration
 ## アーキテクチャ
 
 <figure class="fig">
-  <div class="fig-head">Initial Access Token から自己管理までの流れ</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-dcr-title" viewBox="0 0 960 546" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">initial token から始まり、RP が自分で管理する登録</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dcr-title" viewBox="0 0 960 952" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-dcr-title">運用者が Initial Access Token を発行し、out-of-band で新規 RP に渡します。RP はそれを使って登録し、registration access token を受け取り、以降は自分の登録内容の読み取り・更新・削除に使います。</title>
-    <rect class="fg-group" x="30" y="70" width="916" height="118" rx="8"/>
-    <rect class="fg-group" x="30" y="196" width="916" height="150" rx="8"/>
-    <rect class="fg-group" x="30" y="354" width="916" height="180" rx="8"/>
-    <text class="fg-lbl" x="42" y="88">1 · 運用者が initial access token を渡す</text>
-    <text class="fg-lbl" x="42" y="214">2 · RP が自分を登録する</text>
-    <text class="fg-lbl" x="42" y="372">3 · RP が自分の登録を管理する（RFC 7592）</text>
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="534"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="534"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="534"/>
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">運用者</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">OP を運用する側</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">新規 RP</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">まだ未登録</text>
-    <circle class="fg-badge" cx="15" cy="112" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="115" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,112 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="106" text-anchor="middle">IssueInitialAccessToken(ctx, spec)</text>
-    <circle class="fg-badge" cx="15" cy="144" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="147" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,144 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="138" text-anchor="middle">&lt;iat&gt;</text>
-    <circle class="fg-badge" cx="15" cy="178" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="181" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--muted" d="M150,178 H830" marker-end="url(#fg-am)"/>
-    <text class="fg-xs fg-halo" x="490" y="172" text-anchor="middle">out-of-band で受け渡す — メールでも issue でも、既に信頼している経路で</text>
-    <circle class="fg-badge" cx="15" cy="262" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="265" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M830,262 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="230" text-anchor="middle">POST /register</text>
-    <text class="fg-mxs" x="665" y="244" text-anchor="middle">Authorization: Bearer &lt;iat&gt;</text>
-    <text class="fg-mxs" x="665" y="256" text-anchor="middle">{ redirect_uris, …, client_name }</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="326" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="329" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M500,326 H830" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="665" y="294" text-anchor="middle">201 · { client_id, client_secret?,</text>
-    <text class="fg-mxs" x="665" y="308" text-anchor="middle">registration_access_token,</text>
-    <text class="fg-mxs" x="665" y="320" text-anchor="middle">registration_client_uri, … }</text>
-    <circle class="fg-badge" cx="15" cy="408" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="411" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M830,408 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="390" text-anchor="middle">GET /register/&lt;client_id&gt;</text>
-    <text class="fg-mxs" x="665" y="402" text-anchor="middle">Authorization: Bearer &lt;rat&gt;</text>
-    <circle class="fg-badge" cx="15" cy="438" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="441" text-anchor="middle">7</text>
-    <path class="fg-edge fg-edge--accent" d="M500,438 H830" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="665" y="432" text-anchor="middle">200 · クライアントメタデータ全体</text>
-    <circle class="fg-badge" cx="15" cy="470" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="473" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M830,470 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="464" text-anchor="middle">PUT /register/&lt;client_id&gt; → 200 更新済み</text>
-    <circle class="fg-badge" cx="15" cy="502" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="505" text-anchor="middle">9</text>
-    <path class="fg-edge" d="M830,502 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="496" text-anchor="middle">DELETE /register/&lt;client_id&gt;</text>
-    <circle class="fg-badge" cx="15" cy="530" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="533" text-anchor="middle">10</text>
-    <path class="fg-edge fg-edge--accent" d="M500,530 H830" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="665" y="524" text-anchor="middle">204 · 本文なし</text>
+    <!-- phase bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="240" rx="8"/>
+    <rect class="fg-group" x="32" y="360" width="896" height="200" rx="8"/>
+    <rect class="fg-group" x="32" y="576" width="896" height="352" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">運用者が initial access token を渡す</text>
+    <text class="fg-lbl fg-halo" x="56" y="388">RP が自分を登録する</text>
+    <text class="fg-lbl fg-halo" x="56" y="604">RP が自分の登録を管理する（RFC 7592）</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="928"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="928"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="928"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">運用者</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">OP を運用する側</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">新規 RP</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">まだ未登録</text>
+    <!-- mint -->
+    <path class="fg-edge" d="M192,208 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="174" text-anchor="middle">IssueInitialAccessToken</text>
+    <text class="fg-mxs" x="352" y="196" text-anchor="middle">(ctx, spec)</text>
+    <!-- return iat -->
+    <path class="fg-edge fg-edge--accent" d="M512,264 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="254" text-anchor="middle">&lt;iat&gt;</text>
+    <!-- out of band -->
+    <path class="fg-edge fg-edge--muted" d="M192,320 H824" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="310" text-anchor="middle">out-of-band で渡す — メールやチケットなど、信頼している経路で</text>
+    <!-- register -->
+    <path class="fg-edge" d="M824,464 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="430" text-anchor="middle">POST /register</text>
+    <text class="fg-mxs" x="668" y="452" text-anchor="middle">Bearer &lt;iat&gt; · { metadata }</text>
+    <!-- registered -->
+    <path class="fg-edge fg-edge--accent" d="M512,536 H824" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="668" y="502" text-anchor="middle">201 Created</text>
+    <text class="fg-mxs" x="668" y="524" text-anchor="middle">client_id, &lt;rat&gt;, client_uri</text>
+    <!-- read -->
+    <path class="fg-edge" d="M824,676 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="642" text-anchor="middle">GET /register/&lt;client_id&gt;</text>
+    <text class="fg-mxs" x="668" y="664" text-anchor="middle">Authorization: Bearer &lt;rat&gt;</text>
+    <!-- read ok -->
+    <path class="fg-edge fg-edge--accent" d="M512,732 H824" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="668" y="722" text-anchor="middle">200 · クライアントメタデータ全体</text>
+    <!-- update -->
+    <path class="fg-edge" d="M824,788 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="778" text-anchor="middle">PUT /register/&lt;client_id&gt;</text>
+    <!-- delete -->
+    <path class="fg-edge" d="M824,844 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="834" text-anchor="middle">DELETE /register/&lt;client_id&gt;</text>
+    <!-- deleted -->
+    <path class="fg-edge fg-edge--accent" d="M512,900 H824" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="668" y="890" text-anchor="middle">204 · 本文なし</text>
   </svg>
-  <figcaption class="fig-note">仕様が何も定めていないのは手順 3 だけで、信頼の出どころは実はそこにあります。それ以降はすべて、そのクライアントだけが持つトークンによって 1 クライアントに限定されています。</figcaption>
+  <figcaption class="fig-note">仕様が何も定めていないのは out-of-band の受け渡しだけで、信頼の出どころは実はそこにあります。それ以降はすべて、そのクライアントだけが持つトークンによって 1 クライアントに限定されています。</figcaption>
 </figure>
 
 ## 設定
@@ -126,7 +118,7 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 
 ## オープン登録と既定 scope
 
-`RegistrationOption.Open` を `true` にすると、OP は Initial Access Token なしで `POST /register` を受け付けます — ネットワーク到達できる任意の呼び出し元がクライアントを生成できます。本ライブラリはこの帰結を、**`scope` 省略時は空の scope セットで永続化** することで狭めています。そのクライアントは登録を更新するまで `/authorize` でいかなる scope も要求できません。
+`RegistrationOption.Open` を `true` にすると、OP は Initial Access Token なしで `POST /register` を受け付けます — ネットワーク到達できる任意の呼び出し元がクライアントを生成できます。本ライブラリはこの帰結を、**`scope` 省略時は空の scope セットで永続化** することで狭めています。そのクライアントは登録を更新するまで `/auth` でいかなる scope も要求できません。
 
 ```go
 op.WithDynamicRegistration(op.RegistrationOption{
@@ -159,7 +151,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 
 ## 認証コンテキスト系のクライアントメタデータ
 
-`/authorize` の既定値と発行 `id_token` の `auth_time` を制御するメタデータが 3 つあります。DCR 登録（RFC 7591）でも `op.ClientSeed` の静的シードでも受理され、リクエスト時に OP 側で強制されます。
+`/auth` の既定値と発行 `id_token` の `auth_time` を制御するメタデータが 3 つあります。DCR 登録（RFC 7591）で受理されて `store.Client` に保存されます。静的シードのビルダー（`op.PublicClient` など）にはこれらのフィールドがないため、`/register` 経由か `store.Client` への直接書き込みで設定します。リクエスト時に OP 側で強制されます。
 
 | フィールド | 効果 | 仕様 |
 |---|---|---|
@@ -168,7 +160,7 @@ op.WithDynamicRegistration(op.RegistrationOption{
 | `require_auth_time` | `true` のとき、発行される `id_token` には必ず `auth_time` が乗らなければなりません。OP が元の認証時刻を復元できない場合、値を捏造する代わりに `server_error` でトークン発行を失敗させます。 | OIDC Core 1.0 §2 |
 
 ::: tip なぜ `auth_time` 不在で server_error なのか
-`require_auth_time` の違反は実運用ではめったに起こりません — OP がログインフローを自前で実行している限り `auth_time` は記録されます。捏造（例: `iat` で代替）してしまうと、ステップアップ保証を `auth_time` で監査している RP を気付かれずに壊してしまいます。構築時の拒否によって、欠落の原因が発生した地点で問題が表面化します。
+`require_auth_time` の違反は実運用ではめったに起こりません — OP がログインフローを自前で実行している限り `auth_time` は記録されます。捏造（例: `iat` で代替）してしまうと、ステップアップ保証を `auth_time` で監査している RP を気付かれずに壊してしまいます。発行を失敗させれば、欠落の原因が発生した地点で問題が表面化します。
 :::
 
 ## 譲れないセキュリティの最低ライン
@@ -211,7 +203,7 @@ DCR の対応状況は `full` ではなく `partial` と表記していますが
 
 - `application_type` ごとの `redirect_uris` 形（上のワーニングを参照）。fragment 無し、絶対 URL のみ。
 - `grant_types` と `response_types` を OIDC Core §3 / OIDC Registration §2 の組み合わせ表に対してクロスチェック。整合しない組は `invalid_client_metadata` で拒否し、黙って自動修正することはありません。
-- `jwks` と `jwks_uri` は同時指定不可。URI 系メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`）は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール（絶対 URI、`https`、host 必須、userinfo 不可）は通常通り適用されます。
+- `jwks` と `jwks_uri` は同時指定不可（RFC 7591 §2）で、`private_key_jwt` のクライアントはどちらか一方を必ず指定します。両方を持つ保存済みレコードも、OP はクライアントの鍵を読むあらゆる箇所（request object、`private_key_jwt`、レスポンス暗号化）で拒否します。URI 系メタデータ（`client_uri`、`logo_uri`、`policy_uri`、`tos_uri`、`jwks_uri`、`sector_identifier_uri`、`initiate_login_uri`）は絶対 URI、`https`、fragment 無しを要求。userinfo セグメント(`https://user:pass@host/...`)は拒否します。**例外:** `request_uris` は fragment を許容します。OIDC Core §6.2 が request file の base64url SHA-256 ハッシュを fragment として推奨しており、cache が内容変更を検出できるようにするためです。それ以外の形ルール（絶対 URI、`https`、host 必須、userinfo 不可）は通常通り適用されます。
 - `backchannel_logout_uri` は `https` 必須、fragment / userinfo 不可、host 必須。`backchannel_logout_session_required=true` は、URI が正しく指定されていても `invalid_client_metadata` で拒否します。この OP は `sid` を安全に配送するための RP ごとの session 系譜を保存できないためです。
 - `sector_identifier_uri` は登録時に GET で取得し、応答 JSON 配列に登録する `redirect_uri` がすべて含まれることを検証（OIDC Core §8.1）。取得は 5 秒のタイムアウトと 64 KiB の body サイズ上限で制限し、取得失敗または包含未達はいずれも `invalid_client_metadata`。
 - `subject_type=pairwise` で `sector_identifier_uri` が無い場合、`redirect_uri` の host はすべて同一でなければなりません。
@@ -300,7 +292,7 @@ _ = provider
 _ = err
 ```
 
-従来の `OnClientDeleted` hook も client ID だけを使う cascade 用に残っています。hook のエラーは削除後にログへ記録され、成功した `204` レスポンスは変えません。自前の cleanup は再試行でき、監視できるようにしてください。
+`RegistrationOption.OnClientDeleted` は、同じ hook の client ID だけを受け取る版です。hook のエラーは削除後にログへ記録され、成功した `204` レスポンスは変えません。自前の cleanup は再試行でき、監視できるようにしてください。
 
 ## 採用すべきとき
 

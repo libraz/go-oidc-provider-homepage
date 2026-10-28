@@ -12,30 +12,31 @@ The seam runs between the OAuth records and the end-user records. The library ke
 
 <figure class="fig">
   <div class="fig-head">Protocol records here, people over there</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-byouserstore-title" viewBox="0 0 960 286" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-byouserstore-title" viewBox="0 0 960 352" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-byouserstore-title">The library keeps the OAuth and OIDC records in its own store; your application keeps the end-user rows where they already are. The provider reaches across the boundary through three read calls and nothing else.</title>
-    <text class="fg-lbl fg-accent" x="480" y="18" text-anchor="middle">op.WithUserStore</text>
-    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="480" y1="26" x2="480" y2="270"/>
-    <rect class="fg-box" x="36" y="34" width="404" height="106" rx="8"/>
-    <text class="fg-t2" x="56" y="60">The library owns</text>
-    <text class="fg-mxs" x="56" y="84">clients · codes · refresh tokens · grants</text>
-    <text class="fg-mxs" x="56" y="104">sessions · PAR · IATs · RATs · access tokens</text>
-    <text class="fg-xs" x="56" y="128">everything that only exists because the protocol says so</text>
-    <rect class="fg-box" x="520" y="34" width="404" height="106" rx="8"/>
-    <text class="fg-t2" x="540" y="60">You own</text>
-    <text class="fg-mxs" x="540" y="84">members: member_id · email_address</text>
-    <text class="fg-mxs" x="540" y="104">password_phc · full_name · locale_pref</text>
-    <text class="fg-xs" x="540" y="128">the rows your product already had before any of this</text>
-    <text class="fg-lbl" x="36" y="172">the three calls that cross</text>
-    <rect class="fg-box fg-box--accent" x="36" y="182" width="888" height="34" rx="6"/>
-    <text class="fg-m fg-accent" x="56" y="204">FindBySubject</text>
-    <text class="fg-xs" x="240" y="204">reads the member row behind a subject — the source of the ID token and /userinfo claims</text>
-    <rect class="fg-box fg-box--accent" x="36" y="220" width="888" height="26" rx="6"/>
-    <text class="fg-m fg-accent" x="56" y="238">FindByUsername</text>
-    <text class="fg-xs" x="240" y="238">turns a login identifier into a subject — matched against email_address here</text>
-    <rect class="fg-box fg-box--accent" x="36" y="250" width="888" height="26" rx="6"/>
-    <text class="fg-m fg-accent" x="56" y="268">ReadPasswordHash</text>
-    <text class="fg-xs" x="240" y="268">returns password_phc for op.PrimaryPassword to verify — the hash never leaves your side</text>
+    <!-- library side -->
+    <rect class="fg-box fg-box--accent" x="32" y="24" width="432" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="52">The library owns the protocol records</text>
+    <text class="fg-m" x="48" y="76">clients · codes · grants · sessions</text>
+    <text class="fg-m" x="48" y="100">refresh/access tokens · PAR · IAT · RAT</text>
+    <!-- seam -->
+    <path class="fg-rule fg-rule--dashed fg-rule--strong" d="M480,24 V120"/>
+    <!-- your side -->
+    <rect class="fg-box" x="496" y="24" width="432" height="96" rx="8"/>
+    <text class="fg-t2" x="512" y="52">You own the end-user rows</text>
+    <text class="fg-m" x="512" y="76">members: member_id · email_address</text>
+    <text class="fg-m" x="512" y="100">password_phc · full_name · locale_pref</text>
+    <!-- three reads -->
+    <text class="fg-lbl" x="32" y="168">the three reads that cross</text>
+    <text class="fg-tab fg-accent" x="928" y="168" text-anchor="end">op.WithUserStore</text>
+    <rect class="fg-box fg-box--accent" x="32" y="184" width="896" height="144" rx="8"/>
+    <path class="fg-rule" d="M32,232 H928 M32,280 H928"/>
+    <text class="fg-m fg-accent" x="48" y="214">FindBySubject</text>
+    <text class="fg-s" x="256" y="214">reads a subject's member row — the source of ID token and /userinfo claims</text>
+    <text class="fg-m fg-accent" x="48" y="262">FindByUsername</text>
+    <text class="fg-s" x="256" y="262">turns a login identifier into a subject (matched on email_address here)</text>
+    <text class="fg-m fg-accent" x="48" y="310">ReadPasswordHash</text>
+    <text class="fg-s" x="256" y="310">returns password_phc for op.PrimaryPassword to verify</text>
   </svg>
   <figcaption class="fig-note">All three are reads. The library never writes a member row, never invents one, and never needs your schema to look a particular way — only for those three questions to have answers.</figcaption>
 </figure>
@@ -78,7 +79,11 @@ Your user-store adapter normally implements:
 | `FindByUsername(ctx, username)` | Resolves a login identifier such as email address to the same stable subject. |
 | `ReadPasswordHash(ctx, subject)` | Returns the PHC-encoded password hash for `op.PrimaryPassword`; return `store.ErrNotFound` for unknown or passwordless users. |
 
+Only `FindBySubject` belongs to `store.UserStore`; the other two come from `store.UserPasswordStore`, which the built-in password step needs. A passkey-only deployment implements `store.UserStore` alone.
+
 Column names are irrelevant. In the example, `member_id`, `email_address`, `password_phc`, `full_name`, `locale_pref`, and `tenant_id` are projected onto `store.User.Subject` and `store.User.Claims`.
+
+Pass the same value to `op.WithUserStore` and to `op.PrimaryPassword`. They are wired separately because a step may authenticate against something other than the claim source, but when they differ by accident nothing fails: the login succeeds, resolves a subject from one set of records, and the ID token and `/userinfo` are then built from another. `op.New` logs a warning when the two values differ.
 
 ## Application-owned reauthentication
 
@@ -104,7 +109,7 @@ Use [Public / internal scopes](/use-cases/scopes) when you want to release appli
 
 This pattern replaces only the source of end-user claims. It does not require `storeadapter/composite` because the transactional OAuth cluster stays on one SQL adapter. `WithUserStore` avoids a wrapper that might hide optional capabilities of that adapter.
 
-Use [Hot/cold + Redis](/use-cases/hot-cold-redis) when you want to route multiple substores to different backends, for example durable grants and refresh tokens on SQL, but interactions and consumed JTIs on Redis.
+Use [Hot/cold + Redis](/use-cases/hot-cold-redis) when you want to route multiple substores to different backends, for example durable grants and refresh tokens on SQL, but interactions and sessions on Redis.
 
 ## Run it
 

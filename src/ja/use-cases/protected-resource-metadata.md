@@ -4,7 +4,7 @@ description: OAuth 2.0 Protected Resource Metadata を公開し、resource audie
 pageClass: pg-use-cases-protected-resource-metadata
 ---
 
-# 使い方 — Protected resource メタデータ（RFC 9728）
+# ユースケース — Protected resource メタデータ（RFC 9728）
 
 リソース識別子（API のベース URL）を持つクライアントは、*それをどの認可サーバが保護しているか*、*何を受理するか*、つまり scope、bearer method、応答署名に使う JWKS を、ハードコードせずに知る必要があります。[RFC 9728](https://datatracker.ietf.org/doc/html/rfc9728) はそのための well-known 文書を定義します。OP 自身の `/.well-known/openid-configuration` に対応する、リソースサーバ側の文書です。
 
@@ -14,31 +14,27 @@ pageClass: pg-use-cases-protected-resource-metadata
 
 <figure class="fig">
   <div class="fig-head">リソース識別子から discovery 文書まで</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-prm-title" viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-prm-title" viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-prm-title">リソース識別子しか知らないクライアントが、そのリソースの well-known メタデータを取得し、authorization_servers メンバーを読み、示された issuer を辿って OP 自身の discovery 文書に到達する経路です。</title>
-    <rect class="fg-box" x="36" y="46" width="440" height="66" rx="8"/>
-    <circle class="fg-badge" cx="58" cy="70" r="9"/>
-    <text class="fg-badge-t" x="58" y="73" text-anchor="middle">1</text>
-    <text class="fg-t2" x="80" y="74">クライアントはリソース識別子だけを持っている</text>
-    <text class="fg-mxs" x="56" y="98">https://op.example.com/api</text>
-    <path class="fg-edge" d="M480,79 H514" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="518" y="46" width="406" height="66" rx="8"/>
-    <circle class="fg-badge" cx="540" cy="70" r="9"/>
-    <text class="fg-badge-t" x="540" y="73" text-anchor="middle">2</text>
-    <text class="fg-t2" x="562" y="74">そのリソースのメタデータを取得する</text>
-    <text class="fg-mxs" x="538" y="98">/.well-known/oauth-protected-resource/api</text>
-    <path class="fg-edge" d="M721,116 V138" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="518" y="142" width="406" height="66" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="540" cy="166" r="9"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="540" y="169" text-anchor="middle">3</text>
-    <text class="fg-t2 fg-accent" x="562" y="170">文書が認可サーバーを示す</text>
-    <text class="fg-mxs" x="538" y="194">"authorization_servers": ["https://op.example.com"]</text>
-    <path class="fg-edge fg-edge--accent" d="M514,175 H480" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="36" y="142" width="440" height="66" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="58" cy="166" r="9"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="58" y="169" text-anchor="middle">4</text>
-    <text class="fg-t2 fg-accent" x="80" y="170">その issuer を辿って discovery に到達する</text>
-    <text class="fg-mxs" x="56" y="194">/.well-known/openid-configuration</text>
+    <!-- 1 identifier -->
+    <rect class="fg-box" x="32" y="24" width="428" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="52">クライアントはリソース識別子だけを持つ</text>
+    <text class="fg-mxs" x="48" y="76">https://op.example.com/api</text>
+    <path class="fg-edge" d="M460,60 H500" marker-end="url(#fg-a)"/>
+    <!-- 2 fetch metadata -->
+    <rect class="fg-box" x="500" y="24" width="428" height="72" rx="8"/>
+    <text class="fg-t2" x="516" y="52">そのリソースのメタデータを取得する</text>
+    <text class="fg-mxs" x="516" y="76">/.well-known/oauth-protected-resource/api</text>
+    <path class="fg-edge" d="M714,96 V144" marker-end="url(#fg-a)"/>
+    <!-- 3 names the authorization server -->
+    <rect class="fg-box fg-box--accent" x="500" y="144" width="428" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="516" y="172">文書が認可サーバを示す</text>
+    <text class="fg-mxs" x="516" y="196">"authorization_servers": [issuer]</text>
+    <path class="fg-edge fg-edge--accent" d="M500,180 H460" marker-end="url(#fg-ac)"/>
+    <!-- 4 discovery -->
+    <rect class="fg-box fg-box--accent" x="32" y="144" width="428" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="172">issuer を辿って discovery に到達する</text>
+    <text class="fg-mxs" x="48" y="196">/.well-known/openid-configuration</text>
   </svg>
   <figcaption class="fig-note">ここには事前設定が一つもありません。呼びたい URL さえ分かれば、それを統括する OP に辿り着けます。リソースサーバの隣に issuer を埋め込まずに済むのはこのためです。</figcaption>
 </figure>
@@ -64,10 +60,10 @@ op.New(
   op.WithIssuer("https://op.example.com"),
   /* 必須オプション */
   op.WithProtectedResources(op.ProtectedResource{
-    Resource:             "https://op.example.com/api",
-    ScopesSupported:      []string{"api.read", "api.write"},
+    Resource:               "https://op.example.com/api",
+    ScopesSupported:        []string{"api.read", "api.write"},
     BearerMethodsSupported: []string{"header"},
-    IntrospectionClients: []string{"api-introspector"},
+    IntrospectionClients:   []string{"api-introspector"},
   }),
 )
 ```
@@ -79,7 +75,7 @@ op.New(
 | `BearerMethodsSupported` | `bearer_methods_supported` — `header`、`body`、`query` |
 | `ResourceSigningAlgValuesSupported` | `resource_signing_alg_values_supported` |
 | `JWKSURI` | `jwks_uri` |
-| `ResourceName` | `name` |
+| `ResourceDocumentation` | `resource_documentation` — ドキュメントの URL |
 | `IntrospectionClients` | RFC 9728 フィールドではない。audience 単位の `/introspect` 委譲を設定 |
 
 `Resource` は `op.New` で RFC 8707 の `resource` パラメータと同じように検証され、不正な識別子は起動を拒否します。リソースは最低 1 つ必要で、同じ識別子に正規化される 2 つのリソース — あるいはパスが同じ well-known マウントに衝突するもの — は拒否されます。

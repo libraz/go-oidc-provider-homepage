@@ -51,7 +51,7 @@ The actual names are prefixed `oidc_*` — see the example for the live list. Ca
 | Category | Counters / labels |
 |---|---|
 | Token endpoint | `oidc_token_issued_total{issuer,grant_type,client_id}`, `oidc_tokens_refreshed_total{issuer,client_id}`, refresh / authorization-code replay detections, client-auth failures by method and reason |
-| Authentication | `oidc_login_attempts_total{issuer,factor,result}`; the `factor` label covers primary login and MFA attempts |
+| Authentication | `oidc_login_attempts_total{issuer,factor,result}`; the `factor` label covers primary login and MFA attempts, and `result` is `success` or `failed` |
 | Extension flows | DCR, Device Authorization, Device Code, CIBA, and Token Exchange event counters, labelled by the audit event sub-name |
 | Logout / revocation | back-channel delivery outcomes, session-bearing logout notices with zero eligible RP targets derived from grants (`bcl.no_sessions_for_subject`), token / refresh-chain / grant revocation side-effect failures |
 | Operational signals | introspection authentication errors, DPoP loose-method-case bridge admissions, retired JWKS `kid` presentation |

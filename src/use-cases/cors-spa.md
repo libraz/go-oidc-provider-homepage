@@ -8,41 +8,57 @@ pageClass: pg-use-cases-cors-spa
 
 ## What is a "SPA" and why does it need CORS?
 
-A **Single-Page Application (SPA)** is a JavaScript front-end (React, Vue, Svelte, ...) that runs entirely in the browser and talks to APIs via `fetch()`. Two things make it different from a server-rendered RP:
+A **Single-Page Application (SPA)** is a JavaScript front end (React, Vue, Svelte, ...) that runs in the browser and calls APIs with `fetch()`. Two things set it apart from a server-rendered RP:
 
-1. It **cannot keep a `client_secret`** — anyone can read the JS bundle. So a SPA is a *public client* and uses **PKCE (RFC 7636)** to protect the authorization code in lieu of a secret.
-2. It is typically served from a **different origin** to the OP (`app.example.com` vs `op.example.com`). Browser **CORS** (Fetch spec, "Cross-Origin Resource Sharing") then requires the OP to explicitly allow the SPA's origin on every endpoint the SPA calls from JavaScript.
+1. It **cannot keep a `client_secret`**, because anyone can read the JS bundle. A SPA is therefore a *public client* ([client types](/concepts/client-types)) and uses **PKCE (RFC 7636)** instead of a secret to protect the authorization code.
+2. It is usually served from a **different origin** than the OP (`app.example.com` versus `op.example.com`). The browser's **CORS** rules (Cross-Origin Resource Sharing, from the Fetch standard) then require the OP to allow the SPA's origin explicitly on every endpoint the SPA calls from JavaScript.
 
-Different origins can still be same-site when their hosts share a registrable domain (`app.example.com` and `op.example.com`); that distinction matters because the OP's ceremony cookies are intentionally same-site.
+Two origins can still be *same-site* when their hosts share a registrable domain (`app.example.com` and `op.example.com`). That matters here because the OP's ceremony cookies are same-site only.
 
-This page covers the CORS layer. PKCE itself is covered in [Authorization Code + PKCE](/concepts/authorization-code-pkce).
+This page covers the CORS layer. PKCE is covered in [Authorization Code + PKCE](/concepts/authorization-code-pkce).
 
 <figure class="fig">
   <div class="fig-head">Why a browser asks first</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-cors-title" viewBox="0 0 960 206" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-cors-title" viewBox="0 0 960 568" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-cors-title">The SPA calls fetch. The browser, not the SPA, sends a preflight carrying the page's origin, and the OP answers from its allow-list. Only an approved origin lets the SPA read the response to the real request.</title>
-    <rect class="fg-box" x="36" y="60" width="230" height="76" rx="8"/>
-    <text class="fg-t2" x="56" y="86">The SPA</text>
-    <text class="fg-mxs" x="56" y="108">app.example.com</text>
-    <text class="fg-xs" x="56" y="126">it never sees the preflight</text>
-    <path class="fg-edge" d="M270,84 H346" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="308" y="77" text-anchor="middle">fetch()</text>
-    <rect class="fg-box" x="350" y="46" width="230" height="104" rx="8"/>
-    <text class="fg-t2" x="370" y="72">The browser</text>
-    <text class="fg-xs" x="370" y="94">enforces the same-origin policy</text>
-    <text class="fg-xs" x="370" y="112">and runs the preflight itself</text>
-    <text class="fg-xs fg-warn" x="370" y="136">it decides what the SPA may read</text>
-    <path class="fg-edge" d="M584,76 H676" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="630" y="69" text-anchor="middle">OPTIONS + Origin</text>
-    <path class="fg-edge fg-edge--accent" d="M676,110 H584" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="630" y="128" text-anchor="middle">Allow-Origin</text>
-    <rect class="fg-box fg-box--accent" x="680" y="46" width="244" height="104" rx="8"/>
-    <text class="fg-t2 fg-accent" x="700" y="72">OP</text>
-    <text class="fg-xs" x="700" y="94">checks the origin against its allow-list</text>
-    <text class="fg-xs" x="700" y="112">and answers, or does not</text>
-    <text class="fg-mxs" x="700" y="136">then: the real request · PKCE · Bearer</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="544"/>
+    <line class="fg-life" x1="512" y1="88" x2="512" y2="544"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="544"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">The SPA</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">app.example.com</text>
+    <rect class="fg-box" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="512" y="50" text-anchor="middle">The browser</text>
+    <text class="fg-xs" x="512" y="72" text-anchor="middle">runs the preflight</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- fetch -->
+    <path class="fg-edge" d="M192,136 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="126" text-anchor="middle">fetch()</text>
+    <!-- preflight -->
+    <path class="fg-edge" d="M512,200 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="190" text-anchor="middle">OPTIONS + Origin</text>
+    <!-- allow-list check -->
+    <path class="fg-edge fg-edge--accent" d="M824,232 h-40 v24 h40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="768" y="238" text-anchor="end">check the origin</text>
+    <text class="fg-s" x="768" y="260" text-anchor="end">against the allow-list</text>
+    <!-- answer -->
+    <path class="fg-edge fg-edge--accent" d="M824,320 H512" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="668" y="310" text-anchor="middle">Access-Control-Allow-Origin</text>
+    <!-- real request -->
+    <path class="fg-edge" d="M512,392 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="382" text-anchor="middle">the real request · Bearer</text>
+    <!-- response -->
+    <path class="fg-edge fg-edge--accent" d="M824,456 H512" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="668" y="446" text-anchor="middle">the response</text>
+    <!-- read gate -->
+    <path class="fg-edge fg-edge--muted" d="M512,520 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-s" x="352" y="510" text-anchor="middle">readable only if the origin matched</text>
   </svg>
-  <figcaption class="fig-note">The allow-list is not an authentication check and was never meant to be one. It only decides whether a page at that origin is allowed to read the answer — the token still has to stand on its own.</figcaption>
+  <figcaption class="fig-note">The allow-list is not an authentication check. It only decides whether a page at that origin may read the answer; the token still has to stand on its own.</figcaption>
 </figure>
 
 ::: details Specs referenced on this page
@@ -54,21 +70,32 @@ This page covers the CORS layer. PKCE itself is covered in [Authorization Code +
 :::
 
 ::: details Vocabulary refresher
-- **Origin** — The triple `(scheme, host, port)` — `https://app.example.com:443` and `https://app.example.com:8443` are different origins. The browser's same-origin policy isolates pages from each other; CORS is the controlled escape hatch.
-- **CORS preflight** — For non-trivial XHR (`Authorization` header, custom headers, methods other than GET/HEAD/POST), the browser first sends an `OPTIONS` request asking the server "may this origin make this request?". If the server's headers allow it, the actual request follows. The OP responds to preflight on every CORS-enabled endpoint without bothering your app code.
-- **Public vs confidential client** — A *public* client (a SPA, a mobile app) cannot keep a secret — anyone can read the bundle. A *confidential* client (a backend) can. Public clients must use PKCE on the authorization-code flow because the secret-equivalent (the code) would otherwise be unprotected on the wire.
+- **Origin**: the triple `(scheme, host, port)`. `https://app.example.com:443` and `https://app.example.com:8443` are different origins. The browser's same-origin policy isolates pages from each other, and CORS is the controlled exception.
+- **CORS preflight**: for a non-trivial request (an `Authorization` header, custom headers, a method other than GET, HEAD, or POST), the browser first sends an `OPTIONS` request asking "may this origin make this request?". The real request follows only if the response allows it. The OP answers preflights on every CORS-enabled endpoint, so your application code never sees them.
+- **Public vs confidential client**: a *public* client (a SPA, a mobile app) cannot keep a secret. A *confidential* client (a backend) can. A public client must use PKCE, because without a secret the authorization code would otherwise be unprotected.
 :::
 
 > **Source:** [`examples/14-cors-spa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/14-cors-spa)
 
 ## What the OP allows
 
-Two layers compose:
+The OP applies three CORS profiles, each with its own allow-list:
 
-1. **Static allowlist** — `op.WithCORSOrigins("https://app.example.com", ...)`
-2. **Auto-derived allowlist** — every registered client's `redirect_uris` contributes its origin automatically. So `WithStaticClients` already gets you most of the way.
+| Profile | Endpoints | Allowed origins | Response |
+|---|---|---|---|
+| Public | discovery, `/jwks`, protected resource metadata | any | `Access-Control-Allow-Origin: *`, no credentials |
+| API (strict) | `/token`, `/userinfo`, `/par`, `/introspect`, `/revoke`, `/register`, `/bc-authorize`, `/device_authorization`, grant management | the API allow-list below | the requesting origin echoed, with credentials |
+| Ceremony (strict) | the interaction state route (`/interaction/{uid}` or `LoginMount/state/{uid}`), `/end_session` | issuer origin and `WithCORSOrigins` only | same as API, narrower list |
 
-That union is the API CORS allowlist. It is deliberately **not** the interaction or end-session trust list. Redirect URI origins never authorize a cross-origin POST of login, consent, chooser, or logout state. Ceremony requests accept the issuer origin plus origins explicitly passed to `WithCORSOrigins`, and any ceremony origin must be same-site with the issuer (for example, `login.example.com` alongside `op.example.com`). A genuinely cross-site explicit origin may pass the CORS preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies, including `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` (`SameSite=Strict`), and `__Host-oidc_logout_csrf` (`SameSite=Strict`); interaction and end-session requests then return `404`. Add a SPA origin explicitly only when it is suitable for the API or, for ceremony, satisfies this same-site rule.
+`/auth` has no CORS: it is a browser navigation, not a `fetch()`.
+
+The **API allow-list** is the union of:
+
+1. the issuer's own origin;
+2. the origins passed to `op.WithCORSOrigins("https://app.example.com", ...)`;
+3. the origin of every `redirect_uri` of a client registered through `op.WithStaticClients`. Clients created by dynamic registration or stored in your own client store contribute nothing, so list their origins with `WithCORSOrigins`.
+
+The **ceremony allow-list** is narrower on purpose: the issuer origin plus `WithCORSOrigins` entries, and nothing derived from `redirect_uri`. A page that is on the API list only because some client registered it as a callback must not be able to read another client's CSRF token, account list, or logout confirmation. Each ceremony origin must also be same-site with the issuer (for example `login.example.com` beside `op.example.com`). A genuinely cross-site origin you list explicitly may pass the preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies: `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` and `__Host-oidc_logout_csrf` (`SameSite=Strict`). The interaction and end-session requests then return `404`.
 
 ## Code
 
@@ -76,46 +103,53 @@ That union is the API CORS allowlist. It is deliberately **not** the interaction
 op.New(
   /* required options */
   op.WithCORSOrigins(
-    "https://app.example.com",       // production SPA; same-site with op.example.com here
-    "https://staging.example.com",   // same-site with op.example.com here
-    "http://localhost:5173",          // local dev — API CORS only for a remote issuer
+    "https://admin.example.com",     // an origin that is not a redirect_uri
+    "http://localhost:5173",         // local dev against a remote issuer: API CORS only
   ),
   op.WithStaticClients(op.PublicClient{
     ID:           "spa-client",
-    RedirectURIs: []string{"https://app.example.com/callback"},
+    RedirectURIs: []string{"https://app.example.com/callback"}, // contributes https://app.example.com
     Scopes:       []string{"openid", "profile"},
-    /* ... */
   }),
 )
 ```
 
-Both static and auto-derived origins land on the same internal list; duplicates are de-duped.
+Duplicates across the sources are removed. `WithCORSOrigins` rejects `*`, a missing scheme or host, and anything else that is not an absolute origin when `op.New` runs; there is no "allow everything" setting. Each port is its own origin, so list the Vite (`:5173`) and Next.js (`:3000`) dev origins you use.
 
-## What endpoints get CORS headers
+## Preflight and response headers
 
-| Endpoint | CORS-enabled? | Why |
+The strict profiles behave the same way on both lists:
+
+- A preflight (`OPTIONS` with `Access-Control-Request-Method`) from an allowed origin gets `204`, `Access-Control-Allow-Methods: GET, POST, OPTIONS`, `Access-Control-Allow-Headers` (the requested subset of `Content-Type, Authorization, DPoP, X-CSRF-Token`), and `Access-Control-Max-Age: 600`. The SPA state route additionally allows `DELETE`, which cancels an interaction.
+- A preflight from any other origin, or for a method the endpoint does not allow, gets `403` with no CORS headers.
+- A normal request from an allowed origin gets the requesting origin echoed in `Access-Control-Allow-Origin` (never `*`), `Access-Control-Allow-Credentials: true`, and `Vary: Origin`. From any other origin the response carries no `Access-Control-Allow-*` headers and the browser refuses to expose it.
+- The strict profiles expose `DPoP-Nonce`, `WWW-Authenticate`, and `x-fapi-interaction-id`, so a browser SPA can run the DPoP nonce retry loop and read FAPI interaction IDs without a same-origin proxy.
+- The `Access-Control-Allow-Credentials: true` header lets `fetch(url, { credentials: 'include' })` carry cookies, but it cannot override a cookie's `SameSite` attribute.
+
+The OP emits `op.AuditCORSPreflightAllowed` (`cors.preflight.allowed`) each time it admits a preflight. The preflight is answered with `204` before any inner handler runs, so request-level audit and metrics would otherwise miss cross-origin activity. Treat the event as the baseline for legitimate CORS traffic: a sudden absence on a busy endpoint usually means a `WithCORSOrigins` change broke something, and a burst from an unfamiliar origin is worth checking against your registered `redirect_uri` origins.
+
+## Which endpoints a SPA actually calls
+
+Wrapping an endpoint with strict CORS is an upper bound; what a typical SPA needs is smaller.
+
+| Endpoint | Browser calls it? | CORS needed |
 |---|---|---|
-| `/.well-known/openid-configuration` | ✅ | RPs and SPAs fetch it. |
-| `/jwks` | ✅ | RPs and SPAs verify ID Tokens. |
-| `/userinfo` | ✅ | SPAs call it with a Bearer token. |
-| `/interaction/*` (when SPA driver is in use) | ✅ | The SPA polls these. |
-| `/session/*` | ✅ | SPA reads session state. |
-| `/authorize` | ❌ | Browser navigation, not XHR. |
-| `/token` | ✅ | Browser public clients can redeem `code+PKCE` with `fetch`; backend RPs ignore the CORS headers. |
-| `/par`, `/introspect`, `/revoke`, `/register` | ✅ when mounted | Strict CORS is available for admin consoles and browser-based harnesses, while the protocol auth checks still decide admission. |
-| `/bc-authorize`, `/device_authorization`, `/end_session` | ✅ when mounted | Usually server-side or navigation flows, but wrapped for tooling and explicit browser integrations. |
+| `/auth` | No: full-page redirect | No |
+| `/token` | Yes: the PKCE code exchange via `fetch` | Yes |
+| `/userinfo` | Yes: `Authorization: Bearer` from JS | Yes |
+| `/jwks`, discovery | Yes, if an RP SDK in the browser fetches them | Yes (public profile) |
+| `/introspect` | No: resource server to OP, server to server | Usually no |
+| `/revoke` | Only if the SPA revokes its own tokens | Depends |
+| `/par`, `/bc-authorize`, `/device_authorization` | No: the RP backend or a device starts these | No |
+| `/register` | No, unless you deliberately expose registration to a SPA | Rarely |
+| `/end_session` | No: full-page navigation | No |
+| interaction state route | Yes, when the login UI is a SPA on another origin | Yes (ceremony list) |
 
-::: tip credentialed XHR
-The CORS layer sets `Access-Control-Allow-Credentials: true` so the SPA's `fetch(url, { credentials: 'include' })` can carry the OP's session cookie when the cookie's `SameSite` policy allows it. The browser also requires `Access-Control-Allow-Origin` to be a specific origin (not `*`); the library honors this — every match is the requesting origin verbatim, never a wildcard. `credentials: 'include'` cannot override a `SameSite` restriction.
-:::
+The OP wraps the "no" endpoints anyway, because a wrapper costs little and helps admin consoles and browser-based test harnesses. If you do not list an origin, the strict layer sends no `Access-Control-Allow-*` headers and the browser refuses the response, which is the right outcome.
 
-::: tip Exposed protocol headers
-Strict-CORS responses expose `DPoP-Nonce`, `WWW-Authenticate`, and `x-fapi-interaction-id`. That lets a browser SPA complete the DPoP nonce retry loop and read FAPI interaction IDs without a same-origin proxy.
-:::
+## Public client and PKCE
 
-## Public client + PKCE
-
-A SPA is a **public client** (`token_endpoint_auth_method=none`). It cannot keep a `client_secret`. It uses PKCE to compensate:
+A SPA is a **public client** (`token_endpoint_auth_method=none`). It cannot keep a `client_secret`, so PKCE compensates:
 
 ```go
 op.WithStaticClients(op.PublicClient{
@@ -126,45 +160,15 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`op.PublicClient` is the typed seed for SPAs / native apps; it sets `token_endpoint_auth_method=none` and `public_client=true` automatically so the embedder cannot accidentally ship a SPA with confidential auth. The OP's strict CORS wrapper covers `/token`, so an allowlisted SPA can perform the PKCE code exchange from JavaScript without a separate proxy.
+`op.PublicClient` is the typed seed for SPAs and native apps. It sets `token_endpoint_auth_method=none` and `public_client=true` itself, so a SPA cannot ship with confidential authentication by accident. The strict CORS wrapper covers `/token`, so an allow-listed SPA can do the code exchange from JavaScript without a proxy. The OP accepts only `code_challenge_method=S256`, never `plain`.
 
-The OP refuses `code_challenge_method=plain` for any client — `S256` only — so the SPA's PKCE is real PKCE, not the legacy variant.
+## OP cookies and cross-site
 
-## OP-issued cookies and cross-site
+The OP's session cookie lives on `op.example.com`; the SPA on `app.example.com` cannot read or write it. A SPA on an issuer-sibling host can send it with `credentials: 'include'`, subject to its `SameSite` attribute. A genuinely cross-site origin cannot drive the cookie-bound ceremony at all. The session cookie keeps the user signed in at the OP across `/auth` redirects; the SPA's own session belongs in the SPA's storage.
 
-Even with CORS allowing the origin, the OP's session cookie is set on **op.example.com** — that's where it lives. The SPA on **app.example.com** cannot read or write it directly. A different-origin SPA on an issuer-sibling host can send cookies with `credentials: 'include'`, subject to their `SameSite` attributes; a genuinely cross-site origin cannot drive the cookie-bound ceremony. The session cookie's job is to keep the user signed in at the OP across `/authorize` redirects; the SPA's session lives in the SPA's own cookie or storage.
+## Pitfalls
 
-## Per-endpoint CORS guidance
-
-The previous table records which endpoints the library *wraps* with the strict CORS handler. That is an upper bound — every wrapped endpoint can answer a cross-origin request when the origin is allowlisted. The lower bound — which endpoints actually *need* CORS for a typical deployment — is narrower and depends on who calls the endpoint from a browser.
-
-For API CORS, the allowlist is the union of two sources: explicit entries from `WithCORSOrigins` and the origin of every `redirect_uri` registered through the client store. So registering a SPA client with `RedirectURIs: []string{"https://app.example.com/callback"}` already contributes `https://app.example.com` to API CORS; `WithCORSOrigins` is for the cases where a browser-side origin does not appear as a `redirect_uri` (a separate admin SPA, a status page, a localhost dev origin). The ceremony Origin / Referer check remains issuer-plus-explicit-only, regardless of the redirect URI registry, and an explicit ceremony origin must also be same-site with the issuer. A cross-site entry may pass CORS while still failing the cookie-bound ceremony with `404`.
-
-| Endpoint | Does a browser typically call it? | CORS needed in practice? |
-|---|---|---|
-| `/authorize` | No — full-page redirect, never XHR. | No. |
-| `/token` | Yes for SPAs (PKCE code exchange via `fetch`). | Yes for SPAs; no for backend RPs. |
-| `/userinfo` | Yes for SPAs (`Authorization: Bearer` from JS). | Yes for SPAs. |
-| `/jwks` | Yes — RP SDKs running in the browser fetch it. | Yes (commonly). |
-| `/.well-known/openid-configuration` | Yes — discovery via `fetch` is widespread. | Yes. |
-| `/introspect` | No — RFC 7662 is RS → OP, server-to-server. | Usually no. |
-| `/revoke` | Maybe — only if the SPA itself initiates revocation. | Depends on the SPA design. |
-| `/par` | No — RP backend pushes the auth request. | No. |
-| `/bc-authorize` | No — CIBA initiation is server-side. | No. |
-| `/device_authorization` | No — device-flow start is server-side. | No. |
-| `/register` (Dynamic Client Registration) | No by default. | Only if you intentionally expose DCR to a SPA. |
-| `/end_session` | No — full-page redirect or back-channel. | No. |
-
-The library wraps several "no" endpoints with `strictCORS` anyway because the cost of wrapping is low and it future-proofs against tooling that does call them from JS (admin consoles, browser-based test harnesses). You don't have to add the origin to your allowlist if you don't intend to use them from the browser; without an allowlist match the strict layer responds with no `Access-Control-Allow-*` headers and the browser refuses the response — which is the correct outcome.
-
-::: tip Audit signal for cross-origin traffic
-The strict CORS layer emits `op.AuditCORSPreflightAllowed` (`cors.preflight.allowed`) every time it admits an `OPTIONS` preflight from an allowlisted origin. SOC dashboards that observe only the actual (non-preflight) request can otherwise miss cross-origin activity entirely, because the preflight is short-circuited at 204 before any inner handler runs. Treat this event as a baseline for "legitimate CORS traffic": a sudden absence on a normally-busy endpoint usually points at a misconfigured `WithCORSOrigins` change, while a sudden burst from an unfamiliar origin is worth checking against your `redirect_uris` registry.
-:::
-
-### Pitfalls when wiring the SPA
-
-- **`credentials: 'include'` requires a specific origin, not `*`.** Browsers refuse to send cookies on a CORS request whose response carries `Access-Control-Allow-Origin: *`. The library never returns `*` for an allowlisted origin — the strict layer echoes the requesting `Origin` verbatim and pairs it with `Access-Control-Allow-Credentials: true`. The SPA can therefore call `fetch(url, { credentials: 'include' })` against `/userinfo` and the browser will accept the response. If you see "credentials flag is true, but Access-Control-Allow-Credentials is not 'true'" in DevTools, the request hit the public-CORS profile (`/jwks`, `/.well-known/openid-configuration`) — those endpoints intentionally serve `*` and do not allow credentials, because no browser-side caller needs cookies for them.
-- **Wildcard origins are a configuration mistake, not a knob.** `WithCORSOrigins` validates each entry as a real origin and rejects `*` at boot — there is no "allow everything" setting. Make the list explicit: every SPA host, every staging host, every localhost dev port. Embedders frequently forget the `:5173` port for Vite or the `:3000` port for Next.js dev — the browser treats a different port as a different origin, so each must appear separately.
-- **A redirect URI registered as `http://localhost:5173/callback` contributes `http://localhost:5173` to the allowlist automatically.** You don't need to repeat it in `WithCORSOrigins`. Repeating it is harmless (duplicates are de-duped) but adds noise.
-- **CORS success is not ceremony success.** An explicitly allowlisted cross-site origin may pass preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies, including `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` (`SameSite=Strict`), and `__Host-oidc_logout_csrf` (`SameSite=Strict`). Interaction and end-session requests then return `404`; host ceremony UI on an issuer-sibling, same-site host.
-- **The OP's session cookie lives on the OP's origin, not the SPA's.** CORS allows the SPA to receive a response, but it does not let the SPA read or write `op.example.com` cookies. The SPA's own session state belongs in the SPA's storage — see "OP-issued cookies and cross-site" above.
+- **`credentials: 'include'` needs a specific origin, not `*`.** The strict profiles echo the origin, so `/userinfo` and `/token` work with credentials. Discovery and `/jwks` use the public profile (`*`, no credentials). If DevTools reports "credentials flag is true, but Access-Control-Allow-Credentials is not 'true'", you sent credentials to a public-profile endpoint. Drop `credentials: 'include'` for those two.
+- **A forgotten port.** A different port is a different origin. A static client whose `redirect_uri` is `http://localhost:5173/callback` puts `http://localhost:5173` on the API list automatically; a dev server on another port, or a dynamically registered client, needs its own `WithCORSOrigins` entry.
+- **CORS success is not ceremony success.** An explicit cross-site origin can pass the preflight and still fail the ceremony with `404`; host the login UI on an issuer-sibling, same-site host.
+- **The OP cookie is not the SPA's session.** CORS lets the SPA read a response; it does not give the SPA access to `op.example.com` cookies.

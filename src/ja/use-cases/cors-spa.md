@@ -4,45 +4,61 @@ description: SPA の API 呼び出しに明示的な CORS origin を設定しつ
 pageClass: pg-use-cases-cors-spa
 ---
 
-# 使い方 — SPA 向け CORS
+# ユースケース — SPA 向け CORS
 
 ## SPA とは何か、なぜ CORS が要るのか
 
-**Single-Page Application (SPA)** はブラウザ内だけで動作する JS フロントエンド（React / Vue / Svelte 等）で、API とは `fetch()` で会話します。サーバサイドレンダリングの RP と決定的に違うのは次の 2 点:
+**Single-Page Application（SPA）** は、ブラウザ内で動く JS フロントエンド（React、Vue、Svelte など）で、`fetch()` で API を呼びます。サーバ描画の RP と違うのは次の 2 点です。
 
-1. **`client_secret` を保持できない** — JS バンドルは誰でも読めるため。よって SPA は *public クライアント* として扱われ、`client_secret` の代わりに **PKCE（RFC 7636）** で認可コードを保護します。
-2. OP と **異なる origin** で配信されることが普通（`app.example.com` vs `op.example.com`）。ブラウザの **CORS**（Fetch 仕様 / Cross-Origin Resource Sharing）が、SPA から JS で呼び出すエンドポイントごとに OP 側で origin を明示的に許可することを要求します。
+1. **`client_secret` を保持できません。** JS バンドルは誰でも読めるためです。SPA は *public クライアント*（[クライアントの種類](/ja/concepts/client-types)）として扱われ、secret の代わりに **PKCE（RFC 7636）** で認可コードを守ります。
+2. 多くの場合、OP とは **別の origin** で配信されます（`app.example.com` と `op.example.com`）。ブラウザの **CORS**（Fetch 標準の Cross-Origin Resource Sharing）の規則により、SPA が JavaScript から呼ぶすべてのエンドポイントで、OP が SPA の origin を明示的に許可する必要があります。
 
-異なる origin でも、ホストが同じ registrable domain（`app.example.com` と `op.example.com` など）に属していれば same-site です。この違いは、OP の ceremony cookie が意図的に same-site 制約を持つため重要です。
+origin が違っても、ホストが同じ registrable domain を共有していれば（`app.example.com` と `op.example.com`）、same-site です。OP の ceremony cookie は same-site 限定なので、この違いが重要になります。
 
-本ページは CORS レイヤを扱います。PKCE 自体は [Authorization Code + PKCE](/ja/concepts/authorization-code-pkce) を参照。
+このページは CORS のレイヤを扱います。PKCE は [Authorization Code + PKCE](/ja/concepts/authorization-code-pkce) で説明しています。
 
 <figure class="fig">
   <div class="fig-head">なぜブラウザが先に尋ねるのか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-cors-title" viewBox="0 0 960 206" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-cors-title" viewBox="0 0 960 568" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-cors-title">SPA が fetch を呼ぶと、SPA ではなくブラウザがページのオリジンを載せた preflight を送り、OP が許可リストに照らして応答します。許可されたオリジンの場合にだけ、SPA は本リクエストの応答を読めます。</title>
-    <rect class="fg-box" x="36" y="60" width="230" height="76" rx="8"/>
-    <text class="fg-t2" x="56" y="86">SPA</text>
-    <text class="fg-mxs" x="56" y="108">app.example.com</text>
-    <text class="fg-xs" x="56" y="126">preflight そのものは見えない</text>
-    <path class="fg-edge" d="M270,84 H346" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="308" y="77" text-anchor="middle">fetch()</text>
-    <rect class="fg-box" x="350" y="46" width="230" height="104" rx="8"/>
-    <text class="fg-t2" x="370" y="72">ブラウザ</text>
-    <text class="fg-xs" x="370" y="94">same-origin policy を強制し</text>
-    <text class="fg-xs" x="370" y="112">preflight を自分で送る</text>
-    <text class="fg-xs fg-warn" x="370" y="136">SPA が何を読めるかを決めるのはここ</text>
-    <path class="fg-edge" d="M584,76 H676" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="630" y="69" text-anchor="middle">OPTIONS + Origin</text>
-    <path class="fg-edge fg-edge--accent" d="M676,110 H584" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="630" y="128" text-anchor="middle">Allow-Origin</text>
-    <rect class="fg-box fg-box--accent" x="680" y="46" width="244" height="104" rx="8"/>
-    <text class="fg-t2 fg-accent" x="700" y="72">OP</text>
-    <text class="fg-xs" x="700" y="94">オリジンを許可リストと照合し</text>
-    <text class="fg-xs" x="700" y="112">許可するかどうかを応答する</text>
-    <text class="fg-mxs" x="700" y="136">その後: 本リクエスト · PKCE · Bearer</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="544"/>
+    <line class="fg-life" x1="512" y1="88" x2="512" y2="544"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="544"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">SPA</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">app.example.com</text>
+    <rect class="fg-box" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="512" y="50" text-anchor="middle">ブラウザ</text>
+    <text class="fg-xs" x="512" y="72" text-anchor="middle">preflight を送る</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- fetch -->
+    <path class="fg-edge" d="M192,136 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="126" text-anchor="middle">fetch()</text>
+    <!-- preflight -->
+    <path class="fg-edge" d="M512,200 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="190" text-anchor="middle">OPTIONS + Origin</text>
+    <!-- allow-list check -->
+    <path class="fg-edge fg-edge--accent" d="M824,232 h-40 v24 h40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="768" y="238" text-anchor="end">オリジンを</text>
+    <text class="fg-s" x="768" y="260" text-anchor="end">許可リストと照合</text>
+    <!-- answer -->
+    <path class="fg-edge fg-edge--accent" d="M824,320 H512" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="668" y="310" text-anchor="middle">Access-Control-Allow-Origin</text>
+    <!-- real request -->
+    <path class="fg-edge" d="M512,392 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="382" text-anchor="middle">本リクエスト · Bearer</text>
+    <!-- response -->
+    <path class="fg-edge fg-edge--accent" d="M824,456 H512" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="668" y="446" text-anchor="middle">応答</text>
+    <!-- read gate -->
+    <path class="fg-edge fg-edge--muted" d="M512,520 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-s" x="352" y="510" text-anchor="middle">オリジンが一致した場合のみ読める</text>
   </svg>
-  <figcaption class="fig-note">許可リストは認証の検査ではありませんし、そのつもりで作られてもいません。決めているのは、そのオリジンのページが応答を読んでよいかどうかだけで、トークン自体は単独で成立している必要があります。</figcaption>
+  <figcaption class="fig-note">許可リストは認証の検査ではありません。決めているのは、そのオリジンのページが応答を読んでよいかどうかだけで、トークン自体は単独で成立している必要があります。</figcaption>
 </figure>
 
 ::: details このページで触れる仕様
@@ -54,21 +70,32 @@ pageClass: pg-use-cases-cors-spa
 :::
 
 ::: details 用語の補足
-- **Origin** — `(scheme, host, port)` の 3 要素 — `https://app.example.com:443` と `https://app.example.com:8443` は別 origin です。ブラウザの same-origin policy がページ間を隔離し、CORS は制御された逃げ道です。
-- **CORS preflight** — `Authorization` ヘッダ、カスタムヘッダ、GET/HEAD/POST 以外のメソッドを使う非自明な XHR では、ブラウザは先に `OPTIONS` リクエストを投げて「この origin にこのリクエストを許すか」をサーバに問います。サーバがヘッダで許可すれば本番リクエストが続きます。OP は CORS 有効エンドポイント全てで preflight に応答するので、組み込み側のアプリコードは関与不要です。
-- **Public クライアントと confidential クライアント** — *public* クライアント（SPA、モバイルアプリ）は秘密を保持できません — バンドルは誰でも読めます。*confidential* クライアント（バックエンド）は保持できます。public クライアントは認可コードフローで PKCE 必須 — そうでないと secret 相当（コード）が通信路上で無防備になります。
+- **Origin**: `(scheme, host, port)` の 3 つ組です。`https://app.example.com:443` と `https://app.example.com:8443` は別の origin です。ブラウザの same-origin policy がページ同士を隔離し、CORS はその制御された例外です。
+- **CORS preflight**: `Authorization` ヘッダやカスタムヘッダを付ける、GET・HEAD・POST 以外のメソッドを使うなど、単純でないリクエストの前に、ブラウザが `OPTIONS` リクエストで「この origin にこのリクエストを許すか」とサーバに尋ねることです。応答が許可して初めて、本来のリクエストが送られます。OP は CORS を有効にしたすべてのエンドポイントで preflight に答えるので、アプリケーションのコードには見えません。
+- **public クライアントと confidential クライアント**: *public* クライアント（SPA、モバイルアプリ）は秘密を保持できません。*confidential* クライアント（バックエンド）は保持できます。public クライアントは、秘密がない分、認可コードが無防備になるため、PKCE が必須です。
 :::
 
 > **ソース:** [`examples/14-cors-spa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/14-cors-spa)
 
 ## OP が許可するもの
 
-2 層が合成されます:
+OP は 3 つの CORS プロファイルを使い、それぞれ別の許可リストを持ちます。
 
-1. **静的な許可リスト** — `op.WithCORSOrigins("https://app.example.com", ...)`
-2. **自動導出される許可リスト** — 登録済みクライアントの `redirect_uris` から origin を自動追加。`WithStaticClients` だけで大半は済む。
+| プロファイル | エンドポイント | 許可する origin | 応答 |
+|---|---|---|---|
+| public | discovery、`/jwks`、protected resource metadata | すべて | `Access-Control-Allow-Origin: *`、資格情報なし |
+| API（strict） | `/token`、`/userinfo`、`/par`、`/introspect`、`/revoke`、`/register`、`/bc-authorize`、`/device_authorization`、grant management | 下の API の許可リスト | リクエストの origin をそのまま返し、資格情報を許可 |
+| ceremony（strict） | interaction の状態ルート（`/interaction/{uid}` または `LoginMount/state/{uid}`）、`/end_session` | issuer の origin と `WithCORSOrigins` だけ | API と同じ。許可リストだけが狭い |
 
-この union は API CORS 用の許可リストです。interaction や end-session の trust list とは意図的に別です。redirect URI の origin だけでは、login、consent、chooser、logout state の cross-origin POST 送信元を認可しません。ceremony のリクエストが受け付けるのは issuer origin と `WithCORSOrigins` で明示した origin だけで、ceremony origin は issuer と same-site（例: `op.example.com` と `login.example.com`）でなければなりません。明示された origin が本当に cross-site でも CORS preflight と CORS ヘッダまでは通りますが、ブラウザは `__Host-` ceremony cookie（`__Host-oidc_interaction` は `SameSite=Lax`、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf` は `SameSite=Strict`）を送らないため、interaction と end-session のリクエストは `404` になります。SPA origin は API 用なら明示追加できますが、ceremony 用にする場合はこの same-site 条件を満たしてください。
+`/auth` に CORS はありません。`fetch()` ではなく、ブラウザの画面遷移だからです。
+
+**API の許可リスト**は、次の和集合です。
+
+1. issuer 自身の origin。
+2. `op.WithCORSOrigins("https://app.example.com", ...)` に渡した origin。
+3. `op.WithStaticClients` で登録したクライアントの、すべての `redirect_uri` の origin。動的クライアント登録で作ったクライアントや、自前のクライアントストアにあるクライアントは何も加えないので、その origin は `WithCORSOrigins` に列挙します。
+
+**ceremony の許可リスト**は、意図的に狭くしてあります。issuer の origin と `WithCORSOrigins` の項目だけで、`redirect_uri` から導いた origin は入りません。あるクライアントがコールバックとして登録したというだけで API の許可リストに入ったページが、別のクライアントの CSRF トークン、アカウント一覧、ログアウトの確認を読めてはいけないためです。ceremony の origin は、issuer と same-site でなければなりません（たとえば `op.example.com` と並べた `login.example.com`）。明示的に列挙した、本当に cross-site な origin は、preflight を通過して CORS ヘッダを受け取ることはありますが、ブラウザが `__Host-` の ceremony cookie を送りません。`__Host-oidc_interaction`（`SameSite=Lax`）、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf`（どちらも `SameSite=Strict`）です。その結果、interaction と end-session のリクエストは `404` になります。
 
 ## コード
 
@@ -76,46 +103,53 @@ pageClass: pg-use-cases-cors-spa
 op.New(
   /* 必須オプション */
   op.WithCORSOrigins(
-    "https://app.example.com",       // 本番 SPA; ここでは op.example.com と same-site
-    "https://staging.example.com",   // op.example.com と same-site
-    "http://localhost:5173",          // ローカル開発 — remote issuer では API CORS のみ
+    "https://admin.example.com",     // redirect_uri にならない origin
+    "http://localhost:5173",         // リモートの issuer に対するローカル開発: API の CORS のみ
   ),
   op.WithStaticClients(op.PublicClient{
     ID:           "spa-client",
-    RedirectURIs: []string{"https://app.example.com/callback"},
+    RedirectURIs: []string{"https://app.example.com/callback"}, // https://app.example.com を許可リストに加える
     Scopes:       []string{"openid", "profile"},
-    /* ... */
   }),
 )
 ```
 
-静的 / 自動導出 origin は同じ内部リストに着地、重複は除去されます。
+複数の経路で重複した origin は、まとめられます。`WithCORSOrigins` は、`*`、スキームやホストのないもの、絶対 origin でないものを `op.New` の実行時に拒否します。「すべて許可」という設定は存在しません。ポートが違えば別の origin なので、使っている Vite（`:5173`）や Next.js（`:3000`）の開発用 origin も列挙してください。
 
-## どのエンドポイントに CORS ヘッダが付くか
+## preflight と応答ヘッダ
 
-| Endpoint | CORS 有効？ | 理由 |
+strict の 2 つのプロファイルは、どちらの許可リストでも同じように動作します。
+
+- 許可された origin からの preflight（`Access-Control-Request-Method` を伴う `OPTIONS`）には、`204`、`Access-Control-Allow-Methods: GET, POST, OPTIONS`、`Access-Control-Allow-Headers`（リクエストされたもののうち `Content-Type, Authorization, DPoP, X-CSRF-Token` に含まれるもの）、`Access-Control-Max-Age: 600` を返します。SPA の状態ルートだけは `DELETE`（interaction のキャンセル）も許可します。
+- それ以外の origin からの preflight や、そのエンドポイントが許可しないメソッドの preflight には、CORS ヘッダなしの `403` を返します。
+- 許可された origin からの通常のリクエストには、`Access-Control-Allow-Origin` にリクエストの origin（`*` ではなく）、`Access-Control-Allow-Credentials: true`、`Vary: Origin` を付けます。それ以外の origin への応答には `Access-Control-Allow-*` ヘッダが付かず、ブラウザは応答を公開しません。
+- strict のプロファイルは `DPoP-Nonce`、`WWW-Authenticate`、`x-fapi-interaction-id` を公開します。そのため、ブラウザの SPA が同一 origin のプロキシなしで DPoP の nonce リトライを行い、FAPI の interaction ID を読めます。
+- `Access-Control-Allow-Credentials: true` により、`fetch(url, { credentials: 'include' })` が cookie を送れますが、cookie の `SameSite` 属性を覆すことはできません。
+
+OP は preflight を許可するたびに `op.AuditCORSPreflightAllowed`（`cors.preflight.allowed`）を発行します。preflight は内側のハンドラが動く前に `204` で応答されるため、リクエスト単位の監査やメトリクスだけでは、cross-origin のアクセスを見逃すからです。このイベントは、正当な CORS トラフィックの基準線として使ってください。忙しいエンドポイントで突然なくなったなら、`WithCORSOrigins` の変更が原因であることが多く、見慣れない origin から急に増えたなら、登録済みの `redirect_uri` の origin と照らして確認する価値があります。
+
+## SPA が実際に呼ぶエンドポイント
+
+strict の CORS を付けたエンドポイントは上限です。一般的な SPA が必要とするものは、それより少なくなります。
+
+| エンドポイント | ブラウザが呼ぶか | CORS の要否 |
 |---|---|---|
-| `/.well-known/openid-configuration` | ✅ | RP / SPA が fetch する。 |
-| `/jwks` | ✅ | RP / SPA が ID トークンを検証する。 |
-| `/userinfo` | ✅ | SPA が Bearer トークン付きで呼ぶ。 |
-| `/interaction/*`（SPA driver 使用時） | ✅ | SPA がポーリング。 |
-| `/session/*` | ✅ | SPA がセッション状態を読む。 |
-| `/authorize` | ❌ | ブラウザナビゲーション、XHR ではない。 |
-| `/token` | ✅ | ブラウザの public クライアントが `code+PKCE` を `fetch` で交換できる。backend RP は CORS ヘッダを無視する。 |
-| `/par`、`/introspect`、`/revoke`、`/register` | マウント時 ✅ | admin console やブラウザベースの検証ツール用に厳格な CORS を提供。実際の受理可否は各プロトコルの認証・認可チェックが決める。 |
-| `/bc-authorize`、`/device_authorization`、`/end_session` | マウント時 ✅ | 通常は server-side または navigation flow だが、ツール連携や明示的なブラウザ組み込み向けに対象に含める。 |
+| `/auth` | 呼ばない（ページ遷移） | 不要 |
+| `/token` | 呼ぶ（`fetch` での PKCE のコード交換） | 必要 |
+| `/userinfo` | 呼ぶ（JS から `Authorization: Bearer`） | 必要 |
+| `/jwks`、discovery | ブラウザ上の RP SDK が取得する場合 | 必要（public プロファイル） |
+| `/introspect` | 呼ばない（リソースサーバから OP へのサーバ間） | 通常は不要 |
+| `/revoke` | SPA 自身がトークンを失効させる場合のみ | 設計による |
+| `/par`、`/bc-authorize`、`/device_authorization` | 呼ばない（RP のバックエンドやデバイスが開始） | 不要 |
+| `/register` | 呼ばない。SPA に登録を意図的に公開する場合を除く | まれに必要 |
+| `/end_session` | 呼ばない（ページ遷移） | 不要 |
+| interaction の状態ルート | ログイン UI が別 origin の SPA なら呼ぶ | 必要（ceremony のリスト） |
 
-::: tip credentialed XHR
-CORS 層は `Access-Control-Allow-Credentials: true` を設定し、cookie の `SameSite` 属性が許す場合に、SPA の `fetch(url, { credentials: 'include' })` が OP のセッション cookie を運べるようにします。ブラウザは `Access-Control-Allow-Origin` が特定 origin（`*` ではなく）であることを要求します — ライブラリはこれに従い、マッチした要求 origin をそのまま返します。ワイルドカードは返しません。`credentials: 'include'` で `SameSite` 制約を上書きすることはできません。
-:::
+OP は、「不要」のエンドポイントも CORS で包んでいます。包むコストが小さく、管理コンソールやブラウザ上のテストハーネスで役に立つためです。origin を列挙しなければ、strict の層は `Access-Control-Allow-*` ヘッダを返さず、ブラウザは応答を拒否します。それが正しい結果です。
 
-::: tip 公開されるプロトコルヘッダ
-厳格 CORS の応答では `DPoP-Nonce`、`WWW-Authenticate`、`x-fapi-interaction-id` を `Access-Control-Expose-Headers` に載せます。これにより、ブラウザ SPA は same-origin proxy を挟まずに DPoP nonce retry loop を完了し、FAPI interaction ID も読めます。
-:::
+## public クライアントと PKCE
 
-## Public クライアントと PKCE
-
-SPA は **public クライアント**（`token_endpoint_auth_method=none`）です。`client_secret` を保管できません。代わりに PKCE を使います:
+SPA は **public クライアント**（`token_endpoint_auth_method=none`）です。`client_secret` を保持できないので、PKCE で補います。
 
 ```go
 op.WithStaticClients(op.PublicClient{
@@ -126,45 +160,15 @@ op.WithStaticClients(op.PublicClient{
 })
 ```
 
-`op.PublicClient` は SPA / native アプリ向けの型付きクライアント定義で、`token_endpoint_auth_method=none` と `public_client=true` を自動でセットします。これにより、SPA を confidential 認証で誤ってリリースする事故を構造的に防ぎます。OP の厳格な CORS ラッパは `/token` も覆うので、許可リストに入った SPA は JavaScript から PKCE code exchange を実行できます。
+`op.PublicClient` は、SPA やネイティブアプリ向けの型付きシードです。`token_endpoint_auth_method=none` と `public_client=true` を自動で設定するので、SPA が誤って confidential 認証のまま出荷されることはありません。strict の CORS が `/token` を包んでいるため、許可リストに入った SPA は、プロキシなしで JavaScript からコード交換を行えます。OP が受け付けるのは `code_challenge_method=S256` だけで、`plain` は受け付けません。
 
-OP は全クライアントで `code_challenge_method=plain` を拒否 — `S256` のみ — なので SPA の PKCE は本物の PKCE、レガシー変種ではありません。
+## OP の cookie と cross-site
 
-## OP 発行 cookie とクロスサイト
+OP のセッション cookie は `op.example.com` に置かれ、`app.example.com` の SPA はそれを読み書きできません。issuer の兄弟ホストにある SPA なら、`SameSite` 属性の範囲で `credentials: 'include'` で送れます。本当に cross-site な origin は、cookie に依存する ceremony を動かせません。セッション cookie の役目は、`/auth` のリダイレクトをまたいで OP でのサインイン状態を保つことです。SPA 自身のセッションは、SPA のストレージに置いてください。
 
-CORS で origin を許可しても、OP のセッション cookie は **op.example.com** に設定されます — それがその cookie の保管場所です。**app.example.com** の SPA はそれを直接読み書きできません。issuer と同じ site の sibling host にある別 origin の SPA なら、`credentials: 'include'` で cookie を送れます（ただし `SameSite` 属性の範囲内に限ります）。本当に cross-site の origin からは cookie に束縛された ceremony を動かせません。OP のセッション cookie の役割は `/authorize` リダイレクトを跨いでユーザを OP にログインさせ続けることです。SPA のセッションは SPA 自身の cookie / storage に保管されます。
+## 落とし穴
 
-## エンドポイント別の CORS の効き方
-
-直前の表は、ライブラリが厳格な CORS ハンドラで *ラップ* しているエンドポイントの一覧です。これは上限です — ラップされたエンドポイントは origin が許可リストにあれば cross-origin リクエストに応答できる、という意味でしかありません。下限 — つまり典型的な配備で *実際に CORS が要る* エンドポイントは、もっと狭く、ブラウザから誰がそのエンドポイントを呼ぶかで決まります。
-
-API CORS の許可リストは 2 つの集合の和です。`WithCORSOrigins` で明示した origin と、クライアントストアに登録された全 `redirect_uri` の origin です。SPA クライアントを `RedirectURIs: []string{"https://app.example.com/callback"}` で登録すれば、`https://app.example.com` は API CORS に自動で入ります。`WithCORSOrigins` は、`redirect_uri` として登場しないブラウザ側 origin（別の管理用 SPA、ステータスページ、localhost 開発 origin など）のためにあります。Origin / Referer ceremony check は redirect URI registry を参照せず、issuer origin + 明示 origin のままです。また、ceremony に使う明示 origin は issuer と same-site でなければなりません。cross-site の entry は CORS を通過しても、cookie に束縛された ceremony では `404` になります。
-
-| Endpoint | ブラウザから呼ぶか? | 実運用で CORS が必要か? |
-|---|---|---|
-| `/authorize` | 呼ばない — フルページリダイレクトであって XHR ではない。 | 不要。 |
-| `/token` | SPA は呼ぶ（`fetch` で PKCE のコード交換）。 | SPA では必要、サーバサイドの RP では不要。 |
-| `/userinfo` | SPA は呼ぶ（JS から `Authorization: Bearer`）。 | SPA では必要。 |
-| `/jwks` | 呼ぶ — ブラウザで動く RP SDK がフェッチ。 | 必要（よくある）。 |
-| `/.well-known/openid-configuration` | 呼ぶ — `fetch` での discovery 取得は広く行われる。 | 必要。 |
-| `/introspect` | 呼ばない — RFC 7662 は RS → OP のサーバ間通信。 | 通常不要。 |
-| `/revoke` | 場合による — SPA 自身が失効を起動する設計のときのみ。 | SPA の設計次第。 |
-| `/par` | 呼ばない — authorize 要求は RP バックエンドが push。 | 不要。 |
-| `/bc-authorize` | 呼ばない — CIBA の起動はサーバサイド。 | 不要。 |
-| `/device_authorization` | 呼ばない — デバイスフローの起動はサーバサイド。 | 不要。 |
-| `/register`（Dynamic Client Registration） | 既定では呼ばない。 | DCR を意図的に SPA に開放する場合のみ。 |
-| `/end_session` | 呼ばない — フルページリダイレクトかバックチャネル。 | 不要。 |
-
-ライブラリは「不要」側のいくつかのエンドポイントも `strictCORS` でラップしています。ラップのコストが小さく、JS から呼ぶ可能性のあるツール（管理コンソール、ブラウザベースのテストハーネス）に対する将来耐性を確保したいためです。ブラウザから使う予定がないなら、それらの origin を許可リストに追加する必要はありません。許可リストにマッチしない場合、厳格な層は `Access-Control-Allow-*` ヘッダを 1 つも返さず、ブラウザはレスポンスを拒否します — これが正しい挙動です。
-
-::: tip cross-origin トラフィックの監査シグナル
-厳格な CORS 層は、許可リストに載った origin から `OPTIONS` preflight を受理するたびに `op.AuditCORSPreflightAllowed`（`cors.preflight.allowed`）を発火します。ダッシュボードが実リクエスト（preflight ではない方）だけを観測している場合、cross-origin の活動を完全に見落とすことがあります — preflight は 204 で短絡され、内側のハンドラに到達しないためです。このイベントを「正規 CORS トラフィック」のベースラインとして扱ってください。普段は活発なエンドポイントで突然このイベントが消えたら `WithCORSOrigins` の設定変更ミスを疑う合図、見覚えのない origin から急増したら `redirect_uris` レジストリと突き合わせる合図です。
-:::
-
-### SPA を組み込む際の落とし穴
-
-- **`credentials: 'include'` には `*` ではなく特定の origin が必要。** ブラウザは `Access-Control-Allow-Origin: *` を返すレスポンスに対して cookie を送らない仕様です。本ライブラリは許可リストにマッチした origin に対しては `*` を返さず、厳格な層は要求された `Origin` をそのままエコーし、`Access-Control-Allow-Credentials: true` と組み合わせて返します。SPA は `fetch(url, { credentials: 'include' })` で `/userinfo` を呼べ、ブラウザはレスポンスを受け入れます。DevTools で「credentials flag is true, but Access-Control-Allow-Credentials is not 'true'」と出た場合は、リクエストが public CORS プロファイル（`/jwks`、`/.well-known/openid-configuration`）に当たっています — これらのエンドポイントは意図的に `*` を返し、credentials を許可しません（cookie が要るブラウザ側呼び出し元が無いため）。
-- **ワイルドカード origin は設定ミスであって、選択肢ではない。** `WithCORSOrigins` は各 entry を実 origin として検証し、起動時に `*` を拒否します — 「全部許可」設定はそもそも存在しません。許可リストは明示的に組み立ててください。本番 SPA、ステージング、localhost の各開発ポート全部です。組み込み側はしばしば Vite の `:5173` や Next.js dev の `:3000` を忘れます — ブラウザはポートが違えば別 origin として扱うので、ポートごとに個別 entry が必要です。
-- **`http://localhost:5173/callback` を redirect URI として登録すると `http://localhost:5173` は自動で許可リストに載る。** `WithCORSOrigins` で重ねて指定する必要はありません。重複しても無害（重複除去されます）ですが、設定がノイジーになるだけです。
-- **CORS が成功しても ceremony が成功するとは限らない。** 明示的に許可した cross-site origin は preflight と CORS ヘッダまでは通りますが、ブラウザは `__Host-` ceremony cookie（`__Host-oidc_interaction` は `SameSite=Lax`、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf` は `SameSite=Strict`）を送らないため、interaction と end-session のリクエストは `404` になります。ceremony UI は issuer と同じ site の sibling host に配置してください。
-- **OP のセッション cookie は OP の origin にのみ存在し、SPA の origin には無い。** CORS は SPA がレスポンスを受け取ることは許可しますが、SPA が `op.example.com` の cookie を読み書きできるようにするわけではありません。SPA 自身のセッション状態は SPA 側のストレージに保管します — 「OP 発行 cookie とクロスサイト」節を参照。
+- **`credentials: 'include'` には `*` ではなく具体的な origin が必要です。** strict のプロファイルは origin をそのまま返すので、`/userinfo` と `/token` は資格情報付きでも動きます。discovery と `/jwks` は public プロファイル（`*`、資格情報なし）です。DevTools に「credentials flag is true, but Access-Control-Allow-Credentials is not 'true'」と出たら、public プロファイルのエンドポイントに資格情報を付けて送っています。この 2 つには `credentials: 'include'` を付けないでください。
+- **ポートの書き忘れ。** ポートが違えば別の origin です。`redirect_uri` が `http://localhost:5173/callback` の静的クライアントは、`http://localhost:5173` を自動で API の許可リストに加えます。別のポートの開発サーバや、動的に登録したクライアントには、`WithCORSOrigins` の項目が別途必要です。
+- **CORS が通っても ceremony が通るとは限りません。** 明示した cross-site の origin が preflight を通過しても、ceremony は `404` で失敗することがあります。ログイン UI は、issuer の兄弟で same-site のホストに置いてください。
+- **OP の cookie は SPA のセッションではありません。** CORS で SPA が応答を読めるようになるだけで、`op.example.com` の cookie に SPA がアクセスできるようにはなりません。

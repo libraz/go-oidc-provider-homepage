@@ -19,32 +19,38 @@ This is most useful for two cases:
 The two mechanisms differ in where their output lands. In the authorization code flow, the standard `profile`, `email`, `address`, and `phone` scopes request claims from `/userinfo`; a `claims` member requests only the claims it names, at the destination it specifies. In an ID Token-only response with no access token, scope-derived claims instead appear in the ID Token.
 
 <figure class="fig">
-  <div class="fig-head">Where each request lands</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 258" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">Each request lands in one place</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-claims-title" viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-claims-title">In the authorization code flow, the id_token member requests claims in the ID Token; the userinfo member and standard profile scopes request claims from UserInfo.</title>
-    <text class="fg-lbl" x="40" y="26">what you ask with</text>
-    <text class="fg-lbl" x="644" y="26">where it comes out</text>
-    <rect class="fg-box" x="36" y="38" width="330" height="52" rx="6"/>
-    <text class="fg-mxs" x="54" y="60">claims["id_token"]</text>
-    <text class="fg-xs" x="54" y="78">exactly the claims it names</text>
-    <rect class="fg-box fg-box--accent" x="36" y="102" width="330" height="52" rx="6"/>
-    <text class="fg-mxs fg-accent" x="54" y="124">scope</text>
-    <text class="fg-xs" x="54" y="142">the whole bundle OIDC Core §5.4 defines</text>
-    <rect class="fg-box" x="36" y="166" width="330" height="52" rx="6"/>
-    <text class="fg-mxs" x="54" y="188">claims["userinfo"]</text>
-    <text class="fg-xs" x="54" y="206">exactly the claims it names</text>
-    <path class="fg-edge fg-edge--thin" d="M370,64 H600" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M370,124 H470 V192 H600" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--thin" d="M370,192 H600" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="604" y="38" width="320" height="52" rx="6"/>
-    <text class="fg-mxs" x="622" y="60">the ID token</text>
-    <text class="fg-xs" x="622" y="78">signed into the JWT, read by the RP</text>
-    <rect class="fg-box" x="604" y="166" width="320" height="52" rx="6"/>
-    <text class="fg-mxs" x="622" y="188">GET /userinfo</text>
-    <text class="fg-xs" x="622" y="206">returned in the response</text>
-    <text class="fg-xs" x="36" y="246">the two members are separate requests — naming a claim under one does not put it in the other</text>
+    <text class="fg-lbl" x="32" y="36">what you ask with</text>
+    <text class="fg-lbl" x="568" y="36">where it comes out</text>
+    <!-- claims["id_token"] -->
+    <rect class="fg-box" x="32" y="56" width="376" height="72" rx="8"/>
+    <text class="fg-m" x="48" y="84">claims["id_token"]</text>
+    <text class="fg-s" x="48" y="108">exactly the claims it names</text>
+    <!-- claims["userinfo"] -->
+    <rect class="fg-box" x="32" y="160" width="376" height="72" rx="8"/>
+    <text class="fg-m" x="48" y="188">claims["userinfo"]</text>
+    <text class="fg-s" x="48" y="212">exactly the claims it names</text>
+    <!-- scope -->
+    <rect class="fg-box fg-box--accent" x="32" y="264" width="376" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="292">scope</text>
+    <text class="fg-s" x="48" y="316">the whole bundle OIDC Core §5.4 defines</text>
+    <!-- edges -->
+    <path class="fg-edge" d="M408,92 H568" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M408,196 H568" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--accent" d="M408,300 H568" marker-end="url(#fg-ac)"/>
+    <!-- ID token -->
+    <rect class="fg-box" x="568" y="56" width="360" height="72" rx="8"/>
+    <text class="fg-t2" x="584" y="84">The ID token</text>
+    <text class="fg-s" x="584" y="108">signed into the JWT, read by the RP</text>
+    <!-- UserInfo -->
+    <rect class="fg-box" x="568" y="160" width="360" height="176" rx="8"/>
+    <text class="fg-t2" x="584" y="188">UserInfo</text>
+    <text class="fg-m" x="584" y="212">GET /userinfo</text>
+    <text class="fg-s" x="584" y="236">returned in the response</text>
   </svg>
-  <figcaption class="fig-note">This diagram shows the authorization code flow. A claim requested only under <code>claims["userinfo"]</code> is not requested for the ID Token.</figcaption>
+  <figcaption class="fig-note">This diagram shows the authorization code flow. A claim requested only under <code>claims["userinfo"]</code> is not requested for the ID Token; the two members are separate requests.</figcaption>
 </figure>
 
 `essential` does not change that routing. For ordinary claims it signals importance to the OP's authorization experience but does not require an error when the claim is unavailable. An essential `acr` request with a required value has special matching rules and can trigger re-authentication.
@@ -68,23 +74,24 @@ The two mechanisms differ in where their output lands. In the authorization code
 ```go
 op.New(
   /* required options */
+  op.WithClaimsParameterSupported(true), // the default; shown for clarity
   op.WithClaimsSupported(
-    "sub", "iss", "aud", "exp", "iat",
+    "sub", "iss", "aud", "exp", "iat", "auth_time", "nonce",
+    "name", "given_name", "family_name", "preferred_username",
     "email", "email_verified",
-    "name", "given_name", "family_name",
-    "locale", "zoneinfo",
+    "locale",
   ),
 )
 ```
 
-`claims_parameter_supported` defaults to `true`. Pass `op.WithClaimsParameterSupported(false)` to remove the advertisement and ignore valid `claims` payloads. Scope-derived claims continue to work; malformed JSON is still rejected at the request boundary.
+`claims_parameter_supported` defaults to `true`. Pass `op.WithClaimsParameterSupported(false)` to remove the advertisement and ignore valid `claims` payloads. Scope-derived claims continue to work; malformed JSON is still rejected at the request boundary. `WithClaimsSupported` only fills the discovery `claims_supported` list (omitted when unset); it does not restrict which claims the OP can release.
 
 The discovery document then advertises:
 
 ```json
 {
   "claims_parameter_supported": true,
-  "claims_supported": ["sub", "iss", "aud", "exp", "iat", "email", "email_verified", "name", "given_name", "family_name", "locale", "zoneinfo"]
+  "claims_supported": ["sub", "iss", "aud", "exp", "iat", "auth_time", "nonce", "name", "given_name", "family_name", "preferred_username", "email", "email_verified", "locale"]
 }
 ```
 
@@ -151,11 +158,18 @@ When [JAR](/use-cases/fapi2-baseline) is enabled, the `claims` JSON goes inside 
 
 The library parses both shapes — query parameter and JAR-embedded — through the same merge path.
 
-## Silent authorization and an existing projection
+## Each authorization keeps its own request
 
-When a returning subject is authorised silently (`prompt=none`) against an existing grant, a `claims` parameter on that request updates the projection stored on the grant before the new authorization code is issued. The subsequent ID Token and UserInfo response therefore reflect the claims requested by the silent authorization, even when the earlier grant carried a different projection. If the request omits `claims`, the existing projection is preserved; omission means "leave it as agreed", not "erase it".
+The `claims` request belongs to the authorization that carried it. The authorization code records it, and the refresh tokens and access tokens descended from that code keep it: a JWT access token carries the `userinfo` member in a private `userinfo_claims` claim (`{}` when the request named none), and `/userinfo` releases claims from it. Resource servers should ignore the claim; the name is reserved, so a custom grant cannot set it.
 
-When claims support is disabled, the OP silently suppresses requested-claim projection from existing grants. That applies to both ID Tokens and UserInfo, including tokens descended from refresh rotation; claims released by scopes are unaffected, and the grant is not rewritten, re-prompted, or failed. Re-enabling the option restores projection for grants that still carry their validated request.
+Two consequences follow for a user who authorizes the same client twice:
+
+- Tokens from the first authorization keep releasing exactly what the first request asked for. A later authorization that asks for more claims, or fewer, does not change them.
+- An authorization served silently (`prompt=none`, or a cached grant that covers the request) without a `claims` parameter releases only the scope-derived claims. It does not inherit a `claims` request from an earlier authorization on the same grant. Send `claims` again on each authorization that needs it.
+
+A refresh rotation carries the request of the token it replaces. A bring-your-own store that does not persist the per-authorization fields (see `AuthorizationRecorded` on `store.AuthorizationCode`, `store.RefreshToken` and `store.OpaqueAccessToken`) falls back to the request last stored on the grant.
+
+When claims support is disabled, the OP stops releasing requested claims for every token, including ones issued while it was on and refresh chains descended from them. This applies to both ID Tokens and UserInfo; claims released by scopes are unaffected, and nothing is rewritten, re-prompted, or failed. The recorded requests are kept, so re-enabling the option restores the projection.
 
 ## Authorization Details (RFC 9396)
 

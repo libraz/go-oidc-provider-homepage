@@ -4,65 +4,62 @@ description: CIBA の poll 方式を有効化 — /bc-authorize、検証済み s
 pageClass: pg-use-cases-ciba
 ---
 
-# 使い方 — CIBA（Client-Initiated Backchannel Authentication）
+# ユースケース — CIBA（Client-Initiated Backchannel Authentication）
 
-CIBA の概念的背景（何で、device flow とどう違い、なぜ `binding_message` が重要か）は [CIBA 入門](/ja/concepts/ciba) を先に読んでください。このページは組み込み手順を扱います。
+CIBA は、クライアントがすでに誰だかわかっているユーザ（レジ係の端末、コールセンターのコンソールなど）について認証を開始し、ユーザ本人は自分のデバイス（多くはスマホアプリ）で承認する仕組みです。device flow との違いや、`binding_message` が重要な理由といった概念は、先に [CIBA 入門](/ja/concepts/ciba) を読んでください。このページは組み込み手順を扱います。
 
 <figure class="fig">
-  <div class="fig-head">3 者の関係と、あいだにあるもの</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-ciba-title" viewBox="0 0 960 262" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">承認は端末ではなく、ユーザのスマホで行う</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-ciba-title" viewBox="0 0 960 448" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-ciba-title">利用デバイスが OP に認可の開始を依頼し、組み込み側の通知サービスが登録済みのスマホへ届け、ユーザがそこで承認し、利用デバイスは判定が出るまでトークンエンドポイントを poll します。</title>
-    <rect class="fg-box" x="36" y="84" width="220" height="80" rx="8"/>
-    <text class="fg-t2" x="146" y="114" text-anchor="middle">利用デバイス</text>
-    <text class="fg-xs" x="146" y="136" text-anchor="middle">POS · 共用端末</text>
-    <text class="fg-xs" x="146" y="152" text-anchor="middle">ユーザが信頼できる画面が無い</text>
-    <rect class="fg-box fg-box--accent" x="320" y="54" width="320" height="140" rx="8"/>
-    <text class="fg-t fg-accent" x="480" y="82" text-anchor="middle">OP</text>
-    <line class="fg-rule" x1="340" y1="94" x2="620" y2="94"/>
-    <text class="fg-mxs" x="340" y="120">/bc-authorize</text>
-    <text class="fg-xs" x="470" y="120">リクエストを開始する</text>
-    <text class="fg-mxs" x="340" y="146">CIBARequestStore</text>
-    <text class="fg-xs" x="490" y="146">判定が出るまで保持する</text>
-    <text class="fg-mxs" x="340" y="172">/token</text>
-    <text class="fg-xs" x="470" y="172">poll に応答する</text>
-    <rect class="fg-box" x="704" y="84" width="220" height="80" rx="8"/>
-    <text class="fg-t2" x="814" y="114" text-anchor="middle">認証デバイス</text>
-    <text class="fg-xs" x="814" y="136" text-anchor="middle">ユーザのスマホアプリ</text>
-    <text class="fg-xs" x="814" y="152" text-anchor="middle">事前に登録済み</text>
-    <path class="fg-edge" d="M260,104 H316" marker-end="url(#fg-a)"/>
-    <circle class="fg-badge" cx="288" cy="90" r="8.5"/>
-    <text class="fg-badge-t" x="288" y="93" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M644,104 H700" marker-end="url(#fg-a)"/>
-    <circle class="fg-badge" cx="672" cy="90" r="8.5"/>
-    <text class="fg-badge-t" x="672" y="93" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M700,144 H648" marker-end="url(#fg-a)"/>
-    <circle class="fg-badge" cx="672" cy="158" r="8.5"/>
-    <text class="fg-badge-t" x="672" y="161" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--muted" d="M260,144 H316" marker-end="url(#fg-am)"/>
-    <circle class="fg-badge" cx="288" cy="158" r="8.5"/>
-    <text class="fg-badge-t" x="288" y="161" text-anchor="middle">4</text>
-    <text class="fg-xs" x="36" y="216">1 · 端末が OP に認可の開始を依頼する</text>
-    <text class="fg-xs" x="36" y="234">2 · 組み込み側の通知サービスが登録済みのスマホへ届ける</text>
-    <text class="fg-xs" x="500" y="216">3 · ユーザが別チャネルで承認または拒否する</text>
-    <text class="fg-xs" x="500" y="234">4 · 端末は判定が出るまで /token を poll する</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="424"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="424"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="424"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">利用デバイス</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">POS · 共用端末</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">CIBARequestStore</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">認証デバイス</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">ユーザのスマホアプリ</text>
+    <!-- terminal asks the OP to start -->
+    <path class="fg-edge" d="M192,144 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="134" text-anchor="middle">POST /bc-authorize</text>
+    <!-- your notification service reaches the phone -->
+    <path class="fg-edge fg-edge--muted" d="M512,208 H824" marker-end="url(#fg-am)"/>
+    <text class="fg-s" x="668" y="198" text-anchor="middle">組み込み側の通知サービス</text>
+    <!-- user approves or denies out of band -->
+    <path class="fg-edge" d="M824,272 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="262" text-anchor="middle">ユーザが承認または拒否</text>
+    <!-- terminal polls until decided -->
+    <path class="fg-edge" d="M192,352 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="318" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="352" y="340" text-anchor="middle">判定まで繰り返す</text>
+    <!-- tokens once approved -->
+    <path class="fg-edge fg-edge--accent" d="M512,424 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="352" y="414" text-anchor="middle">承認後にトークンを返す</text>
   </svg>
-  <figcaption class="fig-note">用意が必要なのは手順 2 です。リクエストの保持と poll への応答は本ライブラリが担いますが、そのスマホに通知を届けるのは組み込み側の通知サービスの仕事で、OP の仕事ではありません。</figcaption>
+  <figcaption class="fig-note">用意が必要なのは通知を届ける部分です。リクエストの保持と poll への応答は本ライブラリが担いますが、そのスマホに通知を届けるのは組み込み側の通知サービスの仕事で、OP の仕事ではありません。</figcaption>
 </figure>
 
 ::: details 実装されている poll 配信
-CIBA は poll、ping、push の 3 配信モードを定義していますが、本ライブラリが実装するのは **poll** だけです。利用デバイスが応答を受け取るまで `/token` を繰り返しポーリングします。discovery も `poll` だけを広告するため、クライアントは未実装のモードを交渉できません。
+CIBA は poll、ping、push の 3 つの配信モードを定義していますが、本ライブラリが実装するのは **poll** だけです。利用デバイスは、応答が得られるまで `/token` を繰り返し呼び出します。discovery も `poll` だけを広告するので、クライアントが未実装のモードを選ぶことはできません。
 :::
 
 ::: details `auth_req_id` とは
-`/bc-authorize` が利用デバイスに返す不透明識別子です。CIBA における `device_code` 相当で、デバイスが内部に保持し `/token` への poll ごとに送信します。device-code と異なり、ユーザに見せる別途のコードはありません。組み込み側の認証デバイスサービスが別経路で承認画面を表示するので、利用デバイスは polling 用のハンドルだけ持っていれば十分です。
+`/bc-authorize` が利用デバイスに返す不透明な識別子です。CIBA における `device_code` に当たり、デバイスは外に出さず保持して、`/token` へのポーリングのたびに送ります。device flow と違ってユーザに見せるコードはありません。承認画面は組み込み側の通知サービスが別の経路で届けるので、利用デバイスに必要なのはポーリング用のハンドルだけです。
 :::
 
 ::: details `binding_message` とは
-利用デバイスが `/bc-authorize` に渡す短い人間可読な文字列で、OP が認証デバイスの承認画面に転送します。レジの POS が「Acme Coffee で 800 円を承認、端末 #14」と表示し、ユーザのスマホの承認ダイアログにも同じ文字列が表示されます。これは「目の前の取引と本当に対応する承認画面か」をユーザが判別する唯一の手がかりです。無ければ、無関係な CIBA リクエストを発火させた攻撃者が、漠然とした「サインインを承認しますか?」ダイアログでユーザを欺けます。仕様上は任意でも、運用では必須として扱ってください。
+利用デバイスが `/bc-authorize` に渡す短い文字列で、OP はリクエストと一緒に保存します。組み込み側の通知サービスが、これを認証デバイスに表示します。レジの POS が「Acme Coffee で 800 円を承認、端末 #14」と表示し、ユーザのスマホの承認ダイアログにも同じ文字列が出ます。ユーザにとっては、目の前の取引に対応した承認画面かどうかを見分ける唯一の手がかりです。これがないと、無関係な CIBA リクエストを起動した第三者が、漠然とした「サインインを承認しますか?」というダイアログで承認させられるおそれがあります。仕様では任意ですが、運用では必須として扱ってください。
 :::
 
 ::: warning poll 配信のみ
-本ライブラリは **poll** 配信だけを実装します。Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` のみを広告します。この OP は ping や push の配信を提供しません。
+本ライブラリが実装する配信方式は **poll** だけです。Discovery は `backchannel_token_delivery_modes_supported: ["poll"]` だけを広告します。クライアントが `client_notification_token` や `user_code` を送ると `400 invalid_request` になります。
 :::
 
 ## CIBA を有効化
@@ -83,13 +80,15 @@ provider, err := op.New(
   op.WithKeyset(myKeyset),
   op.WithCookieKeys(myCookieKey),
 
+  // grant.CIBA を挙げると、既定の {authorization_code, refresh_token} は
+  // 外れます。利用デバイスはブラウザを開かないためです。
   op.WithGrants(grant.CIBA),
   op.WithCIBA(
     op.WithCIBAHintResolver(myHintResolver),
     op.WithCIBAPollInterval(5 * time.Second),       // 任意。既定 5 秒
     op.WithCIBADefaultExpiresIn(10 * time.Minute),  // 任意。既定 10 分
     op.WithCIBAMaxExpiresIn(15 * time.Minute),      // `requested_expiry` の上限(任意)
-    op.WithCIBAMaxPollViolations(8),                // 任意。既定 5 ストライクを引き上げる
+    op.WithCIBAMaxPollViolations(8),                // 任意。既定は 5
   ),
 
   op.WithStaticClients(op.ConfidentialClient{
@@ -108,18 +107,20 @@ provider, err := op.New(
 2. CIBA URN（`urn:openid:params:grant-type:ciba`）を `/token` に登録
 3. discovery に `backchannel_authentication_endpoint`、`backchannel_token_delivery_modes_supported: ["poll"]`、`backchannel_user_code_parameter_supported: false` を出力。JAR も有効な場合は `backchannel_authentication_request_signing_alg_values_supported` も出力
 
-CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory と SQL の両アダプタが同梱しています — SQL アダプタは sqlite / mysql / postgres で `oidc_ciba_requests` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis のみの構成では composite アダプタで `CIBARequests` を durable な層（SQL か in-memory）にルーティングしてください。`op.WithCIBA(...)` 経由でも `op.WithGrants(grant.CIBA, ...)` 経由でも、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方が組み込まれていることを確認します。どちらが欠けていても構成エラーで起動を拒否します。
+CIBA サブストア（`store.CIBARequestStore`）は必須です。in-memory、SQL、DynamoDB の各アダプタが同梱しており、SQL アダプタは sqlite / mysql / postgres の `oidc_ciba_requests` テーブルに永続化します。Redis アダプタはこのサブストアに `nil` を返すため、Redis を使う構成では composite アダプタで `CIBARequests` を永続的な層（SQL か in-memory）に振り分けてください。`op.WithCIBA(...)` で有効にしても `op.WithGrants(grant.CIBA, ...)` で有効にしても、`op.New` は `Store.CIBARequests()` と `HintResolver` の両方を必須とします。
+
+`op.New` は、負の `WithCIBADefaultExpiresIn` や `WithCIBAPollInterval`、`WithCIBAMaxExpiresIn` を超える `WithCIBADefaultExpiresIn`、そして `profile.FAPICIBA` の下で 10 分を超える既定値や上限値も拒否します。0 は「ライブラリの既定値を使う」の意味です（600 秒と 5 秒）。
 
 ## `HintResolver` を実装する
 
 CIBA では、承認以前に **どのユーザを承認サービスの対象にするか** を OP が知る必要があります。`op.WithCIBAHintResolver(...)` は必須で、これ無しで `WithCIBA` を呼ぶと `op.New` が失敗します:
 
 ::: details `login_hint` / `id_token_hint` / `login_hint_token` の違い
-CIBA は利用デバイスがユーザを指名する方法を 3 つ用意しています。**`login_hint`** は組み込み側が解釈する自由形式の文字列で、メール、口座番号、ロイヤリティカード等が入ります。**`id_token_hint`** は過去発行の ID トークンで、OP が自分の鍵に対する署名、issuer、認証済みクライアントの audience を検証してから、検証済みの `sub` だけを resolver に渡します。CIBA では hint の exp を意図的に検証しません。pairwise クライアントは resolver の前に拒否されるため、`login_hint` または `login_hint_token` を使ってください。**`login_hint_token`** は信頼している上流システム（federation IdP、企業ディレクトリ等）が発行した署名付き JWT で、resolver 側でそのシステムの契約に従って署名、issuer、audience を検証し、subject にマップします。resolver は raw `id_token_hint` JWT を parse してはなりません。
+CIBA は利用デバイスがユーザを指名する方法を 3 つ用意しています。**`login_hint`** は組み込み側が解釈する自由形式の文字列で、メール、口座番号、ロイヤリティカード等が入ります。**`id_token_hint`** は過去に発行した ID トークンです。OP は、OP 自身の鍵に対する署名、issuer、`typ` ヘッダ（ログアウトトークンやアクセストークンは拒否）、audience が認証済みのクライアントであることを検証し、検証済みの `sub` だけを resolver に渡します。端末は、ずっと前に終わったセッションの ID トークンを持っていて当然なので、hint の有効期限は検証しません。pairwise のクライアントは resolver に届く前に拒否されます。そのクライアントには `login_hint` か `login_hint_token` を使ってください。**`login_hint_token`** は信頼している上流システム（federation IdP、企業ディレクトリ等）が発行した署名付き JWT で、resolver 側でそのシステムの契約に従って署名、issuer、audience を検証し、subject にマップします。resolver は raw `id_token_hint` JWT を parse してはなりません。
 :::
 
 ::: details `HintResolver` とは
-`/bc-authorize` ごとに OP が 1 度呼び出すインターフェースで、「組み込み側が考えるユーザの指名」を安定的な内部 `sub` に翻訳します。OP はこれを推測できません。ユーザテーブルは組み込み側ごとに異なるからです。`Resolve(ctx, kind, value)` は subject 文字列を返します（不明なら `op.ErrUnknownCIBAUser`、一過性の参照失敗なら `login_required`）。リクエスト処理中に必ず呼ばれるため、リモートストアへの参照はローカルでキャッシュしてください。
+`/bc-authorize` ごとに OP が 1 度呼び出すインターフェースで、組み込み側がユーザを指す識別子を、安定した内部の `sub` に変換します。ユーザテーブルは配備ごとに異なるので、OP 自身にはできません。`Resolve(ctx, kind, value)` は subject の文字列を返します。ユーザが存在しなければ `op.ErrUnknownCIBAUser`（通信路上は `unknown_user_id`）、検索自体が失敗したらそのほかのエラー（通信路上は `login_required`）を返します。空の subject も `login_required` になります。
 :::
 
 ```go
@@ -154,15 +155,15 @@ func (r *myHintResolver) Resolve(ctx context.Context, kind op.HintKind, value st
 `Resolve` は `/bc-authorize` POST ごとに呼ばれます。バックエンドがリモートならローカルでキャッシュしてください。承認通知の経路はこの呼び出しを待ちます。
 :::
 
-ワンオフ / 関数的に使うなら `op.HintResolverFunc` で関数を `HintResolver` に変換できます。
+`op.HintResolverFunc` を使うと、関数をそのまま `HintResolver` にできます。
 
 ## 認証デバイスのコールバック
 
-OP はユーザのスマホへ通知する経路自体は所有しません。そこは組み込み側の通知サービスとユーザのアプリの協働です。ライブラリが提供する接点はサブストアです。ユーザのアプリが応答してきたら、組み込み側のコールバックハンドラが `CIBARequestStore.Approve`（または `Deny`）を **`op.WithStore` に渡したのと同じストア参照**に対して直接呼びます。`provider.Store()` のようなアクセサは存在しません。OP はストアを再公開せず、組み込み側で参照を保持しておく前提です。
+ユーザのスマホに通知を届ける経路は、OP の担当ではありません。組み込み側の通知サービスとユーザのアプリの間の仕事です。ライブラリが用意する接点はサブストアです。ユーザのアプリから応答が返ったら、組み込み側のコールバックハンドラが、**`op.WithStore` に渡したのと同じストア**（`*inmem.Store` などのアダプタ）に対して `CIBARequestStore.Approve`（または `Deny`）を呼びます。OP は自分のストアを外に公開しないので、参照は自分で保持してください。
 
 ```go
-// st は op.WithStore(st) に渡したのと同じストア。組み込み側で
-// 参照を保持しておく前提で、provider.Store() のようなアクセサは存在しない。
+// st は op.WithStore(st) に渡したのと同じストア。OP はストアを公開しない
+// ので、組み込み側で参照を保持しておく。
 func handleApproval(w http.ResponseWriter, r *http.Request, st *inmem.Store) {
     authReqID := r.FormValue("auth_req_id")
     decision  := r.FormValue("decision") // "approve" または "deny"
@@ -192,11 +193,11 @@ func handleApproval(w http.ResponseWriter, r *http.Request, st *inmem.Store) {
 }
 ```
 
-利用デバイスからの次の `/token` poll が成功（または `access_denied` を返却）します。
+利用デバイスからの次の `/token` ポーリングは成功します。拒否した場合は `access_denied` を返します。`Approve` に渡す subject は `HintResolver` が返したものと同じで、かつユーザストアに存在している必要があります。トークンエンドポイントが、引き換えのたびに確認するためです。
 
 ## binding_message
 
-`/bc-authorize` POST のたびに利用デバイスから `binding_message` を渡します。OP がサブストアレコード経由で転送するので、組み込み側の認証デバイス通知がレジ係の見ている文字列と同じものを描画できます:
+利用デバイスは、`/bc-authorize` へのリクエストごとに `binding_message` を送ります。OP はそれをリクエストのレコード（`CIBARequest.BindingMessage`）に保存するので、組み込み側の通知サービスは、レジ係が見ているのと同じ文字列を認証デバイスに表示できます。
 
 ```sh
 curl -s -u pos-terminal:<secret> \
@@ -206,48 +207,47 @@ curl -s -u pos-terminal:<secret> \
   https://op.example.com/oidc/bc-authorize
 ```
 
-これがユーザにとって CIBA phishing への唯一の防衛線です。仕様上 optional ですが、組み込み側の UX では **必須** として扱ってください。
+OP は値を trim し、50 文字を超える値や制御文字を含む値は `400 invalid_binding_message` で拒否します。保存するのは HTML エスケープ済みの値ではなく、そのままの文字列です。認証デバイスの UI に表示するときにエスケープしてください。`/bc-authorize` に送る前にエスケープすると、`&`、`<`、`>`、`"`、`'` を含む取引の文言が、レジ側の表示と一致しなくなります。
 
-OP は `binding_message` を検証（trim 後の長さと制御文字チェック）し、HTML escape 済みではなく raw 値として永続化します。認証デバイス UI で描画するときに escape してください。`/bc-authorize` に送る前に事前 escape すると、`&`、`<`、`>`、`"`、`'` を含む取引文言がレジ側表示と一致しなくなります。
+`scope` は必須で、`openid` を含める必要があります。`/bc-authorize` は、寛容なクライアントのために任意の Unicode 空白で分割しますが、タブや改行には頼らないでください。`/auth` と `/par` はスペース区切りしか受け付けません（`/oidc` にマウントした場合は `/oidc/auth` です）。
 
-`scope` については、クライアントが送るべき仕様準拠の ASCII space 区切りをそのまま受け付け、lenient な CIBA クライアント向けに Unicode whitespace も `strings.Fields` で分割します。ただし、tab や改行をエンドポイント横断の互換性前提にしないでください。`/auth` と `/par` はより厳格な wire grammar を維持します（`/oidc` に mount した場合は `/oidc/auth` です）。
+リクエストが成功すると、`auth_req_id`、`expires_in`、`interval` が返ります。`login_hint`、`id_token_hint`、`login_hint_token` は、ちょうど 1 つだけ指定します。
 
 ## RFC 8707 `resource=`
 
-利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを resource server に固定できます。エンドポイントは `/auth` / `/token` と同じ判定を適用します:
+利用デバイスは `/bc-authorize` に `resource=<absolute URI>` を付けて、発行されるアクセストークンを特定のリソースサーバに固定できます。エンドポイントは `/auth`、`/token` と同じ規則を適用します。
 
 - 値は絶対 URI でなければなりません（RFC 8707 §2）。相対 URI は `400 invalid_target` で拒否されます。
-- 正規化後の値（scheme + host を小文字化、末尾 `/` 除去）はクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに登録されていない resource を要求すると `400 invalid_target` で拒否されます。
-- `resource=` を複数指定すると `400 invalid_target` で拒否されます。CIBA 発行パイプラインは audience を 1 つだけ受け付け、複数値を黙って切り捨てません。
+- 正規化後の値（scheme と host を小文字にし、末尾の `/` を除いたもの）がクライアントの `Resources` 許可リストに含まれている必要があります。クライアントに未登録の resource は `400 invalid_target` で拒否されます。
+- 空でない `resource=` を複数指定すると `400 invalid_target` で拒否されます。CIBA のリクエストが持てる audience は 1 つだけで、OP は残りを黙って捨てないためです。
 
-::: warning `resource=` は登録済みである必要があります
-`resource=` は絶対 URI で、かつクライアントの `Resources` 許可リストに含まれている必要があります。許可リスト外の値は `invalid_target` で拒否されます。
-:::
+利用デバイスが要求しうるリソースサーバの URI は、あらかじめクライアントの `Resources` に登録しておきます。
 
 ## sender-constrained な CIBA request
 
-DPoP または mTLS を使う場合、`/bc-authorize` は DPoP 鍵の thumbprint と mTLS 証明書の thumbprint を record に保存します。`/token` では発行前に、record に存在する binding をすべて再検証します。両方を持つ CIBA request には、一致する DPoP proof と mTLS 証明書の両方が必要で、片方だけでは `auth_req_id` を redeem できません。proof が無い、または一致しない場合は redemption に失敗します。成功時に発行する token の `cnf` には、OP が再検証したすべての binding を反映します。
+DPoP や mTLS を使う場合、`/bc-authorize` は DPoP 鍵の thumbprint と mTLS 証明書の thumbprint をレコードに保存します。`/token` では、トークンを発行する前に、レコードにあるすべての binding を再検証します。両方の binding があるリクエストでは、一致する DPoP proof と mTLS 証明書の両方が必要で、片方だけでは足りません。proof がない、または一致しない場合、`auth_req_id` は引き換えできません（`400 invalid_grant`）。成功すると、発行されるトークンの `cnf` には OP が再検証したすべての binding が入ります。
 
 ## CIBA id_token の `amr` と `acr`
 
-CIBA フロー終端で発行される id_token の `acr` は、認証デバイスが実際に満たした ACR ── 組み込み側のコールバックが `CIBARequestStore.Approve` の `acr` 引数として渡す値 ── をそのまま反映します。要求された `acr_values` から決まるわけではなく、コールバックが `""` を渡した場合は空になります。これは比較可能な ACR 語彙を持たない配備環境で想定される挙動です。**`amr` は入りません**。CIBA request レコードには、ユーザの認証デバイスが実際に満たした認証手段の signal がまだ無いためです。OIDC Core §2 は `acr` と `amr` を別概念として定義しており同義ではありません。
+CIBA フローの最後に発行される id_token の `acr` には、認証デバイスが実際に満たした `acr` が入ります。これは、組み込み側のコールバックが `CIBARequestStore.Approve` の `acr` 引数に渡した値です。要求された `acr_values` から決まるわけではなく、コールバックが `""` を渡せば空になります（比較できる ACR の語彙がない配備では、これが想定する使い方です）。**`amr` は入りません**。CIBA のリクエストレコードには、検証済みの認証手段の情報がないためです。OIDC Core §2 は `acr` と `amr` を別の claim として定義しています。CIBA の id_token から `amr` を読む RP は、claim が存在しないものとして扱ってください。
 
-CIBA id_token の `amr` を読む RP は、claim を空 / 不在として扱ってください。現在の CIBA request レコードには、検証済みの認証手段 signal がありません。
+引き換えが済んだリクエストについては、そのクライアントとユーザの同意の記録（grant）も作られます。このためトークンは introspection や `/userinfo` で subject を解決でき（pairwise のクライアントなら pairwise の値）、同じスコープでの次の `/auth` は同意画面を省略できます。
 
 ## FAPI-CIBA プロファイル
 
 `op.WithProfile(profile.FAPICIBA)` を有効化すると以下の項目が固定されます:
 
 - `RequiredFeatures` = `[JAR]` — `/bc-authorize` リクエストは JWT-Secured(RFC 9101)必須
+- `RequiredGrants` = `[CIBA]` — CIBA grant が有効でなければ `op.New` は失敗します。プロファイルが自動で有効にすることはありません
 - `RequiredAnyOf` = `[[DPoP, MTLS]]` — sender constraint 必須。mTLS が明示されていない場合は DPoP が既定選択される
 - `MaxAccessTokenTTL` = 10 分
 - クライアント認証 = `private_key_jwt`（`client_secret_basic` は拒否）。`feature.MTLS` を構成した場合、mTLS は送信者制約要件を満たせますが、`/token` のクライアント認証方式にはなりません。
 - `RequiresAccessTokenRevocation` = true
 - `/bc-authorize` の JAR 強制: `iss` / `aud` / `exp` / `nbf` / `iat` / `jti` をすべて必須にし、本ライブラリは `MaxRequestObjectAge` によりリクエストオブジェクトの `iat` からの経過時間にも 60 分の上限を適用します。これはライブラリの検証上限です。一方、FAPI-CIBA-ID1 §5.2.2 の 9 は署名付き認証リクエストの `nbf` / `exp` が示す有効期間を 60 分以内に制限します。この根拠は FAPI 2.0 Message Signing Final §5.6 ではありません。同仕様の同節は ID トークンの署名を扱います。FAPI 2.0 Baseline / Message Signing では `jti` は任意のままですが、FAPI-CIBA はより厳格な形を選びます。
 - `requested_expiry > 600s` は、本ライブラリの FAPI-CIBA 設定では `invalid_request` になります。10 分の上限は旧 FAPI-CIBA-ID1 プロファイルとライブラリの制約によるもので、現行の FAPI 2.0 Security Profile の節番号ではありません。プロファイル無効時の CIBA では上限に丸めます。
-- `/bc-authorize` で発生したあらゆる JAR 失敗（署名不一致、未サポート alg、必須 claim 欠如、`request_uri` 取得失敗、…）は CIBA Core §13 に従って `400 invalid_request` にマップされます。素の `/auth` の JAR 経路はより細かいエラー語彙を保持しますが、CIBA は仕様上 back-channel 側に細分化の余地がないため、ここで畳み込みます。
+- `/bc-authorize` での、クライアント側に原因がある JAR の失敗（署名の不一致、未対応の alg、必須 claim の欠落、`request_uri` の取得失敗など）は、CIBA Core §13 に従って `400 invalid_request` になります。CIBA Core §13 には、`/auth` の `invalid_request_object` のような細かいコードがないためです。クライアントの鍵を取得する OP 側の障害（JWKS の過負荷や一時的な失敗）は、代わりに `503 server_error` です。
 
-`op.WithACRValuesSupported(...)` が非空のとき、エンドポイントは要求された `acr_values` の各エントリを公開済みリストに対して検証します。空リストの場合は従来どおり緩い受理（permissive）のままです。
+`op.WithACRValuesSupported(...)` が空でない場合、エンドポイントは要求された `acr_values` の各要素を公開済みの一覧と照合し、未知の値には `400 invalid_request` を返します。一覧が空なら、どの値もそのまま受け付けます。
 
 ## Polling 応答
 
@@ -256,16 +256,16 @@ device-code grant と同じ形:
 | 通信路上の応答 | 意味 |
 |---|---|
 | `400 authorization_pending` | ユーザがまだ承認していない。交渉済 interval 後に再 poll |
-| `400 slow_down` | poll が速すぎた。引き上げられた interval に従う（サーバが永続化） |
-| `400 access_denied` | ユーザが拒否、管理者が失効させた、または poll-abuse 上限（`WithCIBAMaxPollViolations`、既定 5）に達してロックアウト。poll を停止 |
+| `400 slow_down` | ポーリングが速すぎた。引き上げられた interval に従う（サーバが保存する） |
+| `400 access_denied` | ユーザが拒否した、管理者が失効させた、または poll-abuse の上限（`WithCIBAMaxPollViolations`、既定 5）に達してロックされた。ポーリングを止める |
 | `400 expired_token` | `auth_req_id` が寿命を超えた（TTL 経過のみ — RFC 6749 §5.2 / CIBA Core §11）。poll を停止 |
-| `400 invalid_grant` | `auth_req_id` は既に消費済み。grant は消滅しているため、同じハンドルで再試行しないこと |
+| `400 invalid_grant` | `auth_req_id` が引き換え済み、またはリクエストの DPoP / mTLS binding が欠けている・一致しない。同じハンドルで再試行しないこと |
 | `200 { access_token, ... }` | 承認 |
 
-OP は「交渉済み interval が経過する前に poll した」を `auth_req_id` に対するストライクとして数えます。ストライク数が上限（既定 5）に達すると、その後の poll はすべて `400 access_denied` を返し、`ciba.poll_abuse.lockout` 監査イベントが発火します。`op.WithCIBAMaxPollViolations(n uint8)` でこの上限を上下できます。プロファイル要件や conformance ハーネスが境界を強く検査するケースで余裕を持たせるために使います。`n=0` は本ライブラリの既定にフォールバックし、`n=255` は診断ビルド向けに実質的な無効化となります。
+OP は、取り決めた interval が過ぎる前に行われたポーリングを、その `auth_req_id` に対する違反として 1 回ずつ数えます。違反が上限（既定 5）に達するとリクエストはロックされ、以降のポーリングはすべて `400 access_denied` を返し、`ciba.poll_abuse.lockout` の監査イベントが記録されます。上限は `op.WithCIBAMaxPollViolations(n uint8)` で変えられます。`n=0` はライブラリの既定値、`n=255` は事実上ロックを無効にする値で、診断用のビルドにしか向きません。
 
 ::: info `/bc-authorize` の単一値パラメータ重複
-`client_id` / `login_hint` / `id_token_hint` / `login_hint_token` / `binding_message` / `requested_expiry` / `acr_values` / `scope` / `user_code` / `client_assertion` のいずれかが 2 回以上現れたリクエストは CIBA Core §13 に従い `400 invalid_request` で拒否します。RFC 8707 の `resource=` だけが正当に複数指定可能です。`/token`、`/end_session`、`/revoke` も対応する単一値パラメータに同じルールを適用します。
+`client_id` / `login_hint` / `id_token_hint` / `login_hint_token` / `binding_message` / `requested_expiry` / `acr_values` / `scope` / `user_code` / `client_assertion` のいずれかが 2 回以上現れたリクエストは、CIBA Core §13 に従い `400 invalid_request` で拒否します。複数指定できるのは `resource=`（RFC 8707）だけです。`/token`、`/end_session`、`/revoke` も、それぞれの単一値パラメータに同じ規則を適用します。
 :::
 
 
@@ -277,10 +277,10 @@ OP は「交渉済み interval が経過する前に poll した」を `auth_req
 (cd examples/32-ciba-pos && GOWORK=off go run -tags example .)
 ```
 
-POS 端末が `/bc-authorize` に POST し、スタッフのスマホ役の goroutine が `CIBARequestStore.Approve` を直接呼び、POS が token 発行まで poll します。end-to-end で約 5 秒。ファイル: `op.go`（OP の組み立て + `HintResolver`）、`rp.go`（POS 側 polling）、`device.go`（スマホ承認シミュレーション）。
+POS 端末が `/bc-authorize` に POST し、スタッフのスマホ役の goroutine が `CIBARequestStore.Approve` を直接呼び、POS がトークンの発行までポーリングします。全体で約 5 秒です。ファイル: `op.go`（OP の組み立て + `HintResolver`）、`rp.go`（POS 側 polling）、`device.go`（スマホ承認シミュレーション）。
 
 ## 続きはこちら
 
 - [CIBA 入門](/ja/concepts/ciba) — 概念的背景
-- [Device Code の組み込み](/ja/use-cases/device-code) — ユーザが見ている利用面に画面とコードがある場合
+- [Device Code の組み込み](/ja/use-cases/device-code) — ユーザの手元に、コードを打ち込める画面がある場合
 - [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) — FAPI-CIBA が継承する親プロファイル

@@ -7,7 +7,7 @@ description: Split scopes into discovery-visible (public) and admin-only (intern
 
 ## What is a "scope"?
 
-In OAuth 2.0 (RFC 6749 §3.3), a **scope** is a string the client adds to its `/authorize` request to say *what kind of access it wants* — for example `email`, `profile`, `billing.read`. The OP decides which scopes to grant; the access token carries the granted scopes; the resource server inspects them to authorise API calls.
+In OAuth 2.0 (RFC 6749 §3.3), a **scope** is a string the client adds to its `/auth` request to say *what kind of access it wants* — for example `email`, `profile`, `billing.read`. The OP decides which scopes to grant; the access token carries the granted scopes; the resource server inspects them to authorise API calls.
 
 OIDC Core 1.0 §3.1.2.1 uses `openid` to identify an OIDC request, while §5.4 maps `profile`, `email`, `address`, and `phone` to user claims. Additional scopes can be defined for your deployment; this page shows how the library separates a **public** catalog (advertised and shown at consent) from an **internal** one (usable by allowed clients but omitted from discovery).
 
@@ -18,7 +18,7 @@ OIDC Core 1.0 §3.1.2.1 uses `openid` to identify an OIDC request, while §5.4 m
 :::
 
 ::: details Vocabulary refresher
-- **Scope vs claim** — A *scope* is a string the client requests at `/authorize` to say *what kind of access it wants* (e.g. `email`, `billing.read`). A *claim* is a key/value piece of identity that ends up in the `id_token` or `/userinfo` response (e.g. `email`, `email_verified`). Scopes are coarse — one scope authorises a *bundle* of claims. For per-claim control see [Claims request](/use-cases/claims-request).
+- **Scope vs claim** — A *scope* is a string the client requests at `/auth` to say *what kind of access it wants* (e.g. `email`, `billing.read`). A *claim* is a key/value piece of identity that ends up in the `id_token` or `/userinfo` response (e.g. `email`, `email_verified`). Scopes are coarse — one scope authorises a *bundle* of claims. For per-claim control see [Claims request](/use-cases/claims-request).
 - **`scopes_supported`** — A discovery field listing the scopes the OP advertises. RPs read it to know what they can request. Scopes that don't appear here can still be issued — `scopes_supported` is *advertisement*, not *authorisation*.
 :::
 
@@ -29,21 +29,20 @@ OIDC Core 1.0 §3.1.2.1 uses `openid` to identify an OIDC request, while §5.4 m
 `op.PublicScope(name, label)` and `op.InternalScope(name)` are constructors that return a `Scope` value. Pass each to `op.WithScope`:
 
 ```go
-op.WithScope(op.PublicScope("billing.read",  "Read your billing history")),
-op.WithScope(op.PublicScope("billing.write", "Manage your invoices")),
+op.WithScope(op.PublicScope("billing.read", "Read your billing data")),
 op.WithScope(op.InternalScope("internal:audit")),
 ```
 
 `PublicScope`:
 - Surfaces in `scopes_supported` of the discovery document.
-- Renders on the consent screen with its label.
 - Issues to any registered RP that lists it in its seed's `Scopes`.
 
 `InternalScope`:
 - **Not** in `scopes_supported`.
-- **Not** rendered on consent (the OP issues it without prompting).
 - Acceptance is governed by `Scope.AllowedClients`: an empty list means any RP may request it; a non-empty list scopes acceptance to the named clients (any other client requesting the scope is rejected with `invalid_scope` per RFC 6749 §5.2).
 - `op.New` rejects an `InternalScope` whose name collides with an OIDC standard scope, so the discovery document never violates OIDC Discovery 1.0 §3.
+
+Visibility means discovery and nothing else. Whether a scope reaches the consent screen does not depend on `Public`: when the user is asked for consent, the screen lists every requested scope, public or internal. The built-in screen prints each scope's `Name` and, if set, its `Description`. `PublicScope(name, label)` stores the label as `Scope.Title`, which the consent prompt does not receive, so give a scope a user-facing sentence with the struct form (`op.Scope{Name: ..., Description: ..., Public: true}`, shown below). A [custom consent UI](/use-cases/custom-consent-ui) receives the same `Name`, `Description` and `Required` fields.
 
 ## Releasing custom claims via `Scope.Claims`
 
@@ -100,7 +99,7 @@ A client requesting a scope it doesn't list gets `invalid_scope` — the catalog
 curl -s http://localhost:8080/.well-known/openid-configuration | jq .scopes_supported
 # [
 #   "openid", "profile", "email", "address", "phone", "offline_access",
-#   "billing.read", "billing.write"
+#   "billing.read"
 # ]
 ```
 

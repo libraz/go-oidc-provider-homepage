@@ -4,7 +4,7 @@ description: セッション終了時に、grant から解決した RP 対象へ
 pageClass: pg-use-cases-back-channel-logout
 ---
 
-# 使い方 — バックチャネルログアウト
+# ユースケース — バックチャネルログアウト
 
 ## そもそも「バックチャネルログアウト」とは？
 
@@ -32,57 +32,42 @@ pageClass: pg-use-cases-back-channel-logout
 
 <figure class="fig">
   <div class="fig-head">1 回のログアウトを全 RP へ届ける</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-bcl-title" viewBox="0 0 960 366" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-bcl-title" viewBox="0 0 960 472" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-bcl-title">RP A がユーザを end-session エンドポイントへ送ります。OP はセッションを終了し、そのセッションの grant が指すすべての RP へ署名済み logout token を POST し、最後にユーザを RP A へ戻します。</title>
-    <line class="fg-life" x1="110" y1="72" x2="110" y2="356"/>
-    <line class="fg-life" x1="300" y1="72" x2="300" y2="356"/>
-    <line class="fg-life fg-life--accent" x1="530" y1="72" x2="530" y2="356"/>
-    <line class="fg-life" x1="760" y1="72" x2="760" y2="356"/>
-    <line class="fg-life" x1="890" y1="72" x2="890" y2="356"/>
-    <rect class="fg-box" x="40" y="24" width="140" height="44" rx="6"/>
-    <text class="fg-t" x="110" y="44" text-anchor="middle">ユーザ</text>
-    <text class="fg-xs" x="110" y="59" text-anchor="middle">ブラウザ</text>
-    <rect class="fg-box" x="230" y="24" width="140" height="44" rx="6"/>
-    <text class="fg-t" x="300" y="44" text-anchor="middle">RP A</text>
-    <text class="fg-xs" x="300" y="59" text-anchor="middle">起点となる RP</text>
-    <rect class="fg-box fg-box--accent" x="450" y="24" width="160" height="44" rx="6"/>
-    <text class="fg-t fg-accent" x="530" y="44" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="530" y="59" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="700" y="24" width="120" height="44" rx="6"/>
-    <text class="fg-t" x="760" y="49" text-anchor="middle">RP B</text>
-    <rect class="fg-box" x="838" y="24" width="86" height="44" rx="6"/>
-    <text class="fg-t" x="881" y="49" text-anchor="middle">RP C</text>
-    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M110,102 H300" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="205" y="96" text-anchor="middle">ユーザが「ログアウト」を押す</text>
-    <circle class="fg-badge" cx="15" cy="142" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="145" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M300,142 H530" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="415" y="122" text-anchor="middle">リダイレクト先</text>
-    <text class="fg-mxs fg-halo" x="415" y="135" text-anchor="middle">/end_session?id_token_hint=…</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="180" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="183" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--accent" d="M530,172 h28 v16 h-28" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="570" y="184">セッションを終了し、その grant を走査する</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="228" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="231" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M530,228 H756" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--accent" d="M530,258 H886" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="643" y="208" text-anchor="middle">POST backchannel_logout_uri</text>
-    <text class="fg-mxs" x="643" y="221" text-anchor="middle">logout_token — 署名済み JWT</text>
-    <text class="fg-xs fg-halo" x="700" y="252" text-anchor="middle">grant から導かれた宛先ごとに 1 回ずつ</text>
-    <circle class="fg-badge" cx="15" cy="292" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="295" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--muted" d="M756,292 H534" marker-end="url(#fg-am)"/>
-    <path class="fg-edge fg-edge--muted" d="M886,314 H534" marker-end="url(#fg-am)"/>
-    <text class="fg-mxs fg-halo" x="645" y="286" text-anchor="middle">200 — あるいは無応答</text>
-    <circle class="fg-badge" cx="15" cy="350" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="353" text-anchor="middle">6</text>
-    <path class="fg-edge fg-edge--accent" d="M530,350 H110" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs fg-halo" x="320" y="344" text-anchor="middle">302 → post_logout_redirect_uri</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="448"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="448"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="448"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP A</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">ユーザがログアウト</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">RP B · RP C</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">ほかの RP すべて</text>
+    <!-- RP A sends the user to /end_session -->
+    <path class="fg-edge" d="M192,144 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="110" text-anchor="middle">GET /end_session</text>
+    <text class="fg-mxs" x="352" y="132" text-anchor="middle">id_token_hint=…</text>
+    <!-- OP ends the session and walks its grants -->
+    <path class="fg-edge fg-edge--accent" d="M512,200 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="206">セッションを終了</text>
+    <text class="fg-s" x="568" y="228">grant を走査</text>
+    <!-- one logout_token POST per grant-derived target -->
+    <path class="fg-edge" d="M512,304 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="270" text-anchor="middle">POST backchannel_logout_uri</text>
+    <text class="fg-mxs" x="668" y="292" text-anchor="middle">logout_token · RP ごとに 1 回</text>
+    <!-- best-effort answer -->
+    <path class="fg-edge fg-edge--muted" d="M824,376 H512" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl" x="668" y="366" text-anchor="middle">200 — あるいは無応答</text>
+    <!-- redirect back to RP A -->
+    <path class="fg-edge fg-edge--accent" d="M512,448 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="438" text-anchor="middle">302 → post_logout_redirect_uri</text>
   </svg>
-  <figcaption class="fig-note">手順 5 を薄く描いているのには理由があります。OP はこの応答を待ちませんし、応答しない RP があっても他はログアウトされます。バックチャネルログアウトは分散トランザクションではなく best-effort の通知です。</figcaption>
+  <figcaption class="fig-note">破線の応答を薄く描いているのには理由があります。OP はこの応答を待ちませんし、応答しない RP があっても他はログアウトされます。バックチャネルログアウトは分散トランザクションではなく best-effort の通知です。</figcaption>
 </figure>
 
 OP は RP 毎に `logout_token` に署名して RP の `backchannel_logout_uri` に POST します。トークンの中身は次のとおりです。
@@ -95,7 +80,7 @@ OP は RP 毎に `logout_token` に署名して RP の `backchannel_logout_uri` 
 | `sub` | 終了したセッションの subject。`sid` は発行されません（[後述](#backchannel-target-resolution)） |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
-RP は署名と `aud` を検証し、ローカルセッションを破棄したうえで 200 を返します。
+JOSE ヘッダには `typ: logout+jwt` が入るので、RP は他の種別のトークンを拒否できます。RP は署名と `aud` を検証し、ローカルセッションを破棄したうえで 200 を返します。逆方向では、`/end_session` が `id_token_hint` として受け付けるのは ID トークンだけで、logout token やアクセストークンは拒否されます。
 
 ## 実装
 
@@ -118,11 +103,13 @@ op.WithStaticClients(op.PublicClient{
 ```go
 op.New(
   /* ... */
-  op.WithBackchannelLogoutHTTPClient(myHTTPClient), // mTLS / カスタム timeout
+  op.WithBackchannelLogoutHTTPClient(myHTTPClient), // カスタム Transport（mTLS、プロキシ）
   op.WithBackchannelLogoutTimeout(5 * time.Second),
   op.WithBackchannelFanOutBudget(30 * time.Second), // detached fan-out 全体。RP ごとの timeout とは別
 )
 ```
+
+渡した client のうち、OP が使うのは `Transport` だけです。timeout は OP 側の設定を必ず適用し、リダイレクトは拒否し、宛先 URL は毎回 SSRF 拒否リストで検査します。`Transport` が nil か `*http.Transport` なら接続時の検査も加わります（独自の dial 関数は OP のものに置き換わります）。プロキシ経由の場合、接続時の検査が見るのはプロキシのアドレスで、宛先ホストは引き渡しの前に 1 度だけ検査されます。それ以外の `http.RoundTripper`（`otelhttp` のラッパーなど）は URL だけで判定するため、DNS rebinding は防げません。
 
 loopback 上に stub RP を立てるローカル demo や CI fixture では、loopback の `backchannel_logout_uri` に限って plain HTTP を許容できます。
 

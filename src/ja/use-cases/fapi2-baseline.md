@@ -1,16 +1,16 @@
 ---
 title: FAPI 2.0 Baseline
-description: 本ライブラリの FAPI2Baseline プロファイルで、PAR、ライブラリが要求する JAR、DPoP / mTLS、private_key_jwt、ES256 のみの ID Token、JAR 60 分上限を有効化します。
+description: 本ライブラリの FAPI2Baseline プロファイルで、PAR、JAR のサポート、DPoP / mTLS、private_key_jwt、ES256 のみの ID Token、アクセストークン 10 分上限、request object の 60 分上限を有効化します。
 pageClass: pg-use-cases-fapi2-baseline
 ---
 
-# 使い方 — FAPI 2.0 Baseline
+# ユースケース — FAPI 2.0 Baseline
 
 ## FAPI 2.0 とは
 
-**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 のセキュリティプロファイル群です。認証済みユーザの識別子が必要な場合には OIDC を使用します。現行の FAPI 2.0 Security Profile は、PAR、`S256` の PKCE、送信者制約付きトークン（DPoP **または** mTLS）、confidential クライアント、`PS256` / `ES256` / `EdDSA` の JWT alg を要求します。Security Profile の要件に JAR は含まれず、ID Token の署名も `ES256` だけに限定していません。既定の mount が `/oidc` なら endpoint は `/oidc/auth` になります。本ライブラリの `profile.FAPI2Baseline` は JAR を追加し、クライアント認証に `private_key_jwt` を使い、現在は ID Token を `ES256` のみで署名します。
+**FAPI**（"Financial-grade API"）は OpenID Foundation が策定する OAuth 2.0 のセキュリティプロファイル群です。現行の FAPI 2.0 Security Profile は、PAR、`S256` の PKCE、送信者制約付きトークン（DPoP **または** mTLS）、confidential クライアント、`PS256` / `ES256` / `EdDSA` の JWT alg を要求します。JAR は要件に含まれず、ID Token の署名を `ES256` だけに限定してもいません。また OAuth のプロファイルなので、認証済みユーザの識別子が必要なときに OIDC を併用します。本ライブラリの `profile.FAPI2Baseline` は、次の 3 点でそれより踏み込んでいます。JAR のサポートを有効にし、クライアント認証に `private_key_jwt` を使い、ID Token を `ES256` のみで署名します。認可エンドポイントは mount prefix 配下の `/auth` で、既定の `/oidc` なら `/oidc/auth` になります。
 
-銀行・医療・行政の運用では、「安全なオプションを全部覚えているか」ではなく「決まったチェックリストに対して監査できるか」が問われます。FAPI 2.0 は FAPI 1.0（こちらも依然現役）の後継です。最終版の FAPI 2.0 文書の名称は Security Profile で、本ライブラリはその設定を `profile.FAPI2Baseline` と呼びます。本ライブラリの別の Message Signing 設定は JARM、DPoP nonce source の制約、応答署名の動作を追加します。これらは本ライブラリの設定の挙動であり、最終版の Security Profile の要件ではありません。
+銀行・医療・行政の運用では、「安全なオプションを全部覚えているか」ではなく「決まったチェックリストに対して監査できるか」が問われます。FAPI 2.0 は、いまも使われている FAPI 1.0 の後継です。最終版の文書名は Security Profile で、本ライブラリはその設定を `profile.FAPI2Baseline` と呼びます。別の設定 `profile.FAPI2MessageSigning` は、JARM、DPoP nonce source の制約、応答署名を追加します。これらは本ライブラリの設定の挙動であり、最終版の Security Profile の要件ではありません。
 
 本ライブラリは Baseline を **プロファイル 1 つの指定**（`op.WithProfile(profile.FAPI2Baseline)`）として公開します。本ライブラリの必要なチェックをまとめて有効にし、ライブラリのプロファイルに反する構成では `op.New` 自体が起動を拒否します。
 
@@ -26,7 +26,7 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 - [RFC 7518](https://datatracker.ietf.org/doc/html/rfc7518) — JOSE algorithms
 :::
 
-> **ソース:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) はプロファイルのフローを扱います。[`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) は、TLS 1.2 の FAPI 1.0 RW cipher allow-list 用 `op.FAPITLSConfig()` と、client 登録前に private JWK material を取り除く `op.LoadPublicJWKS` を示します。Go は TLS 1.3 の cipher suite allow-list を公開していないため、TLS 1.3 配備では独自の `tls.Config` が必要です。
+> **ソース:** [`examples/03-fapi2/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/03-fapi2) はプロファイルのフローを扱います。[`examples/50-fapi-tls-jwks`](https://github.com/libraz/go-oidc-provider/tree/main/examples/50-fapi-tls-jwks) は、TLS 1.2 の FAPI 1.0 RW cipher allow-list 用 `op.FAPITLSConfig()` と `op.LoadPublicJWKS` を示します。`FAPITLSConfig` は TLS 1.2 を最低バージョンとし、TLS 1.2 には FAPI 1.0 RW の cipher allow-list（RSA 鍵の AEAD スイート。RSA のサーバ証明書が必要）を適用します。Go は TLS 1.3 の cipher suite allow-list を公開していないため、クライアントが TLS 1.3 を提示すればそのまま TLS 1.3 でつながります。`LoadPublicJWKS` は、client 登録前に private JWK material を取り除きます。
 
 ## 本ライブラリの `FAPI2Baseline` が強制するもの
 
@@ -36,6 +36,9 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 | Proof Key for Code Exchange | RFC 7636 | `code_challenge_method=S256` 必須、`plain` 拒否。 |
 | 送信者制約付きトークン（DPoP **または** mTLS） | RFC 9449 / RFC 8705 | このプロファイルでは `profile.RequiredAnyOf` が `{DPoP, MTLS}` を返すため、どちらか一方を満たせばよい。どちらも指定されていなければ、コンストラクタがインフラ前提の少ない DPoP を既定として選ぶ。 |
 | JWT alg | FAPI 2.0 §5.4.1 | プロファイルが許可するのは `PS256`、`ES256`、`EdDSA` です。本ライブラリの `id_token_signing_alg_values_supported` は `["ES256"]` のままで、`RS256` / `none` / `HS*` は公告しません。 |
+| 短命なアクセストークン | ライブラリのポリシー | アクセストークンの有効期間が 10 分を超える設定は `op.New` が拒否する（`profile.MaxAccessTokenTTL`）。 |
+| PAR の有効期間 | FAPI 2.0 §5.3.2.2 | `op.WithPARLifetime` が 600 秒以上なら `op.New` が拒否する。 |
+| 署名付き request object | RFC 9101 | `feature.JAR` が自動で有効になり、`/par` と `/auth` は `request` を受け付ける。ただし必須ではない（必須にするのは `profile.FAPI2MessageSigning`）。request object を使う場合は、署名されていない query / form パラメータとマージせず、request object が置き換える。request object とクライアントアサーションの `RS256` は拒否する。 |
 | `redirect_uri` 完全一致 | ライブラリのポリシー | 本ライブラリは事前登録済み URI とのバイト単位の一致を求め、ワイルドカードを認めません。現行の FAPI 2.0 Security Profile は、認証済み PAR リクエストに `redirect_uri` を含めることを求めますが、事前登録は必須としていません。 |
 | クライアント認証 | FAPI 2.0 §5.3.2.1 | FAPI は mTLS または `private_key_jwt` を認めます。本ライブラリが token endpoint のクライアント認証で処理するのは `private_key_jwt` だけです。mTLS は送信者制約を満たせますが、mTLS クライアント認証の経路は未接続です。 |
 
@@ -43,52 +46,51 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 
 <figure class="fig">
   <div class="fig-head">本ライブラリの FAPI2Baseline の一連の流れ</div>
-  <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 412" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="fapi2-arch-title" viewBox="0 0 960 672" xmlns="http://www.w3.org/2000/svg">
     <title id="fapi2-arch-title">本ライブラリの FAPI2Baseline では、RP が認可リクエストを pushed authorization エンドポイントへ送り、request_uri を受け取ります。ブラウザが運ぶのはその参照だけです。トークンリクエストは private_key_jwt で認証され DPoP proof を伴い、アクセストークンは DPoP にバインドされ、ID Token は本ライブラリの設定により ES256 で署名されます。</title>
-    <line class="fg-life" x1="260" y1="62" x2="260" y2="404"/>
-    <line class="fg-life fg-life--accent" x1="700" y1="62" x2="700" y2="404"/>
-    <rect class="fg-box" x="170" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="260" y="35" text-anchor="middle">RP / クライアント</text>
-    <text class="fg-mxs" x="260" y="49" text-anchor="middle">private_key_jwt + DPoP</text>
-    <rect class="fg-box fg-box--accent" x="600" y="16" width="200" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="700" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="700" y="49" text-anchor="middle">go-oidc-provider</text>
-    <circle class="fg-badge" cx="15" cy="104" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="107" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M260,104 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="480" y="84" text-anchor="middle">POST /par</text>
-    <text class="fg-mxs" x="480" y="97" text-anchor="middle">client_assertion=&lt;private_key_jwt&gt; · code_challenge=S256</text>
-    <circle class="fg-badge" cx="15" cy="140" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="143" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M700,140 H260" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="480" y="134" text-anchor="middle">201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
-    <circle class="fg-badge" cx="15" cy="176" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="179" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M260,176 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="480" y="170" text-anchor="middle">GET /authorize?request_uri=urn:…&amp;client_id</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="212" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="215" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M700,204 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="742" y="208">プロファイルに照らして検証する</text>
-    <text class="fg-mxs" x="742" y="221">ライブラリの ID Token は ES256 · redirect_uri の完全一致</text>
-    <circle class="fg-badge" cx="15" cy="258" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="261" text-anchor="middle">5</text>
-    <rect class="fg-box fg-box--sub" x="170" y="240" width="620" height="36" rx="6"/>
-    <text class="fg-xs" x="480" y="262" text-anchor="middle">interaction エンドポイントが認可判断を得る</text>
-    <circle class="fg-badge" cx="15" cy="306" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="309" text-anchor="middle">6</text>
-    <path class="fg-edge fg-edge--accent" d="M700,306 H260" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="480" y="300" text-anchor="middle">302 redirect_uri?code=…&amp;state=…</text>
-    <circle class="fg-badge" cx="15" cy="352" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="355" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M260,352 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="480" y="332" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-    <text class="fg-mxs" x="480" y="345" text-anchor="middle">code · code_verifier · client_assertion</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="396" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="399" text-anchor="middle">8</text>
-    <path class="fg-edge fg-edge--accent" d="M700,396 H260" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="480" y="376" text-anchor="middle">200</text>
-    <text class="fg-mxs" x="480" y="389" text-anchor="middle">access_token（DPoP 結び付き付き）· id_token（ES256）· refresh_token</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="648"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="648"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / クライアント</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">private_key_jwt</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- 1 -->
+    <circle class="fg-badge" cx="32" cy="144" r="12"/>
+    <text class="fg-badge-t" x="32" y="149.5" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M192,144 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="110" text-anchor="middle">POST /par</text>
+    <text class="fg-mxs" x="508" y="132" text-anchor="middle">client_assertion · code_challenge=S256</text>
+    <!-- 2 -->
+    <circle class="fg-badge fg-badge--accent" cx="32" cy="200" r="12"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="32" y="205.5" text-anchor="middle">2</text>
+    <path class="fg-edge fg-edge--accent" d="M824,200 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="508" y="190" text-anchor="middle">201 · request_uri=urn:…:&lt;id&gt; · expires_in</text>
+    <!-- 3 -->
+    <path class="fg-edge" d="M192,256 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="508" y="246" text-anchor="middle">GET /auth?request_uri=urn:…&amp;client_id</text>
+    <!-- validate -->
+    <path class="fg-edge fg-edge--accent" d="M824,296 h-40 v24 h40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="768" y="302" text-anchor="end">プロファイルに照らして検証する</text>
+    <text class="fg-mxs" x="768" y="324" text-anchor="end">redirect_uri exact match</text>
+    <text class="fg-mxs" x="768" y="346" text-anchor="end">ライブラリの ID Token: ES256</text>
+    <!-- interaction -->
+    <rect class="fg-box fg-box--sub" x="232" y="392" width="560" height="48" rx="8"/>
+    <text class="fg-xs" x="248" y="421">interaction エンドポイントが認可判断を得る</text>
+    <!-- code -->
+    <path class="fg-edge fg-edge--accent" d="M824,496 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="508" y="486" text-anchor="middle">302 redirect_uri?code=…&amp;state=…</text>
+    <!-- token -->
+    <path class="fg-edge" d="M192,568 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="534" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <text class="fg-mxs" x="508" y="556" text-anchor="middle">code · code_verifier · client_assertion</text>
+    <!-- tokens -->
+    <path class="fg-edge fg-edge--accent" d="M824,640 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="606" text-anchor="middle">200</text>
+    <text class="fg-mxs" x="508" y="628" text-anchor="middle">access_token (DPoP バインド) · id_token · refresh_token</text>
   </svg>
   <figcaption class="fig-note">本ライブラリのプロファイルが前段に足しているのは手順 1 と 2 です。これ以降ブラウザが運ぶのはリクエスト本体ではなく参照になるため、URL バーに改竄する価値のあるものが残りません。</figcaption>
 </figure>
@@ -99,7 +101,6 @@ PAR / JAR / JARM / DPoP / mTLS / ES256 など各略号の解説は [FAPI 2.0 入
 import (
   "github.com/libraz/go-oidc-provider/op"
   "github.com/libraz/go-oidc-provider/op/feature"
-  "github.com/libraz/go-oidc-provider/op/grant"
   "github.com/libraz/go-oidc-provider/op/profile"
   "github.com/libraz/go-oidc-provider/op/storeadapter/inmem"
 )
@@ -119,7 +120,6 @@ provider, err := op.New(
   op.WithKeyset(opKeys.Keyset()),
   op.WithCookieKeys(opKeys.CookieKey),
   op.WithLoginFlow(loginFlow),
-  op.WithGrants(grant.AuthorizationCode, grant.RefreshToken),
   op.WithProfile(profile.FAPI2Baseline), // <--- プロファイル切り替え
   op.WithFeature(feature.DPoP),
   op.WithStaticClients(op.PrivateKeyJWTClient{
@@ -134,6 +134,8 @@ provider, err := op.New(
 ```
 
 `PrivateKeyJWTClient` は FAPI クライアント用の型付きクライアント定義で、`token_endpoint_auth_method=private_key_jwt` を自動で設定します。組み込み側でこのフィールドを書く必要はありません。同じ系統の型として `op.PublicClient` と `op.ConfidentialClient` があり、3 つすべてが `op.ClientSeed` を実装し、`WithStaticClients(seeds ...ClientSeed)` に渡せます。
+
+example の RP（`rpkit.NewFAPI2`）は、`private_key_jwt` のアサーション付きで `/par` にリクエストを push し、`/token` では DPoP proof を送ります。そのため `http://127.0.0.1:9090/` を開くだけで、ブラウザからフロー全体を試せます。既定の grant は `authorization_code` と `refresh_token` なので、example は `op.WithGrants` を呼びません。
 
 本ライブラリで `WithProfile` を指定すると、OP は次のように振る舞います。
 

@@ -32,57 +32,42 @@ The alternative — *front-channel* logout — embeds an `<iframe>` per RP and d
 
 <figure class="fig">
   <div class="fig-head">One logout, fanned out to every RP</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-bcl-title" viewBox="0 0 960 366" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-bcl-title" viewBox="0 0 960 472" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-bcl-title">RP A sends the user to the end-session endpoint. The OP terminates the session, then posts a signed logout token to every RP the session's grants point at, and finally redirects the user back to RP A.</title>
-    <line class="fg-life" x1="110" y1="72" x2="110" y2="356"/>
-    <line class="fg-life" x1="300" y1="72" x2="300" y2="356"/>
-    <line class="fg-life fg-life--accent" x1="530" y1="72" x2="530" y2="356"/>
-    <line class="fg-life" x1="760" y1="72" x2="760" y2="356"/>
-    <line class="fg-life" x1="890" y1="72" x2="890" y2="356"/>
-    <rect class="fg-box" x="40" y="24" width="140" height="44" rx="6"/>
-    <text class="fg-t" x="110" y="44" text-anchor="middle">User</text>
-    <text class="fg-xs" x="110" y="59" text-anchor="middle">browser</text>
-    <rect class="fg-box" x="230" y="24" width="140" height="44" rx="6"/>
-    <text class="fg-t" x="300" y="44" text-anchor="middle">RP A</text>
-    <text class="fg-xs" x="300" y="59" text-anchor="middle">initiates</text>
-    <rect class="fg-box fg-box--accent" x="450" y="24" width="160" height="44" rx="6"/>
-    <text class="fg-t fg-accent" x="530" y="44" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="530" y="59" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="700" y="24" width="120" height="44" rx="6"/>
-    <text class="fg-t" x="760" y="49" text-anchor="middle">RP B</text>
-    <rect class="fg-box" x="838" y="24" width="86" height="44" rx="6"/>
-    <text class="fg-t" x="881" y="49" text-anchor="middle">RP C</text>
-    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M110,102 H300" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="205" y="96" text-anchor="middle">the user clicks "log out"</text>
-    <circle class="fg-badge" cx="15" cy="142" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="145" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M300,142 H530" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="415" y="122" text-anchor="middle">redirect to</text>
-    <text class="fg-mxs fg-halo" x="415" y="135" text-anchor="middle">/end_session?id_token_hint=…</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="180" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="183" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--accent" d="M530,172 h28 v16 h-28" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="570" y="184">terminate the session, then walk its grants</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="228" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="231" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M530,228 H756" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--accent" d="M530,258 H886" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="643" y="208" text-anchor="middle">POST backchannel_logout_uri</text>
-    <text class="fg-mxs" x="643" y="221" text-anchor="middle">logout_token — a signed JWT</text>
-    <text class="fg-xs fg-halo" x="700" y="252" text-anchor="middle">one POST per grant-derived target</text>
-    <circle class="fg-badge" cx="15" cy="292" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="295" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--muted" d="M756,292 H534" marker-end="url(#fg-am)"/>
-    <path class="fg-edge fg-edge--muted" d="M886,314 H534" marker-end="url(#fg-am)"/>
-    <text class="fg-mxs fg-halo" x="645" y="286" text-anchor="middle">200 — or nothing at all</text>
-    <circle class="fg-badge" cx="15" cy="350" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="353" text-anchor="middle">6</text>
-    <path class="fg-edge fg-edge--accent" d="M530,350 H110" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs fg-halo" x="320" y="344" text-anchor="middle">302 → post_logout_redirect_uri</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="448"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="448"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="448"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP A</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">user clicks log out</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">RP B · RP C</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">every other RP</text>
+    <!-- RP A sends the user to /end_session -->
+    <path class="fg-edge" d="M192,144 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="110" text-anchor="middle">GET /end_session</text>
+    <text class="fg-mxs" x="352" y="132" text-anchor="middle">id_token_hint=…</text>
+    <!-- OP ends the session and walks its grants -->
+    <path class="fg-edge fg-edge--accent" d="M512,200 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="206">end the session</text>
+    <text class="fg-s" x="568" y="228">walk its grants</text>
+    <!-- one logout_token POST per grant-derived target -->
+    <path class="fg-edge" d="M512,304 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="270" text-anchor="middle">POST backchannel_logout_uri</text>
+    <text class="fg-mxs" x="668" y="292" text-anchor="middle">logout_token, once per RP</text>
+    <!-- best-effort answer -->
+    <path class="fg-edge fg-edge--muted" d="M824,376 H512" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl" x="668" y="366" text-anchor="middle">200, or no answer</text>
+    <!-- redirect back to RP A -->
+    <path class="fg-edge fg-edge--accent" d="M512,448 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="438" text-anchor="middle">302 → post_logout_redirect_uri</text>
   </svg>
-  <figcaption class="fig-note">Step 5 is drawn muted for a reason: the OP does not wait on it, and an RP that never answers still gets logged out everywhere else. Back-channel logout is a best-effort notification, not a distributed transaction.</figcaption>
+  <figcaption class="fig-note">The dashed return is muted for a reason: the OP does not wait on it, and an RP that never answers still gets logged out everywhere else. Back-channel logout is a best-effort notification, not a distributed transaction.</figcaption>
 </figure>
 
 The OP signs a `logout_token` per RP and POSTs it to that RP's `backchannel_logout_uri`. The token contains:
@@ -95,7 +80,7 @@ The OP signs a `logout_token` per RP and POSTs it to that RP's `backchannel_logo
 | `sub` | Whose session ended. `sid` is never emitted — see [below](#backchannel-target-resolution) |
 | `events` | `{"http://schemas.openid.net/event/backchannel-logout": {}}` |
 
-The RP verifies the signature and `aud`, drops the local session, and returns 200.
+The JOSE header carries `typ: logout+jwt`, so an RP can refuse a token of any other type. The RP verifies the signature and `aud`, drops the local session, and returns 200. In the other direction, `/end_session` accepts only an ID Token as `id_token_hint`; a logout token or an access token is refused.
 
 ## Wiring
 
@@ -118,11 +103,13 @@ Library-wide knobs:
 ```go
 op.New(
   /* ... */
-  op.WithBackchannelLogoutHTTPClient(myHTTPClient), // mTLS / custom timeouts
+  op.WithBackchannelLogoutHTTPClient(myHTTPClient), // custom Transport: mTLS, proxy
   op.WithBackchannelLogoutTimeout(5 * time.Second),
   op.WithBackchannelFanOutBudget(30 * time.Second), // whole detached fan-out; separate from per-RP timeout
 )
 ```
+
+The OP copies only the `Transport` of the client you pass. It always applies its own timeout, refuses redirects, and checks every target URL against the SSRF deny-list. A nil or `*http.Transport` additionally gets the dial-time check (the OP replaces any custom dial function); through a proxy, that check covers the proxy's address and the target host is checked once before the hand-off. Any other `http.RoundTripper`, an `otelhttp` wrapper for instance, is gated on the URL alone, which does not stop DNS rebinding.
 
 Local demos and CI fixtures that bind a stub RP on loopback can opt into plain HTTP only for loopback `backchannel_logout_uri` values:
 

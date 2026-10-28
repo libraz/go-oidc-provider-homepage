@@ -3,11 +3,11 @@ title: Public / Internal スコープ
 description: scope を「discovery に出す（Public）」と「管理用途で出さない（Internal）」に分離 — OP は前者だけ宣伝、両方発行。
 ---
 
-# 使い方 — Public / Internal スコープ
+# ユースケース — Public / Internal スコープ
 
 ## そもそも scope とは
 
-OAuth 2.0（RFC 6749 §3.3）における **scope** は、クライアントが `/authorize` 要求に付けて *どんな種類のアクセスを要求するか* を表す文字列です（例: `email` / `profile` / `billing.read`）。OP が許可する scope を決め、アクセストークンに許可された scope が乗り、リソースサーバが API 認可判断に使います。
+OAuth 2.0（RFC 6749 §3.3）における **scope** は、クライアントが `/auth` 要求に付けて *どんな種類のアクセスを要求するか* を表す文字列です（例: `email` / `profile` / `billing.read`）。OP が許可する scope を決め、アクセストークンに許可された scope が乗り、リソースサーバが API 認可判断に使います。
 
 OIDC Core 1.0 §3.1.2.1 では `openid` が OIDC リクエストを示し、§5.4 では `profile`、`email`、`address`、`phone` がユーザ claim に対応します。配備独自の scope も定義できます。このページでは、それらを **公開 scope**（Discovery に掲載し、同意画面にも表示）と **内部 scope**（許可したクライアントだけが使え、Discovery には掲載しない）に分ける方法を説明します。
 
@@ -18,7 +18,7 @@ OIDC Core 1.0 §3.1.2.1 では `openid` が OIDC リクエストを示し、§5.
 :::
 
 ::: details 用語の補足
-- **Scope と claim** — *scope* はクライアントが `/authorize` に付けて *どんな種類のアクセスを要求するか* を表す文字列（`email`、`billing.read` など）。*claim* は最終的に `id_token` や `/userinfo` に乗る identity の key/value（`email`、`email_verified` など）。scope は粗い単位で、1 scope は claim の *束* に対応します。claim 単位の細かい制御は [Claims リクエストパラメータ](/ja/use-cases/claims-request) を参照。
+- **Scope と claim** — *scope* はクライアントが `/auth` に付けて *どんな種類のアクセスを要求するか* を表す文字列（`email`、`billing.read` など）。*claim* は最終的に `id_token` や `/userinfo` に乗る identity の key/value（`email`、`email_verified` など）。scope は粗い単位で、1 scope は claim の *束* に対応します。claim 単位の細かい制御は [Claims リクエストパラメータ](/ja/use-cases/claims-request) を参照。
 - **`scopes_supported`** — OP が公開する scope を列挙する discovery フィールド。RP はこれを見て要求可能な scope を知ります。掲載されない scope でも発行は可能です — `scopes_supported` は *公開リスト* であって *認可* ではありません。
 :::
 
@@ -29,21 +29,20 @@ OIDC Core 1.0 §3.1.2.1 では `openid` が OIDC リクエストを示し、§5.
 `op.PublicScope(name, label)` と `op.InternalScope(name)` は `Scope` 値を返すコンストラクタです。`op.WithScope` に 1 つずつ渡します:
 
 ```go
-op.WithScope(op.PublicScope("billing.read",  "請求履歴の閲覧")),
-op.WithScope(op.PublicScope("billing.write", "請求書の管理")),
+op.WithScope(op.PublicScope("billing.read", "請求データの閲覧")),
 op.WithScope(op.InternalScope("internal:audit")),
 ```
 
 `PublicScope`:
 - `scopes_supported` に掲載されます。
-- 同意画面にラベルが表示されます。
 - 自身の seed の `Scopes` に列挙した任意の登録 RP に発行できます。
 
 `InternalScope`:
 - `scopes_supported` には **掲載されません**。
-- 同意画面にも **表示されません**（OP は同意フェーズをスキップします）。
 - 受理可否は `Scope.AllowedClients` で制御されます。空のリストはどの RP からも要求可能、要素を持つリストはそのリストに掲載されたクライアントのみ受理し、それ以外は RFC 6749 §5.2 の `invalid_scope` で拒否されます。
 - OIDC 標準の scope 名で `InternalScope` を作ろうとすると `op.New` が拒否します。discovery 文書が OIDC Discovery 1.0 §3 に違反しないようにするためです。
+
+Public かどうかが決めるのは discovery への掲載だけです。同意画面に出るかどうかは `Public` と無関係で、ユーザに同意を求める場面では、要求された scope が public でも internal でもすべて並びます。組み込みの画面は、各 scope の `Name` と、設定されていれば `Description` を表示します。`PublicScope(name, label)` はラベルを `Scope.Title` に保存しますが、同意画面には `Title` が渡りません。ユーザ向けの説明文を出すには、構造体の形（`op.Scope{Name: ..., Description: ..., Public: true}`、次節参照）を使ってください。[カスタム同意 UI](/ja/use-cases/custom-consent-ui) が受け取るのも、同じ `Name`、`Description`、`Required` です。
 
 ::: tip OIDC 標準スコープ
 `openid`、`profile`、`email`、`address`、`phone`、`offline_access` は組み込み既定で自動登録されます。明示宣言は不要 — 例は **OP 独自の** scope カタログに焦点を当てています。
@@ -100,7 +99,7 @@ op.WithStaticClients(
 curl -s http://localhost:8080/.well-known/openid-configuration | jq .scopes_supported
 # [
 #   "openid", "profile", "email", "address", "phone", "offline_access",
-#   "billing.read", "billing.write"
+#   "billing.read"
 # ]
 ```
 

@@ -30,74 +30,66 @@ In the simplest setup, you (the OP operator) hand-register every RP that integra
 ## Architecture
 
 <figure class="fig">
-  <div class="fig-head">From an initial token to a managed registration</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-dcr-title" viewBox="0 0 960 546" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">An initial token starts a registration the RP then manages</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dcr-title" viewBox="0 0 960 952" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-dcr-title">The operator mints an initial access token and hands it to a new relying party out of band. The RP registers with it and receives a registration access token, which it then uses to read, update and finally delete its own registration.</title>
-    <rect class="fg-group" x="30" y="70" width="916" height="118" rx="8"/>
-    <rect class="fg-group" x="30" y="196" width="916" height="150" rx="8"/>
-    <rect class="fg-group" x="30" y="354" width="916" height="180" rx="8"/>
-    <text class="fg-lbl" x="42" y="88">1 · the operator hands out an initial token</text>
-    <text class="fg-lbl" x="42" y="214">2 · the RP registers itself</text>
-    <text class="fg-lbl" x="42" y="372">3 · the RP manages its own record (RFC 7592)</text>
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="534"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="534"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="534"/>
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">Operator</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">you</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">A new RP</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">not registered yet</text>
-    <circle class="fg-badge" cx="15" cy="112" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="115" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,112 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="106" text-anchor="middle">IssueInitialAccessToken(ctx, spec)</text>
-    <circle class="fg-badge" cx="15" cy="144" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="147" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,144 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="138" text-anchor="middle">&lt;iat&gt;</text>
-    <circle class="fg-badge" cx="15" cy="178" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="181" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--muted" d="M150,178 H830" marker-end="url(#fg-am)"/>
-    <text class="fg-xs fg-halo" x="490" y="172" text-anchor="middle">handed over out of band — email, ticket, whatever you already trust</text>
-    <circle class="fg-badge" cx="15" cy="262" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="265" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M830,262 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="230" text-anchor="middle">POST /register</text>
-    <text class="fg-mxs" x="665" y="244" text-anchor="middle">Authorization: Bearer &lt;iat&gt;</text>
-    <text class="fg-mxs" x="665" y="256" text-anchor="middle">{ redirect_uris, …, client_name }</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="326" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="329" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M500,326 H830" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="665" y="294" text-anchor="middle">201 · { client_id, client_secret?,</text>
-    <text class="fg-mxs" x="665" y="308" text-anchor="middle">registration_access_token,</text>
-    <text class="fg-mxs" x="665" y="320" text-anchor="middle">registration_client_uri, … }</text>
-    <circle class="fg-badge" cx="15" cy="408" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="411" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M830,408 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="390" text-anchor="middle">GET /register/&lt;client_id&gt;</text>
-    <text class="fg-mxs" x="665" y="402" text-anchor="middle">Authorization: Bearer &lt;rat&gt;</text>
-    <circle class="fg-badge" cx="15" cy="438" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="441" text-anchor="middle">7</text>
-    <path class="fg-edge fg-edge--accent" d="M500,438 H830" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="665" y="432" text-anchor="middle">200 · the full client metadata</text>
-    <circle class="fg-badge" cx="15" cy="470" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="473" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M830,470 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="464" text-anchor="middle">PUT /register/&lt;client_id&gt; → 200 updated</text>
-    <circle class="fg-badge" cx="15" cy="502" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="505" text-anchor="middle">9</text>
-    <path class="fg-edge" d="M830,502 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="496" text-anchor="middle">DELETE /register/&lt;client_id&gt;</text>
-    <circle class="fg-badge" cx="15" cy="530" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="533" text-anchor="middle">10</text>
-    <path class="fg-edge fg-edge--accent" d="M500,530 H830" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="665" y="524" text-anchor="middle">204 · No Content</text>
+    <!-- phase bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="240" rx="8"/>
+    <rect class="fg-group" x="32" y="360" width="896" height="200" rx="8"/>
+    <rect class="fg-group" x="32" y="576" width="896" height="352" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">the operator hands out an initial token</text>
+    <text class="fg-lbl fg-halo" x="56" y="388">the RP registers itself</text>
+    <text class="fg-lbl fg-halo" x="56" y="604">the RP manages its own record (RFC 7592)</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="928"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="928"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="928"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Operator</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">you</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">A new RP</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">not registered yet</text>
+    <!-- mint -->
+    <path class="fg-edge" d="M192,208 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="174" text-anchor="middle">IssueInitialAccessToken</text>
+    <text class="fg-mxs" x="352" y="196" text-anchor="middle">(ctx, spec)</text>
+    <!-- return iat -->
+    <path class="fg-edge fg-edge--accent" d="M512,264 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="254" text-anchor="middle">&lt;iat&gt;</text>
+    <!-- out of band -->
+    <path class="fg-edge fg-edge--muted" d="M192,320 H824" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="310" text-anchor="middle">handed over out of band — email, ticket, any channel you trust</text>
+    <!-- register -->
+    <path class="fg-edge" d="M824,464 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="430" text-anchor="middle">POST /register</text>
+    <text class="fg-mxs" x="668" y="452" text-anchor="middle">Bearer &lt;iat&gt; · { metadata }</text>
+    <!-- registered -->
+    <path class="fg-edge fg-edge--accent" d="M512,536 H824" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="668" y="502" text-anchor="middle">201 Created</text>
+    <text class="fg-mxs" x="668" y="524" text-anchor="middle">client_id, &lt;rat&gt;, client_uri</text>
+    <!-- read -->
+    <path class="fg-edge" d="M824,676 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="642" text-anchor="middle">GET /register/&lt;client_id&gt;</text>
+    <text class="fg-mxs" x="668" y="664" text-anchor="middle">Authorization: Bearer &lt;rat&gt;</text>
+    <!-- read ok -->
+    <path class="fg-edge fg-edge--accent" d="M512,732 H824" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="668" y="722" text-anchor="middle">200 · the full client metadata</text>
+    <!-- update -->
+    <path class="fg-edge" d="M824,788 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="778" text-anchor="middle">PUT /register/&lt;client_id&gt;</text>
+    <!-- delete -->
+    <path class="fg-edge" d="M824,844 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="834" text-anchor="middle">DELETE /register/&lt;client_id&gt;</text>
+    <!-- deleted -->
+    <path class="fg-edge fg-edge--accent" d="M512,900 H824" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="668" y="890" text-anchor="middle">204 · No Content</text>
   </svg>
-  <figcaption class="fig-note">Step 3 is the only leg the specification says nothing about, and it is where the trust actually comes from. Everything after it is scoped to one client by a token that client alone holds.</figcaption>
+  <figcaption class="fig-note">The out-of-band hand-over is the only leg the specification says nothing about, and it is where the trust actually comes from. Everything after it is scoped to one client by a token that client alone holds.</figcaption>
 </figure>
 
 ## Wiring
@@ -126,7 +118,7 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 
 ## Open registration and default scope
 
-When `RegistrationOption.Open` is `true`, the OP accepts `POST /register` without an Initial Access Token — anyone reachable on the network can mint a client. The library narrows the resulting trust by **persisting an empty scope set whenever the request omits `scope`**: such a client cannot ask for any scope at `/authorize` until it updates its registration.
+When `RegistrationOption.Open` is `true`, the OP accepts `POST /register` without an Initial Access Token — anyone reachable on the network can mint a client. The library narrows the resulting trust by **persisting an empty scope set whenever the request omits `scope`**: such a client cannot ask for any scope at `/auth` until it updates its registration.
 
 ```go
 op.WithDynamicRegistration(op.RegistrationOption{
@@ -159,7 +151,7 @@ On `PUT /register/{client_id}`, an omitted `scope` is a request to delete the me
 
 ## Authentication-context client metadata
 
-Three client-metadata fields shape `/authorize` defaults and the `auth_time` claim of the resulting `id_token`. They are accepted both from DCR registration (RFC 7591) and from `op.ClientSeed` static seeds; the OP enforces them at request time.
+Three client-metadata fields shape `/auth` defaults and the `auth_time` claim of the resulting `id_token`. They are accepted at DCR registration (RFC 7591) and stored on `store.Client`; the static seed builders (`op.PublicClient` and friends) do not expose them, so set them through `/register` or by writing `store.Client` directly. The OP enforces them at request time.
 
 | Field | Effect | Spec |
 |---|---|---|
@@ -168,7 +160,7 @@ Three client-metadata fields shape `/authorize` defaults and the `auth_time` cla
 | `require_auth_time` | When `true`, the issued `id_token` must carry `auth_time`. If the OP cannot recover the originating authentication time, token issuance fails with `server_error` rather than fabricating a value. | OIDC Core 1.0 §2 |
 
 ::: tip Why server_error on missing auth_time
-RFC violations of `require_auth_time` are rare in practice — the OP records `auth_time` whenever it runs the login flow itself. The fabrication path (substituting `iat`, for example) would silently break RPs that audit step-up assurance based on `auth_time`. The constructor-time refusal makes the gap visible at the point that caused it.
+RFC violations of `require_auth_time` are rare in practice — the OP records `auth_time` whenever it runs the login flow itself. The fabrication path (substituting `iat`, for example) would silently break RPs that audit step-up assurance based on `auth_time`. Failing the issuance makes the gap visible at the point that caused it.
 :::
 
 ## Safety floors that are not negotiable
@@ -211,7 +203,7 @@ The DCR surface is `partial` rather than `full`, but the partial label captures 
 
 - `redirect_uris` shape per `application_type` (see the warning above), with no fragments and absolute URLs only.
 - `grant_types` and `response_types` are cross-checked against the OIDC Core §3 / OIDC Registration §2 combination table; an inconsistent pair is rejected with `invalid_client_metadata` rather than silently auto-fixed.
-- `jwks` and `jwks_uri` are mutually exclusive; URI-bearing metadata fields (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `jwks_uri`, `sector_identifier_uri`, `initiate_login_uri`) must be absolute, `https`, and fragment-free. Userinfo segments (`https://user:pass@host/...`) are rejected. **Exception:** `request_uris` admit a fragment because OIDC Core §6.2 RECOMMENDS the base64url-encoded SHA-256 hash of the request file there so caches can detect content changes; every other shape rule (absolute, `https`, host required, no userinfo) still applies.
+- `jwks` and `jwks_uri` are mutually exclusive (RFC 7591 §2), and a `private_key_jwt` client must supply exactly one of them. The OP also refuses a stored record carrying both wherever it reads client keys (request objects, `private_key_jwt`, response encryption). URI-bearing metadata fields (`client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `jwks_uri`, `sector_identifier_uri`, `initiate_login_uri`) must be absolute, `https`, and fragment-free. Userinfo segments (`https://user:pass@host/...`) are rejected. **Exception:** `request_uris` admit a fragment because OIDC Core §6.2 RECOMMENDS the base64url-encoded SHA-256 hash of the request file there so caches can detect content changes; every other shape rule (absolute, `https`, host required, no userinfo) still applies.
 - `backchannel_logout_uri` MUST be `https`, carry no fragment, no userinfo, and a non-empty host. Any `backchannel_logout_session_required=true` is rejected as `invalid_client_metadata`, even when a valid URI is also present: this OP cannot persist the RP-specific session lineage needed to deliver `sid` safely.
 - `sector_identifier_uri` is fetched at registration time and the document MUST be a JSON array of strings that contains every registered `redirect_uri` (OIDC Core §8.1). The fetch is bounded to a 5 s timeout and a 64 KiB body; failure or containment mismatch produces `invalid_client_metadata`.
 - `subject_type=pairwise` without `sector_identifier_uri` requires every `redirect_uri` host to match.
@@ -300,7 +292,7 @@ _ = provider
 _ = err
 ```
 
-The older `OnClientDeleted` hook remains available for a client-ID-only cascade. Hook errors are logged after the deletion and do not change the successful `204` response, so custom cleanup must be retryable and observable.
+`RegistrationOption.OnClientDeleted` is the client-ID-only variant of the same hook. Hook errors are logged after the deletion and do not change the successful `204` response, so custom cleanup must be retryable and observable.
 
 ## When to use it
 

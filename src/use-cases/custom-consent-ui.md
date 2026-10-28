@@ -7,9 +7,15 @@ description: Customise consent with op.WithConsentUI, locale bundles, or the JSO
 
 ## What is "consent" in OIDC?
 
-After the user authenticates, OIDC Core 1.0 §3.1.2.4 requires the OP to obtain an authorization decision before releasing information. An interactive dialogue in which **the user — not the RP — approves or denies the requested scopes** (`profile`, `email`, anything else the RP listed) is one permitted way to obtain it; prior administrative consent or another established condition can also suffice. This page covers the library's interactive consent UI path between login and the redirect.
+After the user authenticates, OIDC Core 1.0 §3.1.2.4 requires the OP to obtain an authorization decision before it releases information. One permitted way is an interactive dialogue in which **the user, not the RP, approves or denies the requested scopes** (`profile`, `email`, whatever the RP listed). Prior administrative consent or another established condition can also suffice. This page covers the library's interactive consent screen between login and the redirect back to the RP; [Consent](/concepts/consent) explains when the OP shows it and when it remembers an earlier answer.
 
-The bundled consent page works, but you almost certainly want it branded — your logo, your copy, your privacy / TOS links, your i18n. For small copy changes, locale bundle overlays are enough. For a branded server-rendered page, pass `op.WithConsentUI`. For full client-side rendering, use the JSON driver.
+The bundled consent page works, but you will usually want your own logo, copy, privacy and terms links, and languages. Pick the lightest path that gets you there:
+
+| You want to change | Use | The OP keeps |
+|---|---|---|
+| Strings only (wording, translation) | Path 1: `op.WithLocale` | bundled HTML, CSP, CSRF |
+| The page's markup, server-rendered | Path 2: `op.WithConsentUI` | state, CSRF, consent persistence |
+| Everything, rendered in a SPA | Path 3: `interaction.JSONDriver` or `op.WithSPAUI` | state, CSRF, consent persistence |
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (authorization decision and consent)
@@ -18,19 +24,19 @@ The bundled consent page works, but you almost certainly want it branded — you
 :::
 
 ::: details Vocabulary refresher
-- **Consent screen** — When the OP uses interactive dialogue, this is the page between login and the redirect-back-with-code where the user approves the scopes a particular RP is requesting. The OP decides what data to ask about; the user decides whether to release it.
-- **CSRF token** — A per-session secret embedded in a form so a hostile third-party site cannot trick the browser into submitting "Approve" on the user's behalf. The OP issues and validates the token; SPA / template only echo it back in the POST body or the `X-CSRF-Token` header.
-- **Content Security Policy (CSP)** — A response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page may load. The OP renders the bundled consent page under a strict default policy that blocks `<script>`, inline event handlers, and external assets, so a hostile RP `client_name` cannot escalate into XSS.
+- **Consent screen**: the page between login and the redirect back with a code, where the user approves the scopes a particular RP requests. The RP decides what to ask for; the user decides whether to release it.
+- **CSRF token**: a secret embedded in a form so a hostile site cannot make the browser submit "Approve" on the user's behalf. The OP issues and validates it; your template or SPA only echoes it back in the POST body (`csrf_token`) or the `X-CSRF-Token` header.
+- **Content Security Policy (CSP)**: a response header (`Content-Security-Policy: default-src 'none'; ...`) that tells the browser which resources a page may load. The OP serves the bundled consent page under a strict default policy that blocks scripts, inline handlers, and external assets, so a hostile RP `client_name` cannot turn into XSS.
 :::
 
 ## Path 1 — Locale bundle overlay (minor copy / i18n)
 
-If you only need to change the strings (translated copy, brand voice, partial translations), `op.WithLocale` overlays your keys on top of the seed `en` / `ja` bundles at key granularity. The bundled consent page picks up the overlay automatically.
+If you only need to change strings (brand voice, translations, partial translations), `op.WithLocale` overlays your keys on the seed `en` and `ja` bundles one key at a time. The bundled consent page picks up the overlay automatically. The consent screen reads `consent.title` and `consent.subtitle` (both take a `{client_name}` placeholder), `consent.button.allow`, and `consent.scope_required`.
 
 ```go
 brandJa, _ := op.LocaleBundleFromMap("ja", map[string]string{
-  "consent.title":                       "Acme へのアクセス許可",
-  "consent.scope.profile.description":   "プロフィール情報の参照",
+  "consent.title":    "{client_name} へのアクセス許可",
+  "consent.subtitle": "{client_name} が次の情報へのアクセスを求めています。",
 })
 
 op.New(
@@ -39,13 +45,13 @@ op.New(
 )
 ```
 
-Bundle keys follow the surface they render — see [Use case: i18n / locale negotiation](/use-cases/i18n) for the catalogue and the resolution chain.
+The scope lines are not bundle keys. Each row shows the scope name and the `Description` from the `op.Scope` you registered, in its default language; `Scope.I18n` is stored but the consent prompt does not read it. To show translated scope text, look it up by scope name in your own template (Path 2) or SPA (Path 3).
 
-This path keeps the bundled HTML driver, the bundled CSP, and the bundled CSRF / cookie scheme. You only change strings.
+See [i18n / locale negotiation](/use-cases/i18n) for the key catalogue and how the OP picks a locale. This path keeps the bundled HTML driver, CSP, and CSRF and cookie scheme.
 
 ## Path 2 — Custom consent template (server-rendered)
 
-When you want branded HTML but still want the OP to own state, CSRF, and consent persistence, pass `op.WithConsentUI` with a parsed `*html/template.Template`. The template receives `interaction.ConsentTemplateData`, including `Client`, `Scopes`, `StateRef`, `CSRFToken`, `ApprovedScopesField`, `SubmitMethod`, and `SubmitAction`.
+When you want branded HTML but still want the OP to own state, CSRF, and consent persistence, pass `op.WithConsentUI` with a parsed `*html/template.Template`. The template receives `interaction.ConsentTemplateData`: `Client` (name, logo, policy and terms URLs), `Scopes` (each with `Name`, `Description`, `Required`), `StateRef`, `CSRFToken`, `ApprovedScopesField`, `SubmitMethod`, and `SubmitAction`.
 
 ```go
 tmpl := template.Must(template.ParseFiles("consent.html"))
@@ -56,17 +62,46 @@ op.New(
 )
 ```
 
-See [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) for the form field shape.
+The form your template renders must POST three values to `SubmitAction`: `state_ref`, `csrf_token`, and a field named `ApprovedScopesField` (`approved_scopes`) holding the approved scope names joined by spaces. A template that approves every requested scope with one button, as [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui) does, posts all of them. Per-scope checkboxes need client-side script to build the joined value; the bundled screen has no decline button for the same reason. A required scope cannot be dropped: the OP answers 4xx when the submission omits one.
+
+`op.WithConsentUI` may be called once and cannot be combined with `op.WithSPAUI`; `op.New` fails in either case.
+
+::: warning One fixed language
+`ConsentTemplateData` carries no locale and no message bundle, so a custom template renders a single language. If you need several, choose the language in the template yourself, or use the JSON driver, whose prompts carry the resolved `locale`.
+:::
 
 ### CSP for a custom template
 
-`op.ConsentUI` has a `ContentSecurityPolicy` field. An empty value selects the library default (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`), which is intentionally too restrictive for a template that loads branding assets. A non-empty value is normalized by the public `interaction.NormalizeCSP` seam at `op.New`: you may add the `style-src`, `img-src`, `font-src`, or `script-src` policy your template needs, but `form-action` is forbidden, and `frame-ancestors` and `base-uri` must be exactly `'none'` when present. Missing `frame-ancestors` and `base-uri` are appended automatically. Invalid policy returns `interaction.ErrCSPNotPermitted` through the configuration error.
+`op.ConsentUI` has a `ContentSecurityPolicy` field. An empty value selects the library default (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`), which blocks every subresource. A template that loads a stylesheet, logo, or webfont then renders unstyled, and the OP never sees a failure because the browser does the blocking.
 
-Allowing scripts is a conscious trust decision: the page contains the CSRF token and continuation state. `html/template` escaping protects values such as the RP's display name, but it does not make arbitrary script execution harmless.
+A non-empty value is normalized by `interaction.NormalizeCSP` when `op.New` runs. You may add the `style-src`, `img-src`, `font-src`, or `script-src` your template needs, with these exceptions:
+
+- `form-action` is refused, because browsers apply it to redirect targets and it would block the cross-origin redirect that completes a successful consent.
+- `frame-ancestors` and `base-uri` must be exactly `'none'` when present; if you omit them, the OP appends them.
+- A comma, a control character, or a non-ASCII byte is refused.
+
+A refused policy fails `op.New` with `interaction.ErrCSPNotPermitted`.
+
+Allowing scripts is a trust decision: the page contains the CSRF token and the continuation state, so any script that runs on it can complete the consent without the user. `html/template` escaping protects values such as the RP's display name, but it does not make arbitrary script execution harmless. Branding needs `style-src`, `img-src`, and `font-src`, not `script-src`.
 
 ## Path 3 — JSON driver (full markup control)
 
-If you need to own the markup (custom layout, brand assets, framework-rendered consent), switch to the JSON driver. The OP returns the consent prompt as `{ type: "consent.scope", data: { scopes: [...] }, csrf_token, ... }` JSON; your page or SPA renders it and posts the user's choice back.
+If you need to own the markup (custom layout, brand assets, framework-rendered consent), switch to the JSON driver. The OP returns the consent prompt as JSON; your page or SPA renders it and posts the user's choice back. `ConsentScopePromptData` has no JSON tags, so its members are capitalised:
+
+```json
+{
+  "type": "consent.scope",
+  "data": {
+    "Scopes": [{"Name": "openid", "Description": "...", "Required": true}, {"Name": "email", "Description": "...", "Required": false}],
+    "Client": {"ClientID": "demo-spa", "Name": "Demo", "LogoURL": "", "ClientURI": "", "PolicyURI": "", "TosURI": ""}
+  },
+  "state_ref": "...",
+  "csrf_token": "...",
+  "locale": "ja"
+}
+```
+
+The SPA POSTs `{ "state_ref": "...", "values": { "approved_scopes": "openid email" } }` back. A user who declines the whole request sends `DELETE` to the same interaction URL.
 
 ```go
 import "github.com/libraz/go-oidc-provider/op/interaction"
@@ -77,7 +112,7 @@ op.New(
 )
 ```
 
-The SPA echoes `prompt.csrf_token` into the `X-CSRF-Token` header on submission; the OP compares against the `__Host-oidc_csrf` cookie (double-submit pattern). See [SPA / custom interaction](/use-cases/spa-custom-interaction) for the worked end-to-end flow.
+The SPA copies `csrf_token` from the prompt into the `X-CSRF-Token` header; the OP compares it with the `__Host-oidc_csrf` cookie (double-submit pattern). [SPA / custom interaction](/use-cases/spa-custom-interaction) walks through the whole flow.
 
 ## What you don't have to write either way
 
@@ -89,9 +124,9 @@ The SPA echoes `prompt.csrf_token` into the `X-CSRF-Token` header on submission;
 | Session lookup / consent persistence | yes |
 | Rendering the redirect back to the RP after approval | yes |
 
-Path 1 (locale bundle) keeps the bundled CSP (`default-src 'none'; style-src 'none'; frame-ancestors 'none'; base-uri 'none'`) and the rendered HTML. For Path 2 (custom template), set `ConsentUI.ContentSecurityPolicy` rather than trying to add `form-action` for the RP redirect — `form-action` would block successful cross-origin completion. Path 3 (JSON driver) lets your own page set the CSP it needs.
+Path 1 keeps the bundled CSP and HTML. In Path 2, declare your asset origins in `ConsentUI.ContentSecurityPolicy`; do not try to add `form-action` for the RP redirect. In Path 3, your own page sets the CSP it needs.
 
-The POST's Origin / Referer ceremony check is not derived from the client's redirect URI. It accepts the issuer origin and origins explicitly supplied with `op.WithCORSOrigins`; a redirect URI on another origin does not authorize that origin to submit interaction or end-session state.
+The OP checks the POST's `Origin` / `Referer` against the issuer origin and any origin you passed to `op.WithCORSOrigins`. A client's `redirect_uri` origin does not qualify, so a page on another client's origin cannot submit interaction or end-session state.
 
 ## Read next
 

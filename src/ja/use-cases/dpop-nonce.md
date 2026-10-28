@@ -4,7 +4,7 @@ description: RFC 9449 §8 / §9 — サーバが供給する nonce を DPoP proo
 pageClass: pg-use-cases-dpop-nonce
 ---
 
-# 使い方 — DPoP nonce フロー
+# ユースケース — DPoP nonce フロー
 
 ## DPoP とは何か、nonce とは何か
 
@@ -34,49 +34,46 @@ pageClass: pg-use-cases-dpop-nonce
 
 <figure class="fig">
   <div class="fig-head">nonce を一度チャレンジし、受理値を再利用する</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-dpopnonce-title" viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dpopnonce-title" viewBox="0 0 960 624" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-dpopnonce-title">OP は最初の proof を use_dpop_nonce で拒否し、ヘッダで nonce を返します。クライアントはその nonce を入れて proof を作り直し、成功します。以後の proof は OP が新しい値を渡すまで受理値を再利用でき、成功応答に DPoP-Nonce ヘッダが必ず付くわけではありません。</title>
-    <line class="fg-life" x1="200" y1="72" x2="200" y2="390"/>
-    <line class="fg-life fg-life--accent" x1="700" y1="72" x2="700" y2="390"/>
-    <rect class="fg-box" x="110" y="24" width="180" height="44" rx="6"/>
-    <text class="fg-t" x="200" y="44" text-anchor="middle">RP / クライアント</text>
-    <text class="fg-mxs" x="200" y="59" text-anchor="middle">priv_dpop を保有</text>
-    <rect class="fg-box fg-box--accent" x="610" y="24" width="180" height="44" rx="6"/>
-    <text class="fg-t fg-accent" x="700" y="44" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="700" y="59" text-anchor="middle">go-oidc-provider</text>
-    <circle class="fg-badge" cx="15" cy="112" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="115" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M200,112 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="450" y="92" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-    <text class="fg-xs" x="450" y="105" text-anchor="middle">まだ nonce が無い — 事前に知る手段がない</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="158" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="161" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M700,158 H200" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="450" y="138" text-anchor="middle">400 use_dpop_nonce</text>
-    <text class="fg-mxs" x="450" y="151" text-anchor="middle">DPoP-Nonce: nonce-1</text>
-    <circle class="fg-badge" cx="15" cy="196" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="199" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M200,188 h28 v16 h-28" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="240" y="192">proof を作り直す</text>
-    <text class="fg-mxs" x="240" y="205">nonce = nonce-1 を入れる</text>
-    <circle class="fg-badge" cx="15" cy="242" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="245" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M200,242 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="450" y="236" text-anchor="middle">POST /token · DPoP: &lt;proof, nonce-1&gt;</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="288" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="291" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M700,288 H200" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="450" y="268" text-anchor="middle">200 · DPoP 結び付き付きの access_token</text>
-    <text class="fg-mxs" x="450" y="281" text-anchor="middle">nonce-1 を引き続き受理 — 新しいヘッダは不要</text>
-    <circle class="fg-badge" cx="15" cy="330" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="333" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M200,330 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="450" y="324" text-anchor="middle">GET /userinfo · DPoP: &lt;proof, nonce-1&gt;</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="376" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="379" text-anchor="middle">7</text>
-    <path class="fg-edge fg-edge--accent" d="M700,376 H200" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="450" y="356" text-anchor="middle">200 · { user claims }</text>
-    <text class="fg-mxs" x="450" y="369" text-anchor="middle">この成功応答に DPoP-Nonce ヘッダはない</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="600"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="600"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / クライアント</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">priv_dpop を保有</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- first proof -->
+    <path class="fg-edge" d="M192,144 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="110" text-anchor="middle">POST /token</text>
+    <text class="fg-xs" x="508" y="132" text-anchor="middle">まだ nonce が無い — 事前に知る手段がない</text>
+    <!-- challenge -->
+    <path class="fg-edge fg-edge--accent" d="M824,216 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="182" text-anchor="middle">400 use_dpop_nonce</text>
+    <text class="fg-mxs" x="508" y="204" text-anchor="middle">DPoP-Nonce: nonce-1</text>
+    <!-- rebuild -->
+    <path class="fg-edge" d="M192,256 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="262">proof を作り直す</text>
+    <text class="fg-mxs" x="248" y="284">nonce = nonce-1</text>
+    <!-- retry -->
+    <path class="fg-edge" d="M192,360 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="326" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="508" y="348" text-anchor="middle">DPoP: &lt;proof, nonce-1&gt;</text>
+    <!-- accepted -->
+    <path class="fg-edge fg-edge--accent" d="M824,432 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="398" text-anchor="middle">200 · access_token</text>
+    <text class="fg-xs" x="508" y="420" text-anchor="middle">nonce-1 を引き続き受理 — 新しいヘッダは不要</text>
+    <!-- reuse -->
+    <path class="fg-edge" d="M192,504 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="470" text-anchor="middle">GET /userinfo</text>
+    <text class="fg-mxs" x="508" y="492" text-anchor="middle">DPoP: &lt;proof, nonce-1&gt;</text>
+    <!-- reuse accepted -->
+    <path class="fg-edge fg-edge--accent" d="M824,576 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="542" text-anchor="middle">200 · { user claims }</text>
+    <text class="fg-xs" x="508" y="564" text-anchor="middle">この成功応答に DPoP-Nonce ヘッダはない</text>
   </svg>
   <figcaption class="fig-note">最初の拒否は特別扱いすべき失敗ではなく、ハンドシェイクそのものです。<code>use_dpop_nonce</code> を通常のエラーとして扱うクライアントは再試行を繰り返しますが、ヘッダを読むクライアントは次の 1 回で成功します。</figcaption>
 </figure>
@@ -102,7 +99,7 @@ op.New(
 )
 ```
 
-ローテーション間隔（上の `5*time.Minute`）は「現行」nonce が切り替わる頻度です。OP は現行値と直前の値の両方を受理するので、ローテーション境界でリクエストが競合してもハード失敗にはなりません。
+ローテーション間隔（上の `5*time.Minute`）は「現行」nonce が切り替わる頻度です。正の値が必須で、0 以下だと `op.NewInMemoryDPoPNonceSource` がエラーを返します。OP は現行値と直前の値の両方を受理するので、ローテーション境界でリクエストが競合してもハード失敗にはなりません。
 
 ::: warning 複数インスタンス構成
 プロセスローカルな nonce ソースはレプリカを跨げません — インスタンス B はインスタンス A が出した nonce を知りません。本番 HA 構成では、独自 `DPoPNonceSource` の裏に共有ストア（Redis）を置きます。Redis nonce ソースをライブラリに同梱しないのは意図的です。オプション群（TTL、ローテーション周期、ローテーション境界の取りこぼし許容度）が運用ごとに異なりすぎるためです。
@@ -110,13 +107,12 @@ op.New(
 
 ## OP が nonce を要求するエンドポイント
 
-| Endpoint | nonce 必須？ | 設定箇所 |
-|---|---|---|
-| `/token` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | `op.WithDPoPNonceSource` |
-| `/userinfo` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
-| `/par` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
-| `/device_authorization` | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
-| `/bc-authorize`（CIBA） | DPoP proof が提示され、`DPoPNonceSource` を設定している場合に必須 | 同上 |
+以下のどのエンドポイントも、リクエストが DPoP proof を持ち、`op.WithDPoPNonceSource` で nonce ソースが設定されていれば nonce を要求します。違うのはチャレンジの形です。
+
+| Endpoint | nonce が無い・古いときのチャレンジ |
+|---|---|
+| `/token`、`/par`、`/device_authorization`、`/bc-authorize`（CIBA） | `400` と JSON エラー `use_dpop_nonce`、レスポンスヘッダ `DPoP-Nonce` |
+| `/userinfo` | `401` と `WWW-Authenticate: DPoP error="use_dpop_nonce"`、レスポンスヘッダ `DPoP-Nonce`（RFC 9449 §9、リソースサーバ向けの形） |
 
 `/par` と `/token` は同じ nonce チャレンジと検証を行うので、PAR（プッシュ型認可リクエスト）を使う SPA も `/token` と同じ nonce リトライループを `/par` 呼び出しで回すことになります。
 
@@ -136,7 +132,7 @@ curl -i -X POST -H "DPoP: <nonce なしの proof>" \
 # {"error":"use_dpop_nonce", ...}
 ```
 
-`DPoP-Nonce` の値を次の proof の `nonce` claim に入れて再試行します。
+`DPoP-Nonce` の値を次の proof の `nonce` claim に入れて再試行します。`use_dpop_nonce` が続く場合の多くは、クライアントがヘッダを読んでいないか、値を発行したのとは nonce の輪が異なるレプリカに当たっています。
 
 ## 続きはこちら
 

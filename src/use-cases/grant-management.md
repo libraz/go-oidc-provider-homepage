@@ -6,62 +6,70 @@ pageClass: pg-use-cases-grant-management
 
 # Use case — Grant management
 
-When a grant is long-lived — a recurring payment mandate, a standing data-access consent — the client needs more than "authorize once and hope". It needs to name a grant, add to it later, read back what it currently holds, and tear it down. The [OAuth 2.0 Grant Management draft](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-grant-management) gives each grant a stable `grant_id` and five actions over it.
+A *grant* is the OP's record of what a user consented to for one client: the scopes and, with [RAR](/use-cases/authorization-details), the `authorization_details`. Ordinarily the OP keeps a single grant per user and client and quietly amends it on each new authorization, and the client never names it. When a grant is long-lived (a recurring payment mandate, a standing data-access consent), the client needs to name it, add to it later, read back what it holds, and tear it down. The [OAuth 2.0 Grant Management draft](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-grant-management) gives each grant a stable `grant_id` and five actions over it.
 
 `op.WithGrantManagement` honours the `grant_management_action` / `grant_id` authorization parameters, mounts the grant management endpoint (query / revoke), stamps `grant_id` onto the token response, and advertises the feature in discovery.
 
-Use it when clients must manage a consent-like grant after the first authorization, especially when the grant can grow or be revoked independently of one browser session. Do not enable it for short-lived, one-shot sign-in flows: regular authorization codes, refresh-token rotation, and normal token revocation are simpler when the client never needs to name a grant.
+Use it when clients must manage a consent-like grant after the first authorization, especially when the grant can grow or be revoked independently of one browser session. Skip it for short-lived sign-in flows: authorization codes, refresh-token rotation, and ordinary token revocation are simpler when the client never needs to name a grant.
 
 <figure class="fig">
   <div class="fig-head">What sets a grant, and what reaches its tokens</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-grantmgmt-title" viewBox="0 0 960 300" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-grantmgmt-title" viewBox="0 0 960 368" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-grantmgmt-title">Create, replace and merge travel on the authorization request and decide the grant's scope and authorization details. Query and revoke are operations on the grant management endpoint. Of all five, only revoke reaches the tokens bound to the grant.</title>
-    <text class="fg-lbl" x="36" y="26">on the authorization request</text>
-    <rect class="fg-box" x="36" y="38" width="264" height="40" rx="6"/>
-    <text class="fg-mxs fg-accent" x="54" y="58">create</text>
-    <text class="fg-xs" x="54" y="72">no grant_id — the OP mints one</text>
-    <rect class="fg-box" x="36" y="86" width="264" height="40" rx="6"/>
-    <text class="fg-mxs fg-accent" x="54" y="106">replace</text>
-    <text class="fg-xs" x="54" y="120">scope := whatever this request asked for</text>
-    <rect class="fg-box" x="36" y="134" width="264" height="40" rx="6"/>
-    <text class="fg-mxs fg-accent" x="54" y="154">merge</text>
-    <text class="fg-xs" x="54" y="168">scope := the existing set, plus the new</text>
-    <path class="fg-leader" d="M304,58 H336 M304,106 H336 M304,154 H336 M336,58 V154"/>
-    <path class="fg-edge fg-edge--accent" d="M336,106 H366" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="370" y="60" width="250" height="92" rx="8"/>
-    <text class="fg-t2 fg-accent" x="390" y="86">The grant</text>
-    <text class="fg-mxs" x="390" y="108">grant_id = g-9f3c…</text>
-    <text class="fg-xs" x="390" y="128">scope + authorization_details</text>
-    <text class="fg-xs" x="390" y="144">one record, however many tokens</text>
-    <path class="fg-edge" d="M495,156 V186" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--sub" x="370" y="190" width="250" height="90" rx="8"/>
-    <text class="fg-lbl" x="390" y="212">bound to this grant</text>
-    <text class="fg-mxs" x="390" y="234">JWT access tokens</text>
-    <text class="fg-mxs" x="390" y="252">opaque access tokens</text>
-    <text class="fg-mxs" x="390" y="270">refresh tokens</text>
-    <text class="fg-lbl" x="660" y="26">on the grant management endpoint</text>
-    <rect class="fg-box" x="660" y="38" width="264" height="64" rx="6"/>
-    <text class="fg-mxs" x="678" y="60">GET …/{grant_id}</text>
-    <text class="fg-xs" x="678" y="80">reads back the scope and details</text>
-    <text class="fg-xs" x="678" y="96">it changes nothing</text>
-    <path class="fg-edge fg-edge--muted" d="M656,70 H624" marker-end="url(#fg-am)"/>
-    <rect class="fg-box fg-box--danger" x="660" y="180" width="264" height="80" rx="6"/>
-    <text class="fg-mxs" x="678" y="204">DELETE …/{grant_id}</text>
-    <text class="fg-xs" x="678" y="224">204 · the grant record is gone</text>
-    <text class="fg-xs fg-danger" x="678" y="246">and every bound token with it</text>
-    <path class="fg-edge fg-edge--danger" d="M656,225 H624" marker-end="url(#fg-ad)"/>
+    <!-- labels -->
+    <text class="fg-lbl" x="32" y="40">on the authorization request</text>
+    <text class="fg-lbl" x="688" y="40">on the grant endpoint</text>
+    <!-- create -->
+    <rect class="fg-box" x="32" y="56" width="264" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="84">create</text>
+    <text class="fg-s" x="48" y="108">no grant_id; the OP mints one</text>
+    <!-- replace -->
+    <rect class="fg-box" x="32" y="160" width="264" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="188">replace</text>
+    <text class="fg-s" x="48" y="212">scope := this request</text>
+    <!-- merge -->
+    <rect class="fg-box" x="32" y="264" width="264" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="292">merge</text>
+    <text class="fg-s" x="48" y="316">scope := existing + new</text>
+    <!-- into the grant -->
+    <path class="fg-leader" d="M296,92 H320 M296,196 H320 M296,300 H320 M320,92 V300"/>
+    <path class="fg-edge fg-edge--accent" d="M320,196 H344" marker-end="url(#fg-ac)"/>
+    <!-- grant -->
+    <rect class="fg-box fg-box--accent" x="344" y="112" width="296" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="360" y="140">The grant</text>
+    <text class="fg-mxs" x="360" y="164">grant_id = g-9f3c…</text>
+    <text class="fg-xs" x="360" y="188">scope + details, one record</text>
+    <!-- to tokens -->
+    <path class="fg-edge" d="M492,208 V248" marker-end="url(#fg-a)"/>
+    <!-- tokens -->
+    <rect class="fg-box fg-box--sub" x="344" y="248" width="296" height="96" rx="8"/>
+    <text class="fg-t2" x="360" y="276">Tokens bound to it</text>
+    <text class="fg-mxs" x="360" y="300">access tokens (JWT, opaque)</text>
+    <text class="fg-mxs" x="360" y="324">refresh tokens</text>
+    <!-- query -->
+    <rect class="fg-box" x="688" y="56" width="240" height="96" rx="8"/>
+    <text class="fg-mxs" x="704" y="84">GET …/{grant_id}</text>
+    <text class="fg-xs" x="704" y="108">reads scope and details</text>
+    <text class="fg-xs" x="704" y="132">changes nothing</text>
+    <path class="fg-edge fg-edge--muted" d="M688,136 H640" marker-end="url(#fg-am)"/>
+    <!-- revoke -->
+    <rect class="fg-box fg-box--danger" x="688" y="248" width="240" height="96" rx="8"/>
+    <text class="fg-mxs" x="704" y="276">DELETE …/{grant_id}</text>
+    <text class="fg-xs" x="704" y="300">204 · record deleted</text>
+    <text class="fg-xs fg-danger" x="704" y="324">every bound token goes too</text>
+    <path class="fg-edge fg-edge--danger" d="M688,296 H640" marker-end="url(#fg-ad)"/>
   </svg>
-  <figcaption class="fig-note">The lower arrow is the only one that touches the box at the bottom. Changing a grant's scope does not invalidate tokens already issued under it — the new scope applies from the next issuance onward.</figcaption>
+  <figcaption class="fig-note">Only the delete arrow reaches the tokens. Changing a grant's scope does not change tokens already issued under it; the new scope applies from the next issuance. A <code>replace</code> that drops an <code>authorization_details</code> element withdraws it from opaque access tokens and refresh chains; a JWT already issued keeps the claim until it expires.</figcaption>
 </figure>
 
-Only `revoke` reaches the bottom box. `create`, `replace` and `merge` change what the grant holds; `query` reads it back; `revoke` deletes the grant record and tears down the tokens hanging off it.
+Only `revoke` reaches the bottom box. `create`, `replace`, and `merge` change what the grant holds; `query` reads it back; `revoke` deletes the grant record and the tokens hanging off it.
 
 ::: warning Experimental — tracks an IETF draft
 Grant Management is an IETF draft, not a published RFC. The `op.GrantManagementAction` enum and `op.WithGrantManagement` are marked `Experimental:` in godoc: a draft update may make a wire-incompatible change.
 :::
 
 ::: details The five actions
-- **`create`** — start a brand-new grant. A `grant_id` MUST NOT accompany it; the OP mints one and returns it.
+- **`create`** — start a brand-new grant. A `grant_id` MUST NOT accompany it; the OP mints one and returns it. Each `create` makes a separate grant, even for the same user and client.
 - **`replace`** — overwrite the referenced grant's scope and `authorization_details` with the new request's. Requires `grant_id`.
 - **`merge`** — union the referenced grant's scope and `authorization_details` with the new request's. Requires `grant_id`.
 - **`query`** — read the grant. `GET {grant_management_endpoint}/{grant_id}`.
@@ -84,7 +92,7 @@ op.New(
 )
 ```
 
-The first argument is the **closed set** of actions the OP accepts; it is advertised as `grant_management_actions_supported`, and the endpoint refuses any operation outside it. The second argument is `actionRequired`: when `true`, an authorization request that omits `grant_management_action` is rejected (discovery advertises `grant_management_action_required: true`). At least one action is required and each must be one of the five values; a duplicate or unknown action is rejected at `op.New`.
+The first argument is the **closed set** of actions the OP accepts; it is advertised as `grant_management_actions_supported`, and the endpoint refuses any operation outside it. The second argument is `actionRequired`: when `true`, an authorization request that omits `grant_management_action` is rejected (discovery advertises `grant_management_action_required: true`). At least one action is required and each must be one of the five values; a duplicate or unknown action is rejected at `op.New`, and so is a second `WithGrantManagement` call.
 
 The discovery document then advertises:
 
@@ -111,7 +119,7 @@ curl -G --data-urlencode 'grant_management_action=create' \
   https://op.example.com/oidc/auth
 ```
 
-The same parameters are validated on a [PAR](/use-cases/fapi2-baseline) push. After the code exchange, the token response carries the grant's id:
+The same parameters are validated on a [PAR](/use-cases/fapi2-baseline) push. A `create` or `replace` / `merge` request always goes through an explicit consent screen: the first-party consent skip and a cached grant never cover it. After the code exchange, the token response carries the grant's id:
 
 ```json
 {
@@ -121,7 +129,7 @@ The same parameters are validated on a [PAR](/use-cases/fapi2-baseline) push. Af
 }
 ```
 
-To grow that grant later, the client re-authorizes with `grant_management_action=replace` (overwrite the scope / `authorization_details`) or `merge` (union them), passing the `grant_id` it received.
+To change that grant later, the client re-authorizes with `grant_management_action=replace` (overwrite the scope / `authorization_details`) or `merge` (union them), passing the `grant_id` it received. A `grant_id` that does not belong to the signed-in user and this client is refused with `invalid_grant`.
 
 | Action | `grant_id` | Effect on scope / `authorization_details` |
 |---|---|---|
@@ -131,7 +139,7 @@ To grow that grant later, the client re-authorizes with `grant_management_action
 
 ## Querying a grant
 
-`GET` the endpoint with the grant id appended, authenticating as the owning client. The OP enforces client ownership — a client cannot read another client's grant — and returns the grant's current scope and `authorization_details`:
+`GET` the endpoint with the grant id appended, authenticating as the owning client. Only **confidential** clients may call the endpoint; a public client gets `401 invalid_client`, because a `grant_id` in a URL path is not a secret (it reaches proxy logs and browser history). The OP enforces ownership, so a client cannot read another client's grant, and returns the grant's current scope and `authorization_details`:
 
 ```sh
 curl -u demo:demo-secret https://op.example.com/oidc/grant_management/g-9f3c...
@@ -144,13 +152,19 @@ curl -u demo:demo-secret https://op.example.com/oidc/grant_management/g-9f3c...
 }
 ```
 
+A member is omitted when the grant holds nothing for it.
+
 ## Revoking a grant
 
-`DELETE` tears down only the named `grant_id` and cascades to the artefacts bound to that grant: it tombstones / denylists the grant's JWT access tokens, revokes the opaque access tokens and refresh tokens bound to it, and deletes the grant record so a subsequent query reports it gone. Other grants held by the same subject and client are not touched.
+`DELETE` tears down only the named `grant_id`, and everything bound to it: the grant's JWT access tokens (by tombstone, or by the registry, depending on the revocation strategy), its opaque access tokens and refresh tokens, and finally the grant record, so a later query reports it gone. Other grants held by the same subject and client are not touched. To revoke every grant of a subject or client, enumerate and delete those `grant_id`s yourself.
 
-On success, the OP answers `204 No Content` and emits a `grant_management.revoked` audit event for the named grant. A confirmed missing grant or a grant owned by another client returns `404` without attempting a cascade. If the grant store cannot establish whether the grant exists, the OP returns `500 server_error` and performs no cascade. If a cascade side effect fails, the OP returns `500 server_error`, emits `grant_management.revoke_failed`, and leaves the grant retryable/queryable; it does not claim revocation succeeded. A final delete that races with another successful deletion is treated as idempotent success and still returns `204`.
-
-Treat `grant_id` as the revocation unit; if a deployment wants to revoke every grant for a subject or client, it must enumerate and delete those grant IDs explicitly.
+| Outcome | Response |
+|---|---|
+| Revoked | `204 No Content`, and a `grant_management.revoked` audit event for the grant. A delete that races with another successful deletion also returns `204`. |
+| Grant does not exist, or belongs to another client | `404 invalid_request`, with no cascade attempted. |
+| The grant store cannot say whether the grant exists | `500 server_error`, with no cascade. Retry. |
+| A cascade step fails | `500 server_error` and a `grant_management.revoke_failed` audit event. The grant record is kept, so it stays queryable and the delete can be retried. |
+| Public client | `401 invalid_client` |
 
 ```sh
 curl -u demo:demo-secret -X DELETE https://op.example.com/oidc/grant_management/g-9f3c...

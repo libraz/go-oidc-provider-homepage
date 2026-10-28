@@ -4,7 +4,7 @@ description: アプリケーション所有の users テーブルを移行せず
 pageClass: pg-use-cases-byo-userstore
 ---
 
-# 使い方 — 既存ユーザストアの投影
+# ユースケース — 既存ユーザストアの投影
 
 既に users、members、employees、accounts などのテーブルがあり、その形が OP 同梱の `oidc_users` テーブルと一致しない場合でも、そのテーブルを正本として使えます。OP に必要なのは、subject を解決し、許可された claim を返し、パスワードログインを使う場合は `store.UserPasswordStore` の契約に沿ってパスワードハッシュを読める投影です。
 
@@ -12,30 +12,31 @@ pageClass: pg-use-cases-byo-userstore
 
 <figure class="fig">
   <div class="fig-head">プロトコルのレコードはこちら、人のデータは向こう</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-byouserstore-title" viewBox="0 0 960 286" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-byouserstore-title" viewBox="0 0 960 352" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-byouserstore-title">本ライブラリは OAuth / OIDC のレコードを自身のストアで持ち、組み込み側はエンドユーザの行を今ある場所のまま持ちます。OP が境界をまたぐのは 3 つの読み取り呼び出しだけです。</title>
-    <text class="fg-lbl fg-accent" x="480" y="18" text-anchor="middle">op.WithUserStore</text>
-    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="480" y1="26" x2="480" y2="270"/>
-    <rect class="fg-box" x="36" y="34" width="404" height="106" rx="8"/>
-    <text class="fg-t2" x="56" y="60">ライブラリが持つ</text>
-    <text class="fg-mxs" x="56" y="84">clients · 認可コード · refresh token · grants</text>
-    <text class="fg-mxs" x="56" y="104">sessions · PAR · IAT · RAT · access token</text>
-    <text class="fg-xs" x="56" y="128">プロトコルが要求するから存在する情報のすべて</text>
-    <rect class="fg-box" x="520" y="34" width="404" height="106" rx="8"/>
-    <text class="fg-t2" x="540" y="60">組み込み側が持つ</text>
-    <text class="fg-mxs" x="540" y="84">members: member_id · email_address</text>
-    <text class="fg-mxs" x="540" y="104">password_phc · full_name · locale_pref</text>
-    <text class="fg-xs" x="540" y="128">OIDC を入れる前から製品にあった行</text>
-    <text class="fg-lbl" x="36" y="172">境界を越える 3 つの呼び出し</text>
-    <rect class="fg-box fg-box--accent" x="36" y="182" width="888" height="34" rx="6"/>
-    <text class="fg-m fg-accent" x="56" y="204">FindBySubject</text>
-    <text class="fg-xs" x="240" y="204">subject に対応する member の行を読む — ID トークンと /userinfo の claim の出どころ</text>
-    <rect class="fg-box fg-box--accent" x="36" y="220" width="888" height="26" rx="6"/>
-    <text class="fg-m fg-accent" x="56" y="238">FindByUsername</text>
-    <text class="fg-xs" x="240" y="238">ログイン識別子を subject に変換する — ここでは email_address と照合する</text>
-    <rect class="fg-box fg-box--accent" x="36" y="250" width="888" height="26" rx="6"/>
-    <text class="fg-m fg-accent" x="56" y="268">ReadPasswordHash</text>
-    <text class="fg-xs" x="240" y="268">op.PrimaryPassword が検証するために password_phc を返す — ハッシュは組み込み側から出ない</text>
+    <!-- library side -->
+    <rect class="fg-box fg-box--accent" x="32" y="24" width="432" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="52">プロトコルのレコードはライブラリが持つ</text>
+    <text class="fg-m" x="48" y="76">clients · codes · grants · sessions</text>
+    <text class="fg-m" x="48" y="100">refresh/access token · PAR · IAT · RAT</text>
+    <!-- seam -->
+    <path class="fg-rule fg-rule--dashed fg-rule--strong" d="M480,24 V120"/>
+    <!-- your side -->
+    <rect class="fg-box" x="496" y="24" width="432" height="96" rx="8"/>
+    <text class="fg-t2" x="512" y="52">エンドユーザの行は組み込み側が持つ</text>
+    <text class="fg-m" x="512" y="76">members: member_id · email_address</text>
+    <text class="fg-m" x="512" y="100">password_phc · full_name · locale_pref</text>
+    <!-- three reads -->
+    <text class="fg-lbl" x="32" y="168">境界を越える 3 つの読み取り</text>
+    <text class="fg-tab fg-accent" x="928" y="168" text-anchor="end">op.WithUserStore</text>
+    <rect class="fg-box fg-box--accent" x="32" y="184" width="896" height="144" rx="8"/>
+    <path class="fg-rule" d="M32,232 H928 M32,280 H928"/>
+    <text class="fg-m fg-accent" x="48" y="214">FindBySubject</text>
+    <text class="fg-s" x="256" y="214">subject の member 行を読む — ID トークンと /userinfo の claim の出どころ</text>
+    <text class="fg-m fg-accent" x="48" y="262">FindByUsername</text>
+    <text class="fg-s" x="256" y="262">ログイン識別子を subject に変換する — ここでは email_address と照合する</text>
+    <text class="fg-m fg-accent" x="48" y="310">ReadPasswordHash</text>
+    <text class="fg-s" x="256" y="310">op.PrimaryPassword が検証できるよう password_phc を返す</text>
   </svg>
   <figcaption class="fig-note">3 つとも読み取りです。ライブラリが member の行を書き込むことも、作り出すこともありません。スキーマの形を指定することもなく、必要なのはこの 3 つの問いに答えられることだけです。</figcaption>
 </figure>
@@ -78,7 +79,11 @@ provider, err := op.New(
 | `FindByUsername(ctx, username)` | メールアドレスなどのログイン識別子を、同じ安定 subject に解決する。 |
 | `ReadPasswordHash(ctx, subject)` | `op.PrimaryPassword` 用に PHC 形式のパスワードハッシュを返す。未知ユーザやパスワードレスユーザでは `store.ErrNotFound` を返す。 |
 
+`store.UserStore` に属するのは `FindBySubject` だけで、残り 2 つは組み込みパスワードステップが必要とする `store.UserPasswordStore` のメソッドです。パスキーのみの構成なら `store.UserStore` だけを実装すれば足ります。
+
 カラム名は自由です。この例では `member_id`、`email_address`、`password_phc`、`full_name`、`locale_pref`、`tenant_id` を `store.User.Subject` と `store.User.Claims` へ投影しています。
+
+`op.WithUserStore` と `op.PrimaryPassword` には同じ値を渡してください。両者を別々に渡せるのは、ステップが claim の取得元とは別のものに対して認証する構成もありうるからです。ただし食い違いに気付かずに別々の値を渡すと何も失敗しません。ログインは成功し、一方のレコードから subject が解決され、ID トークンと `/userinfo` は別のレコードから組み立てられます。2 つの値が異なると `op.New` は警告をログに出します。
 
 ## アプリケーション側の再認証
 
@@ -104,7 +109,7 @@ if err != nil || !op.VerifyPassword(hash, submittedPassword) {
 
 このパターンはエンドユーザ claim の読み取り元だけを差し替えます。トランザクションが必要な OAuth レコード群は 1 つの SQL アダプタに残るため、`storeadapter/composite` は不要です。`WithUserStore` なら adapter の任意 capability を隠してしまう wrapper も不要です。
 
-複数のサブストアを別バックエンドに振り分けたい場合、たとえば永続化が必要な grants / refresh tokens は SQL に置き、interactions / consumed JTIs は Redis に置く場合は [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) を使います。
+複数のサブストアを別バックエンドに振り分けたい場合、たとえば永続化が必要な grants / refresh tokens は SQL に置き、interactions / sessions は Redis に置く場合は [Hot / Cold 分離](/ja/use-cases/hot-cold-redis) を使います。
 
 ## 実行
 

@@ -4,7 +4,7 @@ description: Provider 構築時に OIDC Core、OAuth 2.1 Baseline、FAPI を明�
 pageClass: pg-use-cases-security-profile
 ---
 
-# 使い方 — セキュリティプロファイルの宣言
+# ユースケース — セキュリティプロファイルの宣言
 
 `op.WithProfile` は OP のセキュリティ姿勢を明示します。未指定も 1 つの選択です。本ライブラリの OpenID Connect Core 1.0 互換の形では、confidential な認可コードクライアントが PKCE なしで要求できます。OAuth 2.1 / RFC 9700 に従い、すべての認可コードリクエストに PKCE を求めるなら `profile.Baseline` を使います。
 
@@ -17,7 +17,7 @@ provider, err := op.New(
 
 `profile.Baseline` が変えるのはこの 1 つの規則だけです。PAR を必須にせず、アクセストークンの有効期間やクライアント認証方式を制限せず、送信者制約付きアクセストークンも要求しません。これらは対象とする FAPI プロファイルの要件であり、本ライブラリの `profile.Baseline` が追加する規則ではありません。対象が FAPI なら [FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を使ってください。
 
-構築に成功すると、OP は audit logger へ `startup.profile` を 1 回出力します。宣言した profile、feature、grant と、`pkce_required` を含む解決後のポリシーが入ります。最初の request を受ける前に、配備した姿勢を確認できます。
+構築に成功すると、OP は audit logger へ `startup.profile` を 1 回出力します。宣言した profile、feature、grant と、解決後のポリシー（`pkce_required`、`par_required`、`sender_constrained`、`client_auth_methods`、トークンの有効期間など）が入ります。最初の request を受ける前に、配備した姿勢を確認できます。
 
 > **ソース:** [`examples/00-security-profile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/00-security-profile) は、profile 未指定の OP と `profile.Baseline` の OP を並べ、同じ confidential client の PKCE 無し request を送ります。
 
@@ -31,31 +31,46 @@ provider, err := op.New(
 
 本ライブラリでは public / native client は `profile.Baseline` を指定しなくても PKCE 必須です。違いが現れるのは confidential client の互換経路です。
 
+## 各プロファイルの要件
+
+| プロファイル | PKCE | 自動で有効になる feature | 送信者制約付きトークン | 必須の grant | その他の上限 |
+|---|---|---|---|---|---|
+| `profile.Baseline` | 必須 | なし | 要求しない | なし | なし |
+| `profile.FAPI2Baseline` | 必須 | PAR、JAR | DPoP または mTLS（どちらも未設定なら DPoP） | なし | アクセストークンの有効期間は 10 分以内。PAR の `expires_in` は 600 秒未満 |
+| `profile.FAPI2MessageSigning` | 必須 | PAR、JAR、JARM | DPoP または mTLS | なし | `FAPI2Baseline` と同じ上限 |
+| `profile.FAPICIBA` | 対象外（`/auth` へのリダイレクトがない） | JAR | DPoP または mTLS | `grant.CIBA` | `FAPI2Baseline` と同じ上限 |
+
+出典は `op/profile` の `RequiredFeatures`、`RequiredAnyOf`、`RequiredGrants`、`RequiresPKCE`、`MaxAccessTokenTTL`、`PARLifetimeCeiling` です。
+
 ## feature は補われ、grant は補われない
 
 プロファイルは隣り合う 2 つの宣言軸を別々に扱います。この非対称は意図したものです。
 
 <figure class="fig">
   <div class="fig-head">プロファイルは feature を補うが、grant は補わない</div>
-  <svg class="fig-svg" role="img" aria-labelledby="profile-supply-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="profile-supply-title" viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg">
     <title id="profile-supply-title">プロファイルを宣言すると、それが必要とする feature flag が有効になります。一方で grant は補われません。プロファイルが要求する grant を配備側が宣言していない場合、黙って有効化するのではなく op.New が失敗します。</title>
-    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="44" rx="8"/>
+    <!-- profile -->
+    <rect class="fg-box fg-box--accent" x="340" y="24" width="280" height="48" rx="8"/>
     <text class="fg-m fg-accent" x="480" y="52" text-anchor="middle">op.WithProfile(…)</text>
-    <path class="fg-leader" d="M480,72 V88 M253,88 H707"/>
-    <path class="fg-edge fg-edge--ok" d="M253,88 V106" marker-end="url(#fg-ao)"/>
-    <path class="fg-edge fg-edge--danger" d="M707,88 V106" marker-end="url(#fg-ad)"/>
-    <rect class="fg-box fg-box--ok" x="36" y="110" width="434" height="108" rx="8"/>
-    <text class="fg-t2" x="56" y="138">feature — 補われる</text>
-    <text class="fg-mxs" x="56" y="160">feature.PAR · feature.JAR · feature.JARM · …</text>
-    <line class="fg-rule" x1="56" y1="172" x2="450" y2="172"/>
-    <text class="fg-xs" x="56" y="192">プロファイルが単独で決めてよいポリシー</text>
-    <text class="fg-xs fg-ok" x="56" y="208">未宣言 → プロファイルが有効化する</text>
-    <rect class="fg-box fg-box--danger" x="490" y="110" width="434" height="108" rx="8"/>
-    <text class="fg-t2" x="510" y="138">grant — 補われない</text>
-    <text class="fg-mxs" x="510" y="160">grant.AuthorizationCode · grant.CIBA · …</text>
-    <line class="fg-rule" x1="510" y1="172" x2="904" y2="172"/>
-    <text class="fg-xs" x="510" y="192">必要な協力者を用意できるのは組み込み側だけ</text>
-    <text class="fg-xs fg-danger" x="510" y="208">未宣言 → op.New が失敗する</text>
+    <!-- branches -->
+    <path class="fg-leader" d="M480,72 V96 M248,96 H712"/>
+    <path class="fg-edge fg-edge--thin fg-edge--ok" d="M248,96 V120" marker-end="url(#fg-ao)"/>
+    <path class="fg-edge fg-edge--thin fg-edge--danger" d="M712,96 V120" marker-end="url(#fg-ad)"/>
+    <!-- features -->
+    <rect class="fg-box fg-box--ok" x="32" y="120" width="432" height="144" rx="8"/>
+    <text class="fg-t2" x="48" y="148">feature: 補われる</text>
+    <text class="fg-mxs" x="48" y="172">feature.PAR · feature.JAR · …</text>
+    <text class="fg-s" x="48" y="196">プロファイルが単独で決めてよいポリシー</text>
+    <rect class="fg-pill fg-pill--ok" x="48" y="216" width="400" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="248" y="237" text-anchor="middle">未宣言 → プロファイルが有効化する</text>
+    <!-- grants -->
+    <rect class="fg-box fg-box--danger" x="496" y="120" width="432" height="144" rx="8"/>
+    <text class="fg-t2" x="512" y="148">grant: 補われない</text>
+    <text class="fg-mxs" x="512" y="172">grant.AuthorizationCode · grant.CIBA · …</text>
+    <text class="fg-s" x="512" y="196">必要な協力者を用意できるのは組み込み側だけ</text>
+    <rect class="fg-pill fg-pill--danger" x="512" y="216" width="400" height="32" rx="16"/>
+    <text class="fg-s fg-danger" x="712" y="237" text-anchor="middle">未宣言 → op.New が失敗する</text>
   </svg>
   <figcaption class="fig-note">この非対称は意図したものです。feature はプロファイルが単独で強制できる規則ですが、grant には認証器やストア、場合によっては通知チャネルが要ります。用意できるのは組み込み側だけなので、黙って有効化すれば、受け付けたリクエストを完了できない OP ができあがります。</figcaption>
 </figure>
@@ -69,10 +84,9 @@ provider, err := op.New(
 ```go
 provider, err := op.New(
   // …
-  op.WithGrants(grant.CIBA),
   op.WithProfile(profile.FAPICIBA),
   op.WithCIBA(op.WithCIBAHintResolver(resolver)),
 )
 ```
 
-エラーはプロファイルが要求する grant と、それを有効化するオプションの両方を示すので、メッセージだけを見て修正できます。`WithCIBA` には `op.WithCIBAHintResolver` などの CIBA option を渡します。`op.WithGrants(grant.CIBA)` の明示的な宣言を置き換えるものではありません。`profile.FAPICIBA` 以外のプロファイルは、固有の grant を要求しません。
+grant を有効にするのは `op.WithCIBA` です。`grant.CIBA` を grant の集合に加え、`op.WithCIBAHintResolver` などの CIBA option を受け取ります。ストアには CIBA リクエスト用のサブストアも必要です。`op.WithCIBA` なしで `profile.FAPICIBA` を宣言すると `op.New` が失敗します。エラーにはプロファイルが要求する grant と、それを有効にするオプションの両方が出るので、メッセージを読めば直せます。`op.WithGrants` に `grant.CIBA` を並べるだけでは足りません。hint resolver が未設定のまま、次の検査で失敗するからです。`profile.FAPICIBA` 以外のプロファイルは、固有の grant を要求しません。

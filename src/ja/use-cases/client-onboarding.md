@@ -4,7 +4,7 @@ description: RP を OP に登録・更新・削除する 5 つの方法。M2M �
 pageClass: pg-use-cases-client-onboarding
 ---
 
-# 使い方 — クライアントオンボーディングのパターン
+# ユースケース — クライアントオンボーディングのパターン
 
 「OAuth / OIDC のクライアントを作る」と一口に言っても、運用上の形は 5 通りあり、IETF / OIDF が仕様化しているのはそのうち 1 つだけです。このページはその地図です。各パターンが活きる場面、ライブラリが提供する差し込み口、そして付随するセキュリティの責任範囲を整理します。標準化された経路は [動的クライアント登録](/ja/use-cases/dynamic-registration) のみで、残りの 4 つは運用設計の領域です。「ライブラリの責任」と「組み込み側の責任」の境界は、思っているよりも明確に分かれています。
 
@@ -19,59 +19,51 @@ pageClass: pg-use-cases-client-onboarding
 
 <figure class="fig">
   <div class="fig-head">5 つの入口を、信頼の軸に並べる</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-onboarding-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
-    <title id="uc-onboarding-title">クライアントを登録する 5 つのパターンを、運用者が完全に統制する側から、通信路上に何も信頼を置かない側まで並べた図。中央の 2 つは呼び出し側が持参するもので認可され、両端は配備環境に到達できるかどうかで決まります。</title>
-    <text class="fg-lbl" x="36" y="26">運用者が完全に統制する</text>
-    <text class="fg-lbl" x="924" y="26" text-anchor="end">通信路上に信頼を置かない</text>
-    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
-    <rect class="fg-box fg-box--accent" x="36" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="56" cy="74" r="9"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="56" y="77" text-anchor="middle">1</text>
-    <text class="fg-t2" x="76" y="78">静的登録</text>
-    <text class="fg-lbl" x="52" y="104">認可の根拠</text>
-    <text class="fg-xs" x="52" y="124">運用者自身が書いた</text>
-    <text class="fg-xs" x="52" y="140">設定</text>
-    <line class="fg-rule" x1="52" y1="152" x2="188" y2="152"/>
-    <text class="fg-mxs" x="52" y="174">WithStaticClients</text>
-    <rect class="fg-box" x="216" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge" cx="236" cy="74" r="9"/>
-    <text class="fg-badge-t" x="236" y="77" text-anchor="middle">2</text>
-    <text class="fg-t2" x="256" y="78">IaC / GitOps</text>
-    <text class="fg-lbl" x="232" y="104">認可の根拠</text>
-    <text class="fg-xs" x="232" y="124">運用者の CI</text>
-    <text class="fg-xs" x="232" y="140">パイプライン</text>
-    <line class="fg-rule" x1="232" y1="152" x2="368" y2="152"/>
-    <text class="fg-mxs" x="232" y="174">store.ClientRegistry</text>
-    <rect class="fg-box" x="396" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge" cx="416" cy="74" r="9"/>
-    <text class="fg-badge-t" x="416" y="77" text-anchor="middle">3</text>
-    <text class="fg-t2" x="436" y="78">DCR</text>
-    <text class="fg-lbl fg-warn" x="412" y="104">認可の根拠</text>
-    <text class="fg-xs" x="412" y="124">発行済みの IAT、続いて</text>
-    <text class="fg-xs" x="412" y="140">クライアント別の RAT</text>
-    <line class="fg-rule" x1="412" y1="152" x2="548" y2="152"/>
-    <text class="fg-mxs" x="412" y="174">/register</text>
-    <rect class="fg-box" x="576" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge" cx="596" cy="74" r="9"/>
-    <text class="fg-badge-t" x="596" y="77" text-anchor="middle">4</text>
-    <text class="fg-t2" x="616" y="78">管理 API</text>
-    <text class="fg-lbl fg-warn" x="592" y="104">認可の根拠</text>
-    <text class="fg-xs" x="592" y="124">管理用トークン</text>
-    <text class="fg-xs" x="592" y="140">— scope と claim</text>
-    <line class="fg-rule" x1="592" y1="152" x2="728" y2="152"/>
-    <text class="fg-mxs" x="592" y="174">store.ClientRegistry</text>
-    <rect class="fg-box fg-box--accent" x="756" y="52" width="168" height="140" rx="8"/>
-    <circle class="fg-badge fg-badge--accent" cx="776" cy="74" r="9"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="776" y="77" text-anchor="middle">5</text>
-    <text class="fg-t2" x="796" y="78">CLI</text>
-    <text class="fg-lbl" x="772" y="104">認可の根拠</text>
-    <text class="fg-xs" x="772" y="124">通信路上には無い —</text>
-    <text class="fg-xs" x="772" y="140">そもそも通信路を通らない</text>
-    <line class="fg-rule" x1="772" y1="152" x2="908" y2="152"/>
-    <text class="fg-mxs" x="772" y="174">RegisterClient</text>
-    <path class="fg-leader" d="M396,206 H744 M396,206 V214 M744,206 V214"/>
-    <text class="fg-lbl fg-warn" x="570" y="230" text-anchor="middle">この 2 つだけが通信路上に信頼を載せる</text>
-    <text class="fg-xs" x="570" y="250" text-anchor="middle">残りは、そもそも配備環境に到達できるのが誰かで決まる</text>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-onboarding-title" viewBox="0 0 960 456" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-onboarding-title">クライアントを登録する 5 つのパターンを、運用者が完全に統制する側から、通信路上に何も信頼を置かない側まで並べた図。中央の 2 つは呼び出し側が持参する資格情報で認可され、残りの 3 つは配備環境に到達できるかどうかで決まります。</title>
+    <text class="fg-lbl" x="32" y="36">運用者が完全に統制する</text>
+    <text class="fg-lbl" x="928" y="36" text-anchor="end">通信路上に信頼を置かない</text>
+    <line class="fg-rule fg-rule--strong" x1="32" y1="48" x2="928" y2="48"/>
+    <rect class="fg-box" x="32" y="72" width="896" height="360" rx="8"/>
+    <!-- row 1 -->
+    <text class="fg-t2" x="48" y="100">Static</text>
+    <text class="fg-mxs" x="48" y="124">WithStaticClients</text>
+    <text class="fg-lbl" x="336" y="100">認可の根拠</text>
+    <text class="fg-s" x="336" y="124">運用者自身が書いた設定</text>
+    <rect class="fg-pill" x="672" y="92" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-dim" x="792" y="113" text-anchor="middle">配備環境に到達できる人</text>
+    <!-- row 2 -->
+    <line class="fg-rule" x1="32" y1="144" x2="928" y2="144"/>
+    <text class="fg-t2" x="48" y="172">IaC / GitOps</text>
+    <text class="fg-mxs" x="48" y="196">store.ClientRegistry</text>
+    <text class="fg-lbl" x="336" y="172">認可の根拠</text>
+    <text class="fg-s" x="336" y="196">運用者の CI パイプライン</text>
+    <rect class="fg-pill" x="672" y="164" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-dim" x="792" y="185" text-anchor="middle">配備環境に到達できる人</text>
+    <!-- row 3 -->
+    <line class="fg-rule" x1="32" y1="216" x2="928" y2="216"/>
+    <text class="fg-t2" x="48" y="244">DCR</text>
+    <text class="fg-mxs" x="48" y="268">/register</text>
+    <text class="fg-lbl fg-warn" x="336" y="244">認可の根拠</text>
+    <text class="fg-s" x="336" y="268">発行済み IAT、続いてクライアント別 RAT</text>
+    <rect class="fg-pill fg-pill--warn" x="672" y="236" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-warn" x="792" y="257" text-anchor="middle">リクエスト内の資格情報</text>
+    <!-- row 4 -->
+    <line class="fg-rule" x1="32" y1="288" x2="928" y2="288"/>
+    <text class="fg-t2" x="48" y="316">Admin API</text>
+    <text class="fg-mxs" x="48" y="340">store.ClientRegistry</text>
+    <text class="fg-lbl fg-warn" x="336" y="316">認可の根拠</text>
+    <text class="fg-s" x="336" y="340">管理用トークン: scope と claim</text>
+    <rect class="fg-pill fg-pill--warn" x="672" y="308" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-warn" x="792" y="329" text-anchor="middle">リクエスト内の資格情報</text>
+    <!-- row 5 -->
+    <line class="fg-rule" x1="32" y1="360" x2="928" y2="360"/>
+    <text class="fg-t2" x="48" y="388">CLI</text>
+    <text class="fg-mxs" x="48" y="412">RegisterClient</text>
+    <text class="fg-lbl" x="336" y="388">認可の根拠</text>
+    <text class="fg-s" x="336" y="412">なし: そもそも通信路を通らない</text>
+    <rect class="fg-pill" x="672" y="380" width="240" height="32" rx="16"/>
+    <text class="fg-s fg-dim" x="792" y="401" text-anchor="middle">配備環境に到達できる人</text>
   </svg>
   <figcaption class="fig-note">見知らぬ相手から会話を始められるのは中央の 2 つだけで、だからこそこの 2 つにだけリクエスト内の資格情報が要ります。両端に不要なのは、そもそもリクエストが存在しないからです。</figcaption>
 </figure>
@@ -120,9 +112,9 @@ provider, err := op.New(
 )
 ```
 
-シードの射影は、DCR が `POST /register` の段階で適用しているのと同じ redirect URI 形式のルールを `op.New` の時点で適用します。形式に違反するシードは構築時に失敗するので、ランタイムまで漏れ出すことはありません。`ConfidentialClient.Secret` は `op.HashClientSecret`（argon2id）でハッシュしてからストアに到達するため、平文がストアに永続化されることはありません。
+シードの射影は、DCR が `POST /register` の段階で適用しているのと同じ redirect URI 形式のルールを `op.New` の時点で適用します。形式に違反するシードは構築時に失敗するので、ランタイムまで漏れ出すことはありません。`ConfidentialClient.Secret` は `op.HashClientSecret`（argon2id）でハッシュしてからストアに到達するため、平文がストアに永続化されることはありません。`client_secret_basic` / `client_secret_post` のクライアントには `Secret` か、計算済みの `SecretHash` のどちらか一方が必須です（同時指定は不可）。どちらも空だと `op.New` が拒否します。空のままでは、空の `client_secret` で認証が通ってしまうためです。`op.WithHighEntropyClientSecrets()` を使う場合、`Secret` は常に argon2id でハッシュされるので、`op.NewClientSecret` か `op.HashHighEntropyClientSecret` で作った `SecretHash` を渡してください。
 
-永続バックエンドが相手の場合、シードは `store.StaticClientReconciler` を通じて**ひとつの原子的かつ冪等なバッチ**として適用されます。存在しないレコードは挿入し、内容が同じレコードはそのままにし、保存済みレコードと食い違う場合や動的登録されたクライアントと衝突する場合は `ErrConflict` で失敗します。この突き合わせは他のすべての失敗しうる構築処理の後に走るため、無関係な理由で起動が失敗したときに一覧の一部だけが書き込まれることはありません。シードを変えずに OP を再起動するのは、書き直しではなく no-op になります。
+永続バックエンドが相手の場合、シードは `store.StaticClientReconciler` を通じて**ひとつの原子的かつ冪等なバッチ**として適用されます。存在しないレコードは挿入し、内容が同じレコードはそのままにし、保存済みレコードと食い違う場合や動的登録されたクライアントと衝突する場合は `ErrConflict` で失敗します。この突き合わせは他のすべての失敗しうる構築処理の後に走るため、無関係な理由で起動が失敗したときに一覧の一部だけが書き込まれることはありません。シードを変えずに OP を再起動するのは、書き直しではなく no-op になります。突き合わせは、一覧から外れた保存済みの静的クライアントを削除しません。クライアントの廃止やシークレットのローテーションは、シードを変える前にパターン 2 か 5 の経路で行います。
 
 このパターンが向くのは、RP の数が少なく、OP と同じチームが運用していて、変更が他の設定と同じ配備パイプラインを通る構成です。
 
@@ -159,7 +151,7 @@ for _, plan := range desired {
 }
 ```
 
-ここでの区別子としては `store.ClientSourceAdmin` が適切です。ファーストパーティ自動同意の対象という観点では `ClientSourceStatic` と同じ扱いになりつつ、OP 自身が `/register` 経由で作成したレコードと監査ログ解析で識別できます。形式のバリデーションはプロビジョニングバイナリ側の責任です。`RegisterClient` は単にストアへ書き込むだけで、登録ハンドラ側のルールセットは実行されません。OP プロセスがクライアント情報の in-memory キャッシュを保持するなら、無効化の手段（SIGHUP によるリロード、バイナリから呼び出す管理エンドポイント、バックエンドが提供する TTL 失効など）を用意します。
+ここでの区別子としては `store.ClientSourceAdmin` が適切です。ファーストパーティ自動同意の対象という観点では `ClientSourceStatic` と同じ扱いになりつつ、OP 自身が `/register` 経由で作成したレコードと監査ログ解析で識別できます。形式のバリデーションはプロビジョニングバイナリ側の責任です。`RegisterClient` は単にストアへ書き込むだけで、登録ハンドラ側のルールセットは実行されません。`jwks` と `jwks_uri` の両方を持つレコードは書かないでください。クライアントの鍵を読むあらゆる箇所（request object、`private_key_jwt`、レスポンス暗号化）で、OP が利用時に拒否します。OP プロセスがクライアント情報の in-memory キャッシュを保持するなら、無効化の手段（SIGHUP によるリロード、バイナリから呼び出す管理エンドポイント、バックエンドが提供する TTL 失効など）を用意します。
 
 マニフェスト内のクレデンシャル素材は、他の配備時クレデンシャルと同じ扱いです — 暗号化された state、CI プリンシパルの最小権限、CI ログへの echo 禁止。
 
@@ -188,7 +180,7 @@ iat, err := provider.IssueInitialAccessToken(ctx, op.InitialAccessTokenSpec{
 
 これは vendor SaaS 系のプロバイダが「管理 API」として同梱していることが多いパターンで、本ライブラリが意図的に同梱していないパターンでもあります。形は決まっています。特権を持つ「管理用クライアント」が `client.read` / `client.write` のような scope（必要なら `tenant=acme` のような claim も）を持つアクセストークンを取得します。組み込み側が用意した HTTP ハンドラがその AT を検証して scope と tenant 境界を解釈し、最終的に `store.ClientRegistry` を呼び出します。
 
-管理用クライアントは `/introspect` を呼び出すため confidential でなければなりません。最小の M2M provider では `op.WithGrants(grant.ClientCredentials)` で client-credentials grant を有効にし、browser 用の `LoginFlow` は設定しません。browser 対応 provider なら authorization-code grant と login flow を明示的に配線します。`/introspect` は通常この管理用クライアント自身の認証情報で認証します。別のクライアントが発行したアクセストークンをハンドラが検査する必要がある場合は、対象 resource の `ProtectedResource.IntrospectionClients` に管理用クライアントを追加してください。リフレッシュトークンはクライアント間で委譲されません。
+管理用クライアントは `/introspect` を呼び出すため confidential でなければなりません。最小の M2M provider では `op.WithGrants(grant.ClientCredentials)` で client-credentials grant を有効にし、browser 用の `LoginFlow` は設定しません。browser 対応 provider なら authorization-code grant と login flow を明示的に設定します。`/introspect` は通常この管理用クライアント自身の認証情報で認証します。別のクライアントが発行したアクセストークンをハンドラが検査する必要がある場合は、対象 resource の `ProtectedResource.IntrospectionClients` に管理用クライアントを追加してください。リフレッシュトークンはクライアント間で委譲されません。
 
 ```go
 // 1. 管理用クライアントの静的シード。

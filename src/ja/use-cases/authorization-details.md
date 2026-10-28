@@ -4,7 +4,7 @@ description: RFC 9396 authorization_details を登録・検証し、新規 detai
 pageClass: pg-use-cases-authorization-details
 ---
 
-# 使い方 — Rich authorization requests（RFC 9396）
+# ユースケース — Rich authorization requests（RFC 9396）
 
 scope は粗い単位です。`scope=payments` は *このクライアントは送金してよい* を表しますが、*IBAN X から IBAN Y へ €40 を一度だけ動かす* までは表せません。[RFC 9396](https://datatracker.ietf.org/doc/html/rfc9396)（Rich Authorization Requests、通称 RAR）は `authorization_details` パラメータを追加します。型付きオブジェクトの JSON 配列で、クライアントは要求内容を細かく記述でき、OP はその内容を grant に束ね、その grant から発行されるトークンへ引き継げます。
 
@@ -20,53 +20,60 @@ RAR は、リソースサーバが金額、口座、location、action、datatype
 
 ::: details 用語の補足
 - **`authorization_details`** — JSON 配列。各要素は `type` 文字列に加えて、type 固有のメンバ（`actions`、`locations`、`datatypes` など、その type が定義するもの）を持つオブジェクト。
-- **`type`** — RFC 9396 §2 の識別子（例: `payment_initiation`）。OP はあらかじめ登録した type だけを受理し、未知の type は拒否します。
-- **validator** — 構造的なチェックは OP が担います。`type` を超えた各メンバの *意味* は、type ごとの validator で組み込み側が強制します。
+- **`type`** — RFC 9396 §2 の識別子（例: `payment_initiation`）。OP が受理するのは、登録された type だけです。未知の type は拒否されます。
+- **validator** — 構造の検査は OP が行います。`type` 以外の各メンバの *意味* は、type ごとの validator で組み込み側が検査します。
 :::
 
 ## ライブラリが見る部分、組み込み側が見る部分
 
 この分担は意図的です。本ライブラリは RFC 9396 §2.1 の **構造** を担います。値がオブジェクトの JSON 配列であること、各要素が OP の認識する非空文字列 `type` を持つこと、リクエスト全体が控えめなサイズ上限に収まることを確認します。type 固有の事柄、たとえば `payment_initiation` 要素が非空の `actions` 配列を持つこと、金額が正であること、location がこのクライアントの触れてよいものであることは、type に登録する `Validate` 関数へ委譲されます。
 
-validator なしで登録された type は、その type 配下で任意の中身を受理してしまいます。そのため nil の `Validate` は `op.New` で拒否され、OP は起動しません。
+validator なしで登録された type は、その type の下で任意の中身を受理してしまいます。そのため、`op.New` は nil の `Validate` を拒否します。
 
 <figure class="fig">
-  <div class="fig-head">どのメンバーを誰が見るか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-authzdetails-title" viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">OP は外形を、組み込み側のコードは中身を見る</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-authzdetails-title" viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-authzdetails-title">authorization_details の 1 要素について、OP は配列の形と type メンバーを確認し、登録した validator がそれ以外のメンバーを確認します。許可された配列はトークン応答、JWT アクセストークンの中、introspection の 3 か所に反映されます。</title>
-    <rect class="fg-box fg-box--sub" x="36" y="36" width="330" height="150" rx="8"/>
-    <text class="fg-mxs" x="56" y="62">[{</text>
-    <text class="fg-mxs fg-accent" x="70" y="84">"type": "payment_initiation",</text>
-    <text class="fg-mxs" x="70" y="106">"actions": ["initiate"],</text>
-    <text class="fg-mxs" x="70" y="128">"amount": "40.00"</text>
-    <text class="fg-mxs" x="56" y="150">}]</text>
-    <text class="fg-xs" x="56" y="176">配列のうちの 1 要素</text>
-    <path class="fg-leader" d="M370,80 H396 M370,116 H396"/>
-    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M396,80 H426" marker-end="url(#fg-ac)"/>
-    <path class="fg-edge fg-edge--thin" d="M396,116 H426" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="430" y="56" width="290" height="48" rx="6"/>
-    <text class="fg-t2 fg-accent" x="448" y="76">OP が見る部分</text>
-    <text class="fg-xs" x="448" y="94">配列の形と、type が登録済みかどうか</text>
-    <rect class="fg-box" x="430" y="112" width="290" height="48" rx="6"/>
-    <text class="fg-t2" x="448" y="132">組み込み側の Validate が見る部分</text>
-    <text class="fg-xs" x="448" y="150">それ以外のメンバー — 語彙は組み込み側のもの</text>
-    <text class="fg-lbl" x="36" y="216">許可された配列は 3 か所に反映される</text>
-    <rect class="fg-box" x="36" y="226" width="290" height="42" rx="6"/>
-    <text class="fg-mxs" x="54" y="246">トークン応答</text>
-    <text class="fg-xs" x="54" y="262">authorization_details として</text>
-    <rect class="fg-box" x="336" y="226" width="290" height="42" rx="6"/>
-    <text class="fg-mxs" x="354" y="246">JWT アクセストークン</text>
-    <text class="fg-xs" x="354" y="262">RFC 9068 §2.2.3</text>
-    <rect class="fg-box" x="636" y="226" width="288" height="42" rx="6"/>
-    <text class="fg-mxs" x="654" y="246">introspection</text>
-    <text class="fg-xs" x="654" y="262">RFC 9396 §9</text>
+    <!-- one array element -->
+    <text class="fg-lbl" x="32" y="40">配列のうちの 1 要素</text>
+    <rect class="fg-box fg-box--sub" x="32" y="56" width="312" height="96" rx="8"/>
+    <text class="fg-mxs fg-accent" x="48" y="84">"type": "payment_initiation",</text>
+    <text class="fg-mxs" x="48" y="108">"actions": ["initiate"],</text>
+    <text class="fg-mxs" x="48" y="132">"amount": "40.00"</text>
+    <!-- bus into the two checkers -->
+    <path class="fg-leader" d="M344,104 H376 M376,92 V196"/>
+    <path class="fg-edge fg-edge--accent fg-edge--thin" d="M376,92 H424" marker-end="url(#fg-ac)"/>
+    <path class="fg-edge fg-edge--thin" d="M376,196 H424" marker-end="url(#fg-a)"/>
+    <!-- the OP checks -->
+    <rect class="fg-box fg-box--accent" x="424" y="56" width="504" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="440" y="84">OP が見る部分</text>
+    <text class="fg-s" x="440" y="108">配列の形と、type が登録済みかどうか</text>
+    <!-- your Validate checks -->
+    <rect class="fg-box" x="424" y="160" width="504" height="72" rx="8"/>
+    <text class="fg-t2" x="440" y="188">組み込み側の Validate が見る部分</text>
+    <text class="fg-s" x="440" y="212">それ以外のメンバー — 語彙は組み込み側のもの</text>
+    <!-- echo -->
+    <path class="fg-rule" d="M32,264 H928"/>
+    <text class="fg-lbl" x="32" y="296">許可された配列は 3 か所に反映される</text>
+    <!-- echo 1 -->
+    <rect class="fg-box" x="32" y="312" width="272" height="72" rx="8"/>
+    <text class="fg-m" x="48" y="340">トークン応答</text>
+    <text class="fg-s" x="48" y="364">authorization_details として</text>
+    <!-- echo 2 -->
+    <rect class="fg-box" x="344" y="312" width="272" height="72" rx="8"/>
+    <text class="fg-m" x="360" y="340">JWT アクセストークン</text>
+    <text class="fg-s" x="360" y="364">RFC 9068 §2.2.3</text>
+    <!-- echo 3 -->
+    <rect class="fg-box" x="656" y="312" width="272" height="72" rx="8"/>
+    <text class="fg-m" x="672" y="340">introspection</text>
+    <text class="fg-s" x="672" y="364">RFC 9396 §9</text>
   </svg>
   <figcaption class="fig-note">この分担がこの機能の要点です。OP は金額や操作が何を意味するかについて見解を持たないため、外形だけを検証し、中身は意味を知っているコードに渡します。</figcaption>
 </figure>
 
 ## 設定
 
-受理する type を `op.WithAuthorizationDetailTypes` で登録します。type を登録すると RAR feature が暗黙に有効になり、`authorization_details` が 3 つのエンドポイントで受理可能になり、許可済みの内容が永続化・反映され、discovery が `authorization_details_types_supported` を公開します。`op.WithFeature(feature.RAR)` だけでは、受理する type と validator が無いため実用的な設定になりません。
+受理する type を `op.WithAuthorizationDetailTypes` で登録します。type を登録すると RAR feature が暗黙に有効になり、`authorization_details` が 3 つのエンドポイントで受理可能になり、許可済みの内容が永続化・反映され、discovery が `authorization_details_types_supported` を公開します。`op.WithFeature(feature.RAR)` だけでは、登録された type も validator もないため意味がありません。type を登録しないと、このパラメータは未知の拡張として無視されます。
 
 ```go
 import (
@@ -129,7 +136,7 @@ curl -G --data-urlencode "authorization_details=$DETAILS" \
   https://op.example.com/oidc/auth
 ```
 
-同じパラメータは [PAR](/ja/use-cases/fapi2-baseline) の push や token エンドポイントでも受理されます。grant が確立すると、token レスポンスに許可済みの内容が入ります:
+同じパラメータは [PAR](/ja/use-cases/fapi2-baseline) の push でも受理されます。ユーザが同意すると、token レスポンスに許可された内容が入ります。
 
 ```json
 {
@@ -139,24 +146,37 @@ curl -G --data-urlencode "authorization_details=$DETAILS" \
 }
 ```
 
-JWT アクセストークンは同じ配列を `authorization_details` claim として保持し（RFC 9068 §2.2.3）、トークンを introspect すると introspection レスポンスにもその配列が返ります（RFC 9396 §9）。そのためリソースサーバは、JWT を自分でパースしても OP に問い合わせても、許可済みの内容に到達できます。
+JWT アクセストークンは同じ配列を `authorization_details` claim として保持し（RFC 9068 §2.2.3）、トークンを introspect すると introspection レスポンスにもその配列が返ります（RFC 9396 §9）。そのためリソースサーバは、JWT を自分でパースしても OP に問い合わせても、許可された内容にたどり着けます。
+
+認可コード、リフレッシュトークンのチェーン、アクセストークンは、それぞれを発行した認可の detail を持ちます。同じユーザとクライアントによる後の認可が、すでにあるトークンに detail を足すことはなく、Grant Management の `replace` が opaque アクセストークンとリフレッシュトークンのチェーンから取り除けるのは detail だけです（[Grant management](/ja/use-cases/grant-management) を参照）。
+
+### token エンドポイントでの扱い
+
+`/token` の `authorization_details` も、登録済みの同じ type で検証されますが、権限を広げることはありません。
+
+| リクエスト | `authorization_details` の効果 |
+|---|---|
+| `authorization_code` または `refresh_token` | 絞り込みです。要求した各要素は、その認可で許可された要素と deep-equal でなければならず、そうでなければ `invalid_authorization_details` で失敗します。省略すると、許可された内容がすべて保たれます。 |
+| `client_credentials` | 検証を通った要素が、要求どおりにトークンへ載ります。ユーザも同意の記録もないため、クライアントが何を要求できるかを検査するのは `Validate` 関数だけです。 |
 
 ## 再同意と detail の適用範囲
 
-OP が既存 grant を同意なしで再利用するのは、要求されたすべての scope が既に含まれ、要求されたすべての `authorization_details` 要素がその grant の要素と deep-equal の場合だけです。`prompt=consent` は両方の集合がカバーされていても同意 interaction を強制します。新しい要素、または `amount: "100"` → `"999"` のように値が変わった要素も同意を強制し、通常の同意が完了すると既存 grant に要求された detail を追加します。
+OP が既存の grant を同意画面なしで再利用するのは、要求されたすべての scope がすでに grant にあり、要求されたすべての `authorization_details` 要素が grant の要素と deep-equal の場合だけです。新しい要素や、`amount: "100"` → `"999"` のように値が変わった要素があると、ユーザは再び同意画面を通ります。通常の同意が済むと、その要素が grant に追加されます。`prompt=consent` は、両方の集合が含まれていても同意を強制します。ファーストパーティのクライアントに対する同意の省略は、`authorization_details` を含むリクエストには適用されません。
 
-同意 UI は要求 scope の集合を絞れますが、detail ごとの承認・絞り込み UI は本ライブラリにありません。各 detail が受理可能かは登録した validator が決め、通常の同意経路が完了すると要求された detail はまとめて永続化され、token と introspection に反映されます。
+組み込みの同意ステップが表示するのは scope だけです。要素ごとの表示や承認はありません。ユーザは scope のチェックを外せますが、要求された detail は、ユーザが何を承認しても、まとめて保存され、そのまま反映されます。金額や受取人のような内容を見せる必要がある場合は、自前の同意 UI で表示してください。要素そのものを拒否したければ、`Validate` で行います。
 
 ## エラー
 
 | 条件 | エラー |
 |---|---|
-| 値がオブジェクトの JSON 配列でない、要素に認識可能な `type` がない、リクエストがサイズ上限を超える | `invalid_request`（サイズ超過）/ `invalid_authorization_details`（形が不正） |
+| 値がサイズ上限を超えている | `invalid_request` |
+| 値がオブジェクトの JSON 配列でない、または要素に登録済みの `type` がない | `invalid_authorization_details` |
 | 登録済み type の `Validate` が nil 以外のエラーを返す | `invalid_authorization_details` |
+| `/token` で、要求した要素が許可された集合にない | `invalid_authorization_details` |
 
 ## RAR と `claims` パラメータ
 
-どちらも粗い scope が与える範囲を絞りますが、答える問いが違います。[`claims` パラメータ](/ja/use-cases/claims-request) は id_token / userinfo の *どこにどの claim が載るか* を要求します。`authorization_details` はリソースサーバで *アクセストークンが何をできるか* を記述します。両者は共存でき（1 リクエストが両方を持てる）、本ライブラリは配列（`authorization_details`）かオブジェクト（`claims`）かを形で区別して同じマージ経路で処理します。
+どちらも粗い scope では言い表せない内容を扱いますが、答える問いが違います。[`claims` パラメータ](/ja/use-cases/claims-request) は、id_token や userinfo の *どこにどの claim を載せるか* を要求します。`authorization_details` は、リソースサーバ上で *アクセストークンが何をしてよいか* を記述します。1 つのリクエストに両方を含めることもできます。
 
 ## 続きはこちら
 

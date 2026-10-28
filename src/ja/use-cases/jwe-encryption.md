@@ -4,7 +4,7 @@ description: JWE の組み込み — 暗号化鍵集合を登録、JWE request_o
 pageClass: pg-use-cases-jwe-encryption
 ---
 
-# 使い方 — JWE 暗号化（RFC 7516）
+# ユースケース — JWE 暗号化（RFC 7516）
 
 OP は以下を行えます:
 
@@ -15,29 +15,31 @@ OP は以下を行えます:
 
 <figure class="fig">
   <div class="fig-head">JWE が JWS を包む</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-jwe-title" viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-jwe-title" viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-jwe-title">OP は claim を JWS に署名し、その JWS を RP の暗号化鍵宛の JWE の中に入れて暗号化します。RP はまず外側を復号し、その後で内側の署名を検証します。</title>
-    <rect class="fg-box" x="36" y="66" width="200" height="96" rx="8"/>
-    <text class="fg-t2" x="56" y="94">OP</text>
-    <text class="fg-xs" x="56" y="116">claim を組み立て、</text>
-    <text class="fg-xs" x="56" y="134">署名する</text>
-    <path class="fg-edge fg-edge--accent" d="M240,114 H286" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="290" y="42" width="342" height="144" rx="10"/>
-    <text class="fg-lbl fg-accent" x="310" y="66">外側 · JWE</text>
-    <text class="fg-xs" x="310" y="86">RP の use=enc JWK 宛に暗号化する</text>
-    <rect class="fg-box fg-box--sub" x="310" y="100" width="302" height="70" rx="8"/>
-    <text class="fg-lbl" x="330" y="124">内側 · JWS</text>
-    <text class="fg-xs" x="330" y="144">署名された claim — 内容はそのまま、</text>
-    <text class="fg-xs" x="330" y="160">外側を外すまで読めない</text>
-    <path class="fg-edge fg-edge--accent" d="M636,114 H696" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="666" y="107" text-anchor="middle">通信路上</text>
-    <rect class="fg-box" x="700" y="66" width="224" height="96" rx="8"/>
-    <text class="fg-t2" x="720" y="94">RP</text>
-    <text class="fg-xs" x="720" y="116">外側の JWE を復号し、</text>
-    <text class="fg-xs" x="720" y="134">続けて内側の JWS を検証する</text>
-    <text class="fg-xs" x="36" y="216">署名は誰が発行したかを示し、暗号化は誰が読めるかを決めます。答えている問いが違うため、ここでは両方が必要です</text>
+    <!-- OP -->
+    <rect class="fg-box" x="32" y="68" width="240" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="96">OP</text>
+    <text class="fg-s" x="48" y="120">claim を組み立て、</text>
+    <text class="fg-s" x="48" y="144">署名する</text>
+    <path class="fg-edge fg-edge--accent" d="M272,116 H312" marker-end="url(#fg-ac)"/>
+    <!-- outer JWE -->
+    <rect class="fg-box fg-box--accent" x="312" y="24" width="336" height="184" rx="8"/>
+    <text class="fg-lbl fg-accent" x="336" y="52">外側 · JWE</text>
+    <text class="fg-s" x="336" y="76">RP の use=enc JWK 宛に暗号化する</text>
+    <!-- inner JWS -->
+    <rect class="fg-box fg-box--sub" x="336" y="96" width="288" height="96" rx="8"/>
+    <text class="fg-lbl" x="352" y="124">内側 · JWS</text>
+    <text class="fg-s" x="352" y="148">署名された claim(変更なし)</text>
+    <text class="fg-s" x="352" y="172">復号するまで読めない</text>
+    <path class="fg-edge fg-edge--accent" d="M648,116 H688" marker-end="url(#fg-ac)"/>
+    <!-- RP -->
+    <rect class="fg-box" x="688" y="68" width="240" height="96" rx="8"/>
+    <text class="fg-t2" x="704" y="96">RP</text>
+    <text class="fg-s" x="704" y="120">外側の JWE を復号し、</text>
+    <text class="fg-s" x="704" y="144">内側の JWS を検証する</text>
   </svg>
-  <figcaption class="fig-note">順序はどちらの向きでも重要です。先に署名するから署名の対象が暗号文ではなく claim になり、先に復号するから RP は読めなかったものに対して署名検証をせずに済みます。</figcaption>
+  <figcaption class="fig-note">順序はどちらの向きでも重要です。先に署名するから署名の対象が暗号文ではなく claim になり、先に復号するから RP は読めなかったものに対して署名検証をせずに済みます。署名は誰が発行したかを示し、暗号化は誰が読めるかを決めます。ここでは両方が必要です。</figcaption>
 </figure>
 
 ::: details JWS と JWE の違い
@@ -55,7 +57,7 @@ JWK は `use` メンバで用途を広告できます — `sig` は署名 / 検�
 ## JWE が欲しい場面
 
 - **通信路上の機密性**。TLS 終端境界が信頼境界と一致しない（企業ゲートウェイが TLS を開くが id_token の本文は見るべきでない、等）
-- **エンドツーエンド暗号化**。規制対象でクレーム内容（PII、金融データ）が中間者に見えてもいけない場合
+- **エンドツーエンド暗号化**。規制対象で claim 内容（PII、金融データ）が中間者に見えてもいけない場合
 - **コンプライアンスフレームワーク**。一部地域の FAPI Open Banking プロファイルが encrypted JARM や encrypted id_token を要求
 
 TLS の区間暗号化で十分で、RP がすでに署名検証しているなら、JWE は鍵配布・ローテーション・アルゴリズム選択の運用複雑性を増やすだけになりがちです。必要性が明確な場合だけ使ってください。
@@ -87,7 +89,7 @@ AES-256 を Galois/Counter Mode で動かしたものです。256-bit の鍵は 
 
 - `RSA1_5` — CVE-2017-11424 padding oracle。発送せず
 
-`op.WithSupportedEncryptionAlgs(algs, encs)` は広告セットを **狭める** ことだけができます（ECDH-ES + A256GCM のみなど）。広げることはできません。許可リスト外の値は `op.New` で構成エラーになります。
+`op.WithSupportedEncryptionAlgs(algs, encs)` は許可セットを **狭める** ことだけができます（ECDH-ES + A256GCM のみなど）。広げることはできません。狭めた結果は広告だけでなく強制されます。除外した `alg` / `enc` を名指しする inbound の request object は、鍵に触れる前に拒否されます。除外した組を指定したクライアントは DCR でも静的シードでも登録できず、outbound 応答がその組で暗号化されることもありません。許可リスト外の値は `op.New` で構成エラーになり、`algs` と `encs` はそれぞれ 1 回の呼び出しでしか狭められません。
 
 ## 暗号化鍵集合の登録
 
@@ -151,7 +153,7 @@ OP は **クライアントメタデータがその応答型に対する暗号�
 |---|---|
 | id_token | `id_token_encrypted_response_alg`、`id_token_encrypted_response_enc` |
 | userinfo（JWT） | `userinfo_encrypted_response_alg`、`userinfo_encrypted_response_enc` |
-| request_object（inbound、JAR / PAR） | `request_object_encryption_alg_values_supported`（サーバ側） |
+| request_object（inbound、JAR / PAR） | なし。OP が `request_object_encryption_alg_values_supported` を広告し、クライアントが送ってきたものを復号する |
 | authorization（JARM） | `authorization_encrypted_response_alg`、`authorization_encrypted_response_enc` |
 | introspection（RFC 9701） | `introspection_encrypted_response_alg`、`introspection_encrypted_response_enc` |
 
@@ -160,10 +162,10 @@ JWT Secured Authorization Response Mode（OpenID Foundation FAPI WG）の略。r
 :::
 
 ::: details JWT introspection とは
-RFC 9701（"OAuth 2.0 JWT Response for Introspection"）。従来の `/introspect`（RFC 7662）は plain な JSON を返しますが、RFC 9701 ではリソースサーバが代わりに署名済（必要なら暗号化済）の JWT を要求できます。リソースサーバが「AS は alice のトークンだとこの時刻に言った」という否認不能な記録を保持したい場合や、introspection 応答自体が信頼境界をまたぐ場合に有用です。
+RFC 9701（"OAuth 2.0 JWT Response for Introspection"）。通常の `/introspect`（RFC 7662）は plain な JSON を返しますが、RFC 9701 ではリソースサーバが代わりに署名済（必要なら暗号化済）の JWT を要求できます。リソースサーバが「AS は alice のトークンだとこの時刻に言った」という否認不能な記録を保持したい場合や、introspection 応答自体が信頼境界をまたぐ場合に有用です。
 :::
 
-DCR マウントは `internal/jose.ParseJWEAlg` / `ParseJWEEnc` 経由で値を検証します。実行時と同じ許可リストを参照するため、登録時と request 処理時の判定が一致します。
+登録時の検証は実行時と同じ許可リストを使います。そのため、`/register` が受け付けた値は、後で OP が実際に暗号化に使える値です。
 
 ::: warning 半ペア登録は拒否
 DCR は `id_token_encrypted_response_alg=RSA-OAEP-256` を `id_token_encrypted_response_enc` 無しで提出するような非対称な指定を、登録時点で `invalid_client_metadata` として拒否します。両方空 = OK(このクライアントはその応答型で暗号化を使わない)、両方値あり = OK、片方だけ = 拒否。「登録は通るが最初の暗号化応答が実行時に失敗する」失敗モードを塞ぎます。
@@ -190,7 +192,7 @@ DCR は `id_token_encrypted_response_alg=RSA-OAEP-256` を `id_token_encrypted_r
 ```
 :::
 
-クライアントは `use=enc` 鍵を含む `jwks`（または `jwks_uri`）も公開します。OP が RP 側ローテーションに合わせて適切な鍵を解決します。
+クライアントは `use=enc` 鍵を含む `jwks`（または `jwks_uri`）も公開します。OP が RP 側ローテーションに合わせて適切な鍵を解決します。どちらか一方だけを持つ必要があり、両方を持つクライアントレコードは暗号化の段階で拒否されます。
 
 ## Discovery 露出
 

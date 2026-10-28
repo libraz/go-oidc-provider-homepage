@@ -6,48 +6,45 @@ pageClass: pg-use-cases-index
 
 # Use cases
 
-Each card below maps to a runnable example under [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) in the source repo. Examples build behind the `example` build tag so they don't bloat your `go.sum` or get pulled into `go test ./...`:
+Each page below pairs with a runnable example under [`examples/`](https://github.com/libraz/go-oidc-provider/tree/main/examples) in the source repo. Examples build behind the `example` build tag, so they stay out of `go test ./...` and out of your `go.sum`:
 
 ```sh
 (cd examples/01-minimal && GOWORK=off go run -tags example .)
 ```
 
-Most pages start with the same decision shape:
-
-- **What problem this solves.** The opening paragraphs explain the pressure that makes the feature useful, not just the option name.
-- **When to use it.** Advanced pages call out the deployment shape where the feature earns its complexity.
-- **When not to use it.** If a simpler built-in path is enough, the page points you there before diving into code.
+Most pages open with the problem the feature solves, then say when it earns its complexity and when a simpler built-in path is enough.
 
 If you are new to the library, start with [Minimal OP](/use-cases/minimal-op), then [Comprehensive bundle](/use-cases/bundle), and only jump to the pages below when your deployment has that specific need.
 
 <figure class="fig">
   <div class="fig-head">A reading order for these pages</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-index-title" viewBox="0 0 960 254" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-index-title" viewBox="0 0 960 536" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-index-title">Start from the minimal OP, then branch into whichever of the five areas the deployment actually needs: profile and flow, UI, storage and authentication, advanced grants, or cryptography and operations.</title>
-    <rect class="fg-box fg-box--accent" x="36" y="98" width="200" height="66" rx="8"/>
-    <text class="fg-t2 fg-accent" x="56" y="126">Minimal OP</text>
-    <text class="fg-xs" x="56" y="146">get it booting first</text>
-    <path class="fg-leader" d="M240,131 H270 M270,43 V219"/>
-    <path class="fg-edge fg-edge--thin" d="M270,43 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M270,87 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M270,131 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M270,175 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M270,219 H296" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="300" y="24" width="624" height="38" rx="6"/>
-    <text class="fg-t2" x="318" y="47">Profile and flow</text>
-    <text class="fg-xs" x="470" y="47">FAPI, CIBA, device code, token exchange</text>
-    <rect class="fg-box" x="300" y="68" width="624" height="38" rx="6"/>
-    <text class="fg-t2" x="318" y="91">UI and SPA</text>
-    <text class="fg-xs" x="470" y="91">custom screens, the account chooser, step-up MFA</text>
-    <rect class="fg-box" x="300" y="112" width="624" height="38" rx="6"/>
-    <text class="fg-t2" x="318" y="135">Storage and authentication</text>
-    <text class="fg-xs" x="510" y="135">SQL, DynamoDB, Redis, your own user store</text>
-    <rect class="fg-box" x="300" y="156" width="624" height="38" rx="6"/>
-    <text class="fg-t2" x="318" y="179">Advanced grants</text>
-    <text class="fg-xs" x="470" y="179">grant management, authorization details, dynamic registration</text>
-    <rect class="fg-box" x="300" y="200" width="624" height="38" rx="6"/>
-    <text class="fg-t2" x="318" y="223">Cryptography and operations</text>
-    <text class="fg-xs" x="510" y="223">JWE, pairwise subjects, protected-resource metadata</text>
+    <rect class="fg-box fg-box--accent" x="32" y="232" width="256" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="260">Minimal OP</text>
+    <text class="fg-s" x="48" y="284">get it booting first</text>
+    <!-- bus -->
+    <path class="fg-leader" d="M288,268 H312 M312,60 V476"/>
+    <path class="fg-edge fg-edge--thin" d="M312,60 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="336" y="24" width="592" height="72" rx="8"/>
+    <text class="fg-t" x="352" y="52">Profile and flow</text>
+    <text class="fg-s" x="352" y="76">FAPI, CIBA, device code, token exchange</text>
+    <path class="fg-edge fg-edge--thin" d="M312,164 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="336" y="128" width="592" height="72" rx="8"/>
+    <text class="fg-t" x="352" y="156">UI and SPA</text>
+    <text class="fg-s" x="352" y="180">custom screens, the account chooser, step-up MFA</text>
+    <path class="fg-edge fg-edge--thin" d="M312,268 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="336" y="232" width="592" height="72" rx="8"/>
+    <text class="fg-t" x="352" y="260">Storage and authentication</text>
+    <text class="fg-s" x="352" y="284">SQL, DynamoDB, Redis, your own user store</text>
+    <path class="fg-edge fg-edge--thin" d="M312,372 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="336" y="336" width="592" height="72" rx="8"/>
+    <text class="fg-t" x="352" y="364">Advanced grants</text>
+    <text class="fg-s" x="352" y="388">grant management, authorization details, dynamic registration</text>
+    <path class="fg-edge fg-edge--thin" d="M312,476 H336" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="336" y="440" width="592" height="72" rx="8"/>
+    <text class="fg-t" x="352" y="468">Cryptography and operations</text>
+    <text class="fg-s" x="352" y="492">JWE, pairwise subjects, protected-resource metadata</text>
   </svg>
   <figcaption class="fig-note">The five rows are independent — take the one that matches what you are building. Only the box on the left has to come first.</figcaption>
 </figure>
@@ -125,6 +122,7 @@ Every example folder maps to one of the use-case pages below.
 | Use case | Example | Page |
 |---|---|---|
 | MFA, captcha, step-up | [`20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp), [`21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa), [`22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha), [`23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) | [MFA / step-up](/use-cases/mfa-step-up) |
+| Durable MFA factor stores on the core database | [`27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) | [MFA / step-up](/use-cases/mfa-step-up) |
 | Email OTP, recovery codes, or passkeys | [`28-email-otp-recovery`](https://github.com/libraz/go-oidc-provider/tree/main/examples/28-email-otp-recovery), [`29-passkey`](https://github.com/libraz/go-oidc-provider/tree/main/examples/29-passkey) | [MFA / step-up](/use-cases/mfa-step-up#where-authenticators-come-from) |
 | Bring your own user store | [`24-byo-userstore`](https://github.com/libraz/go-oidc-provider/tree/main/examples/24-byo-userstore) | [Bring your own user store](/use-cases/byo-userstore) |
 
@@ -161,7 +159,7 @@ Every example folder maps to one of the use-case pages below.
 
 ## Numeric inventory
 
-The example folders are grouped by topic, not by chronology:
+The example folders are grouped by topic, not by the order they were written:
 
 | Band  | Topic |
 |-------|-------|

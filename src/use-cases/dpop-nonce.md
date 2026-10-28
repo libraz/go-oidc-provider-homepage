@@ -34,49 +34,46 @@ In short, the nonce flow blocks two classes of attack:
 
 <figure class="fig">
   <div class="fig-head">One nonce challenge, then reuse of the accepted value</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-dpopnonce-title" viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-dpopnonce-title" viewBox="0 0 960 624" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-dpopnonce-title">The OP refuses the first proof with use_dpop_nonce and hands back a nonce in a header. The client rebuilds the proof with that nonce and succeeds; later proofs may reuse the accepted value until the OP supplies a new one, and successful responses need not carry a DPoP-Nonce header.</title>
-    <line class="fg-life" x1="200" y1="72" x2="200" y2="390"/>
-    <line class="fg-life fg-life--accent" x1="700" y1="72" x2="700" y2="390"/>
-    <rect class="fg-box" x="110" y="24" width="180" height="44" rx="6"/>
-    <text class="fg-t" x="200" y="44" text-anchor="middle">RP / client</text>
-    <text class="fg-mxs" x="200" y="59" text-anchor="middle">holds priv_dpop</text>
-    <rect class="fg-box fg-box--accent" x="610" y="24" width="180" height="44" rx="6"/>
-    <text class="fg-t fg-accent" x="700" y="44" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="700" y="59" text-anchor="middle">go-oidc-provider</text>
-    <circle class="fg-badge" cx="15" cy="112" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="115" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M200,112 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="450" y="92" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
-    <text class="fg-xs" x="450" y="105" text-anchor="middle">no nonce yet — the client cannot know one</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="158" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="161" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--warn fg-edge--accent" d="M700,158 H200" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="450" y="138" text-anchor="middle">400 use_dpop_nonce</text>
-    <text class="fg-mxs" x="450" y="151" text-anchor="middle">DPoP-Nonce: nonce-1</text>
-    <circle class="fg-badge" cx="15" cy="196" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="199" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M200,188 h28 v16 h-28" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="240" y="192">rebuild the proof</text>
-    <text class="fg-mxs" x="240" y="205">with nonce = nonce-1</text>
-    <circle class="fg-badge" cx="15" cy="242" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="245" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M200,242 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="450" y="236" text-anchor="middle">POST /token · DPoP: &lt;proof, nonce-1&gt;</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="288" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="291" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M700,288 H200" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="450" y="268" text-anchor="middle">200 · access_token, DPoP-bound</text>
-    <text class="fg-mxs" x="450" y="281" text-anchor="middle">nonce-1 remains accepted; no new header required</text>
-    <circle class="fg-badge" cx="15" cy="330" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="333" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M200,330 H700" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="450" y="324" text-anchor="middle">GET /userinfo · DPoP: &lt;proof, nonce-1&gt;</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="376" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="379" text-anchor="middle">7</text>
-    <path class="fg-edge fg-edge--accent" d="M700,376 H200" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="450" y="356" text-anchor="middle">200 · { user claims }</text>
-    <text class="fg-mxs" x="450" y="369" text-anchor="middle">no DPoP-Nonce header on this success</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="600"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="600"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">holds priv_dpop</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- first proof -->
+    <path class="fg-edge" d="M192,144 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="110" text-anchor="middle">POST /token</text>
+    <text class="fg-xs" x="508" y="132" text-anchor="middle">no nonce yet; the client cannot know one</text>
+    <!-- challenge -->
+    <path class="fg-edge fg-edge--accent" d="M824,216 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="182" text-anchor="middle">400 use_dpop_nonce</text>
+    <text class="fg-mxs" x="508" y="204" text-anchor="middle">DPoP-Nonce: nonce-1</text>
+    <!-- rebuild -->
+    <path class="fg-edge" d="M192,256 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="262">rebuild the proof</text>
+    <text class="fg-mxs" x="248" y="284">nonce = nonce-1</text>
+    <!-- retry -->
+    <path class="fg-edge" d="M192,360 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="326" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="508" y="348" text-anchor="middle">DPoP: &lt;proof, nonce-1&gt;</text>
+    <!-- accepted -->
+    <path class="fg-edge fg-edge--accent" d="M824,432 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="398" text-anchor="middle">200 · access_token</text>
+    <text class="fg-xs" x="508" y="420" text-anchor="middle">nonce-1 stays accepted; no new header needed</text>
+    <!-- reuse -->
+    <path class="fg-edge" d="M192,504 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="508" y="470" text-anchor="middle">GET /userinfo</text>
+    <text class="fg-mxs" x="508" y="492" text-anchor="middle">DPoP: &lt;proof, nonce-1&gt;</text>
+    <!-- reuse accepted -->
+    <path class="fg-edge fg-edge--accent" d="M824,576 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="508" y="542" text-anchor="middle">200 · { user claims }</text>
+    <text class="fg-xs" x="508" y="564" text-anchor="middle">no DPoP-Nonce header on this success</text>
   </svg>
   <figcaption class="fig-note">The first rejection is not a failure to handle specially — it is the handshake. A client that treats <code>use_dpop_nonce</code> as a normal error will retry forever; one that reads the header succeeds on the next attempt.</figcaption>
 </figure>
@@ -102,7 +99,7 @@ op.New(
 )
 ```
 
-The rotation interval (`5*time.Minute` above) is how often the "current" nonce changes. The OP accepts both the current and previous values, so a client racing through a rotation boundary doesn't see a hard failure.
+The rotation interval (`5*time.Minute` above) is how often the "current" nonce changes; it must be positive, and `op.NewInMemoryDPoPNonceSource` returns an error for zero or less. The OP accepts both the current and previous values, so a client racing through a rotation boundary doesn't see a hard failure.
 
 ::: warning Multi-instance deployments
 A process-local nonce source breaks across replicas — instance B has no record of the nonce instance A issued. Production HA deployments plug a shared store (Redis) behind a custom `DPoPNonceSource`. The library deliberately doesn't ship a Redis nonce source: the option matrix (TTL, rotation cadence, missed-rotation tolerance) is too deployment-specific to standardise.
@@ -110,13 +107,12 @@ A process-local nonce source breaks across replicas — instance B has no record
 
 ## When the OP demands the nonce
 
-| Endpoint | Nonce required? | Set by |
-|---|---|---|
-| `/token` | when a DPoP proof is presented and a `DPoPNonceSource` is configured | `op.WithDPoPNonceSource` |
-| `/userinfo` | when a DPoP proof is presented and a `DPoPNonceSource` is configured | same |
-| `/par` | when a DPoP proof is presented and a `DPoPNonceSource` is configured | same |
-| `/device_authorization` | when a DPoP proof is presented and a `DPoPNonceSource` is configured | same |
-| `/bc-authorize` (CIBA) | when a DPoP proof is presented and a `DPoPNonceSource` is configured | same |
+Every endpoint below demands a nonce when the request carries a DPoP proof and an `op.WithDPoPNonceSource` source is configured. What differs is the shape of the challenge:
+
+| Endpoint | Challenge on a missing or stale nonce |
+|---|---|
+| `/token`, `/par`, `/device_authorization`, `/bc-authorize` (CIBA) | `400` with JSON error `use_dpop_nonce` and a `DPoP-Nonce` response header |
+| `/userinfo` | `401` with `WWW-Authenticate: DPoP error="use_dpop_nonce"` and a `DPoP-Nonce` response header (RFC 9449 §9, resource-server form) |
 
 `/par` and `/token` apply the same nonce challenge and validation, so an SPA that pushes authorization requests runs the same nonce-retry loop at `/par` that it already runs at `/token`.
 
@@ -136,7 +132,7 @@ curl -i -X POST -H "DPoP: <proof-without-nonce>" \
 # {"error":"use_dpop_nonce", ...}
 ```
 
-The `DPoP-Nonce` value goes into the next proof's `nonce` claim.
+The `DPoP-Nonce` value goes into the next proof's `nonce` claim. A client that keeps getting `use_dpop_nonce` is usually not reading the header, or is talking to a replica whose nonce ring differs from the one that issued the value.
 
 ## Read next
 

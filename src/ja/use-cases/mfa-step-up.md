@@ -1,95 +1,110 @@
 ---
-title: MFA / step-up
-description: authenticator と rule の組合せ — TOTP 常時、N 失敗後 captcha、必要時 ACR step-up、login/MFA 監査シグナル。
+title: MFA / ステップアップ
+description: 認証器とルールの組み合わせ。TOTP を常時、N 回失敗後に captcha、必要に応じて ACR によるステップアップ、ログインと MFA の監査シグナル。
 pageClass: pg-use-cases-mfa-step-up
 ---
 
-# 使い方 — MFA / step-up
+# ユースケース — MFA / ステップアップ
 
-ライブラリの認証層は 3 つのプリミティブの合成で構築されます:
+ログイン層は、組み合わせて使う 3 つの部品でできています。
 
-- **`Step`** — 1 つの factor を検証する方法（password、TOTP、passkey、email-OTP …）。
-- **`Rule`** — その factor がこの試行で **必要** かを判定。
-- **`LoginFlow`** — `Primary` ステップと `Rules` の順序付きリスト。
+- **`Step`**: 1 つの認証要素を検証します（パスワード、TOTP、パスキー、メール OTP、または [`op.ExternalStep`](/ja/use-cases/custom-authenticator) で足した独自の要素）。
+- **`Rule`**: その試行でステップが必要かどうかを判定します。
+- **`LoginFlow`**: `Primary` ステップ 1 つと、順序付きの `Rules` のリストです。
 
-各 step は、対応する rule が「必要」と判定したときだけ実行されます。「password 常時、TOTP 常時」が 1 つのフロー、「password 常時、3 回失敗後 captcha、リスク高なら TOTP」が別のフローです。
+`Primary` が成功すると、OP はルールを順に調べ、条件に合ったルールのステップをすべて実行します。「パスワードと TOTP を常に要求」も 1 つのフローで、「パスワードは常に、3 回失敗したら captcha、リスクが高ければ TOTP」も別の 1 つのフローです。
 
-このページは、ログイン判定が「password を受理したか」だけでは終わらない場合に使います。たとえば必須 MFA、不審な試行への captcha、リスクベースの追加 factor、RP が要求する ACR step-up です。ユーザ名と password だけでよいなら、既定の password primary step と user store のページで足ります。必要になる前に rule を増やすと、テストや復旧の範囲だけが広がります。
+このページは、ログインの判定が「パスワードが通ったか」だけでは終わらない場合に使います。たとえば、必須の MFA、不審な試行への captcha、リスクに応じた追加の認証要素、RP が要求するより強い `acr` です。ユーザ名とパスワードだけでよいなら、既定のパスワード用 primary ステップと user store のページで足ります。必要になる前にルールを増やしても、テストと復旧の範囲が広がるだけです。
 
 ::: details このページで触れる仕様
 - [RFC 6238](https://datatracker.ietf.org/doc/html/rfc6238) — TOTP（時刻ベースワンタイムパスワード）
 - [RFC 8176](https://datatracker.ietf.org/doc/html/rfc8176) — Authentication Method Reference Values（`amr`）
-- [RFC 9470](https://datatracker.ietf.org/doc/html/rfc9470) — OAuth 2.0 Step-up Authentication Challenge
+- [RFC 9470](https://datatracker.ietf.org/doc/html/rfc9470) — OAuth 2.0 Step-up Authentication Challenge（リソースサーバ側）
 - [WebAuthn Level 3](https://www.w3.org/TR/webauthn-3/) — パスキー
 - [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html) — Authenticator Assurance Levels（AAL）
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §2（`acr` / `amr` / `auth_time`）
 :::
 
 ::: details 用語の補足
-- **MFA**（Multi-Factor Authentication） — 複数の factor（知識・所持・生体）を立て続けに検証してからトークンを発行する仕組み。
-- **Step-up** — RP が、より高い保証水準を必要とする操作のために `acr_values=aalN` を要求する仕組みです。現在のセッションがその水準に達していなければ、OP は追加の factor を実行して保証水準を引き上げたうえで `id_token` を新規発行します。RFC 9470 が定義しています。
-- **AAL（Authenticator Assurance Level）** — NIST が定義する 3 段階の保証水準です。AAL1 ≒ パスワード、AAL2 ≒ パスワード + もう 1 因子、AAL3 ≒ ハードウェアにバインドされた所持証明。多くの OP / RP が `acr` のラベルとして使います。
-- **`amr` claim** — RFC 8176 が標準値（`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt` …）を列挙しているので、RP は実際にどの factor が使われたかを監査できます。
+- **MFA**（Multi-Factor Authentication）: ユーザが複数の認証要素（知っているもの、持っているもの、生体）を示してから、OP がトークンを発行する仕組みです。
+- **ステップアップ**: RP が機微な操作のために、より高い保証水準を求めることです。`acr_values=aalN` を送ります（OIDC Core §3.1.2.1）。OP は追加の認証要素を実行してから、新しい `id_token` を発行します。リソースサーバがクライアントにこれを求める方法は、RFC 9470 が標準化しています。
+- **AAL**（Authenticator Assurance Level）: NIST が定める 3 段階の保証水準です。AAL1 はおおよそパスワード、AAL2 はパスワードに第 2 要素を加えたもの、AAL3 はハードウェアで裏付けた所持の証明です。多くの OP と RP が `acr` のラベルに使います。
+- **`amr` claim**: RFC 8176 が標準値（`pwd`、`otp`、`mfa`、`hwk`、`face`、`fpt` など）を列挙しているので、RP は実際にどの認証要素が使われたかを監査できます。
 :::
 
 > **ソース:**
-> - [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) — password + 常時 TOTP。
-> - [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — リスクベースの step-up。
-> - [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — N 失敗後 captcha。
-> - [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — RFC 9470 ACR step-up。
-> - [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — 同梱 SQL factor store と OP のコアテーブルを 1 つの DB で使う構成。
+> - [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) — パスワードと常時 TOTP。
+> - [`examples/21-risk-based-mfa`](https://github.com/libraz/go-oidc-provider/tree/main/examples/21-risk-based-mfa) — リスクに応じたステップアップ。
+> - [`examples/22-login-captcha`](https://github.com/libraz/go-oidc-provider/tree/main/examples/22-login-captcha) — N 回失敗後の captcha。
+> - [`examples/23-step-up`](https://github.com/libraz/go-oidc-provider/tree/main/examples/23-step-up) — ACR によるステップアップ。
+> - [`examples/27-durable-mfa-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/27-durable-mfa-store) — 同梱の SQL 認証要素ストアを、OP のコアテーブルと 1 つの DB で使う構成。
 
 ## 構成
 
 <figure class="fig">
-  <div class="fig-head">primary step の後、発火したルールの分だけ step が増える</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-mfa-title" viewBox="0 0 960 372" xmlns="http://www.w3.org/2000/svg">
-    <title id="uc-mfa-title">ログインフローは primary step を 1 つ実行し、続いてルールを評価します。発火したルールがそれぞれ追加の factor step を要求し、どれも発火しなくなった時点でトークンを発行します。ルールは互いに独立で、宣言順にも依存しません。</title>
-    <rect class="fg-box" x="360" y="24" width="240" height="46" rx="8"/>
-    <text class="fg-t2" x="480" y="52" text-anchor="middle">ログイン開始</text>
-    <path class="fg-edge fg-edge--thin" d="M480,74 V88" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="360" y="92" width="240" height="52" rx="8"/>
-    <text class="fg-m fg-accent" x="480" y="116" text-anchor="middle">PrimaryPassword</text>
-    <text class="fg-xs" x="480" y="134" text-anchor="middle">primary step — 常に実行される</text>
-    <path class="fg-edge fg-edge--thin" d="M480,148 V162" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="360" y="166" width="240" height="46" rx="8"/>
-    <text class="fg-m fg-accent" x="480" y="194" text-anchor="middle">Rules を評価する</text>
-    <path class="fg-leader" d="M480,216 V230 M144,230 H816"/>
-    <path class="fg-edge fg-edge--thin" d="M144,230 V244" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M368,230 V244" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M592,230 V244" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M816,230 V244" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="36" y="248" width="216" height="92" rx="8"/>
-    <text class="fg-mxs" x="54" y="270">RuleAlways</text>
-    <text class="fg-xs" x="54" y="288">毎回</text>
-    <line class="fg-rule" x1="54" y1="300" x2="234" y2="300"/>
-    <text class="fg-mxs fg-accent" x="54" y="322">→ StepTOTP</text>
-    <rect class="fg-box" x="260" y="248" width="216" height="92" rx="8"/>
-    <text class="fg-mxs" x="278" y="270">RuleAfterFailedAttempts</text>
-    <text class="fg-xs" x="278" y="288">失敗回数 ≥ 3</text>
-    <line class="fg-rule" x1="278" y1="300" x2="458" y2="300"/>
-    <text class="fg-mxs fg-accent" x="278" y="322">→ StepCaptcha</text>
-    <rect class="fg-box" x="484" y="248" width="216" height="92" rx="8"/>
-    <text class="fg-mxs" x="502" y="270">RuleRisk</text>
-    <text class="fg-xs" x="502" y="288">リスク ≥ High</text>
-    <line class="fg-rule" x1="502" y1="300" x2="682" y2="300"/>
-    <text class="fg-mxs fg-accent" x="502" y="322">→ StepTOTP</text>
-    <rect class="fg-box" x="708" y="248" width="216" height="92" rx="8"/>
-    <text class="fg-mxs" x="726" y="270">RuleACR</text>
-    <text class="fg-xs" x="726" y="288">acr_values に aal3</text>
-    <line class="fg-rule" x1="726" y1="300" x2="906" y2="300"/>
-    <text class="fg-mxs fg-accent" x="726" y="322">→ StepTOTP</text>
-    <path class="fg-edge fg-edge--ok" d="M632,189 H720" marker-end="url(#fg-ao)"/>
-    <text class="fg-xs fg-ok" x="676" y="182" text-anchor="middle">どれも発火しない</text>
-    <rect class="fg-box fg-box--ok" x="724" y="166" width="200" height="46" rx="8"/>
-    <text class="fg-t2" x="824" y="194" text-anchor="middle">トークンを発行する</text>
+  <div class="fig-head">primary ステップの後、発火したルールの分だけステップが増える</div>
+  <svg class="fig-svg" role="img" aria-labelledby="uc-mfa-title" viewBox="0 0 960 384" xmlns="http://www.w3.org/2000/svg">
+    <title id="uc-mfa-title">ログインフローは primary ステップを 1 つ実行し、続いてルールを評価します。発火したルールがそれぞれ追加の認証要素のステップを要求し、どれも発火しなくなった時点でトークンを発行します。ルールは宣言順に調べられ、すでに実行済みのステップを持つルールは飛ばされます。</title>
+    <!-- primary -->
+    <rect class="fg-box" x="32" y="24" width="272" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="52">primary ステップ</text>
+    <text class="fg-m fg-accent" x="48" y="76">PrimaryPassword</text>
+    <path class="fg-edge" d="M304,60 H344" marker-end="url(#fg-a)"/>
+    <!-- rules -->
+    <rect class="fg-box fg-box--accent" x="344" y="24" width="272" height="72" rx="8"/>
+    <text class="fg-t2" x="360" y="52">ルールを評価する</text>
+    <text class="fg-s" x="360" y="76">宣言順に調べる</text>
+    <path class="fg-edge fg-edge--ok" d="M616,60 H656" marker-end="url(#fg-ao)"/>
+    <!-- tokens -->
+    <rect class="fg-box fg-box--ok" x="656" y="24" width="272" height="72" rx="8"/>
+    <text class="fg-t2" x="672" y="52">トークンを発行する</text>
+    <text class="fg-s" x="672" y="76">どれも発火しないとき</text>
+    <path class="fg-edge fg-edge--thin" d="M480,96 V128" marker-end="url(#fg-a)"/>
+    <!-- rule table -->
+    <rect class="fg-box" x="32" y="128" width="896" height="232" rx="8"/>
+    <text class="fg-lbl" x="48" y="156">ルール</text>
+    <text class="fg-lbl" x="304" y="156">発火する条件</text>
+    <text class="fg-lbl" x="640" y="156">追加されるステップ</text>
+    <line class="fg-rule fg-rule--strong" x1="32" y1="168" x2="928" y2="168"/>
+    <text class="fg-mxs" x="48" y="198">RuleClient</text>
+    <text class="fg-s" x="304" y="198">管理用クライアントの場合</text>
+    <text class="fg-mxs fg-accent" x="640" y="198">→ StepEmailOTP</text>
+    <line class="fg-rule" x1="48" y1="216" x2="912" y2="216"/>
+    <text class="fg-mxs" x="48" y="246">RuleAfterFailedAttempts</text>
+    <text class="fg-s" x="304" y="246">失敗回数 ≥ 3</text>
+    <text class="fg-mxs fg-accent" x="640" y="246">→ StepCaptcha</text>
+    <line class="fg-rule" x1="48" y1="264" x2="912" y2="264"/>
+    <text class="fg-mxs" x="48" y="294">RuleRisk</text>
+    <text class="fg-s" x="304" y="294">リスク ≥ High</text>
+    <text class="fg-mxs fg-accent" x="640" y="294">→ StepTOTP</text>
+    <line class="fg-rule" x1="48" y1="312" x2="912" y2="312"/>
+    <text class="fg-mxs" x="48" y="342">RuleACR</text>
+    <text class="fg-s" x="304" y="342">acr_values に "aal3"</text>
+    <text class="fg-mxs fg-accent" x="640" y="342">→ PrimaryPasskey</text>
   </svg>
-  <figcaption class="fig-note">ここにあるのは if 文の連鎖ではありません。各ルールが独立に答え、要求された step が集められ、ループが再び回ります。だから 5 つ目のルールを足しても、他の 4 つの判断は変わりません。</figcaption>
+  <figcaption class="fig-note">各ルールは試行に対する条件判定で、同じ種類のステップは 1 つのルールにしか現れません。ステップを実行するたびにルールは再評価され、ルールの答えは他のルールに左右されないので、5 つ目のルールを足しても、他の 4 つの判断は変わりません。</figcaption>
 </figure>
 
-`LoginFlow` は `Primary` step と `Rules` リストを持つ struct。各 rule は `op.RuleAlways(step)`、`op.RuleAfterFailedAttempts(n, step)`、`op.RuleRisk(threshold, step)`、`op.RuleACR(acr, step)` 等のコンストラクタで作る `Rule` 値です。
+`LoginFlow` は構造体で、`Primary` ステップ、`Rules` のリスト、任意の 2 つのフィールドを持ちます。1 つは `Decider`（ルールでは表せない方針を、ルールより先に判定するフック）、もう 1 つは `Risk`（`RiskAssessor`）です。各 `Rule` は条件とステップの組で、コンストラクタで作ります。
 
-`When` が nil の rule は常時実行です。ライブラリは nil を constant-true predicate として扱うため、`op.Rule{Then: step}` のような struct literal も常時 rule になります。factor を条件付きにしたい場合は、明示的な predicate を指定してください。
+| コンストラクタ | 発火する条件 |
+|---|---|
+| `op.RuleAlways(step)` | 毎回 |
+| `op.RuleAfterFailedAttempts(n, step)` | この試行で拒否された送信が `n` 回以上 |
+| `op.RuleRisk(threshold, step)` | assessor のスコアが `threshold` 以上 |
+| `op.RuleNewDevice(step)` | assessor が新しいデバイスと報告した |
+| `op.RuleClient(clientID, step)` | そのクライアントからのリクエスト |
+| `op.RuleScope(scope, step)` | その scope を要求している |
+| `op.RuleACR(acr, step)` | リクエストの `acr_values` に `acr` が含まれる |
+| `op.RuleWhen(pred, step)` | `op.LoginContext` に対する自前の条件が true を返す |
+
+OP は次のように評価します。
+
+- `Primary` の後、ルールを宣言順に調べ、条件に合い、まだ実行されていない最初のルールのステップを実行します。実行したらもう一度調べ、どれにも合わなくなったら認証は完了です。
+- 同じ種類のステップは 1 つのルールにしか置けません。繰り返したフローは `op.New` が拒否します。
+- `When` が nil のルール（`op.Rule{Then: step}` の構造体リテラルも含む）は常に合致します。条件が panic した場合も合致として扱います。条件に欠陥があっても、認証要素を飛ばさず要求する側に倒れます。
+- `Primary` は利用者を特定できなければなりません。`op.PrimaryPasskey`、`op.StepTOTP`、`op.StepEmailOTP`、`op.StepRecoveryCode` は特定済みのユーザを検証するものなので、`Primary` に置くと `op.New` が拒否します。`op.PrimaryPassword` または [`op.ExternalStep`](/ja/use-cases/custom-authenticator) の後ろのルールに置いてください。
+- `WithLoginFlow` は旧来の `WithAuthenticators` と同時に使えず、呼べるのは 1 回です。
 
 ## 常時 TOTP
 
@@ -112,7 +127,7 @@ op.New(
 )
 ```
 
-## N 回失敗後 captcha
+## N 回失敗後の captcha
 
 ```go
 flow := op.LoginFlow{
@@ -125,15 +140,15 @@ flow := op.LoginFlow{
 op.New(
   /* ... */
   op.WithLoginFlow(flow),
-  op.WithCaptchaVerifier(myCaptchaVerifier), // hCaptcha / Turnstile 等
+  op.WithCaptchaVerifier(myCaptchaVerifier), // hCaptcha / Turnstile など
 )
 ```
 
-`LoginAttemptObserver`（`op.WithLoginAttemptObserver` で渡す）が identifier 毎に失敗回数をカウント。`RuleAfterFailedAttempts` がそのカウントを読みます。
+`StepCaptcha` の `Verifier` フィールドにも verifier が必要です。`op.WithCaptchaVerifier` は、OP 自身が出す captcha の prompt に同じ verifier を渡します。
 
-observer は認証試行ごとに 1 つの `op.LoginAttempt` を受け取ります。`Outcome` は `op.AttemptSuccess`、`op.AttemptFailure`、`op.AttemptLocked` のいずれかです。`AttemptLocked` は送信された credential を通常の失敗として検証したのではなく、総当たり対策の gate が試行を終了させたことを示すため、別の outcome として処理してください。
+`RuleAfterFailedAttempts` が読むのは、現在の試行で拒否された送信の回数で、`LoginAttemptObserver`（`op.WithLoginAttemptObserver` で渡す）から得ます。observer は認証試行ごとに `op.LoginAttempt` を 1 つ受け取ります。`Outcome` は `op.AttemptSuccess`、`op.AttemptFailure`、`op.AttemptLocked` のいずれかです。`AttemptLocked` は、送信された資格情報を評価せずに総当たり対策のゲートが試行を終了させたことを表すので、通常の失敗とは別に処理してください。
 
-## リスクベース step-up
+## リスクに応じたステップアップ
 
 ```go
 flow := op.LoginFlow{
@@ -150,11 +165,13 @@ op.New(
 )
 ```
 
-`RiskAssessor` は試行ごとに `RiskScore` を返します。ライブラリは 4 段階の順序付き列挙（`RiskScoreNone` < `RiskScoreLow` < `RiskScoreMedium` < `RiskScoreHigh`）を公開しています。組み込み側の assessor が、リスク評価サービスの出力をこの列挙値に変換します。`RuleRisk(threshold, step)` は assessor の score が `threshold` 以上のときに発火します。
+`RiskAssessor` はログイン試行ごとに 1 回、`Primary` の前に実行され、4 段階の順序付き列挙（`RiskScoreNone` < `RiskScoreLow` < `RiskScoreMedium` < `RiskScoreHigh`）の `RiskScore` を返します。リスク評価サービスの出力をこの列挙値に変換するのは、組み込み側の assessor の役目です。`RuleRisk(threshold, step)` は、スコアが `threshold` 以上のときに発火します。
 
-## RFC 9470 ACR step-up
+assessor は、試行の拒否や、特定の認証要素の要求を直接返すこともできます。指定は `LoginFlow.Risk` か `op.WithRiskAssessor` のどちらか一方にしてください。両方指定すると `op.New` が失敗します。assessor がなければスコアは `RiskScoreNone` のままなので、`RuleRisk` は発火しません。エラーにもなりません。
 
-RP がより高い Authentication Context Class（`acr_values=aal3`）を要求すると、OP はセッション状態に関係なく step-up を実行します:
+## ACR によるステップアップ
+
+RP がより強い Authentication Context Class（`acr_values=aal3`）を要求したとき、その値に対する `RuleACR` がステップを実行します。
 
 ```go
 flow := op.LoginFlow{
@@ -167,17 +184,30 @@ flow := op.LoginFlow{
 op.New(
   /* ... */
   op.WithLoginFlow(flow),
-  op.WithACRPolicy(myACRPolicy), // op.ACRPolicy 実装
+  op.WithACRPolicy(myACRPolicy), // op.ACRPolicy の実装
 )
 ```
 
-ユーザがセッション内で `aal2` で認証済の場合、RP の `acr_values=aal3` 要求は対話的 step-up を発火させます。実行される factor は `RuleACR` に設定したものです。OP が固定の `passkeyAuth` 実装へ差し替えることはありません。
+このルールは `acr_values` に対する単純な一致判定です。セッションがすでに同等以上の認証を持っていても、指定した認証要素を実行します。どの認証要素を使うかを OP が選ぶことはありません。
+
+発行される `id_token` の `acr` に何を入れるかは、`ACRPolicy` が決めます。既定のポリシーは緩く、ログインが AAL1 に達していれば、要求された最初の値をそのまま返します。`aal3` に実質的な意味を持たせたいときは、完了したステップと AAL を確認してから同意するポリシーを入れてください。
+
+### 再利用されたセッション上のルール
+
+ログインなしで、既存のセッションだけでリクエストを処理できる場合があります。たとえば、キャッシュ済みの grant が scope を満たしている場合や、クライアントがファーストパーティの場合です。OP はその方法で code を発行する前に、`Primary` が完了し、他に何も実行していないものとして、`Decider` とルールを評価します。ルールがステップを要求すれば、OP は発行せず、セッションの subject からチェーンを実行します。`prompt=none` なら `interaction_required` を返します。
+
+ルールを設計するときの注意点は次のとおりです。
+
+- セッションで以前に完了した認証要素は、ルールを満たしません。`RuleAlways(StepTOTP)` は、セッションだけで処理できるはずの認可のたびに、もう一度 TOTP を要求します。必要な場面だけにしたければ、`RuleClient`、`RuleScope`、`RuleACR` で範囲を絞ってください。
+- 再利用されたセッション上のステップアップでは、発行されるトークンの `acr`、`amr`、`auth_time` に、セッションの値とステップアップの認証要素の両方が残ります。リスク assessor にはセッションの認証方法が見え、ルールには `Primary` が完了済みに見えます。
+- captcha のルールとリスク駆動のルールは、この再利用の判定には使われません。チェーンの内側でだけ動きます。
+- 再利用されたセッション上のステップアップは、`login.*` ではなく `mfa.*` イベントとして監査されます。
 
 ## リソースサーバ側: `op.StepUpChallenge`
 
-RFC 9470 には 2 つの側面があります。OP 側は上記のとおり — `acr_values` / `max_age` を尊重して再認証します。もう一方は **リソースサーバ** にあります。ある機微な呼び出しに対してアクセストークンが必要な強度や freshness を欠くとき、リソースサーバは `401` を返し、`error="insufficient_user_authentication"` と必要な `acr_values` / `max_age` を載せた `WWW-Authenticate: Bearer` チャレンジを返します。クライアントはその値で再認可し、上記の OP 側 step-up が働きます。
+RFC 9470 には 2 つの側面があります。OP 側は上のとおりで、`/auth` の `acr_values` と `max_age` を尊重して再認証します。もう一方は**リソースサーバ**にあります。機微な呼び出しに対してアクセストークンの強度や新しさが足りないとき、リソースサーバは `401` を返し、`error="insufficient_user_authentication"` と必要な `acr_values` や `max_age` を載せた `WWW-Authenticate: Bearer` チャレンジを添えます。クライアントはその値で再認可し、上で説明した OP 側のステップアップが動きます。
 
-`op.StepUpChallenge` はそのヘッダ値を組み立てます。OP 自身はこれを発行しません — トークン検証と `401` の応答はリソースサーバの仕事なので、本ライブラリは正しく整形されたチャレンジ文字列を生成するところで止まります:
+`op.StepUpChallenge` は、そのヘッダ値を組み立てます。OP 自身はこれを発行しません。トークン検証と `401` の応答はリソースサーバの仕事なので、ライブラリが行うのはチャレンジ文字列の生成までです。
 
 ```go
 maxAge := int64(300)
@@ -188,52 +218,52 @@ w.Header().Set("WWW-Authenticate", challenge)
 w.WriteHeader(http.StatusUnauthorized)
 ```
 
-空の `realm`、空の `acrValues` スライス、`nil` の `maxAge` はそれぞれ省略され、必須の `error="insufficient_user_authentication"` は常に含まれます。`acrValues` は `acr_values` リクエストパラメータと同じく、space 区切りの引用符付き 1 文字列にエンコードされます。
+空の `realm`、空の `acrValues` スライス、`nil` の `maxAge` はそれぞれ省略され、必須の `error="insufficient_user_authentication"` は常に含まれます。`acrValues` は `acr_values` リクエストパラメータと同じく、スペース区切りの引用符付き 1 文字列にエンコードされます。
 
-## ワンタイム factor は単回使用
+## ワンタイムの認証要素は単回使用
 
-ワンタイム factor — email-OTP（`op.StepEmailOTP`）、TOTP（`op.StepTOTP`）、recovery code（`op.StepRecoveryCode`）— は並行下でも単回使用です。同じコードを 2 度受理することはできません。store は atomic な compare-and-set でこれを強制し、再提示時には `ErrAlreadyConsumed` を返すので、同じコードを提示する 2 つの競合リクエストが両方とも成功することはありません。[factor store を自前実装](/ja/use-cases/byo-store)する場合は、これらの consume 操作を CAS にする必要があります（in-memory リファレンスがその形を示します）。
+メール OTP（`op.StepEmailOTP`）、TOTP（`op.StepTOTP`）、recovery code（`op.StepRecoveryCode`）は、並行処理のもとでも単回使用です。同じコードが 2 度受理されることはありません。store は atomic な compare-and-set でこれを強制し、再提示には `ErrAlreadyConsumed` を返します。同じコードを提示した 2 つの競合リクエストが、両方とも成功することはありません。[認証要素ストアを自前で実装](/ja/use-cases/byo-store)する場合は、これらの消費操作を CAS にする必要があります（in-memory のリファレンス実装が形を示しています）。
 
-terminal な factor 失敗 — 期限切れまたは消費済みのワンタイムコード、lockout、必須のリセット、再送回数超過 — は `authn.ErrFactorAbort` sentinel にラップされ、authorize endpoint はこれを 500 ではなく **HTTP 400** にマップします。使用済みのコードはサーバ障害ではなくクライアント側の状態だからです。
+終端の認証要素の失敗は、500 ではなく **HTTP 400** で返ります。期限切れまたは消費済みのワンタイムコード、ロックアウト、必須のリセット、再送回数の超過、すでに確定した subject と別の subject を指す結果、ユーザ検証なしで完了した AAL3 の認証要素が該当します。サーバ障害ではなく送信内容に起因する状態であり、ユーザは新しい試行を始められます。
 
-recovery-code prompt の `AttemptsRemaining` は、失敗した提出をあと何回許容するかという budget です。未使用の recovery code 数ではないため、driver はこの値から残りコード数を推測しないでください。
+recovery code の prompt の `AttemptsRemaining` は、失敗した提出をあと何回許容するかを表す残り回数です。未使用の recovery code の数ではないため、ドライバはこの値から残りのコード数を推測しないでください。
 
 ## 監査記録
 
-認証フローが発行するのは、実際に解決した factor の結果です。primary factor には `op.AuditLoginSuccess` / `op.AuditLoginFailed`、additional factor には `op.AuditMFASuccess` / `op.AuditMFAFailed` が使われます。cross-factor lockout の CAS 競合で失敗試行がカウントされずに中断された場合は `op.AuditLockoutStalled` です。`op.AuditMFARequired`、`op.AuditStepUpRequired`、`op.AuditStepUpSuccess` は予約されたカタログ定数であり、OP は発行しません。
+認証要素の結果は、`op.Audit*` カタログのイベントとして発行されます。primary の認証要素には `op.AuditLoginSuccess` と `op.AuditLoginFailed`、追加の認証要素（再利用されたセッション上のステップアップを含む）には `op.AuditMFASuccess` と `op.AuditMFAFailed` が使われます。ロックアウトやリセット必須の状態を引き起こした推測は失敗として記録されます。ロックされたままの間の拒否は、ログイン失敗には数えられません。認証要素をまたぐロックアウトカウンタの競合で、失敗した試行がカウントされずに中断された場合は `op.AuditLockoutStalled` です。
 
-- `factor`（`pwd`、`otp`、`webauthn` …）
+`op.AuditMFARequired`、`op.AuditStepUpRequired`、`op.AuditStepUpSuccess` は予約されたカタログ名で、OP は発行しません。`mfa.*` イベントは、再試行を二重に数えることなく同じ情報を伝えます。
 
-イベントは `extras` に解決した `factor` を載せ、`op.WithAuditLogger`（`*slog.Logger`）経由で流れます。発行は request goroutine 上で同期的に行われるため、handler を block させず、並行呼び出しに安全な実装にしてください。
+各イベントは解決した `factor`（`password`、`totp`、`passkey` など）を `extras` に載せ、`op.WithAuditLogger`（`*slog.Logger`）経由で流れます。発行は request goroutine 上で同期的に行われるため、handler はブロックせず、並行呼び出しに安全にしてください。
 
-## 同梱の step
+## 同梱のステップ
 
-ライブラリは一般的な factor 向けに、すぐ使える step を同梱しています:
+ライブラリは一般的な認証要素向けに、すぐ使えるステップを同梱しています。
 
 | Step | 検証対象 | ストレージ interface |
 |---|---|---|
 | `op.PrimaryPassword` | ユーザ名 / email + パスワード | `store.UserPasswords()` |
-| `op.PrimaryPasskey` | WebAuthn / passkey を primary factor として | `store.Passkeys()` |
+| `op.PrimaryPasskey` | WebAuthn / パスキーを primary の認証要素として | `store.Passkeys()` |
 | `op.StepTOTP` | RFC 6238 TOTP、AES-256-GCM 静止時暗号化 | `store.TOTPs()` |
 | `op.StepEmailOTP` | メール配信 one-time code | `store.EmailOTPs()` |
 | `op.StepRecoveryCode` | 単発 recovery code | `store.RecoveryCodes()` |
 | `op.StepCaptcha` | hCaptcha / Turnstile / 自前 verifier | n/a |
 
-各 step の **ストレージ** は組み込み側の責任です。ライブラリはユーザレコードもパスワードハッシュも所有しません。リファレンスの `inmem` アダプタは、例とテストには十分です。本番では、既存のユーザテーブルに合わせて `op/store/*` のサブストアを実装してください。
+各ステップの**ストレージ**は組み込み側の責任です。ライブラリはユーザレコードもパスワードハッシュも所有しません。リファレンスの `inmem` アダプタは、例とテストには十分です。本番では、既存のユーザテーブルに合わせて `op/store/*` のサブストアを実装してください。
 
-完全カスタムな factor は `op.ExternalStep` を実装し、一意な `KindLabel` で rule リストに追加します。これは `examples/2x-*` 全体で踏襲しているパターンです。
+組み込みのステップがない認証要素は、`op.Authenticator` を実装して、ドット形式の `KindLabel` を付けた `op.ExternalStep` で包みます。手順は [カスタム認証器](/ja/use-cases/custom-authenticator) にあります。
 
 アカウント管理の画面では、credential record を自作せず companion package を使います。[`op/passkeykit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/passkeykit) はログイン時の `PrimaryPasskey` と同じ設定から WebAuthn の登録 ceremony を実行します。[`op/recoverykit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/recoverykit) は recovery code batch を作成・置換します。`Result.Codes` は 1 回だけ表示し、保存もログ出力もしません。`LoginFlow` ではなく `WithAuthenticators` を使う場合は、`op.NewEmailOTPAuthenticator(op.EmailOTPConfig{...})` で低レイヤの email-OTP authenticator を組み立てます。[`28-email-otp-recovery`](https://github.com/libraz/go-oidc-provider/tree/main/examples/28-email-otp-recovery) と [`29-passkey`](https://github.com/libraz/go-oidc-provider/tree/main/examples/29-passkey) を参照してください。
 
 ::: warning passkey には IP ではなくドメインが要る
 WebAuthn の Relying Party ID はドメイン名でなければならず、ブラウザは IP リテラルを RP ID として受け付けません。そのため `http://127.0.0.1` で開発している OP には、対にできる RP ID が存在しません。issuer を `localhost` にした上で [`op.WithAllowLocalhostLoopback()`](/ja/reference/options) を指定してください。このオプションは redirect URI だけでなく issuer にも文字列の `localhost` を許可します。緩和が許されるのは開発マシンの中だけで、本番の RP は https の後ろに置きます。
 
-`op.PrimaryPasskey` に `AAGUIDAllowlist` を設定すると、登録 ceremony は `direct` の attestation conveyance に切り替わります。attestation で裏付けられていない AAGUID と allowlist を突き合わせても何も証明できず、ソフトウェア authenticator が承認済みモデルを名乗るだけで登録できてしまうからです。ユーザエージェントの attestation プロンプトが出るようになり、モデルを特定できない登録は allowlist と照合せずに拒否されます。プロンプトの出ない従来の ceremony を保つには allowlist を空のままにします。
+`op.PrimaryPasskey` に `AAGUIDAllowlist` を設定すると、登録 ceremony は `direct` の attestation conveyance に切り替わります。attestation のない AAGUID は自己申告にすぎず、ソフトウェア authenticator が承認済みのモデルを名乗るだけで登録できてしまうためです。そのため allowlist には `AttestationRoots`（attestation 証明書チェーンのトラストアンカー。OP は FIDO MDS を取得しません）が必須で、roots のない allowlist は `op.New` が拒否します。ユーザエージェントの attestation プロンプトが出ることを想定してください。チェーンを検証できない登録は、allowlist と照合されずに拒否されます。プロンプトの出ない ceremony を保つには allowlist を空のままにします。
 
 `RequireUserVerification: true` は passkey の登録とログインの両方に適用されます。PIN や biometric などの user-verification gesture が必要で、presence-only の登録や assertion は拒否されます。登録時の credential がログインでも使えるように、`op/passkeykit` に渡す設定と `op.PrimaryPasskey` を共有してください。
 :::
 
-## TOTP factor の登録（enrolment）
+## TOTP の登録（enrolment）
 
 `op.StepTOTP` は組み込み側がすでに永続化済みの `store.TOTPRecord` に対してコードを検証します。これと対になる登録経路は [`op/totpkit`](https://pkg.go.dev/github.com/libraz/go-oidc-provider/op/totpkit) パッケージにあります。秘密鍵の生成、QR コードとして描画される `otpauth://` プロビジョニング URI、登録を確定する所有証明（proof-of-possession） ステップを所有しています。
 

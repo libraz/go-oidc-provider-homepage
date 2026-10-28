@@ -18,7 +18,9 @@ The OP holds rows the OAuth/OIDC specs require to be **persistent across restart
 
 The default `inmem` store loses everything on restart, which is fine for tests and demos but unsafe for production. The library ships [`op/storeadapter/sql`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql), a `database/sql` adapter that targets **SQLite, MySQL 8.0+, and PostgreSQL 14+**.
 
-> **Sources:** - [`examples/06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store) — SQLite quick start (CGO-free). - [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) — MySQL with production-shaped pool, paired with an in-process RP and shipped as a docker-compose stack.
+> **Sources:**
+> - [`examples/06-sql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/06-sql-store) — SQLite quick start (CGO-free).
+> - [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) — MySQL with a production-shaped pool, paired with an in-process RP and shipped as a docker-compose stack.
 
 ## Why a sub-module
 
@@ -28,26 +30,31 @@ The SQL adapter is published as a **separate Go module**, so its driver dependen
 go get github.com/libraz/go-oidc-provider/op/storeadapter/sql@latest
 ```
 
-The same applies to the Redis adapter.
+The Redis and DynamoDB adapters are separate modules for the same reason.
 
 ## Architecture
 
 <figure class="fig">
   <div class="fig-head">One adapter, one table per substore</div>
-  <svg class="fig-svg" role="img" aria-labelledby="uc-sqlstore-title" viewBox="0 0 960 126" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="uc-sqlstore-title" viewBox="0 0 960 144" xmlns="http://www.w3.org/2000/svg">
     <title id="uc-sqlstore-title">The provider talks to the SQL store adapter over the Store interface, and the adapter persists each substore into its own table inside the database you already run.</title>
-    <rect class="fg-box" x="36" y="34" width="260" height="70" rx="8"/>
-    <text class="fg-t2" x="56" y="62">op.Provider</text>
-    <text class="fg-xs" x="56" y="84">knows nothing about SQL</text>
-    <path class="fg-edge" d="M300,66 H346" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="323" y="59" text-anchor="middle">Store</text>
-    <rect class="fg-box fg-box--accent" x="350" y="34" width="260" height="70" rx="8"/>
-    <text class="fg-m fg-accent" x="370" y="62">storeadapter/sql</text>
-    <text class="fg-xs" x="370" y="84">the only place that speaks SQL</text>
-    <path class="fg-edge fg-edge--accent" d="M614,66 H660" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="664" y="34" width="260" height="70" rx="8"/>
-    <text class="fg-t2" x="684" y="62">Your SQL database</text>
-    <text class="fg-mxs" x="684" y="84">oidc_* tables</text>
+    <!-- provider -->
+    <rect class="fg-box" x="32" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-m" x="48" y="52">op.Provider</text>
+    <text class="fg-s" x="48" y="76">knows nothing about SQL</text>
+    <text class="fg-mxs" x="48" y="100">via the Store interface</text>
+    <path class="fg-edge" d="M304,72 H344" marker-end="url(#fg-a)"/>
+    <!-- adapter -->
+    <rect class="fg-box fg-box--accent" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-m fg-accent" x="360" y="52">storeadapter/sql</text>
+    <text class="fg-s" x="360" y="76">the only SQL-speaking layer</text>
+    <text class="fg-s" x="360" y="100">one table per substore</text>
+    <path class="fg-edge fg-edge--accent" d="M616,72 H656" marker-end="url(#fg-ac)"/>
+    <!-- database -->
+    <rect class="fg-box" x="656" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t2" x="672" y="52">Your SQL database</text>
+    <text class="fg-mxs" x="672" y="76">oidc_* tables</text>
+    <text class="fg-s" x="672" y="100">the schema you already run</text>
   </svg>
   <figcaption class="fig-note">The tables carry an <code>oidc_</code> prefix so they can sit in a schema you already own without colliding with anything. Nothing above them knows the schema exists.</figcaption>
 </figure>
@@ -69,10 +76,10 @@ Each substore maps to one table. These are the tables the protocol paths touch m
 
 The adapter also owns tables for users, interactions, PAR records, device and CIBA requests, dynamic-registration tokens, and the authenticator substores. `Schema()` returns the full dialect-specific DDL.
 
-::: info New substores
-The SQL adapter bundles tables for the opaque-access-token substore (`oidc_opaque_access_tokens`, populated only when `op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or `op.WithAccessTokenFormatPerAudience(...)` is configured) and for the grant-revocation substore (`oidc_grant_revocations` plus `oidc_revoked_jtis`, the backing store for the default `RevocationStrategyGrantTombstone`). Both are part of the transactional cluster — they commit alongside the grant or refresh write that triggered them, so a half-committed cascade cannot leave a revoked grant next to a still-redeemable token.
+::: info Tables that fill only on demand
+`oidc_opaque_access_tokens` is populated only when `op.WithAccessTokenFormat(op.AccessTokenFormatOpaque)` or `op.WithAccessTokenFormatPerAudience(...)` names an opaque format. `oidc_grant_revocations` and `oidc_revoked_jtis` back the default `RevocationStrategyGrantTombstone`. Both groups commit in the same transaction as the grant or refresh write that triggers them, so a half-committed cascade cannot leave a revoked grant next to a still-redeemable token.
 
-Embedders shipping a custom `Store` aggregator (rather than reusing the bundled adapters) MUST implement `OpaqueAccessTokens()` and `GrantRevocations()`. `OpaqueAccessTokens()` may return `nil` when neither `WithAccessTokenFormat(op.AccessTokenFormatOpaque)` nor `WithAccessTokenFormatPerAudience` ever names an opaque audience. `GrantRevocations()` may return `nil` only when the embedder also pins `op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)` (non-FAPI deployments only) — the default `RevocationStrategyGrantTombstone` strategy requires it at construction time. `op.New` fails fast otherwise.
+A hand-written `Store` has different rules for which of these substores may be `nil`; see [Bring your own store backend](/use-cases/byo-store).
 :::
 
 ## Code
@@ -87,7 +94,7 @@ import (
   oidcsql "github.com/libraz/go-oidc-provider/op/storeadapter/sql"
 )
 
-db, err := databasesql.Open("sqlite", "file:op.db?_journal=WAL&_busy_timeout=5000")
+db, err := databasesql.Open("sqlite", "file:op.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)")
 if err != nil { /* ... */ }
 
 storage, err := oidcsql.New(db, oidcsql.SQLite()) // or oidcsql.MySQL() / oidcsql.Postgres()
@@ -109,12 +116,23 @@ provider, err := op.New(
 ```
 
 ::: tip Migrations
-`*sql.Store.Migrate(ctx)` applies the bundled schema for the active dialect, but its `CREATE TABLE IF NOT EXISTS` statements do not alter an existing table. It is suitable for a fresh database or development; an existing installation must apply the additive statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) with the deployment's migration tool rather than relying on `Migrate` alone. SQLite and PostgreSQL can use `Migrate` to reapply their standalone index statements, but missing compatibility columns and the MySQL/MariaDB username-collation change still require explicit `ALTER` statements. `Schema()` returns the current DDL as a string for callers that want to review or hand it to that tool. Schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
+`Store.Migrate(ctx)` runs the bundled `CREATE TABLE IF NOT EXISTS` statements for the active dialect, then re-reads the tables and fails when a required column is missing. It never alters an existing table, so it suits a fresh database or development. For an existing installation, apply the `ALTER` statements in [`schema/MIGRATIONS.md`](https://github.com/libraz/go-oidc-provider/blob/main/op/storeadapter/sql/schema/MIGRATIONS.md) with your own migration tool first; otherwise `Migrate` stops with an error naming the missing columns. `Schema()` returns the current DDL as a string for review or for that tool. The schema files are embedded under [`op/storeadapter/sql/schema/`](https://github.com/libraz/go-oidc-provider/tree/main/op/storeadapter/sql/schema).
 :::
 
 ## Before the first request on an existing database {#sql-migration-before-first-request}
 
-Apply the migration before starting a binary that uses the current MFA and dynamic-registration contracts. The additive changes are `oidc_registration_access_tokens.allowed_scopes` (nullable), `oidc_totp_secrets.row_version`, and `oidc_email_otps.row_version` (both `NOT NULL DEFAULT 1`). Use `TEXT` / `INTEGER` on SQLite, `JSON` / `BIGINT` on MySQL or MariaDB, and `JSONB` / `BIGINT` on PostgreSQL. `allowed_scopes = NULL` means an unrestricted registration access-token ceiling, including a RAT created before scope ceilings were stored. The `row_version` columns are adapter-managed opaque compare-and-swap state; applications must not increment, reuse, or assign meaning to them.
+Apply the migration before starting a binary that uses the current schema. The additive columns are:
+
+| Table | Columns | Purpose |
+|---|---|---|
+| `oidc_registration_access_tokens` | `allowed_scopes` (nullable) | Scope ceiling of a registration access token; `NULL` means unrestricted, including tokens created before ceilings were stored |
+| `oidc_totp_secrets`, `oidc_email_otps` | `row_version` (`NOT NULL DEFAULT 1`) | Adapter-managed opaque compare-and-swap state; applications must not increment, reuse, or interpret it |
+| `oidc_authorization_codes` | `auth_time`, `acr`, `amr`, `authorization_details`, `claims`, `authorization_recorded` | `auth_time`, `acr`, `amr`, authorization details and claims request of the authorization that issued the row |
+| `oidc_refresh_tokens` | `claims`, `authorization_recorded`, `chain_id` | Same per-authorization state, plus the rotation chain the row belongs to |
+| `oidc_opaque_access_tokens` | `authorization_details`, `claims`, `authorization_recorded`, `chain_id` | Same, so introspection and `/userinfo` read the issuing authorization rather than the shared grant |
+| `oidc_grant_revocations` | `access_revoked_at` | Cutoff of the tombstone that covers only a grant's access tokens (the cascade of a single refresh-token revocation) |
+
+Column types differ per engine (`TEXT`/`INTEGER` on SQLite, `JSON`/`BIGINT` on MySQL and MariaDB, `JSONB`/`BIGINT` on PostgreSQL), so copy the statements for your engine from `MIGRATIONS.md` rather than writing them by hand. A row left at the default `authorization_recorded = 0` is read from its grant, as it was before the columns existed, and a `chain_id` left empty makes a rotation fall back to the grant.
 
 The current retention and client-deletion queries also require these exact indexes (substitute the physical names selected by `WithNaming`):
 
@@ -133,7 +151,16 @@ The current retention and client-deletion queries also require these exact index
 | `idx_oidc_interactions_expires` | `oidc_interactions(expires_at)` | Interaction retention sweep |
 | `idx_oidc_consumed_jtis_expires` | `oidc_consumed_jtis(expires_at)` | Replay-marker retention queries |
 
-SQLite and PostgreSQL can acquire these indexes through `Migrate()` because their DDL uses separate `CREATE INDEX IF NOT EXISTS` statements. MySQL and MariaDB declare them inside `CREATE TABLE`, so an existing table needs explicit `ALTER TABLE ... ADD INDEX` statements. Existing MySQL and MariaDB installs also need `oidc_users.username` changed with `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;`; apply it before provisioning usernames that differ only by case, and resolve any existing case-insensitive collisions first. PostgreSQL and SQLite need no equivalent collation change. Do not rely on a fresh `v1.sql` run to upgrade an existing database, and do not run old and current MFA writers against the same tables: drain old writers, apply and validate the columns, then start only writers that participate in the opaque version protocol. The [storage-maintenance](/operations/storage-maintenance) page gives the rollout order.
+SQLite and PostgreSQL can acquire these indexes through `Migrate()` because their DDL uses separate `CREATE INDEX IF NOT EXISTS` statements. MySQL and MariaDB declare them inside `CREATE TABLE`, so an existing table needs explicit `ALTER TABLE ... ADD INDEX` statements. Existing MySQL and MariaDB installs also need the `MODIFY ... COLLATE utf8mb4_bin` statements in `MIGRATIONS.md` for `oidc_users.username`, `oidc_users.subject`, `oidc_clients.id`, and every `client_id` and `subject` column. MySQL's default collation ignores case and accents, so without them `PutUserWithPassword("Alice", ...)` overwrites the row `alice` already owns and `GetClient("MYAPP")` resolves `myapp`. Apply them before provisioning identifiers that differ only by case or accent; a `MODIFY` fails when two existing values collide under the binary collation, and the error names the rows to reconcile first. PostgreSQL and SQLite compare bytes already and need no equivalent change.
+
+Do not rely on a fresh `v1.sql` run to upgrade an existing database.
+
+Two rollout rules follow from the columns:
+
+- **MFA tables.** Do not run old and current writers against `oidc_totp_secrets` and `oidc_email_otps` together. An old writer omits `row_version` from its updates and bypasses the compare-and-swap protocol. Drain old writers, apply and validate the columns, then start only current writers.
+- **Authorization-state and revocation columns.** Old and current writers may run side by side once the columns exist: an old binary leaves `authorization_recorded` at zero and the current binary resolves such a row from its grant. One difference remains: an old node does not read `access_revoked_at`, so until every node runs the current binary, a JWT access token revoked through a single refresh-token revocation still verifies on the old nodes.
+
+The [storage-maintenance](/operations/storage-maintenance) page gives the full rollout order.
 
 ## Renaming the tables
 
@@ -178,16 +205,19 @@ Every resolved physical table name must be distinct. If two logical stores map t
 [`examples/07-mysql-store`](https://github.com/libraz/go-oidc-provider/tree/main/examples/07-mysql-store) demonstrates a production-shaped DSN:
 
 ```go
-db, err := stdsql.Open("mysql",
-  "oidc:secret@tcp(mysql:3306)/op?parseTime=true&charset=utf8mb4&collation=utf8mb4_0900_ai_ci")
-db.SetMaxOpenConns(64)
-db.SetMaxIdleConns(8)
+db, err := databasesql.Open("mysql",
+  "oidc:secret@tcp(mysql:3306)/op?parseTime=true&charset=utf8mb4&loc=UTC")
+db.SetMaxOpenConns(50)
+db.SetMaxIdleConns(10)
 db.SetConnMaxLifetime(30 * time.Minute)
+db.SetConnMaxIdleTime(5 * time.Minute)
 ```
 
-`charset=utf8mb4` is required so 4-byte UTF-8 (emoji, CJK extensions in display names) round-trips through claim values without truncation.
+The adapter does not tune the pool, so the limits are yours to choose.
 
-The DSN's connection collation does not replace the explicit `oidc_users.username` definition. On an existing MySQL or MariaDB database, apply the `ALTER TABLE oidc_users MODIFY username VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL;` migration separately; a case-insensitive collision makes it fail and must be resolved before the change.
+Keep `charset=utf8mb4` so 4-byte UTF-8 (emoji, CJK extensions in display names) round-trips through claim values without truncation.
+
+The DSN's connection collation does not replace the explicit `utf8mb4_bin` column definitions. On an existing MySQL or MariaDB database, apply the `MODIFY` statements from [the migration section](#sql-migration-before-first-request) separately.
 
 ## Username + password credentials
 
@@ -233,8 +263,8 @@ if err != nil {
 log.Printf("oidc GC removed %d rows", stats.Total())
 ```
 
-`GC` returns an `oidcsql.GCStats` value with per-table counts for expired authorization codes, PAR records, interactions, sessions, and refresh-token rotation history. The refresh sweep retains history until no refresh token under the grant is live, and clears sealed retry-response blobs once the predecessor's own expiry has passed even when the row itself is retained; clearing a blob does not increase a row count. A cutoff in the past keeps a grace window, while `time.Now()` reclaims everything already expired. The adapter starts no background GC goroutine and owns no timer, so schedule and monitor the call yourself. Publish `GCStats`, duration, errors, and remaining table sizes so a stalled sweep is visible. Access-token, opaque-token, grant-revocation, and consumed-JTI stores expose their own policy-sensitive GC methods; device-code and CIBA rows are evicted on their insert paths.
+`GC` returns an `oidcsql.GCStats` value with per-table counts for expired authorization codes, PAR records, interactions, sessions, and refresh-token rotation history. The refresh sweep retains history until no refresh token under the grant is live (a per-grant anti-join, so it is the expensive one on a large table), and clears sealed retry-response blobs once the predecessor's own expiry has passed even when the row itself is retained; clearing a blob does not increase a row count. A cutoff in the past keeps a grace window, while `time.Now()` reclaims everything already expired. The adapter starts no background GC goroutine and owns no timer, so schedule and monitor the call yourself. Publish `GCStats`, duration, errors, and remaining table sizes so a stalled sweep is visible. Access-token, opaque-token, grant-revocation, and consumed-JTI stores expose their own policy-sensitive GC methods; device-code and CIBA rows are evicted on their insert paths.
 
 ## When to add Redis on top
 
-Hot data (interactions, consumed JTIs) churns fast and bloats the durable DB if you put it there. The next page, [Hot/cold + Redis](/use-cases/hot-cold-redis), shows how to route the volatile substores to Redis while keeping the durable substores on SQL.
+Hot data (interactions, and sessions if you accept re-login after a cache flush) churns fast and bloats the durable DB if you put it there. The next page, [Hot/cold + Redis](/use-cases/hot-cold-redis), shows how to route the volatile substores to Redis while keeping the durable substores on SQL.
