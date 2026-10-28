@@ -1,11 +1,15 @@
 ---
 title: Operations guide
-description: Production-running concerns the library does not solve for you — key rotation, multi-instance fan-out, observability wiring, backup posture.
+description: Production-running concerns the library leaves to you — key rotation, multi-instance deployment, observability wiring, backup and storage maintenance.
 ---
 
 # Operations guide
 
 The library deliberately stays out of HTTP-lifecycle and infra concerns: there is no `/metrics` route mounted, no opinion about how keys live in your cluster, no built-in tracer. This section documents the seams the OP exposes and how production embedders typically wire them.
+
+::: tip Terms used in this section
+**OP** is the provider you run (this library). **RP** is a client application that signs users in through it. The **embedder** is you: the team whose Go program imports the library and mounts the OP. A **substore** is one of the storage interfaces under `store.Store` (clients, grants, sessions, and so on), and **JWKS** is the public key set the OP publishes at `/jwks`.
+:::
 
 ## What lives here
 
@@ -27,23 +31,23 @@ The library deliberately stays out of HTTP-lifecycle and infra concerns: there i
 | Tracing instrumentation inside endpoint handlers | the public surface is an `http.Handler`; wrap with `otelhttp.NewMiddleware` once at the seam |
 | Rate limiting | upstream — Cloudflare, Envoy, or a Go middleware of your choice. The OP defines the `rate_limit.exceeded` audit-event constant as shared vocabulary for that middleware to emit; the OP does not fire the event itself, nor does it implement the limiter |
 | Health checks | embedder territory; the OP has no opinion about liveness vs readiness for your stack |
-| Background workers | the OP is stateless across requests; no internal goroutines for cleanup. TTL-based eviction is the store's responsibility |
+| Background workers | the OP is stateless across requests and runs no cleanup job. Expiring old rows is the store's responsibility |
 
 ## Operational philosophy
 
 A handful of decisions cascade through every page in this section:
 
-1. **One backend per transactional cluster.** The composite store refuses to split authorization codes / refresh tokens / grants / PARs / access tokens / grant revocations across two backends — see [Hot/cold split](/use-cases/hot-cold-redis).
-2. **Volatile substores are best-effort.** Sessions, DPoP nonces, JAR `jti` registry can live on Redis without persistence. Eviction is a normal operating mode; the OP audits the gap rather than failing open. See [Multi-instance deployment](/operations/multi-instance).
-3. **No background goroutines.** TTL cleanup is the store's job. SQL adapters do periodic prune via your DB scheduler; Redis adapters use native TTL. There is no in-process janitor that could leak on hot-reload.
-4. **Configuration changes require a new `Provider`.** Rotating keys, adding clients, changing scopes — all of these construct a new `*Provider` and replace the handler. See [Key rotation](/operations/key-rotation) for the supervisor-side pattern.
+1. **One backend per transactional cluster.** The composite store refuses to split authorization codes, refresh tokens, grants, PARs, JWT and opaque access tokens, and grant revocations across two backends. See [Hot/cold split](/use-cases/hot-cold-redis).
+2. **Sessions and interactions may be volatile; the replay set may not.** `Sessions` and `Interactions` can live on Redis without persistence, and eviction is a normal operating mode: the OP records the gap in the audit stream instead of failing open. `ConsumedJTIs` (the replay-defence set) is the exception. Evicting a live entry reopens the replay window it closed, so it needs a `noeviction` Redis or a durable backend. See [Multi-instance deployment](/operations/multi-instance).
+3. **No cleanup job in the OP.** Expiring old rows is the store's job. The SQL adapter exposes `GC` for your scheduler to call, and the Redis adapter uses native TTLs. The only detached work is back-channel logout delivery, which `Provider.Shutdown` drains.
+4. **Configuration changes require a new `Provider`.** Rotating keys, changing the statically seeded clients or scopes: each constructs a new `*Provider` and replaces the handler. See [Key rotation](/operations/key-rotation) for the supervisor-side pattern.
 
 ## Where to start
 
-If you've never run the OP in production, read these in order:
+If you have never run the OP in production, read these in order:
 
 1. [Key rotation](/operations/key-rotation) — the most common ops cadence (monthly, quarterly).
 2. [Multi-instance deployment](/operations/multi-instance) — required reading before scaling past one replica.
-3. [Observability](/operations/observability) — wire logging / metrics / tracing on day one rather than after an incident.
+3. [Observability](/operations/observability) — wire logging, metrics, and tracing on day one rather than after an incident.
 4. [Backup & DR](/operations/backup) — at least set the RPO targets before you go live.
 5. [Storage maintenance](/operations/storage-maintenance) — before you apply the first schema change to a live database.

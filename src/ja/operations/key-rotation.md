@@ -10,40 +10,52 @@ pageClass: pg-operations-key-rotation
 ローテーションする鍵の役割は 3 種類で、サイクルもそれぞれ違います:
 
 - **署名鍵**（`op.Keyset`） — ID トークン、JWT アクセストークン、JARM、userinfo JWT を署名する ECDSA P-256 秘密鍵。公開側は `/jwks` に載ります。
-- **Cookie 鍵**（`op.WithCookieKeys`） — session / CSRF cookie を封緘する 32 byte の AES-256-GCM 鍵。
+- **Cookie 鍵**（`op.WithCookieKeys`） — session、interaction、CSRF の各 cookie を封緘する 32 byte の AES-256-GCM 鍵。
 - **inbound 暗号化鍵**（`op.EncryptionKeyset`） — クライアントが暗号化した request object を復号する秘密鍵。公開側は `use=enc` 鍵として `/jwks` に載り、outbound 暗号化鍵ではありません。
 
 いずれも、新しい `*Provider` を構築してハンドラをアトミックに差し替える形でローテーションします。鍵スライスをその場で書き換える API はありません。
 
 <figure class="fig">
   <div class="fig-head">切り替え日を設けずに鍵をローテーションする</div>
-  <svg class="fig-svg" role="img" aria-labelledby="key-rotation-title" viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg">
-    <title id="key-rotation-title">署名鍵または cookie 鍵のローテーション手順。新しい鍵を生成し、新鍵を先頭に旧鍵も残した設定で Provider を構築し、ハンドラを不可分に差し替えます。旧鍵を外すのは、配布済みのキャッシュがすべて期限切れになってからです。</title>
-    <rect class="fg-box" x="36" y="60" width="168" height="80" rx="8"/>
-    <text class="fg-t2" x="54" y="88">生成する</text>
-    <text class="fg-xs" x="54" y="110">新しい kid を持つ</text>
-    <text class="fg-xs" x="54" y="128">鍵を作る</text>
-    <path class="fg-edge" d="M208,100 H244" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="248" y="60" width="196" height="80" rx="8"/>
-    <text class="fg-t2 fg-accent" x="266" y="88">先頭に置く</text>
-    <text class="fg-mxs" x="266" y="110">[新鍵, 旧鍵]</text>
-    <text class="fg-xs" x="266" y="128">先頭が署名し、残りは検証に使う</text>
-    <path class="fg-edge" d="M448,100 H484" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="488" y="60" width="180" height="80" rx="8"/>
-    <text class="fg-m" x="506" y="88">op.New</text>
-    <text class="fg-xs" x="506" y="110">構成全体を</text>
-    <text class="fg-xs" x="506" y="128">もう一度検証する</text>
-    <path class="fg-edge" d="M672,100 H708" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="712" y="60" width="212" height="80" rx="8"/>
-    <text class="fg-t2" x="730" y="88">ハンドラを差し替える</text>
-    <text class="fg-xs" x="730" y="110">不可分に切り替わるため、</text>
-    <text class="fg-xs" x="730" y="128">中途半端な状態は誰も見ない</text>
-    <path class="fg-leader" d="M818,144 V178 H444"/>
-    <path class="fg-edge fg-edge--muted" d="M444,178 H244" marker-end="url(#fg-am)"/>
-    <text class="fg-xs fg-warn" x="470" y="172">トークンの TTL と、各 RP の JWKS キャッシュ期間が過ぎるのを待つ</text>
-    <rect class="fg-box fg-box--muted" x="36" y="156" width="204" height="46" rx="8"/>
-    <text class="fg-t2" x="54" y="176">その後で旧鍵を外す</text>
-    <text class="fg-xs" x="54" y="194">それより早く外さない</text>
+  <svg class="fig-svg" role="img" aria-labelledby="key-rotation-title" viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg">
+    <title id="key-rotation-title">署名鍵または cookie 鍵のローテーション手順。新しい鍵を生成し、新鍵を先頭に旧鍵も残した設定で Provider を構築し、ハンドラを不可分に差し替えます。トークンの寿命と配布済みの鍵集合キャッシュが切れるのを待ってから、旧鍵を外します。</title>
+    <!-- generate -->
+    <rect class="fg-box" x="32" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="52">生成する</text>
+    <text class="fg-s" x="48" y="76">新しい鍵を作る</text>
+    <text class="fg-s" x="48" y="100">新しい kid を付ける</text>
+    <!-- first -->
+    <rect class="fg-box fg-box--accent" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="52">先頭に置く</text>
+    <text class="fg-mxs" x="360" y="76">[新鍵, 旧鍵]</text>
+    <text class="fg-s" x="360" y="100">先頭が署名、残りは検証用</text>
+    <!-- new -->
+    <rect class="fg-box" x="656" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-m" x="672" y="52">op.New</text>
+    <text class="fg-s" x="672" y="76">構成全体を</text>
+    <text class="fg-s" x="672" y="100">もう一度検証する</text>
+    <path class="fg-edge" d="M304,72 H344" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M616,72 H656" marker-end="url(#fg-a)"/>
+    <!-- wrap -->
+    <path class="fg-leader" d="M792,120 V144 H168"/>
+    <path class="fg-edge fg-edge--thin" d="M168,144 V168" marker-end="url(#fg-a)"/>
+    <!-- swap -->
+    <rect class="fg-box" x="32" y="168" width="272" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="196">ハンドラを差し替える</text>
+    <text class="fg-s" x="48" y="220">不可分に切り替わるため、</text>
+    <text class="fg-s" x="48" y="244">中途半端な状態は誰も見ない</text>
+    <!-- wait -->
+    <rect class="fg-box fg-box--warn" x="344" y="168" width="272" height="96" rx="8"/>
+    <text class="fg-t" x="360" y="196">待つ</text>
+    <text class="fg-s" x="360" y="220">トークンの TTL と</text>
+    <text class="fg-s" x="360" y="244">各 RP の JWKS キャッシュ期間</text>
+    <!-- drop -->
+    <rect class="fg-box fg-box--muted" x="656" y="168" width="272" height="96" rx="8"/>
+    <text class="fg-t" x="672" y="196">旧鍵を外す</text>
+    <text class="fg-s" x="672" y="220">待機が終わるまで外さない</text>
+    <text class="fg-s" x="672" y="244">それ以降なら安全</text>
+    <path class="fg-edge" d="M304,216 H344" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--muted" d="M616,216 H656" marker-end="url(#fg-am)"/>
   </svg>
   <figcaption class="fig-note">定期ローテーションでは、旧鍵をオーバーラップ期間のあいだ公開したままにし、署名だけをやめます。旧鍵を早く外すと、この検証を壊すおそれがあります。古い鍵集合を保持したままの検証側は、すでに受け取ったトークンを検証する手段を失います。侵害された鍵はインシデント対応上の例外で、速やかに削除します。</figcaption>
 </figure>
@@ -62,10 +74,12 @@ pageClass: pg-operations-key-rotation
 newPriv, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 
 // Step 2. 新鍵を先頭(active な signer)にした Keyset を組む。
-//         旧鍵は検証用に残しておく。
+//         旧鍵は検証用に残しておく。NotAfter は任意で、その時刻から
+//         OP 自身がこの退役 kid を信頼しなくなる。
+retireAfter := time.Now().Add(2*time.Hour + 5*time.Minute) // 「退役した鍵を外すタイミング」参照
 ks := op.Keyset{
-    {KeyID: "sig-2026-05", Signer: newPriv},  // 現行 signer
-    {KeyID: "sig-2026-02", Signer: prevPriv}, // 退役。直近のトークンを検証するため残す
+    {KeyID: "sig-2026-05", Signer: newPriv},                         // 現行 signer
+    {KeyID: "sig-2026-02", Signer: prevPriv, NotAfter: retireAfter}, // 退役。直近のトークンを検証するため残す
 }
 
 // Step 3. 新しい Provider を構築してアトミックに差し替える。
@@ -82,24 +96,53 @@ if err != nil { /* 旧 provider を残してアラート */ }
 liveHandler.Store(newProv)  // 通常は *atomic.Value または sync.Map
 ```
 
-`Keyset` の先頭が常に現行の signer です。それ以降の live なエントリは検証用として JWKS にアドバタイズされるだけです。RP の JWKS キャッシュは次回 revalidate 時に新しい `kid` を拾います。キャッシュヘッダの挙動は [JWKS エンドポイント](/ja/operations/jwks) を参照してください。現行 signer の `NotAfter` は未設定または未来でなければならず、すでに `NotAfter` に達している場合は `op.New` が失敗します。過去の期限が許されるのは、現行ではない退役エントリだけです。
+`Keyset` の先頭が常に現行の signer で、それ以降は検証専用として JWKS に載ります。JWKS をキャッシュ済みの RP は、次の更新時か、知らない `kid` に出会った時点で、新しい `kid` を拾います。キャッシュヘッダの挙動は [JWKS エンドポイント](/ja/operations/jwks) を参照してください。
+
+退役エントリの `NotAfter` は、OP 自身の検証を止める期限です。その時刻以降、OP は `/userinfo` と `/introspect` での自分の JWT アクセストークンを含め、その `kid` を名乗るトークンを拒否し、`key.retired_kid_presented` を記録します。公開鍵は、`Keyset` から外して作り直すまで `/jwks` に残ります。`retireAfter` には、下で計算する重なり期間の終わりを指定し、ローテーションした時刻そのものにはしないでください。現行エントリの `NotAfter` は未設定か未来でなければならず、すでに `NotAfter` に達している場合は `op.New` が失敗します。
 
 ### 退役した鍵を外すタイミング
 
-最低でも以下の時間は待ちます:
+新しい provider が応答を始めた時点から数えて、次の 2 つが両方とも終わるまで待ちます。
 
-- 発行済みトークンの最長 TTL(既定の `WithAccessTokenTTL` は 5 分)。
-- これに加えて、RP 側の最長 JWKS キャッシュウィンドウ（既定で `max-age=3600`、1 時間）。
+- 旧鍵が署名したすべてのものの最長の寿命。アクセストークン（既定の `WithAccessTokenTTL` は 5 分）と ID トークンです。
+- RP 側の JWKS キャッシュの期間。`/jwks` は `max-age=3600, stale-while-revalidate=3600` で返すため、キャッシュが入れ替わるまでに最長で 2 時間かかります。
 
-つまり安全側の最低待機は **ローテーション後およそ 1 時間**（既定の 1 時間の JWKS キャッシュウィンドウにアクセストークン TTL を足した時間）です。アクセストークン TTL を長めに運用している場合は、その分を JWKS キャッシュウィンドウに上乗せしてください。ローテーション中に旧 set をキャッシュした RP が、検証可能なはずのトークンを弾かないようにするためです。
+既定値では **約 2 時間 5 分** です（寿命の長い ID トークンがあれば、その分延びます）。寿命の長いトークンを運用している場合は、その寿命を上乗せしてください。これより早く外すと、その後に `/jwks` を取得した検証側は、旧鍵が署名したトークンを検証できません。
+
+<figure class="fig">
+  <div class="fig-head">旧鍵をどれだけ残しておくか</div>
+  <svg class="fig-svg" role="img" aria-labelledby="key-overlap-title" viewBox="0 0 960 368" xmlns="http://www.w3.org/2000/svg">
+    <title id="key-overlap-title">ハンドラを差し替えて旧鍵が署名をやめた時点から始まるタイムライン。旧鍵がすでに署名したトークンは、トークン寿命 1 回分だけ有効です。RP の鍵集合キャッシュが入れ替わるまでには最長 2 時間かかります。旧鍵はこれらがすべて終わるまで Keyset と JWKS に残し、その時点が外せる最も早い時刻です。</title>
+    <text class="fg-lbl" x="32" y="40">差し替え後</text>
+    <path class="fg-rule fg-rule--strong" d="M32,56 H928"/>
+    <path class="fg-tick" d="M256,48 V64"/>
+    <text class="fg-s" x="272" y="40">旧鍵が署名をやめる</text>
+    <!-- 旧鍵が署名したトークン -->
+    <text class="fg-s" x="32" y="118">旧鍵が署名したトークン</text>
+    <rect class="fg-box" x="256" y="88" width="96" height="48" rx="8"/>
+    <text class="fg-s" x="368" y="118">あと 1 トークン寿命のあいだ有効（既定 5 分）</text>
+    <!-- RP の鍵集合キャッシュ -->
+    <text class="fg-s" x="32" y="198">RP の鍵集合キャッシュ</text>
+    <rect class="fg-box fg-box--warn" x="256" y="168" width="592" height="48" rx="8"/>
+    <text class="fg-s" x="272" y="198">旧い集合を返し続けることがある（既定で最長 2 時間）</text>
+    <!-- Keyset 内の旧鍵 -->
+    <text class="fg-s" x="32" y="278">Keyset 内の旧鍵</text>
+    <rect class="fg-box fg-box--accent" x="256" y="248" width="592" height="48" rx="8"/>
+    <text class="fg-s" x="272" y="278">上の最も長いバーが終わるまで、公開し信頼したままにする</text>
+    <!-- earliest drop -->
+    <path class="fg-rule fg-rule--strong fg-rule--dashed" d="M848,64 V320"/>
+    <text class="fg-s" x="848" y="344" text-anchor="middle">最短で外せる時点</text>
+  </svg>
+  <figcaption class="fig-note">バーの長さは模式です。旧鍵を外してよいのは、最も長いバーが終わってからです。既定値ではキャッシュ期間がそれにあたり、寿命の長いトークンを扱う場合はトークンのバーのほうが長くなることがあります。</figcaption>
+</figure>
 
 ::: tip ローテーション中であることのシグナル
-`op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語が true の間は、長い既定キャッシュ（`public, max-age=3600, stale-while-revalidate=3600`）の代わりに 5 分の `public, max-age=300, must-revalidate` を返します。オーバーラップ期間中にこの述語を true にしておくと、RP のキャッシュが短い間隔で revalidate しに来てくれます。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。
+`op.WithJWKSRotationActive(predicate)` で Provider に述語を渡します。述語が true の間、`/jwks` は長い既定キャッシュの代わりに 5 分の `Cache-Control: public, max-age=300, must-revalidate` を返すので、RP のキャッシュが早く更新されます。重なり期間のあいだ true にしておいてください。[JWKS エンドポイント § ローテーション中のキャッシュ制御](/ja/operations/jwks#ローテーション中のキャッシュ制御) を参照。
 :::
 
 ## inbound 暗号化鍵のローテーション
 
-`op.EncryptionKeyset` は、`/authorize` と `/par` に届く暗号化 request object を復号する OP の inbound 専用 JWE 鍵集合です。outbound 応答のアクティブ鍵を供給するものではありません。outbound JWE 応答はクライアントの JWKS にある `use=enc` 鍵で暗号化します。
+`op.EncryptionKeyset` は、`/auth` と `/par` に届く暗号化 request object を復号する OP の inbound 専用 JWE 鍵集合です。outbound 応答のアクティブ鍵を供給するものではありません。outbound JWE 応答はクライアントの JWKS にある `use=enc` 鍵で暗号化します。
 
 ```go
 encKeys := op.EncryptionKeyset{
@@ -125,7 +168,7 @@ entry は inbound 復号候補の順序で並び、`use=enc` として公開さ�
 
 ### サイクル
 
-- **定期:** 四半期ごと（リスクは低めです。`__Host-` でスコープが締まり、寿命は session TTL の中に収まります）。
+- **定期:** 四半期ごと（リスクは低めです。cookie は `__Host-` プレフィックスで保護され、寿命は session の寿命の中に収まります）。
 - **侵害時:** 即時。
 
 ### 手順
@@ -139,7 +182,7 @@ if _, err := rand.Read(newKey); err != nil { /* abort */ }
 op.WithCookieKeys(newKey, oldKey)
 ```
 
-`WithCookieKeys` は復号用に旧鍵を残せるので、有効なセッションはユーザの再認証または session TTL 満了までそのまま継続します。発行済みセッションがすべて期限切れになった（または強制ログアウトを fan-out した）あとで、`oldKey` をスライスから外してください。
+`WithCookieKeys` は復号用に旧鍵を残せるので、有効なセッションはそのまま継続します。session の既定は、アイドル 14 日・絶対 30 日です。`oldKey` は最長 30 日残してください。それより早く外すと、その鍵で封緘された cookie を持つユーザがログアウトされます。該当するセッションがすべて終わったら、`oldKey` をスライスから外します。レプリカが複数ある場合は、他のレプリカが開けない cookie を封緘するレプリカが出ないよう、[マルチインスタンス展開](/ja/operations/multi-instance#cookie-鍵の一貫性) の 3 段階の手順でロールアウトしてください。
 
 ::: warning 順序が重要
 `WithCookieKeys` の先頭が現行の暗号化鍵です。旧鍵を先頭にしてしまうと、**気付かれないうちに侵害済み鍵を現行扱いに格下げ**してしまいます。型ではなく規約での強制なので、ローテーション時はレビューを慎重にしてください。
@@ -147,7 +190,7 @@ op.WithCookieKeys(newKey, oldKey)
 
 ## MFA 暗号化鍵のローテーション
 
-`WithMFAEncryptionKeys` も cookie 鍵と同じ「先頭が現行、以降が過去」の形に従います。32 byte 鍵で TOTP のシークレットを保存時暗号化（AES-256-GCM、subject 識別子を AAD にバインド）します。
+`WithMFAEncryptionKeys` も cookie 鍵と同じ「先頭が現行、以降が過去」の形に従います。32 byte 鍵で TOTP のシークレットを保存時暗号化（AES-256-GCM、subject 識別子を AAD にバインド）します。`StepTOTP` に専用の `EncryptionKey` を渡した場合は、そちらが使われます。
 
 ```go
 op.WithMFAEncryptionKeys(currentKey, previousKey)
@@ -158,7 +201,7 @@ op.WithMFAEncryptionKeys(currentKey, previousKey)
 ## ローテーション**しない**もの
 
 - **Issuer。** `WithIssuer` を変えると、発行済みのすべてのトークン（`iss` は JWT の一部です）と、すべての RP の discovery キャッシュが無効になります。ローテーションではなくデプロイ扱いです。
-- **`Keyset` 内の `KeyID`。** いったん JWKS に出した `kid` は、RP のキャッシュキーになる公開識別子です。外した `kid` を再利用すると、古い公開鍵をキャッシュしている RP で検証ギャップが発生します。ローテーションのたびに新しい `kid` を生成してください。
+- **`Keyset` 内の `KeyID`。** いったん JWKS に出した `kid` は、RP のキャッシュキーになる公開識別子です。別の鍵に同じ `kid` を再利用すると、古い公開鍵をキャッシュしている RP で検証に失敗します。ローテーションのたびに新しい `kid` を生成してください。
 
 ## 検証チェックリスト
 
@@ -166,8 +209,8 @@ op.WithMFAEncryptionKeys(currentKey, previousKey)
 
 1. `curl https://op.example.com/jwks` で、新しい `kid` が出ていて退役した `kid` がまだ並んでいるか（撤去工程を完了するまでは並んでいるべき）を確認します。
 2. 新しいトークンの `kid` ヘッダが新鍵を指しているか確認します: `echo "<jwt>" | cut -d. -f1 | base64 -d | jq .kid`。
-3. 切り替え（cut-over）後に `key.retired_kid_presented` 監査イベントが新たに発火していないことを確認します（退役済みの `kid` を持つ JWS / JWE が届いた場合だけ発火するイベントなので、沈黙が成功シグナルです）。
-4. ローテーション前に確立したブラウザセッションで、`/authorize` の認可要求を再開し、再認証なしに進められること（session cookie を復号できること）を確認します。
+3. 切り替え（cut-over）後に `key.retired_kid_presented` 監査イベントが新たに発火していないことを確認します。このイベントは、`NotAfter` を過ぎた `kid` を名乗る JWS / JWE が届いたときに出るため、`NotAfter` を設定したエントリだけが対象です。沈黙が成功のシグナルです。
+4. ローテーション前に確立したブラウザセッションで、`/auth` の認可要求を再開し、再認証なしに進められること（session cookie を復号できること）を確認します。
 
 ## なぜその場で書き換えず、新しい `Provider` を作るのか
 

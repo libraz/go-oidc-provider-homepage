@@ -7,45 +7,53 @@ pageClass: pg-operations-multi-instance
 
 # マルチインスタンス展開
 
-OP はリクエストをまたいでステートレスで、すべてのレプリカが設定済みの `store.Store` 経由で読み書きします。レプリカ 1 から N に増やすということは、論点が「プロセスメモリに何があるか」から「何が共有され、何が揮発で、どの fan-out 挙動が許容できるか」に移る、ということです。
+OP はリクエストをまたいでステートレスで、すべてのレプリカが設定済みの `store.Store` 経由で読み書きします。レプリカを 1 から N に増やすと、論点は「プロセスメモリに何があるか」から「全レプリカが見えなければならないものは何か、失ってよいものは何か、ログアウトをどう全 RP へ届けるか」に移ります。
 
 <figure class="fig">
   <div class="fig-head">N 台のレプリカ、1 つの永続ストア、1 つの揮発層</div>
-  <svg class="fig-svg" role="img" aria-labelledby="multi-instance-title" viewBox="0 0 960 424" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="multi-instance-title" viewBox="0 0 960 552" xmlns="http://www.w3.org/2000/svg">
     <title id="multi-instance-title">レプリカ構成を示した図。ロードバランサが 1 クライアントのリクエストを複数の OP レプリカへ振り分け、各レプリカは 1 つの永続ストアと 1 つの揮発 Redis 層を共有します。nonce を発行するレプリカと検証するレプリカが異なりうるため、この状態はプロセスの外に置く必要があります。</title>
-    <rect class="fg-box" x="380" y="24" width="200" height="46" rx="8"/>
-    <text class="fg-t" x="480" y="43" text-anchor="middle">RP / クライアント</text>
-    <text class="fg-mxs" x="480" y="60" text-anchor="middle">POST /token · GET /userinfo</text>
-    <path class="fg-edge" d="M480,74 V104" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="380" y="108" width="200" height="46" rx="8"/>
-    <text class="fg-t2" x="480" y="128" text-anchor="middle">ロードバランサ</text>
-    <text class="fg-xs" x="480" y="145" text-anchor="middle">round-robin。セッション固定なし</text>
-    <path class="fg-leader" d="M480,158 V172 M156,172 H804"/>
-    <path class="fg-edge" d="M156,172 V196" marker-end="url(#fg-a)"/>
-    <path class="fg-edge" d="M480,172 V196" marker-end="url(#fg-a)"/>
-    <path class="fg-edge" d="M804,172 V196" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="66" y="200" width="180" height="64" rx="8"/>
-    <text class="fg-t2 fg-accent" x="156" y="224" text-anchor="middle">OP #1</text>
-    <text class="fg-xs" x="156" y="244" text-anchor="middle">DPoP nonce を発行する</text>
-    <rect class="fg-box fg-box--accent" x="390" y="200" width="180" height="64" rx="8"/>
-    <text class="fg-t2 fg-accent" x="480" y="224" text-anchor="middle">OP #2</text>
-    <text class="fg-xs" x="480" y="244" text-anchor="middle">自前の状態を持たない</text>
-    <rect class="fg-box fg-box--accent" x="714" y="200" width="180" height="64" rx="8"/>
-    <text class="fg-t2 fg-accent" x="804" y="224" text-anchor="middle">OP #3</text>
-    <text class="fg-xs" x="804" y="244" text-anchor="middle">同じ nonce を検証する</text>
-    <path class="fg-leader" d="M156,268 V286 M480,268 V286 M804,268 V286 M156,286 H804"/>
-    <path class="fg-edge" d="M290,286 V310" marker-end="url(#fg-a)"/>
-    <path class="fg-edge" d="M670,286 V310" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="66" y="314" width="448" height="94" rx="8"/>
-    <text class="fg-t2" x="86" y="340">永続ストア — 共有</text>
-    <text class="fg-mxs" x="86" y="364">clients · 認可コード · refresh / access token</text>
-    <text class="fg-mxs" x="86" y="382">grants · 発行時刻の記録 · PAR リクエスト</text>
-    <text class="fg-xs" x="86" y="400">全レプリカの背後にバックエンドは 1 つ</text>
-    <rect class="fg-box" x="546" y="314" width="348" height="94" rx="8"/>
-    <text class="fg-t2" x="566" y="340">揮発層 — Redis</text>
-    <text class="fg-mxs" x="566" y="364">Sessions · Interactions</text>
-    <text class="fg-mxs" x="566" y="382">ConsumedJTIs · DPoP nonce</text>
-    <text class="fg-xs fg-warn" x="566" y="400">再起動時や maxmemory で追い出される</text>
+    <!-- client -->
+    <rect class="fg-box" x="304" y="24" width="352" height="72" rx="8"/>
+    <text class="fg-t" x="320" y="52">RP / クライアント</text>
+    <text class="fg-mxs" x="320" y="76">POST /token · GET /userinfo</text>
+    <path class="fg-edge" d="M480,96 V136" marker-end="url(#fg-a)"/>
+    <!-- load balancer -->
+    <rect class="fg-box" x="304" y="136" width="352" height="72" rx="8"/>
+    <text class="fg-t" x="320" y="164">ロードバランサ</text>
+    <text class="fg-s" x="320" y="188">round-robin。セッション固定なし</text>
+    <path class="fg-leader" d="M480,208 V232 M168,232 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M168,232 V256" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M480,232 V256" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M792,232 V256" marker-end="url(#fg-a)"/>
+    <!-- OP #1 -->
+    <rect class="fg-box fg-box--accent" x="32" y="256" width="272" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="284">OP #1</text>
+    <text class="fg-s" x="48" y="308">DPoP nonce を発行する</text>
+    <!-- OP #2 -->
+    <rect class="fg-box fg-box--accent" x="344" y="256" width="272" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="284">OP #2</text>
+    <text class="fg-s" x="360" y="308">自前の状態を持たない</text>
+    <!-- OP #3 -->
+    <rect class="fg-box fg-box--accent" x="656" y="256" width="272" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="672" y="284">OP #3</text>
+    <text class="fg-s" x="672" y="308">同じ nonce を検証する</text>
+    <path class="fg-leader" d="M168,328 V352 M480,328 V352 M792,328 V352 M168,352 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M248,352 V376" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M712,352 V376" marker-end="url(#fg-a)"/>
+    <!-- durable store -->
+    <rect class="fg-box" x="32" y="376" width="432" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="404">永続ストア（共有）</text>
+    <text class="fg-mxs" x="48" y="428">clients · 認可コード · トークン · grants</text>
+    <text class="fg-mxs" x="48" y="452">発行時刻の記録 · PAR リクエスト</text>
+    <!-- volatile tier -->
+    <rect class="fg-box" x="496" y="376" width="432" height="96" rx="8"/>
+    <text class="fg-t" x="512" y="404">揮発層（Redis）</text>
+    <text class="fg-mxs" x="512" y="428">Sessions · Interactions · ConsumedJTIs</text>
+    <text class="fg-mxs" x="512" y="452">DPoP nonce（自前の source）</text>
+    <!-- eviction caveat -->
+    <rect class="fg-pill fg-pill--warn" x="496" y="496" width="384" height="32" rx="8"/>
+    <text class="fg-s" x="688" y="517" text-anchor="middle">ConsumedJTIs 以外は追い出されてよい</text>
   </svg>
   <figcaption class="fig-note">特別なレプリカは存在せず、どれも何も覚えていません。だからロードバランサは単純なままで済みます。その代わり、リクエストをまたぐ状態はすべて、下段の 2 つから見える場所に置く必要があります。</figcaption>
 </figure>
@@ -64,9 +72,9 @@ OP はリクエストをまたいでステートレスで、すべてのレプ�
 - consumed JTIs
 - metadata
 
-ただし本番の複数レプリカでは、レプリカ間の可視性が必要なデータを共有ストレージへ配置してください。
+ただし本番の複数レプリカでは、レプリカ間の可視性が必要なデータを共有ストレージへ配置してください。インメモリストア（`inmem`）はプロセス単位なので、レプリカが複数なら `Sessions` と `Interactions` は SQL、DynamoDB、Redis のいずれかの共有バックエンドに置きます。
 
-Redis 層に置ける揮発サブストアは `Sessions`、`Interactions`、`ConsumedJTIs`(JAR / DPoP / private_key_jwt の replay set)です。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。DPoP server-nonce ストアはサブストアではなく、`op.WithDPoPNonceSource` 経由で差し込む別の seam です。
+Redis アダプタが実装するサブストアは `Sessions`、`Interactions`、`ConsumedJTIs`(JAR / DPoP / private_key_jwt の replay set)です。[hot/cold split](/ja/use-cases/hot-cold-redis) を参照してください。`Sessions` と `Interactions` は追い出されても構いません。`ConsumedJTIs` は別で、有効なマーカーが追い出されると、塞いでいた replay の窓が再び開きます。`noeviction` の Redis か永続バックエンドで動かしてください。DPoP server-nonce ストアはサブストアではなく、`op.WithDPoPNonceSource` 経由で差し込む別の seam です。
 
 `op.WithAuthnLockoutStore` 経由で組み込む authn-factor 用のロックアウトカウンタも、`store.Store` のサブストアには含まれないため、明示的に渡します。同梱の SQL / DynamoDB adapter は、永続かつレプリカ間で共有される実装を `storage.AuthnLockouts()` として提供します。
 
@@ -84,7 +92,8 @@ device-code の確認でも、レコード状態と試行状態を分けて考�
 |---|---|---|
 | DPoP server nonce | ライブラリ同梱のインメモリ参照実装で済む | 分散ソースが必要 |
 | Session cookie | `WithCookieKeys` で暗号化。鍵が一致する限りレプリカをまたいで共有可能 | 同上 — 全レプリカが同じ cookie 鍵を持つ必要がある |
-| Interaction 状態（`/interaction/{uid}`） | プロセス内メモリでも可 | Redis または sticky session が必要 |
+| Session レコード | どのストアでも可 | 共有ストア（SQL、DynamoDB、Redis）が必要。`inmem` はプロセス単位 |
+| Interaction 状態（`/interaction/{uid}`） | `inmem` を含むどのストアでも可 | 共有ストア（SQL、Redis）または sticky ルーティングが必要 |
 | レートリミット | 上流 / プロセス外 | 上流 / プロセス外 |
 | OFCS conformance harness | 1 OP インスタンスに対して実行する | 1 OP インスタンスに対して実行する — 単一レプリカか LB エンドポイントを指定 |
 
@@ -94,7 +103,7 @@ device-code の確認でも、レコード状態と試行状態を分けて考�
 
 選択肢は 2 つです:
 
-1. **server-nonce フローを無効化する。** `WithDPoPNonceSource` を渡さない形です。クライアントは server 供給の nonce 無しで進みます。RFC 9449 §8 のハードニングが要らないなら、安全な既定です。
+1. **server-nonce フローを無効化する。** `WithDPoPNonceSource` を渡さない形です。クライアントは server 供給の nonce 無しで進みます。RFC 9449 §8 のハードニングが要らないなら、これで足ります。ただし FAPI 2.0 Message Signing と FAPI-CIBA のプロファイルは source を必須とし、DPoP を有効にしたまま渡さないと `op.New` が起動を拒否します。
 2. **分散ソースを差し込む。** 共有ストア（Redis、Memcached）に対する `op.DPoPNonceSource` 実装を組み込みます。Redis の nonce source をライブラリが同梱しないのは意図的です。オプションの組み合わせ（TTL、ローテーション周期、取りこぼし許容度）が運用者ごとに違いすぎるためです。
 
 ```go
@@ -109,7 +118,7 @@ func (r *redisNonces) Validate(nonce string) bool { /* ... */ }
 op.WithDPoPNonceSource(&redisNonces{rdb: client})
 ```
 
-インメモリ版は [`examples/51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) を参照してください。本番版は同じ interface を満たします。
+source を渡すと、`/token`、`/par`、`/userinfo` は `nonce` claim が無い、または受理できない DPoP proof を拒否し、新しい値を `DPoP-Nonce` ヘッダに載せた `use_dpop_nonce` を返します。インメモリ版でこのやり取りを確認できる [`examples/51-dpop-nonce`](https://github.com/libraz/go-oidc-provider/tree/main/examples/51-dpop-nonce) を参照してください。本番版は同じ interface を実装します。
 
 ## Session 配置
 
@@ -120,16 +129,14 @@ session は永続（SQL）にも揮発（永続化無しの Redis）にも置け
 | 永続（SQL） | 再起動 / failover 後も browser logout trigger が subject と session snapshot を解決できる。RP の対象は session 一覧ではなく grant から導出する | login のたびに DB 書き込みが発生する |
 | 揮発（Redis） | 書き込みレイテンシが低く、DB のホットな行が無い | 再起動や `maxmemory` の追い出しで snapshot 前に browser logout trigger を失うことがある。snapshot 後の RP 対象も `SessionStore` の行ではなく grant から導出する |
 
-`WithSessionDurabilityPosture(...)` で audit イベントに配置を注釈できます（`bcl.no_sessions_for_subject` は session-bearing notice で grant 由来の RP 対象が 0 件だったことを記録します）。ライブラリは配置自体を制約しません。永続配置は、再起動や failover をまたいで browser logout trigger と fan-out 前の snapshot を保護します。揮発な配置では、fan-out が始まる前に追い出しで trigger を失うことがあります。snapshot 後の対象解決は `SessionStore` の行を辿らず grant から行うため、方針注釈は trigger loss と対象 0 件を SOC ダッシュボードで解釈するための文脈になります。
+`WithSessionDurabilityPosture(...)` で配置を宣言します（既定は揮発）。この値は `bcl.no_sessions_for_subject` に記録され、このイベントは session を伴うログアウトで grant 由来の RP 対象が 0 件だったことを表します。ライブラリは配置自体を制約しません。永続配置は、再起動や failover をまたいで browser logout trigger と fan-out 前の snapshot を保護します。揮発な配置では、fan-out が始まる前に追い出しで trigger を失うことがあります。snapshot 後の対象解決は `SessionStore` の行を辿らず grant から行うため、方針注釈は trigger loss と対象 0 件を SOC ダッシュボードで解釈するための文脈になります。
 
 ## Interaction 状態
 
-`/interaction/{uid}` の処理は、`uid` cookie に紐付く試行ごとの状態を読み書きします。レプリカが 1 つならプロセスメモリで済みます。N 個なら 2 通りです:
+進行中のログイン（`/interaction/{uid}`）の状態は `store.InteractionStore` に置かれ、ブラウザは封緘された `__Host-oidc_interaction` cookie で `uid` を運びます。インメモリストアでは、この状態はプロセス単位になります。レプリカが N 個なら 2 通りです。
 
-1. **LB で sticky session。** 同じ `uid` cookie のリクエストを常に同じレプリカへ転送します。簡単ですが、ログイン途中でレプリカが落ちるとユーザに汎用エラーが見えます。
-2. **共有 interaction store。** `store.InteractionStore` を Redis 実装にします（または同梱の Redis アダプタを使います）。任意のレプリカが任意のログインを再開できます。本番の既定推奨です。
-
-Redis アダプタの `InteractionStore` は揮発適格で、[composite store](/ja/use-cases/hot-cold-redis) の揮発スライスに住みます。
+1. **LB で sticky ルーティング。** 同じ `uid`（パスに含まれます）のリクエストを常に同じレプリカへ転送します。簡単ですが、ログイン途中でレプリカが落ちるとユーザに汎用エラーが見えます。
+2. **共有 interaction store。** SQL アダプタを使うか、Redis アダプタを [composite store](/ja/use-cases/hot-cold-redis) の揮発スライスに置きます。任意のレプリカが任意のログインを再開できます。本番の既定推奨です。
 
 ## graceful shutdown と detached logout
 
@@ -140,11 +147,11 @@ srv.Shutdown(ctx)      // 受付を停止
 provider.Shutdown(ctx) // detached fan-out を drain
 ```
 
-`WithBackchannelFanOutBudget` は detached fan-out 全体（デフォルト 30 秒）を制限し、`WithBackchannelLogoutTimeout` は各 RP リクエストを別々に制限します。`Provider.Shutdown(ctx)` は実行中の fan-out が完了するまで待つため、drain 中も全レプリカで共有セッション／grant store を使って対象解決を一貫させてください。
+`WithBackchannelFanOutBudget` は detached fan-out 全体（既定 30 秒）を制限し、`WithBackchannelLogoutTimeout` は各 RP リクエストを別々に制限します（既定 5 秒）。`Provider.Shutdown(ctx)` は実行中の fan-out が完了するまで待ちますが、provider がリクエストを受け付けるのを止めるわけではありません。HTTP サーバを先に止めるのはそのためです。drain 中も全レプリカで共有セッション／grant store を使って対象解決を一貫させてください。
 
 ## Cookie 鍵の一貫性
 
-すべてのレプリカが同じ `WithCookieKeys` スライスを持つ必要があります。違う鍵で復号しようとするレプリカは、自分が暗号化していない cookie に対して `invalid_session` を返します。スケール時の症状としては「ランダムにユーザがログアウトする」現象として現れます。
+すべてのレプリカが同じ `WithCookieKeys` スライスを持つ必要があります。別の鍵を持つレプリカは、自分が封緘していない cookie を開けず、そのブラウザを未ログインとして扱います。スケールすると「ランダムにユーザがログアウトする」現象として現れます。
 
 secret manager から鍵を取り、すべてのレプリカに同じ値を注入してください:
 
@@ -154,19 +161,26 @@ if err != nil { log.Fatal(err) }
 op.WithCookieKeys(key)
 ```
 
-N レプリカでのローテーション: 全レプリカに `WithCookieKeys(new, old)` を同時にデプロイ → オーバーラップ期間後に `WithCookieKeys(new)` へ切り替え。[鍵ローテーション](/ja/operations/key-rotation) を参照してください。
+ローリングデプロイでは、N レプリカでの鍵ローテーションは 3 段階になります。ある鍵で封緘を始めるレプリカより先に、すべてのレプリカがその鍵で cookie を開けるようになっている必要があるためです。
+
+1. 全レプリカに `WithCookieKeys(old, new)` をデプロイします。まだ `new` で封緘するレプリカはありませんが、全レプリカが `new` の cookie を開けます。
+2. `WithCookieKeys(new, old)` をデプロイします。以後は `new` で封緘し、`old` の cookie もまだ開けます。
+3. 最長のセッションが終わった後に、`WithCookieKeys(new)` をデプロイします。
+
+サイクルと重なり期間の長さは [鍵ローテーション](/ja/operations/key-rotation) を参照してください。
 
 ## LB アフィニティ
 
 | エンドポイント | アフィニティ必要? |
 |---|---|
 | `/.well-known/openid-configuration`、`/jwks` | 不要 — 純粋な read |
-| `/authorize`、`/par`、`/end_session` | interaction state が共有 Redis なら不要、プロセスローカルなら必要 |
+| `/auth`、`/par`、`/end_session` | interaction と session の状態が共有ストアにあれば不要、プロセスローカルなら必要 |
 | `/token`、`/userinfo`、`/introspect`、`/revoke` | 不要 |
+| `/device_authorization`、`/bc-authorize` | 不要 |
 | `/register`、`/register/{client_id}` | 不要 |
-| `/interaction/{uid}` | `/authorize` リダイレクトを受けたレプリカに sticky、ただし Redis-backed なら不要 |
+| `/interaction/{uid}` | `/auth` のリダイレクトを受けたレプリカに sticky。ただし interaction store が共有なら不要 |
 
-最も簡素な本番形: 全エンドポイントを round-robin にしつつ、interaction store を Redis-backed にする形です。次に簡素な形: `uid` cookie で sticky にしつつ、interaction state をプロセスローカルに置く形です。
+パスは既定値で、mount prefix（既定は `/oidc`）からの相対です。最も簡素な本番形は、全エンドポイントを round-robin にしつつ、interaction store を共有にする形です。次に簡素なのは、`uid` で sticky にしつつ、interaction の状態をプロセスローカルに置く形です。
 
 ## ヘルスチェック
 
@@ -193,17 +207,17 @@ func ready(store *MyComposite) http.HandlerFunc {
 
 ## キャパシティプランニング
 
-コモディティハードウェア上の概算（ピークではなく持続スループット）:
+何を測るべきか決める手がかりとして、エンドポイントごとの 1 リクエストあたりの主なコストを示します。
 
-| エンドポイント | RPS / レプリカ | ボトルネック |
-|---|---|---|
-| `/jwks`、discovery | 数千 | 静的 JSON。CDN とも相性が良い |
-| `/authorize`(interaction なし) | 100 台 | code + session の DB 書き込み |
-| `/token`(authorization_code) | 数百 | ID トークン署名と DB 書き込み |
-| `/token`(refresh_token) | 数百 | 暗号処理とローテーションの書き込み |
-| `/userinfo` | 数百 | bearer 検証 + UserStore lookup |
+| エンドポイント | 主なコスト |
+|---|---|
+| `/jwks`、discovery | 静的 JSON でストアにアクセスしない。CDN とも相性が良い |
+| `/auth`(interaction なし) | code と session のストア書き込み |
+| `/token`(authorization_code) | ID トークンの署名に加え、ストア書き込みとユーザの lookup |
+| `/token`(refresh_token) | 署名に加え、1 トランザクションでのローテーション書き込み |
+| `/userinfo` | アクセストークンの検証とユーザの lookup |
 
-数値は目安です。ボトルネックは多くの場合 OP ではなく永続ストア側にあります。サイジング前に、自前のストア実装に対して `go test -bench` でプロファイルを取ってください。
+ボトルネックは多くの場合 OP ではなく永続ストア側にあります。KMS をバックエンドにした署名器は、署名のたびに独自の待ち時間を足します（[JWKS エンドポイント](/ja/operations/jwks#hsm-kms-連携) を参照）。サイジングの前に、自前のストアに対して負荷試験をしてください。本ライブラリはスループットの数値を公開していません。
 
 ## マルチインスタンスでも**できないこと**
 

@@ -7,42 +7,63 @@ pageClass: pg-operations-jwks
 
 # JWKS endpoint
 
-The `/jwks` endpoint exposes the public half of the OP's signing keys. RPs fetch it to verify ID Tokens, JWT access tokens, JARM responses, and any userinfo JWTs. This page is the operational contract between the OP and those RP caches.
+The `/jwks` endpoint publishes the public half of the OP's signing keys as a JWKS (JSON Web Key Set, RFC 7517), a JSON document listing public keys by `kid`. RPs fetch it to verify ID Tokens, JWT access tokens, JARM responses, and any userinfo JWTs. This page is the operational contract between the OP and those RP caches.
 
 <figure class="fig">
-  <div class="fig-head">How an RP finds the right key</div>
-  <svg class="fig-svg" role="img" aria-labelledby="jwks-fetch-title" viewBox="0 0 960 268" xmlns="http://www.w3.org/2000/svg">
-    <title id="jwks-fetch-title">A relying party reads jwks_uri out of the discovery document, fetches the key set once, and caches it. When a token arrives carrying a kid the cache does not know, it refetches — which is how a rotated key reaches every verifier without a coordinated deploy.</title>
-    <rect class="fg-box" x="36" y="94" width="180" height="80" rx="8"/>
-    <text class="fg-t" x="54" y="124">RP</text>
-    <text class="fg-xs" x="54" y="146">verifies the tokens</text>
-    <text class="fg-xs" x="54" y="162">it is presented with</text>
-    <path class="fg-edge" d="M220,116 H302" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="261" y="109" text-anchor="middle">1 · read config</text>
-    <rect class="fg-box fg-box--accent" x="306" y="34" width="230" height="72" rx="8"/>
-    <text class="fg-m fg-accent" x="324" y="60">/.well-known/…</text>
-    <text class="fg-xs" x="324" y="80">the discovery document</text>
-    <text class="fg-mxs" x="324" y="96">advertises jwks_uri</text>
-    <path class="fg-edge fg-edge--accent" d="M421,110 V142" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="437" y="132">2 · fetch keys</text>
-    <rect class="fg-box fg-box--accent" x="306" y="146" width="230" height="72" rx="8"/>
-    <text class="fg-m fg-accent" x="324" y="172">/jwks</text>
-    <text class="fg-xs" x="324" y="192">the JWK set, with an ETag</text>
-    <text class="fg-xs" x="324" y="208">so a refetch is usually a 304</text>
-    <path class="fg-edge" d="M540,182 H616" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="578" y="175" text-anchor="middle">3 · cache</text>
-    <rect class="fg-box" x="620" y="146" width="304" height="72" rx="8"/>
-    <text class="fg-t2" x="638" y="172">RP cache</text>
-    <text class="fg-xs" x="638" y="192">picks the key by the token's kid</text>
-    <text class="fg-xs" x="638" y="208">no network call on the happy path</text>
-    <path class="fg-edge fg-edge--muted" d="M772,142 V102" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="788" y="126">4 · unknown kid</text>
-    <rect class="fg-box fg-box--warn" x="620" y="52" width="304" height="50" rx="8"/>
-    <text class="fg-t2" x="638" y="74">A kid the cache has never seen</text>
-    <text class="fg-xs" x="638" y="92">refetch /jwks once, then verify — step 5</text>
-    <path class="fg-edge fg-edge--muted" d="M616,77 H556 V152" marker-end="url(#fg-am)"/>
+  <div class="fig-head">A rotated key reaches RPs the first time they miss</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jwks-fetch-title" viewBox="0 0 960 808" xmlns="http://www.w3.org/2000/svg">
+    <title id="jwks-fetch-title">A relying party reads jwks_uri out of the discovery document, fetches the key set once, and caches it. When a token arrives carrying a kid the cache does not know, it refetches once and then verifies, which is how a rotated key reaches every verifier without a coordinated deploy.</title>
+    <!-- phases -->
+    <rect class="fg-group" x="32" y="104" width="896" height="320" rx="8"/>
+    <rect class="fg-group" x="32" y="440" width="896" height="344" rx="8"/>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="784"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="784"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">verifies the tokens</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <!-- first use -->
+    <text class="fg-lbl fg-halo" x="56" y="132">first use</text>
+    <!-- 1 -->
+    <path class="fg-edge" d="M192,172 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="138" text-anchor="middle">GET /.well-known/…</text>
+    <text class="fg-mxs" x="352" y="160" text-anchor="middle">read jwks_uri</text>
+    <!-- 2 -->
+    <path class="fg-edge" d="M192,244 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="210" text-anchor="middle">GET /jwks</text>
+    <text class="fg-mxs" x="352" y="232" text-anchor="middle">no cached copy yet</text>
+    <!-- 3 -->
+    <path class="fg-edge fg-edge--accent" d="M512,316 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="282" text-anchor="middle">200 · JWK set</text>
+    <text class="fg-mxs" x="352" y="304" text-anchor="middle">with an ETag</text>
+    <!-- 4 -->
+    <path class="fg-edge" d="M192,364 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="370">cache the set by kid</text>
+    <text class="fg-xs" x="248" y="392">later lookups skip the network</text>
+    <!-- unknown kid -->
+    <text class="fg-lbl fg-halo" x="56" y="468">a kid the cache has never seen</text>
+    <!-- 5 -->
+    <path class="fg-edge" d="M192,504 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="510">kid not in the cache</text>
+    <text class="fg-xs" x="248" y="532">refetch once, don't reject</text>
+    <!-- 6 -->
+    <path class="fg-edge" d="M192,608 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="574" text-anchor="middle">GET /jwks</text>
+    <text class="fg-mxs" x="352" y="596" text-anchor="middle">If-None-Match: ETag</text>
+    <!-- 7 -->
+    <path class="fg-edge fg-edge--accent" d="M512,680 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="646" text-anchor="middle">200 · JWK set</text>
+    <text class="fg-mxs" x="352" y="668" text-anchor="middle">or 304 if unchanged</text>
+    <!-- 8 -->
+    <path class="fg-edge" d="M192,728 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="734">verify the token</text>
+    <text class="fg-xs" x="248" y="756">with the key just fetched</text>
   </svg>
-  <figcaption class="fig-note">Step 4 is what makes rotation safe without coordination. An RP that has never heard of the new key finds out the first time it meets one — provided it refetches on a miss rather than rejecting outright.</figcaption>
+  <figcaption class="fig-note">The refetch on an unknown kid is what makes rotation safe without coordination. An RP that has never heard of the new key finds out the first time it meets one — provided it refetches on a miss rather than rejecting outright.</figcaption>
 </figure>
 
 ## What's served
@@ -85,15 +106,16 @@ The JOSE allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) is the set the OP **ver
 | `ETag` | `"<sha256-hex>"` | strong validator over the marshalled body |
 | `Allow` | `GET, HEAD` | other methods get 405 |
 
-`HEAD` returns the headers (including `ETag` and `Cache-Control`) with no body, which is what well-behaved RP caches use to revalidate.
+`HEAD` returns the same headers (including `ETag` and `Cache-Control`) with no body. RP caches normally revalidate with a conditional `GET` instead, as below.
 
 ### `If-None-Match`
 
 The handler honours `If-None-Match`:
 
-- Exact ETag match → `304 Not Modified` with no body.
+- Exact ETag match → `304 Not Modified` with no body. The 304 still carries `ETag` and `Cache-Control`.
 - `*` wildcard → `304 Not Modified`.
 - Weak validator (`W/"..."`) with the same opaque tag → also matches (the `If-None-Match` comparison is weak).
+- A comma-separated list matches when any member does.
 
 The ETag covers the **full marshalled JWKS**, so any `kid` change or key set membership change rolls the value automatically. There is no manual cache-bust step.
 
@@ -135,10 +157,10 @@ A well-behaved RP:
 
 1. Fetches `/jwks` once at startup (or first verification).
 2. Caches the response per `Cache-Control`; revalidates with `If-None-Match` after `max-age` expires.
-3. On a JWS verification with an unknown `kid`, refetches `/jwks` bypassing cache (this is the expected rotation path — the new `kid` arrives, the verification retries, and succeeds).
-4. Does NOT fall back to a cached key on `kid` mismatch — that would defeat rotation auditing.
+3. On a JWS verification with an unknown `kid`, refetches `/jwks` bypassing cache. This is the expected rotation path: the new `kid` arrives, the verification retries, and succeeds.
+4. Does NOT fall back to a cached key on `kid` mismatch, because that would defeat rotation auditing.
 
-The OP's own internal verification path follows the same rules. There is no special "trust the active key for unknown `kid`" branch.
+The OP applies the same rule when it verifies its own JWT access tokens at `/userinfo` and `/introspect`: it looks the `kid` up in the configured keyset, and a `kid` that is unknown or past its `NotAfter` is refused. There is no "trust the active key for an unknown `kid`" branch.
 
 ## Multiple keys in JWKS
 
@@ -153,6 +175,8 @@ op.WithKeyset(op.Keyset{
 
 Both `kid` values appear in `/jwks`. The OP signs new tokens with the first entry; the second is kept in JWKS so RPs can still verify tokens issued before the rotation. See [Key rotation](/operations/key-rotation) for cadence.
 
+An entry stays in `/jwks` until you rebuild the `Keyset` without it. Setting `SigningKey.NotAfter` on a retiring entry makes the OP itself stop trusting that `kid` at the deadline (it also emits `key.retired_kid_presented` when one shows up), but the public key stays published so RP caches can drain. Encryption keys behave differently: an `EncryptionKey` past its `NotAfter` is removed from `/jwks` as well.
+
 ## HSM / KMS integration
 
 `op.SigningKey.Signer` is `crypto.Signer` — anything implementing `Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error)` fits. Common shapes:
@@ -165,14 +189,14 @@ Both `kid` values appear in `/jwks`. The OP signs new tokens with the first entr
 
 The OP only requires:
 
-- The signer's public key is `*ecdsa.PublicKey` on `elliptic.P256()`.
-- `Sign` is safe for concurrent use (every adapter listed above is).
+- The signer's public key is `*ecdsa.PublicKey` on `elliptic.P256()`; any other key type makes `op.New` fail.
+- `Sign` is safe for concurrent use. A thin adapter must guarantee this itself if its client is not.
 
 A KMS-backed signer adds latency to token issuance (typically 10 – 50 ms per signature). Plan capacity accordingly.
 
 ## Discovery `jwks_uri`
 
-The discovery document advertises `jwks_uri` as the absolute URL of the configured JWKS path under your issuer + mount prefix. RPs fetch discovery once and follow the `jwks_uri` from there — there is no hard-coded path the OP relies on.
+The discovery document advertises `jwks_uri` as the absolute URL of the configured JWKS path under your issuer and mount prefix (`/oidc` by default). RPs fetch discovery once and follow the `jwks_uri` from there — there is no hard-coded path the OP relies on.
 
 You can override the path with `WithEndpoints(op.Endpoints{JWKS: "/keys"})` if you have a router conflict; the discovery document follows.
 
