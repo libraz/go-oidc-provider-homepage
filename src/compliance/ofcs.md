@@ -6,7 +6,7 @@ pageClass: pg-compliance-ofcs
 
 # OFCS conformance status
 
-`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the baseline below is the retained release-equivalent run captured immediately before the release tag at commit [`8ee7ca3`](https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd), executed end-to-end against a `cmd/op-demo` instance.
+`go-oidc-provider` is regressed against the [OpenID Foundation Conformance Suite (OFCS)][ofcs]. The harness lives in [`conformance/`][harness] in the source repo and scaffolds nine OFCS plans; the baseline below is the run captured on the v1.4.0 release candidate, commit [`6b37232`](https://github.com/libraz/go-oidc-provider/commit/6b3723292cb6763faf2aff35be9acbc3117888d8), executed end-to-end against a `cmd/op-demo` instance. The commits between that run and the `v1.4.0` tag change only tests, module pins and the conformance image tag.
 
 [ofcs]: https://gitlab.com/openid/conformance-suite
 [harness]: https://github.com/libraz/go-oidc-provider/tree/main/conformance
@@ -17,48 +17,50 @@ This is a personal project maintained by an individual developer. No OpenID Foun
 
 <figure class="fig">
   <div class="fig-head">Nine plans in, one outcome per module out</div>
-  <svg class="fig-svg" role="img" aria-labelledby="ofcs-shape-title" viewBox="0 0 960 262" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="ofcs-shape-title" viewBox="0 0 960 408" xmlns="http://www.w3.org/2000/svg">
     <title id="ofcs-shape-title">Nine conformance test plans across four specification families are run against the demo OP. Every module in every plan lands in exactly one of five outcomes: passed, review, skipped, no verdict, or failed.</title>
-    <text class="fg-lbl" x="40" y="26">test plans — nine of them</text>
-    <text class="fg-lbl" x="664" y="26">outcome per module</text>
-    <rect class="fg-box" x="36" y="38" width="264" height="44" rx="6"/>
-    <text class="fg-t2" x="54" y="58">OIDC Core 1.0</text>
-    <text class="fg-xs" x="54" y="74">6 plans</text>
-    <rect class="fg-box" x="36" y="90" width="264" height="44" rx="6"/>
-    <text class="fg-t2" x="54" y="110">FAPI 2.0 Baseline</text>
-    <text class="fg-xs" x="54" y="126">1 plan</text>
-    <rect class="fg-box" x="36" y="142" width="264" height="44" rx="6"/>
-    <text class="fg-t2" x="54" y="162">FAPI 2.0 Message Signing</text>
-    <text class="fg-xs" x="54" y="178">1 plan</text>
-    <rect class="fg-box" x="36" y="194" width="264" height="44" rx="6"/>
-    <text class="fg-t2" x="54" y="214">FAPI-CIBA</text>
-    <text class="fg-xs" x="54" y="230">1 plan</text>
-    <path class="fg-leader" d="M304,60 H332 M304,112 H332 M304,164 H332 M304,216 H332 M332,60 V216"/>
-    <path class="fg-edge fg-edge--accent" d="M332,138 H360" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="364" y="108" width="232" height="60" rx="8"/>
-    <text class="fg-m fg-accent" x="480" y="134" text-anchor="middle">cmd/op-demo</text>
-    <text class="fg-xs" x="480" y="154" text-anchor="middle">the OP under test</text>
-    <path class="fg-edge fg-edge--accent" d="M600,138 H628" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="660" y="38" width="264" height="34" rx="6"/>
-    <rect class="fg-fill--ok" x="676" y="49" width="12" height="12" rx="3"/>
-    <text class="fg-t2" x="698" y="59">PASSED</text>
-    <text class="fg-xs" x="770" y="59">every condition was met</text>
-    <rect class="fg-box" x="660" y="80" width="264" height="34" rx="6"/>
-    <rect class="fg-fill--warn" x="676" y="91" width="12" height="12" rx="3"/>
-    <text class="fg-t2" x="698" y="101">REVIEW</text>
-    <text class="fg-xs" x="770" y="101">the suite asks a human</text>
-    <rect class="fg-box" x="660" y="122" width="264" height="34" rx="6"/>
-    <rect class="fg-fill--muted" x="676" y="133" width="12" height="12" rx="3"/>
-    <text class="fg-t2" x="698" y="143">SKIPPED</text>
-    <text class="fg-xs" x="770" y="143">not applicable here</text>
-    <rect class="fg-box" x="660" y="164" width="264" height="34" rx="6"/>
-    <rect class="fg-fill" x="676" y="175" width="12" height="12" rx="3"/>
-    <text class="fg-t2" x="698" y="185">No verdict</text>
-    <text class="fg-xs" x="770" y="185">it ran and returned nothing</text>
-    <rect class="fg-box" x="660" y="206" width="264" height="34" rx="6"/>
-    <rect class="fg-fill--danger" x="676" y="217" width="12" height="12" rx="3"/>
-    <text class="fg-t2" x="698" y="227">FAILED</text>
-    <text class="fg-xs" x="770" y="227">a condition was not met</text>
+    <text class="fg-lbl" x="32" y="40">test plans — nine of them</text>
+    <text class="fg-lbl" x="640" y="40">outcome per module</text>
+    <!-- plans -->
+    <rect class="fg-box" x="32" y="96" width="288" height="256" rx="8"/>
+    <text class="fg-t2" x="48" y="124">OIDC Core 1.0</text>
+    <text class="fg-s" x="48" y="148">6 plans</text>
+    <line class="fg-rule" x1="48" y1="160" x2="304" y2="160"/>
+    <text class="fg-t2" x="48" y="188">FAPI 2.0 Baseline</text>
+    <text class="fg-s" x="48" y="212">1 plan</text>
+    <line class="fg-rule" x1="48" y1="224" x2="304" y2="224"/>
+    <text class="fg-t2" x="48" y="252">FAPI 2.0 Message Signing</text>
+    <text class="fg-s" x="48" y="276">1 plan</text>
+    <line class="fg-rule" x1="48" y1="288" x2="304" y2="288"/>
+    <text class="fg-t2" x="48" y="316">FAPI-CIBA</text>
+    <text class="fg-s" x="48" y="340">1 plan</text>
+    <path class="fg-edge fg-edge--accent" d="M320,224 H360" marker-end="url(#fg-ac)"/>
+    <!-- op under test -->
+    <rect class="fg-box fg-box--accent" x="360" y="188" width="240" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="376" y="216">cmd/op-demo</text>
+    <text class="fg-s" x="376" y="240">the OP under test</text>
+    <path class="fg-edge fg-edge--accent" d="M600,224 H640" marker-end="url(#fg-ac)"/>
+    <!-- outcomes -->
+    <rect class="fg-box" x="640" y="64" width="288" height="320" rx="8"/>
+    <rect class="fg-fill--ok" x="656" y="80" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="680" y="92">PASSED</text>
+    <text class="fg-s" x="680" y="116">every condition was met</text>
+    <line class="fg-rule" x1="656" y1="128" x2="912" y2="128"/>
+    <rect class="fg-fill--warn" x="656" y="144" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="680" y="156">REVIEW</text>
+    <text class="fg-s" x="680" y="180">the suite asks a human</text>
+    <line class="fg-rule" x1="656" y1="192" x2="912" y2="192"/>
+    <rect class="fg-fill--muted" x="656" y="208" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="680" y="220">SKIPPED</text>
+    <text class="fg-s" x="680" y="244">not applicable here</text>
+    <line class="fg-rule" x1="656" y1="256" x2="912" y2="256"/>
+    <rect class="fg-dot" x="656" y="272" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="680" y="284">No verdict</text>
+    <text class="fg-s" x="680" y="308">it ran and returned nothing</text>
+    <line class="fg-rule" x1="656" y1="320" x2="912" y2="320"/>
+    <rect class="fg-fill--danger" x="656" y="336" width="12" height="12" rx="3"/>
+    <text class="fg-t2" x="680" y="348">FAILED</text>
+    <text class="fg-s" x="680" y="372">a condition was not met</text>
   </svg>
   <figcaption class="fig-note">Only the last row is a defect. The middle three are the suite declining to answer — because the module does not apply to this profile, or because the verdict is one a person has to make.</figcaption>
 </figure>
@@ -83,37 +85,37 @@ The `fapi2-security-profile-id2` and `fapi2-message-signing-id1` plans are the I
 
 <div class="ofcs-summary">
   <div class="ofcs-headline">
-    <b>210 of 271</b>
-    <span>modules PASSED across nine plans — 77.5% of the run</span>
+    <b>210 of 270</b>
+    <span>modules PASSED across nine plans — 77.8% of the run</span>
   </div>
-  <div class="ofcs-scale"><span>0</span><span>271 modules — every module in the run</span></div>
+  <div class="ofcs-scale"><span>0</span><span>270 modules — every module in the run</span></div>
   <div class="ofcs-track">
-    <div class="ofcs-stack" role="img" aria-label="271 modules: 210 PASSED, 38 REVIEW, 15 SKIPPED, 2 no verdict, 6 FAILED">
+    <div class="ofcs-stack" role="img" aria-label="270 modules: 210 PASSED, 38 REVIEW, 14 SKIPPED, 2 no verdict, 6 FAILED">
       <i class="pass" style="flex:210"></i>
       <i class="review" style="flex:38"></i>
-      <i class="skip" style="flex:15"></i>
+      <i class="skip" style="flex:14"></i>
       <i class="noverdict" style="flex:2"></i>
       <i class="fail" style="flex:6"></i>
     </div>
   </div>
   <ul class="ofcs-legend">
-    <li><span class="ofcs-dot pass"></span>PASSED<b>210</b><em>77.5%</em></li>
-    <li><span class="ofcs-dot review"></span>REVIEW<b>38</b><em>14.0%</em></li>
-    <li><span class="ofcs-dot skip"></span>SKIPPED<b>15</b><em>5.5%</em></li>
+    <li><span class="ofcs-dot pass"></span>PASSED<b>210</b><em>77.8%</em></li>
+    <li><span class="ofcs-dot review"></span>REVIEW<b>38</b><em>14.1%</em></li>
+    <li><span class="ofcs-dot skip"></span>SKIPPED<b>14</b><em>5.2%</em></li>
     <li><span class="ofcs-dot noverdict"></span>No verdict<b>2</b><em>0.7%</em></li>
     <li><span class="ofcs-dot fail"></span>FAILED<b>6</b><em>2.2%</em></li>
     <li><span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>WARNING<b>0</b><em>0.0%</em></li>
   </ul>
   <p class="ofcs-note">Every FAILED and no-verdict module is a reviewed release exclusion — <a href="#why-six-modules-failed">three causes, none of them an unresolved defect</a>.</p>
   <div class="ofcs-meta">
-    <span><i>Captured</i>2026-09-28T13:43:49Z</span>
-    <span><i>Repository SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/8ee7ca36ef45fb4a1ee01eb44728d5e9db907bdd">8ee7ca3</a></span>
-    <span><i>OFCS image</i>not recorded in snapshot</span>
+    <span><i>Captured</i>2026-10-22T16:26:08Z</span>
+    <span><i>Repository SHA</i><a href="https://github.com/libraz/go-oidc-provider/commit/6b3723292cb6763faf2aff35be9acbc3117888d8">6b37232</a></span>
+    <span><i>OFCS release</i>release-v5.3.3 (run label)</span>
   </div>
 </div>
 
 ::: info Snapshot status
-The bars are the raw outcome of all nine plans. The retained run was measured immediately before the release tag and is treated as release-equivalent to OFCS `release-v5.3.1`. Its JSON artifact is a local, gitignored file under `conformance/baselines/`, but it does not record the OFCS image tag or digest. The current `conformance/docker-compose.yml` default is also `release-v5.3.1`. `make conformance-release-verify` accepted this release snapshot with zero blockers: every raw failure and no-verdict module has a reviewed, expiry-bound entry in `conformance/release-exclusions.json`. That gate result is not an OIDC certification.
+The bars are the raw outcome of all nine plans, run against OFCS `release-v5.3.3`. The run label records that suite release; the JSON artifact, a local gitignored file under `conformance/baselines/`, stores neither the image tag nor the digest. `make conformance-release-verify` accepted the run with zero blockers: every raw failure has a reviewed, expiry-bound entry in `conformance/release-exclusions.json`, every no-verdict module has an entry with evidence, and every REVIEW or SKIPPED module falls under a reviewed rule. That gate result is not an OIDC certification.
 :::
 
 ### Why six modules FAILED
@@ -297,17 +299,17 @@ Each bar is one plan on its own scale: full width is that plan's own module coun
   <div class="ofcs-plan">
     <div class="ofcs-plan-head">
       <span class="ofcs-plan-name">fapi-ciba-id1-test-plan</span>
-      <span class="ofcs-plan-score"><b>32</b> / 35 PASSED</span>
+      <span class="ofcs-plan-score"><b>32</b> / 34 PASSED</span>
     </div>
     <div class="ofcs-track">
-      <div class="ofcs-stack" role="img" aria-label="fapi-ciba-id1-test-plan, 35 modules: 32 PASSED, 3 SKIPPED">
+      <div class="ofcs-stack" role="img" aria-label="fapi-ciba-id1-test-plan, 34 modules: 32 PASSED, 2 SKIPPED">
         <i class="pass" style="flex:32"></i>
-        <i class="skip" style="flex:3"></i>
+        <i class="skip" style="flex:2"></i>
       </div>
     </div>
     <span class="ofcs-plan-counts">
       <span><span class="ofcs-dot pass"></span><b>32</b> PASSED</span>
-      <span><span class="ofcs-dot skip"></span><b>3</b> SKIPPED</span>
+      <span><span class="ofcs-dot skip"></span><b>2</b> SKIPPED</span>
     </span>
   </div>
 </div>
@@ -323,8 +325,8 @@ Each bar is one plan on its own scale: full width is that plan's own module coun
 | `oidcc-backchannel-rp-initiated-logout-certification-test-plan` | 0 | 0 | 0 | 0 | **2** | 0 | 2 |
 | `fapi2-security-profile-id2-test-plan`     |     48 |      9 |       1 |       0 |       0 |          0 |    58 |
 | `fapi2-message-signing-id1-test-plan`      |     60 |      9 |       2 |       0 |       0 |          0 |    71 |
-| `fapi-ciba-id1-test-plan`                  |     32 |      0 |       3 |       0 |       0 |          0 |    35 |
-| **Total**                                  | **210**| **38** |  **15** |   **0** |  **6** |      **2** | **271** |
+| `fapi-ciba-id1-test-plan`                  |     32 |      0 |       2 |       0 |       0 |          0 |    34 |
+| **Total**                                  | **210**| **38** |  **14** |   **0** |  **6** |      **2** | **270** |
 :::
 
 ## What each test plan covers
@@ -386,26 +388,14 @@ The CIBA plan exercises the OpenID Connect Client-Initiated Backchannel Authenti
 
 ### How REVIEW, SKIPPED, WARNING, and FAILED categorize
 
-- <span class="ofcs-dot review"></span>**REVIEW** — the test ran, but a human reviewer must verify visual or out-of-band behaviour the harness cannot capture honestly (consent UI strings, error page screenshots, certificate chain confirmation). Not a failure.
-- <span class="ofcs-dot skip"></span>**SKIPPED** — the test depends on a feature this OP does not advertise in discovery or per-client metadata. For example, the `RS256` negative tests skip because the FAPI client metadata declares `PS256` as its signing alg, putting `RS256` out of scope for that probe. Not a failure.
-- <span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>**WARNING** — OFCS records this as a non-failed result value: the test reached a terminal PASS on its main assertions but logged an advisory the operator may want to address. The current snapshot has **0 warnings**.
-- <span class="ofcs-dot fail"></span>**FAILED** — a module did not reach the suite's expected result. In this release run, six failures are reviewed release exclusions: four arise from the permanent ES256-only signing policy and two from the deliberately subject-scoped back-channel logout metadata. The release verifier fails unless each exception is explicitly listed and unexpired.
-- <span class="ofcs-dot noverdict"></span>**No verdict** — the harness could not produce a terminal result. One current module requires an in-process signing-key rotation. The other remains waiting for a callback after an `RS256` request-object flow; the checked-in artifact does not identify which validation or harness boundary prevented that callback. Both are reviewed release exclusions.
+- <span class="ofcs-dot review"></span>**REVIEW** — the test ran, but a person has to confirm something the harness cannot see, such as the error page the OP rendered or whether a login screen appeared again. The suite uploads a screenshot placeholder and waits in `WAITING` until someone marks it reviewed in the OFCS UI; the headless runner records `REVIEW` as-is. Not a failure.
+- <span class="ofcs-dot skip"></span>**SKIPPED** — the test depends on something this OP does not advertise in discovery or per-client metadata, so the suite does not run it. For example, the `RS256` negative tests skip because the OP signs with `ES256` only and the FAPI plans register `PS256` clients. Not a failure.
+- <span class="ofcs-dot" style="background:var(--vp-c-divider)"></span>**WARNING** — the test reached a terminal PASS but logged an advisory. The current snapshot has **0 warnings**.
+- <span class="ofcs-dot fail"></span>**FAILED** — a module did not reach the result the suite expects. In this run, six failures are reviewed release exclusions: four from the permanent ES256-only signing policy and two from the deliberately subject-scoped back-channel logout metadata. The release verifier fails unless each one is listed and unexpired.
+- <span class="ofcs-dot noverdict"></span>**No verdict** — the harness could not drive the module to a terminal result. One needs a signing-key rotation in the middle of the module; the other pushes an `RS256`-signed request object, which the OP refuses before redirecting, so the suite waits for a callback that never comes. Both are reviewed release exclusions with evidence from a standalone run.
 
-### How to reproduce the conformance run yourself
-
-1. Stand up an OP with the relevant profile wired in — `op.WithProfile(profile.FAPI2Baseline)` for the security profile, `op.WithProfile(profile.FAPI2MessageSigning)` for message signing, `op.WithProfile(profile.FAPICIBA)` plus the CIBA options for FAPI-CIBA, or no `WithProfile` for the OIDC Core plan.
-2. Register the plan against an OFCS deployment. The conformance suite is operated by the OpenID Foundation; the source repo's `conformance/` directory contains plan templates and a pinned Docker image that brings up a local copy.
-3. Drive the plan. The harness pokes `/oidc/auth`, `/oidc/par`, `/oidc/token`, `/oidc/userinfo`, `/oidc/jwks`, and the rest of the discovered endpoints through every required code path, then writes a JSON snapshot you can diff against the recorded baseline.
-
-The detailed runbook (`make` targets, the JSON snapshot layout, the diff gate) is in [Reproducing the baseline yourself](/compliance/ofcs-reproduce#reproduce-baseline).
-
-## REVIEW vs FAILED — the distinction
-
-OFCS mainly reports `PASSED`, `FAILED`, `REVIEW`, and `SKIPPED`; the harness also preserves `WARNING` when OFCS emits an advisory result. **REVIEW does not mean a test failed.** It means the test wants a human operator to confirm something the automation cannot — for example, "did the OP show a login screen here?" The test runs, takes screenshots, then sits in a `WAITING` state until someone in the OFCS UI clicks "reviewed". Our headless runner records `REVIEW` when the test reached that state without erroring.
-
-::: details Why we don't auto-pass REVIEW modules
-The conformance suite gates these modules on human judgment by design. A `cmd/op-demo` running headless can't honestly upload a screenshot of "this is what my user saw"; turning the gate off would lie about what was actually checked. The harness records `REVIEW` as-is, on the understanding that paid certification would require sitting in front of the UI to clear them.
+::: details Why REVIEW modules are not auto-passed
+The suite gates these modules on human judgment by design. A headless `cmd/op-demo` cannot honestly upload a screenshot of "this is what my user saw", and turning the gate off would misstate what was checked. The harness keeps `REVIEW` as it is; certification through the OpenID Foundation would have a person clear each one in the UI.
 :::
 
 ## Modules currently FAILED — and why
@@ -428,21 +418,22 @@ Two modules the harness could not drive to a terminal result. Both are recorded 
 | Module | Plan | Why there is no verdict |
 |---|---|---|
 | `oidcc-server-rotate-keys` | `oidcc-dynamic` | The module waits for an operator to rotate the signing keys and press Start. The keyset is fixed at `op.New`, and rebuilding the provider mid-plan would drop the in-memory store holding the plan's registered client. The module stays `CONFIGURED` until the runner's idle bound. |
-| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | The module pushes an `RS256`-signed request object and waits for a successful authorization response. The recorded baseline for this run records `WAITING` with an empty result after the runner drove the request. The checked-in artifact does not identify which validation or harness boundary prevented a callback; outbound ES256-only issuance does not by itself determine inbound request-object algorithm handling, so leave the cause unclassified until a request trace is available. |
+| `oidcc-request-uri-signed-rs256` | `oidcc-dynamic` | The module pushes an `RS256`-signed request object and waits for a successful authorization response. Signing is `ES256` only, so `/auth` refuses with a pre-redirect error page and the suite is left `WAITING` for a callback the OP must not send. This is the same policy as the `oidcc-idtoken-rs256` exclusion, reaching the suite at request time instead of at registration. |
 
 ## Modules currently in REVIEW
 
-### `oidcc-basic` plan (3)
+Thirty-eight modules, all of them cases where the OP refuses or re-prompts and the suite has no callback to assert on, so it asks a person to look at the rendered screen. In each case the refusal itself is pinned by the library's own tests.
 
-| Module | What it gates |
-|---|---|
-| `oidcc-ensure-registered-redirect-uri` | Manual confirmation that the OP refused an unregistered `redirect_uri` |
-| `oidcc-max-age-1` | Manual confirmation that `max_age=1` re-prompted the user |
-| `oidcc-prompt-login` | Manual confirmation that `prompt=login` re-prompted |
+| Plan | Modules | Why a person has to look |
+|---|---|---|
+| `oidcc-basic`, `oidcc-formpost-basic` (3 each) | `oidcc-ensure-registered-redirect-uri` | An unregistered `redirect_uri` must not be redirected to, so the outcome is an error page. |
+| | `oidcc-max-age-1`, `oidcc-prompt-login` | Only a person can confirm the login screen appeared again instead of the session being reused. |
+| `oidcc-dynamic` (6) | `oidcc-ensure-redirect-uri-in-authorization-request`, `oidcc-redirect-uri-query-added`, `oidcc-redirect-uri-query-mismatch` | Same as the first row: refused without redirecting. |
+| | `oidcc-registration-logo-uri`, `oidcc-registration-policy-uri`, `oidcc-registration-tos-uri` | The suite asks a person to confirm the consent screen presents the registered URIs. Whether they render depends on the interaction driver the embedder supplies. |
+| `oidcc-rp-initiated-logout` (8) | `oidcc-rp-initiated-logout-*` | Each ends on a screen the OP renders itself — the logout confirmation, or the error page for a bad `id_token_hint` or unregistered `post_logout_redirect_uri` — because a refused logout must not redirect back to the RP. |
+| `fapi2-security-profile-id2`, `fapi2-message-signing-id1` (9 each) | the nine modules below | PAR `request_uri` refusals and request-object mismatches are refused before redirecting, leaving an error page to confirm. |
 
-### FAPI 2.0 plans (9 each, same set)
-
-These all gate on a screenshot upload of the OP's error page or a manual "is the user actually re-prompted" judgment. They run cleanly headless but stay `REVIEW` until human sign-off (the same nine names appear on both `fapi2-security-profile-id2` and `fapi2-message-signing-id1`, totalling 18 across the two plans):
+The nine FAPI 2.0 modules (the same names appear in both plans, 18 in total):
 
 - `fapi2-…-ensure-different-nonce-inside-and-outside-request-object`
 - `fapi2-…-ensure-different-state-inside-and-outside-request-object`
@@ -454,27 +445,20 @@ These all gate on a screenshot upload of the OP's error page or a manual "is the
 - `fapi2-…-par-attempt-to-use-request_uri-for-different-client`
 - `fapi2-…-state-only-outside-request-object-not-used`
 
-The OP returns the right HTTP error in every case (the negative tests pass their internal assertions); OFCS just wants a human to inspect the rendered error UI.
-
-## Modules currently in WARNING
-
-None in the current snapshot. The previous `fapi-ciba-id1-refresh-token` advisory is now a plain `PASSED` module.
-
 ## Modules currently SKIPPED — and why
 
-| Module | Reason |
-|---|---|
-| `fapi2-…-ensure-signed-client-assertion-with-RS256-fails` (×2) | The FAPI client used in the plan registers `token_endpoint_auth_signing_alg=PS256`, so OFCS skips the per-client `RS256` negative test on both fapi2 plans. |
-| `fapi2-message-signing-…-ensure-signed-request-object-with-RS256-fails` | Same — the FAPI client's `request_object_signing_alg=PS256` makes the `RS256` negative test inapplicable. |
-| `fapi-ciba-id1-ensure-request-object-signature-algorithm-is-RS256-fails` | The FAPI-CIBA client registers `request_object_signing_alg=PS256`. |
-| `fapi-ciba-id1-ensure-client-assertion-signature-algorithm-in-backchannel-authorization-request-is-RS256-fails` | Same — `token_endpoint_auth_signing_alg=PS256` on the CIBA client. |
-| `fapi-ciba-id1-ensure-client-assertion-signature-algorithm-in-token-endpoint-request-is-RS256-fails` | Same. |
-| `oidcc-ensure-request-object-with-redirect-uri` | The `oidcc-basic` plan does not enable JAR; the OP omits `request_object_signing_alg_values_supported` from discovery and OFCS skips. |
-| `oidcc-unsigned-request-object-supported-correctly-or-rejected-as-unsupported` | Same — JAR off, no `request` parameter, OFCS skips. |
+Fourteen modules. The suite decides to skip from what discovery and per-client metadata advertise, so a skip here records a deliberate omission, not a test that failed to run.
 
-::: tip "SKIPPED" is intentional, not "didn't run"
-OFCS's skip decision is a function of what discovery and per-client metadata advertise. The FAPI clients in the plan declare `PS256` as their token-endpoint-auth and request-object signing alg, so OFCS's "`RS256` should fail" probes are not applicable and the suite marks them skipped rather than running them and recording a pass.
-:::
+| Module | Plan | Reason |
+|---|---|---|
+| `fapi2-security-profile-id2-ensure-signed-client-assertion-with-RS256-fails` | both `fapi2-*` plans | The OP signs with `ES256` only and the plan's FAPI client registers `token_endpoint_auth_signing_alg=PS256`, so the `RS256` negative probe has nothing to exercise. |
+| `fapi2-security-profile-id2-ensure-signed-request-object-with-RS256-fails` | `fapi2-message-signing-id1` | Same, for `request_object_signing_alg=PS256`. (The Message Signing plan reuses the security-profile module names.) |
+| `fapi-ciba-id1-ensure-request-object-signature-algorithm-is-RS256-fails` | `fapi-ciba-id1` | The CIBA client registers `request_object_signing_alg=PS256`. |
+| `fapi-ciba-id1-ensure-client-assertion-signature-algorithm-in-token-endpoint-request-is-RS256-fails` | `fapi-ciba-id1` | Same, for `token_endpoint_auth_signing_alg=PS256`. |
+| `oidcc-ensure-request-object-with-redirect-uri`, `oidcc-unsigned-request-object-supported-correctly-or-rejected-as-unsupported` | `oidcc-basic`, `oidcc-formpost-basic` (both), `oidcc-dynamic` (first only) | Request-object modules of the non-FAPI plans. The suite skips them based on the request-object capabilities discovery advertises, and the OP never accepts `alg=none`. Signed request objects run in the FAPI plans, where JAR is mandatory. |
+| `oidcc-request-uri-unsigned` | `oidcc-dynamic` | Same family, for an unsigned object behind `request_uri`. |
+| `oidcc-idtoken-unsigned` | `oidcc-dynamic` | Asks for an unsigned ID Token. The OP signs every ID Token and does not advertise `none`. |
+| `oidcc-registration-sector-bad`, `oidcc-registration-sector-uri` | `oidcc-dynamic` | `sector_identifier_uri` modules. Pairwise subjects are opt-in (`op.WithPairwiseSubject`) and the demo runs the dynamic plan with public subjects; pairwise is covered by the library's own tests and by [`examples/34-pairwise-saas`](https://github.com/libraz/go-oidc-provider/tree/main/examples/34-pairwise-saas). |
 
 ## Reproducing the baseline yourself
 
@@ -486,30 +470,22 @@ make conformance-baseline LABEL=local-check
 ls conformance/baselines/   # JSON snapshot lands here
 ```
 
-The harness:
+`make conformance-up` generates certificates, starts the OFCS containers at `https://localhost:8443`, builds and starts `cmd/op-demo` at `https://127.0.0.1:9443`, and seeds the nine plans through the OFCS REST API. `make conformance-baseline` then drives every module and records a deterministic JSON file. `make conformance-baseline-diff` exits non-zero on any module that **lost** `PASSED` between two snapshots; that is the regression gate the project uses before merging security-relevant changes.
 
-1. Generates self-signed RSA-2048 certs (`scripts/conformance.sh certs`).
-2. Brings up the OFCS Docker stack at `https://localhost:8443`.
-3. Builds and runs `cmd/op-demo` at `https://127.0.0.1:9443`.
-4. Seeds the OFCS plans via the REST API. The harness scaffolds nine plans; the latest status table above records all nine.
-5. Records pass/fail per module to a deterministic JSON file.
-
-`make conformance-baseline-diff` exits non-zero on any module that **lost** `PASSED` between two snapshots — that is the regression gate the project uses pre-merge for security-relevant changes.
+Which `op.With...` options each plan needs, the plan-to-flag table, and the release gate are in [Reproducing the OFCS run](/compliance/ofcs-reproduce). The baseline-diff cycle is under [Capturing and diffing a baseline](/compliance/ofcs-reproduce#reproduce-baseline).
 
 ## What FAPI 2.0 means in this codebase
 
-`op.WithProfile(profile.FAPI2Baseline)` activates the configuration the two `fapi2-*` plans are built around:
+`op.WithProfile(profile.FAPI2Baseline)` activates the configuration the two `fapi2-*` plans are built around. The full explanation is in [FAPI 2.0](/concepts/fapi); the pieces the plans assert are:
 
-- `feature.PAR` (auto-enabled by `FAPI2Baseline`) — `/oidc/par` becomes routable; `request_uri` accepted at `/oidc/auth`
-- `feature.JAR` (auto-enabled by `FAPI2Baseline`) — `request` / `request_uri` validated as signed JWTs
-- `feature.JARM` (additionally auto-enabled by `FAPI2MessageSigning`) — authorization responses signed as JWTs
-- Sender-constrained access tokens — the profile imposes a DPoP-or-mTLS requirement. If the embedder explicitly enables `feature.MTLS` (`cnf.x5t#S256`), that satisfies the requirement and suppresses the DPoP default. Otherwise `op.New` selects `feature.DPoP` (`cnf.jkt`) as the canonical default, so a plain `op.WithProfile(profile.FAPI2Baseline)` still boots with sender-constrained access tokens. Discovery advertises `dpop_signing_alg_values_supported: ES256, EdDSA, PS256` when DPoP is active.
-- JOSE alg allow-list locked to `RS256 / PS256 / ES256 / EdDSA` codebase-wide; `HS*` and `none` are **structurally** unreachable (see `internal/jose/alg.go`)
-- `token_endpoint_auth_methods_supported` intersected with the FAPI production path (`private_key_jwt`)
-- `redirect_uri` exact-string match enforced
-- per-client `RequestObjectSigningAlg` / `TokenEndpointAuthSigningAlg` narrowing pins each FAPI client to `PS256` (or `ES256` / `EdDSA`); the discovery doc still advertises the codebase-wide list
+- `feature.PAR` and `feature.JAR`, both auto-enabled by `FAPI2Baseline`: `/oidc/par` becomes routable, `request` / `request_uri` are validated as signed JWTs.
+- `feature.JARM`, additionally auto-enabled by `FAPI2MessageSigning`: authorization responses are signed JWTs.
+- Sender-constrained access tokens. The profile requires DPoP or mTLS. If the embedder enables `feature.MTLS` (`cnf.x5t#S256`), that satisfies it and the DPoP default is not added. Otherwise `op.New` selects `feature.DPoP` (`cnf.jkt`), so a plain `op.WithProfile(profile.FAPI2Baseline)` still boots with sender-constrained tokens. With DPoP active, discovery advertises `dpop_signing_alg_values_supported: ES256, EdDSA, PS256`.
+- A JOSE algorithm allow-list of `RS256 / PS256 / ES256 / EdDSA` across the codebase; `HS*` and `none` are structurally unreachable (see `internal/jose/alg.go`).
+- `token_endpoint_auth_methods_supported` narrowed to the FAPI production path (`private_key_jwt`), and `redirect_uri` exact-string match.
+- Per-client `RequestObjectSigningAlg` / `TokenEndpointAuthSigningAlg` pin each FAPI client to `PS256` (or `ES256` / `EdDSA`); discovery still advertises the codebase-wide list.
 
-If you set conflicting options after `WithProfile`, `op.New(...)` returns a build-time error rather than letting a partial-FAPI configuration escape into production.
+If you set options that conflict with the profile after `WithProfile`, `op.New(...)` returns a build-time error instead of letting a partial-FAPI configuration reach production.
 
 ## Where the harness lives
 
@@ -517,16 +493,17 @@ If you set conflicting options after `WithProfile`, `op.New(...)` returns a buil
 |---|---|
 | `conformance/README.md` | Operator runbook |
 | `conformance/plans/*.json` | Plan templates (server / client / resource blocks) |
-| `conformance/docker-compose.yml` | Current OFCS image pin (`release-v5.3.1`) + JKS truststore wiring |
-| `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` |
-| `tools/conformance/ofcs.py` | REST client + headless drive script |
+| `conformance/docker-compose.yml` | Current OFCS image pin (`release-v5.3.3`) + JKS truststore wiring |
+| `conformance/release-exclusions.json` | Reviewed, expiry-bound exceptions the release gate accepts |
+| `scripts/conformance.sh` | `certs` / `ofcs-up` / `op-up` / `seed-plans` / `drive` / `batch` / `baseline` / `baseline-diff` / `release-verify` |
+| `tools/conformance/` | REST client, headless drive script, baseline and release-verify logic (Python) |
 | `conformance/baselines/*.json` | Captured snapshots (gitignored — environment-specific) |
 
 ## Caveats worth naming
 
-- **Plan suite version.** The current default pin is `release-v5.3.1`. Because the run was measured immediately before the release tag, this page treats it as release-equivalent to that pin; the retained snapshot does not record the actual image tag or digest.
-- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it. The retained snapshot does not record the actual image tag or digest.
+- **Plan suite version.** The run behind this page is labelled `ofcs-v5.3.3`, and the current default pin in `docker-compose.yml` is `release-v5.3.3`. The JSON artifact does not record the image tag or digest itself.
+- **Headless drive.** The drive script reverse-engineers the OFCS REST surface; OFCS does not document it.
 - **No real RP cert.** The mTLS plan slots use generated self-signed certs at `conformance/certs/` so the plan can be instantiated. No real CA chain is exercised.
 - **Single OP instance.** Cross-instance behaviour (e.g. token introspection across two OPs sharing a store) is exercised by `test/scenarios`, not OFCS.
 
-The conformance harness sits next to an in-process Spec Scenario Suite under `test/scenarios/`. The two suites cover different layers — OFCS runs end-to-end against a live OP via HTTP, the scenario suite drives the same protocol invariants in-process — and both must be passing before security-relevant changes merge.
+The conformance harness sits next to an in-process Spec Scenario Suite under `test/scenarios/`. OFCS runs end-to-end against a live OP over HTTP; the scenario suite drives the same protocol invariants in-process. Both must pass before security-relevant changes merge.

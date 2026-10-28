@@ -6,38 +6,38 @@ pageClass: rfc-matrix-page pg-compliance-rfc-matrix
 
 # RFC compliance matrix
 
-Every standard the library actively cites in its code, mapped to the package that implements it and the option / feature that gates it.
+Every standard the library cites in its code, mapped to the package that implements it and the option or feature that gates it. Read the status column first (see the legend below), then the parenthesis: it names what is and is not covered.
 
 <figure class="fig">
   <div class="fig-head">How a specification is classified</div>
-  <svg class="fig-svg" role="img" aria-labelledby="rfc-matrix-shape-title" viewBox="0 0 960 216" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="rfc-matrix-shape-title" viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg">
     <title id="rfc-matrix-shape-title">Every specification in the matrix is first sorted by whether it is the OP's concern at all. What is the OP's concern is then marked full, partial or planned; what is not is marked out of scope or refused.</title>
-    <rect class="fg-box" x="36" y="70" width="264" height="76" rx="8"/>
-    <text class="fg-t2" x="56" y="98">A specification</text>
-    <text class="fg-mxs" x="56" y="120">RFC · OIDC · FAPI</text>
-    <text class="fg-xs" x="56" y="138">one row in the matrix</text>
-    <path class="fg-edge" d="M304,108 H336" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="340" y="70" width="264" height="76" rx="8"/>
-    <text class="fg-t2 fg-accent" x="360" y="98">Is it the OP's concern?</text>
-    <text class="fg-xs" x="360" y="120">some specs describe what an RP</text>
-    <text class="fg-xs" x="360" y="138">or a resource server must do</text>
-    <path class="fg-leader" d="M608,108 H624 M624,62 V162"/>
-    <path class="fg-edge fg-edge--thin" d="M624,62 H640" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M624,162 H640" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="644" y="28" width="280" height="68" rx="8"/>
-    <text class="fg-t2" x="662" y="50">Yes — the OP's concern</text>
-    <rect class="fg-box fg-box--ok" x="662" y="60" width="62" height="22" rx="5"/>
-    <text class="fg-mxs" x="674" y="75">full</text>
-    <rect class="fg-box fg-box--warn" x="732" y="60" width="76" height="22" rx="5"/>
-    <text class="fg-mxs" x="744" y="75">partial</text>
-    <rect class="fg-box fg-box--accent" x="816" y="60" width="88" height="22" rx="5"/>
-    <text class="fg-mxs" x="828" y="75">planned</text>
-    <rect class="fg-box" x="644" y="128" width="280" height="68" rx="8"/>
-    <text class="fg-t2" x="662" y="150">No — outside the OP</text>
-    <rect class="fg-box fg-box--muted" x="662" y="160" width="118" height="22" rx="5"/>
-    <text class="fg-mxs" x="674" y="175">out of scope</text>
-    <rect class="fg-box fg-box--danger" x="788" y="160" width="92" height="22" rx="5"/>
-    <text class="fg-mxs" x="800" y="175">refused</text>
+    <!-- specification -->
+    <rect class="fg-box" x="32" y="88" width="224" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="116">A specification</text>
+    <text class="fg-m" x="48" y="140">RFC · OIDC · FAPI</text>
+    <text class="fg-s" x="48" y="164">one row in the matrix</text>
+    <path class="fg-edge" d="M256,136 H296" marker-end="url(#fg-a)"/>
+    <!-- the question -->
+    <rect class="fg-box fg-box--accent" x="296" y="88" width="272" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="312" y="116">Is it the OP's concern?</text>
+    <text class="fg-s" x="312" y="140">some specs tell an RP or a</text>
+    <text class="fg-s" x="312" y="164">resource server what to do</text>
+    <!-- branches -->
+    <path class="fg-leader" d="M568,136 H592 M592,72 V200"/>
+    <path class="fg-edge fg-edge--thin" d="M592,72 H616" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M592,200 H616" marker-end="url(#fg-a)"/>
+    <!-- OP concern -->
+    <rect class="fg-box" x="616" y="24" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="632" y="52">Yes — the OP's concern</text>
+    <rect class="fg-pill fg-pill--ok" x="632" y="72" width="64" height="32" rx="16"/><text class="fg-s fg-ok" x="664" y="93" text-anchor="middle">full</text>
+    <rect class="fg-pill fg-pill--warn" x="704" y="72" width="96" height="32" rx="16"/><text class="fg-s fg-warn" x="752" y="93" text-anchor="middle">partial</text>
+    <rect class="fg-pill" x="808" y="72" width="96" height="32" rx="16"/><text class="fg-s fg-dim" x="856" y="93" text-anchor="middle">planned</text>
+    <!-- not OP concern -->
+    <rect class="fg-box" x="616" y="152" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="632" y="180">No — outside the OP</text>
+    <rect class="fg-pill" x="632" y="200" width="136" height="32" rx="16"/><text class="fg-s fg-dim" x="700" y="221" text-anchor="middle">out of scope</text>
+    <rect class="fg-pill fg-pill--danger" x="776" y="200" width="96" height="32" rx="16"/><text class="fg-s fg-danger" x="824" y="221" text-anchor="middle">refused</text>
   </svg>
   <figcaption class="fig-note">"Out of scope" and "refused" are different claims. The first says the specification is somebody else's job; the second says it is the OP's job and this OP declines it on purpose, with the reasoning recorded.</figcaption>
 </figure>
@@ -56,7 +56,7 @@ These labels describe implementation coverage, not OpenID Foundation certificati
 
 | Standard | Status | Where |
 |---|---|---|
-| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span> (`response_type=code` only; Aggregated and Distributed claim types §5.6.2 are not emitted; pairwise sub §8.1 is now wired via `op.WithPairwiseSubject`. See "Out of scope by design" below.) | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo`, `internal/sector` |
+| **OpenID Connect Core 1.0** | <span class="status-pill partial">partial</span> (`response_type=code` only; Aggregated and Distributed claim types §5.6.2 are not emitted; pairwise sub §8.1 is supported through `op.WithPairwiseSubject`. See "Out of scope by design" below.) | `op/`, `internal/authorize`, `internal/tokenendpoint`, `internal/userinfo`, `internal/sector` |
 | **OpenID Connect Discovery 1.0** | <span class="status-pill partial">partial</span> (metadata endpoint is implemented, but `id_token_signing_alg_values_supported` omits `RS256`, which Discovery requires) | `internal/discovery` |
 | **OpenID Connect Dynamic Client Registration 1.0** | <span class="status-pill partial">partial</span> (core flow, `sector_identifier_uri` fetch, `application_type=web` / `=native` redirect rules, JWKs / pairwise / response-type cross-checks, PUT reserved-field rejection, `post_logout_redirect_uris` round-trip, and the five JWE alg/enc encrypted-response families are enforced; `client_secret` is intentionally omitted from `GET /register/{id}` responses, `software_statement` is not accepted) | `internal/registrationendpoint` |
 | **OpenID Connect RP-Initiated Logout 1.0** | <span class="status-pill full">full</span> | `internal/endsession` |
@@ -72,30 +72,30 @@ These labels describe implementation coverage, not OpenID Foundation certificati
 | **RFC 6749** OAuth 2.0 Framework | <span class="status-pill partial">partial</span> (authorization-code, refresh-token, and client-credentials surfaces; implicit and password grants are intentionally not implemented) | `op/`, `internal/authorize`, `internal/tokenendpoint` |
 | **RFC 6750** Bearer Token Usage | <span class="status-pill partial">partial</span> (OP-issued bearer tokens and OP-hosted resource endpoints such as UserInfo / introspection; general RS challenge behaviour belongs to resource servers) | `internal/tokens`, `internal/userinfo`, `internal/introspectendpoint` |
 | **RFC 6819** Threat Model & Security Considerations | <span class="status-pill partial">partial</span> (security guidance applied across the OP; not a standalone protocol surface) | whole codebase |
-| **RFC 7009** Token Revocation | <span class="status-pill full">full</span> (gated by `feature.Revoke`) | `internal/revokeendpoint` |
+| **RFC 7009** Token Revocation | <span class="status-pill full">full</span> (gated by `feature.Revoke`; revoking a refresh token revokes its whole rotation chain however long it has grown, plus the grant's access tokens; the user's other refresh chains on the same client stay usable) | `internal/revokeendpoint` |
 | **RFC 7521** Assertion Framework | <span class="status-pill partial">partial</span> (`private_key_jwt` client authentication only; assertion grants and `client_secret_jwt` are intentionally not implemented) | `internal/clientauth` |
-| **RFC 7523** JWT Bearer Assertions for Client Auth | <span class="status-pill partial">partial</span> (`private_key_jwt`; JWT bearer authorization grants and `client_secret_jwt` are not implemented, and `client_secret_jwt` is rejected at registration with `invalid_client_metadata`) | `internal/clientauth` |
-| **RFC 7591** Dynamic Client Registration | <span class="status-pill partial">partial</span> (gated by `feature.DynamicRegistration`; `software_statement` is rejected with `invalid_software_statement`) | `internal/registrationendpoint` |
+| **RFC 7523** JWT Bearer Assertions for Client Auth | <span class="status-pill partial">partial</span> (`private_key_jwt`; an assertion with an empty or over-long `jti` is rejected, and a client JWKS fetch fault answers 503 instead of `invalid_client`. JWT bearer authorization grants and `client_secret_jwt` are not implemented, and `client_secret_jwt` is rejected at registration with `invalid_client_metadata`) | `internal/clientauth` |
+| **RFC 7591** Dynamic Client Registration | <span class="status-pill partial">partial</span> (gated by `feature.DynamicRegistration`; `software_statement` is rejected with `invalid_software_statement`; a client record carrying both `jwks` and `jwks_uri` is refused on every surface, as §2 forbids the pair) | `internal/registrationendpoint` |
 | **RFC 7592** DCR Management | <span class="status-pill partial">partial</span> (read / update / delete; PUT omission resets to server defaults rather than deleting fields, and the response only re-emits `client_secret` on a `none` → confidential auth-method upgrade or an explicit rotation request) | `internal/registrationendpoint` |
 | **RFC 7636** PKCE | <span class="status-pill full">full</span> (only `S256`; `plain` refused) | `internal/pkce` |
-| **RFC 7662** Token Introspection | <span class="status-pill full">full</span> (gated by `feature.Introspect`) | `internal/introspectendpoint` |
+| **RFC 7662** Token Introspection | <span class="status-pill full">full</span> (gated by `feature.Introspect`; an active refresh token reports no `token_type`, so a resource server cannot mistake it for an access token) | `internal/introspectendpoint` |
 | **RFC 7800** Confirmation Methods (`cnf`) | <span class="status-pill full">full</span> | `internal/dpop`, `internal/mtls`, `internal/tokens` |
 | **RFC 8252** OAuth 2.0 for Native Apps | <span class="status-pill partial">partial</span> (OP-side native redirect / loopback hardening; client-app behaviour is out of scope) | `internal/registrationendpoint`, `internal/authorize` |
 | **RFC 8414** Authorization Server Metadata | <span class="status-pill full">full</span> | `internal/discovery` |
 | **RFC 8485** Vectors of Trust | <span class="status-pill partial">partial</span> (consumed via ACR/AAL mapping) | `op/aal.go`, `op/acr.go` |
-| **RFC 8628** Device Authorization Grant | <span class="status-pill full">full</span> (gated by `op.WithDeviceCodeGrant`; `slow_down` ladder persisted atomically with `LastPolledAt`; `op/devicecodekit` ships the brute-force gate + revoke audit hook) | `internal/devicecode`, `internal/devicecodeendpoint`, `op/devicecodekit` |
-| **RFC 8693** OAuth 2.0 Token Exchange | <span class="status-pill full">full</span> (gated by `op.RegisterTokenExchange`; act chain mandatory whenever actor differs from subject; cnf rebinding to request's verified DPoP / mTLS) | `internal/customgrant/tokenexchange` |
+| **RFC 8628** Device Authorization Grant | <span class="status-pill full">full</span> (gated by `op.WithDeviceCodeGrant`; `slow_down` ladder persisted atomically with `LastPolledAt`; redemption records a `store.Grant`, so revocation and pairwise `/userinfo` reach the tokens; `op/devicecodekit` ships the brute-force gate and a `Revoke` helper that cascades under the grant and, given `Deps.Grants`, deletes the grant record) | `internal/devicecode`, `internal/devicecodeendpoint`, `op/devicecodekit` |
+| **RFC 8693** OAuth 2.0 Token Exchange | <span class="status-pill full">full</span> (gated by `op.RegisterTokenExchange`; `act` chain mandatory whenever actor differs from subject, nesting the subject_token's own chain up to five levels; issued tokens sit under the subject_token's grant, so revoking it revokes them; cnf rebinding to the request's verified DPoP / mTLS) | `internal/customgrant/tokenexchange` |
 | **RFC 8705** OAuth 2.0 mTLS Client Auth & Cert-Bound Tokens | <span class="status-pill partial">partial</span> (`feature.MTLS` wires certificate-bound access tokens and `mtls_endpoint_aliases`; token endpoint `tls_client_auth` / `self_signed_tls_client_auth` dispatch is not wired) | `internal/mtls` |
 | **RFC 8707** Resource Indicators | <span class="status-pill partial">partial</span> (canonicalisation and client allow-list enforcement across authorize / token / device / CIBA; built-in grants currently narrow most issuance paths to a single resource value) | `internal/resourceindicator`, `internal/authorize`, `internal/tokenendpoint`, `internal/devicecodeendpoint`, `internal/cibaendpoint` |
 | **RFC 8725** JWT Best Current Practices | <span class="status-pill full">full</span> (alg allow-list, type checks) | `internal/jose` |
-| **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill partial">partial</span> (JWT issuance is ES256-only, while §2.1 requires RS256 support; the verifier also accepts tokens without the §2.2 required `jti`) | `internal/tokens` |
+| **RFC 9068** JWT Profile for Access Tokens | <span class="status-pill partial">partial</span> (JWT issuance is ES256-only, while §2.1 requires RS256 support; the verifier requires `jti` only when the revocation strategy keys on it, so with strategy `None` it accepts tokens without the §2.2 required claim) | `internal/tokens` |
 | **RFC 9101** JAR (JWT-Secured Authorization Request) | <span class="status-pill full">full</span> (gated by `feature.JAR`) | `internal/jar` |
 | **RFC 9126** PAR (Pushed Authorization Requests) | <span class="status-pill full">full</span> (gated by `feature.PAR`) | `internal/parendpoint` |
 | **RFC 9207** OAuth 2.0 Authorization Server Issuer Identifier | <span class="status-pill full">full</span> | `internal/authorize` (`iss` parameter on the response) |
-| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill full">full</span> (gated by `op.WithAuthorizationDetailTypes`; validated at `/authorize`, `/par`, `/token`, persisted on the grant, echoed on JWT access tokens and introspection, advertised in discovery) | `internal/authorizationdetails`, `op/authorization_details.go` |
+| **RFC 9396** Rich Authorization Requests (`authorization_details`) | <span class="status-pill full">full</span> (gated by `op.WithAuthorizationDetailTypes`; validated at `/auth`, `/par`, `/token`, persisted with each authorization code, refresh chain and access token so a later authorization cannot change them, echoed on JWT access tokens and introspection, advertised in discovery) | `internal/authorizationdetails`, `op/authorization_details.go` |
 | **RFC 9449** DPoP | <span class="status-pill full">full</span> incl. §8 nonce flow (gated by `feature.DPoP`) | `internal/dpop`, `op.WithDPoPNonceSource` |
 | **RFC 9470** OAuth 2.0 Step Up Authentication Challenge | <span class="status-pill full">full</span> (OP honours `acr_values` / `max_age` reauthentication via ACR rules; `op.StepUpChallenge` builds the resource-server `WWW-Authenticate` challenge the embedder's RS returns) | `op/rule.go` (`RuleACR`), `op/stepup.go` |
-| **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill partial">partial</span> (OP-side BCP posture; resource-server and client-side requirements remain with embedders) | whole codebase |
+| **RFC 9700** OAuth 2.0 Security Best Current Practice | <span class="status-pill partial">partial</span> (OP-side BCP posture, including refresh-token rotation with replay cascade per §2.2.2; resource-server and client-side requirements remain with embedders) | whole codebase |
 | **RFC 9701** JWT Response for OAuth 2.0 Token Introspection | <span class="status-pill full">full</span> (signed JWT default; JWE-wrapped per client `introspection_encrypted_response_alg` / `_enc` metadata) | `internal/introspectendpoint`, `internal/jose` |
 | **RFC 9728** OAuth 2.0 Protected Resource Metadata | <span class="status-pill full">full</span> (gated by `op.WithProtectedResources`; served at `/.well-known/oauth-protected-resource` with the issuer stamped into `authorization_servers`) | `internal/protectedresource`, `op/protected_resource.go` |
 
@@ -136,11 +136,13 @@ The profile enumeration also carries `profile.Baseline`, which is not a FAPI pro
 | RFC | Use |
 |---|---|
 | **RFC 1918** | Private-network deny-list for back-channel logout SSRF defense |
+| **RFC 2045** | Case-insensitive media-type comparison for request-object `typ` |
 | **RFC 2606** | Reserved example domains in tests / examples |
 | **RFC 3986** | URI parsing |
 | **RFC 4122** | UUIDv4 generation |
 | **RFC 4226** | HOTP building block used by the TOTP authenticator |
 | **RFC 4514** | DN handling for mTLS subject DN |
+| **RFC 4647** | Language-tag lookup when selecting a locale bundle |
 | **RFC 4648** | Base64url encoding |
 | **RFC 5280** | X.509 cert validation |
 | **RFC 5321** | SMTP address length bounds for email OTP inputs |
@@ -155,6 +157,7 @@ The profile enumeration also carries `profile.Baseline`, which is not a FAPI pro
 | **RFC 8176** | AMR values registry |
 | **RFC 8259** | JSON |
 | **RFC 9110** | HTTP semantics |
+| **RFC 9325** | TLS recommendations; `op.FAPITLSConfig` keeps TLS 1.3 enabled alongside the FAPI TLS 1.2 cipher list |
 
 ## Out of scope by design
 
@@ -186,4 +189,4 @@ cd go-oidc-provider
 grep -rhoE 'RFC [0-9]+' op/ internal/ | sort -u
 ```
 
-The list above mirrors the output of that command, with the ones that are normative-for-the-library called out and the ones that are incidental references rolled up in "Other".
+The tables above follow the output of that command: standards the library implements get their own rows, and incidental references are collected under "Other RFCs the library cites".
