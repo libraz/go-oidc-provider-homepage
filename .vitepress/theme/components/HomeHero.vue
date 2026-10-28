@@ -22,9 +22,9 @@ const copy = computed(() =>
         secondaryWhy: { text: 'go-oidc-provider とは', link: '/ja/why' },
         trust: [
           'FAPI 2.0 BASELINE',
-          'OFCS 210 PASSED / 全 271 モジュール · 9 プラン',
+          'OFCS 210 PASSED / 全 270 モジュール · 9 プラン',
           'APACHE-2.0',
-          'GO ≥ 1.25'
+          'GO ≥ 1.26'
         ],
         codeLabel: 'main.go',
         codeLang: 'GO'
@@ -42,9 +42,9 @@ const copy = computed(() =>
         secondaryWhy: { text: 'Why this library', link: '/why' },
         trust: [
           'FAPI 2.0 BASELINE',
-          'OFCS 210 PASSED / 271 MODULES · 9 PLANS',
+          'OFCS 210 PASSED / 270 MODULES · 9 PLANS',
           'APACHE-2.0',
-          'GO ≥ 1.25'
+          'GO ≥ 1.26'
         ],
         codeLabel: 'main.go',
         codeLang: 'GO'

@@ -6,39 +6,76 @@ description: 既存の Go アプリに http.Handler として OIDC Provider（Au
 pageClass: pg-index
 ---
 
-<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="home-embed-title">go-oidc-provider は既存の Go アプリに http.Handler として組み込み、OP エンドポイント、ストア、ログ、鍵をアプリ側の運用基盤に接続する。</title>
-  <rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
-  <text class="home-text" x="112" y="124" text-anchor="middle">既存 Go アプリ</text>
-  <text class="home-sub" x="112" y="146" text-anchor="middle">router / middleware</text>
+<figure class="fig">
+  <div class="fig-head">プロバイダはアプリの中で動くハンドラ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="home-embed-title" viewBox="0 0 1440 472" xmlns="http://www.w3.org/2000/svg">
+    <title id="home-embed-title">クライアントは HTTPS で OpenID Provider を呼び出す。プロバイダは http.Handler で、Go アプリが自分のルータの /oidc 配下にマウントする。discovery・JWKS・認可・トークン・userinfo・ログアウトのエンドポイントは常に提供し、PAR・introspection・失効・登録・デバイス・CIBA は機能を有効にしたときに加わる。ストレージ・署名鍵・ログインフローには op.New に渡したオプションを通してアクセスする。</title>
+    <!-- 1440-wide viewBox: the landing column is ~1.6x a docs column, so this keeps the docs type scale at full width -->
+    <text class="fg-lbl" x="32" y="52">クライアント</text>
+    <rect class="fg-box" x="32" y="72" width="304" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="100">Web アプリ (RP)</text>
+    <text class="fg-mxs fg-dim" x="48" y="124">confidential client</text>
+    <text class="fg-xs fg-faint" x="48" y="148">認可コード + PKCE</text>
+    <path class="fg-edge" d="M336,120 H430" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="32" y="200" width="304" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="228">SPA・モバイル・CLI</text>
+    <text class="fg-mxs fg-dim" x="48" y="252">public client</text>
+    <text class="fg-xs fg-faint" x="48" y="276">PKCE・デバイスコード</text>
+    <path class="fg-edge" d="M336,248 H430" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="32" y="328" width="304" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="356">リソースサーバ</text>
+    <text class="fg-mxs fg-dim" x="48" y="380">アクセストークンを検証</text>
+    <text class="fg-xs fg-faint" x="48" y="404">JWKS・/introspect</text>
+    <path class="fg-edge" d="M336,376 H430" marker-end="url(#fg-a)"/>
+    <!-- application boundary -->
+    <rect class="fg-frame fg-frame--dashed" x="400" y="24" width="1008" height="424" rx="8"/>
+    <text class="fg-lbl" x="424" y="52">あなたの Go アプリ</text>
+    <text class="fg-lbl" x="1384" y="52" text-anchor="end">渡すオプション</text>
+    <!-- provider -->
+    <rect class="fg-box fg-box--accent" x="432" y="72" width="576" height="352" rx="8"/>
+    <text class="fg-t fg-accent" x="448" y="100">op.New(…)</text>
+    <text class="fg-mxs fg-dim" x="448" y="124">/oidc にマウントする http.Handler</text>
+    <path class="fg-rule" d="M448,144 H992"/>
+    <text class="fg-lbl" x="448" y="176">常設</text>
+    <text class="fg-m" x="448" y="204">/auth</text>
+    <text class="fg-m" x="592" y="204">/jwks</text>
+    <text class="fg-m" x="448" y="228">/token</text>
+    <text class="fg-m" x="592" y="228">/end_session</text>
+    <text class="fg-m" x="448" y="252">/userinfo</text>
+    <text class="fg-m" x="448" y="276">/.well-known/openid-configuration</text>
+    <path class="fg-rule" d="M776,160 V320"/>
+    <text class="fg-lbl" x="800" y="176">有効化したとき</text>
+    <text class="fg-m fg-dim" x="800" y="204">/par</text>
+    <text class="fg-m fg-dim" x="800" y="228">/introspect</text>
+    <text class="fg-m fg-dim" x="800" y="252">/revoke</text>
+    <text class="fg-m fg-dim" x="800" y="276">/register</text>
+    <text class="fg-m fg-dim" x="800" y="300">/device_authorization</text>
+    <path class="fg-rule" d="M448,336 H992"/>
+    <text class="fg-lbl" x="448" y="368">組み込み</text>
+    <text class="fg-m" x="448" y="396">PKCE · PAR · JAR · JARM · DPoP · mTLS · FAPI 2.0 プロファイル</text>
+    <!-- supplied through options -->
+    <path class="fg-edge" d="M1008,120 H1070" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="1072" y="72" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="1088" y="100">ストア</text>
+    <text class="fg-mxs fg-accent" x="1088" y="124">WithStore</text>
+    <text class="fg-xs fg-faint" x="1088" y="148">inmem · SQL · DynamoDB</text>
+    <path class="fg-edge" d="M1008,248 H1070" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="1072" y="200" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="1088" y="228">署名鍵</text>
+    <text class="fg-mxs fg-accent" x="1088" y="252">WithKeyset</text>
+    <text class="fg-xs fg-faint" x="1088" y="276">ES256 · ローテーション</text>
+    <path class="fg-edge" d="M1008,376 H1070" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="1072" y="328" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="1088" y="356">ログインフロー</text>
+    <text class="fg-mxs fg-accent" x="1088" y="380">WithLoginFlow</text>
+    <text class="fg-xs fg-faint" x="1088" y="404">password · TOTP · passkey</text>
+  </svg>
+  <figcaption class="fig-note">別のサーバを立てるわけではなく、net/http・chi・gin など任意のルータにマウントします。ストレージ・鍵・ログインはアプリ側の部品で、プロバイダはそれを呼び出します。ログとメトリクスも同じく <code>WithLogger</code> と <code>WithPrometheus</code> で渡します。</figcaption>
+</figure>
 
-  <rect class="home-main" x="286" y="74" width="190" height="118" rx="8"/>
-  <text class="home-text" x="381" y="108" text-anchor="middle">OIDC Provider</text>
-  <text class="home-sub" x="381" y="130" text-anchor="middle">http.Handler</text>
-  <text class="home-sub" x="381" y="152" text-anchor="middle">/oidc/auth /oidc/token</text>
-  <text class="home-sub" x="381" y="170" text-anchor="middle">/oidc/jwks</text>
+## 代表的なユースケース
 
-  <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
-  <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
-  <rect class="home-box" x="570" y="112" width="154" height="56" rx="8"/>
-  <text class="home-text" x="647" y="146" text-anchor="middle">Keyset</text>
-  <rect class="home-box" x="570" y="190" width="154" height="56" rx="8"/>
-  <text class="home-text" x="647" y="224" text-anchor="middle">ログ / 監査</text>
-
-  <path class="home-flow" d="M190 133 H286"/>
-  <path class="home-flow" d="M277 129 L286 133 L277 137"/>
-  <text class="home-sub halo" x="238" y="137" text-anchor="middle">マウント</text>
-  <path class="home-flow" d="M476 116 C520 96 530 62 570 62"/>
-  <path class="home-flow" d="M561 58 L570 62 L561 66"/>
-  <path class="home-flow" d="M476 140 H570"/>
-  <path class="home-flow" d="M561 136 L570 140 L561 144"/>
-  <path class="home-flow" d="M476 164 C520 184 530 218 570 218"/>
-  <path class="home-flow" d="M561 214 L570 218 L561 222"/>
-</svg>
-
-## 代表的な使い方
-
-本ライブラリでよく作る構成を 5 つ挙げます。いずれもリポジトリに動作する実例があります。
+代表的な構成を 5 つ挙げます。いずれも upstream リポジトリに動作する実例があります。
 
 ### 1. 最小構成の OP を立ち上げる
 
@@ -97,7 +134,7 @@ handler, _ := op.New(
 ```
 
 ::: tip プロファイル 1 行で済む理由
-`op.WithProfile(profile.FAPI2Baseline)` は、本ライブラリの FAPI プロファイル方針をまとめて適用します。`PAR` と `JAR` を有効化し、`token_endpoint_auth_methods_supported` をプロファイルの許可リストに絞り込み、mTLS を明示していない場合は DPoP を既定で選びます。OP 発行 JWT の署名は ES256 を使います。FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、送信者制約付きトークンです。JAR と ES256 固定は本ライブラリのプロファイル設定です。詳細は [使い方: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
+`op.WithProfile(profile.FAPI2Baseline)` は、本ライブラリの FAPI プロファイル方針をまとめて適用します。`PAR` と `JAR` を有効化し、`token_endpoint_auth_methods_supported` をプロファイルの許可リストに絞り込み、mTLS を明示していない場合は DPoP を既定で選びます。OP 発行 JWT の署名は ES256 を使います。FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、送信者制約付きトークンです。JAR と ES256 固定は本ライブラリのプロファイル設定です。詳細は [ユースケース: FAPI 2.0 Baseline](/ja/use-cases/fapi2-baseline) を参照してください。
 :::
 
 ### 3. バックエンド向けトークンを発行する（エンドユーザなし）
@@ -119,7 +156,7 @@ handler, _ := op.New(
 )
 ```
 
-> [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) と [使い方: client_credentials](/ja/use-cases/client-credentials) を参照。
+> [`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) と [ユースケース: client_credentials](/ja/use-cases/client-credentials) を参照。
 
 ### 4. ログイン・同意・ログアウトを SPA から扱う
 
@@ -141,7 +178,7 @@ handler, _ := op.New(
 ```
 
 ::: info UI オプション
-`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は、OP 側で SPA の入口を公開する構成、独自の同意テンプレート、独自のアカウント選択テンプレートを扱うためのオプションです。SPA の配信を自前のルータで行いたい場合は `interaction.JSONDriver` も使えます。詳細は [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) と [使い方: SPA](/ja/use-cases/spa-custom-interaction) を参照してください。
+`op.WithSPAUI` / `op.WithConsentUI` / `op.WithChooserUI` は、OP 側で SPA の入口を公開する構成、独自の同意テンプレート、独自のアカウント選択テンプレートを扱うためのオプションです。SPA の配信を自前のルータで行いたい場合は `interaction.JSONDriver` も使えます。詳細は [`examples/10-react-login`](https://github.com/libraz/go-oidc-provider/tree/main/examples/10-react-login) と [ユースケース: SPA](/ja/use-cases/spa-custom-interaction) を参照してください。
 :::
 
 ### 5. 永続ストアと揮発ストアを分離する
@@ -162,10 +199,9 @@ volatile, _ := oidcredis.New(context.Background(),
   oidcredis.WithRedisAuth(redisUser, redisPassword),
 )
 combined, _ := composite.New(
-  composite.WithDefault(durable),
+  composite.WithDefault(durable), // 残りはすべて永続側。消費済み JTI のマーカーも含む
   composite.With(composite.Sessions, volatile),
   composite.With(composite.Interactions, volatile),
-  composite.With(composite.ConsumedJTIs, volatile),
 )
 
 loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: durable.UserPasswords()}}
@@ -178,14 +214,23 @@ handler, _ := op.New(
 )
 ```
 
-> [`examples/09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) と [使い方: Hot / Cold 分離](/ja/use-cases/hot-cold-redis) を参照。
+> [`examples/09-redis-volatile`](https://github.com/libraz/go-oidc-provider/tree/main/examples/09-redis-volatile) と [ユースケース: Hot / Cold 分離](/ja/use-cases/hot-cold-redis) を参照。
 
 ---
+
+## どこから読むか
+
+| あなたの状況 | 最初に読むページ |
+|---|---|
+| OAuth 2.0 / OIDC が初めて | [OAuth 2.0 / OIDC 入門](/ja/concepts/oauth2-oidc-primer)、続いて [最小構成 OP](/ja/getting-started/minimal) |
+| すぐ動かしたい | [インストール](/ja/getting-started/install)、[必須オプション](/ja/getting-started/required-options)、[ルータへのマウント](/ja/getting-started/mount) |
+| 採用を判断したい | [go-oidc-provider とは](/ja/why)、[セキュリティ方針](/ja/security/posture)、[FAQ](/ja/faq) |
+| 具体的な構成を探している | [ユースケース](/ja/use-cases/) |
 
 ## インストール
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v1.2.0
+go get github.com/libraz/go-oidc-provider@v1.4.0
 ```
 
 ::: info 安定 API

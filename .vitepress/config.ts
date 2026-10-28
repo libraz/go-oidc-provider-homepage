@@ -4,10 +4,10 @@ import { generateLlmsTxt, type LlmsLocale, llmsDevPlugin } from './llms'
 
 const siteUrl = 'https://go-oidc-provider.libraz.net'
 const githubUrl = 'https://github.com/libraz/go-oidc-provider'
-const docsVersion = '1.2.0'
+const docsVersion = '1.4.0'
 const docsVersionTag = `v${docsVersion}`
 const changelogUrl = `${githubUrl}/blob/main/CHANGELOG.md`
-const releaseNotesUrl = `${changelogUrl}#v120--2026-09-02`
+const releaseNotesUrl = `${changelogUrl}#v140--2026-10-23`
 
 /** Per-locale structured data and social-card copy. */
 type Locale = 'en' | 'ja'
@@ -22,7 +22,7 @@ const softwareApplicationJsonLd = (lang: Locale) => ({
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   description:
     lang === 'ja'
-      ? 'Go 向けの OpenID Connect Provider（認可サーバー）ライブラリ。http.Handler として組み込め、FAPI 用のプロファイル設定を備えています。'
+      ? 'Go 向けの OpenID Connect Provider（認可サーバ）ライブラリ。http.Handler として組み込め、FAPI 用のプロファイル設定を備えています。'
       : 'OpenID Connect Provider (Authorization Server) library for Go. Mounts as an http.Handler and includes FAPI profile options.',
   url: lang === 'ja' ? `${siteUrl}/ja/` : siteUrl,
   downloadUrl: githubUrl,
@@ -48,7 +48,7 @@ const SEO: Record<Locale, { title: string; description: string; keywords: string
     description:
       'Go の http.Handler として組み込める OIDC Provider ライブラリ。PAR、JAR、DPoP と FAPI 用のプロファイル設定を備えています。',
     keywords:
-      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバー, http.Handler'
+      'OpenID Connect, OIDC, OAuth2, FAPI 2.0, PAR, JAR, JARM, DPoP, mTLS, PKCE, リフレッシュトークン ローテーション, Go, 認可サーバ, http.Handler'
   }
 }
 
@@ -95,7 +95,7 @@ const LLMS_LOCALES: LlmsLocale[] = [
     prefix: '/ja',
     title: 'go-oidc-provider',
     summary:
-      'Go の http.Handler に組み込める OpenID Connect Provider（認可サーバー）ライブラリです。PAR・JAR・DPoP・mTLS と FAPI 用のプロファイル設定を備えています。',
+      'Go の http.Handler に組み込める OpenID Connect Provider（認可サーバ）ライブラリです。PAR・JAR・DPoP・mTLS と FAPI 用のプロファイル設定を備えています。',
     intro:
       'go-oidc-provider は単体で動く製品ではなく、既存の Go サービスに組み込むライブラリです。\nストレージ・ユーザ認証・同意画面はホスト側のアプリケーションが担います。ドキュメントは\nAPI リファレンスに加えて OAuth 2.0 / OIDC の概念を基礎から扱うため、入門にも使えます。\n以下は日本語ドキュメントへのリンク一覧です。',
     overviewHeading: '主要ページ',
@@ -235,6 +235,15 @@ export default defineConfig({
         nav: [
           { text: 'Why', link: '/why' },
           {
+            text: 'Quick Start',
+            items: [
+              { text: 'Install', link: '/getting-started/install' },
+              { text: 'Minimal OP', link: '/getting-started/minimal' },
+              { text: 'Required options', link: '/getting-started/required-options' },
+              { text: 'Mount on your router', link: '/getting-started/mount' }
+            ]
+          },
+          {
             text: 'Learn',
             items: [
               {
@@ -310,15 +319,6 @@ export default defineConfig({
                 text: 'Help',
                 items: [{ text: 'FAQ', link: '/faq' }]
               }
-            ]
-          },
-          {
-            text: 'Quick Start',
-            items: [
-              { text: 'Install', link: '/getting-started/install' },
-              { text: 'Minimal OP', link: '/getting-started/minimal' },
-              { text: 'Required options', link: '/getting-started/required-options' },
-              { text: 'Mount on your router', link: '/getting-started/mount' }
             ]
           },
           {
@@ -434,15 +434,6 @@ export default defineConfig({
             ]
           },
           {
-            text: 'Reference',
-            items: [
-              { text: 'Options', link: '/reference/options' },
-              { text: 'Errors', link: '/reference/errors' },
-              { text: 'Audit events', link: '/reference/audit-events' },
-              { text: 'Architecture', link: '/reference/architecture' }
-            ]
-          },
-          {
             text: 'Operations',
             items: [
               { text: 'Overview', link: '/operations/' },
@@ -475,6 +466,15 @@ export default defineConfig({
                   { text: 'Disclosure', link: '/security/disclosure' }
                 ]
               }
+            ]
+          },
+          {
+            text: 'Reference',
+            items: [
+              { text: 'Options', link: '/reference/options' },
+              { text: 'Errors', link: '/reference/errors' },
+              { text: 'Audit events', link: '/reference/audit-events' },
+              { text: 'Architecture', link: '/reference/architecture' }
             ]
           },
           {
@@ -884,7 +884,7 @@ export default defineConfig({
       label: '日本語',
       lang: 'ja',
       description:
-        'Go の http.Handler に組み込める OpenID Connect Provider（認可サーバー）ライブラリ。PAR、JAR、DPoP、mTLS と FAPI 用のプロファイル設定を備えます。',
+        'Go の http.Handler に組み込める OpenID Connect Provider（認可サーバ）ライブラリ。PAR、JAR、DPoP、mTLS と FAPI 用のプロファイル設定を備えます。',
       themeConfig: {
         search: {
           provider: 'local',
@@ -909,6 +909,15 @@ export default defineConfig({
         },
         nav: [
           { text: 'go-oidc-provider とは', link: '/ja/why' },
+          {
+            text: 'クイックスタート',
+            items: [
+              { text: 'インストール', link: '/ja/getting-started/install' },
+              { text: '最小構成 OP', link: '/ja/getting-started/minimal' },
+              { text: '必須オプション', link: '/ja/getting-started/required-options' },
+              { text: 'ルータへのマウント', link: '/ja/getting-started/mount' }
+            ]
+          },
           {
             text: '学ぶ',
             items: [
@@ -991,15 +1000,6 @@ export default defineConfig({
                 text: 'ヘルプ',
                 items: [{ text: 'FAQ', link: '/ja/faq' }]
               }
-            ]
-          },
-          {
-            text: 'クイックスタート',
-            items: [
-              { text: 'インストール', link: '/ja/getting-started/install' },
-              { text: '最小構成 OP', link: '/ja/getting-started/minimal' },
-              { text: '必須オプション', link: '/ja/getting-started/required-options' },
-              { text: 'ルータへのマウント', link: '/ja/getting-started/mount' }
             ]
           },
           {
@@ -1133,15 +1133,6 @@ export default defineConfig({
             ]
           },
           {
-            text: 'リファレンス',
-            items: [
-              { text: 'Options 索引', link: '/ja/reference/options' },
-              { text: 'エラーカタログ', link: '/ja/reference/errors' },
-              { text: 'Audit イベント', link: '/ja/reference/audit-events' },
-              { text: 'アーキテクチャ概観', link: '/ja/reference/architecture' }
-            ]
-          },
-          {
             text: '運用',
             items: [
               { text: '概要', link: '/ja/operations/' },
@@ -1174,6 +1165,15 @@ export default defineConfig({
                   { text: '脆弱性報告', link: '/ja/security/disclosure' }
                 ]
               }
+            ]
+          },
+          {
+            text: 'リファレンス',
+            items: [
+              { text: 'Options 索引', link: '/ja/reference/options' },
+              { text: 'エラーカタログ', link: '/ja/reference/errors' },
+              { text: 'Audit イベント', link: '/ja/reference/audit-events' },
+              { text: 'アーキテクチャ概観', link: '/ja/reference/architecture' }
             ]
           },
           {

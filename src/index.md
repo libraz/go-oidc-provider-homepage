@@ -6,39 +6,76 @@ description: Mount an OIDC Provider (Authorization Server) on any Go http.Handle
 pageClass: pg-index
 ---
 
-<svg role="img" aria-labelledby="home-embed-title" viewBox="0 0 760 280" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <title id="home-embed-title">go-oidc-provider mounts into an existing Go application as an http.Handler, wiring the OP endpoints to the application's own store, keyset, and logging.</title>
-  <rect class="home-box" x="34" y="92" width="156" height="82" rx="8"/>
-  <text class="home-text" x="112" y="124" text-anchor="middle">Your Go app</text>
-  <text class="home-sub" x="112" y="146" text-anchor="middle">router / middleware</text>
-
-  <rect class="home-main" x="286" y="74" width="190" height="118" rx="8"/>
-  <text class="home-text" x="381" y="108" text-anchor="middle">OIDC Provider</text>
-  <text class="home-sub" x="381" y="130" text-anchor="middle">http.Handler</text>
-  <text class="home-sub" x="381" y="152" text-anchor="middle">/oidc/auth /oidc/token</text>
-  <text class="home-sub" x="381" y="170" text-anchor="middle">/oidc/jwks</text>
-
-  <rect class="home-box" x="570" y="34" width="154" height="56" rx="8"/>
-  <text class="home-text" x="647" y="68" text-anchor="middle">Store</text>
-  <rect class="home-box" x="570" y="112" width="154" height="56" rx="8"/>
-  <text class="home-text" x="647" y="146" text-anchor="middle">Keyset</text>
-  <rect class="home-box" x="570" y="190" width="154" height="56" rx="8"/>
-  <text class="home-text" x="647" y="224" text-anchor="middle">Logs / audit</text>
-
-  <path class="home-flow" d="M190 133 H286"/>
-  <path class="home-flow" d="M277 129 L286 133 L277 137"/>
-  <text class="home-sub halo" x="238" y="137" text-anchor="middle">Mount</text>
-  <path class="home-flow" d="M476 116 C520 96 530 62 570 62"/>
-  <path class="home-flow" d="M561 58 L570 62 L561 66"/>
-  <path class="home-flow" d="M476 140 H570"/>
-  <path class="home-flow" d="M561 136 L570 140 L561 144"/>
-  <path class="home-flow" d="M476 164 C520 184 530 218 570 218"/>
-  <path class="home-flow" d="M561 214 L570 218 L561 222"/>
-</svg>
+<figure class="fig">
+  <div class="fig-head">The provider is a handler inside your application</div>
+  <svg class="fig-svg" role="img" aria-labelledby="home-embed-title" viewBox="0 0 1440 472" xmlns="http://www.w3.org/2000/svg">
+    <title id="home-embed-title">Clients call the OpenID Provider over HTTPS. The provider is an http.Handler that your Go application mounts under /oidc on its own router. It always serves discovery, JWKS, authorization, token, userinfo and logout endpoints, adds PAR, introspection, revocation, registration, device and CIBA endpoints when those features are enabled, and reaches storage, signing keys and the login flow through the options you pass to op.New.</title>
+    <!-- 1440-wide viewBox: the landing column is ~1.6x a docs column, so this keeps the docs type scale at full width -->
+    <text class="fg-lbl" x="32" y="52">clients</text>
+    <rect class="fg-box" x="32" y="72" width="304" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="100">Web app (RP)</text>
+    <text class="fg-mxs fg-dim" x="48" y="124">confidential client</text>
+    <text class="fg-xs fg-faint" x="48" y="148">authorization code + PKCE</text>
+    <path class="fg-edge" d="M336,120 H430" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="32" y="200" width="304" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="228">SPA · mobile · CLI</text>
+    <text class="fg-mxs fg-dim" x="48" y="252">public client</text>
+    <text class="fg-xs fg-faint" x="48" y="276">PKCE · device code</text>
+    <path class="fg-edge" d="M336,248 H430" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="32" y="328" width="304" height="96" rx="8"/>
+    <text class="fg-t2" x="48" y="356">Resource server</text>
+    <text class="fg-mxs fg-dim" x="48" y="380">verifies access tokens</text>
+    <text class="fg-xs fg-faint" x="48" y="404">JWKS · /introspect</text>
+    <path class="fg-edge" d="M336,376 H430" marker-end="url(#fg-a)"/>
+    <!-- application boundary -->
+    <rect class="fg-frame fg-frame--dashed" x="400" y="24" width="1008" height="424" rx="8"/>
+    <text class="fg-lbl" x="424" y="52">your Go application</text>
+    <text class="fg-lbl" x="1384" y="52" text-anchor="end">options you pass</text>
+    <!-- provider -->
+    <rect class="fg-box fg-box--accent" x="432" y="72" width="576" height="352" rx="8"/>
+    <text class="fg-t fg-accent" x="448" y="100">op.New(…)</text>
+    <text class="fg-mxs fg-dim" x="448" y="124">http.Handler mounted at /oidc</text>
+    <path class="fg-rule" d="M448,144 H992"/>
+    <text class="fg-lbl" x="448" y="176">always</text>
+    <text class="fg-m" x="448" y="204">/auth</text>
+    <text class="fg-m" x="592" y="204">/jwks</text>
+    <text class="fg-m" x="448" y="228">/token</text>
+    <text class="fg-m" x="592" y="228">/end_session</text>
+    <text class="fg-m" x="448" y="252">/userinfo</text>
+    <text class="fg-m" x="448" y="276">/.well-known/openid-configuration</text>
+    <path class="fg-rule" d="M776,160 V320"/>
+    <text class="fg-lbl" x="800" y="176">when enabled</text>
+    <text class="fg-m fg-dim" x="800" y="204">/par</text>
+    <text class="fg-m fg-dim" x="800" y="228">/introspect</text>
+    <text class="fg-m fg-dim" x="800" y="252">/revoke</text>
+    <text class="fg-m fg-dim" x="800" y="276">/register</text>
+    <text class="fg-m fg-dim" x="800" y="300">/device_authorization</text>
+    <path class="fg-rule" d="M448,336 H992"/>
+    <text class="fg-lbl" x="448" y="368">built in</text>
+    <text class="fg-m" x="448" y="396">PKCE · PAR · JAR · JARM · DPoP · mTLS · FAPI 2.0 profile</text>
+    <!-- supplied through options -->
+    <path class="fg-edge" d="M1008,120 H1070" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="1072" y="72" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="1088" y="100">Store</text>
+    <text class="fg-mxs fg-accent" x="1088" y="124">WithStore</text>
+    <text class="fg-xs fg-faint" x="1088" y="148">inmem · SQL · DynamoDB</text>
+    <path class="fg-edge" d="M1008,248 H1070" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="1072" y="200" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="1088" y="228">Signing keys</text>
+    <text class="fg-mxs fg-accent" x="1088" y="252">WithKeyset</text>
+    <text class="fg-xs fg-faint" x="1088" y="276">ES256 · rotation</text>
+    <path class="fg-edge" d="M1008,376 H1070" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="1072" y="328" width="312" height="96" rx="8"/>
+    <text class="fg-t2" x="1088" y="356">Login flow</text>
+    <text class="fg-mxs fg-accent" x="1088" y="380">WithLoginFlow</text>
+    <text class="fg-xs fg-faint" x="1088" y="404">password · TOTP · passkey</text>
+  </svg>
+  <figcaption class="fig-note">Nothing runs as a separate server — the handler mounts on net/http, chi, gin or any other router. Storage, keys and sign-in are parts of your application that the provider calls. Logging and metrics hook in the same way, through <code>WithLogger</code> and <code>WithPrometheus</code>.</figcaption>
+</figure>
 
 ## Standard use cases
 
-The five configurations people build most often with this library. Each one links to a runnable example in the upstream repository.
+Five typical configurations. Each one links to a runnable example in the upstream repository.
 
 ### 1. Stand up the smallest possible OP
 
@@ -162,10 +199,9 @@ volatile, _ := oidcredis.New(context.Background(),
   oidcredis.WithRedisAuth(redisUser, redisPassword),
 )
 combined, _ := composite.New(
-  composite.WithDefault(durable),
+  composite.WithDefault(durable), // everything else, consumed-JTI markers included
   composite.With(composite.Sessions, volatile),
   composite.With(composite.Interactions, volatile),
-  composite.With(composite.ConsumedJTIs, volatile),
 )
 
 loginFlow := op.LoginFlow{Primary: op.PrimaryPassword{Store: durable.UserPasswords()}}
@@ -182,10 +218,19 @@ handler, _ := op.New(
 
 ---
 
+## Where to start
+
+| You are | Start with |
+|---|---|
+| New to OAuth 2.0 and OIDC | [OAuth 2.0 / OIDC primer](/concepts/oauth2-oidc-primer), then [Minimal OP](/getting-started/minimal) |
+| Ready to run the library | [Install](/getting-started/install), [Required options](/getting-started/required-options), [Mount on your router](/getting-started/mount) |
+| Deciding whether to adopt it | [Why go-oidc-provider](/why), [Security posture](/security/posture), [FAQ](/faq) |
+| Building something specific | [Use cases](/use-cases/) |
+
 ## Install
 
 ```sh
-go get github.com/libraz/go-oidc-provider/op@v1.2.0
+go get github.com/libraz/go-oidc-provider@v1.4.0
 ```
 
 ::: info Stable API

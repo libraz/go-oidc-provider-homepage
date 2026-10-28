@@ -55,7 +55,7 @@ const rows = computed<Row[]>(() =>
         {
           key: 'CONFORMANCE',
           parts: [
-            { text: 'OFCS 210 PASSED / 全 271 モジュール · 9 プラン · strict release blocker 0' }
+            { text: 'OFCS 210 PASSED / 全 270 モジュール · 9 プラン · strict release blocker 0' }
           ],
           link: '/ja/compliance/ofcs'
         },
@@ -109,7 +109,7 @@ const rows = computed<Row[]>(() =>
         },
         {
           key: 'CONFORMANCE',
-          parts: [{ text: 'OFCS 210 PASSED / 271 MODULES · 9 plans · 0 strict release blockers' }],
+          parts: [{ text: 'OFCS 210 PASSED / 270 MODULES · 9 plans · 0 strict release blockers' }],
           link: '/compliance/ofcs'
         },
         {
