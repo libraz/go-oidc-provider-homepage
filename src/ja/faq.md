@@ -7,42 +7,45 @@ pageClass: pg-faq
 
 # FAQ
 
-ここに並んでいる質問は、作者が examples を書いたり適合性テストのハーネスを実行したりする過程で実際に詰まったものです。FAQ の体裁を整えるために足した項目はありません。同じところで詰まった場合、ここに書いてある方法が本プロジェクトで実際に使っている方法です。
+ここに並んでいる質問は、作者が examples を書いたり適合性テストのハーネスを実行したりする過程で実際に詰まったものです。同じところで詰まった場合、ここに書いてある方法が本プロジェクトで実際に使っている方法です。
 
 <figure class="fig">
   <div class="fig-head">この FAQ の読み方</div>
-  <svg class="fig-svg" role="img" aria-labelledby="faq-order-title" viewBox="0 0 960 222" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="faq-order-title" viewBox="0 0 960 384" xmlns="http://www.w3.org/2000/svg">
     <title id="faq-order-title">この FAQ の読み進め方。まず OP を起動できる状態にし、次に自分が取り組んでいる領域へ進み、最後にエラー対応と採用判断を確認します。</title>
-    <rect class="fg-box fg-box--accent" x="36" y="88" width="170" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="54" y="116">まず起動する</text>
-    <text class="fg-xs" x="54" y="138">必須オプション</text>
-    <text class="fg-xs" x="54" y="152">issuer · store · 鍵</text>
-    <path class="fg-leader" d="M210,124 H240 M240,54 V178"/>
-    <path class="fg-edge fg-edge--thin" d="M240,54 H258" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M240,116 H258" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M240,178 H258" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="262" y="32" width="250" height="44" rx="6"/>
-    <text class="fg-t2" x="280" y="52">FAPI / DPoP</text>
-    <text class="fg-xs" x="280" y="68">プロファイルと送信者制約</text>
-    <rect class="fg-box" x="262" y="94" width="250" height="44" rx="6"/>
-    <text class="fg-t2" x="280" y="114">トークン / ストレージ</text>
-    <text class="fg-xs" x="280" y="130">形式・TTL・どのストアを使うか</text>
-    <rect class="fg-box" x="262" y="156" width="250" height="44" rx="6"/>
-    <text class="fg-t2" x="280" y="176">UI / SPA / MFA</text>
-    <text class="fg-xs" x="280" y="192">画面とユーザ操作</text>
-    <path class="fg-leader" d="M516,54 H544 M516,116 H544 M516,178 H544 M544,54 V178"/>
-    <path class="fg-edge fg-edge--thin" d="M544,116 H564" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="568" y="88" width="170" height="72" rx="8"/>
-    <text class="fg-t2" x="586" y="116">エラー対応</text>
-    <text class="fg-xs" x="586" y="138">失敗が何を意味し、</text>
-    <text class="fg-xs" x="586" y="152">何を直せばよいか</text>
-    <path class="fg-edge fg-edge--thin" d="M742,124 H790" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="794" y="88" width="130" height="72" rx="8"/>
-    <text class="fg-t2" x="810" y="116">採用判断</text>
-    <text class="fg-xs" x="810" y="138">本番投入</text>
-    <text class="fg-xs" x="810" y="152">脆弱性報告</text>
+    <!-- start -->
+    <rect class="fg-box fg-box--accent" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="52">まず起動する</text>
+    <text class="fg-s" x="360" y="76">必須オプション</text>
+    <text class="fg-s" x="360" y="100">issuer · store · 鍵</text>
+    <!-- fan-out -->
+    <path class="fg-leader" d="M480,120 V144 M168,144 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M168,144 V168" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M480,144 V168" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M792,144 V168" marker-end="url(#fg-a)"/>
+    <!-- areas -->
+    <rect class="fg-box" x="32" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="196">FAPI / DPoP</text>
+    <text class="fg-s" x="48" y="220">プロファイルと送信者制約</text>
+    <rect class="fg-box" x="344" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="360" y="196">トークン / ストレージ</text>
+    <text class="fg-s" x="360" y="220">形式・TTL・ストア選び</text>
+    <rect class="fg-box" x="656" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="672" y="196">UI / SPA / MFA</text>
+    <text class="fg-s" x="672" y="220">画面とユーザ操作</text>
+    <!-- merge -->
+    <path class="fg-leader" d="M168,240 V264 M480,240 V264 M792,240 V264 M168,264 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M480,264 V288" marker-end="url(#fg-a)"/>
+    <!-- errors, adoption -->
+    <rect class="fg-box" x="344" y="288" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="360" y="316">エラー対応</text>
+    <text class="fg-s" x="360" y="340">失敗の意味と直し方</text>
+    <path class="fg-edge fg-edge--thin" d="M616,324 H656" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="656" y="288" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="672" y="316">採用判断</text>
+    <text class="fg-s" x="672" y="340">本番投入 · 脆弱性報告</text>
   </svg>
-  <figcaption class="fig-note">読み飛ばせるのは中央の列だけです。いま取り組んでいる領域を選んでください。最初と最後の列はどの読者にも当てはまります。</figcaption>
+  <figcaption class="fig-note">選ぶのは中段の 1 つだけです。いま取り組んでいる領域を選んでください。最初の起動と、最後のエラー対応・採用判断はどの読者にも当てはまります。</figcaption>
 </figure>
 
 <ul class="faq-index">
@@ -67,24 +70,25 @@ pageClass: pg-faq
 
 ### `op.New(...)` がエラーを返すのはなぜ？
 
-中心的なオプションには「安全な既定値」が存在しないためです。ゼロ値で黙って動くのではなく、`op.New` は構築時にエラーを返して止めます。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須で、`WithCookieKeys` は authorization-code grant を有効にする場合（既定の grant セットを含む）に必須です:
+中心的なオプションには安全な既定値がないためです。`op.New` はゼロ値で黙って動くかわりに、起動時にエラーを返して止まります。`WithIssuer`、`WithStore`、`WithKeyset` は常に必須です。authorization_code grant を有効にする場合（既定の grant 集合を含む）は、さらに `WithCookieKeys` と `WithLoginFlow`（または `WithAuthenticators`）が必須になります。
 
-| オプション | これが無いと |
+| オプション | これがないと |
 |---|---|
-| `WithIssuer` | OP が署名 / 名前空間に使う識別子が無い |
-| `WithStore` | clients / codes / tokens の永続化先が無い |
+| `WithIssuer` | `iss` や discovery URL に載せる OP の識別子がない |
+| `WithStore` | クライアント、認可コード、トークンの保存先がない |
 | `WithKeyset` | ID トークンに署名できない |
-| `WithCookieKeys` | ブラウザの認可フローで使う session / CSRF cookie を封緘できない |
+| `WithCookieKeys` | ブラウザフローのセッション cookie と CSRF cookie を暗号化できない |
+| `WithLoginFlow` | サインインできるユーザがいないため、最初の本番リクエストで失敗する代わりに起動を拒否する |
 
-エラーは欠けた項目名を明示するので、起動時のタイポは「実行時の謎」ではなくビルド時エラーになります。
+エラーには欠けている項目名が入るので、タイポは実行時の謎ではなく起動時の失敗として現れます。`op.New` は、`WithLoginFlow` と `WithAuthenticators` の併用や、シークレットのない `client_secret_basic` の静的クライアントなど、動作しない組み合わせも拒否します。個別の条件は [必須オプション](/ja/getting-started/required-options) にまとめています。
 
 ::: tip 推奨パターン
-32 バイトの cookie 鍵を環境ごとに 1 度 `crypto/rand` で生成し、config / シークレットマネージャー経由で渡してください。標準的な 30 行のセットアップは [`examples/01-minimal/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal) を参照。
+32 バイトの cookie 鍵を環境ごとに 1 度 `crypto/rand` で生成し、config やシークレットマネージャー経由で渡してください。RP も含めた全体の構成は [`examples/01-minimal/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal) にあります。
 :::
 
 ### OP はどこにマウントすればいい？ prefix を変えても大丈夫？
 
-`http.Handler` をマウントしたパスにそのまま乗ります。既定のマウントプリフィックスは `/oidc` で、ルートに置きたい場合は `op.WithMountPrefix("/")`、`/auth` に動かしたい場合は `op.WithMountPrefix("/auth")` を渡します。Discovery 文書には設定された issuer + マウント prefix が埋め込まれるので、RP からは一貫した URL として見えます。
+返ってきた `http.Handler` はルータのルートにマウントし、URL の prefix は `op.WithMountPrefix` で決めます。既定は `/oidc` で、`op.WithMountPrefix("/")` を渡すとエンドポイントがルート直下に移ります。discovery 文書は issuer と mount prefix から作られるので、RP からは常に一貫した URL に見えます。各エンドポイントの置き場所は [ルータへのマウント](/ja/getting-started/mount) にまとめています。
 
 ### 最小構成は？
 
@@ -101,7 +105,7 @@ handler, err := op.New(
 )
 ```
 
-これは通常のブラウザフローの最小形です。常時必須の 3 オプションに、authorization-code grant 用の cookie 鍵を足しています。詳細は <a class="doc-ref" href="/ja/getting-started/minimal">最小構成 OP</a>。
+これはブラウザフローの最小形です。常に必須の 3 つに、authorization_code grant 用の cookie 鍵とログインフローを足しています。詳細は <a class="doc-ref" href="/ja/getting-started/minimal">最小構成 OP</a>。
 
 ### 「Issuer の末尾にスラッシュは禁止」って本当？
 
@@ -125,7 +129,7 @@ RP の検証側でも、片側に正規形でない 1 文字が紛れただけ�
 
 ### `op.WithProfile(profile.FAPI2Baseline)` で具体的に何が ON になる？
 
-1 行で、本ライブラリの FAPI プロファイル方針を 6 つの領域に適用します:
+1 行で、本ライブラリの FAPI プロファイル方針を次の領域に適用します:
 
 | スイッチ | 効果 |
 |---|---|
@@ -135,6 +139,8 @@ RP の検証側でも、片側に正規形でない 1 文字が紛れただけ�
 | `redirect_uri` | 完全一致を強制（ワイルドカード不可） |
 | PKCE | すべての code 要求で S256 を必須化 |
 | `state` / `nonce` | すべての authorize 要求でいずれか必須 |
+| PAR | `/auth` は、先に `/par` へ送られていない要求を拒否 |
+| 有効期間 | `WithAccessTokenTTL` の上限は 10 分、`WithPARLifetime` は 600 秒未満に制限 |
 
 FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、送信者制約付きトークンです。`redirect_uri` の完全一致は本ライブラリのポリシーです。FAPI 2.0 §5.5 は完全一致する値の事前登録を要求していません。JAR、本ライブラリの alg 絞り込み、OP 発行 JWT の ES256 固定は、本ライブラリのプロファイル設定であり、FAPI Security Profile の必須要件ではありません。
 
@@ -144,7 +150,7 @@ FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、
 
 ### Baseline と Message Signing — どちらが必要？
 
-本ライブラリでは Message Signing は `profile.FAPI2Baseline` に JARM を加えたものです。authorize 要求と応答そのものについて **非否認性**（non-repudiation）が必要なら Message Signing を選びます。オープンバンキングのような監査連鎖が典型例です。それ以外は本ライブラリの Baseline プロファイルで足ります。
+本ライブラリでは Message Signing は `profile.FAPI2Baseline` に JARM を加えたもので、DPoP が有効なときは `op.WithDPoPNonceSource` も必須です。authorize 要求と応答そのものについて **非否認性**（non-repudiation）が必要なら Message Signing を選びます。オープンバンキングのような監査連鎖が典型例です。それ以外は本ライブラリの Baseline プロファイルで足ります。
 
 | `FAPI2Baseline`（本ライブラリのプロファイル） | Message Signing |
 |---|---|
@@ -152,7 +158,7 @@ FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、
 
 ### DPoP なしで FAPI 2.0 に対応できる？
 
-可能です。`feature.MTLS` を有効化し、`op.WithMTLSProxy(...)` で proxy からの証明書ヘッダを構成すれば mTLS 送信者バインディングに切り替わります。FAPI 2.0 §5.3.2.1(4)–(5) は「DPoP **または** mTLS」を要求しますが、本ライブラリの FAPI プロファイルでは `/token` のクライアント認証に引き続き `private_key_jwt` を使います。
+可能です。`op.WithFeature(feature.MTLS)` で mTLS を有効にし、proxy が TLS を終端する場合は `op.WithMTLSProxy(...)` で証明書ヘッダを構成すれば、mTLS による送信者バインディングに切り替わります。FAPI 2.0 §5.3.2.1(4)–(5) は「DPoP **または** mTLS」を要求しますが、本ライブラリの FAPI プロファイルでは `/token` のクライアント認証に引き続き `private_key_jwt` を使います。
 
 <div id="tokens" class="faq-anchor"></div>
 
@@ -160,7 +166,7 @@ FAPI 2.0 Security Profile（Final）が要求するのは PAR、S256 の PKCE、
 
 ### リフレッシュトークンのリトライで `invalid_grant` が返る — 既に通信中だったのに
 
-ローテーション後の **猶予期間（grace period）** の話です。既定は 60 秒です。応答が届かなかった場合、猶予期間内に前のリフレッシュトークンを再提示すると、再ローテーションせずに保存済みの後継トークンを返します。送信者制約付きの再試行では、結び付け直したアクセストークンを発行する場合があります。期間を過ぎた場合や、再利用検知で系列が失効した場合は `invalid_grant` になります。
+ローテーション後の **猶予期間（grace period）** の話です。既定は 60 秒です。応答が届かなかった場合、猶予期間内に前のリフレッシュトークンを再提示すると、再ローテーションせずに保存済みの後継トークンを返します。送信者制約付きの再試行では、結び付け直したアクセストークンを発行する場合があります。期間を過ぎた場合や、再利用検知で連鎖が失効した場合は `invalid_grant` になります。
 
 ::: details 期間を調整したいとき
 FAPI 以外の profile では、`op.WithRefreshGracePeriod(90 * time.Second)` で延長できます。本ライブラリの `profile.FAPI2Baseline` または `profile.FAPI2MessageSigning` では、`0` 秒から `60` 秒まで（60 秒を含む）の明示設定が許容され、`60` 秒を超える値だけが拒否されます。`op.WithRefreshGracePeriod(0)` で猶予期間を完全に無効化（厳密な single-use）にできます。負値はオプション側で拒否されます。詳細は <a class="doc-ref" href="/ja/security/design-judgments">設計判断 §2</a>。
@@ -186,6 +192,12 @@ OIDC Core 1.0 §11 は、ユーザがその場にいなくなった後のアク�
 ### 「ログイン状態の維持」と通常セッションを TTL で分けたい
 
 `op.WithRefreshTokenOfflineTTL(...)` で `offline_access` chain と通常ローテーションの TTL を分離できます。`token.issued` 監査イベントが `extras.offline_access=true` を出力するので、SOC ダッシュボードで chain を分けて可視化できます。
+
+### リフレッシュトークンを失効させると何が失効する？
+
+リフレッシュトークンに対する `/revoke` は、そのトークンのローテーション連鎖全体を、連鎖がどれだけ長くなっていても失効させ、同じ grant で発行したアクセストークンも受理しなくなります。同じクライアントにおけるユーザの他のリフレッシュ連鎖には影響しないため、別の端末はそのまま使え、新しいアクセストークンも発行できます。例外はリフレッシュトークンの replay です。RFC 9700 §2.2.2 は replay を盗難とみなすので、OP は replay された連鎖と、その grant で発行済みのアクセストークンをすべて失効させます。`/revoke` が連鎖から grant のリフレッシュトークン全体へ範囲を広げた場合、`token.revoked` 監査イベントは `surface: "refresh_grant"` を報告します。
+
+独自ストアで連鎖単位の範囲を得るには、`store.OpaqueAccessTokenChainRevoker` と `store.IssuanceRevocationChecker` を実装し、`ChainID` を保存する必要があります。これらがなければ、失効は grant 単位のままです。
 
 <div id="dpop" class="faq-anchor"></div>
 
@@ -219,7 +231,7 @@ op.WithDPoPNonceSource(src)
 
 ### 既存の users テーブルを置き換えないといけない？
 
-いいえ。ライブラリは `users` テーブルを直接読み書きしません。`op.Authenticator`（または同梱の TOTP step を使う構成）と `store.UserStore` を既存スキーマに合わせて実装するだけです。OP は「このクレデンシャルは有効か」「この subject にはどんな claim があるか」を尋ねるだけで、それ以外で users テーブルに触ることはありません。
+いいえ。ライブラリは `users` テーブルを直接読み書きしません。`op.PrimaryPassword`（または別のログイン step、自前の `op.Authenticator`）と `store.UserStore` を、既存のスキーマに向けるだけです。OP は「このクレデンシャルは有効か」「この subject にはどんな claim があるか」を尋ねるだけで、それ以外で users テーブルに触ることはありません。
 
 ### どのストレージアダプタを選べばいい？
 
@@ -227,7 +239,7 @@ op.WithDPoPNonceSource(src)
 |---|---|
 | `inmem` | テスト、demo、単一プロセス開発 |
 | `sql`（SQLite / MySQL / Postgres） | 単一の永続バックエンド。最短で本番に乗せられる選択 |
-| `redis`（揮発サブストア専用） | `composite` で `sql` と組み合わせ、hot / cold を分離 |
+| `redis`（セッション、interaction、消費済み JTI） | `composite` で `sql` と組み合わせ、hot / cold を分離。単独のストアにはなれない |
 | `composite` | hot / cold 分離。`TxClusterKinds` は 1 つの比較可能な transactional バックエンドへまとめ、それ以外の `Kind` は分離可能 |
 | `dynamodb` | サブストアごとに 1 テーブルを使う永続バックエンド。`store.Transactional` によりブラウザ認可コードフローも動作する。API は Experimental。 |
 
@@ -235,7 +247,7 @@ op.WithDPoPNonceSource(src)
 
 ### `composite.New` が起動時に設定を拒否するのはなぜ？
 
-トランザクションクラスタの不変条件があるためです — トランザクション系サブストア（clients / codes / リフレッシュトークン / アクセストークン / IATs）は **同じ** バックエンドを共有する必要があります。揮発スライス（sessions / DPoP nonce キャッシュ / JAR `jti` レジストリ）だけが別バックエンドに置けます。`composite.New` は構築時にこれを検証し、トランザクションを 2 つのストアに跨がせる設定を拒否します。
+トランザクションクラスタの不変条件があるためです。1 つのトランザクションに関わるサブストアは **同じ** バックエンドを共有しなければなりません。対象は、認可コード、リフレッシュトークン、grant、PAR、アクセストークン、opaque アクセストークン、grant の失効記録です（`composite.TxClusterKinds`）。セッションと interaction はクラスタの外にあり、Redis に置けます。消費済み JTI のマーカーは削除されると困るため、Redis に置くなら `noeviction` のインスタンスに限り、既定では永続ストア側に置きます。`composite.New` は構築時にこれらを検証し、トランザクションを 2 つのストアにまたがらせる設定を拒否します。
 
 <div id="ui-spa" class="faq-anchor"></div>
 
@@ -267,17 +279,17 @@ JSON ドライバは、HTML ドライバが使う `/interaction/{uid}` と同じ
 op.WithCORSOrigins("https://app.example.com")
 ```
 
-`WithCORSOrigins` を呼ばない場合、登録済み redirect URI から許可リストが自動導出されます。詳細は <a class="doc-ref" href="/ja/use-cases/cors-spa">SPA 向け CORS</a>。
+API エンドポイント（`/token`、`/userinfo`、`/introspect`、`/revoke`、`/par`）の許可リストには、issuer の origin と、`WithStaticClients` で登録したクライアントの redirect URI の origin も入ります。クライアントストアにだけ存在するクライアントや、動的登録で作られたクライアントは origin を提供しないため、ブラウザから呼ぶそのようなクライアントの origin は `WithCORSOrigins` に渡す必要があります。詳細は <a class="doc-ref" href="/ja/use-cases/cors-spa">SPA 向け CORS</a>。
 
-API の CORS 許可リストが redirect URI の origin から導出される場合でも、それによって cross-origin の interaction や end-session ceremony が許可されるわけではありません。これらが受け付けるのは issuer origin と `WithCORSOrigins` に明示的に渡した origin だけで、ceremony origin は issuer と同じ site でなければなりません。実際には cross-site の origin でも preflight と CORS ヘッダまでは通りますが、ブラウザは `__Host-` ceremony cookie（`__Host-oidc_interaction` は `SameSite=Lax`、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf` は `SameSite=Strict`）を送らないため、interaction と end-session のリクエストは `404` になります。ceremony UI は `op.example.com` に対する `login.example.com` のような issuer と同じ site の sibling host に配置してください。
+redirect URI の origin が、cross-origin の interaction や end-session ceremony を許可することはありません。これらが受け付けるのは issuer origin と `WithCORSOrigins` に明示的に渡した origin だけで、ceremony origin は issuer と同じ site でなければなりません。実際には cross-site の origin でも preflight と CORS ヘッダまでは通りますが、ブラウザは `__Host-` ceremony cookie（`__Host-oidc_interaction` は `SameSite=Lax`、`__Host-oidc_csrf` と `__Host-oidc_logout_csrf` は `SameSite=Strict`）を送らないため、interaction と end-session のリクエストは `404` になります。ceremony UI は `op.example.com` に対する `login.example.com` のような issuer と同じ site の sibling host に配置してください。
 
 ### ライブラリを fork せずに同意画面をカスタマイズできる？
 
 可能です。主な経路は次の 3 つです。
 
-- **同梱 HTML ドライバを残し、ロケール bundle で文言を上書き。** `op.WithLocale` を使うと、seed の `en` / `ja` bundle 上に変更したいキーだけを重ねられます — 同意画面の文言はこのキー単位の上書きでカバーできるので、ブランド・コピー差し替えはこちらで足ります。詳細は [使い方: i18n / ロケール解決](/ja/use-cases/i18n)。
+- **同梱 HTML ドライバを残し、ロケール bundle で文言を上書き。** `op.WithLocale` を使うと、seed の `en` / `ja` bundle 上に変更したいキーだけを重ねられます — 同意画面の文言はこのキー単位の上書きでカバーできるので、ブランド・コピー差し替えはこちらで足ります。詳細は [ユースケース: i18n / ロケール解決](/ja/use-cases/i18n)。
 - **`op.WithConsentUI` でテンプレートを差し替える。** OP は組み込み側の `*html/template.Template` を `ConsentTemplateData` で描画し、state / CSRF / 同意永続化は引き続き OP が担当します。詳細は [`examples/11-custom-consent-ui`](https://github.com/libraz/go-oidc-provider/tree/main/examples/11-custom-consent-ui)。
-- **JSON ドライバに切り替えて画面ごと自前で描画。** `op.WithInteractionDriver(interaction.JSONDriver{})` を渡すと同意プロンプトが JSON で返るので、自前のページ（または SPA）で描画できます。詳細は [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction)。
+- **JSON ドライバに切り替えて画面ごと自前で描画。** `op.WithInteractionDriver(interaction.JSONDriver{})` を渡すと同意画面が JSON で返るので、自前のページ（または SPA）で描画できます。詳細は [SPA / 対話画面のカスタマイズ](/ja/use-cases/spa-custom-interaction)。
 
 <div id="auth-mfa" class="faq-anchor"></div>
 
@@ -285,7 +297,7 @@ API の CORS 許可リストが redirect URI の origin から導出される場
 
 ### パスワード / TOTP / passkey の検証はどこにある？
 
-ライブラリは `op.PrimaryPassword`、`op.StepTOTP`、`op.RuleAlways` などのビルディングブロックを提供します。これらを `op.LoginFlow` に組み合わせて、どの factor をどの順で実行するかを決めます。クレデンシャルストレージは `store.UserPasswords()` / `store.TOTPs()` などを組み込み側で実装します。完全カスタムな factor が必要なら `op.Authenticator` を実装してください。詳細は [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) 以降を参照してください。
+ライブラリは `op.PrimaryPassword`、`op.StepTOTP`、`op.RuleAlways` などのビルディングブロックを提供します。これらを `op.LoginFlow` に組み合わせて、どの factor をどの順で実行するかを決めます。クレデンシャルの保存先は、`store.UserPasswordStore` や `store.TOTPStore` を組み込み側で実装します（in-memory アダプタは `UserPasswords()` と `TOTPs()` として公開しています）。完全カスタムな factor が必要なら `op.Authenticator` を実装してください。詳細は [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) 以降を参照してください。
 
 ### Step-up 認証はどう実装する？
 
@@ -341,9 +353,10 @@ HTTP ルートのマウントはルータ側の責務です — トレーシン�
 | `device_authorization.*` / `device_code.*` | RFC 8628 |
 | `ciba.*` | OIDC CIBA |
 | `token_exchange.*` | RFC 8693 |
-| `client_authn.*` / `introspection.*` | クライアント認証 / イントロスペクション |
+| `client_authn.*` / `introspection.*` | クライアント認証 / introspection |
 | `account.*` / `federation.*` / `recovery.*` | アカウント管理フィード |
-| `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` | 防御シグナル |
+| `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` / `lockout.*` | 防御シグナル |
+| `custom_grant.*` / `grant_management.*` / `cascade.*` / `startup.*` | custom grant、Grant Management、失効の連鎖、起動時の構成記録 |
 
 各イベントには `audit="true"` と識別子の `event` が含まれます。`actor_id`、`client_id`、`request_id` などは設定時だけ出力され、カテゴリ固有の `extras` グループも空なら出力されません。購読には `op.WithAuditLogger(...)`（`*slog.Logger`）を使います。全フィールドは[監査イベントカタログ](/ja/reference/audit-events#共通の属性)を参照してください。
 
@@ -375,21 +388,29 @@ OFCS は複数の判定を記録し、素通しで合格といえるのは `PASS
 
 ## よくあるエラー {#common-errors}
 
-### `invalid_request: redirect_uri does not match a registered URI`
+### `invalid_request: redirect_uri is not registered for this client`
 
-redirect-URI 完全一致に引っかかっています。よくある原因 3 つ:
+`/auth` は `redirect_uri` を、クライアントの登録済みリストとバイト単位で比較します。URI はまだ信頼できないため、リダイレクトせず、OP 自身のエラーページにこのエラーを表示します。よくある原因は次の 3 つです。
 
-1. 末尾スラッシュのドリフト（`/cb` と `/cb/`）。
+1. 末尾スラッシュのずれ（`/cb` と `/cb/`）。
 2. 既定ポートが片側だけ含まれる（`https://rp.example.com:443/cb` と `https://rp.example.com/cb`）。
 3. CLI / ネイティブアプリのループバックで、RFC 8252 §7.3 のオプトインをしていない（前述）。
 
-### `invalid_client: alg not allowed`
+### `invalid_request_object: request object alg is not allowed`
 
-クライアントの `request_object_signing_alg` / `token_endpoint_auth_signing_alg` がコードベースの許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）に含まれていません。本ライブラリの `profile.FAPI2Baseline` を使う場合は、クライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込んでください。このライブラリのプロファイルでは `RS256` が拒否されます。
+`/auth` または `/par` に送った JAR request object の `alg` が、許可リスト（`RS256`、`PS256`、`ES256`、`EdDSA`）か、クライアントの `request_object_signing_alg` の範囲外です。`private_key_jwt` の client assertion で alg が不正な場合は、あえて詳細を伏せた `invalid_client`（"client authentication failed"）が返ります。本ライブラリの `profile.FAPI2Baseline` を使う場合は、クライアントを `PS256`（または `ES256` / `EdDSA`）に絞り込んでください。このライブラリのプロファイルでは `RS256` が拒否されます。
 
-### `invalid_dpop_proof: jkt mismatch`
+### `invalid_request: this OP requires authorization requests to be pushed via the PAR endpoint`
 
-DPoP proof の公開鍵 thumbprint（RFC 7638）が、アクセストークンにバインドされた `cnf.jkt` と一致しません。これは送信者バインディングが正しく機能している証拠で、proof が違う鍵で生成されたか、アクセストークンが別クライアント向けかのどちらかです。
+FAPI 2.0 のプロファイルは PAR を必須にするため、通常の `/auth?...` URL は拒否されます。先に `/par` へ要求を送り、`/auth` には `client_id` と返ってきた `request_uri` だけを渡してください。
+
+### `invalid_token: DPoP proof key does not match the bound thumbprint`
+
+DPoP proof の公開鍵 thumbprint（RFC 7638）が、アクセストークンに結び付けられた `cnf.jkt` と一致しません。`/userinfo` はこの `invalid_token` の challenge で応答し、誤った鍵でのリフレッシュには `invalid_grant` が返ります。送信者バインディングが期待どおり働いている状態で、proof を別の鍵で署名したか、トークンが別のクライアントのものかのどちらかです。
+
+### `private_key_jwt` のクライアントに `/token` が 503 を返す
+
+クライアントの JWKS（`jwks_uri`）を取得できない、または使えない状態です。取得が容量制限で拒否されたか、一時的に失敗しています。原因は OP 側にあり、再試行しても安全なため、`invalid_client` ではなく 503 `server_error`（"client keys are temporarily unavailable"）を返します。`/auth`、`/par`、`/bc-authorize` も、request object について同じように応答します。クライアントストアの障害は 500 `server_error` です。
 
 ### `/par` 成功後に `invalid_request_uri` が返る
 

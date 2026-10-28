@@ -24,32 +24,33 @@ You're writing a Go service. You need to **be** an OpenID Connect Provider — i
 | **2. Front a heavyweight IdP** | Operationally rich | The IdP owns the user table, the templates, the upgrade cadence. **Your Go service becomes an embedder of *their* product.** |
 | **3. `go-oidc-provider`** | Library owns the protocol | You bring user accounts, storage, and UI |
 
-This page argues option 3 by walking through the things that hurt when you build options 1 or 2.
+The rest of this page walks through what hurts when you pick option 1 or 2, and what the library does about each.
 
 <figure class="fig">
   <div class="fig-head">Who owns what</div>
-  <svg class="fig-svg" role="img" aria-labelledby="why-split-title" viewBox="0 0 960 164" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="why-split-title" viewBox="0 0 960 176" xmlns="http://www.w3.org/2000/svg">
     <title id="why-split-title">The split of responsibility. Your application owns users, screens and storage; the library owns the OIDC and OAuth ceremony; the consuming app only verifies tokens.</title>
-    <text class="fg-lbl" x="40" y="26">you own this</text>
-    <text class="fg-lbl fg-accent" x="344" y="26">the library owns this</text>
-    <text class="fg-lbl" x="648" y="26">someone else owns this</text>
-    <rect class="fg-box" x="36" y="38" width="280" height="104" rx="8"/>
-    <text class="fg-t" x="56" y="66">Your application</text>
-    <text class="fg-xs" x="56" y="88">users · screens · storage</text>
-    <line class="fg-rule" x1="56" y1="102" x2="296" y2="102"/>
-    <text class="fg-mxs" x="56" y="126">Authenticator · Store · Templates</text>
-    <path class="fg-edge" d="M320,88 H336" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--accent" x="340" y="38" width="280" height="104" rx="8"/>
-    <text class="fg-t fg-accent" x="360" y="66">go-oidc-provider</text>
-    <text class="fg-xs" x="360" y="88">the OIDC / OAuth ceremony</text>
-    <line class="fg-rule" x1="360" y1="102" x2="600" y2="102"/>
-    <text class="fg-mxs" x="360" y="126">/authorize · /token · /jwks</text>
-    <path class="fg-edge" d="M624,88 H640" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="644" y="38" width="280" height="104" rx="8"/>
-    <text class="fg-t" x="664" y="66">RP / API</text>
-    <text class="fg-xs" x="664" y="88">the consuming application</text>
-    <line class="fg-rule" x1="664" y1="102" x2="904" y2="102"/>
-    <text class="fg-mxs" x="664" y="126">verifies the tokens it is given</text>
+    <!-- column labels -->
+    <text class="fg-lbl" x="32" y="40">you own this</text>
+    <text class="fg-lbl fg-accent" x="344" y="40">the library owns this</text>
+    <text class="fg-lbl" x="656" y="40">someone else owns this</text>
+    <!-- your application -->
+    <rect class="fg-box" x="32" y="56" width="272" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="84">Your application</text>
+    <text class="fg-s" x="48" y="108">users · screens · storage</text>
+    <text class="fg-mxs" x="48" y="132">Authenticator · Store</text>
+    <path class="fg-edge" d="M304,104 H344" marker-end="url(#fg-a)"/>
+    <!-- the library -->
+    <rect class="fg-box fg-box--accent" x="344" y="56" width="272" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="84">go-oidc-provider</text>
+    <text class="fg-s" x="360" y="108">the OIDC / OAuth ceremony</text>
+    <text class="fg-mxs" x="360" y="132">/auth · /token · /jwks</text>
+    <path class="fg-edge" d="M616,104 H656" marker-end="url(#fg-a)"/>
+    <!-- the consuming application -->
+    <rect class="fg-box" x="656" y="56" width="272" height="96" rx="8"/>
+    <text class="fg-t" x="672" y="84">RP / API</text>
+    <text class="fg-s" x="672" y="108">the consuming application</text>
+    <text class="fg-s" x="672" y="132">verifies tokens it receives</text>
   </svg>
   <figcaption class="fig-note">The library never asks for your user table, your login screen, or your database. It asks for interfaces, which is the difference between a library and a product you have to migrate onto.</figcaption>
 </figure>
@@ -62,7 +63,17 @@ Where the line falls:
 
 ## Pain points, answered
 
-### "I want one switch for FAPI 2.0"
+| What hurts | What the library gives you | Section |
+|---|---|---|
+| FAPI 2.0 settings drift apart | `op.WithProfile(profile.FAPI2Baseline)` | [one switch](#fapi) |
+| Your users table cannot move | `op.WithUserStore` plus your own store | [users table](#users-table) |
+| Cookie and CSRF details | a fixed scheme keyed by one 32-byte secret | [cookies](#cookies) |
+| Login UI in a SPA | `op.WithSPAUI` or the JSON driver | [SPA](#spa) |
+| "We follow the RFC" is not evidence | a conformance-suite run per release | [conformance](#conformance) |
+| Refresh-token theft and retry storms | rotation with a grace window and reuse detection | [rotation](#rotation) |
+| A `/metrics` route you did not ask for | counters on your registry, no route | [metrics](#metrics) |
+
+### "I want one switch for FAPI 2.0" {#fapi}
 
 You can make PAR work, then later remember JAR, then later discover that discovery still advertises `client_secret_basic`, then later find that one test path signs an ID Token with an algorithm outside the profile's allow-list. That is the kind of drift FAPI makes expensive.
 
@@ -86,7 +97,7 @@ op.New(
 The constructor rejects option conflicts and missing collaborators it can detect at startup. It does not establish conformance with every requirement in the final FAPI 2.0 specifications; see the [RFC status matrix](/compliance/rfc-matrix).
 :::
 
-### "I don't want to give up my users table"
+### "I don't want to give up my users table" {#users-table}
 
 Heavyweight IdPs often make user storage part of the product boundary: import users, sync them, accept their profile schema, then route login through their screens. That is a poor fit when the account model is already part of your Go service.
 
@@ -104,7 +115,7 @@ op.New(
 
 Reference adapters: `inmem`, `sql` (SQLite / MySQL / Postgres), `redis` (volatile substores), `dynamodb` (one table per substore; experimental), and `composite` (hot/cold splitter). See [DynamoDB storage](/use-cases/dynamodb-store) for its provisioning model.
 
-### "Cookies and CSRF on the consent POST are a minefield"
+### "Cookies and CSRF on the consent POST are a minefield" {#cookies}
 
 The risky part is not choosing a cookie library. It is remembering every browser rule that makes an OAuth session cookie hard to steal or replay, and applying those rules identically across login, consent, and logout.
 
@@ -117,7 +128,7 @@ The library bakes in:
 - `__Host-` cookie prefix (no Domain, Path=`/`, Secure)
 - AES-256-GCM encryption (cookie key supplied via `op.WithCookieKeys`)
 - Double-submit CSRF + Origin / Referer check on the consent / logout POST
-- SameSite=`Lax` for the session cookie, `Strict` where compatible
+- `SameSite=Lax` for the session cookie, `SameSite=Strict` for the CSRF cookies
 
 You don't write any of this. You generate one 32-byte key, hand it to `WithCookieKeys`, and the cookie scheme is correct.
 
@@ -133,11 +144,11 @@ op.New(
 )
 ```
 
-### "I want to drive UI from a SPA"
+### "I want to drive UI from a SPA" {#spa}
 
 The protocol engine should decide what prompt is next; your frontend should decide how it looks. Those are separate jobs.
 
-`op.WithSPAUI(op.SPAUI{...})` swaps the default HTML pages for a JSON-backed SPA flow, and lets the OP serve the shell and its static assets. Your SPA — React, Vue, Svelte, Angular — fetches each prompt from `/interaction/{uid}` and posts its response back. The protocol engine keeps the state machine.
+`op.WithSPAUI(op.SPAUI{...})` swaps the default HTML pages for a JSON-backed SPA flow, and lets the OP serve the shell and its static assets. Your SPA (React, Vue, Svelte, Angular) fetches each prompt as JSON under `LoginMount/state/{uid}` and posts its response back. The protocol engine keeps the state machine.
 
 ```go
 op.New(
@@ -159,7 +170,7 @@ op.New(
 Error pages emit `<div id="op-error" data-code="..." data-description="...">` so the SPA host can `document.querySelector('#op-error')` without parsing markup, under CSP `default-src 'none'; style-src 'unsafe-inline'`.
 :::
 
-### "I need real conformance, not 'we follow the RFC'"
+### "I need real conformance, not 'we follow the RFC'" {#conformance}
 
 Security reviews rarely fail because a team cannot cite an RFC. They fail because no one can show which optional branches were implemented, which were refused, and what the conformance suite actually exercised.
 
@@ -169,11 +180,11 @@ Each release is regressed against the OpenID Foundation conformance suite. The l
 `REVIEW` is OFCS's "human reviewer must look" verdict — the OP error pages that stay there are intentional ([details](/compliance/ofcs)). `SKIPPED` are modules that exercise things the OP refuses by design (e.g. `alg=none` request objects). A raw `FAILED` or no-verdict result is never silently accepted: it must match a reviewed, unexpired exclusion for the release verifier to pass.
 :::
 
-### "I need observable refresh-token rotation"
+### "I need observable refresh-token rotation" {#rotation}
 
 When a mobile app retries the same refresh request, you want an idempotent replay inside the grace window. When a stolen old refresh token appears later, you want the whole chain revoked and an audit event that explains why.
 
-Refresh tokens rotate by default. Reuse detection invalidates the entire chain. This is a library policy; final FAPI 2.0 Security Profile §5.3.2.1(9) prohibits routine refresh-token rotation except under extraordinary circumstances, so this default does not establish final-profile conformance.
+Refresh tokens rotate by default. When an already-rotated token is presented outside the grace window, the OP treats it as theft (RFC 9700 §2.2.2): it revokes that refresh chain and every access token issued under the grant. Revoking a single refresh token at `/revoke` is narrower: it retires only that token's own chain, so the user's other devices keep their refresh tokens. Rotation is a library policy. Final FAPI 2.0 Security Profile §5.3.2.1(9) prohibits routine refresh-token rotation except under extraordinary circumstances, so this default does not establish final-profile conformance.
 
 - `op.WithRefreshGracePeriod` — widens the rotation window for racing clients; this library's `profile.FAPI2Baseline` and `profile.FAPI2MessageSigning` accept explicit values from 0 through 60 seconds (inclusive) and reject only a value above 60 seconds.
 - Refresh rotation rechecks the effective scope against the client's current registration before consuming the presented token, so narrowing a registration takes effect on an existing chain.
@@ -192,7 +203,7 @@ op.New(
 )
 ```
 
-### "I want metrics, but not a `/metrics` route I didn't ask for"
+### "I want metrics, but not a `/metrics` route I didn't ask for" {#metrics}
 
 Libraries that mount their own observability routes tend to fight your router, auth boundary, path conventions, and SRE middleware. This library only emits protocol signals; you decide where those signals are served.
 

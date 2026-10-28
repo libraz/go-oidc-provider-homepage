@@ -7,42 +7,45 @@ pageClass: pg-faq
 
 # FAQ
 
-Every question below came out of building the example suite or running the conformance harness. Nothing is here just because a FAQ ought to cover it. If you are stuck on one of them, the answer below is the one the project itself uses.
+Every question below came out of building the example suite or running the conformance harness. If you are stuck on one of them, the answer here is the one the project itself uses.
 
 <figure class="fig">
   <div class="fig-head">How to read this FAQ</div>
-  <svg class="fig-svg" role="img" aria-labelledby="faq-order-title" viewBox="0 0 960 222" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="faq-order-title" viewBox="0 0 960 384" xmlns="http://www.w3.org/2000/svg">
     <title id="faq-order-title">A reading order for this FAQ: get the OP booted first, then move into whichever area you are working in, then finish at the error catalogue and the adoption questions.</title>
-    <rect class="fg-box fg-box--accent" x="36" y="88" width="170" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="54" y="116">Boot it first</text>
-    <text class="fg-xs" x="54" y="138">required options</text>
-    <text class="fg-xs" x="54" y="152">issuer · store · keys</text>
-    <path class="fg-leader" d="M210,124 H240 M240,54 V178"/>
-    <path class="fg-edge fg-edge--thin" d="M240,54 H258" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M240,116 H258" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M240,178 H258" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="262" y="32" width="250" height="44" rx="6"/>
-    <text class="fg-t2" x="280" y="52">FAPI / DPoP</text>
-    <text class="fg-xs" x="280" y="68">profiles and sender constraints</text>
-    <rect class="fg-box" x="262" y="94" width="250" height="44" rx="6"/>
-    <text class="fg-t2" x="280" y="114">Tokens / storage</text>
-    <text class="fg-xs" x="280" y="130">formats, TTLs, which store to use</text>
-    <rect class="fg-box" x="262" y="156" width="250" height="44" rx="6"/>
-    <text class="fg-t2" x="280" y="176">UI / SPA / MFA</text>
-    <text class="fg-xs" x="280" y="192">screens and interaction</text>
-    <path class="fg-leader" d="M516,54 H544 M516,116 H544 M516,178 H544 M544,54 V178"/>
-    <path class="fg-edge fg-edge--thin" d="M544,116 H564" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="568" y="88" width="170" height="72" rx="8"/>
-    <text class="fg-t2" x="586" y="116">Errors</text>
-    <text class="fg-xs" x="586" y="138">what a failure means</text>
-    <text class="fg-xs" x="586" y="152">and what to change</text>
-    <path class="fg-edge fg-edge--thin" d="M742,124 H790" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="794" y="88" width="130" height="72" rx="8"/>
-    <text class="fg-t2" x="810" y="116">Adoption</text>
-    <text class="fg-xs" x="810" y="138">production</text>
-    <text class="fg-xs" x="810" y="152">disclosure</text>
+    <!-- start -->
+    <rect class="fg-box fg-box--accent" x="344" y="24" width="272" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="360" y="52">Boot it first</text>
+    <text class="fg-s" x="360" y="76">required options</text>
+    <text class="fg-s" x="360" y="100">issuer · store · keys</text>
+    <!-- fan-out -->
+    <path class="fg-leader" d="M480,120 V144 M168,144 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M168,144 V168" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M480,144 V168" marker-end="url(#fg-a)"/>
+    <path class="fg-edge fg-edge--thin" d="M792,144 V168" marker-end="url(#fg-a)"/>
+    <!-- areas -->
+    <rect class="fg-box" x="32" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="196">FAPI / DPoP</text>
+    <text class="fg-s" x="48" y="220">profiles, sender constraints</text>
+    <rect class="fg-box" x="344" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="360" y="196">Tokens / storage</text>
+    <text class="fg-s" x="360" y="220">formats, TTLs, store choice</text>
+    <rect class="fg-box" x="656" y="168" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="672" y="196">UI / SPA / MFA</text>
+    <text class="fg-s" x="672" y="220">screens and interaction</text>
+    <!-- merge -->
+    <path class="fg-leader" d="M168,240 V264 M480,240 V264 M792,240 V264 M168,264 H792"/>
+    <path class="fg-edge fg-edge--thin" d="M480,264 V288" marker-end="url(#fg-a)"/>
+    <!-- errors, adoption -->
+    <rect class="fg-box" x="344" y="288" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="360" y="316">Errors</text>
+    <text class="fg-s" x="360" y="340">failures and what to change</text>
+    <path class="fg-edge fg-edge--thin" d="M616,324 H656" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="656" y="288" width="272" height="72" rx="8"/>
+    <text class="fg-t" x="672" y="316">Adoption</text>
+    <text class="fg-s" x="672" y="340">production · disclosure</text>
   </svg>
-  <figcaption class="fig-note">The middle column is the only part you can skip through — pick the one you are actually working on. The first and last columns apply to everyone.</figcaption>
+  <figcaption class="fig-note">Only the middle row is a choice: pick the area you are working in. Booting first, and the error and adoption pages at the end, apply to everyone.</figcaption>
 </figure>
 
 <ul class="faq-index">
@@ -67,24 +70,25 @@ Every question below came out of building the example suite or running the confo
 
 ### Why does `op.New(...)` return an error?
 
-The core options have no safe default, so `op.New` refuses to boot without them rather than silently using zero values. `WithIssuer`, `WithStore`, and `WithKeyset` are always required; `WithCookieKeys` is required when the authorization-code grant is enabled, including the default grant set:
+The core options have no safe default, so `op.New` refuses to start without them instead of falling back to zero values. `WithIssuer`, `WithStore` and `WithKeyset` are always required. When the `authorization_code` grant is enabled, which the default grant set does, `WithCookieKeys` and `WithLoginFlow` (or `WithAuthenticators`) are required too:
 
 | Option | Without it |
 |---|---|
-| `WithIssuer` | OP can't sign / namespace anything. |
-| `WithStore` | OP has nowhere to persist clients, codes, tokens. |
-| `WithKeyset` | OP can't sign ID tokens. |
-| `WithCookieKeys` | OP can't seal session / CSRF cookies for browser authorization flows. |
+| `WithIssuer` | The OP has no identity to put in `iss` or in the discovery URL. |
+| `WithStore` | The OP has nowhere to persist clients, codes and tokens. |
+| `WithKeyset` | The OP cannot sign ID tokens. |
+| `WithCookieKeys` | The OP cannot seal the session and CSRF cookies of the browser flow. |
+| `WithLoginFlow` | No user can sign in, so the OP refuses instead of failing the first real request. |
 
-The error names the missing piece, so a typo at boot is a build-time error, not a runtime mystery.
+The error names the missing piece, so a typo at boot surfaces at start-up instead of as a runtime mystery. `op.New` also rejects combinations that cannot work, such as `WithLoginFlow` together with `WithAuthenticators`, or a statically seeded `client_secret_basic` client with no secret. [Required options](/getting-started/required-options) walks through each.
 
 ::: tip Recommended pattern
-Generate a 32-byte cookie key with `crypto/rand` once per environment and feed it through your config / secret manager. See [`examples/01-minimal/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal) for the canonical 30-line setup.
+Generate a 32-byte cookie key with `crypto/rand` once per environment and feed it through your config or secret manager. [`examples/01-minimal/main.go`](https://github.com/libraz/go-oidc-provider/tree/main/examples/01-minimal) shows the complete setup, including the RP that drives it.
 :::
 
 ### Where does the OP mount? Can I prefix it?
 
-Wherever you mount the returned `http.Handler`. The default mount prefix is `/oidc`; pass `op.WithMountPrefix("/")` to mount at the root or `op.WithMountPrefix("/auth")` to relocate it. The discovery document embeds the issuer + mount prefix you configured, so RPs see consistent URLs regardless of where you mount.
+Mount the returned `http.Handler` at the root of your router and choose the URL prefix with `op.WithMountPrefix`. The default is `/oidc`; `op.WithMountPrefix("/")` serves the endpoints at the root. The discovery document is built from the issuer and the mount prefix, so RPs always see consistent URLs. [Mount on your router](/getting-started/mount) lists where each endpoint lands.
 
 ### What's the smallest config that boots?
 
@@ -101,7 +105,7 @@ handler, err := op.New(
 )
 ```
 
-This is the usual browser-flow minimum: three always-required options plus cookie keys for the authorization-code grant. See [/getting-started/minimal](/getting-started/minimal).
+This is the minimum for a browser flow: the three always-required options, plus cookie keys and a login flow for the authorization-code grant. See [Minimal OP](/getting-started/minimal).
 
 ### "Issuer must not have a trailing slash" — really?
 
@@ -125,7 +129,7 @@ A single non-canonical character on either side of an RP's verification flips by
 
 ### What does `op.WithProfile(profile.FAPI2Baseline)` actually flip?
 
-In one call, it applies this library's FAPI profile policy across six areas:
+In one call, it applies this library's FAPI profile policy across these areas:
 
 | Knob | Effect |
 |---|---|
@@ -135,6 +139,8 @@ In one call, it applies this library's FAPI profile policy across six areas:
 | `redirect_uri` | enforces exact match (no wildcarding) |
 | PKCE | requires S256 on every code request |
 | `state` / `nonce` | one of the two required on every authorize request |
+| PAR | `/auth` rejects a request that was not pushed to `/par` first |
+| Lifetimes | caps `WithAccessTokenTTL` at 10 minutes, and `WithPARLifetime` must stay below 600 seconds |
 
 The final FAPI 2.0 Security Profile requires PAR, PKCE with S256, and sender-constrained tokens. The exact `redirect_uri` row is this library's policy; FAPI 2.0 §5.5 does not require pre-registration of exact values. JAR, this library's algorithm narrowing, and ES256-only OP signing are library profile settings, not requirements of the FAPI Security Profile.
 
@@ -144,7 +150,7 @@ The profile is intentionally rigid, so it cannot be partially relaxed by acciden
 
 ### Baseline vs Message Signing — when do I need each?
 
-In this library, Message Signing is `profile.FAPI2Baseline` plus JARM. Pick it when your RP needs **non-repudiation** of the authorization request and response — an open-banking style audit chain, for example. Otherwise the library's Baseline profile is enough.
+In this library, Message Signing is `profile.FAPI2Baseline` plus JARM, and it also requires an `op.WithDPoPNonceSource` whenever DPoP is active. Pick it when your RP needs **non-repudiation** of the authorization request and response — an open-banking style audit chain, for example. Otherwise the library's Baseline profile is enough.
 
 | `FAPI2Baseline` (library profile) | Message Signing |
 |---|---|
@@ -152,7 +158,7 @@ In this library, Message Signing is `profile.FAPI2Baseline` plus JARM. Pick it w
 
 ### Can I run FAPI 2.0 without DPoP?
 
-Yes — switch to mTLS sender-binding by enabling `feature.MTLS` and configuring the proxy certificate header with `op.WithMTLSProxy(...)`. FAPI 2.0 §5.3.2.1(4)–(5) requires "DPoP **or** mTLS"; this library's FAPI profile still uses `private_key_jwt` for `/token` client authentication.
+Yes. Switch to mTLS sender binding by enabling it with `op.WithFeature(feature.MTLS)` and, when a proxy terminates TLS, configuring the certificate header with `op.WithMTLSProxy(...)`. FAPI 2.0 §5.3.2.1(4)–(5) requires "DPoP **or** mTLS"; this library's FAPI profile still uses `private_key_jwt` for `/token` client authentication.
 
 <div id="tokens" class="faq-anchor"></div>
 
@@ -187,6 +193,12 @@ OIDC Core 1.0 §11 defines `offline_access` for access after the user is no long
 
 `op.WithRefreshTokenOfflineTTL(...)` separates the long-lived `offline_access` chains from the conventional rotation TTL. The `token.issued` audit event carries `extras.offline_access=true` so SOC dashboards can split the chains.
 
+### What does revoking a refresh token revoke?
+
+`/revoke` on a refresh token revokes that token's whole rotation chain, however long the chain has grown, and the access tokens issued under the grant stop being accepted. The user's other refresh chains on the same client are not touched, so a second device keeps working and can mint new access tokens. A refresh-token replay is the exception: RFC 9700 §2.2.2 treats it as theft, so the OP revokes the replayed chain together with every access token issued under the grant. The `token.revoked` audit event reports `surface: "refresh_grant"` when `/revoke` had to fall back from the chain to the grant's refresh tokens.
+
+A bring-your-own store gets this per-chain scope only if it implements `store.OpaqueAccessTokenChainRevoker` and `store.IssuanceRevocationChecker` and persists `ChainID`. Without them, revocation stays grant-wide.
+
 <div id="dpop" class="faq-anchor"></div>
 
 ## DPoP & sender-constraint {#dpop-sender-constraint}
@@ -219,7 +231,7 @@ Correct. The DPoP discovery list is `ES256, EdDSA, PS256` — narrower than the 
 
 ### Do I need to migrate my users table?
 
-No. The library never reads or writes your `users` table directly. You implement `op.Authenticator` (or use the supplied TOTP one) and `store.UserStore` against whatever schema you already have. The OP asks "is this credential valid?" and "what claims does this subject have?" — that's the only contact surface.
+No. The library never reads or writes your `users` table directly. You point `op.PrimaryPassword` (or another login step, or your own `op.Authenticator`) and `store.UserStore` at whatever schema you already have. The OP asks "is this credential valid?" and "what claims does this subject have?" — that's the only contact surface.
 
 ### Which storage adapter should I pick?
 
@@ -227,7 +239,7 @@ No. The library never reads or writes your `users` table directly. You implement
 |---|---|
 | `inmem` | Tests, demos, single-process dev |
 | `sql` (SQLite / MySQL / Postgres) | Single durable backend; easiest production path |
-| `redis` (volatile substores only) | Pair with `sql` via `composite` for hot/cold split |
+| `redis` (sessions, interactions, consumed JTIs) | Pair with `sql` via `composite` for a hot/cold split; it cannot serve as the store alone |
 | `composite` | Hot/cold; all `TxClusterKinds` share one comparable transactional backend, while other kinds may route separately |
 | `dynamodb` | One-table-per-substore durable backend; `store.Transactional` supports the browser authorization-code flow. Experimental API. |
 
@@ -235,7 +247,7 @@ See [/use-cases/sql-store](/use-cases/sql-store), [/use-cases/dynamodb-store](/u
 
 ### Why does `composite.New` reject my config at boot?
 
-Because the transactional cluster invariant says all transactional substores (clients / codes / refresh tokens / access tokens / IATs) must share **one** backend. The volatile slice (sessions / DPoP nonce cache / JAR `jti` registry) is the only part that may diverge. `composite.New` validates this at construction and refuses to boot a configuration that would split a transaction across two stores.
+Because the transactional cluster invariant says the substores that take part in one transaction must share **one** backend: authorization codes, refresh tokens, grants, pushed authorization requests, access tokens, opaque access tokens and grant revocations (`composite.TxClusterKinds`). Sessions and interactions are outside the cluster and may live in Redis. Consumed-JTI markers are not eviction-tolerant, so route them to Redis only on a `noeviction` instance; the default is to keep them with the durable store. `composite.New` checks all of this at construction and refuses a configuration that would split a transaction across two stores.
 
 <div id="ui-spa" class="faq-anchor"></div>
 
@@ -267,9 +279,9 @@ Error pages emit `<div id="op-error" data-code="..." data-description="...">` un
 op.WithCORSOrigins("https://app.example.com")
 ```
 
-The library auto-derives the allowlist from registered redirect URIs when you don't pass one. See [/use-cases/cors-spa](/use-cases/cors-spa).
+For the API endpoints (`/token`, `/userinfo`, `/introspect`, `/revoke`, `/par`) the allowlist also includes the issuer origin and the redirect-URI origins of clients seeded with `WithStaticClients`. A client that lives only in the client store, or was created by dynamic registration, contributes no origin, so a browser client of that kind needs its origin in `WithCORSOrigins`. See [/use-cases/cors-spa](/use-cases/cors-spa).
 
-The API CORS allowlist may derive redirect-URI origins; that does not authorize cross-origin interaction or end-session ceremonies. Those accept only the issuer origin and origins explicitly passed to `WithCORSOrigins`, and a ceremony origin must be same-site with the issuer. A genuinely cross-site explicit origin may pass preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies, including `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` (`SameSite=Strict`), and `__Host-oidc_logout_csrf` (`SameSite=Strict`), so interaction and end-session requests return `404`. Put ceremony UI on an issuer-sibling host, such as `login.example.com` alongside `op.example.com`.
+Redirect-URI origins never authorize cross-origin interaction or end-session ceremonies. Those accept only the issuer origin and origins explicitly passed to `WithCORSOrigins`, and a ceremony origin must be same-site with the issuer. A genuinely cross-site explicit origin may pass preflight and receive CORS headers, but the browser withholds the `__Host-` ceremony cookies, including `__Host-oidc_interaction` (`SameSite=Lax`), `__Host-oidc_csrf` (`SameSite=Strict`), and `__Host-oidc_logout_csrf` (`SameSite=Strict`), so interaction and end-session requests return `404`. Put ceremony UI on an issuer-sibling host, such as `login.example.com` alongside `op.example.com`.
 
 ### Can I customize the consent screen without forking the library?
 
@@ -285,7 +297,7 @@ Yes. There are three supported paths:
 
 ### Where does password / TOTP / passkey verification live?
 
-The library ships building blocks (`op.PrimaryPassword`, `op.StepTOTP`, `op.RuleAlways`, …) that you compose into an `op.LoginFlow`. The flow is the DAG deciding which factors run in which order; the credential storage is your `store.UserPasswords()` / `store.TOTPs()` implementation. The `op.Authenticator` type is exposed for fully custom factors (passkey, email-OTP, …). [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) and onward.
+The library ships building blocks (`op.PrimaryPassword`, `op.StepTOTP`, `op.RuleAlways`, …) that you compose into an `op.LoginFlow`. The flow decides which factors run and in which order; the credential storage is your implementation of `store.UserPasswordStore` and `store.TOTPStore` (the in-memory adapter exposes them as `UserPasswords()` and `TOTPs()`). The `op.Authenticator` type is exposed for fully custom factors (passkey, email-OTP, …). [`examples/20-mfa-totp`](https://github.com/libraz/go-oidc-provider/tree/main/examples/20-mfa-totp) and onward.
 
 ### How do I implement step-up?
 
@@ -341,7 +353,8 @@ A finite catalog (search `op.Audit*` constants in `op/audit.go`):
 | `token_exchange.*` | RFC 8693 |
 | `client_authn.*` / `introspection.*` | client auth / introspection |
 | `account.*` / `federation.*` / `recovery.*` | account-management feed |
-| `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` | defensive signals |
+| `rate_limit.*` / `pkce.*` / `redirect_uri.*` / `alg.*` / `cors.*` / `dpop.*` / `key.*` / `lockout.*` | defensive signals |
+| `custom_grant.*` / `grant_management.*` / `cascade.*` / `startup.*` | custom grants, Grant Management, teardown cascades, boot-time posture record |
 
 Every event carries `audit="true"` and its `event` identifier. Fields such as `actor_id`, `client_id`, and `request_id` appear only when set; the category-specific `extras` group is omitted when empty. Subscribe through `op.WithAuditLogger(...)` (a `*slog.Logger`). See the [audit event catalog](/reference/audit-events#common-attributes) for the full record shape.
 
@@ -373,21 +386,29 @@ Yes. Pin production dependencies in `go.mod` and read the [CHANGELOG](https://gi
 
 ## Common errors {#common-errors}
 
-### `invalid_request: redirect_uri does not match a registered URI`
+### `invalid_request: redirect_uri is not registered for this client`
 
-You hit redirect-URI exact-match. Three usual causes:
+`/auth` compares `redirect_uri` byte for byte with the client's registered list, and shows this error on the OP's own page instead of redirecting, because the URI is not yet trusted. Three usual causes:
 
 1. Trailing slash drift (`/cb` vs `/cb/`).
 2. Default port included on one side (`https://rp.example.com:443/cb` vs `https://rp.example.com/cb`).
 3. CLI / native loopback without the RFC 8252 §7.3 opt-in (above).
 
-### `invalid_client: alg not allowed`
+### `invalid_request_object: request object alg is not allowed`
 
-The client's `request_object_signing_alg` / `token_endpoint_auth_signing_alg` is not in the codebase allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`). If you use this library's `profile.FAPI2Baseline`, narrow each client to `PS256` (or `ES256` / `EdDSA`); that library profile rejects `RS256`.
+The `alg` of a JAR request object at `/auth` or `/par` is outside the allow-list (`RS256`, `PS256`, `ES256`, `EdDSA`) or outside the client's `request_object_signing_alg`. A `private_key_jwt` client assertion with a bad `alg` gets the deliberately opaque `invalid_client` ("client authentication failed") instead. If you use this library's `profile.FAPI2Baseline`, narrow each client to `PS256` (or `ES256` / `EdDSA`); that library profile rejects `RS256`.
 
-### `invalid_dpop_proof: jkt mismatch`
+### `invalid_request: this OP requires authorization requests to be pushed via the PAR endpoint`
 
-The DPoP proof's public key thumbprint (RFC 7638) doesn't match the `cnf.jkt` bound to the access token. This is the sender-binding working — either the proof was generated with a different key, or the access token belongs to a different client.
+A FAPI 2.0 profile makes PAR mandatory, so a plain `/auth?...` URL is refused. Push the request to `/par` first and send only `client_id` and the returned `request_uri` to `/auth`.
+
+### `invalid_token: DPoP proof key does not match the bound thumbprint`
+
+The DPoP proof's public key thumbprint (RFC 7638) differs from the `cnf.jkt` bound to the access token. `/userinfo` answers with this `invalid_token` challenge, and a refresh with the wrong key gets `invalid_grant`. It is the sender binding doing its job: the proof was signed with a different key, or the token belongs to a different client.
+
+### `/token` answers 503 for a `private_key_jwt` client
+
+The OP could not fetch or use the client's JWKS (`jwks_uri`) because the fetch was rejected for capacity or failed transiently. The response is 503 `server_error` ("client keys are temporarily unavailable"), not `invalid_client`, because the fault is on the OP side and the call is safe to retry. `/auth`, `/par` and `/bc-authorize` answer the same way for request objects. A client-store outage gives 500 `server_error`.
 
 ### `invalid_request_uri` after a successful `/par`
 
