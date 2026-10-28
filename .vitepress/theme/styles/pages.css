@@ -127,30 +127,6 @@
   }
 }
 
-/* The landing page still draws a bare <svg>, so it keeps the sizing and the
-   opt-in halo the figure layer supersedes everywhere else. Scoped to the page
-   so it cannot outrank `.fig-svg`, whose selector is one specificity point
-   lighter than an attribute selector. */
-.pg-index .vp-doc svg[viewBox] {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-  margin: 1.75rem auto;
-}
-
-.pg-index .vp-doc svg text,
-.pg-index .vp-doc svg tspan {
-  paint-order: stroke fill;
-  stroke: var(--dg-halo, none);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-}
-
-.pg-index .vp-doc svg .halo {
-  --dg-halo: var(--vp-c-bg);
-}
-
 /* pg-compliance-ofcs — src/compliance/ofcs.md + src/ja/compliance/ofcs.md */
 .pg-compliance-ofcs {
   --ofcs-pass: #047857;
@@ -407,35 +383,4 @@
 .pg-compliance-ofcs .vp-doc .ofcs-plan-score b {
   font-weight: 600;
   color: var(--vp-c-text-1);
-}
-
-/* pg-index — src/index.md + src/ja/index.md */
-.pg-index .home-box {
-  fill: var(--vp-c-bg-soft);
-}
-.pg-index .home-main {
-  fill: var(--vp-c-brand-soft);
-}
-.pg-index .home-text {
-  fill: var(--vp-c-text-1);
-  stroke: none;
-  font:
-    600 14px system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.pg-index .home-sub {
-  fill: var(--vp-c-text-2);
-  stroke: var(--dg-halo, none);
-  font:
-    12px system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-}
-.pg-index .home-flow {
-  stroke: var(--vp-c-brand-2);
 }

@@ -1,39 +1,86 @@
 /* =========================================
-   Figure layer
+   Figure layer — vocabulary and layout rubric
 
-   One presentation vocabulary for every hand-authored SVG on the site.
-   The markup in a page owns geometry only — coordinates, box sizes, the
-   order of the steps. Every stroke weight, fill, and type spec lives
-   here, so the whole figure set reads as one system and follows the
-   light / dark token tables without a page ever naming a colour.
+   The page owns geometry only (coordinates, order); every stroke, fill
+   and type spec comes from the classes below. No page <style>, no
+   page-specific class, no font-size/stroke attributes, no <defs>.
 
-   The register is deliberately fine: hairline strokes (1–1.3), type from
-   9 to 13px, tints instead of saturated fills. A figure should read like
-   a printed schematic sitting inside the prose, not like a slide.
+   SCALE  viewBox is 0 0 960 H (H a multiple of 8). It renders between
+          0.68 (688px column) and a cap of 0.85 (816px, set below), so the
+          type reads like the landing figure: mono ~12px, titles ~15px.
+          The landing page alone uses a 1440-wide viewBox for its column.
+   GRID   unit 8. Content lives in x 32..928, y 24..H-24. Round every
+          coordinate to 8 (4 for half steps, 2 for hairline nudges only).
+   TYPE   (units) .fg-t 17.5 | .fg-t2 16 | .fg-s/.fg-m/.fg-note 14.5 |
+          .fg-xs/.fg-mxs/.fg-edge-lbl/.fg-num/.fg-tab 14 | .fg-lbl 13.5.
+          Nothing smaller exists; never override sizes. Leave air: a box
+          should look half-empty rather than filled to its edges.
+          Widths: Latin ~7.5/char (.fg-s), 9/char (.fg-t), mono 8.7/char,
+          CJK 1 em (14.5 or 17.5). Size boxes for the longer locale (JA).
+   BOXES  rx 8. Padding 16 sides; title baseline = top+28; details every
+          24 below it. Heights: title only 48, +1 detail 72, +2 details
+          96. Max 3 lines (title+2); more means split or move to prose.
+          Text inside a box is left-aligned at x+16 (centred only for
+          actor headers and single-line chips).
+   GAPS   >=32 between sibling boxes, >=40 where an arrow runs between;
+          >=24 of bare shaft after an arrowhead lands. Group bands pad 24
+          around their children and carry a .fg-lbl at top+28 (x+24).
+   EDGES  Label sits ABOVE its line, baseline = line y - 10, centred on
+          the span, and must fit span-32 (span/9.3 mono chars). Two-line
+          labels: first line y-34 (.fg-m verb/path), second y-12 (.fg-mxs
+          detail). Vertical edges: label right of the line at x+12. A
+          label crossing a lifeline or edge gets .fg-halo, nothing else
+          (band labels too). Mono = identifiers/protocol; prose labels .fg-s.
+          Orthogonal routing, square corners. Actor subtitles: .fg-mxs for
+          identifiers, .fg-xs for prose, <=18 chars (mono) in a 208 box.
+   SEQUENCE  actor boxes y=24 h=64, w=208, centres 192/512/824 (3 lanes);
+          lifeline from box bottom to H-24. Step gutter: .fg-badge r=12 at
+          cx=32, badge-t at y+5.5; badge cy = message y, or loop top+12 for
+          self-loops. Number only steps the prose cites. Self-loop = 40
+          wide, 24 tall, note starts x+56 (left of the line when the actor
+          is the right lane: text-anchor end at x-56); first note baseline
+          = loop top+6, then +22. Row pitch >=56 (1-line label), >=72
+          (2-line), loop rows = text height + 32.
+   COLOUR  Ink/dim does 90% of the work. .fg-accent / --accent = the OP /
+          this library and its happy path (one emphasis per figure).
+          ok/warn/danger only for a labelled state (accepted / caveat /
+          attack or rejection); never decoration. Dashed = return, optional
+          or out-of-scope (--muted, --ext, .fg-frame--dashed).
+   FRAMES  .fg-group bands (no stroke) for phases/swimlanes; .fg-frame for
+          a trust boundary. At most one nesting level.
+   HEAD/CAPTION  .fig-head: sentence case, <=60 chars, states the claim,
+          not "diagram of". <figcaption>: 1-2 sentences, what to look at
+          and why it matters; never re-narrates the steps. <title>: one
+          sentence, kept in sync with the drawing.
+   MARKUP  <figure class="fig"> + .fig-head + svg.fig-svg + figcaption; no
+          blank lines (use <!-- comment --> separators); en and ja use
+          identical coordinates, only strings differ.
 
    Vocabulary
-     frame     .fg-plate .fg-frame .fg-group .fg-rule .fg-life .fg-lane
-     nodes     .fg-box (--sub --accent --muted --ok --warn --danger)
-     edges     .fg-edge (--accent --muted --danger --thin) .fg-tick .fg-dot
-     type      .fg-t .fg-t2 .fg-s .fg-xs .fg-lbl .fg-m .fg-mxs
-               .fg-edge-lbl .fg-num .fg-note
+     frame     .fg-plate .fg-frame(--dashed --accent) .fg-group(--accent)
+               .fg-rule(--strong --dashed) .fg-life(--accent) .fg-lane
+     nodes     .fg-box(--sub --accent --muted --ext --ok --warn --danger)
+               .fg-pill(--accent --ok --warn --danger) status chip, rx=h/2
+     edges     .fg-edge(--accent --muted --danger --ok --thin) .fg-leader
+               .fg-tick .fg-dot(--accent --hollow --ok --warn --danger)
+               .fg-fill(--ok --warn --danger --muted)
+     type      .fg-t .fg-t2 .fg-s .fg-xs .fg-lbl .fg-tab .fg-m .fg-mxs
+               .fg-edge-lbl .fg-num .fg-note(--strong)
      colour    .fg-ink .fg-dim .fg-faint .fg-accent .fg-ok .fg-warn .fg-danger
-     utility   .fg-halo .fg-badge .fg-badge-t
-
-   Arrowheads come from the shared markers rendered once per document by
-   `FigureDefs.vue`: url(#fg-a) ink, #fg-ac accent, #fg-am muted,
-   #fg-ad danger, #fg-ao open (line, not solid).
+     utility   .fg-halo(--plain) .fg-badge(--accent) .fg-badge-t(--accent)
+   Arrowheads: marker-end url(#fg-a) ink, #fg-ac accent, #fg-am muted,
+   #fg-ad danger, #fg-ao ok (from FigureDefs.vue; pair with the edge hue).
    ========================================= */
 
 :root {
   --fg-ink: var(--vp-c-text-1);
-  --fg-dim: var(--vp-c-text-2);
-  --fg-faint: var(--vp-c-text-3);
+  --fg-dim: #475569;
+  --fg-faint: #64748b;
   --fg-accent: #1d4ed8;
   --fg-surface: var(--vp-c-bg);
   --fg-surface-2: var(--vp-c-bg-soft);
-  --fg-rule: rgba(15, 23, 42, 0.16);
-  --fg-rule-soft: rgba(15, 23, 42, 0.09);
+  --fg-rule: rgba(15, 23, 42, 0.22);
+  --fg-rule-soft: rgba(15, 23, 42, 0.12);
   --fg-tint: rgba(29, 78, 216, 0.07);
   /* Phase / group bands, and the colour a haloed label knocks out to.
      They are the same value on purpose: nearly every label that needs a
@@ -43,9 +90,11 @@
 }
 
 .dark {
+  --fg-dim: #b8c0cc;
+  --fg-faint: #94a0b0;
   --fg-accent: #7dafff;
-  --fg-rule: rgba(255, 255, 255, 0.17);
-  --fg-rule-soft: rgba(255, 255, 255, 0.09);
+  --fg-rule: rgba(255, 255, 255, 0.24);
+  --fg-rule-soft: rgba(255, 255, 255, 0.12);
   --fg-tint: rgba(125, 175, 255, 0.1);
 }
 
@@ -69,11 +118,10 @@
   gap: 0.5rem;
   margin: 0 0 0.9rem;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.74rem;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--vp-c-text-3);
+  letter-spacing: 0.02em;
+  color: var(--vp-c-text-2);
 }
 
 .vp-doc .fig-head::before {
@@ -82,7 +130,7 @@
   width: 3px;
   height: 12px;
   border-radius: 2px;
-  background: linear-gradient(to bottom, var(--vp-c-brand-1), var(--vp-c-brand-2));
+  background: var(--fg-accent);
 }
 
 .vp-doc .fig-svg {
@@ -92,12 +140,18 @@
   margin: 0 auto;
 }
 
+/* Cap a 960-wide figure at 0.85 scale: wide doc columns would otherwise blow
+   the type up past the landing figure's size. */
+.vp-doc .fig-svg[viewBox^="0 0 960 "] {
+  max-width: 816px;
+}
+
 .vp-doc .fig-note {
   margin: 0.85rem 0 0;
   padding-top: 0.7rem;
   border-top: 1px solid var(--vp-c-divider);
   font-family: var(--font-reading);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   line-height: 1.6;
   color: var(--vp-c-text-2);
 }
@@ -123,7 +177,7 @@ html[lang="ja"] .vp-doc .fig-note {
   gap: 0.45rem;
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   line-height: 1.4;
   color: var(--vp-c-text-2);
 }
@@ -182,7 +236,7 @@ html[lang="ja"] .vp-doc .fig-note {
 .fg-frame {
   fill: none;
   stroke: var(--fg-rule);
-  stroke-width: 1;
+  stroke-width: 1.1;
 }
 
 /* Outside the boundary — another party, another process, out of scope. */
@@ -223,8 +277,8 @@ html[lang="ja"] .vp-doc .fig-note {
 .fg-life {
   fill: none;
   stroke: var(--fg-rule);
-  stroke-width: 1;
-  stroke-dasharray: 2 5;
+  stroke-width: 1.1;
+  stroke-dasharray: 3 6;
 }
 
 .fg-life--accent {
@@ -243,7 +297,30 @@ html[lang="ja"] .vp-doc .fig-note {
 .fg-box {
   fill: var(--fg-surface);
   stroke: var(--fg-rule);
-  stroke-width: 1;
+  stroke-width: 1.1;
+}
+
+/* Status chip: rx = height / 2, one short label (.fg-s / .fg-xs inside). */
+.fg-pill {
+  fill: var(--fg-surface-2);
+  stroke: var(--fg-rule-soft);
+  stroke-width: 1.1;
+}
+.fg-pill--accent {
+  fill: var(--fg-tint);
+  stroke: color-mix(in srgb, var(--fg-accent) 45%, transparent);
+}
+.fg-pill--ok {
+  fill: color-mix(in srgb, var(--sem-ok) 12%, transparent);
+  stroke: color-mix(in srgb, var(--sem-ok) 45%, transparent);
+}
+.fg-pill--warn {
+  fill: color-mix(in srgb, var(--sem-warn) 12%, transparent);
+  stroke: color-mix(in srgb, var(--sem-warn) 45%, transparent);
+}
+.fg-pill--danger {
+  fill: color-mix(in srgb, var(--sem-danger) 12%, transparent);
+  stroke: color-mix(in srgb, var(--sem-danger) 45%, transparent);
 }
 
 /* Nested inside another box — one step quieter. */
@@ -302,7 +379,7 @@ html[lang="ja"] .vp-doc .fig-note {
 .fg-edge--muted {
   stroke: var(--fg-faint);
   stroke-width: 1.2;
-  stroke-dasharray: 5 4;
+  stroke-dasharray: 6 5;
 }
 
 .fg-edge--danger {
@@ -320,7 +397,7 @@ html[lang="ja"] .vp-doc .fig-note {
 /* Thin leader from a note to the mark it names. */
 .fg-leader {
   fill: none;
-  stroke: var(--fg-rule);
+  stroke: color-mix(in srgb, var(--fg-ink) 42%, transparent);
   stroke-width: 1;
 }
 
@@ -380,42 +457,50 @@ html[lang="ja"] .vp-doc .fig-note {
   stroke: none;
   fill: var(--fg-ink);
   font-family: var(--font-reading);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Node title. */
 .fg-t {
-  font-size: 12.5px;
+  font-size: 17.5px;
   font-weight: 600;
   fill: var(--fg-ink);
 }
 
 /* Secondary / nested node title. */
 .fg-t2 {
-  font-size: 11.5px;
+  font-size: 16px;
   font-weight: 500;
   fill: var(--fg-ink);
 }
 
 /* A detail line inside a box. */
 .fg-s {
-  font-size: 10.5px;
+  font-size: 14.5px;
   fill: var(--fg-dim);
 }
 
 /* Micro caption — the smallest thing that still has to be read. */
 .fg-xs {
-  font-size: 9.5px;
+  font-size: 14px;
   fill: var(--fg-faint);
 }
 
 /* Region label above a group: the mono uppercase micro-label again. */
 .fg-lbl {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 13.5px;
   font-weight: 500;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   fill: var(--fg-faint);
+}
+
+/* Japanese band labels: no mono CJK fallback, no case transform. */
+html[lang^="ja"] .fg-lbl {
+  font-family: var(--font-reading);
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 /* The tab on a sequence fragment (`par`, `loop`, `alt`). Mono like the
@@ -423,7 +508,7 @@ html[lang="ja"] .vp-doc .fig-note {
    identifiers, and "EVERY INTERVAL S" is not a readable thing to write. */
 .fg-tab {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.04em;
   fill: var(--fg-faint);
@@ -432,13 +517,13 @@ html[lang="ja"] .vp-doc .fig-note {
 /* Identifiers: endpoints, claim names, package paths. */
 .fg-m {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 14.5px;
   fill: var(--fg-dim);
 }
 
 .fg-mxs {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 14px;
   fill: var(--fg-faint);
 }
 
@@ -446,21 +531,21 @@ html[lang="ja"] .vp-doc .fig-note {
    method + path or a parameter list. */
 .fg-edge-lbl {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 14px;
   fill: var(--fg-dim);
 }
 
 /* Step numbers beside an edge. */
 .fg-num {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 14px;
   fill: var(--fg-faint);
 }
 
 /* A sentence pointing at something — set in the reading face because it
    is prose, not a name. */
 .fg-note {
-  font-size: 10.5px;
+  font-size: 14.5px;
   fill: var(--fg-dim);
 }
 
@@ -507,7 +592,7 @@ html[lang="ja"] .fg-svg text {
 .fg-halo {
   paint-order: stroke fill;
   stroke: var(--fg-band);
-  stroke-width: 3px;
+  stroke-width: 4px;
   stroke-linejoin: round;
 }
 
@@ -520,7 +605,7 @@ html[lang="ja"] .fg-svg text {
 .fg-badge {
   fill: var(--fg-surface);
   stroke: var(--fg-rule);
-  stroke-width: 1;
+  stroke-width: 1.1;
 }
 
 .fg-badge--accent {
@@ -530,7 +615,7 @@ html[lang="ja"] .fg-svg text {
 
 .fg-badge-t {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 13.5px;
   font-weight: 600;
   fill: var(--fg-dim);
 }
@@ -569,6 +654,6 @@ html[lang="ja"] .fg-svg text {
   /* Below this width a 960px figure would set its type at 6px or less;
      let it keep its own scale and scroll instead. */
   .vp-doc .fig-svg {
-    min-width: 620px;
+    min-width: 640px;
   }
 }
