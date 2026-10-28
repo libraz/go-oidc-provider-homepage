@@ -6,7 +6,7 @@ pageClass: pg-concepts-client-credentials
 
 # Client Credentials
 
-`grant_type=client_credentials` is the **service-to-service** grant: no end user, no browser, no consent. A confidential backend authenticates **as itself** and gets an access token to call another backend.
+`grant_type=client_credentials` is the **service-to-service** grant: no end user, no browser, no consent. A confidential backend authenticates **as itself** at the token endpoint and gets an access token to call another backend. Use it for batch jobs, internal APIs and daemons; use [authorization code + PKCE](./authorization-code-pkce) whenever a person is involved.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework (§4.4 client credentials)
@@ -18,72 +18,67 @@ pageClass: pg-concepts-client-credentials
 :::
 
 ::: details Vocabulary refresher
-- **Confidential client** — a client that can hold a real authentication credential (a long-lived secret, an asymmetric key, or an X.509 certificate). Backends and trusted servers are confidential.
+- **Confidential client** — a client that can hold a real authentication credential (a long-lived secret, an asymmetric key, or an X.509 certificate). Backends and trusted servers are confidential. See [Client types](./client-types).
 - **Public client** — a client that *cannot* hold a real secret in practice (SPAs in a browser, native mobile apps). They authenticate with `token_endpoint_auth_method=none` and rely on PKCE for code protection.
 - **`private_key_jwt`** — client authentication where the client signs a short-lived JWT with its private key; the OP verifies it against the registered public key. Stronger than a shared secret because the secret never leaves the client.
 :::
 
 <figure class="fig">
-  <div class="fig-head">Client Credentials — one service, no user</div>
-  <svg class="fig-svg" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 960 316" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">One service gets a token as itself, no user</div>
+  <svg class="fig-svg" role="img" aria-labelledby="cc-flow-title" viewBox="0 0 960 632" xmlns="http://www.w3.org/2000/svg">
     <title id="cc-flow-title">The client credentials flow. Service A authenticates to the OP as itself, receives an access token scoped to what it registered, and presents that token as a bearer credential to Service B.</title>
+    <!-- phase bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="296" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">Get a token</text>
+    <rect class="fg-group" x="32" y="424" width="896" height="182" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="452">Call the API</text>
     <!-- lifelines -->
-    <line class="fg-life" x1="160" y1="62" x2="160" y2="300"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="300"/>
-    <line class="fg-life" x1="820" y1="62" x2="820" y2="300"/>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="608"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="608"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="608"/>
     <!-- actors -->
-    <rect class="fg-box" x="70" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="160" y="35" text-anchor="middle">Service A</text>
-    <text class="fg-xs" x="160" y="49" text-anchor="middle">your backend</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="730" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="820" y="35" text-anchor="middle">Service B</text>
-    <text class="fg-xs" x="820" y="49" text-anchor="middle">another backend</text>
-    <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="124" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="127" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M160,124 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="330" y="92" text-anchor="middle">POST /token</text>
-    <text class="fg-mxs" x="330" y="105" text-anchor="middle">grant_type=client_credentials</text>
-    <text class="fg-mxs" x="330" y="118" text-anchor="middle">scope · client authentication</text>
-    <!-- 2 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="158" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="161" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,150 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="542" y="154">check the requested scope</text>
-    <text class="fg-mxs" x="542" y="167">against the client's allow-list</text>
-    <!-- 3 -->
-    <circle class="fg-badge" cx="15" cy="204" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="207" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--accent" d="M500,204 H160" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="330" y="184" text-anchor="middle">200 OK</text>
-    <text class="fg-mxs" x="330" y="197" text-anchor="middle">{ access_token, expires_in } — no id_token, no refresh_token</text>
-    <!-- 4 -->
-    <circle class="fg-badge" cx="15" cy="252" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="255" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M160,252 H820" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="490" y="232" text-anchor="middle">GET /things</text>
-    <text class="fg-mxs fg-halo" x="490" y="245" text-anchor="middle">Authorization: Bearer &lt;token&gt;</text>
-    <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="288" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="291" text-anchor="middle">5</text>
-    <path class="fg-edge" d="M820,288 H160" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="490" y="282" text-anchor="middle">200 [ … ]</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Service A</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">your backend</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Service B</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">another backend</text>
+    <!-- token request -->
+    <path class="fg-edge" d="M192,206 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="172" text-anchor="middle">POST /token</text>
+    <text class="fg-mxs" x="352" y="194" text-anchor="middle">grant_type=client_credentials</text>
+    <!-- OP checks -->
+    <path class="fg-edge fg-edge--accent" d="M512,246 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="252">authenticate the client</text>
+    <text class="fg-s" x="568" y="274">check the scope against</text>
+    <text class="fg-s" x="568" y="296">its allow-list</text>
+    <!-- token response -->
+    <path class="fg-edge fg-edge--accent" d="M512,376 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="342" text-anchor="middle">200 · access_token</text>
+    <text class="fg-xs" x="352" y="364" text-anchor="middle">no id_token, no refresh_token</text>
+    <!-- API call -->
+    <path class="fg-edge" d="M192,526 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="508" y="492" text-anchor="middle">GET /things</text>
+    <text class="fg-mxs fg-halo" x="508" y="514" text-anchor="middle">Authorization: Bearer &lt;token&gt;</text>
+    <!-- API response -->
+    <path class="fg-edge fg-edge--muted" d="M824,582 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="572" text-anchor="middle">200 [ … ]</text>
   </svg>
-  <figcaption class="fig-note">There is no user anywhere in this picture, so there is nothing for an ID token to describe and nobody to re-consent when a refresh token would have expired. The <code>sub</code> of the resulting token is the client itself.</figcaption>
+  <figcaption class="fig-note">The access token is the only thing that comes back: no ID token, because there is no user to describe, and no refresh token, because the client can authenticate and ask again. The <code>sub</code> of the token is the client itself.</figcaption>
 </figure>
 
 ::: warning Confidential clients only
-`client_credentials` is structurally restricted to **confidential** clients in this library — clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`). Public clients (SPAs / native, `token_endpoint_auth_method=none`) cannot use it. mTLS can bind issued access tokens, but it is not a `client_credentials` authentication method.
+`client_credentials` is restricted to **confidential** clients — clients with a real authentication credential (`client_secret_basic`, `client_secret_post`, `private_key_jwt`). Public clients (SPAs / native, `token_endpoint_auth_method=none`) cannot use it. `tls_client_auth` and `self_signed_tls_client_auth` are not selectable in this library; [mTLS](./mtls) binds the issued access token to a certificate instead, whichever method authenticated the client.
 
 There is no end user, so there is no PKCE, no consent, no `id_token`, and **no refresh token**. The client just re-runs the grant when the access token expires.
 :::
 
 ## Wiring
 
-Enable the grant explicitly. The library refuses to mint tokens for any grant type not in the enabled set.
+Enable the grant explicitly. The token endpoint refuses any grant type that is not in the enabled set.
 
 ```go
 import (
@@ -110,23 +105,23 @@ handler, err := op.New(
 )
 ```
 
-A registered client opting in via `GrantTypes`:
+A registered client opts in through `GrantTypes`. A static `client_secret_basic` / `client_secret_post` client must carry `Secret` (or a pre-computed `SecretHash`); `op.New` refuses one without. For `private_key_jwt`, use `op.PrivateKeyJWTClient` with the public JWKS.
 
 ```go
 op.WithStaticClients(op.ConfidentialClient{
   ID:         "service-a",
   Secret:     "rotate-me",
-  AuthMethod: op.AuthClientSecretBasic, // or use op.PrivateKeyJWTClient instead for private_key_jwt
+  AuthMethod: op.AuthClientSecretBasic, // the default when empty
   GrantTypes: []string{"client_credentials"},
   Scopes:     []string{"read:things", "write:things"},
 })
 ```
 
 ::: details Why both global and per-client opt-in?
-- **Global** (`op.WithGrants`) gates which grants the OP supports at all, surfaced in `grant_types_supported` of the discovery document.
-- **Per-client** (`store.Client.GrantTypes`) gates which of those grants *this specific client* may use.
+- **Global** (`op.WithGrants`) sets which grants the OP supports at all, surfaced in `grant_types_supported` of the [discovery document](./discovery).
+- **Per-client** (`GrantTypes` on the client record) sets which of those grants *this client* may use. When left empty, a static client defaults to `authorization_code` and `refresh_token`; a non-empty list replaces the default entirely.
 
-A client only succeeds when both checks pass. This lets you run a single OP that issues `authorization_code` for end-user apps and `client_credentials` for backend services, without giving the SPA client the ability to mint app-level tokens.
+A request succeeds only when both checks pass. One OP can therefore issue `authorization_code` to end-user apps and `client_credentials` to backend services, and an SPA client cannot mint app-level tokens.
 :::
 
 ## Token shape
@@ -134,25 +129,39 @@ A client only succeeds when both checks pass. This lets you run a single OP that
 `client_credentials` access tokens carry:
 
 - `iss` — the OP issuer
-- `aud` — the resource server identifier (the typed seeds carry a `Resources []string` field that lists permitted RFC 8707 resource indicators; with DCR, the equivalent `resources` metadata field)
+- `aud` — the `resource` the request named (RFC 8707), or the OP issuer when it named none; see below
 - `client_id` — the requesting client
 - `sub = client_id` — RFC 9068 §2.2 says `sub` SHOULD correspond to the client application; this library uses the client itself as the subject
-- `scope` — the granted subset of the requested scopes
+- `scope` — the granted scopes. A request without `scope` gets every scope registered on the client except `openid`
 
 When `op.WithFeature(feature.MTLS)` or DPoP is configured and the client presented a sender constraint, the token additionally carries the `cnf` (Confirmation, RFC 7800) claim binding it to that constraint.
+
+The subject is never pairwise: with a pairwise `SubjectType` on the client, `sub` is still the plain `client_id`, because pairwise identifiers are defined for end users only.
 
 ::: details Why `sub = client_id` here?
 In the user-facing flows, `sub` is the end-user's stable identifier. In `client_credentials` there is no end user, so RFC 9068 §2.2 says `sub` SHOULD correspond to the client application; it does not require literal equality with `client_id`. This library chooses that direct mapping and sets `sub = client_id`, so the *client itself* acts as the subject. RSes that read `sub` to log "who did this" still get a stable identifier; they just need to know that for service tokens, that identifier is a registered service rather than a person. A common bug is to assume `sub` always points to a row in the user table; for service tokens it points to a row in the *client* table.
 :::
 
 ::: details `aud` for `client_credentials` — what it means and how it's set
-**`aud`** is the resource server identifier — *not* the `client_id`, *not* the OP's issuer. It tells the RS "this token was minted for me to consume." The library populates it from:
+**`aud`** names the resource server the token is for — *not* the `client_id`. It tells the RS "this token was minted for me to consume." The library sets it from the request:
 
-- The client's registered `Resources []string` (the allow-list of RFC 8707 resource indicators the client is permitted to ask for); or
-- The runtime `resource=...` request parameter (RFC 8707), if the client requests one within its allow-list.
+- With `resource=https://api.example.com` (RFC 8707), `aud` is that value, canonicalised. The value must appear in the client's registered `Resources` allow-list, and only one `resource` is accepted per request; anything else is `400 invalid_target`.
+- Without `resource`, `aud` is the OP issuer.
 
-Without `Resources` configured and without a runtime `resource` parameter, the OP falls back to a deployment-defined default. RSes should reject tokens whose `aud` doesn't match their own identifier — that's the audience-restriction defence against a token stolen from an RS being replayed against a different RS.
+`Resources` is an allow-list, not a default: registering it does not put anything into `aud` by itself. An RS should reject tokens whose `aud` is not its own identifier. That is the audience-restriction defence against a token stolen from one RS being replayed against another.
 :::
+
+## What the token endpoint answers
+
+| Condition | Response |
+|---|---|
+| Client authentication fails | `invalid_client`; `503` instead when the client's JWKS fetch is overloaded or failing, `500 server_error` on a client-store outage |
+| Public client, or `client_credentials` not in the client's `GrantTypes` | `400 unauthorized_client` |
+| `scope` contains `openid` | `400 invalid_scope` |
+| `scope` contains an entry outside the client's registered `Scopes` | `400 invalid_scope` (rejected, not silently narrowed) |
+| `resource` malformed, repeated with different values, or not in `Resources` | `400 invalid_target` |
+
+Public and unregistered-grant clients get the same code on purpose, so a caller cannot tell the two apart from the wire.
 
 ::: details Bearer vs sender-constrained — what's the difference?
 By default, `client_credentials` access tokens are **bearer** tokens (RFC 6750): "whoever holds it, can use it." A leaked bearer token works for the attacker until it expires.
@@ -164,7 +173,7 @@ For service-to-service traffic in regulated contexts (FAPI 2.0, PSD2, OBL), send
 
 ## See it run
 
-[`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) ships a runnable end-to-end version with a `client_secret_basic` client.
+[`examples/05-client-credentials`](https://github.com/libraz/go-oidc-provider/tree/main/examples/05-client-credentials) is a machine-to-machine-only OP (`op.WithGrants(grant.ClientCredentials)`) with one `client_secret_basic` client; the `curl` command it prints at startup fetches a token.
 
 ```sh
 (cd examples/05-client-credentials && GOWORK=off go run -tags example .)
@@ -172,5 +181,6 @@ For service-to-service traffic in regulated contexts (FAPI 2.0, PSD2, OBL), send
 
 ## Read next
 
+- [Access token format](./access-token-format) — JWT vs opaque, and how `aud` selects the format.
 - [Sender constraint (DPoP / mTLS)](/concepts/sender-constraint) — bind service tokens to a client-held key so a stolen token is useless.
 - [Use case: client_credentials in production](/use-cases/client-credentials).

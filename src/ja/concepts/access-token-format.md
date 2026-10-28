@@ -6,11 +6,11 @@ pageClass: pg-concepts-access-token-format
 
 # アクセストークンの形式 — JWT と opaque
 
-`go-oidc-provider` は **RFC 9068 に沿った形の JWT アクセストークンを既定で発行** し、**opaque 形式は明示時のみ** 選べます。形式によって **検証する主体** と **失効の伝わり方** が変わります。提示方法は送信者制約によって決まり、制約なし・mTLS バインドでは `Authorization: Bearer`、DPoP バインドでは `Authorization: DPoP` と DPoP proof ヘッダーを使います。
+`go-oidc-provider` は **RFC 9068 に沿った形の JWT アクセストークンを既定で発行** し、**opaque 形式は明示時のみ** 選べます。形式によって **検証する主体** と **失効の伝わり方** が変わります。提示方法は送信者制約によって決まり、制約なし・mTLS バインドでは `Authorization: Bearer`、DPoP バインドでは `Authorization: DPoP` と DPoP proof ヘッダを使います。
 
 本ライブラリは JWT アクセストークンを ES256 のみで署名しますが、RFC 9068 §2.1 は RS256 対応を求めます。また、検証側は §2.2 で必須の `jti` がなくても受け付けます。完全適合を判断する際は [RFC 対応表](/ja/compliance/rfc-matrix) を参照してください。
 
-これはライブラリ側で決められない設計判断で、組み込み側が選ぶことになります。RS（リソースサーバ）が OP に対してどの位置にいるか、即時失効をどこまで要求するか、負荷をどう分散したいかで答えが変わります。
+形式はライブラリ側では決められず、組み込み側が選びます。RS（リソースサーバ）が OP に対してどの位置にいるか、失効をどれだけ速く反映させる必要があるか、負荷をどこに置きたいかで答えが変わります。OP・RP・RS といった役割から確認したい場合は、先に [OAuth 2.0 / OIDC 入門](/ja/concepts/oauth2-oidc-primer) を読んでください。
 
 ::: tip 結論を先に
 - **既定は JWT（RFC 9068）。** RS は JWKS でオフライン検証します。`/end_session` のカスケードは OP のエンドポイント（`/userinfo` / `/introspect`）までしか届かず、オフライン検証している RS では `exp` までトークンが通り続けます。
@@ -34,29 +34,33 @@ pageClass: pg-concepts-access-token-format
 
 ## 同じ通信路上の枠に 2 つの形式
 
-同じ送信者制約の下では、どちらの形式も同じ認可方式で提示します。制約なし・mTLS バインドなら `Bearer`、DPoP バインドなら proof ヘッダーを添えた `DPoP` です。ここでの違いは **RS がトークンをどう検証するか** です。図は制約なしの Bearer トークンを例にしています。
+同じ送信者制約の下では、どちらの形式も同じ認可方式で提示します。制約なし・mTLS バインドなら `Bearer`、DPoP バインドなら proof ヘッダを添えた `DPoP` です。ここでの違いは **RS がトークンをどう検証するか** です。図は制約なしの Bearer トークンを例にしています。
 
 ### JWT（RFC 9068） — RS がローカルで検証
 
 <figure class="fig">
   <div class="fig-head">JWT — リソースサーバが自分で判断する</div>
-  <svg class="fig-svg" role="img" aria-labelledby="atf-jwt-title" viewBox="0 30 960 140" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="atf-jwt-title" viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg">
     <title id="atf-jwt-title">JWT アクセストークンでは、リソースサーバが署名、typ、issuer、audience、有効期間、必須 claim をキャッシュ済みの OP 鍵で検証し、必要に応じて鍵を更新します。DPoP バインド時は proof も検証します。通常のリクエスト経路に OP は入りません。</title>
-    <rect class="fg-box" x="36" y="54" width="190" height="68" rx="8"/>
-    <text class="fg-t" x="56" y="84">RP</text>
-    <text class="fg-xs" x="56" y="104">アクセストークンを保持する</text>
-    <path class="fg-edge" d="M230,96 H316" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="273" y="89" text-anchor="middle">Bearer &lt;JWT&gt;</text>
-    <rect class="fg-box" x="320" y="48" width="320" height="98" rx="8"/>
-    <text class="fg-t" x="340" y="80">RS</text>
-    <text class="fg-xs" x="340" y="102">JWT claim とバインドの証明を検証</text>
-    <text class="fg-xs" x="340" y="120">問い合わせる相手も待ち時間も無い</text>
-    <text class="fg-mxs fg-ok" x="340" y="138">リクエストあたりのネットワーク呼び出し 0 回</text>
-    <path class="fg-edge fg-edge--muted" d="M644,96 H730" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="687" y="89" text-anchor="middle">一度だけ</text>
-    <rect class="fg-box fg-box--accent" x="734" y="54" width="190" height="68" rx="8"/>
-    <text class="fg-m fg-accent" x="754" y="84">OP /jwks</text>
-    <text class="fg-xs" x="754" y="104">RS が取得してキャッシュする</text>
+    <!-- RP -->
+    <rect class="fg-box" x="32" y="36" width="208" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="64">RP</text>
+    <text class="fg-s" x="48" y="88">トークンを保持する</text>
+    <!-- RS -->
+    <rect class="fg-box" x="448" y="24" width="336" height="96" rx="8"/>
+    <text class="fg-t" x="464" y="52">RS</text>
+    <text class="fg-s" x="464" y="76">JWT とバインド証明を検証する</text>
+    <text class="fg-mxs fg-ok" x="464" y="100">リクエストあたり通信 0 回</text>
+    <!-- RP to RS -->
+    <path class="fg-edge" d="M240,72 H448" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="344" y="62" text-anchor="middle">Bearer &lt;JWT&gt;</text>
+    <!-- OP -->
+    <rect class="fg-box fg-box--accent" x="448" y="176" width="336" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="464" y="204">OP /jwks</text>
+    <text class="fg-s" x="464" y="228">署名鍵</text>
+    <!-- key fetch -->
+    <path class="fg-edge fg-edge--muted" d="M616,120 V176" marker-end="url(#fg-am)"/>
+    <text class="fg-s" x="628" y="154">初回に取得し、キャッシュする</text>
   </svg>
   <figcaption class="fig-note">高速で、しかもオフラインで完結します。それが同時に難点でもあり、発行後に OP が行ったことは、トークン自身の <code>exp</code> が過ぎるまでこのリソースサーバには届きません。</figcaption>
 </figure>
@@ -67,25 +71,29 @@ RS はキャッシュした JWKS の鍵で署名と許可アルゴリズムを�
 
 <figure class="fig">
   <div class="fig-head">Opaque — リソースサーバが毎回問い合わせる</div>
-  <svg class="fig-svg" role="img" aria-labelledby="atf-opaque-title" viewBox="0 30 960 140" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="atf-opaque-title" viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg">
     <title id="atf-opaque-title">opaque なアクセストークンは読み取れる内容を持たないため、リソースサーバはリクエストのたびに OP の introspection エンドポイントを呼び出し、その応答でトークンを解決します。</title>
-    <rect class="fg-box" x="36" y="54" width="190" height="68" rx="8"/>
-    <text class="fg-t" x="56" y="84">RP</text>
-    <text class="fg-xs" x="56" y="104">アクセストークンを保持する</text>
-    <path class="fg-edge" d="M230,96 H316" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="273" y="89" text-anchor="middle">Bearer &lt;opaque&gt;</text>
-    <rect class="fg-box" x="320" y="48" width="320" height="98" rx="8"/>
-    <text class="fg-t" x="340" y="80">RS</text>
-    <text class="fg-xs" x="340" y="102">トークン単体では何も分からない</text>
-    <text class="fg-xs" x="340" y="120">これが何かを OP に尋ねる必要がある</text>
-    <text class="fg-mxs fg-warn" x="340" y="138">リクエストあたりのネットワーク呼び出し 1 回</text>
-    <path class="fg-edge" d="M644,80 H730" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="687" y="73" text-anchor="middle">毎リクエスト</text>
-    <path class="fg-edge fg-edge--accent" d="M730,120 H648" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="689" y="138" text-anchor="middle">応答</text>
-    <rect class="fg-box fg-box--accent" x="734" y="54" width="190" height="68" rx="8"/>
-    <text class="fg-m fg-accent" x="754" y="84">OP /introspect</text>
-    <text class="fg-mxs" x="754" y="104">{ active, sub, scope, … }</text>
+    <!-- RP -->
+    <rect class="fg-box" x="32" y="36" width="208" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="64">RP</text>
+    <text class="fg-s" x="48" y="88">トークンを保持する</text>
+    <!-- RS -->
+    <rect class="fg-box" x="448" y="24" width="336" height="96" rx="8"/>
+    <text class="fg-t" x="464" y="52">RS</text>
+    <text class="fg-s" x="464" y="76">トークン単体では何も分からない</text>
+    <text class="fg-mxs fg-warn" x="464" y="100">リクエストあたり通信 1 回</text>
+    <!-- RP to RS -->
+    <path class="fg-edge" d="M240,72 H448" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="344" y="62" text-anchor="middle">Bearer &lt;opaque&gt;</text>
+    <!-- OP -->
+    <rect class="fg-box fg-box--accent" x="448" y="176" width="336" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="464" y="204">OP /introspect</text>
+    <text class="fg-mxs" x="464" y="228">{ active, sub, … }</text>
+    <!-- introspection round trip -->
+    <path class="fg-edge" d="M520,120 V176" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="532" y="154">毎リクエスト</text>
+    <path class="fg-edge fg-edge--accent" d="M712,176 V120" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="724" y="154">応答</text>
   </svg>
   <figcaption class="fig-note">呼び出しごとに往復が発生する代わりに、返ってくる答えはその瞬間に正しい値です。ここでトークンを失効させれば、次のリクエストがもうそれを知っています。</figcaption>
 </figure>
@@ -94,10 +102,12 @@ opaque token は `crypto/rand` から取った 32 バイトを base64url で 43 
 
 `/introspect` は confidential client 向けのエンドポイントです。public client や token endpoint 認証方式が `none` の client は、token を提示しても `401 invalid_client` を受け取ります。confidential caller は自分の token を introspect できます。リソースサーバが別 client に発行された access token を調べられるのは、その client ID が protected resource の `IntrospectionClients` に登録され、token の `aud` がその resource を示す場合だけです。この委譲は audience 単位で、refresh token には適用されません。
 
-opaque access token が active のとき、RFC 7662 response には利用可能な `client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope` に加えて `iss` も含まれます。JWT と opaque を切り替えても同じ issuer 検証を行えるようにするためです。
+opaque access token が active のとき、RFC 7662 response には利用可能な `client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope`、`acr`、`amr`、`cnf` に加えて `iss` も含まれます。JWT と opaque を切り替えても同じ issuer 検証を行えるようにするためです。`jti` は含まれません。opaque レコードが持つ識別子はトークンそのものだけで、RS のログに残りやすい応答本文へ載せると資格情報が漏れるからです。
+
+introspection の `token_type` は、DPoP や mTLS にバインドされたトークンでも常に `Bearer` です。バインドは型ではなく `cnf` で伝わるので、RS はどの proof を求めるかを `cnf` から判断します。refresh token ではこのメンバーを省略します。RFC 7662 がこれをアクセストークンの型と定義しているためです。
 
 ::: details `jti` — それは何か
-`jti` は JWT 標準 claim（RFC 7519 §4.1.7）の "JWT ID" です。トークンごとに付ける一意の識別子で、特定のトークンを参照・失効・重複排除するときに使います。JWT アクセストークンには `jti` が含まれ、OP は旧来の JTI registry 戦略でこれをキーにし、拒否リストのテーブルでも重複排除キーとして使います。opaque トークンには `jti` がありません — bearer 文字列自体がすでに一意の識別子になるからです。
+`jti` は JWT 標準 claim（RFC 7519 §4.1.7）の "JWT ID" です。トークンごとに付ける一意の識別子で、特定のトークンを参照・失効・重複排除するときに使います。JWT アクセストークンには `jti` が含まれ、OP は JTI registry 戦略でこれをキーにし、拒否リストのテーブルでも重複排除キーとして使います。opaque トークンには `jti` がありません — bearer 文字列自体がすでに一意の識別子になるからです。
 :::
 
 ::: details `gid` — それは何か
@@ -105,6 +115,10 @@ opaque access token が active のとき、RFC 7662 response には利用可能�
 
 - **いつ気にすべきか:** introspection 連動の RS コードを書くときや JWT のバイト列を監査するときだけです。標準的な RFC 9068 検証器は `gid` を見ません。
 - **混同しがち:** `sid`（OIDC Core の session ID）。`sid` は **ユーザセッション** を、`gid` は **grant** を指します（1 セッションが複数 grant を持ちえます）。
+:::
+
+::: details `userinfo_claims` — それは何か
+認可コードまたはその refresh chain から発行したアクセストークンに載る、ライブラリ独自の JWT private claim です。OIDC `claims` リクエストの `userinfo` メンバー（リクエストになければ `{}`）を保持し、`/userinfo` はこれをもとに claim を返します。リソースサーバは無視してください。名前は予約されており、custom grant が extra claims で設定することはできません。
 :::
 
 ::: tip 通信路上の見た目だけでは RS は形式を判別できない
@@ -121,8 +135,8 @@ opaque access token が active のとき、RFC 7662 response には利用可能�
 | RS レイテンシ下限 | ローカル暗号処理のみ | OP との往復（またはキャッシュ TTL）が乗る |
 | キャッシュ面 | RS が JWKS をキャッシュ（更新は稀） | RS が introspect 応答をトークンごとにキャッシュ |
 | ログアウト後の到達範囲 | OP のエンドポイント（userinfo / introspect）にだけ届く | 全 RS リクエストに届く |
-| Refresh ローテーション時の旧アクセストークン | `exp` まで生き残る | ローテーションと同時に失効 |
-| トークン byte 列からの情報漏洩 | `sub`、`scope`、`aud`、`cnf`、`acr`、`gid` が露出 | 何も漏れない |
+| Refresh ローテーション時の旧アクセストークン | `exp` まで生き残る | 同じ refresh chain の旧アクセストークンがローテーションと同時に失効 |
+| トークン byte 列からの情報漏洩 | `sub`、`scope`、`aud`、`cnf`、`acr`、`gid`、`userinfo_claims` が露出 | 何も漏れない |
 | RS 側のデバッグ性 | JWT をデコードすれば claim を直読できる | `/introspect` を呼び出す必要がある |
 | 送信者制約（DPoP / mTLS） | JWT の `cnf` claim | OP 側のレコードから `cnf` を再構成 |
 
@@ -148,43 +162,47 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 ::: info OP 側のストレージコストは **対称ではありません**
 既定の JWT 戦略（grant tombstone）は **発行時にデータベースへ書き込みを行わず**、失効した grant ごとに 1 行だけ書き込みます — 定常状態の行数は `O(失効した grant 数)` です。明示時のみの JTI registry 戦略は発行ごとに 1 行（`jti` をキーにした shadow 行）を保持します。opaque 形式は常に発行ごとに 1 行（ハッシュ化した bearer ID をキーにした行）を保持します。
 
-「JWT も opaque もトークン 1 本ごとに 1 行」という説明は旧 JTI registry 既定の前提でした — 現在の既定では、JWT の発行経路は純粋な計算処理だけで完結します。詳細は下記の [JWT 失効戦略](#jwt-アクセストークン失効戦略) を参照。RS 側の差（JWT は RS にとってステートレス、opaque はそうではない）は変わりません。
+そのため既定では、JWT の発行経路は純粋な計算処理だけで完結します。詳細は下記の [JWT 失効戦略](#jwt-アクセストークン失効戦略) を参照してください。RS 側の差（JWT は RS にとってステートレス、opaque はそうではない）は、どの戦略でも変わりません。
 :::
 
 ## 失効はどこに届くか — そして `/end_session` のギャップ
 
 ここはトレードオフのうち最も見落とされがちな側面です。
 
-`/end_session`（および `/revoke`、code 再利用検出のカスケード）は subject の grant に紐付くすべてのアクセストークンに対し、OP 側のレコードを revoked 状態へ切り替えます。両形式ともこの切り替えは記録されますが、問題は **どの経路がそれに気付くか** です。
+`/end_session`、code 再利用検出のカスケード、refresh token に対する `/revoke` は、いずれも grant 配下のアクセストークンについて OP 側の状態を revoked へ切り替えます。両形式ともこの切り替えは記録されますが、問題は **どの経路がそれに気付くか** です。
 
 **JWT 形式:**
 
 <figure class="fig">
   <div class="fig-head">JWT — 失効はどこで止まるか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="atf-revoke-jwt-title" viewBox="0 20 960 220" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="atf-revoke-jwt-title" viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg">
     <title id="atf-revoke-jwt-title">JWT アクセストークンの場合、セッション終了は grant tombstone を書き込みます。OP は userinfo と introspection のエンドポイントでこれを参照しますが、オフラインで JWT を検証するリソースサーバには届きません。</title>
-    <rect class="fg-box fg-box--accent" x="36" y="90" width="180" height="60" rx="8"/>
-    <text class="fg-m fg-accent" x="126" y="116" text-anchor="middle">/end_session</text>
-    <text class="fg-xs" x="126" y="136" text-anchor="middle">RP 起点のログアウト</text>
-    <path class="fg-edge fg-edge--accent" d="M220,120 H316" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="320" y="84" width="240" height="72" rx="8"/>
-    <text class="fg-t2" x="340" y="110">grant tombstone</text>
-    <text class="fg-xs" x="340" y="128">既定。または registry の</text>
-    <text class="fg-mxs" x="340" y="146">RevokeByGrant</text>
-    <path class="fg-leader" d="M564,120 H620 M620,54 V193"/>
-    <path class="fg-edge fg-edge--thin" d="M620,54 H696" marker-end="url(#fg-a)"/>
-    <text class="fg-xs fg-ok" x="658" y="47" text-anchor="middle">参照する</text>
-    <path class="fg-edge fg-edge--thin" d="M620,120 H696" marker-end="url(#fg-a)"/>
-    <text class="fg-xs fg-ok" x="658" y="113" text-anchor="middle">参照する</text>
-    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M620,193 H696" marker-end="url(#fg-ad)"/>
-    <text class="fg-xs fg-danger" x="658" y="186" text-anchor="middle">届かない</text>
-    <rect class="fg-box" x="700" y="34" width="224" height="40" rx="6"/>
-    <text class="fg-m" x="718" y="59">OP /userinfo</text>
-    <rect class="fg-box" x="700" y="100" width="224" height="40" rx="6"/>
-    <text class="fg-m" x="718" y="125">OP /introspect</text>
-    <rect class="fg-box fg-box--danger" x="700" y="166" width="224" height="54" rx="6"/>
-    <text class="fg-t2" x="718" y="188">RS</text>
-    <text class="fg-xs" x="718" y="208">オフラインの JWT 検証</text>
+    <!-- trigger -->
+    <rect class="fg-box fg-box--accent" x="32" y="92" width="208" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="120">/end_session</text>
+    <text class="fg-s" x="48" y="144">RP 起点のログアウト</text>
+    <path class="fg-edge fg-edge--accent" d="M240,128 H280" marker-end="url(#fg-ac)"/>
+    <!-- revocation state -->
+    <rect class="fg-box" x="280" y="80" width="248" height="96" rx="8"/>
+    <text class="fg-t2" x="296" y="108">grant tombstone</text>
+    <text class="fg-s" x="296" y="132">既定。または registry の</text>
+    <text class="fg-mxs" x="296" y="156">RevokeByGrant</text>
+    <!-- bus -->
+    <path class="fg-leader" d="M528,128 H560 M560,48 V220"/>
+    <!-- consulted by -->
+    <path class="fg-edge fg-edge--thin" d="M560,48 H688" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-ok" x="624" y="38" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--thin" d="M560,128 H688" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-ok" x="624" y="118" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M560,220 H688" marker-end="url(#fg-ad)"/>
+    <text class="fg-s fg-danger" x="624" y="210" text-anchor="middle">届かない</text>
+    <rect class="fg-box" x="688" y="24" width="240" height="48" rx="8"/>
+    <text class="fg-m" x="704" y="52">OP /userinfo</text>
+    <rect class="fg-box" x="688" y="104" width="240" height="48" rx="8"/>
+    <text class="fg-m" x="704" y="132">OP /introspect</text>
+    <rect class="fg-box fg-box--danger" x="688" y="184" width="240" height="72" rx="8"/>
+    <text class="fg-t" x="704" y="212">RS</text>
+    <text class="fg-s" x="704" y="236">オフラインの JWT 検証</text>
   </svg>
   <figcaption class="fig-note">このページが扱っているギャップがここです。長さを決めるのはアクセストークンの TTL だけで、他に何もありません。形式が JWT のときに TTL を短く保つべき理由がこれです。</figcaption>
 </figure>
@@ -193,39 +211,45 @@ opaque は検証を OP に集中させます。RS の呼び出しは（運用者
 
 <figure class="fig">
   <div class="fig-head">Opaque — 失効はすべてに届く</div>
-  <svg class="fig-svg" role="img" aria-labelledby="atf-revoke-opaque-title" viewBox="0 20 960 220" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="atf-revoke-opaque-title" viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg">
     <title id="atf-revoke-opaque-title">opaque アクセストークンの場合、セッション終了はトークンストアの行を切り替えます。OP は userinfo と introspection のエンドポイントでこのストアを参照し、各リソースサーバも参照します。どのみち introspection を呼ばなければならないからです。</title>
-    <rect class="fg-box fg-box--accent" x="36" y="90" width="180" height="60" rx="8"/>
-    <text class="fg-m fg-accent" x="126" y="116" text-anchor="middle">/end_session</text>
-    <text class="fg-xs" x="126" y="136" text-anchor="middle">RP 起点のログアウト</text>
-    <path class="fg-edge fg-edge--accent" d="M220,120 H316" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="320" y="84" width="240" height="72" rx="8"/>
-    <text class="fg-t2" x="340" y="110">opaque トークンストア</text>
-    <text class="fg-xs" x="340" y="128">次の呼び出しで行を revoked に</text>
-    <text class="fg-mxs" x="340" y="146">RevokeByGrant</text>
-    <path class="fg-leader" d="M564,120 H620 M620,54 V193"/>
-    <path class="fg-edge fg-edge--thin" d="M620,54 H696" marker-end="url(#fg-a)"/>
-    <text class="fg-xs fg-ok" x="658" y="47" text-anchor="middle">参照する</text>
-    <path class="fg-edge fg-edge--thin" d="M620,120 H696" marker-end="url(#fg-a)"/>
-    <text class="fg-xs fg-ok" x="658" y="113" text-anchor="middle">参照する</text>
-    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M620,193 H696" marker-end="url(#fg-ao)"/>
-    <text class="fg-xs fg-ok" x="658" y="186" text-anchor="middle">参照する</text>
-    <rect class="fg-box" x="700" y="34" width="224" height="40" rx="6"/>
-    <text class="fg-m" x="718" y="59">OP /userinfo</text>
-    <rect class="fg-box" x="700" y="100" width="224" height="40" rx="6"/>
-    <text class="fg-m" x="718" y="125">OP /introspect</text>
-    <rect class="fg-box fg-box--ok" x="700" y="166" width="224" height="54" rx="6"/>
-    <text class="fg-t2" x="718" y="188">RS</text>
-    <text class="fg-xs" x="718" y="208">自身の /introspect 呼び出し</text>
+    <!-- trigger -->
+    <rect class="fg-box fg-box--accent" x="32" y="92" width="208" height="72" rx="8"/>
+    <text class="fg-m fg-accent" x="48" y="120">/end_session</text>
+    <text class="fg-s" x="48" y="144">RP 起点のログアウト</text>
+    <path class="fg-edge fg-edge--accent" d="M240,128 H280" marker-end="url(#fg-ac)"/>
+    <!-- revocation state -->
+    <rect class="fg-box" x="280" y="80" width="248" height="96" rx="8"/>
+    <text class="fg-t2" x="296" y="108">opaque トークンストア</text>
+    <text class="fg-s" x="296" y="132">次の呼び出しで行を revoked に</text>
+    <text class="fg-mxs" x="296" y="156">RevokeByGrant</text>
+    <!-- bus -->
+    <path class="fg-leader" d="M528,128 H560 M560,48 V220"/>
+    <!-- consulted by -->
+    <path class="fg-edge fg-edge--thin" d="M560,48 H688" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-ok" x="624" y="38" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--thin" d="M560,128 H688" marker-end="url(#fg-a)"/>
+    <text class="fg-s fg-ok" x="624" y="118" text-anchor="middle">参照する</text>
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M560,220 H688" marker-end="url(#fg-ao)"/>
+    <text class="fg-s fg-ok" x="624" y="210" text-anchor="middle">参照する</text>
+    <rect class="fg-box" x="688" y="24" width="240" height="48" rx="8"/>
+    <text class="fg-m" x="704" y="52">OP /userinfo</text>
+    <rect class="fg-box" x="688" y="104" width="240" height="48" rx="8"/>
+    <text class="fg-m" x="704" y="132">OP /introspect</text>
+    <rect class="fg-box fg-box--ok" x="688" y="184" width="240" height="72" rx="8"/>
+    <text class="fg-t" x="704" y="212">RS</text>
+    <text class="fg-s" x="704" y="236">自身で問い合わせる</text>
   </svg>
   <figcaption class="fig-note">迂回路が存在しないため、到達範囲に穴が空きません。トークンを読めないリソースサーバは、問い合わせずに受理する方法を持たず、その問い合わせがギャップを閉じています。</figcaption>
 </figure>
 
-- **JWT 経路。** トークンが OP のエンドポイント（`/userinfo`、`/introspect`、`/revoke`）に到達したときに registry を参照します。そこに来た revoked JWT は即座に拒否されます。**JWKS でオフライン JWT 検証している RS は registry を参照しません** — それが自己完結トークンの存在意義だからです。その RS では revoked JWT が `exp` まで通り続けます。
+- **JWT 経路。** トークンが OP のエンドポイント（`/userinfo`、`/introspect`、`/revoke`）に到達したときに registry を参照します。そこに来た失効済みの JWT は即座に拒否されます。**JWKS でオフライン JWT 検証している RS は registry を参照しません** — それが自己完結トークンの存在意義だからです。その RS では revoked JWT が `exp` まで通り続けます。
 - **Opaque 経路。** トークンを使うすべての経路が `/introspect` を通るので、カスケードは定義上どの RS にも届きます。
 
+何に届くかは起点によっても違います。`/end_session` と、code または refresh token の再利用検出は grant 全体を終わらせます。refresh token に対する `/revoke` が終わらせるのは、その refresh chain と grant 配下のアクセストークンだけです。同じクライアント上の、そのユーザの別 refresh chain や、まだ引き換えていない認可コードは有効なまま残ります。
+
 ::: info opaque の introspection は inactive 形を統一する
-confidential client の認証後は、認可されない client、該当行なし、失効済み、期限切れ、DPoP / mTLS proof 不一致、委譲対象外の audience など、すべての inactive 経路が同じ `{"active": false}` に集約されます（RFC 7662 §2.2 準拠）。認証前の失敗はプロトコルのエラーを返します。introspection を経由した列挙や状態推測が構造的に閉じられます。
+confidential client の認証後は、認可されない client、該当行なし、失効済み、期限切れ、委譲対象外の audience など、すべての inactive 経路が同じ `{"active": false}` に集約されます（RFC 7662 §2.2 準拠）。認証前の失敗はプロトコルのエラーを返します。introspection を経由した列挙や状態推測が構造的に閉じられます。
 :::
 
 ::: danger 「ログアウトされた」の要件に合う形式を選んでください
@@ -237,14 +261,14 @@ confidential client の認証後は、認可されない client、該当行な�
 
 リフレッシュトークンのローテーションも関連する調整ポイントです。本ライブラリはどのローテーションでも新しいアクセストークンを発行しますが、JWT 形式では **旧アクセストークンは `exp` まで生き残ります**（カスケードのギャップはアクセストークン TTL の範囲で閉じる設計）。
 
-一方 opaque 形式は、ローテーションのたびに opaque サブストアに対して `RevokeByGrant` を呼び、旧アクセストークンも同時に失効させます — **漏洩したリフレッシュトークンで旧アクセストークンを再利用される窓は、事実上 clock skew まで縮みます**。
+一方 opaque 形式は、ローテーションのたびに、ローテーション対象の refresh chain の旧アクセストークンも同時に失効させます — **漏洩したリフレッシュトークンで旧アクセストークンを再利用される窓は、事実上 clock skew まで縮みます**。失効の範囲は grant ではなく chain なので、片方の端末でリフレッシュしても、同じクライアント上の他のセッションは終了しません。これにはオプションの `store.OpaqueAccessTokenChainRevoker`（`RevokeByChain`）を使います。実装していない store や、`ChainID` なしで記録された chain では、grant 全体を対象にする `RevokeByGrant` に切り替わります。
 
 もうひとつのカスケードのきっかけは **RFC 6749 §4.1.2 の認可コード再利用検出** です。盗まれた code が二度目に提示された瞬間、その grant 配下のアクセストークンがすべて失効します。
 
-JWT 形式では grant tombstone を書き込み（明示時のみの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。
+JWT 形式では grant tombstone を書き込み（明示時のみの JTI registry 戦略下では registry 行を反転）、opaque 形式では opaque サブストアの行が revoked に切り替わり、上の経路図と同じ可視範囲で伝播します。`/end_session` だけがカスケードの起点ではない、ということです。なお、未引き換えの code を別のクライアントが提示した場合や、`redirect_uri` または PKCE の検証に失敗した場合は再利用とみなされません。code は消費されず、正当な保持者の grant も壊れません。
 
 ::: details カスケード失効とは
-ここで言う「カスケード」は「1 回の失効イベントが、同じ grant から派生したすべての成果物に届く」という意味です。`/end_session` が 1 回鳴れば、OP は grant を revoked 状態にし、その瞬間からその grant 配下のアクセストークン / リフレッシュトークン / shadow 行はすべて、OP に問い合わせるどの経路でも無効として扱われます。対比となる「リーフ失効」は「この特定のトークンだけ失効させ、同じ grant 配下のほかは有効に保つ」というやり方で、RFC 7009 の `/revocation` を 1 件の `jti` に対して使ったときの挙動がこれにあたります。
+ここで言う「カスケード」は「1 回の失効イベントが、同じ grant から派生したすべての成果物に届く」という意味です。`/end_session` が 1 回鳴れば、OP は grant を revoked 状態にし、その瞬間からその grant 配下のアクセストークン / リフレッシュトークン / shadow 行はすべて、OP に問い合わせるどの経路でも無効として扱われます。対比となる「リーフ失効」は「この特定のトークンだけ失効させ、同じ grant 配下のほかは有効に保つ」というやり方で、RFC 7009 の `/revoke` を 1 件の `jti` に対して使ったときの挙動がこれにあたります。
 :::
 
 ## JWT アクセストークン失効戦略
@@ -260,18 +284,20 @@ JWT 経路にはもうひとつの調整ポイントがあります — **OP が
 - **いつ気にすべきか:** データベースのサイジングを行うときです。tombstone は `O(失効した grant 数)`、shadow 行は `O(発行レート × TTL)` で増えます。高負荷の OP では、千行単位と百万行単位の差になります。
 :::
 
-`go-oidc-provider` は 3 つの戦略を同梱しており、`op.WithAccessTokenRevocationStrategy` で選択します。既定は `RevocationStrategyGrantTombstone` です。旧来の `jti` ごとの方式は `RevocationStrategyJTIRegistry` として残してあり、必要な組み込み側は明示的に切り替えられます。
+`go-oidc-provider` は 3 つの戦略を同梱しており、`op.WithAccessTokenRevocationStrategy` で選択します。既定は `RevocationStrategyGrantTombstone` です。`RevocationStrategyJTIRegistry` は発行した JWT ごとに 1 行を持つ方式で、トークン単位の記録が必要な組み込み側が選びます。
 
 | 戦略 | 発行時の書き込み | 失効時の書き込み | 定常状態の行数 | 備考 |
 |---|---|---|---|---|
 | **`RevocationStrategyGrantTombstone`**（既定） | **0 件** | 1（tombstone 行） | `O(失効した grant 数 + 失効した jti 数)` | OP は grant に紐づく JWT に `gid` という private claim（GrantID）を含め、自身の検証エンドポイントで grant ごとの tombstone テーブルを参照します。 |
 | `RevocationStrategyJTIRegistry` | 1（shadow 行） | N（grant 配下の AT ごとに 1 件 UPDATE） | `O(発行レート × AT_TTL)` | 発行された AT 1 本ごとに `store.AccessTokenRegistry` の shadow 行が 1 件作られます。AT 単位の監査ログが規制要件のときに選択できます。 |
-| `RevocationStrategyNone` | 0 | 0 | 0 | `/revocation` は RFC 7009 §2.2 のとおり 200 を冪等に返しますが、実体としては何もしません。JWT AT は `exp` まで有効なままです。**本ライブラリの FAPI プロファイル下では `op.New` が拒否します**。これはライブラリのポリシーです。 |
+| `RevocationStrategyNone` | 0 | 0 | 0 | `/revoke` は RFC 7009 §2.2 のとおり 200 を冪等に返しますが、実体としては何もしません。JWT AT は `exp` まで有効なままです。**本ライブラリの FAPI プロファイル下では `op.New` が拒否します**。これはライブラリのポリシーです。 |
 
 ::: tip 既定は発行時に何も書きません
 既定戦略では `/token` の処理経路がデータベースに触れません。代わりに、grant が失効するとき（ログアウト、コード再利用カスケード、リフレッシュトークン連鎖の侵害）に grant ID をキーにした tombstone 行を 1 件だけ書き込みます。`/userinfo` と `/introspect` は JWT の `gid` を tombstone と突き合わせるので、失効した grant の JWT は OP のエンドポイントで即座に拒否されます。
 
-`jti` 単位の `/revocation`（RFC 7009）は同じサブストアに拒否リスト行を 1 件書き込みます。**grant tombstone へはまとめられません** — 同じ grant 配下のほかの AT はそのまま有効です。
+`jti` 単位の `/revoke`（RFC 7009）は同じサブストアに拒否リスト行を 1 件書き込みます。**grant tombstone へはまとめられません** — 同じ grant 配下のほかの AT はそのまま有効です。
+
+refresh token に対する `/revoke` は、対象をアクセストークンに絞った tombstone（`GrantTombstone.AccessTokensOnly`）を書き込みます。`/userinfo` と `/introspect` は両方の tombstone を参照しますが、refresh と code の引き換えが参照するのは grant 全体の tombstone だけで、オプションの `store.IssuanceRevocationChecker` を通して判定します。このフィールドもインターフェースも実装しない自作 store は grant 全体の扱いになり、失効が足りなくなる側ではなく過剰になる側に倒れます。
 :::
 
 ::: info `gid` claim は private
@@ -284,7 +310,7 @@ grant に紐づく JWT アクセストークンは、`gid` という private cla
 ```go
 // 既定は RevocationStrategyGrantTombstone なので、追加オプションは不要です。
 
-// 完全な構成にこのオプションを追加すると、旧来の jti 単位 registry 方式になります。
+// 完全な構成にこのオプションを追加すると、jti 単位の registry 方式になります。
 op.WithAccessTokenRevocationStrategy(op.RevocationStrategyJTIRegistry)
 
 // サーバ側 JWT 失効を意図的に無効化する場合だけ追加します（非 FAPI 配備専用）。
@@ -296,8 +322,8 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 本ライブラリのいずれかの FAPI プロファイルと併用して `RevocationStrategyNone` を選ぶと、`op.New` が失敗します。これはライブラリの安全策です。現行の FAPI 2.0 Security Profile §5.3.4(3) はリソースサーバにアクセストークンの失効状態の検証を求めており、OP 内部の失効戦略だけでリソースサーバの適合性は決まりません。
 :::
 
-::: warning サブストアの存在は `op.New` で強制されます（BREAKING）
-既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が nil 以外なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は最初の `/revoke` / refresh 再利用検出で半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI 配備は `RevocationStrategyNone` に固定する選択肢があります）。
+::: warning サブストアの存在は `op.New` で強制されます
+既定の `RevocationStrategyGrantTombstone` は `Store.GrantRevocations()` が nil 以外なサブストアを返すことを必須とし、`RevocationStrategyJTIRegistry` は `Store.AccessTokens()` を必須とします。どちらの判定も構築時に走るため、サブストアが欠けている構成は、最初の `/revoke` や refresh 再利用検出で中途半端にカスケードが走るのではなく、`op.New` が構成エラーを返して停止します。同梱の `inmem` / `sql` / composite アダプタはどちらのサブストアも返すので、`Store` を自作する組み込み側は両方を実装してください（失効処理を必要としない非 FAPI 配備は `RevocationStrategyNone` に固定する選択肢があります）。
 :::
 
 ## 形式の選び方
@@ -306,45 +332,45 @@ op.WithAccessTokenRevocationStrategy(op.RevocationStrategyNone)
 
 <figure class="fig">
   <div class="fig-head">形式の選び方</div>
-  <svg class="fig-svg" role="img" aria-labelledby="atf-choice-title" viewBox="0 0 960 374" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="atf-choice-title" viewBox="0 0 960 456" xmlns="http://www.w3.org/2000/svg">
     <title id="atf-choice-title">アクセストークンの形式を 3 つの問いで決める判定木。すべてのリソースサーバに introspection の呼び出しを義務付けられるか、トークンの有効期限で区切られるギャップを許容できるか、内部と外部のリソースサーバが混在するかを順に見ます。</title>
     <!-- 1 -->
-    <rect class="fg-box" x="36" y="24" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="52">すべての RS に毎回 /introspect を義務付けられるか</text>
-    <text class="fg-xs" x="56" y="74">自社が運用していない RS も含めて</text>
-    <path class="fg-edge" d="M434,57 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="50" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="28" width="394" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="52">Opaque</text>
-    <text class="fg-xs" x="550" y="72">失効がすべてに届く。代償は 1 回ずつの往復</text>
-    <path class="fg-edge" d="M233,94 V116" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="110">いいえ</text>
+    <rect class="fg-box" x="32" y="24" width="448" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="52">全 RS に introspection を要求できるか</text>
+    <text class="fg-s" x="48" y="76">自社が運用していない RS も含めて</text>
+    <path class="fg-edge" d="M480,60 H568" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="524" y="50" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="568" y="24" width="360" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="584" y="52">Opaque</text>
+    <text class="fg-s" x="584" y="76">失効が全 RS に届く。代償は毎回の往復</text>
+    <path class="fg-edge" d="M256,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="268" y="122">いいえ</text>
     <!-- 2 -->
-    <rect class="fg-box" x="36" y="120" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="148">アクセストークンの TTL を十分短くできるか</text>
-    <text class="fg-xs" x="56" y="170">exp までのギャップを許容できる長さに</text>
-    <path class="fg-edge" d="M434,153 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="146" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="124" width="394" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="148">JWT — 既定</text>
-    <text class="fg-xs" x="550" y="168">処理経路に呼び出しが無く、ギャップは exp で閉じる</text>
-    <path class="fg-edge" d="M233,190 V212" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="206">いいえ</text>
+    <rect class="fg-box" x="32" y="136" width="448" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="164">アクセストークンの TTL は十分短いか</text>
+    <text class="fg-s" x="48" y="188">exp までのギャップを許容できる長さか</text>
+    <path class="fg-edge" d="M480,172 H568" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="524" y="162" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="568" y="136" width="360" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="584" y="164">JWT — 既定</text>
+    <text class="fg-s" x="584" y="188">呼び出し無し。ギャップは exp で閉じる</text>
+    <path class="fg-edge" d="M256,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="268" y="234">いいえ</text>
     <!-- 3 -->
-    <rect class="fg-box" x="36" y="216" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="244">内部 RS と外部 RS が混在するか</text>
-    <text class="fg-xs" x="56" y="266">audience が異なれば、要求できることも異なる</text>
-    <path class="fg-edge" d="M434,249 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="242" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="220" width="394" height="58" rx="8"/>
-    <text class="fg-t2" x="550" y="244">audience ごとの使い分け</text>
-    <text class="fg-xs" x="550" y="264">内側には JWT、外側には opaque。形式は audience 単位で決まる</text>
-    <path class="fg-edge" d="M233,286 V308" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="302">いいえ</text>
-    <!-- 既定 -->
-    <rect class="fg-box" x="36" y="312" width="888" height="54" rx="8"/>
-    <text class="fg-t2" x="56" y="334">Opaque</text>
-    <text class="fg-xs" x="56" y="354">ギャップを許容できず TTL も短くできないなら、残る選択肢は毎回の往復です</text>
+    <rect class="fg-box" x="32" y="248" width="448" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="276">内部 RS と外部 RS が混在するか</text>
+    <text class="fg-s" x="48" y="300">audience が異なれば、要求できることも異なる</text>
+    <path class="fg-edge" d="M480,284 H568" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="524" y="274" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="568" y="248" width="360" height="72" rx="8"/>
+    <text class="fg-t2" x="584" y="276">audience ごとの使い分け</text>
+    <text class="fg-s" x="584" y="300">内側は JWT、外側は opaque</text>
+    <path class="fg-edge" d="M256,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="268" y="346">いいえ</text>
+    <!-- default -->
+    <rect class="fg-box" x="32" y="360" width="896" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="388">Opaque</text>
+    <text class="fg-s" x="48" y="412">ギャップを許容できず TTL も短くできないなら、残る選択肢は毎回の往復です</text>
   </svg>
   <figcaption class="fig-note">形式は audience の性質であって、デプロイ全体の性質ではありません。自社で運用するサービスには JWT を、そうでないサービスには opaque を、同じ OP から発行して構いません。</figcaption>
 </figure>
@@ -412,6 +438,10 @@ provider, err := op.New(
 各キーは構築時に正規化されます（scheme と host を小文字化、default port を除去、末尾スラッシュを揃える）。`/token` も `resource=` の生入力を同じヘルパで正規化してからマップ参照するので、登録済みキーと case や末尾スラッシュだけ違うリクエストでも正しい format が選ばれます。同じ値に正規化される 2 つのキーは構成エラーで拒否されます。fragment と `userinfo` セグメントはどのキーでも禁止です — RFC 8707 §2 が resource indicator にこれらを許していません。
 :::
 
+::: info custom grant と token exchange
+custom grant ハンドラが返す `BoundAccessToken` は常に JWT です。opaque の行にはハンドラの claim を載せる余地がないためです。`CustomGrantResponse.AccessToken` はそのままの値で書き出されます。custom grant や token exchange を起点にした chain の refresh ローテーションも、設定した形式にかかわらず JWT を発行します。詳しくは [Custom grant](/ja/use-cases/custom-grant) を参照してください。
+:::
+
 ::: tip 構築時ガード
 opaque を選択しているのに、設定された `Store` の `OpaqueAccessTokens()` が `nil` を返す場合、`op.New` は構築時点で構成を拒否します。誤設定は最初の `/token` リクエストではなく、起動時に表面化します。
 :::
@@ -438,4 +468,5 @@ opaque サブストアはリフレッシュトークン store と同じ「保存
 
 - [ID トークン / アクセストークン / userinfo](/ja/concepts/tokens) — 各アーティファクトの役割と、なぜ交換不可なのか。
 - [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — `cnf` が JWT vs opaque の選択をどう跨いで残るか。
-- [Back-Channel Logout](/ja/use-cases/back-channel-logout) — OP がどのように他 RP にログアウトを伝播し、shadow 行の失効をカスケードさせるか。
+- [リフレッシュトークン](/ja/concepts/refresh-tokens) — ローテーション、再利用検出、ローテーションがどのアクセストークンを失効させるか。
+- [Back-Channel Logout](/ja/use-cases/back-channel-logout) — OP が他の RP にログアウトを通知する仕組み。

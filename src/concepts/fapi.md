@@ -62,35 +62,35 @@ FAPI 1.0 had two profiles. **Read-Only** was for use cases that only retrieved d
 FAPI 2.0 has a general Security Profile and a separate Message Signing profile. The Go library keeps the historical `profile.FAPI2Baseline` identifier for the former.
 
 <figure class="fig">
-  <div class="fig-head">What each FAPI layer adds</div>
-  <svg class="fig-svg" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">Each FAPI layer fixes more of the base specs’ options</div>
+  <svg class="fig-svg" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 960 376" xmlns="http://www.w3.org/2000/svg">
     <title id="fapi-layers-title">The FAPI 2.0 profiles. The base specifications leave many options open; the Security Profile fixes a high-security baseline; Message Signing adds separately testable signed authorization requests, signed authorization responses, and signed introspection responses.</title>
-    <!-- message signing -->
-    <rect class="fg-box fg-box--accent" x="36" y="24" width="664" height="102" rx="8"/>
-    <text class="fg-t fg-accent" x="56" y="52">FAPI 2.0 Message Signing</text>
-    <text class="fg-xs" x="56" y="74">Security Profile, plus JAR, JARM or signed introspection</text>
-    <text class="fg-xs" x="56" y="94">each signing method can be implemented and tested separately</text>
-    <text class="fg-mxs" x="56" y="116">op.WithProfile(profile.FAPI2MessageSigning)</text>
-    <path class="fg-leader" d="M704,44 H736 M704,80 H736"/>
-    <rect class="fg-box fg-box--muted" x="740" y="32" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="48">audit trail</text>
-    <rect class="fg-box fg-box--muted" x="740" y="68" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="84">non-repudiation</text>
-    <!-- security profile -->
-    <rect class="fg-box" x="36" y="138" width="664" height="88" rx="8"/>
-    <text class="fg-t" x="56" y="166">FAPI 2.0 Security Profile</text>
-    <text class="fg-xs" x="56" y="188">PAR · PKCE S256 · confidential clients · DPoP or mTLS</text>
-    <text class="fg-mxs" x="56" y="212">op.WithProfile(profile.FAPI2Baseline)</text>
-    <path class="fg-leader" d="M704,182 H736"/>
-    <rect class="fg-box fg-box--muted" x="740" y="170" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="186">safety floor</text>
-    <!-- base -->
-    <rect class="fg-box fg-box--muted" x="36" y="238" width="664" height="74" rx="8"/>
-    <text class="fg-t" x="56" y="266">OAuth 2.0 + OpenID Connect</text>
-    <text class="fg-xs" x="56" y="288">the base specifications — many options, some dangerous in combination</text>
-    <path class="fg-leader" d="M704,275 H736"/>
-    <rect class="fg-box fg-box--muted" x="740" y="263" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="279">transport</text>
+    <!-- FAPI 2.0 Message Signing -->
+    <rect class="fg-box fg-box--accent" x="32" y="24" width="640" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="52">FAPI 2.0 Message Signing</text>
+    <text class="fg-xs" x="48" y="76">Security Profile + JAR · JARM · signed introspection</text>
+    <text class="fg-mxs" x="48" y="100">op.WithProfile(profile.FAPI2MessageSigning)</text>
+    <path class="fg-leader" d="M672,48 H736"/>
+    <rect class="fg-pill" x="736" y="32" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="53" text-anchor="middle">audit trail</text>
+    <path class="fg-leader" d="M672,96 H736"/>
+    <rect class="fg-pill" x="736" y="80" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="101" text-anchor="middle">non-repudiation</text>
+    <!-- FAPI 2.0 Security Profile -->
+    <rect class="fg-box" x="32" y="152" width="640" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="180">FAPI 2.0 Security Profile</text>
+    <text class="fg-xs" x="48" y="204">PAR · PKCE S256 · confidential clients · DPoP or mTLS</text>
+    <text class="fg-mxs" x="48" y="228">op.WithProfile(profile.FAPI2Baseline)</text>
+    <path class="fg-leader" d="M672,200 H736"/>
+    <rect class="fg-pill" x="736" y="184" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="205" text-anchor="middle">safety floor</text>
+    <!-- OAuth 2.0 + OpenID Connect -->
+    <rect class="fg-box fg-box--muted" x="32" y="280" width="640" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="308">OAuth 2.0 + OpenID Connect</text>
+    <text class="fg-xs" x="48" y="332">many options, some risky in combination</text>
+    <path class="fg-leader" d="M672,316 H736"/>
+    <rect class="fg-pill" x="736" y="300" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="321" text-anchor="middle">transport</text>
   </svg>
   <figcaption class="fig-note">The Security Profile fixes the high-security choices in the underlying specifications. Message Signing adds application-level signatures for selected OAuth messages; it does not wrap every API request and response in a JWS.</figcaption>
 </figure>
@@ -118,15 +118,15 @@ Regional open banking and open insurance schemes may add message-signing require
 ## What each acronym actually does
 
 ::: details PAR — Pushed Authorization Request (RFC 9126)
-The classical OAuth flow has the RP build an `/authorize?...` URL with all parameters in the query string and tell the browser to navigate there. Anyone in the middle (browser extensions, intermediary proxies, referrer leaks, server logs) sees the parameters.
+The classical OAuth flow has the RP build an `/auth?...` URL with all parameters in the query string and tell the browser to navigate there. Anyone in the middle (browser extensions, intermediary proxies, referrer leaks, server logs) sees the parameters.
 
-PAR has the RP first POST the parameters to the OP's `/par` endpoint **directly, server-to-server** with client authentication. The OP returns a short-lived `request_uri` such as `urn:ietf:params:oauth:request_uri:abc...`. The browser is then redirected to `/authorize?request_uri=urn:...&client_id=...` and the OP looks up the original parameters internally.
+PAR has the RP first POST the parameters to the OP's `/par` endpoint **directly, server-to-server** with client authentication. The OP returns a short-lived `request_uri` such as `urn:ietf:params:oauth:request_uri:abc...`. The browser is then redirected to `/auth?request_uri=urn:...&client_id=...` and the OP looks up the original parameters internally.
 
 Result: sensitive parameters never travel through the browser.
 :::
 
 ::: details `request_uri` — what is it?
-A reference to a server-side stash of the authorize parameters. PAR returns a `request_uri` whose URN-form value points to a one-time row the OP keeps for ~60 seconds. The browser replays only the URN and the `client_id` to `/authorize`; the OP joins them back to the stashed parameters. The `request_uri` mechanism predates PAR (RFC 9101 also uses it for inline `request` JWTs hosted at an HTTPS URL) — PAR specialises it to "the OP itself hosts the URI" and locks the lifetime to a single redemption.
+A reference to a server-side stash of the authorize parameters. PAR returns a `request_uri` whose URN-form value points to a one-time row the OP keeps for ~60 seconds. The browser replays only the URN and the `client_id` to `/auth`; the OP joins them back to the stashed parameters. The `request_uri` mechanism predates PAR (RFC 9101 also uses it for inline `request` JWTs hosted at an HTTPS URL) — PAR specialises it to "the OP itself hosts the URI" and locks the lifetime to a single redemption.
 :::
 
 ::: details JAR — JWT-Secured Authorization Request (RFC 9101)
@@ -231,7 +231,20 @@ The profile call:
 
 The library's refresh flow also rotates refresh tokens during normal use. The Final Security Profile prohibits routine refresh-token rotation, so this setting alone is not evidence of Final conformance.
 
-Options that conflict with the profile cause `op.New` to refuse to start; the constructor catches those detected conflicts before the OP is created.
+Options that conflict with the profile cause `op.New` to refuse to start; the constructor catches those detected conflicts before the OP is created. The main constraints, by what they act on:
+
+| Setting | Under FAPI 2.0 and FAPI-CIBA profiles |
+|---|---|
+| Token-endpoint client authentication | `private_key_jwt` only; dynamic registration refuses any other `token_endpoint_auth_method` with `invalid_client_metadata` |
+| Algorithms on client-signed input (assertions, request objects) | `PS256`, `ES256`, `EdDSA`; `RS256` is rejected at runtime, in discovery and at registration |
+| `op.WithAccessTokenTTL` | at most 10 minutes |
+| `op.WithPARLifetime` | strictly below 600 seconds |
+| Request object at `/par` and `/bc-authorize`, and at `/auth` under a FAPI profile | replaces the unsigned query or form parameters instead of being merged with them, so every authorization parameter must be inside the signed object |
+| Access-token revocation strategy | `RevocationStrategyNone` is refused |
+| `op.WithFirstPartyClients`, `op.WithOpenIDScopeOptional` | refused under the FAPI 2.0 profiles |
+| DPoP nonce source | `op.WithDPoPNonceSource` is required with DPoP under `FAPI2MessageSigning` and `FAPICIBA` |
+| `profile.FAPICIBA` | `grant.CIBA` must be enabled (it is not auto-enabled); CIBA default and maximum expiry at most 10 minutes |
+| Responses | every response carries an `x-fapi-interaction-id`: the request's value, or a generated one |
 
 To select the library's Message Signing profile, use `profile.FAPI2MessageSigning` instead of `profile.FAPI2Baseline`; when DPoP is active, also configure `WithDPoPNonceSource`. The conformance suite covers both settings; see [OFCS status](/compliance/ofcs).
 

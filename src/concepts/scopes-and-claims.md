@@ -29,7 +29,7 @@ Scopes are the request; claims are the response. Granting a scope authorises the
 
 ## Scope: what the client asks for
 
-The `scope` parameter on `/auth` is a **space-separated** list of opaque identifiers. The user consents to the set; the OP records the granted set with the resulting authorization code and carries it into the access-token and refresh-token state. An ID Token does not carry a standard `scope` claim.
+The `scope` parameter on `/auth` is a **space-separated** list of opaque identifiers. The user consents to the set; the OP records the granted set with the resulting authorization code and carries it into the access-token and refresh-token state. An ID Token does not carry a standard `scope` claim. The OP mounts under `/oidc` by default, so the authorization endpoint is `/oidc/auth`.
 
 ```
 GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
@@ -41,14 +41,14 @@ A few observations beginners often miss:
 - **Scopes are case-sensitive.** `openid` is the scope; `OpenID` is a different (and unrecognised) scope.
 - **`openid` is the magic that turns OAuth into OIDC.** Without `openid` in the request, no ID Token is issued. The library defaults to OIDC (the `openid` scope is required); `op.WithOpenIDScopeOptional()` flips it to pure OAuth 2.0.
 - **The user can decline some scopes.** The granted set may be a subset of the requested set; the OP reports the granted scopes in the token response and access-token state.
-- **Unknown scopes fail.** The OP rejects authorization requests for scopes not registered through `WithScope` (or built-in OIDC standard scopes), returning `invalid_scope` per RFC 6749 §5.2.
+- **A client can only request scopes it was registered with.** A scope missing from the client's registered `Scopes`, or one whose `AllowedClients` list excludes the client, is rejected with `invalid_scope` (RFC 6749 §5.2).
 
 ## Claim: a key-value in a token or userinfo response
 
 A **claim** is a single field inside a JSON object returned by the OP. Tokens are signed; `/userinfo` returns JSON by default or a signed/encrypted JWT when requested. OIDC Core §5.1 catalogues a long list. Token metadata claims are type-specific; user claims are controlled by scopes and claims requests.
 
-- **ID Token claims** — `iss`, `sub`, `aud`, `iat`, and `exp` are required; `nonce`, `auth_time`, `acr`, `amr`, `azp`, `at_hash`, `c_hash`, and `sid` are conditional on the flow and request.
-- **JWT access-token claims** — `iss`, `sub`, `aud`, `client_id`, `iat`, `exp`, and `jti` are required by RFC 9068; `scope`, `cnf`, `auth_time`, `acr`, `amr`, and other extensions appear when applicable. In this library, opaque access tokens, refresh tokens, and authorization codes do not carry claims on the wire.
+- **ID Token claims** — `iss`, `sub`, `aud`, `iat`, and `exp` are always present. `nonce`, `auth_time`, `acr`, `amr`, `at_hash`, and `c_hash` appear when the flow and request call for them.
+- **JWT access-token claims** — `iss`, `sub`, `aud`, `client_id`, `iat`, `exp`, and `jti` are required by RFC 9068. `scope`, `cnf`, `auth_time`, `acr`, `amr`, and `authorization_details` appear when applicable. Two private claims are for the OP only, and resource servers should ignore them: `gid` (the grant ID, used for revocation) and `userinfo_claims` (the `userinfo` member of the claims request, which `/userinfo` reads back). Opaque access tokens, refresh tokens, and authorization codes carry no claims on the wire.
 - **User claims** — `name`, `family_name`, `email`, `email_verified`, `phone_number`, `address`, `picture`, etc. These describe the end user. The OP releases them only when the granted scope or an explicit claims request authorises them and the claim source supplies a value.
 
 Scopes control user claims; the token type and the flow determine which token metadata claims are present.
@@ -71,65 +71,57 @@ A request for `scope=openid email` therefore releases `sub`, `email`, and `email
 The map alone does not say *where* a released claim shows up. In the ordinary scope flow, `sub` and the ID Token's metadata claims ride in the ID Token, while the user claims released by `profile`, `email`, `address`, and `phone` are served from `/userinfo`. The access token carries the granted `scope`; the ID Token does not carry a standard `scope` claim.
 
 <figure class="fig">
-  <div class="fig-head">Scope requested → claims released → where they arrive</div>
-  <svg class="fig-svg" role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">A scope releases claims; ID token and userinfo carry them</div>
+  <svg class="fig-svg" role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 960 376" xmlns="http://www.w3.org/2000/svg">
     <title id="scope-claim-map-title">Each standard scope releases a group of claims. The openid scope releases sub, which rides in the ID token; profile, email, address and phone are served from the userinfo endpoint. offline_access releases no claim at all.</title>
-    <text class="fg-lbl" x="40" y="26">scope requested</text>
-    <text class="fg-lbl" x="228" y="26">claims released</text>
-    <text class="fg-lbl" x="664" y="26">delivered in</text>
-    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <text class="fg-lbl" x="32" y="44">scope requested</text>
+    <text class="fg-lbl" x="224" y="44">claims released</text>
+    <text class="fg-lbl" x="616" y="44">delivered in</text>
+    <path class="fg-rule fg-rule--strong" d="M32,56 H928"/>
     <!-- openid -->
-    <rect class="fg-box fg-box--accent" x="36" y="52" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="71">openid</text>
-    <text class="fg-m" x="232" y="71">sub</text>
-    <line class="fg-rule" x1="36" y1="96" x2="620" y2="96"/>
+    <text class="fg-m fg-accent" x="32" y="93">openid</text>
+    <text class="fg-m" x="224" y="93">sub</text>
+    <path class="fg-rule" d="M32,112 H576"/>
     <!-- profile -->
-    <rect class="fg-box" x="36" y="106" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="125">profile</text>
-    <text class="fg-m" x="232" y="125">name · family_name · given_name · … (14 claims)</text>
-    <line class="fg-rule" x1="36" y1="150" x2="620" y2="150"/>
+    <text class="fg-m" x="32" y="141">profile</text>
+    <text class="fg-m" x="224" y="141">name · family_name · … (14 claims)</text>
+    <path class="fg-rule" d="M32,160 H576"/>
     <!-- email -->
-    <rect class="fg-box" x="36" y="160" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="179">email</text>
-    <text class="fg-m" x="232" y="179">email · email_verified</text>
-    <line class="fg-rule" x1="36" y1="204" x2="620" y2="204"/>
+    <text class="fg-m" x="32" y="189">email</text>
+    <text class="fg-m" x="224" y="189">email · email_verified</text>
+    <path class="fg-rule" d="M32,208 H576"/>
     <!-- address -->
-    <rect class="fg-box" x="36" y="214" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="233">address</text>
-    <text class="fg-m" x="232" y="233">address</text>
-    <line class="fg-rule" x1="36" y1="258" x2="620" y2="258"/>
+    <text class="fg-m" x="32" y="237">address</text>
+    <text class="fg-m" x="224" y="237">address</text>
+    <path class="fg-rule" d="M32,256 H576"/>
     <!-- phone -->
-    <rect class="fg-box" x="36" y="268" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="287">phone</text>
-    <text class="fg-m" x="232" y="287">phone_number · phone_number_verified</text>
-    <line class="fg-rule" x1="36" y1="312" x2="924" y2="312"/>
+    <text class="fg-m" x="32" y="285">phone</text>
+    <text class="fg-m" x="224" y="285">phone_number · phone_number_verified</text>
+    <path class="fg-rule" d="M32,304 H576"/>
     <!-- offline_access -->
-    <rect class="fg-box fg-box--muted" x="36" y="322" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="341">offline_access</text>
-    <text class="fg-xs" x="232" y="341">no claim at all — it drives the consent prompt and the refresh-token TTL bucket</text>
-    <!-- ID Token panel -->
-    <rect class="fg-box fg-box--accent" x="660" y="44" width="264" height="98" rx="8"/>
-    <text class="fg-t fg-accent" x="678" y="68">ID token</text>
-    <text class="fg-mxs" x="678" y="88">iss · aud · exp · iat · sub</text>
-    <text class="fg-mxs" x="678" y="102">optional: nonce · auth_time · azp</text>
-    <text class="fg-mxs" x="678" y="116">optional: acr · amr · at_hash · sid</text>
-    <text class="fg-xs" x="678" y="134">filled in by the OP itself</text>
-    <path class="fg-edge fg-edge--accent" d="M624,68 H656" marker-end="url(#fg-ac)"/>
-    <!-- userinfo panel -->
-    <rect class="fg-box" x="660" y="158" width="264" height="130" rx="8"/>
-    <text class="fg-m" x="678" y="182">/userinfo</text>
-    <text class="fg-xs" x="678" y="202">the RP calls it with the access</text>
-    <text class="fg-xs" x="678" y="216">token and gets claims back (JSON by default)</text>
-    <line class="fg-rule" x1="678" y1="232" x2="906" y2="232"/>
-    <text class="fg-xs" x="678" y="252">it returns only the claims the</text>
-    <text class="fg-xs" x="678" y="266">granted scopes authorise</text>
-    <path class="fg-leader" d="M628,120 H640 V240 H628"/>
-    <path class="fg-edge" d="M640,196 H656" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-dim" x="32" y="333">offline_access</text>
+    <text class="fg-xs" x="224" y="333">no claim · shapes consent and refresh TTL</text>
+    <path class="fg-rule" d="M32,352 H576"/>
+    <!-- ID token -->
+    <path class="fg-edge fg-edge--accent" d="M576,88 H616" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="616" y="64" width="312" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="632" y="92">ID token</text>
+    <text class="fg-mxs" x="632" y="116">iss · aud · exp · iat · sub</text>
+    <text class="fg-xs" x="632" y="140">filled in by the OP itself</text>
+    <!-- userinfo -->
+    <path class="fg-leader" d="M576,136 H592 V280 H576"/>
+    <path class="fg-edge fg-edge--thin" d="M592,240 H616" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="616" y="192" width="312" height="96" rx="8"/>
+    <text class="fg-m" x="632" y="220">/userinfo</text>
+    <text class="fg-xs" x="632" y="244">RP calls it with the access token</text>
+    <text class="fg-xs" x="632" y="268">returns what the scopes allow</text>
   </svg>
   <figcaption class="fig-note">A scope is a request, not a guarantee. The OP grants the intersection of what the client registered, what the user consented to, and what your claim source can actually produce — so a claim listed here can still be absent from the response.</figcaption>
 </figure>
 
 An RP that wants a user claim inside the ID Token instead has to ask for it explicitly with the OIDC Core §5.5 `claims` parameter; a scope grant alone puts it at `/userinfo`.
+
+`/userinfo` releases the claims of the scopes granted to the presented access token, plus whatever the `userinfo` member of the claims request asked for when that token's authorization was issued. Each access token carries its own claims request (a JWT in `userinfo_claims`, an opaque token in its stored row), so a later authorization by the same user and client does not change what an earlier token can read.
 
 ::: details `offline_access` does not release a claim
 `offline_access` is the OIDC standard scope that signals "the client wants to keep working when the user is not present" — i.e. the user-facing consent prompt for refresh-token issuance. It releases no user claim. In this library it routes the resulting refresh token to a separate TTL bucket (`op.WithRefreshTokenOfflineTTL`) so stay-signed-in chains can outlive everyday short-session refreshes; see [Refresh tokens](/concepts/refresh-tokens).
@@ -137,7 +129,7 @@ An RP that wants a user claim inside the ID Token instead has to ask for it expl
 
 ## Custom scopes
 
-The library lets embedders register additional scopes through `op.WithScope`. Every custom scope is a `op.Scope` struct describing the wire identifier, the consent-prompt UI text, the claim list it releases, and (optionally) which clients may request it.
+Embedders register additional scopes through `op.WithScope`. Each one is an `op.Scope` struct: the wire identifier (`Name`), the text for the consent screen (`Description`, and `Required` if the user cannot decline it), the claim names it releases from `/userinfo` (`Claims`), whether discovery advertises it (`Public`), and optionally which clients may request it (`AllowedClients`).
 
 ```go
 op.WithScope(op.PublicScope("read:projects", "Read your projects")),
@@ -158,9 +150,9 @@ Two helpers cover the common shapes:
 
 Standard OIDC scopes are recognised automatically with built-in defaults. Calling `WithScope` for a standard name (e.g. `email`) overrides the built-in entry — typically to attach translations or extra claim mappings — but registering one with `Public: false` fails `op.New` so the discovery document never advertises an OIDC scope as missing.
 
-`op.Scope.Parse` is a convenience helper for embedder-side strings and splits on any Unicode whitespace run. The protocol path remains stricter: wire-facing scope parsing uses RFC 6749's ASCII-space grammar, so tabs or newlines in `/auth` / `/par` input are not a portability feature to rely on.
+`op.ParseScopeSet(raw)` is a convenience helper for embedder-side strings and splits on any Unicode whitespace run. The protocol path is stricter: wire-facing scope parsing uses RFC 6749's ASCII-space grammar, so don't rely on tabs or newlines in `/auth` or `/par` input.
 
-See [Use case: Scopes](/use-cases/scopes) for the full walkthrough including i18n labels, claim mapping, and consent-prompt rendering.
+See [Use case: Scopes](/use-cases/scopes) for the full walkthrough including public versus internal visibility, claim mapping, and what the consent prompt shows for each scope.
 
 ## Scopes vs RFC 8707 resource indicators
 
@@ -181,7 +173,7 @@ Every surface that accepts a `resource` parameter reduces it to the same canonic
 | Absolute URI required | A value without a scheme and host is rejected. |
 | Scheme and host lowercased | `HTTPS://API.example.com` and `https://api.example.com` are the same resource. |
 | Default port removed | `:80` for HTTP and `:443` for HTTPS drop out; a non-default port is preserved. |
-| One trailing slash removed | `https://api.example.com/` becomes `https://api.example.com`. |
+| Trailing slashes removed | `https://api.example.com/` becomes `https://api.example.com`. |
 | Query preserved | The query string is part of the identity of the resource. |
 | Fragment or userinfo rejected | The request fails with `invalid_target`. |
 
@@ -192,5 +184,5 @@ See [Use case: Claims request](/use-cases/claims-request) for the OIDC §5.5 `cl
 ## Read next
 
 - [ID Token, access token, userinfo](/concepts/tokens) — what each artefact actually contains and how scopes shape it.
-- [Use case: Scopes](/use-cases/scopes) — i18n labels, claim mapping, allowed-clients, and the consent-prompt surface.
+- [Use case: Scopes](/use-cases/scopes) — public versus internal visibility, claim mapping, allowed-clients, and what the consent prompt shows.
 - [Use case: Claims request](/use-cases/claims-request) — the OIDC §5.5 `claims` parameter for fine-grained claim selection.

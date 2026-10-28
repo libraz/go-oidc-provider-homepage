@@ -6,67 +6,67 @@ pageClass: pg-concepts-consent
 
 # Consent
 
-**Consent** is the user's explicit "yes, this app may have these scopes." OIDC Core 1.0 §3.1.2.4 leaves the timing conditional; the spec only requires that the OP "obtain authorization information from the End-User". This library's default is to show a consent screen the first time a client requests a scope set, and to remember the answer.
+**Consent** is the user's explicit "yes, this app may have these scopes." OIDC Core 1.0 §3.1.2.4 leaves the timing open; it only requires that the OP obtain an authorization decision before releasing information. This library shows a consent screen the first time a client requests a scope set, and remembers the answer.
 
 ::: details Specs referenced on this page
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html) — §3.1.2.4 (consent), §3.1.2.1 (`prompt`)
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — §3.3 (scope), §6 (refresh)
-- [RFC 7009](https://datatracker.ietf.org/doc/html/rfc7009) — Token Revocation
+- [RFC 7009](https://datatracker.ietf.org/doc/html/rfc7009) — Token Revocation (§2.1 cascade)
 :::
 
 ::: tip Mental model
-- A **grant** is a row recording "user U authorised client C for scopes S at time T."
-- The first authorize flow that needs scopes outside any existing grant produces a **consent prompt**.
-- Subsequent flows inside the same scope set **skip** the prompt.
+- A **grant** is a record of "user U authorised client C for scopes S", keyed by the pair `(subject, client_id)`.
+- The first authorize flow that needs scopes outside any existing grant shows a **consent prompt**.
+- Later flows inside the same scope set **skip** the prompt.
 - Adding a new scope (a **scope delta**) brings the prompt back, asking only for the delta.
-- Revoking a grant clears the row and forces the next authorize flow to prompt again.
+- Revoking a grant deletes the record, so the next authorize flow prompts again.
 :::
 
 ## When consent is shown
 
-The library evaluates four cases on every authorize flow.
+On every authorize flow the OP evaluates the four cases below, in the order the figure shows.
 
 <figure class="fig">
-  <div class="fig-head">When the consent screen is shown</div>
-  <svg class="fig-svg" role="img" aria-labelledby="consent-decision-title" viewBox="0 0 960 404" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">Consent is shown on any of three triggers, else skipped</div>
+  <svg class="fig-svg" role="img" aria-labelledby="consent-decision-title" viewBox="0 0 960 456" xmlns="http://www.w3.org/2000/svg">
     <title id="consent-decision-title">Three gates decide whether consent is shown: an explicit prompt=consent, no existing grant for this subject and client, or a requested scope outside the existing grant. If none of them fires, the existing grant already covers the request and the authorization code is minted without a prompt.</title>
     <!-- gate 1 -->
-    <rect class="fg-box" x="36" y="30" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="58">the request carries</text>
-    <text class="fg-m" x="56" y="76">prompt=consent</text>
-    <path class="fg-edge" d="M434,63 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="56" text-anchor="middle">yes</text>
-    <rect class="fg-box fg-box--warn" x="530" y="34" width="394" height="58" rx="8"/>
-    <text class="fg-t2" x="550" y="58">Forced re-prompt</text>
-    <text class="fg-xs" x="550" y="76">show consent, even for a grant that already covers this</text>
-    <path class="fg-edge" d="M233,100 V126" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="118">no</text>
+    <rect class="fg-box" x="32" y="24" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="52">the request carries</text>
+    <text class="fg-m" x="48" y="76">prompt=consent</text>
+    <path class="fg-edge" d="M464,60 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="50" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="24" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="52">Forced re-prompt</text>
+    <text class="fg-xs" x="576" y="76">ask again even if a grant covers it</text>
+    <path class="fg-edge" d="M248,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="121">no</text>
     <!-- gate 2 -->
-    <rect class="fg-box" x="36" y="130" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="158">no existing grant for</text>
-    <text class="fg-m" x="56" y="176">(subject, client_id)</text>
-    <path class="fg-edge" d="M434,163 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="156" text-anchor="middle">yes</text>
-    <rect class="fg-box fg-box--warn" x="530" y="134" width="394" height="58" rx="8"/>
-    <text class="fg-t2" x="550" y="158">First-time grant</text>
-    <text class="fg-xs" x="550" y="176">show consent and record what the user agreed to</text>
-    <path class="fg-edge" d="M233,200 V226" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="218">no</text>
+    <rect class="fg-box" x="32" y="136" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="164">no existing grant for</text>
+    <text class="fg-m" x="48" y="188">(subject, client_id)</text>
+    <path class="fg-edge" d="M464,172 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="162" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="136" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="164">First-time grant</text>
+    <text class="fg-xs" x="576" y="188">show consent and record what was agreed</text>
+    <path class="fg-edge" d="M248,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="233">no</text>
     <!-- gate 3 -->
-    <rect class="fg-box" x="36" y="230" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="258">a requested scope falls outside</text>
-    <text class="fg-s" x="56" y="276">the existing grant</text>
-    <path class="fg-edge" d="M434,263 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="256" text-anchor="middle">yes</text>
-    <rect class="fg-box fg-box--warn" x="530" y="234" width="394" height="58" rx="8"/>
-    <text class="fg-t2" x="550" y="258">Scope delta</text>
-    <text class="fg-xs" x="550" y="276">show consent for the difference, not for the whole set</text>
-    <path class="fg-edge" d="M233,300 V326" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="318">no</text>
+    <rect class="fg-box" x="32" y="248" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="276">a requested scope is outside the grant</text>
+    <text class="fg-xs" x="48" y="300">the existing grant does not cover it</text>
+    <path class="fg-edge" d="M464,284 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="274" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="248" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="276">Scope delta</text>
+    <text class="fg-xs" x="576" y="300">consent for the difference only</text>
+    <path class="fg-edge" d="M248,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="345">no</text>
     <!-- outcome -->
-    <rect class="fg-box fg-box--accent" x="36" y="330" width="888" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="56" y="354">The existing grant already covers the request</text>
-    <text class="fg-xs" x="56" y="372">no prompt — the OP mints the authorization code and redirects straight back</text>
+    <rect class="fg-box fg-box--accent" x="32" y="360" width="896" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="388">The existing grant already covers the request</text>
+    <text class="fg-xs" x="48" y="412">no prompt — the OP mints the authorization code and redirects straight back</text>
   </svg>
   <figcaption class="fig-note">Only the third gate looks at scope. That is why adding one scope to an existing integration re-prompts every user: the request no longer fits the grant they gave, and the OP will not widen a grant it was never asked about.</figcaption>
 </figure>
@@ -78,8 +78,12 @@ The library evaluates four cases on every authorize flow.
 | **Forced re-prompt** — the request carries `prompt=consent`. | Prompt regardless of grant state. OIDC §3.1.2.1 mandates this. |
 | **Existing grant covers the request** — `Grant` row already covers every requested scope and every requested `authorization_details` element, and `prompt` is absent, `none`, or `login` (never `consent`). | Skipped. The library proceeds straight to authorization-code emission. There is no dedicated "skipped" audit event. |
 
+A grant does not have to come from the consent screen. A device-code, CIBA, or token-exchange redemption records a `store.Grant` for the client it serves, and `/auth` counts that grant as consent: a later request for the same scopes skips the screen.
+
+Skipping consent does not skip authentication rules. Before minting from an existing session, `/auth` evaluates the `LoginFlow` rules and the `Decider` as if the chain had just completed `Primary`. If a `RuleClient` or `RuleScope` step-up applies, the request runs that step first, and `prompt=none` answers `interaction_required` instead. Both the covering-grant path and the first-party skip below go through this check.
+
 ::: details `prompt=none`, `prompt=login`, `prompt=consent` — what's the difference?
-- `prompt=none` — "if the user is signed in and consent is already in place, complete the flow silently. Otherwise return an error." Used by SPAs for silent re-auth.
+- `prompt=none` — "if the user is signed in and consent is already in place, complete the flow silently. Otherwise return an error": `login_required`, `consent_required`, or `interaction_required`. Used by SPAs for silent re-auth.
 - `prompt=login` — "force the user to re-authenticate, even if a valid session exists." Does not by itself force a consent re-prompt.
 - `prompt=consent` — "force the consent screen, even if a grant already covers the scopes." Useful when the RP wants the user to re-confirm before a sensitive operation.
 
@@ -96,12 +100,19 @@ When no credential factor runs and the live session still exists, the authorizat
 
 ## First-party clients
 
-Some embedders run a small set of trusted apps — a flagship web client, an internal admin console, the company mobile app — where the operator has pre-approved the scope catalogue at deployment time and the consent screen would only annoy the user. For these clients, `op.WithFirstPartyClients(ids ...string)` lets named `client_id` values **skip** the consent prompt, regardless of whether a `Grant` row exists, as long as the requested scopes are in the operator's pre-approved catalogue.
+Some embedders run a small set of trusted apps — a flagship web client, an internal admin console, the company mobile app — where the consent screen would only annoy the user. `op.WithFirstPartyClients(ids ...string)` lets the named `client_id` values **skip** the consent prompt, whether or not a `Grant` exists yet. Every listed ID must also be registered through `op.WithStaticClients`, and the skip applies only to statically seeded or admin-created clients, never to dynamically registered ones.
 
-Two important notes:
+The skip applies only when all of these hold:
 
-1. **The skip is recorded.** The library writes the `Grant` row anyway and emits `op.AuditConsentGrantedFirstParty` so the audit trail still answers "what scopes did this user end up authorising?" — the only thing that changed is that the user did not see the screen.
-2. **`prompt=consent` overrides the skip.** A first-party client that explicitly requests `prompt=consent` still gets the prompt. The skip is for the silent default path; the override stays available.
+- The user already has a session. The skip never invents a subject.
+- The request does not carry `prompt=consent`, which always shows the screen.
+- The scopes do not include `offline_access`, and the request carries no `authorization_details` and no Grant Management action. Those always get an explicit screen.
+- The browser sends `Sec-Fetch-Site: same-origin`, or `same-site` with an `Origin` or `Referer` that matches the `redirect_uri` origin. A cross-site navigation never skips.
+
+Two more notes:
+
+1. **The skip is recorded.** The library writes the `Grant` row anyway and emits `op.AuditConsentGrantedFirstParty`, so the audit trail still answers "what scopes did this user end up authorising?" The only change is that the user did not see the screen.
+2. **FAPI 2.0 profiles refuse the option.** Combining `WithFirstPartyClients` with `profile.FAPI2Baseline` or `profile.FAPI2MessageSigning` fails `op.New`.
 
 See the [first-party use case](/use-cases/first-party) for the complete wiring including the operator-side scope catalogue.
 
@@ -119,7 +130,7 @@ op.WithConsentUI(op.ConsentUI{
 })
 ```
 
-The template receives the requested scopes (and any deltas relative to an existing grant), the `client_id`, the optional client logo / display name from the client metadata, and the CSRF token to embed in the form. On `POST` from the form, the library validates the CSRF, parses the approved scope set, writes the `Grant` row, and continues the authorize flow.
+The template receives the client (ID, display name, logo, and the other client metadata), the requested scopes (and any deltas relative to an existing grant), and the CSRF token to embed in the form. Scopes marked `Required` cannot be deselected. `ConsentUI.ContentSecurityPolicy` sets the page's CSP; the default forbids every subresource, so a branded template that loads a stylesheet, logo, or font must declare those origins. On `POST` from the form, the library validates the CSRF, parses the approved scope set, writes the `Grant` row, and continues the authorize flow. A tampered or stale submission is answered with a 4xx, and cancelling the screen redirects back with `access_denied`.
 
 For RFC 9396 `authorization_details`, coverage uses deep equality: a new element or a changed member forces consent, even when the scope set is already covered. The built-in consent contract exposes scope approval; it has no separate per-detail approval or narrowing control. After ordinary consent, the requested details are persisted with the grant.
 
@@ -129,12 +140,17 @@ For SPAs that render consent client-side (e.g. inside a React shell that already
 
 ## Consent revocation
 
-A user (or admin) can revoke a grant at any time. Revocation flows through two paths:
+A user or operator can revoke consent at any time. There are three routes, and they reach different amounts:
 
-1. **`/revoke` (RFC 7009)** — invalidates a single token (refresh or access). This does not touch the underlying `Grant` row; the next authorize flow with the same scopes still finds the grant and skips consent.
-2. **Grant revocation** — flips the `Grant` row's `Revoked` column. The library cascades through the `Grants` and `AccessTokens` substores: every refresh token in the grant's chain is invalidated, every access token shadow row flips to revoked, and JWT ATs become inactive at every OP-served boundary (`/userinfo`, `/introspect`). The user's next authorize flow finds no covering grant and re-prompts.
+| Route | What it retires | Grant record |
+|---|---|---|
+| **`/revoke`** (RFC 7009) with one token | That token. For a refresh token, its whole rotation chain and the access tokens issued under the grant; the grant's other refresh chains and unredeemed codes keep working. | Kept, so the next authorize flow still skips consent. |
+| **Grant Management revoke** (`DELETE` on the grant) | Every access token and refresh token issued under the grant. | Deleted. The next authorize flow finds no covering grant and prompts again. |
+| **`Provider.RevokeSubject(ctx, subject)`** | The same, for every grant the subject holds. Meant for disabling or deprovisioning a user. | Deleted. |
 
-The cascade is implemented across `internal/revokeendpoint`, `op/store/grant_revocation.go`, and `op/store/cascade.go`. Successful Grant Management revocation emits `grant_management.revoked`; the library does not emit a dedicated `consent.revoked` event for generic grant or token revocation. The end-session cascade ([sessions and logout](/concepts/sessions-and-logout#end-session-cascade)) reuses the same machinery.
+The three share one teardown, so JWT access tokens, opaque access tokens, and refresh tokens are retired the same way regardless of the entry point. Tokens issued by device-code, CIBA, and token-exchange redemptions sit under a grant and are reached too. Credentials from a custom grant are not, unless the handler records a grant.
+
+Successful Grant Management revocation emits `grant_management.revoked`. The library does not emit a dedicated `consent.revoked` event for generic grant or token revocation. The end-session cascade ([sessions and logout](/concepts/sessions-and-logout#end-session-cascade)) uses the same teardown but leaves the grant records in place.
 
 ## Audit events
 

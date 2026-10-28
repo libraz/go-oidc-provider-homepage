@@ -6,45 +6,55 @@ pageClass: pg-concepts-jose-basics
 
 # JOSE basics: JWS, JWE, JWK, JWKS, kid
 
-**JOSE** (JavaScript Object Signing and Encryption) is the umbrella term for a family of IETF specs that define how to sign, encrypt, and represent keys for JSON-shaped tokens. Any OIDC implementation deals with all four pieces — JWS, JWE, JWK, JWKS — usually under the surface, occasionally directly. This page is the minimum a reader needs to understand `id_token`, `jwks_uri`, the JAR `request=` parameter, and `kid`.
+**JOSE** (JavaScript Object Signing and Encryption) is the umbrella term for the IETF specs that define how to sign JSON tokens, encrypt them, and represent keys. Every OIDC implementation uses all four pieces (JWS, JWE, JWK, JWKS), mostly out of sight and occasionally in the open. This page covers the minimum needed to read `id_token`, `jwks_uri`, the JAR `request=` parameter, and `kid`.
 
 <figure class="fig">
   <div class="fig-head">How the JOSE pieces fit together</div>
-  <svg class="fig-svg" role="img" aria-labelledby="jose-map-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="jose-map-title" viewBox="0 0 960 512" xmlns="http://www.w3.org/2000/svg">
     <title id="jose-map-title">JWS signs a JWT, JWE wraps a signed JWT in an encrypted shell, and the recipient unwraps then verifies. Separately, the kid in a JWS header selects one JWK out of the JWKS the OP publishes at its jwks endpoint.</title>
-    <text class="fg-lbl" x="40" y="26">producing a token</text>
-    <rect class="fg-box" x="36" y="38" width="280" height="86" rx="8"/>
-    <text class="fg-t" x="56" y="64">JWS</text>
-    <text class="fg-xs" x="56" y="84">signs a JWT — anyone can read it</text>
-    <text class="fg-mxs" x="56" y="108">header.payload.signature</text>
-    <path class="fg-edge" d="M320,81 H336" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="340" y="38" width="280" height="86" rx="8"/>
-    <text class="fg-t" x="360" y="64">JWE</text>
-    <text class="fg-xs" x="360" y="84">wraps a signed JWT — nobody can read it</text>
-    <text class="fg-mxs" x="360" y="108">an encrypted outer shell</text>
-    <path class="fg-edge" d="M624,81 H640" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="644" y="38" width="280" height="86" rx="8"/>
-    <text class="fg-t" x="664" y="64">Recipient</text>
-    <text class="fg-xs" x="664" y="84">decrypts the shell first,</text>
-    <text class="fg-xs" x="664" y="102">then verifies the signature inside</text>
-    <text class="fg-lbl" x="40" y="164">finding the right key</text>
-    <rect class="fg-box fg-box--accent" x="36" y="176" width="280" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="56" y="202">JWS header</text>
-    <text class="fg-mxs" x="56" y="226">"alg": "RS256", "kid": "2024-05"</text>
-    <path class="fg-edge fg-edge--accent" d="M320,212 H420" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="370" y="205" text-anchor="middle">selects</text>
-    <rect class="fg-box" x="424" y="160" width="500" height="160" rx="8"/>
-    <text class="fg-t2" x="444" y="184">JWKS</text>
-    <text class="fg-xs" x="512" y="184">a set of JWKs, published at /jwks</text>
-    <rect class="fg-box fg-box--accent" x="444" y="196" width="460" height="34" rx="6"/>
-    <text class="fg-mxs" x="460" y="217">JWK · kid 2024-05</text>
-    <text class="fg-xs" x="700" y="217">current signing key</text>
-    <rect class="fg-box fg-box--muted" x="444" y="238" width="460" height="34" rx="6"/>
-    <text class="fg-mxs" x="460" y="259">JWK · kid 2023-11</text>
-    <text class="fg-xs" x="700" y="259">retired, still verifies old tokens</text>
-    <rect class="fg-box fg-box--muted" x="444" y="280" width="460" height="34" rx="6"/>
-    <text class="fg-mxs" x="460" y="301">JWK · kid 2024-09</text>
-    <text class="fg-xs" x="700" y="301">next key, published ahead of time</text>
+    <!-- band: producing a token -->
+    <rect class="fg-group" x="32" y="24" width="896" height="168" rx="8"/>
+    <text class="fg-lbl" x="56" y="52">producing a token</text>
+    <!-- jws -->
+    <rect class="fg-box" x="56" y="72" width="256" height="96" rx="8"/>
+    <text class="fg-t" x="72" y="100">JWS</text>
+    <text class="fg-s" x="72" y="124">signs a JWT; readable</text>
+    <text class="fg-mxs" x="72" y="148">header.payload.signature</text>
+    <!-- jwe -->
+    <rect class="fg-box" x="352" y="72" width="256" height="96" rx="8"/>
+    <text class="fg-t" x="368" y="100">JWE</text>
+    <text class="fg-s" x="368" y="124">wraps a signed JWT</text>
+    <text class="fg-s" x="368" y="148">an encrypted outer shell</text>
+    <!-- rcp -->
+    <rect class="fg-box" x="648" y="72" width="256" height="96" rx="8"/>
+    <text class="fg-t" x="664" y="100">Recipient</text>
+    <text class="fg-s" x="664" y="124">decrypts the shell first</text>
+    <text class="fg-s" x="664" y="148">then checks the signature</text>
+    <path class="fg-edge" d="M312,120 H352" marker-end="url(#fg-a)"/>
+    <path class="fg-edge" d="M608,120 H648" marker-end="url(#fg-a)"/>
+    <!-- band: finding the right key -->
+    <rect class="fg-group" x="32" y="216" width="896" height="272" rx="8"/>
+    <text class="fg-lbl" x="56" y="244">finding the right key</text>
+    <!-- JWS header -->
+    <rect class="fg-box fg-box--accent" x="56" y="284" width="232" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="72" y="312">JWS header</text>
+    <text class="fg-mxs" x="72" y="336">"alg": "ES256"</text>
+    <text class="fg-mxs" x="72" y="360">"kid": "2024-05"</text>
+    <path class="fg-edge fg-edge--accent" d="M288,332 H408" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="348" y="322" text-anchor="middle">selects</text>
+    <!-- JWKS -->
+    <rect class="fg-box" x="408" y="264" width="496" height="200" rx="8"/>
+    <text class="fg-t2" x="424" y="292">JWKS</text>
+    <text class="fg-s" x="496" y="292">a set of JWKs, published at /jwks</text>
+    <rect class="fg-box fg-box--accent" x="424" y="312" width="464" height="40" rx="8"/>
+    <text class="fg-mxs" x="440" y="337">JWK · kid 2024-05</text>
+    <text class="fg-s" x="632" y="337">current signing key</text>
+    <rect class="fg-box fg-box--muted" x="424" y="360" width="464" height="40" rx="8"/>
+    <text class="fg-mxs" x="440" y="385">JWK · kid 2023-11</text>
+    <text class="fg-s" x="632" y="385">retired, verifies old tokens</text>
+    <rect class="fg-box fg-box--muted" x="424" y="408" width="464" height="40" rx="8"/>
+    <text class="fg-mxs" x="440" y="433">JWK · kid 2024-09</text>
+    <text class="fg-s" x="632" y="433">next key, published ahead</text>
   </svg>
   <figcaption class="fig-note">All three keys sit in the document at once, and that is the point: a verifier that fetched the set yesterday can still check a token signed today, and one signed last year, without a flag day.</figcaption>
 </figure>
@@ -64,13 +74,13 @@ pageClass: pg-concepts-jose-basics
 ::: tip Mental model
 - **JWS** signs. **JWE** encrypts. **JWK** is a key. **JWKS** is a key set. **kid** picks which key.
 - Every JWT you'll see in OIDC is a JWS — `header.payload.signature`.
-- JWE is the outer envelope when an ID Token / userinfo / authorize response is encrypted on top of being signed.
-- JWKS at `/jwks` lets RPs verify ID Tokens offline; the OP rotates keys by adding the new key ahead of time.
+- JWE is the outer envelope when an ID Token, userinfo or authorize response is encrypted on top of being signed.
+- The JWKS at `/jwks` lets RPs verify ID Tokens offline. The OP rotates keys by publishing the new key ahead of time.
 :::
 
 ## JWS — JSON Web Signature
 
-A **JWS** is the signing scheme JWTs use. The compact serialisation is three base64url segments joined by dots:
+A **JWS** is the signing scheme JWTs use. Its compact serialisation is three base64url segments joined by dots:
 
 ```
 <base64url(header)>.<base64url(payload)>.<base64url(signature)>
@@ -82,20 +92,22 @@ The header is a JSON object naming the signing algorithm and the key:
 { "alg": "ES256", "kid": "2026-q1" }
 ```
 
-The payload is the token's claims (a JSON object). The signature covers `header + "." + payload`, computed with the algorithm named in `alg` and the key named by `kid`.
+The payload is the token's claims (a JSON object). The signature covers `header + "." + payload` and is computed with the algorithm named in `alg` and the key named by `kid`.
 
-In OIDC, JWS is used for:
+OIDC uses JWS for:
 
-| Artefact | Spec | Signed by |
+| Token | Spec | Signed by |
 |---|---|---|
 | `id_token` | OIDC Core 1.0 §2 | The OP's signing key. |
-| Access token (default JWT path) | RFC 9068 | The OP's signing key. |
-| `request` / `request_uri` (JAR) | RFC 9101 | The RP's key, advertised via the client's `jwks_uri`. |
+| Access token (default JWT format) | RFC 9068 | The OP's signing key. |
+| `request` / `request_uri` (JAR) | RFC 9101 | The RP's key, from the client's registered JWKS (`jwks_uri` or inline `jwks`). |
 | `client_assertion` (`private_key_jwt`) | RFC 7523 | The RP's key. |
 | Authorize response (JARM) | OpenID FAPI JARM | The OP's signing key. |
 | `logout_token` (Back-Channel Logout) | OIDC BCL 1.0 | The OP's signing key. |
 
-The receiver verifies by re-running the algorithm against the public key in the relevant JWKS. If the signature checks out and the claims (`iss`, `aud`, `exp`) match expectations, the token is accepted.
+The receiver verifies the signature with the public key from the relevant JWKS. If the signature is valid and the claims (`iss`, `aud`, `exp`) match what it expects, it accepts the token.
+
+The OP also checks the `typ` header where a token's kind matters. An `id_token_hint` whose `typ` is anything other than absent or `JWT`, such as a logout token or an access token, is rejected at `/end_session` and for CIBA.
 
 ## JWE — JSON Web Encryption
 
@@ -112,15 +124,15 @@ The header carries two algorithm names:
 | `alg` | **Key-management algorithm.** How the per-message content key is delivered to the recipient: `RSA-OAEP-256` (RSA key transport), `ECDH-ES` (direct ECDH), `ECDH-ES+A128KW` / `ECDH-ES+A256KW` (ECDH with AES key wrap). |
 | `enc` | **Content-encryption algorithm.** How the payload is encrypted: `A128GCM`, `A256GCM`. |
 
-In OIDC, JWE is used as an **outer envelope** when the embedder or the client wants confidentiality on top of signature: `id_token` encrypted with the RP's public key, an encrypted userinfo response, an encrypted introspection response, an encrypted authorize response (JARM-with-encryption). The inner artefact is still a JWS — the JWE just wraps it.
+OIDC uses JWE as an **outer envelope** when the embedder or the client wants confidentiality on top of the signature: an `id_token` encrypted to the RP's public key, an encrypted userinfo response, an encrypted introspection response, an encrypted authorize response (JARM with encryption). The inner token is still a JWS, and the JWE just wraps it.
 
-The OP's `op.WithEncryptionKeyset` is for the other direction: it holds private keys for decrypting inbound encrypted request objects and publishes their public halves as `use=enc` keys. It is not an outbound encryption keyset; outbound JWE responses use a `use=enc` key selected from the client's JWKS. If an inbound JWE omits `kid`, the OP filters live keys to the family required by `alg` and refuses to try more than `op.MaxKidlessEncryptionTrialKeys` (default: 4) candidates. Send `kid` when a family is larger than that limit.
+`op.WithEncryptionKeyset` covers the opposite direction. It holds the private keys that decrypt inbound encrypted request objects and publishes their public halves as `use=enc` keys. It is not an outbound keyset: outbound JWE responses are encrypted to a `use=enc` key from the client's JWKS. If an inbound JWE omits `kid`, the OP narrows its live keys to the family `alg` requires and tries at most `op.MaxKidlessEncryptionTrialKeys` (4) candidates. Send `kid` when a family has more keys than that.
 
 See [JWE encryption use case](/use-cases/jwe-encryption) for the complete wiring (`op.WithEncryptionKeyset`, `op.WithSupportedEncryptionAlgs`).
 
 ## JWK — JSON Web Key
 
-A **JWK** is the canonical JSON representation of a single cryptographic key:
+A **JWK** is the standard JSON representation of one cryptographic key:
 
 ```json
 {
@@ -139,13 +151,13 @@ A **JWK** is the canonical JSON representation of a single cryptographic key:
 | `kty` | Key type: `RSA`, `EC` (elliptic curve), `OKP` (Edwards curves: Ed25519, Ed448). |
 | `kid` | Key id — the label used to pick this key out of a JWKS. |
 | `use` | `sig` (signing) or `enc` (encryption). |
-| `alg` | The algorithm this key is used with — pinned so that callers can't substitute a weaker one. |
+| `alg` | The algorithm this key is used with. It is pinned so that callers cannot substitute a weaker one. |
 
-A JWK contains only public material when published; the matching private material stays on the OP.
+A published JWK contains only public material; the private half stays on the OP.
 
 ## JWKS — JWK Set
 
-A **JWKS** is just a JSON array of JWKs:
+A **JWKS** is a JSON object whose `keys` member is an array of JWKs:
 
 ```json
 {
@@ -156,11 +168,13 @@ A **JWKS** is just a JSON array of JWKs:
 }
 ```
 
-The OP publishes its public signing keys at `jwks_uri` (advertised in the discovery document). When `op.WithEncryptionKeyset` is configured, the same endpoint also publishes the OP's public `use=enc` keys for inbound encrypted request objects. RPs fetch the JWKS once, cache it, and use the relevant keys to verify signatures or encrypt request objects. During key rotation the OP keeps previous keys in the set for a window long enough that RP caches converge — see [Operations: key rotation](/operations/key-rotation).
+The OP publishes its public signing keys at `jwks_uri`, which the [discovery document](/concepts/discovery) advertises. With `op.WithEncryptionKeyset` configured, the same endpoint also publishes the OP's public `use=enc` keys for inbound encrypted request objects. RPs fetch the JWKS, cache it, and use the keys to verify signatures or to encrypt request objects. During key rotation the OP keeps the previous keys in the set long enough for RP caches to catch up; see [Operations: key rotation](/operations/key-rotation).
+
+A client's own keys work the same way, but a client record holds either an inline `jwks` or a `jwks_uri`, never both (RFC 7591 §2). The OP refuses a record with both everywhere it would use the keys: request-object verification, `private_key_jwt` and response encryption.
 
 ::: details `jwks_uri` vs the `jwk` JWS header — what's the difference?
 - **`jwks_uri`** (discovery field) is the URL the OP serves its JWKS at. Stable, cacheable, the RP fetches it on its own schedule.
-- **`jwk` JWS header** is an inline JWK *carried inside* a token's header. RFC 7515 allows it but RFC 8725 §3.5 warns that trusting a token's self-declared key is one of the canonical alg-confusion footguns: anyone can mint a JWS, attach their own `jwk` to the header, and ask the verifier to use it. **This library never trusts the inline `jwk` header on incoming tokens** — keys come from the OP's own JWKS for outgoing artefacts and from the configured client `jwks_uri` for client-presented JWS.
+- **`jwk` JWS header** is a JWK embedded *in* a token's own header. RFC 7515 allows it, but RFC 8725 §3.5 warns that trusting a key the token names for itself is a classic mistake: anyone can mint a JWS, attach their own `jwk` to the header, and ask the verifier to use it. **This library never trusts the inline `jwk` header on incoming tokens.** It verifies tokens it issued with the OP's own keys, and client-presented JWS with the keys registered for that client.
 :::
 
 ## kid — picking the right key
@@ -171,41 +185,41 @@ The OP publishes its public signing keys at `jwks_uri` (advertised in the discov
 2. Finds the JWK with matching `kid` in the relevant JWKS.
 3. Uses the algorithm named in `alg` to verify the signature against that key.
 
-Without `kid`, the verifier would have to try every key in the set — which is both slow and a foot-cannon (it lets attackers pick which key to confuse you with). The library always emits `kid` on every JWS it produces and rejects incoming tokens whose `kid` does not appear in the relevant JWKS.
+Without `kid`, the verifier would have to try every key in the set, which is slow and lets an attacker choose which key to confuse. The library puts `kid` on every JWS it produces and rejects incoming tokens whose `kid` is not in the relevant JWKS.
 
-For incoming tokens whose `kid` does not match the active set but does match a recently retired key, the library emits `op.AuditKeyRetiredKidPresented` so dashboards can spot RPs that haven't picked up a key rotation. See [Operations: key rotation](/operations/key-rotation).
+When a token the OP signed itself carries the `kid` of a key whose retirement time has passed, the OP rejects it as if the `kid` were unknown and emits `op.AuditKeyRetiredKidPresented`, so dashboards can show which callers are still holding tokens from a rotated-out key. See [Operations: key rotation](/operations/key-rotation).
 
 ## Why this library closes the alg allow-list
 
-Two classes of attack live in the JOSE algorithm registry, and the canonical defence is to refuse to ever name those algorithms in a type that the verifier reaches.
+The JOSE algorithm registry contains two algorithm families that enable well-known attacks. The standard defence is to keep them out of every type the verifier can reach.
 
 ### Refused algorithms for signing
 
 - **`alg=none`** (RFC 7518 §3.6) — an unsecured JWT has no signature. RFC 8725 §3.1 requires verification to use an application-approved algorithm set; this library excludes `none` from that set entirely.
-- **`HS256` / `HS384` / `HS512`** (HMAC family) — symmetric MACs. The alg-confusion attack class (RFC 8725 §3.2) is a verifier that accepts both asymmetric and symmetric algorithms: an attacker mints a JWS with `alg=HS256` and uses the OP's *public* key as the HMAC secret, and a sloppy verifier validates it. The library does not include any HMAC algorithm in its enum.
+- **`HS256` / `HS384` / `HS512`** (HMAC family) are symmetric MACs. Alg confusion (RFC 8725 §3.2) targets a verifier that accepts both asymmetric and symmetric algorithms: the attacker mints a JWS with `alg=HS256` and uses the OP's *public* key as the HMAC secret, and a careless verifier accepts it. The library's algorithm enum contains no HMAC algorithm.
 
 ### Permitted algorithms
 
 | Use | Algorithms |
 |---|---|
 | OP issuance (signing outgoing ID Tokens, JWT access tokens, JARM) | `ES256` only. `WithKeyset` rejects non-P-256 signing keys at `op.New`. |
-| Verification (incoming JWS) | `RS256`, `PS256`, `ES256`, `EdDSA`. Inbound `RS256` support is this library's interoperability choice; it does not fix the separate OIDC Core requirement to support `RS256` when signing ID Tokens. |
+| Verification (incoming JWS) | `RS256`, `PS256`, `ES256`, `EdDSA`. FAPI profiles narrow client-signed input to `PS256`, `ES256`, `EdDSA`. Accepting `RS256` inbound is an interoperability choice; it does not satisfy the separate OIDC Core requirement to support `RS256` when signing ID Tokens. |
 
-These four are the closed enum in `internal/jose.Algorithm`. There is no zero-value default for the type, and no fallback to a wider registry. A `depguard` lint rule forbids importing the underlying JOSE package outside `internal/jose/`, so no future code path can re-introduce `none` or `HS*` by accident. See [design judgment #11](/security/design-judgments#dj-11) for the full reasoning.
+These four are the closed enum in `internal/jose.Algorithm`. The type has no zero-value default and no fallback to a wider registry, and a `depguard` lint rule forbids importing the underlying JOSE package outside `internal/jose/`, so no new code path can reintroduce `none` or `HS*`. See [design judgment #11](/security/design-judgments#dj-11) for the full reasoning.
 
 ## JWE allow-list
 
-The JWE permitted set in `internal/jose/jweparam.go` is similarly closed.
+The permitted JWE set in `internal/jose/jweparam.go` is closed in the same way.
 
 | Field | Permitted | Refused |
 |---|---|---|
 | `alg` (key management) | `RSA-OAEP-256`, `ECDH-ES`, `ECDH-ES+A128KW`, `ECDH-ES+A256KW` | `RSA1_5` (Bleichenbacher class), `dir` (no key wrap), `A*KW` / `A*GCMKW` (symmetric — same key-distribution problem as HMAC). |
 | `enc` (content encryption) | `A128GCM`, `A256GCM` | `A*CBC-HS*` (AES-CBC with HMAC — historic CBC-with-MAC pitfalls, plus a wider attack surface than GCM). |
 
-The narrowing is deliberate: every refused algorithm has a documented attack class that the OAuth / OIDC ecosystem has either retired (RSA1_5) or never adopted by profile (CBC-with-MAC for OAuth bearers). The embedder may further narrow the advertised set per deployment with `op.WithSupportedEncryptionAlgs(algs, encs []string)`, but cannot widen it past the library's allow-list.
+Every refused algorithm has a documented attack class that the OAuth / OIDC ecosystem has either retired (`RSA1_5`) or never adopted in a profile (CBC-with-MAC for OAuth bearers). The embedder can narrow the advertised set per deployment with `op.WithSupportedEncryptionAlgs(algs, encs []string)` but cannot widen it past the library's allow-list.
 
 ## Read next
 
-- [ID Token, access token, userinfo](/concepts/tokens) — what each artefact contains and how the JWS verification path differs.
+- [ID Token, access token, userinfo](/concepts/tokens) — what each token contains and how the JWS verification path differs.
 - [Operations: key rotation](/operations/key-rotation) — the JWKS lifecycle, kid retirement, and RP cache convergence.
 - [Use case: JWE encryption](/use-cases/jwe-encryption) — wiring the encryption keyset and narrowing the alg / enc list.

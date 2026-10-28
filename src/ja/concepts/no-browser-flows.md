@@ -31,9 +31,9 @@ pageClass: pg-concepts-no-browser-flows
 | 仕様上のエンドポイント | `/device_authorization` | `/bc-authorize` |
 | token grant_type | `urn:ietf:params:oauth:grant-type:device_code` | `urn:openid:params:grant-type:ciba` |
 | 主な用途 | TV アプリ、CLI ツール、kiosk、音声アシスタント、入力手段が乏しい IoT | 強力な顧客認証（PSD2 風）、金融 / ヘルスケアでの別経路承認、画面共有なしでアクセスをリセットするカスタマーサポートのフロー |
-| 本ライブラリでの対応 | RFC 8628 — `op.WithGrants(grant.DeviceCode)` と `op.WithDeviceCodeGrant()` で有効化 | OIDC CIBA Core 1.0 — poll モードのみ。Discovery も `poll` だけを広告し、ping / push は実装しない |
-| ブルートフォース対策 | `op/devicecodekit` の opaque attempt-key limiter + レコード単位ロックアウト（`MaxUserCodeStrikes`） | poll-abuse ロックアウト — `auth_req_id` 単位で `/token` 再試行を rate-limit、閾値超過で `AuditCIBAPollAbuseLockout` |
-| FAPI プロファイルとの関係 | Device Code は FAPI 2.0 Security Profile で分析済みの認可フローには含まれません | FAPI-CIBA は FAPI 2.0 Security Profile / Message Signing とは別のプロファイルです。本ライブラリの CIBA 設定は JAR、DPoP または mTLS、アクセストークンの有効期間の上限 10 分を要求します |
+| 本ライブラリでの対応 | RFC 8628 — `op.WithDeviceCodeGrant()` で有効化 | OIDC CIBA Core 1.0 — poll モードのみ。Discovery も `poll` だけを広告し、ping / push は実装しない |
+| ブルートフォース対策 | `op/devicecodekit` の opaque attempt-key limiter + レコード単位ロックアウト（`MaxUserCodeStrikes`、5 回）、さらに `slow_down` 違反 5 回で poll-abuse ロックアウト | poll-abuse ロックアウト — `auth_req_id` ごとに `slow_down` 違反 5 回（`WithCIBAMaxPollViolations`）、閾値超過で `AuditCIBAPollAbuseLockout`。ユーザが打つコードがないので推測の対象もない |
+| FAPI プロファイルとの関係 | Device Code は FAPI 2.0 Security Profile で分析済みの認可フローには含まれません | FAPI-CIBA は FAPI 2.0 Security Profile / Message Signing とは別のプロファイルです。本ライブラリの CIBA 設定は JAR、DPoP または mTLS、アクセストークンの有効期間と `auth_req_id` の有効期間の上限 10 分を要求します |
 
 ::: tip 2 つの grant、同じ症状
 両方の grant が存在するのは、正攻法の `authorization_code + PKCE` フローがそもそも「token を欲しがるデバイスにまともなブラウザがある」前提で組まれているからです。その前提は TV、CLI、IoT、音声アシスタント、ユーザの代わりに動くバックエンドサービス、では成り立ちません。RFC 8628 と CIBA は「ブラウザがどこか別の場所にある」という状況の、**異なる 2 つの形** を解いています。
@@ -44,57 +44,57 @@ pageClass: pg-concepts-no-browser-flows
 順番に 4 つの問いを通ってください。最初の問いでだいたい片付きます。
 
 <figure class="fig">
-  <div class="fig-head">CIBA か Device Code か — 4 つの問い</div>
-  <svg class="fig-svg" role="img" aria-labelledby="nbf-decision-title" viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">4 つの問いで CIBA か Device Code かが決まる</div>
+  <svg class="fig-svg" role="img" aria-labelledby="nbf-decision-title" viewBox="0 0 960 568" xmlns="http://www.w3.org/2000/svg">
     <title id="nbf-decision-title">CIBA とデバイス認可グラントのどちらを選ぶかを、4 つの問いを順にたどって決める判定木。RP がユーザを既に知っているか、デバイスに画面があるか、ユーザが認証デバイスを事前登録しているか、別経路での承認が規制要件かを順に見ます。</title>
-    <!-- 1 -->
-    <rect class="fg-box" x="36" y="24" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="52">RP はどのユーザかを既に知っているか</text>
-    <text class="fg-xs" x="56" y="74">フロー開始前に login_hint を渡せる</text>
-    <path class="fg-edge" d="M434,57 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="50" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="28" width="394" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="52">CIBA</text>
-    <text class="fg-xs" x="550" y="72">リダイレクトなしで OP がユーザに到達できる</text>
-    <path class="fg-edge" d="M233,94 V116" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="110">いいえ</text>
-    <!-- 2 -->
-    <rect class="fg-box" x="36" y="120" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="148">トークンを求めるデバイスに画面があるか</text>
-    <text class="fg-xs" x="56" y="170">短いコードと URL を表示できる程度でよい</text>
-    <path class="fg-edge" d="M434,153 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="146" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="124" width="394" height="58" rx="8"/>
-    <text class="fg-t2" x="550" y="148">Device Code</text>
-    <text class="fg-xs" x="550" y="168">ユーザがコードを別画面へ持っていく</text>
-    <path class="fg-edge" d="M233,190 V212" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="206">いいえ</text>
-    <!-- 3 -->
-    <rect class="fg-box" x="36" y="216" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="244">ユーザは認証デバイスを事前登録しているか</text>
-    <text class="fg-xs" x="56" y="266">OP が到達方法を既に知っているスマホなど</text>
-    <path class="fg-edge" d="M434,249 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="242" text-anchor="middle">いいえ</text>
-    <rect class="fg-box" x="530" y="220" width="394" height="58" rx="8"/>
-    <text class="fg-t2" x="550" y="244">Device Code</text>
-    <text class="fg-xs" x="550" y="264">通知先が無いので、ユーザ側から来てもらう</text>
-    <path class="fg-edge" d="M233,286 V308" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="302">はい</text>
-    <!-- 4 -->
-    <rect class="fg-box" x="36" y="312" width="394" height="66" rx="8"/>
-    <text class="fg-s" x="56" y="340">規制下の金融・ヘルスケアで別経路承認が要件か</text>
-    <text class="fg-xs" x="56" y="362">取引に使う端末から離れた場所で承認する必要がある</text>
-    <path class="fg-edge" d="M434,345 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="338" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="316" width="394" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="340">CIBA</text>
-    <text class="fg-xs" x="550" y="360">binding_message が 2 つの端末を結び付ける</text>
-    <path class="fg-edge" d="M233,382 V404" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="398">いいえ</text>
-    <!-- 既定 -->
-    <rect class="fg-box" x="36" y="408" width="888" height="54" rx="8"/>
-    <text class="fg-t2" x="56" y="430">既定は Device Code</text>
-    <text class="fg-xs" x="56" y="450">要求するものが少なくて済みます。hint resolver も通知チャネルの運用も要りません</text>
+    <!-- question 1 -->
+    <rect class="fg-box" x="32" y="24" width="392" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="52">RP は事前にユーザを特定できるか</text>
+    <text class="fg-s" x="48" y="76">フロー開始前に login_hint を渡せる</text>
+    <path class="fg-edge" d="M424,60 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="480" y="50" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="536" y="24" width="392" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="552" y="52">CIBA</text>
+    <text class="fg-s" x="552" y="76">OP がユーザに直接到達できる</text>
+    <path class="fg-edge" d="M228,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="240" y="121">いいえ</text>
+    <!-- question 2 -->
+    <rect class="fg-box" x="32" y="136" width="392" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="164">デバイスに画面があるか</text>
+    <text class="fg-s" x="48" y="188">短いコードと URL を表示できればよい</text>
+    <path class="fg-edge" d="M424,172 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="480" y="162" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="536" y="136" width="392" height="72" rx="8"/>
+    <text class="fg-t2" x="552" y="164">Device Code</text>
+    <text class="fg-s" x="552" y="188">ユーザがコードをスマホへ持っていく</text>
+    <path class="fg-edge" d="M228,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="240" y="233">いいえ</text>
+    <!-- question 3 -->
+    <rect class="fg-box" x="32" y="248" width="392" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="276">ユーザは認証デバイスを登録済みか</text>
+    <text class="fg-s" x="48" y="300">OP が到達方法を知っているスマホなど</text>
+    <path class="fg-edge" d="M424,284 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="480" y="274" text-anchor="middle">いいえ</text>
+    <rect class="fg-box" x="536" y="248" width="392" height="72" rx="8"/>
+    <text class="fg-t2" x="552" y="276">Device Code</text>
+    <text class="fg-s" x="552" y="300">通知先が無いのでユーザに来てもらう</text>
+    <path class="fg-edge" d="M228,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="240" y="345">はい</text>
+    <!-- question 4 -->
+    <rect class="fg-box" x="32" y="360" width="392" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="388">別経路での承認が要件か</text>
+    <text class="fg-s" x="48" y="412">規制下の金融・ヘルスケアで、端末から離れて</text>
+    <path class="fg-edge" d="M424,396 H536" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="480" y="386" text-anchor="middle">はい</text>
+    <rect class="fg-box fg-box--accent" x="536" y="360" width="392" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="552" y="388">CIBA</text>
+    <text class="fg-s" x="552" y="412">binding_message が 2 つの端末を結ぶ</text>
+    <path class="fg-edge" d="M228,432 V472" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="240" y="457">いいえ</text>
+    <!-- default -->
+    <rect class="fg-box" x="32" y="472" width="896" height="72" rx="8"/>
+    <text class="fg-t2" x="48" y="500">既定は Device Code</text>
+    <text class="fg-s" x="48" y="524">要求するものが少ない。hint resolver も通知チャネルの運用も要らない</text>
   </svg>
   <figcaption class="fig-note">分かれ目は、どちらから話しかけるかです。Device Code はユーザ側に OP を探してもらう方式で、CIBA は事前に伝えられた端末へ OP から働きかける方式です。後者はその通知チャネルを自分で運用している場合にだけ成立します。</figcaption>
 </figure>
@@ -116,7 +116,7 @@ pageClass: pg-concepts-no-browser-flows
 
 **4. これは規制下の金融 / ヘルスケアで、別経路承認が要件になっているか?**
 
-- **CIBA は別経路での認証に対応します。** 旧 FAPI-CIBA-ID1 は FAPI 1.0 と mTLS を基礎としています。本ライブラリの `profile.FAPICIBA` は JAR を要求し、送信者制約として DPoP または mTLS を認め、アクセストークンの有効期間を 10 分以内に制限します。この設定だけで ID1 への適合は示せません。`binding_message` は、ユーザが承認するリクエストを識別する助けになります。
+- **CIBA はこの用途のために設計されています。** 旧 FAPI-CIBA-ID1 は FAPI 1.0 と mTLS を基礎としています。本ライブラリの `profile.FAPICIBA` は JAR を要求し、送信者制約として DPoP または mTLS を認め、アクセストークンの有効期間を 10 分以内に制限します。この設定だけで ID1 への適合は示せません。`binding_message` は、ユーザが承認するリクエストを識別する助けになります。
 - **Device Code は汎用的な仕組みです。** 適切に組めば十分機能しますが、規制当局が SCA で名指ししてくる形にはなっていません。
 
 判定木を抜けてもまだ迷うなら、既定としては「画面はあるがブラウザがない」一般消費者向けには **Device Code**、「RP がユーザを把握済みで、別経路で承認だけしてほしい」業務向けには **CIBA** を選んでください。
@@ -126,150 +126,84 @@ pageClass: pg-concepts-no-browser-flows
 ### Device Code（RFC 8628）
 
 <figure class="fig">
-  <div class="fig-head">Device Code（RFC 8628）</div>
-  <svg class="fig-svg" role="img" aria-labelledby="nbf-devicecode-title" viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">Device Code: コードは人間が画面の間で運ぶ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="nbf-devicecode-title" viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg">
     <title id="nbf-devicecode-title">デバイス認可グラント。ブラウザを持たないデバイスが device_code と短い user_code を要求し、コードと URL を画面に表示し、ユーザが別のブラウザで承認する間トークンエンドポイントを poll します。</title>
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="454"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="454"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="454"/>
-    <rect class="fg-box" x="55" y="16" width="190" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">ブラウザの無いデバイス</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">TV · CLI · IoT</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="735" y="16" width="190" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">ユーザのブラウザ</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">スマホでもラップトップでもよい</text>
-    <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="96" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="99" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,96 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="325" y="90" text-anchor="middle">POST /device_authorization</text>
-    <!-- 2 -->
-    <circle class="fg-badge" cx="15" cy="130" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="133" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,130 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="124" text-anchor="middle">200 · { device_code, user_code, verification_uri }</text>
-    <!-- 3 -->
-    <circle class="fg-badge" cx="15" cy="176" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="179" text-anchor="middle">3</text>
-    <rect class="fg-box fg-box--sub" x="55" y="156" width="330" height="40" rx="6"/>
-    <text class="fg-xs" x="71" y="181">デバイスが <tspan class="fg-accent">user_code</tspan> と開く URL を表示する</text>
-    <!-- par -->
-    <rect class="fg-frame" x="44" y="216" width="896" height="176" rx="8"/>
-    <rect class="fg-box fg-box--muted" x="44" y="216" width="52" height="18" rx="4"/>
-    <text class="fg-tab" x="56" y="229">par</text>
-    <line class="fg-rule fg-rule--dashed" x1="44" y1="322" x2="940" y2="322"/>
-    <rect class="fg-frame" x="64" y="246" width="600" height="66" rx="6"/>
-    <rect class="fg-box fg-box--muted" x="64" y="246" width="168" height="18" rx="4"/>
-    <text class="fg-tab" x="76" y="259">loop · interval 秒ごと</text>
-    <!-- 4 -->
-    <circle class="fg-badge" cx="15" cy="278" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="281" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M150,278 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="325" y="272" text-anchor="middle">POST /token · grant_type=…:device_code</text>
-    <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="304" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="307" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--muted" d="M500,304 H150" marker-end="url(#fg-am)"/>
-    <text class="fg-mxs fg-halo" x="325" y="298" text-anchor="middle">400 · authorization_pending</text>
-    <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="364" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="367" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M830,364 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="665" y="344" text-anchor="middle">verification_uri を開き、user_code を入力し、</text>
-    <text class="fg-xs" x="665" y="357" text-anchor="middle">ログインして承認する</text>
-    <!-- 7 -->
-    <circle class="fg-badge" cx="15" cy="418" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="421" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M150,418 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="412" text-anchor="middle">POST /token — 次の poll</text>
-    <!-- 8 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="448" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="451" text-anchor="middle">8</text>
-    <path class="fg-edge fg-edge--accent" d="M500,448 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="442" text-anchor="middle">200 · { access_token, id_token? }</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="576"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="576"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="576"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">デバイス</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">ブラウザ無し · TV · CLI</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">ユーザのブラウザ</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">スマホやラップトップ</text>
+    <path class="fg-edge" d="M192,136 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="126" text-anchor="middle">POST /device_authorization</text>
+    <path class="fg-edge fg-edge--accent" d="M512,192 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="182" text-anchor="middle">200 · device_code, user_code</text>
+    <path class="fg-edge" d="M192,232 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="238">URL とコードを画面に表示</text>
+    <text class="fg-mxs fg-accent" x="248" y="260">user_code=ABCD-EFGH</text>
+    <path class="fg-edge" d="M192,328 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="318" text-anchor="middle">POST /token · poll</text>
+    <path class="fg-edge fg-edge--muted" d="M512,384 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl" x="352" y="374" text-anchor="middle">400 · authorization_pending</text>
+    <path class="fg-edge" d="M824,440 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="430" text-anchor="middle">コードを入力して承認</text>
+    <path class="fg-edge" d="M192,496 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="486" text-anchor="middle">POST /token · 次の poll</text>
+    <path class="fg-edge fg-edge--accent" d="M512,552 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="542" text-anchor="middle">200 · access_token, id_token?</text>
   </svg>
-  <figcaption class="fig-note">デバイスとブラウザは互いに接続されていません。両者の間を移動するのは <code>user_code</code> だけで、それを運ぶのは片方の画面を読んでもう片方に入力する人間です。</figcaption>
+  <figcaption class="fig-note">デバイスとブラウザは互いに接続されません。両者の間を移動するのは <code>user_code</code> だけで、それを運ぶのは片方の画面を読んでもう片方に入力する人間です。</figcaption>
 </figure>
 
 ### CIBA（Core 1.0、poll モード）
 
 <figure class="fig">
-  <div class="fig-head">CIBA（OIDC Core 1.0、poll モード）</div>
-  <svg class="fig-svg" role="img" aria-labelledby="nbf-ciba-title" viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">CIBA: OP が登録済みデバイスへ働きかける</div>
+  <svg class="fig-svg" role="img" aria-labelledby="nbf-ciba-title" viewBox="0 0 960 624" xmlns="http://www.w3.org/2000/svg">
     <title id="nbf-ciba-title">CIBA の poll モード。RP が backchannel authentication エンドポイントで login hint を渡し、OP がそれを subject に解決し、組み込み側の通知サービスがユーザの事前登録デバイスへ届け、RP は承認が届くまで poll します。</title>
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="454"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="454"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="454"/>
-    <rect class="fg-box" x="55" y="16" width="190" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / API クライアント</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">POS · コールセンタ操作画面</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="735" y="16" width="190" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">ユーザの認証デバイス</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">事前登録済み</text>
-    <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,102 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="325" y="82" text-anchor="middle">POST /bc-authorize</text>
-    <text class="fg-mxs" x="325" y="95" text-anchor="middle">login_hint=alice · binding_message</text>
-    <!-- 2 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="132" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="135" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,124 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="542" y="136">HintResolver → subject</text>
-    <!-- 3 -->
-    <circle class="fg-badge" cx="15" cy="180" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="183" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M500,180 H830" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="665" y="160" text-anchor="middle">組み込み側の通知サービスが届ける</text>
-    <text class="fg-mxs" x="665" y="173" text-anchor="middle">「Acme Coffee で 800 円を承認?」</text>
-    <!-- 4 -->
-    <circle class="fg-badge" cx="15" cy="210" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="213" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M500,210 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="204" text-anchor="middle">200 · { auth_req_id, expires_in, interval }</text>
-    <!-- par -->
-    <rect class="fg-frame" x="44" y="230" width="896" height="162" rx="8"/>
-    <rect class="fg-box fg-box--muted" x="44" y="230" width="52" height="18" rx="4"/>
-    <text class="fg-tab" x="56" y="243">par</text>
-    <line class="fg-rule fg-rule--dashed" x1="44" y1="330" x2="940" y2="330"/>
-    <rect class="fg-frame" x="64" y="258" width="600" height="62" rx="6"/>
-    <rect class="fg-box fg-box--muted" x="64" y="258" width="168" height="18" rx="4"/>
-    <text class="fg-tab" x="76" y="271">loop · interval 秒ごと</text>
-    <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="288" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="291" text-anchor="middle">5</text>
-    <path class="fg-edge" d="M150,288 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="325" y="282" text-anchor="middle">POST /token · grant_type=…:ciba</text>
-    <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="312" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="315" text-anchor="middle">6</text>
-    <path class="fg-edge fg-edge--muted" d="M500,312 H150" marker-end="url(#fg-am)"/>
-    <text class="fg-mxs fg-halo" x="325" y="306" text-anchor="middle">400 · authorization_pending</text>
-    <!-- 7 -->
-    <circle class="fg-badge" cx="15" cy="366" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="369" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M830,366 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="665" y="346" text-anchor="middle">ユーザが認証デバイス上で承認する</text>
-    <text class="fg-mxs" x="665" y="359" text-anchor="middle">Approve(auth_req_id)</text>
-    <!-- 8 -->
-    <circle class="fg-badge" cx="15" cy="418" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="421" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M150,418 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="412" text-anchor="middle">POST /token — 次の poll</text>
-    <!-- 9 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="448" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="451" text-anchor="middle">9</text>
-    <path class="fg-edge fg-edge--accent" d="M500,448 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="442" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="600"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="600"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="600"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">POS · コールセンタ画面</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">ユーザのデバイス</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">事前登録済み</text>
+    <path class="fg-edge" d="M192,136 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="126" text-anchor="middle">POST /bc-authorize</text>
+    <path class="fg-edge fg-edge--accent" d="M512,176 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="182">hint を subject に解決</text>
+    <path class="fg-edge" d="M512,240 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="230" text-anchor="middle">ユーザのデバイスへ通知</text>
+    <path class="fg-edge fg-edge--accent" d="M512,296 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="286" text-anchor="middle">200 · auth_req_id</text>
+    <path class="fg-edge" d="M192,352 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="342" text-anchor="middle">POST /token · poll</text>
+    <path class="fg-edge fg-edge--muted" d="M512,408 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl" x="352" y="398" text-anchor="middle">400 · authorization_pending</text>
+    <path class="fg-edge" d="M824,464 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="454" text-anchor="middle">ユーザがスマホ上で承認</text>
+    <path class="fg-edge" d="M192,520 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="510" text-anchor="middle">POST /token · 次の poll</text>
+    <path class="fg-edge fg-edge--accent" d="M512,576 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="566" text-anchor="middle">200 · access_token, id_token</text>
   </svg>
-  <figcaption class="fig-note">上の図との違いは手順 3 です。ここでは OP からユーザに働きかけるため、解決できる hint と送信できるチャネルの両方が必要になります。手順 5 から 9 の poll ループはどちらの方式でも同じです。</figcaption>
+  <figcaption class="fig-note">Device Code の図との違いは、ここでは OP からユーザに働きかける点です。そのため、解決できる hint と送信できるチャネルの両方が必要になります。その後の poll ループはどちらの方式でも同じです。</figcaption>
 </figure>
 
 形は頭の中でマッピングできる程度には似ています。決定的な違いは斜めに伸びる矢印です。Device Code ではユーザが **コードを手に OP まで歩いてくる** のに対し、CIBA では OP が **ユーザがすでに信頼しているデバイスに手を伸ばす**。
@@ -289,18 +223,19 @@ pageClass: pg-concepts-no-browser-flows
 **`/token` ポーリングへの replay / abuse.**
 
 - 両フローとも、ユーザが判断中は `authorization_pending` を、`interval` より速く poll してきたら `slow_down` を返します。RFC 8628 §3.5 は新しい `interval` の遵守を必須としており、OP は `LastPolledAt` と原子的に値を永続化するため、複数レプリカ構成で値をリセットされる経路はありません。
-- CIBA はさらに poll-abuse ロックアウトを持ちます。`auth_req_id` 単位の違反カウンタが閾値を超えると、リクエストは `reason="poll_abuse"` で拒否され、audit catalogue に `AuditCIBAPollAbuseLockout` が記録されます。
+- 両フローとも、`slow_down` 違反が 5 回に達するとレコードをロックします。リクエストは `reason="poll_abuse"` で拒否され、次の poll は `access_denied` になります。CIBA では加えて `AuditCIBAPollAbuseLockout` が記録され、CIBA の閾値は `op.WithCIBAMaxPollViolations` で調整できます。
 
 ## 本ライブラリの現状の対応
 
-**Device Code（RFC 8628）.** フル対応、`op.WithGrants(grant.DeviceCode)` と `op.WithDeviceCodeGrant()` で有効化します。verification ページ（ユーザが `user_code` を入力する画面）は **組み込み側がホスト** します。最初の手入力は raw `user_code` ではない opaque なサーバ側 ceremony key と `devicecodekit.VerifyUserCodeByAttemptKey` で検証し、その後 `ApproveUserCode` / `DenyUserCode` を呼びます。`devicecodekit.Deps` は pointer のまま保持・受け渡しし、既定 limiter はプロセス内限定です。複数インスタンスでは共有 atomic `AttemptLimiter` を注入します。Audit は `Deps.AuditLogger` 経由です。Audit catalogue:
+**Device Code（RFC 8628）.** フル対応で、`op.WithDeviceCodeGrant()` で有効化します（この option が grant を有効な集合に加えるので、`op.WithGrants` に `grant.DeviceCode` を併記しても何も変わりません）。verification ページ（ユーザが `user_code` を入力する画面）は **組み込み側がホスト** します。最初の手入力は raw `user_code` ではない opaque なサーバ側 ceremony key と `devicecodekit.VerifyUserCodeByAttemptKey` で検証し、その後 `ApproveUserCode` / `DenyUserCode` を呼びます。`devicecodekit.Deps` は pointer のまま保持・受け渡しし、既定 limiter はプロセス内限定です。複数インスタンスでは共有 atomic `AttemptLimiter` を注入します。Audit は `Deps.AuditLogger` 経由です。Audit catalogue:
 
 - `AuditDeviceAuthorizationIssued`、`AuditDeviceAuthorizationRejected`、`AuditDeviceAuthorizationUnboundRejected`
 - `AuditDeviceCodeVerificationApproved`、`AuditDeviceCodeVerificationDenied`、`AuditDeviceCodeUserCodeBruteForce`
 - `AuditDeviceCodeTokenIssued`、`AuditDeviceCodeTokenRejected`、`AuditDeviceCodeTokenSlowDown`
+- `AuditDeviceCodePollObservationFailed`（token endpoint がきれいに反映できない状態遷移を観測したとき）
 - `AuditDeviceCodeRevoked`（公開 `Revoke` ヘルパから発火）
 
-**CIBA（Core 1.0）.** poll モードのみで、Discovery も `poll` だけを広告します。ping / push 配信方式は提供しません。`op.WithGrants(grant.CIBA)` と `op.WithCIBA(op.WithCIBAHintResolver(...))` で組み込みます。`HintResolver` は組み込み側のフックで、受信した hint（`login_hint`、`id_token_hint`、`login_hint_token`）を subject に解決します。`id_token_hint` は OP が署名・issuer・認証済みクライアント audience を検証し、検証済み `sub` だけを resolver に渡します。`exp` は意図的に検証せず、pairwise client は resolver 前に拒否します。Audit catalogue:
+**CIBA（Core 1.0）.** poll モードのみで、Discovery も `poll` だけを広告します。ping / push 配信方式は提供しません。`op.WithCIBA(op.WithCIBAHintResolver(...))` で有効化します。リゾルバは必須です。`HintResolver` は組み込み側のフックで、受信した hint（`login_hint`、`id_token_hint`、`login_hint_token`）を subject に解決します。`id_token_hint` は OP が署名・issuer・認証済みクライアント audience を検証し、検証済み `sub` だけを resolver に渡します。`exp` は意図的に検証せず、`typ` が `JWT` でないトークンは拒否し、pairwise client は resolver 前に拒否します。Audit catalogue:
 
 - `AuditCIBAAuthorizationIssued`、`AuditCIBAAuthorizationRejected`、`AuditCIBAAuthorizationUnboundRejected`
 - `AuditCIBAPollAbuseLockout`
@@ -313,6 +248,6 @@ pageClass: pg-concepts-no-browser-flows
 
 - [Device Code 入門](/ja/concepts/device-code) — RFC 8628 の動き方、polling 応答、`user_code` brute-force の防御。
 - [CIBA 入門](/ja/concepts/ciba) — CIBA Core 1.0 の動き方、hint の種類、`binding_message`、FAPI-CIBA プロファイル。
-- [使い方: device-code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、verification ページの契約、cascade revocation。
-- [使い方: CIBA の組み込み](/ja/use-cases/ciba) — `op.WithCIBA`、`HintResolver` の契約、FAPI-CIBA の制約。
+- [ユースケース: device-code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、verification ページの契約、cascade revocation。
+- [ユースケース: CIBA の組み込み](/ja/use-cases/ciba) — `op.WithCIBA`、`HintResolver` の契約、FAPI-CIBA の制約。
 - [Audit イベント](/ja/reference/audit-events) — 中身の形式付きの全カタログ。

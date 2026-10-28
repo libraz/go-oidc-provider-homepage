@@ -20,7 +20,7 @@ pageClass: pg-concepts-sessions-and-logout
 - セッションは **OP 側** に生きていて、cookie の中ではありません。
 - cookie はセッション行を指す暗号化されたポインタにすぎません。
 - 「ログアウト」とはその行を消すこと。任意で RP に通知を fan-out できます。
-- cookie だけ消した場合は OP がユーザを忘れます。行だけ消した場合は次のリクエストで cookie が空のセッションを指し、ユーザは再認証を強制されます。
+- ブラウザ側の cookie だけ消しても、OP 上の行は残ります。行だけ消すと cookie は何も指さなくなり、次のリクエストでセッションが見つからず、ユーザは再認証になります。
 :::
 
 ## 本ライブラリでのセッション表現
@@ -29,28 +29,43 @@ OP は `store.SessionStore` に次の行を保持します。
 
 | フィールド | 内容 |
 |---|---|
-| `ID` | 不透明な OP ブラウザセッション識別子。cookie / セッション検索と監査相関に使う値ですが、現在の sub-only Back-Channel Logout Token では RP 固有の `sid` claim として発行されません。 |
-| `Subject` | OP 内部の安定したユーザ ID。ID トークンの `sub` になります。 |
-| `AuthTime` | ユーザがいつ認証したか。ID トークンの `auth_time` になります。 |
+| `ID` | 不透明な OP ブラウザセッション識別子。cookie / セッション検索と監査相関に使います。`sid` claim としては発行されず、本 OP が送る Back-Channel Logout Token は `sub` だけを持ちます。 |
+| `Subject` | OP 内部の安定したユーザ ID。ID トークンの `sub` になります（pairwise subject を有効にした場合はクライアントごとに射影されます）。 |
+| `AuthTime` | ユーザがいつ認証したか。このセッションから発行されるトークンの `auth_time` にコピーされます。 |
 | `ACR` | Authentication Context Class Reference — セッションが満たす保証レベル。 |
 | `AMR` | Authentication Methods References（RFC 8176） — `pwd`、`otp`、`mfa`、`hwk`、… |
 | `ChooserGroupID` | マルチアカウントチューザのグループ識別子。同じブラウザに属する複数セッションが共有します。 |
 | `ExpiresAt`、`CreatedAt`、`UpdatedAt` | ライフサイクルのタイムスタンプ。 |
 
-この行を指す cookie が `__Host-oidc_session` です（`internal/cookie/profile.go` で定義）。本ライブラリは合計 4 つの cookie を使います。
+この行を指す cookie が `__Host-oidc_session` です（`internal/cookie/profile.go` で定義）。暗号化された payload には、chooser group の ID、現在のセッション ID、cookie を書いた時刻が入ります。セッションの存続期間は保存された行に対して強制されるため、cookie を再送しても延長できません。本ライブラリは合計 5 つの cookie を使います。
 
 | Cookie | 用途 | 仕様 |
 |---|---|---|
-| `__Host-oidc_session` | 永続セッションへのポインタ。 | 不透明な payload を AES-256-GCM で AEAD 暗号化。`__Host-` 接頭辞で同一 origin に強制。`SameSite=Lax`。 |
+| `__Host-oidc_session` | 永続セッションへのポインタ。 | 不透明な payload を AES-256-GCM で AEAD 暗号化。`__Host-` 接頭辞で同一 origin に強制。`SameSite=Lax`、最大 14 日。 |
 | `__Host-oidc_interaction` | 進行中のインタラクション（ログインフォーム、MFA チャレンジ）の状態。 | 同じ AEAD。1 時間 TTL。 |
-| `__Host-oidc_csrf` | インタラクションフォームの double-submit CSRF トークン。 | HMAC のみ（AEAD なし）。`SameSite=Strict`。 |
+| `__Host-oidc_csrf` | インタラクションフォームの double-submit CSRF トークン。 | HMAC のみ（AEAD なし）。`SameSite=Strict`。ブラウザセッション cookie。 |
+| `__Host-oidc_logout_csrf` | `/end_session` の確認画面を GET ページから POST まで運ぶ double-submit CSRF トークン。 | HMAC のみ（AEAD なし）。`SameSite=Strict`。5 分 TTL。 |
 | `__Host-oidc_locale` | インタラクション画面をまたいでユーザが選んだ UI ロケールを覚えておく。 | 平文（暗号化なし）。1 年 TTL。`SameSite=Lax`。 |
 
 ::: details `__Host-` 接頭辞とは
 RFC 6265bis により、cookie 名が `__Host-` で始まるとき、ブラウザは `Secure`、`Path=/`、そして `Domain` 属性 **なし** を同時に満たさないと cookie を受理しません — つまり、OP の origin に厳密に縛られます。サブドメイン侵害でも偽造できず、兄弟ドメインからも読めません。本ライブラリが平文 HTTP では起動しないのは、まさに `__Host-` 接頭辞がそれでは成立しないからです。
 :::
 
-セッション行は `store.SessionStore` を経由します — 組み込み側がライブラリの不変条件を破ることなく、揮発性のバックエンド（Redis、Memcached）に振り向けてもよい substore です。トレードオフは [設計判断 #10](/ja/security/design-judgments#dj-10) を参照。
+セッション行は `store.SessionStore` を経由します — 組み込み側がライブラリの不変条件を破ることなく、揮発性のバックエンド（Redis など）に振り向けてもよい substore です。トレードオフは [設計判断 #10](/ja/security/design-judgments#dj-10) を参照。
+
+## `/auth` でのセッションの再利用
+
+ブラウザが有効なセッションを持って `/auth` に来たとき、OP はリクエストごとに、そのセッションで処理してよいかを判断します。
+
+| リクエスト | 挙動 |
+|---|---|
+| `prompt=login` | セッションは再利用せず、ユーザは最初から再認証する。 |
+| セッションの `auth_time` からの経過時間より短い `max_age` | 同じく、完全な再認証。 |
+| セッションの `acr` が満たさない `acr_values` または essential な `acr` | step-up を実行する。発行されるトークンはセッションの `acr`・`amr`・`auth_time` を保持し、step-up の factor は `mfa.*` イベントとして監査される。 |
+| `LoginFlow` のルールまたは `Decider` が別の step を要求 | セッションの subject からチェーンを実行するため、`Primary` は繰り返さない。 |
+| 上のいずれにも該当しない | セッションが要求を処理し、トークンはその `auth_time`・`acr`・`amr` を持つ。 |
+
+`prompt=none` では、UI が必要になる行はエラーを返します。アカウントチューザで古い、または保証の弱いセッションを選ぶと、リクエストを失敗させず再認証を求めます。
 
 ## ログアウトの分類
 
@@ -66,12 +81,16 @@ GET /end_session?id_token_hint=<id_token>&post_logout_redirect_uri=<uri>&state=<
 
 OP は次のことを行います。
 
-1. `id_token_hint` を検証（自分が発行したセッションに紐付くか確認）。
-2. 任意で「本当にログアウトしますか？」の確認画面を挟む（UX として推奨）。
+1. `id_token_hint` を検証する。署名、`aud` が登録済みクライアントを指すこと、`typ` が無いか `JWT` であることを確認し、logout token やアクセストークンは拒否します。期限切れの ID トークンは受理します。古いタブからのログアウトが典型的だからです。
+2. ヒントの `sub` がセッション cookie の subject と一致しない限り、確認画面を表示する。ヒントが別の subject のものである場合や、ヒントが無い場合は、必ず確認画面を挟みます。
 3. `logout_scope` を解決し、選択されたセッション行を削除。
 4. `post_logout_redirect_uri` がそのクライアントに登録されていれば、`state` を反射させてブラウザをリダイレクト。
 
-デフォルトの scope は、アクティブな chooser group 全体です。ブラウザの group にあるすべてのセッションを破棄します。単一値のクエリパラメータ `logout_scope=current` を指定すると、アクティブなセッションだけを破棄し、兄弟セッションが残れば cookie をそのセッションへ再バインドします。空値、未知の値、`logout_scope` の重複は、セッション状態を変更する前に HTTP 400 で拒否します。
+| `logout_scope` | 破棄されるセッション |
+|---|---|
+| 省略（既定） | ブラウザの chooser group にあるすべてのセッション。 |
+| `current` | アクティブなセッションだけ。兄弟セッションが残れば cookie をそのセッションへ再バインドする。 |
+| 空値、未知の値、重複 | なし。状態を変更する前に HTTP 400 で拒否する。 |
 
 セッション cookie の subject と一致しない `id_token_hint` では確認画面を省略できません。セッションストアの transport 障害がセッションの解決または破棄中に起きた場合、`/end_session` は静的な HTTP 503 ページを返します。`post_logout_redirect_uri` へはリダイレクトせず、cookie とセッション行をそのまま残します。セッションが存在しない、または期限切れの場合は別の安全に継続できるケースです。
 
@@ -79,7 +98,7 @@ OP は次のことを行います。
 
 native / public client では、`redirect_uri` と同じ RFC 8252 の loopback any-port ルールを `post_logout_redirect_uri` にも適用します。固定の loopback URI を登録しておき、logout 時には別の ephemeral port で戻る形を許容します。変動できるのは port だけで、host / scheme / path は登録形状と一致している必要があります。
 
-主眼は **このブラウザの OP セッションを終わらせる** ことです。リダイレクトを起点にした RP は当然ログアウトを把握していますが、他の RP は — OP が Back-Channel Logout も同時に動かしていない限り — 把握できません。
+主眼は **このブラウザの OP セッションを終わらせる** ことです。ログアウトを起点にした RP はそれを把握していますが、他の RP は、OP が Back-Channel Logout も動かしていない限り把握できません。
 
 ### Back-Channel Logout 1.0
 
@@ -89,7 +108,7 @@ native / public client では、`redirect_uri` と同じ RFC 8252 の loopback a
 
 外向き HTTP リクエストは、JWKS / sector_identifier_uri 取得と同じ SSRF 拒否リストでガードされます — 組み込み側が明示的にオプトインしない限り、private network には到達しません。失敗は `op.AuditLogoutBackChannelFailed`、成功は `op.AuditLogoutBackChannelDelivered` で記録されます。session-bearing logout notice の grant 由来 RP audience が空の場合は `op.AuditBCLNoSessionsForSubject` が出ます — 「RP の対象を解決できなかった」と「配送に失敗した」を区別するのに有用です。
 
-detached fan-out には独立した 2 つの時間制限があります。`op.WithBackchannelLogoutTimeout` は 1 RP への HTTP 配送（デフォルト 5 秒）を制限し、`op.WithBackchannelFanOutBudget` は detached fan-out 全体（デフォルト 30 秒）を制限します。後者は RP ごとの timeout ではなく、イベント全体の予算です。実行中の fan-out は `Provider.Shutdown(ctx)` でも drain されます。
+detached fan-out には独立した 2 つの時間制限があります。`op.WithBackchannelLogoutTimeout` は 1 RP への HTTP 配送（既定 5 秒）を制限し、`op.WithBackchannelFanOutBudget` は detached fan-out 全体（既定 30 秒）を制限します。後者は RP ごとの timeout ではなく、イベント全体の予算です。実行中の fan-out は `Provider.Shutdown(ctx)` でも drain されます。
 
 ::: warning 揮発セッション下では Back-Channel Logout は best-effort
 揮発な `store.SessionStore` が `/end_session` の解決と snapshot 取得より前に行を追い出すと、ブラウザからの logout trigger を失い detached fan-out は起動しません。snapshot を取得できた場合、RP audience は `SessionStore` の行を辿らず grant store から解決されます。session-bearing notice で grant 由来 RP 対象が 0 件の場合だけ、対象 0 件として監査されます。`op.SessionDurabilityPosture` ノブは trigger / snapshot の喪失と対象 0 件をダッシュボードで解釈する文脈を提供します。詳細は [設計判断 #10](/ja/security/design-judgments#dj-10) を参照。
@@ -101,82 +120,78 @@ Front-Channel Logout は、OP が RP ごとの `frontchannel_logout_uri` をひ�
 
 - Safari ITP（2017 年〜）
 - Firefox ETP（2019 年〜）
-- Chrome の `SameSite=Lax` デフォルト化（2020 年〜）
+- Chrome の `SameSite=Lax` 既定化（2020 年〜）
 - third-party cookie の段階的廃止（2024〜2025 年）
 
 本ライブラリは Front-Channel Logout を **実装しません**。discovery 文書でも `frontchannel_logout_supported` は広告しません。fan-out 型のログアウトが必要な組み込み側は、ブラウザの cookie ポリシーから独立した server-to-server の Back-Channel Logout 1.0 を使います。完全な背景は [設計判断 #5](/ja/security/design-judgments#dj-5) を参照。
 
 ## End-session カスケード
 
-`/end_session` は単に「cookie を消す」だけではありません。組み込み側が `Grants` と `AccessTokens` の substore を組み込んでいる場合、本ライブラリは subject が保持するすべての grant を歩き、grant ごとのアクセストークン shadow row を失効させます。JWT アクセストークンは OP が応答するエンドポイント（`/userinfo`、`/introspect`）で inactive になります。opaque アクセストークンは introspection を経由するすべての RS で inactive になります。
+`/end_session` は cookie を消すだけではありません。破棄するセッションに含まれる subject ごとに、本ライブラリはその subject が持つすべての grant を走査し、grant の配下で発行された認証情報（JWT と opaque のアクセストークン、リフレッシュトークン）を失効させます。grant の記録自体は残るため、ユーザの同意は覚えられたままです。JWT アクセストークンは OP が応答するエンドポイント（`/userinfo`、`/introspect`）で inactive になります。opaque アクセストークンは introspection を経由するすべての RS で inactive になります。
 
 <figure class="fig">
-  <div class="fig-head">セッション行ひとつと、終了がどこまで届くか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 960 452" xmlns="http://www.w3.org/2000/svg">
-    <title id="session-cascade-title">上段はセッションモデル。OP オリジンに紐づく 4 つの cookie のうち 1 つが SessionStore の行 ID を運び、OP 側の状態はその行が持ちます。下段は end-session のカスケード。行を削除し、grant を走査して失効させ、アクセストークンを失効させ、登録済みの back-channel logout URI すべてに logout_token を POST します。</title>
-    <text class="fg-lbl" x="40" y="24">セッションモデル</text>
-    <!-- cookie -->
-    <rect class="fg-box" x="36" y="34" width="300" height="132" rx="8"/>
-    <text class="fg-t2" x="56" y="58">ブラウザの cookie</text>
-    <text class="fg-mxs" x="56" y="80">__Host-oidc_session</text>
-    <text class="fg-mxs" x="56" y="96">__Host-oidc_interaction</text>
-    <text class="fg-mxs" x="56" y="112">__Host-oidc_csrf</text>
-    <text class="fg-mxs" x="56" y="128">__Host-oidc_locale</text>
-    <line class="fg-rule" x1="56" y1="140" x2="316" y2="140"/>
-    <text class="fg-xs" x="56" y="157">OP オリジンに紐づき、RP には渡らない</text>
-    <path class="fg-edge" d="M340,100 H428" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="384" y="93" text-anchor="middle">行 ID を運ぶ</text>
+  <div class="fig-head">セッション終了は連鎖するが、全トークンには届かない</div>
+  <svg class="fig-svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 960 720" xmlns="http://www.w3.org/2000/svg">
+    <title id="session-cascade-title">上段はセッションモデル。OP オリジンに紐づく 5 つの cookie のうち 1 つが SessionStore の行 ID を運び、OP 側の状態はその行が持ちます。下段は end-session のカスケード。行を削除し、各 grant を走査してその配下のアクセストークンとリフレッシュトークンを失効させ、登録済みの back-channel logout URI すべてに logout_token を POST します。注記として、JWT アクセストークンを拒否するのは OP だけで、opaque なトークンは各リソースサーバが introspect して初めて無効になります。</title>
+    <!-- session model band -->
+    <rect class="fg-group" x="32" y="24" width="896" height="176" rx="8"/>
+    <text class="fg-lbl" x="56" y="52">セッションモデル</text>
+    <rect class="fg-box" x="56" y="80" width="336" height="96" rx="8"/>
+    <text class="fg-t2" x="72" y="108">ブラウザの cookie</text>
+    <text class="fg-mxs" x="72" y="132">__Host-oidc_* × 5</text>
+    <text class="fg-xs" x="72" y="156">OP オリジンに紐づき、RP には渡らない</text>
+    <path class="fg-edge" d="M392,128 H488" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="440" y="118" text-anchor="middle">行 ID</text>
+    <rect class="fg-box fg-box--accent" x="488" y="80" width="416" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="504" y="108">SessionStore</text>
+    <text class="fg-xs" x="504" y="132">1 セッション 1 行で OP 側の状態を持つ</text>
+    <text class="fg-mxs" x="504" y="156">ID · Subject · AuthTime · ACR · AMR</text>
+    <!-- cascade band -->
+    <rect class="fg-group" x="32" y="232" width="896" height="464" rx="8"/>
+    <text class="fg-lbl" x="56" y="260">end-session カスケード</text>
+    <rect class="fg-box" x="56" y="440" width="192" height="72" rx="8"/>
+    <text class="fg-m" x="72" y="468">/end_session</text>
+    <text class="fg-xs" x="72" y="492">RP 起点のログアウト</text>
+    <path class="fg-leader" d="M248,476 H272 M272,324 V636"/>
     <!-- SessionStore -->
-    <rect class="fg-box fg-box--accent" x="432" y="34" width="492" height="132" rx="8"/>
-    <text class="fg-t fg-accent" x="452" y="58">SessionStore</text>
-    <text class="fg-xs" x="452" y="76">セッションごとに 1 行 — OP 側の状態はすべてここ</text>
-    <line class="fg-rule" x1="452" y1="88" x2="904" y2="88"/>
-    <text class="fg-mxs" x="452" y="110">ID · Subject · AuthTime · ACR</text>
-    <text class="fg-mxs" x="452" y="128">AMR · ChooserGroupID · timestamps</text>
-    <text class="fg-xs" x="452" y="152">cookie が持つのは行 ID だけ</text>
-    <text class="fg-lbl" x="40" y="204">end-session カスケード</text>
-    <!-- 起点 -->
-    <rect class="fg-box fg-box--accent" x="36" y="214" width="184" height="72" rx="8"/>
-    <text class="fg-m" x="128" y="248" text-anchor="middle">/end_session</text>
-    <text class="fg-xs" x="128" y="266" text-anchor="middle">RP 起点のログアウト</text>
-    <!-- 幹線 -->
-    <path class="fg-leader" d="M224,250 H252 V423"/>
-    <path class="fg-edge fg-edge--thin" d="M252,245 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M252,297 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M252,359 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M252,423 H296" marker-end="url(#fg-a)"/>
-    <!-- 波及先 -->
-    <rect class="fg-box" x="300" y="224" width="290" height="42" rx="6"/>
-    <text class="fg-t2" x="318" y="242">SessionStore</text>
-    <text class="fg-xs" x="318" y="258">行を削除する</text>
-    <rect class="fg-box" x="300" y="276" width="290" height="42" rx="6"/>
-    <text class="fg-t2" x="318" y="294">Grants</text>
-    <text class="fg-xs" x="318" y="310">走査して revoked に切り替える</text>
-    <rect class="fg-box" x="300" y="328" width="290" height="52" rx="6"/>
-    <text class="fg-t2" x="318" y="346">AccessTokens</text>
-    <text class="fg-xs" x="318" y="362">OP が直接失効させる</text>
-    <rect class="fg-box" x="300" y="390" width="290" height="52" rx="6"/>
-    <text class="fg-t2" x="318" y="408">Back-Channel Logout</text>
-    <text class="fg-mxs" x="318" y="426">POST logout_token → 各 RP</text>
-    <!-- 到達範囲 -->
-    <path class="fg-edge fg-edge--muted" d="M594,354 H636" marker-end="url(#fg-am)"/>
-    <rect class="fg-box fg-box--muted" x="640" y="328" width="284" height="114" rx="8"/>
-    <text class="fg-lbl" x="658" y="348">実際にどこまで届くか</text>
-    <text class="fg-xs" x="658" y="368">JWT アクセストークンは OP が</text>
-    <text class="fg-xs" x="658" y="382">/userinfo と /introspect で拒否する</text>
-    <text class="fg-xs" x="658" y="404">opaque なトークンは各 RS が introspect</text>
-    <text class="fg-xs" x="658" y="418">して初めて inactive になる</text>
-    <text class="fg-xs fg-warn" x="658" y="436">到達範囲は OP ではなく各 RS 次第</text>
+    <path class="fg-edge fg-edge--thin" d="M272,324 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="288" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="316">SessionStore</text>
+    <text class="fg-xs" x="312" y="340">行を削除する</text>
+    <!-- Grants -->
+    <path class="fg-edge fg-edge--thin" d="M272,428 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="392" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="420">Grants</text>
+    <text class="fg-xs" x="312" y="444">grant ごとに失効処理を実行する</text>
+    <!-- Tokens under each grant -->
+    <path class="fg-edge fg-edge--thin" d="M272,532 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="496" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="524">各 grant 配下のトークン</text>
+    <text class="fg-xs" x="312" y="548">アクセス / リフレッシュを失効</text>
+    <!-- Back-channel logout -->
+    <path class="fg-edge fg-edge--thin" d="M272,636 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="600" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="628">Back-Channel Logout</text>
+    <text class="fg-mxs" x="312" y="652">logout_token → 各 RP</text>
+    <!-- reach note -->
+    <path class="fg-edge fg-edge--muted" d="M560,532 H608" marker-end="url(#fg-am)"/>
+    <rect class="fg-box fg-box--muted" x="608" y="496" width="296" height="96" rx="8"/>
+    <text class="fg-t2" x="624" y="524">どこまで届くか</text>
+    <text class="fg-xs" x="624" y="548">JWT: OP は拒否する</text>
+    <text class="fg-xs" x="624" y="572">opaque: RS の introspect 待ち</text>
+    <rect class="fg-pill fg-pill--warn" x="608" y="624" width="224" height="32" rx="16"/>
+    <text class="fg-s" x="720" y="645" text-anchor="middle">到達範囲は各 RS 次第</text>
   </svg>
-  <figcaption class="fig-note">左の列は同期的で、すべて OP の制御下にあります。下 2 行はそうではありません。すでに配られた JWT は有効期限まで形式上は正当なままですし、バックチャネル通知が効くのは URI を登録して応答する RP に限られます。</figcaption>
+  <figcaption class="fig-note">最初の 2 つのステップは同期的で、OP の制御下にあります。トークンの失効と back-channel logout はそうではありません。すでに配られた JWT は有効期限まで形式上は正当なままですし、バックチャネル通知が効くのは URI を登録して応答する RP に限られます。</figcaption>
 </figure>
 
 cookie は単なるポインタで、セッションの実体は `SessionStore` の行です。ブラウザ側で cookie を消しても行は残るため、OP が行そのものを削除する必要があります。
 
 | 組み込まれた store | カスケード挙動 |
 |---|---|
-| `Grants` + `AccessTokens`（同梱アダプタを使えばデフォルト） | カスケード発火。AT が revoked に切り替わる。JWT AT は `/userinfo` で拒否、opaque AT は全 RS で拒否。 |
-| いずれかが nil | カスケードは静かに短絡。AT は自然に `exp` まで生存。 |
+| `Grants` を組み込み済み（同梱アダプタを使えば既定） | カスケード発火。JWT AT は `/userinfo` と `/introspect` で拒否、opaque AT は全 RS で拒否、リフレッシュトークンは更新できなくなる。 |
+| `Grants` が nil | カスケードは行われない。AT は自然に `exp` まで生存。 |
+| JWT の失効戦略が `None` | JWT 側は行われない。opaque AT とリフレッシュトークンは引き続き失効する。 |
 
 理由と JWT / opaque のカスケード到達範囲の非対称性は [設計判断 #17](/ja/security/design-judgments#dj-17) を参照。
 
@@ -219,6 +234,6 @@ provider.Shutdown(ctx) // detached fan-out を drain
 
 ## 次に読む
 
-- [使い方: Back-Channel Logout](/ja/use-cases/back-channel-logout) — RP の `backchannel_logout_uri` の設定、署名鍵の選択、`logout_token` の payload。
+- [ユースケース: Back-Channel Logout](/ja/use-cases/back-channel-logout) — RP の `backchannel_logout_uri` の設定、署名鍵の選択、`logout_token` の payload。
 - [設計判断](/ja/security/design-judgments) — #5、#10、#17 がログアウト方針の背後にある明示的な解釈を扱っています。
 - [運用: マルチインスタンス](/ja/operations/multi-instance) — 揮発ストアでセッションを共有しつつロードバランサ越しに OP を動かす場合の話。

@@ -1,17 +1,17 @@
 ---
 title: Redirect URI
-description: How the default /auth redirect_uri check uses exact matching, what RFC 8252 loopback relaxation permits, and how to avoid a CVE-class mistake.
+description: How the /auth redirect_uri check uses exact matching, what the RFC 8252 loopback relaxation permits, and which registrations the library refuses.
 pageClass: pg-concepts-redirect-uri
 ---
 
 # Redirect URI
 
-A **redirect URI** is the URL the OP sends the user back to after `/auth` finishes — with `?code=...&state=...` on success, or `?error=...&state=...` on failure. When the provider is mounted at `/oidc`, this endpoint is `/oidc/auth`. The RP registers one (or more) at client-creation time; the OP compares the registered value against the `redirect_uri` query parameter on every authorize request. Mismatches reject the request before the user is sent anywhere.
+A **redirect URI** is the URL the OP sends the user back to after the authorization endpoint (`/auth`, or `/oidc/auth` when the provider is mounted at `/oidc`) finishes, with `?code=...&state=...` on success or `?error=...&state=...` on failure. The RP registers one or more when the client is created, and the OP compares the `redirect_uri` query parameter of every authorize request against them. A mismatch rejects the request before the user is sent anywhere.
 
 ::: tip Mental model in 30 seconds
-- The `redirect_uri` is **byte-for-byte exact-match** by default. `/cb` and `/cb/` are different URIs.
-- A few historical relaxations exist (loopback ports for CLI tools), but they are opt-in and narrowly scoped.
-- The OP rejects the request **before** redirecting to a wrong URI, because the redirect itself is the attack vector.
+- The `redirect_uri` must match a registered value **byte for byte**. `/cb` and `/cb/` are different URIs.
+- The one relaxation is the RFC 8252 loopback port, which applies only to public and native clients.
+- The OP rejects a bad request **before** redirecting anywhere, because the redirect itself is the attack vector.
 :::
 
 ::: details Specs referenced on this page
@@ -24,114 +24,145 @@ A **redirect URI** is the URL the OP sends the user back to after `/auth` finish
 
 ## Why exact-match
 
-A wildcard or prefix-match policy on `redirect_uri` was the source of an entire CVE class in OAuth's early years. An attacker who could induce the OP to redirect to any URL within the registered prefix could:
+Wildcard and prefix matching on `redirect_uri` caused a whole class of vulnerabilities in OAuth's early years. If the OP redirects to any URL under a registered prefix, an attacker can:
 
-1. Register their own subdomain or path under the registered prefix, or compromise one downstream resource the prefix admitted.
-2. Initiate an authorize request, substituting their attacker-controlled URL for the legitimate `redirect_uri`.
+1. Control one URL under that prefix, by registering their own subdomain or path or by compromising one downstream resource the prefix admits.
+2. Start an authorize request with that URL as the `redirect_uri`.
 3. Receive the authorization code in the redirect.
-4. Exchange the code for a token because the client_id and PKCE state matched.
+4. Exchange the code for tokens.
 
 RFC 9700 §4.1 closes this off:
 
 > **RFC 9700 §4.1 (paraphrase)** authorization servers MUST compare the `redirect_uri` parameter against the registered URIs using simple string comparison; pattern matching, wildcards, and substring matching MUST NOT be used.
 
-The library implements this literally. Whatever string the client registered is the only string that satisfies that registration. If you registered `https://app.example.com/cb`, the request must use exactly that.
+The library implements this literally. If you registered `https://app.example.com/cb`, the request must use exactly that string.
 
 <figure class="fig">
   <div class="fig-head">What "exact match" rejects</div>
-  <svg class="fig-svg" role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 960 348" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="redirect-exact-title" viewBox="0 0 960 432" xmlns="http://www.w3.org/2000/svg">
     <title id="redirect-exact-title">Only a byte-for-byte identical redirect_uri matches the registered value. A trailing slash, an added query parameter, a differently cased host, and a different port are each rejected.</title>
-    <text class="fg-lbl" x="40" y="28">registered on the client</text>
-    <rect class="fg-box fg-box--accent" x="36" y="38" width="440" height="36" rx="6"/>
-    <text class="fg-m" x="54" y="61">https://app.example.com/cb</text>
-    <text class="fg-lbl" x="72" y="106">value sent on the authorize request</text>
-    <text class="fg-lbl" x="612" y="106">result</text>
-    <line class="fg-rule--strong fg-rule" x1="36" y1="118" x2="924" y2="118"/>
-    <!-- accepted -->
-    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M44,136 l4,5 l8,-10"/>
-    <text class="fg-m" x="72" y="143">https://app.example.com/cb</text>
-    <text class="fg-xs fg-ok" x="612" y="143">accepted — every byte identical</text>
-    <line class="fg-rule" x1="36" y1="158" x2="924" y2="158"/>
-    <!-- trailing slash -->
-    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,177 l10,10 M54,177 l-10,10"/>
-    <text class="fg-m" x="72" y="183">https://app.example.com/cb<tspan class="fg-danger">/</tspan></text>
-    <text class="fg-xs" x="612" y="183">a trailing slash is a different path</text>
-    <line class="fg-rule" x1="36" y1="198" x2="924" y2="198"/>
-    <!-- extra query -->
-    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,217 l10,10 M54,217 l-10,10"/>
-    <text class="fg-m" x="72" y="223">https://app.example.com/cb<tspan class="fg-danger">?env=prod</tspan></text>
-    <text class="fg-xs" x="612" y="223">extra query parameters are not merged in</text>
-    <line class="fg-rule" x1="36" y1="238" x2="924" y2="238"/>
-    <!-- host case -->
-    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,257 l10,10 M54,257 l-10,10"/>
-    <text class="fg-m" x="72" y="263">https://<tspan class="fg-danger">APP</tspan>.example.com/cb</text>
-    <text class="fg-xs" x="612" y="263">the comparison never case-folds the host</text>
-    <line class="fg-rule" x1="36" y1="278" x2="924" y2="278"/>
-    <!-- port -->
-    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M44,297 l10,10 M54,297 l-10,10"/>
-    <text class="fg-m" x="72" y="303">https://app.example.com<tspan class="fg-danger">:8443</tspan>/cb</text>
-    <text class="fg-xs" x="612" y="303">a different port is a different origin</text>
-    <line class="fg-rule" x1="36" y1="318" x2="924" y2="318"/>
+    <text class="fg-lbl" x="32" y="40">registered on the client</text>
+    <rect class="fg-box fg-box--accent" x="32" y="56" width="448" height="48" rx="8"/>
+    <text class="fg-m" x="48" y="84">https://app.example.com/cb</text>
+    <text class="fg-lbl" x="72" y="152">value sent on the authorize request</text>
+    <text class="fg-lbl" x="504" y="152">result</text>
+    <line class="fg-rule fg-rule--strong" x1="32" y1="168" x2="928" y2="168"/>
+    <!-- row 1 -->
+    <path class="fg-edge fg-edge--ok fg-edge--thin" d="M42,193 l5,6 l9,-12"/>
+    <text class="fg-s fg-ok" x="504" y="198">accepted — every byte identical</text>
+    <text class="fg-m" x="72" y="198">https://app.example.com/cb</text>
+    <line class="fg-rule" x1="32" y1="216" x2="928" y2="216"/>
+    <!-- row 2 -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M42,234 l12,12 M54,234 l-12,12"/>
+    <text class="fg-s" x="504" y="246">a trailing slash is a different path</text>
+    <text class="fg-m" x="72" y="246">https://app.example.com/cb<tspan class="fg-danger">/</tspan></text>
+    <line class="fg-rule" x1="32" y1="264" x2="928" y2="264"/>
+    <!-- row 3 -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M42,282 l12,12 M54,282 l-12,12"/>
+    <text class="fg-s" x="504" y="294">extra query parameters are not merged in</text>
+    <text class="fg-m" x="72" y="294">https://app.example.com/cb<tspan class="fg-danger">?env=prod</tspan></text>
+    <line class="fg-rule" x1="32" y1="312" x2="928" y2="312"/>
+    <!-- row 4 -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M42,330 l12,12 M54,330 l-12,12"/>
+    <text class="fg-s" x="504" y="342">the comparison never case-folds the host</text>
+    <text class="fg-m" x="72" y="342">https://<tspan class="fg-danger">APP</tspan>.example.com/cb</text>
+    <line class="fg-rule" x1="32" y1="360" x2="928" y2="360"/>
+    <!-- row 5 -->
+    <path class="fg-edge fg-edge--danger fg-edge--thin" d="M42,378 l12,12 M54,378 l-12,12"/>
+    <text class="fg-s" x="504" y="390">a different port is a different origin</text>
+    <text class="fg-m" x="72" y="390">https://app.example.com<tspan class="fg-danger">:8443</tspan>/cb</text>
+    <line class="fg-rule" x1="32" y1="408" x2="928" y2="408"/>
   </svg>
   <figcaption class="fig-note">None of these are normalised before the comparison, and that is deliberate: every normalisation rule is a rule an attacker can aim a lookalike URI at. A string comparison has no such surface.</figcaption>
 </figure>
 
-Every rejected row above differs from the registered string by one or two characters. The OP does not normalise any of them: it compares the two strings and stops. The one exception is the loopback carve-out below, where a native client may vary the port.
+Every rejected row above differs from the registered string by a character or two, and the OP normalises none of them. It compares the two strings and stops. The one exception is the loopback carve-out below, where the port may vary.
 
 ## What this library refuses
 
-At registration time (DCR or `op.WithStaticClients`):
+Registration (DCR or `op.WithStaticClients`) applies the same validator. `redirect_uris` must be non-empty, every entry must be a non-empty absolute URL that `url.Parse` accepts, and no entry may contain a fragment, which has no role in the redirect and which the spec forbids. The scheme rules depend on `application_type`:
 
-- **Empty values.** `redirect_uris` must contain at least one entry, and no entry may be empty.
-- **Unparseable URLs.** A value that fails `url.Parse` is rejected.
-- **Relative URLs.** Must be absolute (`scheme://host/...`).
-- **Fragments.** A `#...` portion has no role in the redirect protocol; the spec forbids it.
-- **Custom URI schemes for web clients.** Web clients (`application_type=web`, the default) must use `https`. The single carve-out is loopback `http`, gated by the rules below.
-- **Schemes that collide with browser primitives** (`javascript:`, `data:`, `file:`, `ftp:`, `ws:`, `wss:`) — rejected outright for native clients.
-- **Custom schemes without a dot** (e.g. `myapp:` instead of `com.example.myapp:`) — rejected for native clients per RFC 8252 §7.1, because non-reverse-DNS schemes have a high collision risk across applications.
+| `application_type` | Accepted schemes |
+|---|---|
+| `web` (default) | `https` with a host and no userinfo. Also `http` on the loopback IP literals `127.0.0.1` and `[::1]`; `http://localhost` only with `op.WithAllowLocalhostLoopback()`. Custom schemes are refused. |
+| `native` | `https` (claimed links), loopback `http` as above, and private-use schemes such as `com.example.app:/cb`. |
 
-At authorize time, the registered list is consulted with strict byte-for-byte comparison. Anything that does not match exactly returns an error response **before** the browser is redirected anywhere — the user sees a server-side error page rather than an attacker-controlled URL.
+Private-use schemes must contain a dot (reverse-DNS form), because RFC 8252 §7.1 warns that short names like `myapp:` collide across applications. `javascript:`, `data:`, `file:`, `ftp:`, `ws:` and `wss:` are refused outright.
+
+At authorize time the registered list is checked by string comparison (plus the loopback rule below). A request that matches nothing gets an error response from the OP itself **before** the browser is redirected anywhere, so the user sees a server-side error page and never an attacker-controlled URL.
 
 ## Loopback (RFC 8252)
 
-A native CLI tool cannot pre-register every ephemeral OS-assigned port — the registered redirect would have to be `http://127.0.0.1:54321/cb` today and `http://127.0.0.1:62114/cb` tomorrow. RFC 8252 §7.3 carves out an exception:
+A CLI tool listens on a port the OS assigns at run time, so it cannot register a fixed redirect: `http://127.0.0.1:54321/cb` today would be `http://127.0.0.1:62114/cb` tomorrow. RFC 8252 §7.3 carves out an exception:
 
 > **RFC 8252 §7.3 (paraphrase)** native applications using loopback redirect MUST be allowed to specify a port at request time even when the registered port differs.
 
-The library honours the carve-out per client, with three rules tightening it against DNS rebinding (RFC 8252 §8.3):
+The library honours the carve-out for **public clients and `application_type=native` clients** only, and tightens it against DNS rebinding (RFC 8252 §8.3):
 
-| Condition | Behaviour |
+| Registered redirect URI | Behaviour |
 |---|---|
-| Scheme is `http` and registered host is `127.0.0.1` or `[::1]` | Authorize-time port may differ from the registered port; everything else (path, query, fragment) must match exactly. |
-| Scheme is `http` and registered host is the textual `localhost` | **Refused for web clients by default.** The textual `localhost` resolves through DNS, which is hijackable. Web clients opt in via `op.WithAllowLocalhostLoopback()`; native clients (`application_type=native`) accept `localhost` unconditionally per OIDC Registration §2. |
-| Scheme is `https` on a loopback host | No port relaxation. ACME does not issue certificates for `127.0.0.1`, so this combination is rare in practice. |
+| `http` on `127.0.0.1` or `[::1]` | A public or native client may use any port at authorize time. Scheme, host, path and query must still match exactly. A confidential web client gets exact matching, port included. |
+| `http` on the textual `localhost` | **Refused at registration unless `op.WithAllowLocalhostLoopback()` is set**, for web and native clients alike. `localhost` resolves through DNS, which can be hijacked. Once admitted, it follows the same any-port rule as the IP literals. |
+| `https` on a loopback host | No port relaxation. Certificate authorities do not issue certificates for `127.0.0.1`, so this combination is rare. |
 
-Outside the loopback carve-out, the strict exact-match policy still applies. A web client that registers `https://app.example.com/cb` cannot vary the port at request time.
+<figure class="fig">
+  <div class="fig-head">The loopback exception relaxes only the port</div>
+  <svg class="fig-svg" role="img" aria-labelledby="redirect-match-title" viewBox="0 0 960 384" xmlns="http://www.w3.org/2000/svg">
+    <title id="redirect-match-title">Decision flow for the redirect_uri on an authorize request. A value identical to a registered entry is accepted. Otherwise the loopback exception applies only to a public or native client whose registered URI is http on a loopback host and whose request differs only in the port. Anything else is rejected with an error page and no redirect.</title>
+    <!-- test 1 -->
+    <rect class="fg-box" x="32" y="24" width="448" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="52">Identical to a registered entry?</text>
+    <text class="fg-s" x="48" y="76">compared as a plain string, byte for byte</text>
+    <path class="fg-edge fg-edge--ok" d="M480,60 H568" marker-end="url(#fg-ao)"/>
+    <text class="fg-edge-lbl" x="524" y="50" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--ok" x="568" y="24" width="360" height="72" rx="8"/>
+    <text class="fg-t" x="584" y="52">Accepted</text>
+    <text class="fg-s" x="584" y="76">redirect to the registered URI</text>
+    <!-- test 2 -->
+    <path class="fg-edge" d="M256,96 V144" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="268" y="124">no</text>
+    <rect class="fg-box" x="32" y="144" width="448" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="172">Does the loopback exception apply?</text>
+    <text class="fg-s" x="48" y="196">public or native client, http loopback URI</text>
+    <text class="fg-s" x="48" y="220">same scheme, host, path, query; port differs</text>
+    <path class="fg-edge fg-edge--ok" d="M480,192 H568" marker-end="url(#fg-ao)"/>
+    <text class="fg-edge-lbl" x="524" y="182" text-anchor="middle">yes</text>
+    <rect class="fg-box fg-box--ok" x="568" y="144" width="360" height="96" rx="8"/>
+    <text class="fg-t" x="584" y="172">Accepted</text>
+    <text class="fg-s" x="584" y="196">redirect to the requested URI</text>
+    <text class="fg-s" x="584" y="220">with the port it sent</text>
+    <!-- rejected -->
+    <path class="fg-edge fg-edge--danger" d="M256,240 V288" marker-end="url(#fg-ad)"/>
+    <text class="fg-edge-lbl" x="268" y="268">no</text>
+    <rect class="fg-box fg-box--danger" x="32" y="288" width="448" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="316">Rejected</text>
+    <text class="fg-s" x="48" y="340">OP shows an error page; no redirect happens</text>
+  </svg>
+  <figcaption class="fig-note">The only loopback exception is the port. A <code>localhost</code> registration reaches the second test only if <code>op.WithAllowLocalhostLoopback()</code> let it through at registration.</figcaption>
+</figure>
 
 ::: warning DNS rebinding is the reason `localhost` is special
-The textual `localhost` is a name the OS resolves through DNS. An attacker who can poison DNS for `localhost` (LAN-side DNS hijacks, malicious resolver, hostile WiFi) can cause the user's browser to land on an attacker-controlled host while the OP thinks it sent the user to loopback. The IP literals `127.0.0.1` and `[::1]` skip DNS entirely, which is why they are the strict-default loopback shape and `localhost` requires explicit opt-in. The default posture (literal IPs only) is the right one for DNS-rebinding-sensitive deployments. See [Design judgments — RFC 8252 loopback handling](/security/design-judgments#dj-4) for the explicit reasoning.
+The textual `localhost` is a name the OS resolves through DNS. An attacker who can poison DNS for `localhost` (a hijacked LAN resolver, a malicious resolver, hostile WiFi) can make the user's browser land on a host the attacker controls while the OP believes it sent the user to loopback. The IP literals `127.0.0.1` and `[::1]` skip DNS entirely, so they are the default loopback form and `localhost` needs an explicit opt-in. See [Design judgments — RFC 8252 loopback handling](/security/design-judgments#dj-4).
 :::
 
 ## How clients are registered
 
-You have two paths to put a redirect URI in front of the OP:
+A redirect URI reaches the OP by one of two paths, and both use the same validator:
 
-- **Static seeds.** Pass `op.WithStaticClients(seeds...)` at construction. Each seed lists its `RedirectURIs`; the OP validates them at boot and rejects malformed values before serving the first request. Best for a small, known fleet — internal tools, single-tenant SaaS, FAPI deployments where every client is vetted.
-- **Dynamic Client Registration (RFC 7591).** The OP exposes `POST /register`; an RP creates itself at runtime by submitting metadata including `redirect_uris`. The same validation rules apply, surfaced as `400 invalid_redirect_uri` or `400 invalid_client_metadata` if any entry violates the policy. Best for multi-tenant SaaS, marketplaces, or any deployment where the OP operator does not pre-know the client population. See [Dynamic Client Registration](/use-cases/dynamic-registration) for the full walkthrough.
-
-Both paths share the same validator, so the same rules apply whether a redirect was vetted at boot or self-registered ten seconds ago.
+- **Static seeds.** Pass `op.WithStaticClients(seeds...)` at construction, with `RedirectURIs` on each seed (see [Client types](/concepts/client-types#provisioning-options)). The OP validates them in `op.New` and refuses to start on a malformed value. This suits a small, known fleet: internal tools, single-tenant SaaS, vetted FAPI clients.
+- **Dynamic Client Registration (RFC 7591).** An RP registers itself at runtime with `POST /register` and its `redirect_uris`. A violating entry is answered with `400 invalid_redirect_uri` or `400 invalid_client_metadata`. This suits multi-tenant SaaS, marketplaces, and any OP whose operator does not know the clients in advance. See [Dynamic Client Registration](/use-cases/dynamic-registration).
 
 ## Common mistakes
 
-- **Hard-coding `localhost` in production seeds.** Works on your laptop, fails on every developer's laptop with a different DNS resolver. Use `127.0.0.1` if you really mean loopback; use the production hostname otherwise.
-- **Trailing-slash drift.** `https://app.example.com/cb` and `https://app.example.com/cb/` are different URIs. Pick one shape, register it, and have the RP framework use it verbatim.
-- **Mixed case in the host.** RP frameworks sometimes upper-case the host because someone pasted from a marketing email. The OP is case-sensitive byte-for-byte; case drift breaks the match.
-- **Path-only registration.** A path without a scheme and host (`/cb`) is not a valid redirect URI. The OP rejects it at registration.
-- **Wildcard expectations.** "Surely `*` works in the path?" It does not. Wildcards are forbidden by RFC 9700.
+- **Registering `http://localhost/...` for development.** Registration fails unless `op.WithAllowLocalhostLoopback()` is set, and that option belongs on a developer machine only. Prefer `http://127.0.0.1:<port>/...`, which needs no option.
+- **Trailing-slash drift.** `https://app.example.com/cb` and `https://app.example.com/cb/` are different URIs. Register one form and have the RP framework send it verbatim.
+- **Mixed case in the host.** An RP framework fed a pasted URL may upper-case the host. The comparison is case-sensitive, so the request no longer matches.
+- **Path-only registration.** `/cb` has no scheme or host, so it is not a valid redirect URI, and registration rejects it.
+- **Expecting wildcards.** `*` in a path does not work; RFC 9700 forbids wildcards.
 
 ## Read next
 
 - [Authorization Code + PKCE flow](/concepts/authorization-code-pkce) — where the redirect URI travels and what the OP checks at each step.
-- [Client types](/concepts/client-types) — `application_type=native` is the switch that admits loopback `http` for CLIs.
+- [Client types](/concepts/client-types) — public and native clients are the ones the loopback port exception applies to.
 - [Dynamic Client Registration](/use-cases/dynamic-registration) — runtime registration and how the same validation applies.
 - [Design judgments — RFC 8252 loopback handling](/security/design-judgments#dj-4) — the explicit reasoning for the loopback rules.

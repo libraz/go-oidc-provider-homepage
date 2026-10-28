@@ -6,11 +6,9 @@ pageClass: pg-concepts-authorization-code-pkce
 
 # Authorization Code + PKCE
 
-The most common OIDC flow. Used by every web app, mobile app, SPA, and desktop app that logs a human in. PKCE (Proof Key for Code Exchange, RFC 7636) is mandatory for every public or native client in this library, and mandatory for all authorization-code clients under FAPI profiles. Confidential clients outside a FAPI profile can still run the older OIDC Core shape, but new deployments should send `S256` everywhere.
+The flow every web app, mobile app, SPA, and desktop app uses to log a human in. The RP sends the browser to the OP, the user signs in and consents there, and the RP trades the one-time `code` that comes back for tokens at `/token`.
 
-::: warning Current behavior
-Public and native clients that omit `code_challenge` are rejected at `/authorize` with `invalid_request`. Register these clients with PKCE and always send `code_challenge_method=S256`; the OP no longer issues a non-PKCE authorization code to a client that cannot authenticate at `/token`.
-:::
+PKCE (Proof Key for Code Exchange, RFC 7636) ties that code to the client that started the flow. This library requires it for public and native clients, and for every client under the `Baseline`, `FAPI2Baseline`, and `FAPI2MessageSigning` profiles. A public client that omits `code_challenge` gets `invalid_request` at `/auth`, because it cannot authenticate at `/token` and the verifier is its only proof of identity. Confidential clients under the default profile may still skip PKCE, but new integrations should send `S256` everywhere.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework (§5.2 error codes)
@@ -30,155 +28,132 @@ Public and native clients that omit `code_challenge` are rejected at `/authorize
 ## The full sequence
 
 <figure class="fig">
-  <div class="fig-head">Authorization Code + PKCE — browser to API</div>
-  <svg class="fig-svg" role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 960 924" xmlns="http://www.w3.org/2000/svg">
-    <title id="acpkce-seq-title">Authorization Code with PKCE, in four phases: the authorization request the Relying Party builds, the authentication and consent the OpenID Provider runs, the token exchange where the PKCE verifier is checked, and the resource access that follows.</title>
-    <!-- phase bands -->
-    <rect class="fg-group" x="30" y="68" width="916" height="164" rx="8"/>
-    <rect class="fg-group" x="30" y="240" width="916" height="246" rx="8"/>
-    <rect class="fg-group" x="30" y="494" width="916" height="258" rx="8"/>
-    <rect class="fg-group" x="30" y="760" width="916" height="152" rx="8"/>
-    <text class="fg-lbl" x="42" y="86">1 · authorization request</text>
-    <text class="fg-lbl" x="42" y="258">2 · authenticate and consent</text>
-    <text class="fg-lbl" x="42" y="512">3 · token exchange</text>
-    <text class="fg-lbl" x="42" y="778">4 · resource access</text>
+  <div class="fig-head">The browser carries the request and the code</div>
+  <svg class="fig-svg" role="img" aria-labelledby="acpkce-seq-title" viewBox="0 0 960 1040" xmlns="http://www.w3.org/2000/svg">
+    <title id="acpkce-seq-title">The first half of Authorization Code with PKCE. The Relying Party builds a PKCE pair and sends the user to the OpenID Provider through the browser; the provider validates the request, authenticates the user and collects consent, then redirects back to the Relying Party with a code and state.</title>
+    <rect class="fg-group" x="32" y="104" width="896" height="328" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">authorization request</text>
+    <rect class="fg-group" x="32" y="456" width="896" height="560" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="484">authenticate and consent</text>
     <!-- lifelines -->
-    <line class="fg-life" x1="110" y1="62" x2="110" y2="912"/>
-    <line class="fg-life" x1="330" y1="62" x2="330" y2="912"/>
-    <line class="fg-life fg-life--accent" x1="570" y1="62" x2="570" y2="912"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="912"/>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="1016"/>
+    <line class="fg-life" x1="512" y1="88" x2="512" y2="1016"/>
+    <line class="fg-life fg-life--accent" x1="824" y1="88" x2="824" y2="1016"/>
     <!-- actors -->
-    <rect class="fg-box" x="34" y="16" width="152" height="42" rx="6"/>
-    <text class="fg-t" x="110" y="35" text-anchor="middle">User</text>
-    <text class="fg-xs" x="110" y="49" text-anchor="middle">browser</text>
-    <rect class="fg-box" x="254" y="16" width="152" height="42" rx="6"/>
-    <text class="fg-t" x="330" y="35" text-anchor="middle">Relying Party</text>
-    <text class="fg-xs" x="330" y="49" text-anchor="middle">your web app</text>
-    <rect class="fg-box fg-box--accent" x="490" y="16" width="160" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="570" y="35" text-anchor="middle">OpenID Provider</text>
-    <text class="fg-mxs" x="570" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="754" y="16" width="152" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">Resource Server</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">your API</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Relying Party</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">your web app</text>
+    <rect class="fg-box" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="512" y="50" text-anchor="middle">User</text>
+    <text class="fg-xs" x="512" y="72" text-anchor="middle">browser</text>
+    <rect class="fg-box fg-box--accent" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="824" y="50" text-anchor="middle">OpenID Provider</text>
+    <text class="fg-mxs" x="824" y="72" text-anchor="middle">go-oidc-provider</text>
     <!-- phase 1 -->
-    <rect class="fg-box fg-box--sub" x="236" y="94" width="320" height="36" rx="6"/>
-    <text class="fg-t2" x="396" y="110" text-anchor="middle">RP builds the PKCE pair</text>
-    <text class="fg-mxs" x="396" y="123" text-anchor="middle">code_challenge = S256(code_verifier)</text>
-    <circle class="fg-badge" cx="15" cy="152" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="155" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M110,152 H330" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="220" y="146" text-anchor="middle">open the app</text>
-    <circle class="fg-badge" cx="15" cy="192" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="195" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M330,192 H110" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="220" y="172" text-anchor="middle">302 to the OP</text>
-    <text class="fg-mxs" x="220" y="185" text-anchor="middle">/authorize · code_challenge · state · nonce</text>
-    <circle class="fg-badge" cx="15" cy="220" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="223" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M110,220 H570" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="400" y="214" text-anchor="middle">GET /authorize</text>
+    <path class="fg-edge" d="M512,184 H192" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="352" y="174" text-anchor="middle">open the app</text>
+    <path class="fg-edge" d="M192,224 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="230">build the PKCE pair</text>
+    <text class="fg-mxs" x="248" y="252">code_challenge =</text>
+    <text class="fg-mxs" x="248" y="274">S256(code_verifier)</text>
+    <path class="fg-edge" d="M192,346 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="312" text-anchor="middle">302 → /auth</text>
+    <text class="fg-mxs" x="352" y="334" text-anchor="middle">code_challenge · state · nonce</text>
+    <path class="fg-edge" d="M512,408 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="398" text-anchor="middle">GET /auth</text>
     <!-- phase 2 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="274" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="277" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M570,266 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="612" y="270">validate the request</text>
-    <text class="fg-mxs" x="612" y="283">redirect_uri exact match · client_id · S256</text>
-    <circle class="fg-badge" cx="15" cy="308" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="311" text-anchor="middle">5</text>
-    <path class="fg-edge" d="M570,308 H110" marker-end="url(#fg-a)"/>
-    <text class="fg-s fg-halo" x="400" y="302" text-anchor="middle">200 login page</text>
-    <circle class="fg-badge" cx="15" cy="338" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="341" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M110,338 H570" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="400" y="332" text-anchor="middle">POST credentials</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="364" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="367" text-anchor="middle">7</text>
-    <path class="fg-edge fg-edge--accent" d="M570,356 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="612" y="360">authenticate</text>
-    <text class="fg-xs" x="612" y="373">password · passkey · step-up MFA</text>
-    <circle class="fg-badge" cx="15" cy="398" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="401" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M570,398 H110" marker-end="url(#fg-a)"/>
-    <text class="fg-s fg-halo" x="400" y="392" text-anchor="middle">200 consent page</text>
-    <circle class="fg-badge" cx="15" cy="428" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="431" text-anchor="middle">9</text>
-    <path class="fg-edge" d="M110,428 H570" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="400" y="422" text-anchor="middle">POST consent</text>
-    <circle class="fg-badge" cx="15" cy="468" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="471" text-anchor="middle">10</text>
-    <path class="fg-edge" d="M570,468 H110" marker-end="url(#fg-a)"/>
-    <text class="fg-s fg-halo" x="400" y="448" text-anchor="middle">302 back to redirect_uri</text>
-    <text class="fg-mxs fg-halo" x="400" y="461" text-anchor="middle">code · state</text>
-    <!-- phase 3 -->
-    <circle class="fg-badge" cx="15" cy="536" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="539" text-anchor="middle">11</text>
-    <path class="fg-edge" d="M110,536 H330" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="220" y="530" text-anchor="middle">GET /callback?code&amp;state</text>
-    <circle class="fg-badge" cx="15" cy="564" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="567" text-anchor="middle">12</text>
-    <path class="fg-edge" d="M330,556 h30 v16 h-30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="372" y="560">verify state</text>
-    <text class="fg-xs" x="372" y="573">must equal the value stored at step 2</text>
-    <circle class="fg-badge" cx="15" cy="608" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="611" text-anchor="middle">13</text>
-    <path class="fg-edge" d="M330,608 H570" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="450" y="588" text-anchor="middle">POST /token</text>
-    <text class="fg-mxs" x="450" y="601" text-anchor="middle">code · code_verifier · client auth</text>
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="636" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="639" text-anchor="middle">14</text>
-    <path class="fg-edge fg-edge--accent" d="M570,628 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s fg-accent" x="612" y="632">verify PKCE</text>
-    <text class="fg-mxs" x="612" y="645">S256(code_verifier) == code_challenge</text>
-    <circle class="fg-badge" cx="15" cy="680" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="683" text-anchor="middle">15</text>
-    <path class="fg-edge" d="M570,680 H330" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="450" y="660" text-anchor="middle">200 OK</text>
-    <text class="fg-mxs" x="450" y="673" text-anchor="middle">access_token · id_token · refresh_token</text>
-    <circle class="fg-badge" cx="15" cy="708" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="711" text-anchor="middle">16</text>
-    <path class="fg-edge" d="M330,700 h30 v16 h-30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="372" y="704">verify the ID token</text>
-    <text class="fg-mxs" x="372" y="717">iss · aud · exp · nonce</text>
-    <circle class="fg-badge" cx="15" cy="740" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="743" text-anchor="middle">17</text>
-    <path class="fg-edge" d="M330,740 H110" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="220" y="734" text-anchor="middle">set the session cookie</text>
-    <!-- phase 4 -->
-    <circle class="fg-badge" cx="15" cy="802" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="805" text-anchor="middle">18</text>
-    <path class="fg-edge" d="M110,802 H330" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="220" y="796" text-anchor="middle">GET /api/me</text>
-    <circle class="fg-badge" cx="15" cy="842" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="845" text-anchor="middle">19</text>
-    <path class="fg-edge" d="M330,842 H830" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="580" y="822" text-anchor="middle">GET /api/me</text>
-    <text class="fg-mxs fg-halo" x="580" y="835" text-anchor="middle">Authorization: Bearer …</text>
-    <circle class="fg-badge" cx="15" cy="874" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="877" text-anchor="middle">20</text>
-    <path class="fg-edge fg-edge--muted" d="M830,874 H570" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="700" y="856" text-anchor="middle">optional</text>
-    <text class="fg-mxs" x="700" y="868" text-anchor="middle">introspect · or verify the JWT locally</text>
-    <circle class="fg-badge" cx="15" cy="902" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="905" text-anchor="middle">21</text>
-    <path class="fg-edge" d="M830,902 H330" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="580" y="896" text-anchor="middle">200 { user data }</text>
+    <path class="fg-edge fg-edge--accent" d="M824,512 h-40 v24 h40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="768" y="518" text-anchor="end">validate the request</text>
+    <text class="fg-mxs" x="768" y="540" text-anchor="end">redirect_uri exact match</text>
+    <text class="fg-mxs" x="768" y="562" text-anchor="end">client_id · S256</text>
+    <path class="fg-edge" d="M824,626 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="616" text-anchor="middle">200 login page</text>
+    <path class="fg-edge" d="M512,682 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="672" text-anchor="middle">POST credentials</text>
+    <path class="fg-edge fg-edge--accent" d="M824,720 h-40 v24 h40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="768" y="726" text-anchor="end">authenticate</text>
+    <text class="fg-xs" x="768" y="748" text-anchor="end">password · passkey · MFA</text>
+    <path class="fg-edge" d="M824,808 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="798" text-anchor="middle">200 consent page</text>
+    <path class="fg-edge" d="M512,864 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="854" text-anchor="middle">POST consent</text>
+    <path class="fg-edge" d="M824,936 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="668" y="902" text-anchor="middle">302 → redirect_uri</text>
+    <text class="fg-mxs" x="668" y="924" text-anchor="middle">code · state</text>
+    <path class="fg-edge" d="M512,992 H192" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="982" text-anchor="middle">GET /callback?code&amp;state</text>
   </svg>
-  <figcaption class="fig-note">Steps 4, 7 and 14 are the only ones the OP performs on its own; everything else is a hop between two parties. Step 14 is what PKCE buys: the code redeemed at <code>/token</code> is only accepted from whoever knows the verifier behind the challenge sent at step 2.</figcaption>
+  <figcaption class="fig-note">The OP validates <code>redirect_uri</code>, <code>client_id</code> and the S256 challenge before it shows any login page, so a malformed request never reaches the user. Only the challenge leaves the RP here; the verifier stays behind until the token request.</figcaption>
+</figure>
+
+<figure class="fig">
+  <div class="fig-head">PKCE is checked where the code is redeemed</div>
+  <svg class="fig-svg" role="img" aria-labelledby="acpkce-seq2-title" viewBox="0 0 960 864" xmlns="http://www.w3.org/2000/svg">
+    <title id="acpkce-seq2-title">The second half of Authorization Code with PKCE. The Relying Party verifies state, redeems the code at the token endpoint together with the PKCE verifier, the OpenID Provider checks the verifier against the earlier challenge and returns tokens, and the Relying Party then calls the Resource Server with the access token.</title>
+    <rect class="fg-group" x="32" y="104" width="896" height="440" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">token exchange</text>
+    <rect class="fg-group" x="32" y="568" width="896" height="272" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="596">resource access</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="840"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="840"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="840"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Relying Party</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">your web app</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OpenID Provider</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Resource Server</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">your API</text>
+    <!-- phase 3 -->
+    <path class="fg-edge" d="M192,152 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="158">verify state</text>
+    <text class="fg-xs" x="248" y="180">must match the stored value</text>
+    <path class="fg-edge" d="M192,256 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="222" text-anchor="middle">POST /token · client auth</text>
+    <text class="fg-mxs" x="352" y="244" text-anchor="middle">code · code_verifier</text>
+    <path class="fg-edge fg-edge--accent" d="M512,296 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="568" y="302">verify PKCE</text>
+    <text class="fg-mxs" x="568" y="324">S256(code_verifier)</text>
+    <text class="fg-mxs" x="568" y="346">== code_challenge</text>
+    <path class="fg-edge fg-edge--accent" d="M512,424 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="390" text-anchor="middle">200 OK</text>
+    <text class="fg-mxs" x="352" y="412" text-anchor="middle">access_token · id_token</text>
+    <path class="fg-edge" d="M192,464 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="470">verify the ID token</text>
+    <text class="fg-mxs" x="248" y="492">iss · aud · exp · nonce</text>
+    <text class="fg-xs" x="248" y="514">then set the session cookie</text>
+    <!-- phase 4 -->
+    <path class="fg-edge" d="M192,670 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="508" y="636" text-anchor="middle">GET /api/me</text>
+    <text class="fg-mxs fg-halo" x="508" y="658" text-anchor="middle">Authorization: Bearer &lt;access_token&gt;</text>
+    <path class="fg-edge fg-edge--muted" d="M824,742 H512" marker-end="url(#fg-am)"/>
+    <text class="fg-m" x="668" y="708" text-anchor="middle">/introspect</text>
+    <text class="fg-xs" x="668" y="730" text-anchor="middle">optional, or verify JWT locally</text>
+    <path class="fg-edge" d="M824,814 H192" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="804" text-anchor="middle">200 OK · { data }</text>
+  </svg>
+  <figcaption class="fig-note">The verifier appears only in the <code>/token</code> request, so a code intercepted in the redirect is useless without it: the OP accepts the code only from whoever knows the verifier behind the challenge it saw earlier. The RP still checks the ID token <code>nonce</code> before it trusts the login.</figcaption>
 </figure>
 
 ## Parameter glossary
 
+Pages on this site write the authorization endpoint as `/auth`, the library default. With default routing the OP mounts under `/oidc`, so the authorization endpoint is served at `/oidc/auth` and the token endpoint at `/oidc/token`.
+
 | Parameter | Sent at | Purpose |
 |---|---|---|
-| `response_type=code` | `/authorize` | Asks for the authorization-code grant. |
-| `client_id` | `/authorize`, `/token` | Identifies the registered RP. |
-| `redirect_uri` | `/authorize` (and echoed at `/token`) | Where the OP sends the user back. **Exact match** against the registered list. |
-| `scope` | `/authorize` | Permissions requested. Must include `openid` for OIDC. |
-| `state` | `/authorize` | Random opaque value the RP echoes on callback. CSRF defense for the redirect. |
-| `nonce` | `/authorize` | Random value bound into the ID Token's `nonce` claim. Replay defense. |
-| `code_challenge` | `/authorize` | `BASE64URL(SHA256(code_verifier))`. |
-| `code_challenge_method` | `/authorize` | `S256` (the only one this library accepts). |
-| `code` | `/authorize` response | Single-use. This library defaults to a 60 s max-age; RFC 6749 §4.1.2 recommends a 10-minute maximum. |
+| `response_type=code` | `/auth` | Asks for the authorization-code grant. |
+| `client_id` | `/auth`, `/token` | Identifies the registered RP. |
+| `redirect_uri` | `/auth` (and echoed at `/token`) | Where the OP sends the user back. **Exact match** against the registered list. |
+| `scope` | `/auth` | Permissions requested. Must include `openid` for OIDC. |
+| `state` | `/auth` | Random opaque value the RP echoes on callback. CSRF defense for the redirect. |
+| `nonce` | `/auth` | Random value bound into the ID Token's `nonce` claim. Replay defense. |
+| `code_challenge` | `/auth` | `BASE64URL(SHA256(code_verifier))`. |
+| `code_challenge_method` | `/auth` | `S256` (the only one this library accepts). |
+| `code` | `/auth` response | Single-use. Valid for 60 seconds; RFC 6749 §4.1.2 recommends a 10-minute maximum. |
 | `code_verifier` | `/token` | The pre-image of `code_challenge`. The OP recomputes the SHA-256. |
 | `grant_type=authorization_code` | `/token` | Selects this grant. |
 | Client auth | `/token` | One of `client_secret_basic`, `client_secret_post`, `private_key_jwt`, or `none` (PKCE-only). mTLS sender constraint is separate from token-endpoint client authentication. |
@@ -195,13 +170,13 @@ Use both when your RP validates an ID Token. OIDC makes `nonce` mandatory for re
 ::: details `code_verifier` / `code_challenge` / `S256` — what's that?
 **`code_verifier`** is a high-entropy random string the RP generates and *keeps to itself*. RFC 7636 §4.1 mandates 43-128 URL-safe characters.
 
-**`code_challenge`** is what the RP sends to the OP at `/authorize`. With `code_challenge_method=S256`, it's `BASE64URL(SHA-256(code_verifier))` — a one-way hash. The OP can't reverse it; only the RP can prove ownership later by sending the verifier itself.
+**`code_challenge`** is what the RP sends to the OP at `/auth`. With `code_challenge_method=S256`, it's `BASE64URL(SHA-256(code_verifier))` — a one-way hash. The OP can't reverse it; only the RP can prove ownership later by sending the verifier itself.
 
 **`S256`** is the SHA-256-based transform; it's the only `code_challenge_method` this library accepts. The legacy `plain` method (where challenge equals verifier) provides no protection against an attacker who reads the URL, so RFC 9700 forbids it for new deployments.
 :::
 
 ::: details `redirect_uri` — strict exact-match, and why
-The `redirect_uri` on `/authorize` is checked **byte-for-byte** against the client's registered list — no tail-slash normalisation, no path-prefix matches, no wildcards. That strictness is on purpose: open-redirect bugs and "any subpath of `https://app.example.com/`" patterns are a well-trodden way to leak codes to attacker-controlled URLs. RFC 9700 §2.1 requires exact match, and this library enforces it. At `/token`, the RP must repeat the *same* `redirect_uri` it sent on `/authorize`; a mismatch returns `invalid_grant`.
+The `redirect_uri` on `/auth` is checked **byte-for-byte** against the client's registered list — no tail-slash normalisation, no path-prefix matches, no wildcards. That strictness is on purpose: open-redirect bugs and "any subpath of `https://app.example.com/`" patterns are a well-trodden way to leak codes to attacker-controlled URLs. RFC 9700 §2.1 requires exact match, and this library enforces it. At `/token`, the RP must repeat the *same* `redirect_uri` it sent on `/auth`; a mismatch returns `invalid_grant`.
 :::
 
 ::: details `response_type=code` — what's that?
@@ -229,7 +204,7 @@ Without PKCE, a malicious app on the same device that controls a URI-handler for
 
 PKCE binds the code to a **secret only the legitimate RP knows**:
 
-1. The legit RP generates a random `code_verifier` and sends only `SHA256(code_verifier)` (the `code_challenge`) to `/authorize`.
+1. The legit RP generates a random `code_verifier` and sends only `SHA256(code_verifier)` (the `code_challenge`) to `/auth`.
 2. The OP stores `code_challenge` alongside the issued code.
 3. At `/token`, the OP requires `code_verifier` and recomputes the SHA-256.
 4. The malicious app saw the code but never saw the verifier — its `/token` call fails.
@@ -242,22 +217,27 @@ This works even when the RP can't store a client secret (SPA / native).
 | Behaviour | Where |
 |---|---|
 | `code_challenge_method=plain` is **rejected** — only `S256` accepted. | `internal/pkce` |
-| Authorization request without `code_challenge` is rejected when the client's `RequiresPKCE` is true (default for public clients, forced for FAPI 2.0). | `internal/authorize` |
+| An authorization request without `code_challenge` is rejected with `invalid_request` for public and native clients, and for every client under `Baseline`, `FAPI2Baseline`, and `FAPI2MessageSigning`. | `internal/authorize` |
 | `code_verifier` length and char-set are validated against RFC 7636 §4.1. | `internal/pkce` |
-| Mismatch returns RFC 6749 §5.2 `invalid_grant` at `/token` (not `/authorize`). | `internal/tokenendpoint/authcode.go` |
+| A mismatch returns RFC 6749 §5.2 `invalid_grant` at `/token` (not `/auth`). | `internal/tokenendpoint/authcode.go` |
+| A public client's code that was issued without a challenge is refused at `/token` with `invalid_grant`, even if the request carries a verifier. | `internal/tokenendpoint/authcode_enforce.go` |
+| A code that was issued with a challenge refuses a request without a matching verifier, and a code issued without one refuses any verifier. | `internal/grants/authcode` |
+| A wrong client, a different `redirect_uri`, or a failed PKCE check rejects the request without spending the code. Only a second redemption of an already-used code counts as a replay and revokes the grant's tokens (RFC 6749 §4.1.2). | `internal/grants/authcode` |
 
 ## Common errors and what they mean
 
 | Wire error | Cause | Where to look |
 |---|---|---|
-| `invalid_request` `code_challenge_method` | Client sent `plain` | Send `S256` |
-| `invalid_request_uri` | PAR `request_uri` expired or already consumed | New PAR request |
-| `invalid_grant` (at `/token`) | `code_verifier` doesn't match, or code already used / expired | Don't reuse codes, regenerate |
-| `invalid_grant` (at `/token`) | The `redirect_uri` at `/token` differs from `/authorize` | They must be byte-identical |
+| `invalid_request` (at `/auth`) | `code_challenge` missing for a client that needs PKCE | Send `code_challenge` with `code_challenge_method=S256` |
+| `invalid_request` `code_challenge_method` | Client sent `plain`, or no method | Send `S256` |
+| `unsupported_response_type` | `response_type` is not `code` | Use `response_type=code` |
+| `invalid_request_uri` | PAR `request_uri` unknown, expired, or already used to issue a code | Push a new PAR request |
+| `invalid_grant` (at `/token`) | `code_verifier` doesn't match, or the code is unknown, used, or expired | Don't reuse codes; restart the flow |
+| `invalid_grant` (at `/token`) | The `redirect_uri` at `/token` differs from `/auth` | They must be byte-identical |
 
 ## Run the flow yourself
 
-`examples/03-fapi2` runs this library's `FAPI2Baseline` setting with PAR, JAR, DPoP, and PKCE. JAR is an additional library requirement here; the final FAPI 2.0 Security Profile does not require it. The [OFCS results](/compliance/ofcs) cover the named Implementer's Draft plans.
+`examples/01-minimal` runs this exact flow in one process: an OP with a public client plus a small RP that generates `state`, `nonce`, and the PKCE pair, then verifies the ID Token. Start there, sign in as `demo` / `demo`, and read the redirect URLs in the browser. `examples/03-fapi2` is the same flow hardened with PAR, `private_key_jwt` client authentication, and a DPoP-bound access token under `FAPI2Baseline`. The [OFCS results](/compliance/ofcs) cover the named Implementer's Draft plans.
 
 ## Read next
 

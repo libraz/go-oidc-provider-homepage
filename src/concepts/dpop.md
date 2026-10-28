@@ -43,81 +43,81 @@ A DPoP proof is a JWT (RFC 9449 §4) signed with a private key the client contro
 
 <figure class="fig">
   <div class="fig-head">One proof per request, checked twice</div>
-  <svg class="fig-svg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 960 476" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 960 736" xmlns="http://www.w3.org/2000/svg">
     <title id="dpop-proof-flow-title">A DPoP proof end to end. The client signs a fresh proof for every request, the OP verifies it and writes the key's thumbprint into the access token as cnf.jkt, and the resource server re-checks a later proof against that same binding.</title>
     <!-- lifelines -->
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="462"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="462"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="462"/>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="712"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="712"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="712"/>
     <!-- actors -->
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / client</text>
-    <text class="fg-mxs" x="150" y="49" text-anchor="middle">holds priv_dpop</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">Resource server</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">re-checks the binding</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / client</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">holds priv_dpop</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Resource server</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">re-checks the binding</text>
     <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="107" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="110" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,98 h30 v18 h-30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="192" y="102">build and sign a DPoP proof</text>
-    <text class="fg-mxs" x="192" y="115">jti · htm:POST · htu:/token · iat</text>
-    <text class="fg-mxs" x="192" y="128">typ: dpop+jwt · alg: ES256 · jwk</text>
+    <circle class="fg-badge" cx="32" cy="140" r="12"/>
+    <text class="fg-badge-t" x="32" y="145.5" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M192,128 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="134">build and sign a proof</text>
+    <text class="fg-mxs" x="248" y="156">jti · htm · htu · iat · jwk</text>
     <!-- 2 -->
-    <circle class="fg-badge" cx="15" cy="162" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="165" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M150,162 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="156" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <circle class="fg-badge" cx="32" cy="216" r="12"/>
+    <text class="fg-badge-t" x="32" y="221.5" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M192,216 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="206" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
     <!-- 3 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="194" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="197" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--accent" d="M500,186 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="542" y="190">verify the proof</text>
-    <text class="fg-mxs" x="542" y="203">typ/alg/jwk · htm/htu · iat · jti · nonce</text>
+    <circle class="fg-badge fg-badge--accent" cx="32" cy="268" r="12"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="32" y="273.5" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--accent" d="M512,256 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="262">verify the proof</text>
+    <text class="fg-mxs" x="568" y="284">typ/alg/jwk · htm/htu</text>
+    <text class="fg-mxs" x="568" y="306">iat · jti · nonce</text>
     <!-- 4 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="240" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="243" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M500,232 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s fg-accent" x="542" y="236">bind the key into the token</text>
-    <text class="fg-mxs" x="542" y="249">cnf.jkt = JWK SHA-256 thumbprint</text>
+    <circle class="fg-badge fg-badge--accent" cx="32" cy="364" r="12"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="32" y="369.5" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M512,352 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="568" y="358">bind the key to the token</text>
+    <text class="fg-mxs" x="568" y="380">cnf.jkt = thumbprint(jwk)</text>
     <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="286" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="289" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M500,286 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="280" text-anchor="middle">200 · access_token · token_type: DPoP</text>
+    <circle class="fg-badge" cx="32" cy="424" r="12"/>
+    <text class="fg-badge-t" x="32" y="429.5" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--accent" d="M512,424 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="414" text-anchor="middle">200 · token_type: DPoP</text>
     <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="320" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="323" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M150,312 h30 v16 h-30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="192" y="316">mint a fresh proof for the API call</text>
-    <text class="fg-mxs" x="192" y="329">this one also carries ath = SHA-256(access_token)</text>
+    <circle class="fg-badge" cx="32" cy="476" r="12"/>
+    <text class="fg-badge-t" x="32" y="481.5" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M192,464 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="470">mint a fresh proof</text>
+    <text class="fg-mxs" x="248" y="492">+ ath = SHA-256(token)</text>
     <!-- 7 -->
-    <circle class="fg-badge" cx="15" cy="378" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="381" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M150,378 H830" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="490" y="358" text-anchor="middle">GET /api</text>
-    <text class="fg-mxs fg-halo" x="490" y="371" text-anchor="middle">Authorization: DPoP &lt;token&gt; · DPoP: &lt;proof&gt;</text>
+    <circle class="fg-badge" cx="32" cy="568" r="12"/>
+    <text class="fg-badge-t" x="32" y="573.5" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M192,568 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="508" y="534" text-anchor="middle">GET /api</text>
+    <text class="fg-mxs fg-halo" x="508" y="556" text-anchor="middle">Authorization: DPoP &lt;token&gt; · DPoP: &lt;proof&gt;</text>
     <!-- 8 -->
-    <circle class="fg-badge" cx="15" cy="412" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="415" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M830,404 h-30 v16 h30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="788" y="408" text-anchor="end">verify the proof, then the binding</text>
-    <text class="fg-mxs" x="788" y="421" text-anchor="end">cnf.jkt == thumbprint(proof.jwk)</text>
+    <circle class="fg-badge" cx="32" cy="620" r="12"/>
+    <text class="fg-badge-t" x="32" y="625.5" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M824,608 h-40 v24 h40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="768" y="614" text-anchor="end">verify proof, then binding</text>
+    <text class="fg-mxs" x="768" y="636" text-anchor="end">cnf.jkt == thumbprint(jwk)</text>
     <!-- 9 -->
-    <circle class="fg-badge" cx="15" cy="456" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="459" text-anchor="middle">9</text>
-    <path class="fg-edge" d="M830,456 H150" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="490" y="450" text-anchor="middle">200 OK</text>
+    <circle class="fg-badge" cx="32" cy="688" r="12"/>
+    <text class="fg-badge-t" x="32" y="693.5" text-anchor="middle">9</text>
+    <path class="fg-edge" d="M824,688 H192" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="678" text-anchor="middle">200 OK</text>
   </svg>
   <figcaption class="fig-note">The token that comes back at step 5 is useless on its own: without a proof signed by the key behind <code>cnf.jkt</code>, step 8 fails. That is the whole trade — an extra signature per request, in exchange for a stolen token being worthless.</figcaption>
 </figure>
 
 The OP and the RS run the same checklist. The RS additionally verifies that the proof's `jwk` thumbprint equals the access token's `cnf.jkt`.
 
-DPoP-bound access tokens must be presented with `Authorization: DPoP <token>`, not `Authorization: Bearer <token>`. The OP enforces this on `/userinfo`: a sender-constrained token under the Bearer scheme is rejected even if the token bytes are otherwise valid, because RFC 9449 §7.1 makes the scheme part of the proof-of-possession contract.
+DPoP-bound access tokens must be presented with `Authorization: DPoP <token>`, not `Authorization: Bearer <token>`. The OP enforces this on `/userinfo`: a sender-constrained token under the Bearer scheme is rejected even if the token bytes are otherwise valid, because RFC 9449 §7.1 makes the scheme part of the proof-of-possession contract. The rejection is `401` with `WWW-Authenticate: DPoP error="invalid_token"`; the library uses `invalid_token` rather than the spec's `invalid_dpop_proof` so clients that follow the Bearer error taxonomy keep working.
 
 The `DPoP` proof header is single-valued. The OP rejects multiple `DPoP` header values, including an empty first value followed by a valid proof; it does not select a later value or silently fall back to the bearer path. The shared gate applies this rule at `/par`, `/token`, `/device_authorization`, and `/bc-authorize` (CIBA), and proof verification applies it at `/userinfo` as well.
 
@@ -135,7 +135,7 @@ The thumbprint is a stable, short identifier that survives JSON re-encoding. RFC
 
 DPoP layers four independent gates so an attacker who captured a single proof gains nothing:
 
-- **`jti` deduplication.** The OP threads every accepted proof's `jti` through `store.ConsumedJTIStore.Mark` (see `internal/dpop/verify.go`). A repeated `jti` inside the freshness window returns `ErrProofReplayed` and the request fails. The store is the same one PAR / JAR replay defenses use, so a single Redis substore covers all three.
+- **`jti` deduplication.** The OP threads every accepted proof's `jti` through `store.ConsumedJTIStore.Mark` (see `internal/dpop/verify.go`), keyed by the pair of key thumbprint and `jti`. A repeated pair inside the freshness window returns `ErrProofReplayed` and the request fails. The mark is written only after the client has authenticated, so an unauthenticated request cannot burn a legitimate proof. The store is the same one PAR / JAR replay defenses use, so a single Redis substore covers all three.
 - **`iat` window.** Proofs older or further in the future than the 60-second symmetric freshness window are rejected with `ErrProofIatWindow`. The window is short on purpose: it caps how long a stolen proof remains useful even if the `jti` cache is wiped.
 - **`htm` + `htu` match.** A proof for one method or URL cannot be presented against another endpoint. The OP folds both sides through the RFC 9449 §4.3 canonical form (lower-cased scheme / host, default port stripped, query / fragment removed) before comparing.
 - **`ath` binding.** When a proof is paired with an access token, the proof must carry `ath = SHA-256(access_token)`. A proof minted for a different access token fails `ErrProofATHMismatch`.
@@ -154,12 +154,14 @@ See [DPoP nonce flow](/use-cases/dpop-nonce) for the full wiring, the rotation p
 
 ## What this library binds
 
-Access tokens are always DPoP-bound when `feature.DPoP` is enabled and the client presents a proof at `/token` (or pre-commits a key via `dpop_jkt` on the authorize / PAR request). The refresh-token behavior below is library policy; the Final FAPI 2.0 Security Profile prohibits routine refresh-token rotation except in extraordinary circumstances, so normal library refresh behavior must be reviewed before claiming conformance.
+Access tokens are DPoP-bound when `feature.DPoP` is enabled and the client presents a proof at `/token` (or pre-commits a key via `dpop_jkt` on the authorize / PAR request). Without a proof the OP issues a bearer token, unless the profile is `FAPI2Baseline`, `FAPI2MessageSigning`, or `FAPICIBA`: those refuse the request with `invalid_request`. The refresh-token behavior below is library policy; the Final FAPI 2.0 Security Profile prohibits routine refresh-token rotation except in extraordinary circumstances, so normal library refresh behavior must be reviewed before claiming conformance.
 
 Refresh tokens follow [Design judgment #15](/security/design-judgments#dj-15) — bind for public clients, leave unbound for confidential:
 
 - **Public clients** (`token_endpoint_auth_method = "none"`, typically SPAs and native apps) get their refresh chain DPoP-bound on first issue, and the binding propagates through every rotation per RFC 9449 §5.4. A leaked refresh token is useless without the matching key — exactly the threat model RFC 9449 §1 cites.
 - **Confidential clients** (`private_key_jwt`, `client_secret_*`) leave the refresh chain unbound. They can rotate DPoP keys per request (the OFCS plans exercise this) without locking the chain to a single key for its lifetime. The access tokens minted on each refresh are still bound to the key presented on that exchange, so the leak surface is limited to the access token.
+
+A bound chain enforces its key on every refresh: a missing proof, or a proof from a different key, is `invalid_grant`. A refresh that presents a proof gets an access token bound to that key, including on an unbound confidential chain.
 
 The trade-off is explicit: confidential clients gain key-rotation flexibility at the cost of leaving the refresh chain as a raw bearer secret. Their token-endpoint credential is a separate control and can itself be a shared secret, so a refresh-token leak still deserves protection through storage, transport, and operational controls.
 

@@ -6,7 +6,7 @@ pageClass: pg-concepts-refresh-tokens
 
 # リフレッシュトークン
 
-**リフレッシュトークン** は、RP が再認証なしに新しいアクセストークンを得るために交換する長寿命の資格情報です。「ログイン状態の維持」はこの仕組みで実現されます。
+**リフレッシュトークン** は、RP が再認証なしに新しい[アクセストークン](/ja/concepts/tokens)を得るために交換する長寿命の資格情報です。「ログイン状態の維持」はこの仕組みで実現されます。アクセストークンは短命のまま、リフレッシュトークンがそれを裏で入れ替え続けます。
 
 ::: details このページで触れる仕様
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework（§6 refresh）
@@ -17,7 +17,7 @@ pageClass: pg-concepts-refresh-tokens
 ::: details 用語の補足
 - **ローテーション（rotation）** — リフレッシュトークン交換が成功するたび、古いトークンを無効化して新しいトークンを発行します。古→新のペアは、同じログインに連なる **連鎖** を形成します。
 - **再利用検知（reuse detection）** — 既にローテーション済みのリフレッシュトークンが再提示されたら、OP は盗難シグナルとして扱い、連鎖全体を無効化します。下の警告セクションを参照。
-- **猶予期間** — ローテーション直後の短い期間です。再試行では系列をもう一度ローテーションせず、同じ後継リフレッシュトークンを返します。送信者制約付きの場合、アクセストークンは再発行されることがあります。
+- **猶予期間** — ローテーション直後の短い期間です。再試行では連鎖をもう一度ローテーションせず、同じ後継リフレッシュトークンを返します。送信者制約付きの場合、アクセストークンは再発行されることがあります。
 - **`offline_access` scope** — OIDC が定める「ユーザがその場にいなくてもアプリに動き続けてほしい」を表明する scope。既定では offline TTL バケットの選択に使われ、`op.WithStrictOfflineAccess()` を渡すと発行条件にもなります。
 :::
 
@@ -27,67 +27,65 @@ pageClass: pg-concepts-refresh-tokens
 
 <figure class="fig">
   <div class="fig-head">ローテーションと、消費済みトークンが戻ってきたとき</div>
-  <svg class="fig-svg" role="img" aria-labelledby="rt-rotation-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="rt-rotation-title" viewBox="0 0 960 904" xmlns="http://www.w3.org/2000/svg">
     <title id="rt-rotation-title">リフレッシュトークンのローテーションを示した図。交換のたびに提示されたトークンを無効化し、同じ連鎖内で新しいトークンを発行します。ローテーション済みのトークンが再提示されると OP は再利用として検知し、正規クライアントが保持しているトークンを含めて連鎖全体を失効させます。</title>
-    <!-- 段階の帯 -->
-    <rect class="fg-group" x="30" y="70" width="916" height="300" rx="8"/>
-    <rect class="fg-group" x="30" y="378" width="916" height="172" rx="8"/>
-    <text class="fg-lbl" x="42" y="88">通常の更新</text>
-    <text class="fg-lbl fg-danger" x="42" y="396">盗まれたトークンが戻ってくる</text>
-    <!-- ライフライン -->
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="550"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="550"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="550"/>
-    <!-- 登場人物 -->
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / クライアント</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">トークンを更新する</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box fg-box--danger" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">攻撃者</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">rt1 の複製を持つ</text>
-    <!-- 初回発行 -->
-    <path class="fg-edge" d="M150,110 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="104" text-anchor="middle">POST /token · grant_type=authorization_code</text>
-    <path class="fg-edge fg-edge--accent" d="M500,140 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="134" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
-    <!-- 有効期限切れ -->
-    <path class="fg-edge fg-edge--muted" d="M150,166 h28 v14 h-28" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="190" y="178">アクセストークンの有効期限が切れる</text>
-    <!-- 1 回目のローテーション -->
-    <path class="fg-edge" d="M150,212 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="206" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
-    <path class="fg-edge fg-edge--accent" d="M500,244 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s fg-accent" x="542" y="248">ローテーション</text>
-    <text class="fg-mxs" x="542" y="261">rt1 を無効化 · 同じ連鎖で rt2 を発行</text>
-    <path class="fg-edge fg-edge--accent" d="M500,290 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="284" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
-    <!-- 2 回目のローテーション -->
-    <path class="fg-edge" d="M150,322 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="316" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,354 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="348" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
-    <!-- 盗難 -->
-    <path class="fg-edge fg-edge--muted" d="M150,424 H830" marker-end="url(#fg-am)"/>
-    <text class="fg-xs fg-halo" x="490" y="418" text-anchor="middle">rt1 が以前に漏洩し、攻撃者が複製を保持している</text>
-    <!-- 再提示 -->
-    <path class="fg-edge fg-edge--danger" d="M830,456 H500" marker-end="url(#fg-ad)"/>
-    <text class="fg-mxs" x="665" y="450" text-anchor="middle">refresh_token=rt1 を再提示 — すでに消費済み</text>
-    <path class="fg-edge fg-edge--danger" d="M500,484 h30 v16 h-30" marker-end="url(#fg-ad)"/>
-    <text class="fg-s fg-danger" x="542" y="488">再利用を検知</text>
-    <text class="fg-mxs" x="542" y="501">RevokeChain(rt1…rt3) · refresh.replay_detected</text>
-    <path class="fg-edge fg-edge--danger" d="M500,536 H150" marker-end="url(#fg-ad)"/>
-    <text class="fg-mxs" x="325" y="530" text-anchor="middle">400 invalid_grant — rt3 も失効している</text>
+    <!-- phase bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="416" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">通常の更新</text>
+    <rect class="fg-group" x="32" y="544" width="896" height="336" rx="8"/>
+    <text class="fg-lbl fg-danger fg-halo" x="56" y="572">盗まれたトークンが戻ってくる</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="880"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="880"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="880"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / client</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">トークンを更新する</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box fg-box--danger" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">攻撃者</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">rt1 の複製を持つ</text>
+    <!-- normal renewal -->
+    <path class="fg-edge" d="M192,176 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="166" text-anchor="middle">POST /token · code</text>
+    <path class="fg-edge fg-edge--accent" d="M512,224 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="214" text-anchor="middle">200 · access_token · rt1</text>
+    <path class="fg-edge" d="M192,280 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="270" text-anchor="middle">refresh_token grant · rt1</text>
+    <path class="fg-edge fg-edge--accent" d="M512,304 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="568" y="310">ローテーション</text>
+    <text class="fg-mxs" x="568" y="332">rt1 を無効化 · rt2 を発行</text>
+    <path class="fg-edge fg-edge--accent" d="M512,384 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="374" text-anchor="middle">200 · access_token · rt2</text>
+    <path class="fg-edge" d="M192,440 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="430" text-anchor="middle">refresh_token grant · rt2</text>
+    <path class="fg-edge fg-edge--accent" d="M512,496 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="486" text-anchor="middle">200 · access_token · rt3</text>
+    <!-- stolen token -->
+    <path class="fg-edge fg-edge--muted" d="M192,632 H824" marker-end="url(#fg-am)"/>
+    <text class="fg-s fg-halo" x="508" y="620" text-anchor="middle">rt1 は以前に漏洩し、攻撃者が複製を保持</text>
+    <path class="fg-edge fg-edge--danger" d="M824,688 H512" marker-end="url(#fg-ad)"/>
+    <text class="fg-edge-lbl" x="668" y="678" text-anchor="middle">refresh_token=rt1 (再提示)</text>
+    <path class="fg-edge fg-edge--danger" d="M512,720 h40 v24 h-40" marker-end="url(#fg-ad)"/>
+    <text class="fg-s fg-danger" x="568" y="726">再利用を検知</text>
+    <text class="fg-mxs" x="568" y="748">RevokeChain(rt1…rt3)</text>
+    <text class="fg-mxs" x="568" y="770">refresh.replay_detected</text>
+    <path class="fg-edge fg-edge--danger" d="M512,856 H192" marker-end="url(#fg-ad)"/>
+    <text class="fg-m" x="352" y="822" text-anchor="middle">400 invalid_grant</text>
+    <text class="fg-mxs" x="352" y="844" text-anchor="middle">後で RP が rt3 を提示</text>
   </svg>
   <figcaption class="fig-note">最後の矢印がこの設計の要点です。正規のクライアントも手元の有効なトークンを失います。再利用が起きたということは 2 人の保持者のどちらかが攻撃者だということで、OP にはどちらかを判別できません。そこで連鎖を打ち切り、双方に再認証を求めます。</figcaption>
 </figure>
 
 ::: warning 再利用検知は連鎖全体を無効化
-すでにローテーション済みのリフレッシュトークンが再提示されると、OP は「資格情報が盗まれた」シグナルとして扱い、**連鎖全体を失効させます** — 盗まれたトークンも、それを起点に発行された正規のトークンも、両方とも無効になります。両者とも再認証が必要です。
+すでにローテーション済みのリフレッシュトークンが再提示されると、OP は `400 invalid_grant` を返し、`refresh.replay_detected` を記録したうえで、「資格情報が盗まれた」シグナルとして **連鎖全体を失効させます** — 盗まれたトークンも、それを起点に発行された正規のトークンも、両方とも無効になります。盗んだ側が引き換えたアクセストークンを持っている可能性があるため、grant 配下のアクセストークンも失効させます。両者とも再認証が必要です。
 
 これは意図的な挙動です — OP が出せる「何かがおかしい」という最強のシグナルだからです。
+
+対象は grant 全体です。grant は 1 人のユーザが 1 つのクライアントで開いた全セッションで共有されます。既定の grant tombstone 戦略では grant への新規発行が止まるため、同じクライアント上のそのユーザの別の連鎖も、次のリフレッシュで拒否されます。この処理は `invalid_grant` の応答を確定させたあとに走り、ベストエフォートです。store の障害は warn レベルの監査イベントとして記録されますが、クライアントに返した応答は変わりません。
 :::
 
 ::: details ローテーション / 再利用検知 / 連鎖失効とは
@@ -95,9 +93,9 @@ pageClass: pg-concepts-refresh-tokens
 
 - **ローテーション** — *正常系* の成功経路。`grant_type=refresh_token` が成功するたびに新しいリフレッシュトークンを返し、前のトークンを無効化します。既定は single-use。
 - **再利用検知** — すでにローテーション済みのリフレッシュトークンが再度送られてきた状態。漏洩、マルウェア、混乱したクライアントによる複製のいずれかでしか起こり得ません。本ライブラリは盗難として扱います。
-- **連鎖失効**（family revocation とも） — 再利用検知への応答。問題のトークンと同じ系統に属するリフレッシュトークン全部が無効化されます — 正規クライアントが今使っている子孫トークンも含めて。次の正規リフレッシュは失敗し、ユーザは再認証することになり、攻撃者の盗難トークンも死にます。
+- **連鎖失効**（family revocation とも） — 再利用検知への応答。問題のトークンと同じ系統に属するリフレッシュトークン全部が無効化されます — 正規クライアントが今使っている子孫トークンも含めて。次の正規リフレッシュは失敗し、ユーザは再認証することになり、攻撃者の盗難トークンも死にます。OP は親ポインタをたどって連鎖の根から失効させ、根が見つからない場合は grant のリフレッシュトークンをまとめて失効させます。
 
-RFC 9700 §4.14.2 は、public クライアントのリフレッシュトークンについて、送信者制約またはローテーションによる再利用検知を要求します。ローテーションで再利用を検知した場合は、現在有効なリフレッシュトークンを失効させると説明しています。本ライブラリは、クライアント種別を問わず同じ系列全体を無効にします。
+RFC 9700 §4.14.2 は、public クライアントのリフレッシュトークンについて、送信者制約またはローテーションによる再利用検知を要求します。ローテーションで再利用を検知した場合は、現在有効なリフレッシュトークンを失効させると説明しています。本ライブラリは、クライアント種別を問わず同じ連鎖全体を無効にします。
 :::
 
 ## 猶予期間
@@ -110,8 +108,10 @@ op.WithRefreshGracePeriod(2 * time.Second)
 
 ローテーション成功から `d` 秒以内なら、正当な再試行で同じ後継リフレッシュトークンを回収できます。送信者制約付きのリクエストでは、OP が再試行時に提示された鍵または証明書へ結び付けたアクセストークンを新たに発行することがあります。`d` 秒を過ぎた再提示は再利用として扱います。
 
+再試行が成立するのは、ローテーション時に後継トークンと並べて、cookie key（`op.WithCookieKeys`）で封印した応答を保存しているからです。同梱の `inmem` / `sql` / `dynamodb` アダプタは、そのためのオプションのインターフェース `store.RefreshRetryResponseStore` を実装しています。[ストアを自前実装](/ja/use-cases/byo-store)して実装しなければ、再生できる応答がないので、猶予期間内の再試行も `invalid_grant` になります。
+
 ::: details 猶予期間中の再試行
-OP は猶予期間中にリフレッシュトークンの系列を再度ローテーションせず、保存済みの後継リフレッシュトークンを返します。Bearer の応答はそのまま再送できます。DPoP または mTLS を使う場合は、同じ後継リフレッシュトークンと ID トークンを保ち、再試行で提示された送信者制約に合わせてアクセストークンを再発行します。保存済みの再試行用応答がない場合は、後継トークンを失効させずに `invalid_grant` を返します。猶予期間後に古いトークンを提示すると、再利用検知と系列の失効が起きます。期間を 0 にすると再試行を受け付けず、応答の取りこぼしを再利用と判定する可能性が高まります。
+OP は猶予期間中にリフレッシュトークンの連鎖を再度ローテーションせず、保存済みの後継リフレッシュトークンを返します。Bearer の応答はそのまま再送できます。DPoP または mTLS を使う場合は、同じ後継リフレッシュトークンと ID トークンを保ち、再試行で提示された送信者制約に合わせてアクセストークンを再発行します。保存済みの再試行用応答がない場合は、後継トークンを失効させずに `invalid_grant` を返します。猶予期間後に古いトークンを提示すると、再利用検知と連鎖の失効が起きます。期間を 0 にすると再試行を受け付けず、応答の取りこぼしを再利用と判定する可能性が高まります。
 :::
 
 ::: tip 既定は 60 秒
@@ -140,9 +140,11 @@ op.New(
 
 リフレッシュトークンは連鎖の開始時に付与された scope を記録しますが、ローテーションが後から変更されたクライアント登録を迂回することはありません。提示されたトークンを消費する前に、OP は要求された scope とトークンに束縛された scope の積集合を実効 scope として求めます（要求を省略した場合は束縛済み scope を再利用します）。その実効 scope と現在のクライアントの `Scopes` 登録との積集合が実効 scope と一致するかを再検証し、scope ごとの `AllowedClients` ポリシーも検証します。発行対象の scope が現在の登録に含まれなくなっていれば `/token` は `invalid_scope` を返し、提示されたトークンは未消費のまま残ります。これにより、クライアント登録を狭めても、既存の連鎖が削除済み scope を発行し続けることはありません。
 
+要求でより狭い scope を指定した場合に狭まるのは、そのとき受け取るアクセストークンだけです。ローテーション後のリフレッシュトークンは、置き換えた元のトークンの scope をそのまま引き継ぐので、次のリフレッシュでは再び全 scope を要求できます。
+
 ## TTL バケット
 
-| Option | デフォルト | 適用範囲 |
+| Option | 既定 | 適用範囲 |
 |---|---|---|
 | `op.WithRefreshTokenTTL(d)` | 30 日 | 通常のリフレッシュトークン。 |
 | `op.WithRefreshTokenOfflineTTL(d)` | `WithRefreshTokenTTL` を継承 | `offline_access` scope で発行されたリフレッシュトークン。 |
@@ -169,7 +171,19 @@ OIDC Core 1.0 §11 の既定（緩やかな）解釈では、`offline_access` �
 
 ## 認証コンテキストはローテーションをまたいで保持される
 
-リフレッシュトークンは、subject と scope だけでなく、元のログインの認証コンテキストを保持します。リフレッシュ交換が新しい id_token や JWT アクセストークンを発行するとき、OP はリフレッシュ時点ではなく、ユーザが実際に認証したときのコンテキスト — `auth_time`、`acr`、`amr`、付与された `authorization_details` — を再現します。そのため、ログイン時に `acr_values=aal2` を要求した RP は、1 週間バックグラウンドでリフレッシュを続けたあとでも `acr` がその強度を反映したままになり、ステップアップの鮮度シグナルがローテーションのたびに知らぬ間にリセットされることもありません。リフレッシュレコードはこれらのフィールド（トークンの `origin` も含む）を永続化するので、保存された連鎖がそれらを忠実に再現します。
+リフレッシュトークンは、subject と scope だけでなく、自身を発行した認可のコンテキストを保持します。リフレッシュ交換が新しい id_token やアクセストークンを発行するとき、OP はリフレッシュ時点ではなく、ユーザが実際に認証したときのコンテキスト — `auth_time`、`acr`、`amr`、付与された `authorization_details`、OIDC の `claims` リクエスト — を再現します。そのため、ログイン時に `acr_values=aal2` を要求した RP は、1 週間バックグラウンドでリフレッシュを続けたあとでも `acr` がその強度を反映したままになり、ステップアップの鮮度シグナルがローテーションのたびに知らぬ間にリセットされることもありません。
+
+このコンテキストは、1 人のユーザが 1 つのクライアントで開いた全セッションで共有される grant ではなく、連鎖に属します。同じユーザが同じクライアントで 2 回目にログインしても、既存の連鎖が報告する内容は変わりません。リフレッシュレコードはこれらのフィールド（トークンの `origin` も含む）を永続化します。[ストアを自前実装](/ja/use-cases/byo-store)してこれらを保存しない場合は、連鎖が grant の値を読む動作に戻り、grant を共有することによる挙動になります。
+
+## 送信者制約付きの連鎖
+
+DPoP の proof やクライアント証明書を提示したクライアントに発行した連鎖は、その鍵または証明書に結び付くことがあります（[DPoP](/ja/concepts/dpop#本ライブラリが何を結び付けるか)、[mTLS](/ja/concepts/mtls) を参照）。結び付いた連鎖は、proof や証明書がない、あるいは別のものを提示したリフレッシュを `invalid_grant` で拒否します。バインドは現在の設定とも照合されます。連鎖の発行後に DPoP や mTLS を無効にした場合、結び付いた連鎖は bearer に格下げされずに拒否されます。
+
+## 連鎖の失効
+
+リフレッシュトークンに対する `/revoke`（RFC 7009）は、その連鎖と grant 配下のアクセストークンを失効させ、それ以外には触れません。同じクライアント上のそのユーザの別の連鎖と、まだ引き換えていない認可コードは有効なままです。長い連鎖でも連鎖の根は見つかります。根が見つからなければ grant のリフレッシュトークンを失効させ、`token.revoked` の `surface` は `refresh_chain` ではなく `refresh_grant` になります。別のクライアントに発行されたリフレッシュトークンは無視され、応答はどちらの場合も `200` です。
+
+ユーザが削除またはプロビジョニング解除されると、次のリフレッシュは `invalid_grant` で失敗し、OP は grant を破棄します。
 
 ## 保存形式: ハッシュ化・定数時間
 
@@ -177,18 +191,19 @@ OIDC Core 1.0 §11 の既定（緩やかな）解釈では、`offline_access` �
 
 ## 監査ログ
 
-token endpoint は `op.WithAuditLogger` 経由で 2 種類の slog 監査イベントを発行します。
+token endpoint は `op.WithAuditLogger` 経由で次の slog 監査イベントを発行します。
 
 | イベント | 発火タイミング |
 |---|---|
-| `op.AuditTokenIssued` | `authorization_code` 交換時にリフレッシュトークンを発行したとき。 |
-| `op.AuditTokenRefreshed` | `refresh_token` grant でリフレッシュトークンをローテーションしたとき。 |
+| `op.AuditTokenIssued`（`token.issued`） | `authorization_code` 交換時にリフレッシュトークンを発行したとき。 |
+| `op.AuditTokenRefreshed`（`token.refreshed`） | `refresh_token` grant でリフレッシュトークンをローテーションしたとき。ローテーションが永続化されてから記録します。同時提示に負けた、またはロールバックされたリフレッシュは記録しません。 |
+| `op.AuditRefreshReplayDetected`（`refresh.replay_detected`） | ローテーション済みのトークンが再提示された（再利用検出）とき。ベストエフォートの連鎖失効より前に発行されます。 |
+| `op.AuditTokenRevoked`（`token.revoked`） | `/revoke` がリフレッシュの連鎖を失効させたとき。`surface` は `refresh_chain`、フォールバックした場合は `refresh_grant`。 |
 
-すでにローテーション済みのトークンが再提示された（再利用検出）ときは、連鎖失効を試みる前に `refresh.replay_detected` イベントが発行されます。
-
-両方とも `extras` に `offline_access`（boolean）と `ttl_bucket`（`"offline"` または `"default"`）を持つので、SOC ダッシュボードは scope を再読することなく「ログイン状態の維持」の連鎖と通常のローテーションを区別できます。
+発行とローテーションの記録は `extras` に `offline_access`（boolean）と `ttl_bucket`（`"offline"` または `"default"`）を持つので、SOC ダッシュボードは scope を再読することなく「ログイン状態の維持」の連鎖と通常のローテーションを区別できます。
 
 ## 続きはこちら
 
 - [ID トークン / アクセストークン / userinfo](/ja/concepts/tokens) — それぞれのトークンが実際に持つ中身。
 - [送信者制約](/ja/concepts/sender-constraint) — アクセストークン（とリフレッシュトークン）をクライアント保有の鍵に結び付ける。
+- [アクセストークンの形式](/ja/concepts/access-token-format) — JWT と opaque で、ローテーションが旧アクセストークンをどう扱うか。

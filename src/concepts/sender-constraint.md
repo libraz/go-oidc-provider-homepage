@@ -49,7 +49,7 @@ TLS protects the token while it is on the wire. Once the request reaches the app
 | Per-request artefact | Fresh JWS proof, signed in the application | Nothing extra — the binding lives at the TLS layer |
 | Proxy / TLS terminator dependency | None — works over plain HTTPS | Requires the terminator to forward the cert in a header |
 | `cnf` member | `cnf.jkt` (JWK thumbprint) | `cnf.x5t#S256` (X.509 thumbprint) |
-| Refresh token binding (default) | Bound for public clients, unbound for confidential ([Design judgment #15](/security/design-judgments#dj-15)) | Access tokens can be certificate-bound; mTLS token-endpoint client authentication is not dispatched |
+| Refresh token binding (default) | Bound for public clients, unbound for confidential ([Design judgment #15](/security/design-judgments#dj-15)) | Bound to the certificate for every client type; a refresh must present the same certificate |
 | Replay defense beyond binding | `jti` cache, `iat` window, optional server nonce | TLS session reuse + cert thumbprint match |
 | FAPI 2.0 Security Profile (confidential clients) | Yes | Yes |
 | FAPI 2.0 Message Signing | Inherits the Security Profile; DPoP nonce is optional | Inherits the Security Profile |
@@ -58,60 +58,75 @@ The Final FAPI 2.0 Security Profile applies to confidential clients and requires
 
 The selection guide below also covers public-client deployments supported by the library. Public clients are outside the Final Security Profile's client-scope requirement.
 
+## When the binding applies
+
+Enabling `feature.DPoP` or `feature.MTLS` does not by itself force every token to be bound. The token endpoint binds a token when the request carries a DPoP proof or a client certificate, and issues a plain bearer token otherwise. The `profile.FAPI2Baseline`, `profile.FAPI2MessageSigning`, and `profile.FAPICIBA` profiles close that gap: they refuse an unbound request at `/token` with `invalid_request`. A single token may carry both `cnf.jkt` and `cnf.x5t#S256`; the resource server then has to check both.
+
+| Situation | Response |
+|---|---|
+| Token request under a FAPI profile, no proof and no certificate | `400 invalid_request` |
+| Refresh of a DPoP-bound chain, proof missing or signed by another key | `400 invalid_grant` |
+| Refresh of an mTLS-bound chain, certificate missing or different | `400 invalid_grant` |
+| `/userinfo` with a DPoP-bound token under the `Bearer` scheme, or without a proof | `401`, `WWW-Authenticate` with `invalid_token` |
+| `/userinfo` with an mTLS-bound token and a different or missing certificate | `401`, `WWW-Authenticate` with `invalid_token` |
+| Introspection of a bound token | Active response with `cnf`; the OP does not check a proof, the resource server does |
+
+Introspection reports `token_type: "Bearer"` for bound tokens too; the binding is visible only in `cnf`.
+
 ## Choosing between them
 
 <figure class="fig">
-  <div class="fig-head">Picking a sender constraint</div>
-  <svg class="fig-svg" role="img" aria-labelledby="sc-choice-title" viewBox="0 0 960 466" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">Default to DPoP; use mTLS where certificates exist</div>
+  <svg class="fig-svg" role="img" aria-labelledby="sc-choice-title" viewBox="0 0 960 568" xmlns="http://www.w3.org/2000/svg">
     <title id="sc-choice-title">A decision tree for choosing a sender constraint. Browser-driven clients usually take DPoP, backends that already hold a PKI certificate can take mTLS, B2B and regulated estates follow their scheme or partner requirements, a mixed fleet enables both, and the default when none of these applies is DPoP.</title>
     <!-- 1 -->
-    <rect class="fg-box" x="36" y="24" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="50">Is the client browser-driven?</text>
-    <text class="fg-xs" x="56" y="70">SPA · mobile app · any public client</text>
-    <path class="fg-edge" d="M434,55 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="48" text-anchor="middle">yes</text>
-    <rect class="fg-box fg-box--accent" x="530" y="24" width="394" height="62" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="50">DPoP</text>
-    <text class="fg-mxs" x="550" y="70">cnf.jkt — a key the client generates and keeps</text>
-    <path class="fg-edge" d="M233,90 V112" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="106">no</text>
+    <rect class="fg-box" x="32" y="24" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="52">Is the client browser-driven?</text>
+    <text class="fg-xs" x="48" y="76">SPA · mobile app · any public client</text>
+    <path class="fg-edge" d="M464,60 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="50" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="24" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="52">DPoP</text>
+    <text class="fg-mxs" x="576" y="76">cnf.jkt · client-generated key</text>
+    <path class="fg-edge" d="M248,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="121">no</text>
     <!-- 2 -->
-    <rect class="fg-box" x="36" y="116" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="142">Does the backend already hold a PKI certificate?</text>
-    <text class="fg-xs" x="56" y="162">you run an internal CA and issue to services</text>
-    <path class="fg-edge" d="M434,147 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="140" text-anchor="middle">yes</text>
-    <rect class="fg-box fg-box--accent" x="530" y="116" width="394" height="62" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="142">mTLS</text>
-    <text class="fg-mxs" x="550" y="162">cnf.x5t#S256 — reuse the certificate you issue</text>
-    <path class="fg-edge" d="M233,182 V204" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="198">no</text>
+    <rect class="fg-box" x="32" y="136" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="164">Does the backend hold a PKI certificate?</text>
+    <text class="fg-xs" x="48" y="188">you run an internal CA and issue to services</text>
+    <path class="fg-edge" d="M464,172 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="162" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="136" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="164">mTLS</text>
+    <text class="fg-mxs" x="576" y="188">cnf.x5t#S256 · issued certificate</text>
+    <path class="fg-edge" d="M248,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="233">no</text>
     <!-- 3 -->
-    <rect class="fg-box" x="36" y="208" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="234">B2B, open banking, or otherwise regulated?</text>
-    <text class="fg-xs" x="56" y="254">the scheme or partner may require client certs</text>
-    <path class="fg-edge" d="M434,239 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="232" text-anchor="middle">yes</text>
-    <rect class="fg-box" x="530" y="208" width="394" height="62" rx="8"/>
-    <text class="fg-t2" x="550" y="234">mTLS, or both</text>
-    <text class="fg-xs" x="550" y="254">check the scheme or partner standard</text>
-    <path class="fg-edge" d="M233,274 V296" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="290">no</text>
+    <rect class="fg-box" x="32" y="248" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="276">B2B, open banking, or otherwise regulated?</text>
+    <text class="fg-xs" x="48" y="300">the scheme or partner may require client certs</text>
+    <path class="fg-edge" d="M464,284 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="274" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="248" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="276">mTLS, or both</text>
+    <text class="fg-xs" x="576" y="300">check the scheme or partner standard</text>
+    <path class="fg-edge" d="M248,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="345">no</text>
     <!-- 4 -->
-    <rect class="fg-box" x="36" y="300" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="326">A mixed fleet?</text>
-    <text class="fg-xs" x="56" y="346">some SPAs, some backend services</text>
-    <path class="fg-edge" d="M434,331 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="324" text-anchor="middle">yes</text>
-    <rect class="fg-box" x="530" y="300" width="394" height="62" rx="8"/>
-    <text class="fg-t2" x="550" y="326">Enable both</text>
-    <text class="fg-xs" x="550" y="346">each client picks one at registration time</text>
-    <path class="fg-edge" d="M233,366 V388" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="382">no</text>
+    <rect class="fg-box" x="32" y="360" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="388">A mixed fleet?</text>
+    <text class="fg-xs" x="48" y="412">some SPAs, some backend services</text>
+    <path class="fg-edge" d="M464,396 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="386" text-anchor="middle">yes</text>
+    <rect class="fg-box" x="560" y="360" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="388">Enable both</text>
+    <text class="fg-xs" x="576" y="412">each client picks at registration</text>
+    <path class="fg-edge" d="M248,432 V472" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="457">no</text>
     <!-- default -->
-    <rect class="fg-box fg-box--accent" x="36" y="392" width="888" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="56" y="416">Not sure? Start with DPoP</text>
-    <text class="fg-xs" x="56" y="436">it needs nothing from your network or your PKI, and a client can move to mTLS later</text>
+    <rect class="fg-box fg-box--accent" x="32" y="472" width="896" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="500">Not sure? Start with DPoP</text>
+    <text class="fg-xs" x="48" y="524">it needs nothing from your network or your PKI, and a client can move to mTLS later</text>
   </svg>
   <figcaption class="fig-note">Both mechanisms end at the same place — a <code>cnf</code> claim the resource server re-checks. The question is only which credential you can realistically get onto every client: a generated key, or a certificate someone has to issue and renew.</figcaption>
 </figure>

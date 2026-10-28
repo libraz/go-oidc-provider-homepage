@@ -6,7 +6,7 @@ pageClass: pg-concepts-refresh-tokens
 
 # Refresh tokens
 
-A **refresh token** is a long-lived credential the RP exchanges for a fresh access token without re-authenticating the user. It's how "stay signed in" works.
+A **refresh token** is a long-lived credential the RP exchanges for a fresh [access token](/concepts/tokens) without re-authenticating the user. It's how "stay signed in" works: access tokens stay short-lived, and the refresh token quietly replaces them.
 
 ::: details Specs referenced on this page
 - [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) — OAuth 2.0 Authorization Framework (§6 refresh)
@@ -27,65 +27,63 @@ Every successful `grant_type=refresh_token` call **rotates** the refresh token: 
 
 <figure class="fig">
   <div class="fig-head">Rotation, and what happens when a rotated token comes back</div>
-  <svg class="fig-svg" role="img" aria-labelledby="rt-rotation-title" viewBox="0 0 960 566" xmlns="http://www.w3.org/2000/svg">
-    <title id="rt-rotation-title">Refresh-token rotation. Every exchange invalidates the token that was presented and mints a new one in the same chain. When a token that has already been rotated is replayed, the OP detects reuse and revokes the entire chain, including the tokens the legitimate client still holds.</title>
+  <svg class="fig-svg" role="img" aria-labelledby="rt-rotation-title" viewBox="0 0 960 904" xmlns="http://www.w3.org/2000/svg">
+    <title id="rt-rotation-title">Refresh token rotation. Each exchange invalidates the presented token and issues a new one in the same chain. When an already-rotated token is replayed, the OP detects reuse and revokes the whole chain, including the token the legitimate client holds.</title>
     <!-- phase bands -->
-    <rect class="fg-group" x="30" y="70" width="916" height="300" rx="8"/>
-    <rect class="fg-group" x="30" y="378" width="916" height="172" rx="8"/>
-    <text class="fg-lbl" x="42" y="88">normal renewal</text>
-    <text class="fg-lbl fg-danger" x="42" y="396">a stolen token comes back</text>
+    <rect class="fg-group" x="32" y="104" width="896" height="416" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">normal renewal</text>
+    <rect class="fg-group" x="32" y="544" width="896" height="336" rx="8"/>
+    <text class="fg-lbl fg-danger fg-halo" x="56" y="572">a stolen token comes back</text>
     <!-- lifelines -->
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="550"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="550"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="550"/>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="880"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="880"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="880"/>
     <!-- actors -->
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / client</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">renews its tokens</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box fg-box--danger" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">Attacker</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">holds a copy of rt1</text>
-    <!-- initial issue -->
-    <path class="fg-edge" d="M150,110 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="104" text-anchor="middle">POST /token · grant_type=authorization_code</text>
-    <path class="fg-edge fg-edge--accent" d="M500,140 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="134" text-anchor="middle">200 · access_token · refresh_token: rt1</text>
-    <!-- expiry -->
-    <path class="fg-edge fg-edge--muted" d="M150,166 h28 v14 h-28" marker-end="url(#fg-am)"/>
-    <text class="fg-xs" x="190" y="178">the access token expires</text>
-    <!-- first rotation -->
-    <path class="fg-edge" d="M150,212 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="206" text-anchor="middle">grant_type=refresh_token · refresh_token=rt1</text>
-    <path class="fg-edge fg-edge--accent" d="M500,244 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s fg-accent" x="542" y="248">Rotate</text>
-    <text class="fg-mxs" x="542" y="261">invalidate rt1 · mint rt2 in the same chain</text>
-    <path class="fg-edge fg-edge--accent" d="M500,290 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="284" text-anchor="middle">200 · access_token · refresh_token: rt2</text>
-    <!-- second rotation -->
-    <path class="fg-edge" d="M150,322 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="316" text-anchor="middle">grant_type=refresh_token · refresh_token=rt2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,354 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="348" text-anchor="middle">200 · access_token · refresh_token: rt3</text>
-    <!-- theft -->
-    <path class="fg-edge fg-edge--muted" d="M150,424 H830" marker-end="url(#fg-am)"/>
-    <text class="fg-xs fg-halo" x="490" y="418" text-anchor="middle">rt1 leaked earlier — the attacker kept the copy</text>
-    <!-- replay -->
-    <path class="fg-edge fg-edge--danger" d="M830,456 H500" marker-end="url(#fg-ad)"/>
-    <text class="fg-mxs" x="665" y="450" text-anchor="middle">replay refresh_token=rt1 — already consumed</text>
-    <path class="fg-edge fg-edge--danger" d="M500,484 h30 v16 h-30" marker-end="url(#fg-ad)"/>
-    <text class="fg-s fg-danger" x="542" y="488">Reuse detected</text>
-    <text class="fg-mxs" x="542" y="501">RevokeChain(rt1…rt3) · refresh.replay_detected</text>
-    <path class="fg-edge fg-edge--danger" d="M500,536 H150" marker-end="url(#fg-ad)"/>
-    <text class="fg-mxs" x="325" y="530" text-anchor="middle">400 invalid_grant — rt3 is gone too</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / client</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">renews its tokens</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box fg-box--danger" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Attacker</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">holds a copy of rt1</text>
+    <!-- normal renewal -->
+    <path class="fg-edge" d="M192,176 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="166" text-anchor="middle">POST /token · code</text>
+    <path class="fg-edge fg-edge--accent" d="M512,224 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="214" text-anchor="middle">200 · access_token · rt1</text>
+    <path class="fg-edge" d="M192,280 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="270" text-anchor="middle">refresh_token grant · rt1</text>
+    <path class="fg-edge fg-edge--accent" d="M512,304 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="568" y="310">Rotate</text>
+    <text class="fg-mxs" x="568" y="332">invalidate rt1 · mint rt2</text>
+    <path class="fg-edge fg-edge--accent" d="M512,384 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="374" text-anchor="middle">200 · access_token · rt2</text>
+    <path class="fg-edge" d="M192,440 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="430" text-anchor="middle">refresh_token grant · rt2</text>
+    <path class="fg-edge fg-edge--accent" d="M512,496 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="486" text-anchor="middle">200 · access_token · rt3</text>
+    <!-- stolen token -->
+    <path class="fg-edge fg-edge--muted" d="M192,632 H824" marker-end="url(#fg-am)"/>
+    <text class="fg-s fg-halo" x="508" y="620" text-anchor="middle">rt1 copied earlier</text>
+    <path class="fg-edge fg-edge--danger" d="M824,688 H512" marker-end="url(#fg-ad)"/>
+    <text class="fg-edge-lbl" x="668" y="678" text-anchor="middle">refresh_token=rt1 (replay)</text>
+    <path class="fg-edge fg-edge--danger" d="M512,720 h40 v24 h-40" marker-end="url(#fg-ad)"/>
+    <text class="fg-s fg-danger" x="568" y="726">Reuse detected</text>
+    <text class="fg-mxs" x="568" y="748">RevokeChain(rt1…rt3)</text>
+    <text class="fg-mxs" x="568" y="770">refresh.replay_detected</text>
+    <path class="fg-edge fg-edge--danger" d="M512,856 H192" marker-end="url(#fg-ad)"/>
+    <text class="fg-m" x="352" y="822" text-anchor="middle">400 invalid_grant</text>
+    <text class="fg-mxs" x="352" y="844" text-anchor="middle">later, RP presents rt3</text>
   </svg>
   <figcaption class="fig-note">The last arrow is the point of the design: the legitimate client loses its working token as well. Reuse means one of the two holders is an attacker and the OP cannot tell which, so it ends the chain and makes both re-authenticate.</figcaption>
 </figure>
 
 ::: warning Reuse detection invalidates the chain
-If a previously-rotated refresh token is presented again, the OP treats it as a stolen-credential signal and **revokes the entire chain** — both the stolen token and the legitimate token derived from it. Both parties have to re-authenticate. This is intentional: it's the strongest signal the OP can give that something has gone wrong.
+If a previously-rotated refresh token is presented again, the OP answers `400 invalid_grant`, emits `refresh.replay_detected`, and **revokes the entire chain** — both the stolen token and the legitimate token derived from it. It also retires the access tokens under the grant, since an attacker who redeemed the stolen token holds one. Both parties have to re-authenticate. This is intentional: it's the strongest signal the OP can give that something has gone wrong.
+
+The scope is the whole grant, which is shared by every session of one user on one client. Under the default grant-tombstone strategy the grant is closed to further issuance, so the user's other refresh chains on that client are refused at their next refresh too. The cascade runs once the `invalid_grant` response is settled and is best effort: a store fault raises a warn-level audit event and does not change the answer the client already got.
 :::
 
 ::: details Rotation, reuse detection, family revocation — what's that?
@@ -93,7 +91,7 @@ Three terms that get used interchangeably in blog posts but mean different thing
 
 - **Rotation** — the *normal* successful path. Each `grant_type=refresh_token` returns a new refresh token and invalidates the previous one. Single-use by default.
 - **Reuse detection** — the OP saw an already-rotated refresh token come back. That can only happen if it leaked, was caught by malware, or a confused client kept a copy. The library treats it as theft.
-- **Family revocation** (also called *chain revocation*) — the OP's response to reuse: every refresh token in the same lineage as the offending one is invalidated, including the legitimate descendant the real client is currently using. The next legitimate refresh fails, the user re-authenticates, and the attacker's stolen token is dead too.
+- **Family revocation** (also called *chain revocation*) — the OP's response to reuse: every refresh token in the same lineage as the offending one is invalidated, including the legitimate descendant the real client is currently using. The next legitimate refresh fails, the user re-authenticates, and the attacker's stolen token is dead too. The OP walks the parent pointers to the chain root and revokes from there; if no root resolves, it revokes the grant's refresh tokens instead.
 
 RFC 9700 §4.14.2 requires replay detection for public-client refresh tokens through sender constraint or rotation. When rotation detects reuse, it describes revoking the active refresh token. This library invalidates the whole lineage for every client type.
 :::
@@ -107,6 +105,8 @@ op.WithRefreshGracePeriod(2 * time.Second)
 ```
 
 Within `d` seconds of a successful rotation, a valid retry can recover the same successor refresh token. For a sender-constrained request, the OP may issue a new access token bound to the key or certificate presented on the retry. After `d` seconds, replay is treated as reuse.
+
+The retry works because the rotation stores the response sealed with the cookie keys (`op.WithCookieKeys`) next to the successor. The bundled `inmem`, `sql`, and `dynamodb` adapters implement the optional `store.RefreshRetryResponseStore` for this; a [custom store](/use-cases/byo-store) that does not has no stored response to replay, so a retry inside the window gets `invalid_grant`.
 
 ::: details What the grace period permits
 The OP does not rotate the refresh-token chain again during a grace retry: it returns the saved successor refresh token. Bearer responses can be replayed unchanged. For DPoP or mTLS, the OP reissues the access token for the sender constraint on the retry while keeping the same successor refresh token and ID token. If no saved retry response is available, the retry returns `invalid_grant` without revoking the live successor. Once the window closes, presenting the predecessor triggers reuse detection and chain revocation. Pass zero to disable the window, accepting a greater chance that a legitimate lost-response retry is treated as reuse.
@@ -135,6 +135,8 @@ op.New(
 ## Current client registration scopes apply on rotation
 
 A refresh token records the scope granted when its chain started, but rotation does not bypass a later registration change. Before consuming the presented token, the OP derives the effective scope. It intersects the requested scope with the token's bound scope — an omitted request reuses the bound scope — and then re-intersects the result with the client's current `Scopes` registration, checking any per-scope `AllowedClients` policy. Every scope to issue must still be registered; if the re-check would remove one, `/token` returns `invalid_scope` and leaves the presented token unconsumed. This lets an operator narrow a client's registration without allowing an existing chain to keep minting the removed scope.
+
+A request that asks for a narrower scope only narrows the access token it receives. The rotated refresh token keeps the scope of the token it replaces, so a later refresh can still ask for the full set.
 
 ## TTL buckets
 
@@ -165,7 +167,19 @@ The option is mutually exclusive with `op.WithOpenIDScopeOptional` (strict §11 
 
 ## Authentication context survives rotation
 
-A refresh token carries the original login's authentication context, not just the subject and scope. When a refresh exchange mints a fresh id_token or JWT access token, the OP reproduces the context the user actually authenticated with — `auth_time`, `acr`, `amr`, and the granted `authorization_details` — rather than stamping the moment of the refresh. So an RP that asked for `acr_values=aal2` at login still sees `acr` reflect that strength after a week of background refreshes, and a step-up's freshness signal does not silently reset on every rotation. The refresh record persists these fields (alongside the token's `origin`) so a stored chain reproduces them faithfully.
+A refresh token carries the context of the authorization that issued it, not just the subject and scope. When a refresh exchange mints a fresh id_token or access token, the OP reproduces what the user actually authenticated with — `auth_time`, `acr`, `amr`, the granted `authorization_details`, and the OIDC `claims` request — rather than stamping the moment of the refresh. So an RP that asked for `acr_values=aal2` at login still sees `acr` reflect that strength after a week of background refreshes, and a step-up's freshness signal does not silently reset on every rotation.
+
+The context belongs to the chain, not to the grant shared by every session of one user on one client. A second login by the same user on the same client does not change what an existing chain reports. The refresh record persists these fields (alongside the token's `origin`); a [custom store](/use-cases/byo-store) that drops them makes the chain fall back to reading the grant, with the shared-grant behaviour that implies.
+
+## Sender-constrained chains
+
+A chain issued to a client that presented a DPoP proof or a client certificate may be bound to that key or certificate (see [DPoP](/concepts/dpop#what-this-library-binds) and [mTLS](/concepts/mtls)). A bound chain refuses a refresh that omits the proof or certificate, or presents a different one, with `invalid_grant`. Binding is also checked against the current configuration: if DPoP or mTLS has been switched off since the chain was issued, a bound chain is refused rather than downgraded to bearer.
+
+## Revoking a chain
+
+`/revoke` on a refresh token (RFC 7009) revokes that chain and the access tokens under its grant, and nothing more: the user's other refresh chains on the same client and any unredeemed authorization codes stay valid. For a long chain the endpoint still finds the chain root; if none resolves, it revokes the grant's refresh tokens and records `surface: "refresh_grant"` on `token.revoked` instead of `refresh_chain`. A refresh token issued to another client is ignored, and the answer is `200` either way.
+
+When the user is deleted or deprovisioned, the next refresh fails with `invalid_grant` and the OP tears the grant down.
 
 ## At rest: hashed, constant-time
 
@@ -173,18 +187,19 @@ Refresh-token handles are opaque bearer secrets: possession alone redeems them. 
 
 ## Audit trail
 
-The token endpoint emits two slog audit events through `op.WithAuditLogger`:
+The token endpoint emits these slog audit events through `op.WithAuditLogger`:
 
 | Event | Fired on |
 |---|---|
-| `op.AuditTokenIssued` | Refresh minted on `authorization_code` exchange. |
-| `op.AuditTokenRefreshed` | Refresh rotated on `refresh_token` grant. |
+| `op.AuditTokenIssued` (`token.issued`) | Refresh minted on `authorization_code` exchange. |
+| `op.AuditTokenRefreshed` (`token.refreshed`) | Refresh rotated on `refresh_token` grant, recorded once the rotation is durable. A refresh that lost a concurrent presentation or rolled back records nothing. |
+| `op.AuditRefreshReplayDetected` (`refresh.replay_detected`) | An already-rotated token was presented (reuse detection), before the best-effort chain revoke. |
+| `op.AuditTokenRevoked` (`token.revoked`) | `/revoke` retired a refresh chain; `surface` is `refresh_chain`, or `refresh_grant` when the fallback ran. |
 
-A `refresh.replay_detected` event is emitted before the best-effort chain revoke when an already-rotated token is presented (reuse detection).
-
-Both records carry an `offline_access` boolean and a `ttl_bucket` string (`"offline"` or `"default"`) in `extras`, so SOC dashboards can split stay-signed-in chains from conventional rotation without re-reading the granted scope set.
+The issued and refreshed records carry an `offline_access` boolean and a `ttl_bucket` string (`"offline"` or `"default"`) in `extras`, so SOC dashboards can split stay-signed-in chains from conventional rotation without re-reading the granted scope set.
 
 ## Read next
 
 - [ID Token vs access token vs userinfo](/concepts/tokens) — what each token actually contains.
 - [Sender constraint](/concepts/sender-constraint) — bind the access token (and the refresh token) to a key the client holds.
+- [Access token format](/concepts/access-token-format) — what a rotation does to the prior access token under JWT and opaque formats.

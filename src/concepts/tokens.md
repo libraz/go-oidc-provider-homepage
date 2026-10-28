@@ -47,47 +47,41 @@ In OIDC, **ID Tokens are always JWTs**. Access tokens issued by `go-oidc-provide
 
 <figure class="fig">
   <div class="fig-head">Who issues what, and who checks it</div>
-  <svg class="fig-svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 30 960 240" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
     <title id="tokens-flow-title">The OpenID Provider issues an ID token and an access token to the Relying Party. The Relying Party presents the access token to the Resource Server, and to the provider's userinfo endpoint, which answers with claims about the signed-in user.</title>
     <!-- OP -->
-    <rect class="fg-box fg-box--accent" x="40" y="44" width="240" height="100" rx="8"/>
-    <text class="fg-lbl fg-accent" x="54" y="64">OP</text>
-    <text class="fg-t fg-accent" x="160" y="88" text-anchor="middle">OpenID Provider</text>
-    <text class="fg-mxs" x="160" y="102" text-anchor="middle">go-oidc-provider</text>
-    <line class="fg-rule" x1="54" y1="114" x2="266" y2="114"/>
-    <text class="fg-xs" x="160" y="132" text-anchor="middle">mints tokens and signs JWTs</text>
+    <rect class="fg-box fg-box--accent" x="32" y="24" width="192" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="52">OP</text>
+    <text class="fg-s" x="48" y="76">OpenID Provider</text>
+    <text class="fg-mxs" x="48" y="100">go-oidc-provider</text>
     <!-- RP -->
-    <rect class="fg-box" x="400" y="44" width="240" height="100" rx="8"/>
-    <text class="fg-lbl" x="414" y="64">RP</text>
-    <text class="fg-t" x="520" y="88" text-anchor="middle">Relying Party</text>
-    <text class="fg-mxs" x="520" y="102" text-anchor="middle">client app</text>
-    <line class="fg-rule" x1="414" y1="114" x2="626" y2="114"/>
-    <text class="fg-xs" x="520" y="132" text-anchor="middle">holds the tokens</text>
+    <rect class="fg-box" x="384" y="24" width="192" height="96" rx="8"/>
+    <text class="fg-t" x="400" y="52">RP</text>
+    <text class="fg-s" x="400" y="76">Relying Party</text>
+    <text class="fg-s" x="400" y="100">client app</text>
     <!-- RS -->
-    <rect class="fg-box" x="760" y="44" width="160" height="100" rx="8"/>
-    <text class="fg-lbl" x="774" y="64">RS</text>
-    <text class="fg-t" x="840" y="88" text-anchor="middle">Resource Server</text>
-    <text class="fg-mxs" x="840" y="102" text-anchor="middle">your API</text>
-    <line class="fg-rule" x1="774" y1="114" x2="906" y2="114"/>
-    <text class="fg-xs" x="840" y="132" text-anchor="middle">validates the token</text>
-    <!-- userinfo -->
-    <rect class="fg-box fg-box--sub" x="40" y="196" width="240" height="56" rx="8"/>
-    <text class="fg-m" x="160" y="220" text-anchor="middle">/userinfo</text>
-    <text class="fg-xs" x="160" y="236" text-anchor="middle">claims about the signed-in user</text>
+    <rect class="fg-box" x="736" y="24" width="192" height="96" rx="8"/>
+    <text class="fg-t" x="752" y="52">RS</text>
+    <text class="fg-s" x="752" y="76">Resource Server</text>
+    <text class="fg-s" x="752" y="100">your API</text>
     <!-- issuance -->
-    <path class="fg-edge fg-edge--accent" d="M284,74 H396" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="340" y="67" text-anchor="middle">id_token</text>
-    <path class="fg-edge fg-edge--accent" d="M284,112 H396" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="340" y="105" text-anchor="middle">access_token</text>
+    <path class="fg-edge fg-edge--accent" d="M224,48 H384" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="304" y="38" text-anchor="middle">id_token</text>
+    <path class="fg-edge fg-edge--accent" d="M224,104 H384" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="304" y="94" text-anchor="middle">access_token</text>
     <!-- API call -->
-    <path class="fg-edge" d="M644,100 H756" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="700" y="74" text-anchor="middle">Authorization:</text>
-    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt; (unbound example)</text>
-    <!-- userinfo round trip -->
-    <path class="fg-edge" d="M520,148 V218 H288" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer (unbound)</text>
-    <path class="fg-edge fg-edge--accent" d="M284,240 H560 V152" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="420" y="233" text-anchor="middle">200 { claims }</text>
+    <path class="fg-edge" d="M576,72 H736" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="656" y="62" text-anchor="middle">access_token</text>
+    <!-- userinfo -->
+    <path class="fg-leader" d="M128,120 V200"/>
+    <rect class="fg-box fg-box--sub" x="32" y="200" width="256" height="96" rx="8"/>
+    <text class="fg-m" x="48" y="228">/userinfo</text>
+    <text class="fg-s" x="48" y="252">claims about the user</text>
+    <text class="fg-s" x="48" y="276">served by the OP</text>
+    <path class="fg-edge" d="M512,120 V232 H288" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="400" y="222" text-anchor="middle">GET /userinfo</text>
+    <path class="fg-edge fg-edge--accent" d="M288,288 H544 V120" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="416" y="278" text-anchor="middle">200 { claims }</text>
   </svg>
   <figcaption class="fig-note">The ID token is for the RP and stops there — it answers "who signed in". The access token is a credential the RP carries outward, to your API and to <code>/userinfo</code> alike; neither of those ever sees the ID token.</figcaption>
 </figure>
@@ -101,12 +95,15 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 | `iss` | Issuer (the OP). Must match the RP's expectation. | OIDC Core §2 |
 | `sub` | Subject identifier — opaque per-OP user ID. | OIDC Core §2 |
 | `aud` | Audience — must contain the RP's `client_id`. | OIDC Core §2 |
-| `azp` | Authorized party — the `client_id` requesting the token (when `aud` has multiple values). | OIDC Core §2 |
+| `azp` | Authorized party — the `client_id` requesting the token (when `aud` has multiple values). This library issues single-audience ID Tokens and does not set it. | OIDC Core §2 |
 | `exp`, `iat` | Expiry / issued-at. | RFC 7519 |
 | `nonce` | Echoes the `nonce` from the authorize request. Replay defence. | OIDC Core §3.1.2.1 |
 | `auth_time` | When the user authenticated (vs. when the token was issued). | OIDC Core §2 |
 | `acr` | Authentication Context Class Reference — assurance level the auth method provided. | OIDC Core §2 / RFC 9470 |
 | `amr` | Authentication Methods References — `pwd`, `otp`, `mfa`, `hwk`, etc. | RFC 8176 |
+| `at_hash`, `c_hash` | Hashes of the access token and authorization code issued alongside, so the RP can tie the ID Token to them. | OIDC Core §3.1.3.6 |
+
+`auth_time`, `acr`, and `amr` describe the authentication behind the authorization that issued the token. A later login by the same user at the same client does not rewrite them on tokens already issued, and every refresh keeps the values of the chain's original authorization.
 
 ::: details `acr` — what's that?
 **`acr`** (Authentication Context Class Reference) is a string identifying the authentication context. Your OP decides the vocabulary; examples include `urn:mace:incommon:iap:silver` and `urn:openbanking:psd2:sca`. The RP sends `acr_values=...` as an ordered preference list; OIDC Core treats it as a voluntary claim request. For a hard requirement, request `claims.id_token.acr` with `essential: true` and `value` or `values`; this library then steps up or returns an interaction error if the current session does not match. `amr` instead lists the methods used.
@@ -117,7 +114,7 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 :::
 
 ::: details `auth_time` — what's that?
-**`auth_time`** is the Unix timestamp of when the user *authenticated to the OP*, which is **not** the same as `iat` (when *this* token was issued). A user who logged in an hour ago and just refreshed gets a fresh `iat` but the old `auth_time`. RPs use it to enforce a `max_age` policy ("force re-auth if it's been more than 30 minutes") and the OP enforces it server-side when the RP passes `max_age` on `/auth`.
+**`auth_time`** is the Unix timestamp of when the user *authenticated to the OP*, which is **not** the same as `iat` (when *this* token was issued). A user who logged in an hour ago and just refreshed gets a fresh `iat` but the old `auth_time`. RPs use it to enforce a `max_age` policy ("force re-auth if it's been more than 30 minutes"), and the OP enforces `max_age` itself when the RP passes it on `/auth`.
 :::
 
 ::: details `azp` — what's that?
@@ -130,6 +127,18 @@ A signed JWT defined by **OIDC Core 1.0 §2**. The RP verifies its signature aga
 
 ::: warning Don't put the ID Token on `Authorization: Bearer`
 The ID Token's audience is the RP, not the RS. A correctly configured RS rejects it; an API with incomplete token validation might accept it and expose identity claims such as email. **Use the access token for APIs.**
+
+```http
+# Wrong: aud is the RP's client_id, so this is not a token the RS should accept
+GET /api/invoices HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJ...id_token...
+
+# Right: an access token whose aud names the API / resource server
+GET /api/invoices HTTP/1.1
+Host: api.example.com
+Authorization: Bearer eyJ...access_token...
+```
 :::
 
 ## Access token — "this client may call this API"
@@ -140,6 +149,20 @@ The access token your resource server validates. An unbound or mTLS-bound token 
 |---|---|---|
 | **Opaque** | RS calls `/introspect` (RFC 7662) every request. | OP keeps a row keyed on the token. |
 | **JWT (RFC 9068 shape)** | RS verifies signature/allowed algorithm, `typ=at+jwt`, `iss`, `aud`, `exp`, `iat`, and required claims; sender-bound tokens also need proof validation. | Verification is local; the OP may keep grant tombstones or JTI rows for OP-served revocation. |
+
+A JWT access token carries these claims:
+
+| Claim | Meaning | Who reads it |
+|---|---|---|
+| `iss`, `sub`, `aud`, `exp`, `iat`, `jti`, `client_id` | The RFC 9068 required set. `aud` is the resource server; `sub` is the per-client subject, so it matches the ID Token's. | The RS |
+| `scope` | The granted scopes, space-separated. | The RS |
+| `cnf` | Sender-constraint binding: `jkt` for DPoP, `x5t#S256` for mTLS. Absent for a Bearer token. | The RS |
+| `auth_time`, `acr`, `amr` | The authentication behind the authorization that issued the token. | The RS, for step-up policy |
+| `authorization_details` | RFC 9396 details, when the grant carries them. | The RS |
+| `gid` | Private claim: the grant ID, matched against grant tombstones. | The OP only |
+| `userinfo_claims` | Private claim: the `userinfo` member of the claims request, or `{}` when none was made. `/userinfo` releases claims from it. | The OP only |
+
+Resource servers should ignore `gid` and `userinfo_claims`. Both names are reserved: a custom grant cannot set them through its extra claims.
 
 ### Why this matters: session_end, userinfo, and revocation depend on history
 
@@ -173,16 +196,28 @@ The library defaults to an RFC 9068-shaped JWT and offers opaque as opt-in. Both
 `/userinfo`, `/introspect`, `/revoke`, `/end_session`, and the code-replay cascade all use OP-side revocation state. A revoked or logout-cascaded token is rejected at `/userinfo` with `WWW-Authenticate: Bearer error="invalid_token"` even when its JWT signature still verifies — **but only when the request reaches the OP**. An RS that validates a JWT offline against the JWKS does not see the cascade until it receives equivalent denylist state or the token expires. Opaque format closes that gap because every RS validation reaches `/introspect`.
 :::
 
+How much each event retires depends on the event:
+
+| Event | JWT access tokens | Opaque access tokens | Refresh tokens |
+|---|---|---|---|
+| `/revoke` on one access token | That token (denylisted by `jti`) | That token | none |
+| `/revoke` on a refresh token | All of the grant's access tokens | All of the grant's access tokens | That token's rotation chain; the grant's other chains keep working |
+| Refresh-token rotation | none (they expire) | Those of the same chain | The old token is replaced |
+| Code or refresh-token replay | The whole grant | The whole grant | The whole grant |
+| `/end_session`, Grant Management revoke, `RevokeSubject` | The whole grant | The whole grant | The whole grant |
+
+The JWT column assumes the default grant-tombstone strategy; under `RevocationStrategyNone` the OP records nothing for JWTs. "Whole grant" covers the user's other sessions at the same client. That is why a replay or a logout reaches everywhere, while a rotation or a single-token `/revoke` stays narrow.
+
 ### Introspection is for confidential callers
 
 `/introspect` authenticates the caller before it examines a token. Public clients and clients registered with token-endpoint authentication method `none` receive `401` with `invalid_client`; they cannot use introspection. A confidential caller can introspect its own access or refresh tokens. Cross-client access is inactive by default and becomes active only when the caller is listed in the matching protected resource's `IntrospectionClients` and the access token's `aud` names that resource. This delegation never applies to refresh tokens.
 
-An active opaque access-token introspection response includes `iss` alongside the usual `active`, `client_id`, `token_type`, `exp`, `iat`, `sub`, `aud`, and `scope` fields when those values exist. Resource servers should validate `iss` and `aud` as part of their local policy.
+An active opaque access-token introspection response includes `iss` alongside the usual `active`, `client_id`, `token_type`, `exp`, `iat`, `sub`, `aud`, and `scope` fields, plus `auth_time`, `acr`, `amr`, and `authorization_details` when the token has them. Resource servers should validate `iss` and `aud` as part of their local policy. A refresh token's response has no `token_type`: RFC 7662 defines that member as the access-token type, and a `Bearer` tag would invite a resource server to treat the refresh token as an access token.
 
 ::: details `jti`? `gid`? Tombstones?
 Each access token JWT issued by this library includes a `jti` (RFC 7519 §4.1.7, unique per-token). Tokens with grant lineage also carry a `gid` private claim (the OP-side GrantID, consumed by the OP only — RSes ignore it); it is omitted when no grant ID exists.
 
-**Default — grant-tombstone strategy.** The OP keeps a small per-grant tombstone table; verification matches the JWT's `gid` against it. A single-AT `/revocation` writes one denylist row keyed on `jti`. Steady state is `O(revoked grants + revoked JTIs)`, not `O(issued)`.
+**Default — grant-tombstone strategy.** The OP keeps a small per-grant tombstone table; verification matches the JWT's `gid` against it. A single-AT `/revoke` writes one denylist row keyed on `jti`. Steady state is `O(revoked grants + revoked JTIs)`, not `O(issued)`.
 
 **Opt-in — JTI registry strategy** (`RevocationStrategyJTIRegistry`). The OP writes one shadow row per issuance keyed on `jti`, and revocation flips the row's `Revoked` column. Useful when audit policy requires a per-issuance trail.
 
@@ -250,9 +285,10 @@ Before using any UserInfo claim, the RP must check that the response's `sub` exa
 
 | Option | What it controls | Default |
 |---|---|---|
-| `op.WithAccessTokenTTL(d)` | Lifetime of access tokens. | 5 min |
+| `op.WithAccessTokenTTL(d)` | Lifetime of access tokens. At most 24 hours, and at most 10 minutes under a FAPI 2.0 profile. | 5 min |
 | `op.WithRefreshTokenTTL(d)` | Lifetime of refresh tokens. | 30 days |
 | `op.WithRefreshTokenOfflineTTL(d)` | Lifetime of `offline_access` refresh tokens. | inherits `WithRefreshTokenTTL` |
+| `op.WithAccessTokenRevocationStrategy(s)` | How a JWT access token is revoked on the OP: grant tombstone, JTI registry, or none. | grant tombstone |
 | `op.WithClaimsSupported(...)` | Claims the OP can return. Surfaced in the discovery document. | — |
 | `op.WithClaimsParameterSupported(false)` | Stop advertising and projecting valid OIDC §5.5 `claims` requests; malformed JSON is still rejected. | on |
 | `op.WithStrictOfflineAccess()` | Switch issuance and refresh exchange to the strict OIDC Core §11 reading: refresh tokens are issued only when the granted scope contains `offline_access`. See callout below. | off (lax — `openid` + client `refresh_token` grant suffices) |

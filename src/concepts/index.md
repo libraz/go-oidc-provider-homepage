@@ -5,10 +5,12 @@ description: A recommended reading order for the concept pages. Each step builds
 
 # Learn the concepts
 
-This page is the **recommended reading order** for everything under `/concepts/`. The pages are arranged so each one only assumes what the earlier steps have already covered. If you read top-to-bottom you should not need to backtrack.
+This page gives the **recommended reading order** for everything under `/concepts/`. Each page assumes only what the earlier steps cover, so reading top to bottom never requires backtracking.
 
 ::: tip Read in order
-If you are new to OAuth and OIDC, start at Step 1 and walk down. Most readers get lost because the docs jump straight to refresh tokens or DPoP before pinning down what an "issuer" or a "redirect URI" actually is. This order pins those down first.
+If you are new to OAuth and OIDC, start at Step 1 and read down. Readers usually get lost when a guide jumps to refresh tokens or DPoP before explaining what an "issuer" or a "redirect URI" is, so this order covers those first.
+
+Prefer to run something first? Do the [Quick Start](/getting-started/install) (four short pages ending in a working OP), then come back here to learn why each piece exists. After the concepts, pick a task in [Use cases](/use-cases/).
 :::
 
 ::: details Skip ahead if you already know X
@@ -25,7 +27,7 @@ Start here if any of "OP", "RP", "RS", "JWT", "PKCE" feel unclear.
 
 ## Step 2 — Setup primitives
 
-The vocabulary every later page assumes. None of these are about flows or tokens yet — they are about the strings, URLs, and key material that identify an OP and its clients.
+The vocabulary every later page assumes. These pages are not about flows or tokens yet; they cover the strings, URLs, and keys that identify an OP and its clients.
 
 - [issuer](/concepts/issuer) — the OP's identity URL, the `iss` claim, and why exactly one canonical form matters.
 - [Redirect URI](/concepts/redirect-uri) — what an RP registers, why exact-match is the modern rule, and how this library validates it.
@@ -36,7 +38,7 @@ The vocabulary every later page assumes. None of these are about flows or tokens
 
 ## Step 3 — Common flows
 
-The three grants you will use 90 % of the time. Read in the listed order; refresh tokens reference authorization code, and client credentials is easiest to compare against authorization code.
+The three grants most deployments use. Read them in order: refresh tokens build on the authorization code flow, and client credentials is easiest to understand by comparing it with it.
 
 - [Authorization Code + PKCE](/concepts/authorization-code-pkce) — the default user-facing flow. PKCE is mandatory for public clients and recommended for everyone.
 - [Refresh tokens](/concepts/refresh-tokens) — how long-lived sessions work, rotation, and the reuse-detection rule from RFC 9700.
@@ -70,7 +72,9 @@ Less common flows and profiles. Read these only when you have a concrete reason 
 
 - [Device Code (RFC 8628)](/concepts/device-code) — input-constrained devices: TVs, CLIs, IoT.
 - [CIBA](/concepts/ciba) — push-to-phone authentication where the user has no browser on the device making the request.
+- [No-browser flows (CIBA vs Device Code)](/concepts/no-browser-flows) — how to choose between the two when the requesting device has no browser.
 - [Token Exchange (RFC 8693)](/concepts/token-exchange) — swapping one token for another with different audience or actor.
+- [JARM (signed authorization response)](/concepts/jarm) — having the OP sign the authorization response itself, one of the methods in FAPI 2.0 Message Signing.
 - [FAPI 2.0 primer](/concepts/fapi) — the profile that pins PAR + sender constraint + strict client auth into one set, used by open banking and equivalent regulated APIs.
 
 ## Step 8 — Help

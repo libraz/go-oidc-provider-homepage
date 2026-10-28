@@ -20,7 +20,7 @@ A **session** is the OP-side state that says "this browser was authenticated by 
 - The session lives **on the OP**, not in the cookie.
 - The cookie is just an encrypted pointer to the session row.
 - "Logout" = delete the row. Optional fan-out tells RPs about it.
-- If you only delete the cookie, the OP forgets the user. If you only kill the row, the cookie next request reads no session and the user is forced to re-authenticate.
+- Deleting only the cookie in the browser leaves the row on the OP. Deleting only the row leaves a cookie that points at nothing, so the user's next request finds no session and signs in again.
 :::
 
 ## How this library encodes the session
@@ -29,28 +29,43 @@ The OP keeps a row in `store.SessionStore` with:
 
 | Field | Meaning |
 |---|---|
-| `ID` | Opaque OP browser-session identifier; used for cookie/session lookup and audit correlation, but not emitted as the RP-specific `sid` claim in current sub-only Back-Channel Logout Tokens. |
-| `Subject` | The OP-internal stable user id. Becomes `sub` in ID Tokens. |
-| `AuthTime` | When the user authenticated. Becomes `auth_time` in ID Tokens. |
+| `ID` | Opaque OP browser-session identifier; used for cookie/session lookup and audit correlation. It is not emitted as a `sid` claim: the Back-Channel Logout Tokens this OP sends carry `sub` only. |
+| `Subject` | The OP-internal stable user id. Becomes `sub` in ID Tokens (projected per client when pairwise subjects are enabled). |
+| `AuthTime` | When the user authenticated. Copied into the `auth_time` of tokens issued from this session. |
 | `ACR` | Authentication Context Class Reference — the assurance level the session satisfies. |
 | `AMR` | Authentication Methods References (RFC 8176) — `pwd`, `otp`, `mfa`, `hwk`, … |
 | `ChooserGroupID` | Multi-account chooser group. Multiple sessions in one browser share this. |
 | `ExpiresAt`, `CreatedAt`, `UpdatedAt` | Lifecycle timestamps. |
 
-The cookie that points at this row is `__Host-oidc_session` (defined in `internal/cookie/profile.go`). The library uses four cookies in total:
+The cookie that points at this row is `__Host-oidc_session` (defined in `internal/cookie/profile.go`). Its encrypted payload holds the chooser-group ID, the current session ID, and the time the cookie was written; the session's lifetime is enforced against the stored row, so a replayed cookie cannot extend it. The library uses five cookies in total:
 
 | Cookie | Purpose | Scheme |
 |---|---|---|
-| `__Host-oidc_session` | Persistent session pointer. | AES-256-GCM AEAD over an opaque payload. `__Host-` prefix forces same-origin only. `SameSite=Lax`. |
+| `__Host-oidc_session` | Persistent session pointer. | AES-256-GCM AEAD over an opaque payload. `__Host-` prefix forces same-origin only. `SameSite=Lax`; 14-day max age. |
 | `__Host-oidc_interaction` | In-flight interaction (login form, MFA challenge) state. | Same AEAD; one-hour TTL. |
-| `__Host-oidc_csrf` | Double-submit CSRF token for the interaction form. | HMAC-only (no AEAD). `SameSite=Strict`. |
+| `__Host-oidc_csrf` | Double-submit CSRF token for the interaction form. | HMAC-only (no AEAD). `SameSite=Strict`; browser-session cookie. |
+| `__Host-oidc_logout_csrf` | Double-submit CSRF token that carries the `/end_session` confirmation from its GET page to its POST. | HMAC-only (no AEAD). `SameSite=Strict`; five-minute TTL. |
 | `__Host-oidc_locale` | Remembers the user's chosen UI locale across interaction pages. | Plain text (not encrypted); one-year TTL. `SameSite=Lax`. |
 
 ::: details `__Host-` prefix — what's that?
 A cookie name that starts with `__Host-` is, per RFC 6265bis, accepted by browsers only when the cookie also has `Secure`, `Path=/`, and **no** `Domain` attribute — meaning it is bound to exactly the OP's origin. Subdomain compromise can't forge it; a sibling domain can't read it. This library refuses to boot on plain HTTP precisely because the `__Host-` prefix would not survive.
 :::
 
-The session row goes through `store.SessionStore` — a substore that the embedder may serve from a volatile backend (Redis, Memcached) without violating any library invariant. See [design judgment #10](/security/design-judgments#dj-10) for the trade-off.
+The session row goes through `store.SessionStore` — a substore that the embedder may serve from a volatile backend (Redis など) without violating any library invariant. See [design judgment #10](/security/design-judgments#dj-10) for the trade-off.
+
+## Reusing a session at `/auth`
+
+When a browser arrives at `/auth` with a live session, the OP decides per request whether that session may serve it:
+
+| Request | What happens |
+|---|---|
+| `prompt=login` | The session is not reused. The user authenticates again in full. |
+| `max_age` shorter than the time since the session's `auth_time` | Same: full re-authentication. |
+| `acr_values` or an essential `acr` the session's `acr` does not meet | A step-up runs. The issued tokens keep the session's `acr`, `amr`, and `auth_time`, and the step-up factors are audited as `mfa.*` events. |
+| A `LoginFlow` rule or the `Decider` demands another step | The chain runs from the session's subject, so `Primary` is not repeated. |
+| None of the above | The session serves the request, and tokens carry its `auth_time`, `acr`, and `amr`. |
+
+With `prompt=none`, any row that would need a user interface returns an error instead. Picking a stale or weaker session in the account chooser prompts for re-authentication rather than failing the request.
 
 ## Logout taxonomy
 
@@ -66,12 +81,16 @@ GET /end_session?id_token_hint=<id_token>&post_logout_redirect_uri=<uri>&state=<
 
 The OP does the following:
 
-1. Verifies the `id_token_hint` (matches a session it issued).
-2. Optionally renders an interstitial confirmation page (recommended for "are you sure?" UX).
+1. Verifies the `id_token_hint`: its signature, that `aud` names a registered client, and that `typ` is absent or `JWT` (a logout token or access token is refused). An expired ID Token is accepted, because a user logging out from a stale tab is the common case.
+2. Shows a confirmation page unless the hint's `sub` matches the subject of the session cookie. A hint for a different subject, or no hint, always gets the page.
 3. Resolves the logout scope and deletes the selected session rows.
 4. If the `post_logout_redirect_uri` is registered for the client, redirects the browser back with `state` echoed.
 
-The default scope is the active chooser group: every session in that browser group is destroyed. Add the single-valued query parameter `logout_scope=current` to destroy only the active session; if a sibling survives, the OP rebinds the browser cookie to that sibling. An empty value, an unknown value, or a repeated `logout_scope` is rejected with HTTP 400 before session state is changed.
+| `logout_scope` | Sessions destroyed |
+|---|---|
+| absent (default) | Every session in the browser's chooser group. |
+| `current` | Only the active session. If a sibling survives, the OP rebinds the cookie to it. |
+| empty, unknown, or repeated | None: the request is rejected with HTTP 400 before any state changes. |
 
 An `id_token_hint` whose subject does not match the session cookie cannot bypass confirmation. If the session store has a transport failure while the OP is resolving or destroying the session, `/end_session` returns a static HTTP 503 page with no post-logout redirect and leaves both the cookie and the session row intact. An absent or already-expired session is a different, safe-to-continue case.
 
@@ -79,7 +98,7 @@ The confirmation and browser-facing error HTML from `/end_session` carry both `X
 
 For native and public clients, the same RFC 8252 loopback any-port rule used for `redirect_uri` also applies to `post_logout_redirect_uri`: a client may register a fixed loopback URI and return with a different ephemeral port at logout. Host, scheme, and path still have to match the registered shape; only the port varies.
 
-The point is **end the OP's session for this browser**. The RP that initiated the logout already knows about it (it's the one that redirected); other RPs don't, unless the OP also runs Back-Channel Logout.
+The point is to **end the OP's session for this browser**. The RP that initiated the logout already knows about it; other RPs don't, unless the OP also runs Back-Channel Logout.
 
 ### Back-Channel Logout 1.0
 
@@ -108,75 +127,71 @@ The library does **not** ship Front-Channel Logout, and the discovery document d
 
 ## End-session cascade
 
-`/end_session` is not just "delete the cookie." When the embedder has wired `Grants` and `AccessTokens` substores, the library walks every grant the subject holds and revokes the per-grant access-token shadow rows. JWT access tokens become inactive at OP-served boundaries (`/userinfo`, `/introspect`); opaque access tokens become inactive at every RS that introspects.
+`/end_session` does more than delete the cookie. For each distinct subject in the sessions being destroyed, the library walks every grant the subject holds and retires the credentials issued under it: JWT and opaque access tokens, and refresh tokens. The grant records themselves stay, so the user's consent is remembered. JWT access tokens become inactive at OP-served boundaries (`/userinfo`, `/introspect`); opaque access tokens become inactive at every RS that introspects.
 
 <figure class="fig">
-  <div class="fig-head">One session row, and how far ending it reaches</div>
-  <svg class="fig-svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 960 452" xmlns="http://www.w3.org/2000/svg">
-    <title id="session-cascade-title">Above, the session model: four browser cookies scoped to the OP origin, of which one carries the id of a single SessionStore row that holds the OP-side state. Below, the end-session cascade: the row is deleted, grants are walked and revoked, access tokens are revoked, and a logout token is posted to every registered back-channel logout URI.</title>
-    <text class="fg-lbl" x="40" y="24">session model</text>
-    <!-- cookies -->
-    <rect class="fg-box" x="36" y="34" width="300" height="132" rx="8"/>
-    <text class="fg-t2" x="56" y="58">Browser cookies</text>
-    <text class="fg-mxs" x="56" y="80">__Host-oidc_session</text>
-    <text class="fg-mxs" x="56" y="96">__Host-oidc_interaction</text>
-    <text class="fg-mxs" x="56" y="112">__Host-oidc_csrf</text>
-    <text class="fg-mxs" x="56" y="128">__Host-oidc_locale</text>
-    <line class="fg-rule" x1="56" y1="140" x2="316" y2="140"/>
-    <text class="fg-xs" x="56" y="157">scoped to the OP origin, never to the RP</text>
-    <path class="fg-edge" d="M340,100 H428" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="384" y="93" text-anchor="middle">carries the row id</text>
-    <!-- session store -->
-    <rect class="fg-box fg-box--accent" x="432" y="34" width="492" height="132" rx="8"/>
-    <text class="fg-t fg-accent" x="452" y="58">SessionStore</text>
-    <text class="fg-xs" x="452" y="76">one row per session — all OP-side state</text>
-    <line class="fg-rule" x1="452" y1="88" x2="904" y2="88"/>
-    <text class="fg-mxs" x="452" y="110">ID · Subject · AuthTime · ACR</text>
-    <text class="fg-mxs" x="452" y="128">AMR · ChooserGroupID · timestamps</text>
-    <text class="fg-xs" x="452" y="152">the cookie holds the id and nothing else</text>
-    <text class="fg-lbl" x="40" y="204">end-session cascade</text>
-    <!-- trigger -->
-    <rect class="fg-box fg-box--accent" x="36" y="214" width="184" height="72" rx="8"/>
-    <text class="fg-m" x="128" y="248" text-anchor="middle">/end_session</text>
-    <text class="fg-xs" x="128" y="266" text-anchor="middle">RP-initiated logout</text>
-    <!-- trunk -->
-    <path class="fg-leader" d="M224,250 H252 V423"/>
-    <path class="fg-edge fg-edge--thin" d="M252,245 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M252,297 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M252,359 H296" marker-end="url(#fg-a)"/>
-    <path class="fg-edge fg-edge--thin" d="M252,423 H296" marker-end="url(#fg-a)"/>
-    <!-- consequences -->
-    <rect class="fg-box" x="300" y="224" width="290" height="42" rx="6"/>
-    <text class="fg-t2" x="318" y="242">SessionStore</text>
-    <text class="fg-xs" x="318" y="258">the row is deleted</text>
-    <rect class="fg-box" x="300" y="276" width="290" height="42" rx="6"/>
-    <text class="fg-t2" x="318" y="294">Grants</text>
-    <text class="fg-xs" x="318" y="310">walked and marked revoked</text>
-    <rect class="fg-box" x="300" y="328" width="290" height="52" rx="6"/>
-    <text class="fg-t2" x="318" y="346">AccessTokens</text>
-    <text class="fg-xs" x="318" y="362">revoked at the OP, directly</text>
-    <rect class="fg-box" x="300" y="390" width="290" height="52" rx="6"/>
-    <text class="fg-t2" x="318" y="408">Back-Channel Logout</text>
-    <text class="fg-mxs" x="318" y="426">POST logout_token → each RP</text>
+  <div class="fig-head">Ending a session cascades, but not to every token</div>
+  <svg class="fig-svg" role="img" aria-labelledby="session-cascade-title" viewBox="0 0 960 720" xmlns="http://www.w3.org/2000/svg">
+    <title id="session-cascade-title">Above, the session model: five browser cookies scoped to the OP origin, of which one carries the id of a single SessionStore row that holds the OP-side state. Below, the end-session cascade: the row is deleted, each grant is walked and the access and refresh tokens under it are revoked, and a logout token is posted to every registered back-channel logout URI. A note marks that a JWT access token is refused only by the OP and an opaque one only once each resource server introspects it.</title>
+    <!-- session model band -->
+    <rect class="fg-group" x="32" y="24" width="896" height="176" rx="8"/>
+    <text class="fg-lbl" x="56" y="52">session model</text>
+    <rect class="fg-box" x="56" y="80" width="336" height="96" rx="8"/>
+    <text class="fg-t2" x="72" y="108">Browser cookies</text>
+    <text class="fg-mxs" x="72" y="132">five __Host-oidc_* cookies</text>
+    <text class="fg-xs" x="72" y="156">scoped to the OP origin, never the RP</text>
+    <path class="fg-edge" d="M392,128 H488" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="440" y="118" text-anchor="middle">row id</text>
+    <rect class="fg-box fg-box--accent" x="488" y="80" width="416" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="504" y="108">SessionStore</text>
+    <text class="fg-xs" x="504" y="132">one row per session, all OP-side state</text>
+    <text class="fg-mxs" x="504" y="156">ID · Subject · AuthTime · ACR · AMR</text>
+    <!-- cascade band -->
+    <rect class="fg-group" x="32" y="232" width="896" height="464" rx="8"/>
+    <text class="fg-lbl" x="56" y="260">end-session cascade</text>
+    <rect class="fg-box" x="56" y="440" width="192" height="72" rx="8"/>
+    <text class="fg-m" x="72" y="468">/end_session</text>
+    <text class="fg-xs" x="72" y="492">RP-initiated logout</text>
+    <path class="fg-leader" d="M248,476 H272 M272,324 V636"/>
+    <!-- SessionStore -->
+    <path class="fg-edge fg-edge--thin" d="M272,324 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="288" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="316">SessionStore</text>
+    <text class="fg-xs" x="312" y="340">the row is deleted</text>
+    <!-- Grants -->
+    <path class="fg-edge fg-edge--thin" d="M272,428 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="392" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="420">Grants</text>
+    <text class="fg-xs" x="312" y="444">one teardown per grant</text>
+    <!-- Tokens under each grant -->
+    <path class="fg-edge fg-edge--thin" d="M272,532 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="496" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="524">Tokens under each grant</text>
+    <text class="fg-xs" x="312" y="548">access and refresh revoked</text>
+    <!-- Back-channel logout -->
+    <path class="fg-edge fg-edge--thin" d="M272,636 H296" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="296" y="600" width="264" height="72" rx="8"/>
+    <text class="fg-t2" x="312" y="628">Back-channel logout</text>
+    <text class="fg-mxs" x="312" y="652">logout_token → each RP</text>
     <!-- reach note -->
-    <path class="fg-edge fg-edge--muted" d="M594,354 H636" marker-end="url(#fg-am)"/>
-    <rect class="fg-box fg-box--muted" x="640" y="328" width="284" height="114" rx="8"/>
-    <text class="fg-lbl" x="658" y="348">how far it actually reaches</text>
-    <text class="fg-xs" x="658" y="368">a JWT access token is refused by the OP</text>
-    <text class="fg-xs" x="658" y="382">at /userinfo and /introspect</text>
-    <text class="fg-xs" x="658" y="404">an opaque one goes inactive only once</text>
-    <text class="fg-xs" x="658" y="418">each resource server introspects it</text>
-    <text class="fg-xs fg-warn" x="658" y="436">reach depends on every RS, not on the OP</text>
+    <path class="fg-edge fg-edge--muted" d="M560,532 H608" marker-end="url(#fg-am)"/>
+    <rect class="fg-box fg-box--muted" x="608" y="496" width="296" height="96" rx="8"/>
+    <text class="fg-t2" x="624" y="524">How far it reaches</text>
+    <text class="fg-xs" x="624" y="548">JWT: refused by the OP</text>
+    <text class="fg-xs" x="624" y="572">opaque: needs RS introspection</text>
+    <rect class="fg-pill fg-pill--warn" x="608" y="624" width="224" height="32" rx="16"/>
+    <text class="fg-s" x="720" y="645" text-anchor="middle">depends on every RS</text>
   </svg>
-  <figcaption class="fig-note">Everything in the left column is synchronous and under the OP's control. The last two rows are not: a JWT already in flight stays syntactically valid until it expires, and a back-channel notification only helps for RPs that registered a URI and answer it.</figcaption>
+  <figcaption class="fig-note">The first two steps are synchronous and under the OP's control. Token revocation and back-channel logout are not: a JWT already in flight stays syntactically valid until it expires, and a back-channel notification only helps for RPs that registered a URI and answer it.</figcaption>
 </figure>
 
 The cookie is only a pointer — the session is the row in `SessionStore`. Clearing the cookie in the browser leaves that row intact, so the OP has to delete the row itself.
 
 | Wired stores | Cascade behaviour |
 |---|---|
-| `Grants` + `AccessTokens` (default with the bundled adapters) | Logout cascades. ATs flip to revoked. JWT ATs are rejected at `/userinfo`; opaque ATs are rejected at every RS. |
-| Either left nil | Cascade short-circuits silently. ATs expire naturally at their `exp`. |
+| `Grants` wired (default with the bundled adapters) | Logout cascades. JWT ATs are rejected at `/userinfo` and `/introspect`; opaque ATs are rejected at every RS; refresh tokens stop refreshing. |
+| `Grants` left nil | The cascade is skipped. ATs expire naturally at their `exp`. |
+| JWT revocation strategy `None` | The JWT half is skipped; opaque ATs and refresh tokens are still revoked. |
 
 See [design judgment #17](/security/design-judgments#dj-17) for the rationale and the asymmetry between JWT and opaque cascade reach.
 

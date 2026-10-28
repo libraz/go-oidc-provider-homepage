@@ -9,43 +9,44 @@ pageClass: pg-concepts-jarm
 OP は既定では認可応答（`code`、`state`、`iss` など）を URL クエリにそのまま載せて返します。JARM ではない配送方式として `form_post` も選べます。リダイレクトを書き換えられる立場の攻撃者 — 悪意のあるブラウザ拡張、改ざんされた中継、別の OP との mix-up — は、RP が応答を受け取る前にフィールドを差し替えることができます。**JARM**（OpenID Foundation FAPI WG 仕様 "JWT Secured Authorization Response Mode for OAuth 2.0"、RFC 9101 §10.2 が情報参照しています）は、この応答全体をひとつの署名付き JWT にまとめ、`response` 1 個のパラメータとして配送する方式です。応答そのものに改ざん検知性が乗り、OP が発行したことが暗号学的に立証できるようになります。
 
 <figure class="fig">
-  <div class="fig-head">ばらばらのパラメータか、署名された 1 通の文書か</div>
-  <svg class="fig-svg" role="img" aria-labelledby="jarm-shape-title" viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">JARM は 3 つのパラメータを 1 つの署名に置き換える</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jarm-shape-title" viewBox="0 0 960 448" xmlns="http://www.w3.org/2000/svg">
     <title id="jarm-shape-title">通常の認可応答は code・state・issuer を個別の query パラメータで返し、RP はそれぞれを個別に検証する必要があります。JARM は同じ値を署名付き JWT に包み、response パラメータ 1 つで返します。</title>
-    <line class="fg-rule fg-rule--dashed" x1="480" y1="16" x2="480" y2="304"/>
-    <text class="fg-lbl" x="40" y="30">通常の応答</text>
-    <text class="fg-lbl fg-accent" x="500" y="30">JARM の応答</text>
-    <!-- 通常 -->
-    <rect class="fg-box" x="163" y="44" width="180" height="52" rx="8"/>
-    <text class="fg-t" x="253" y="68" text-anchor="middle">OP</text>
-    <text class="fg-xs" x="253" y="86" text-anchor="middle">各フィールドをそのまま返す</text>
-    <path class="fg-edge" d="M253,100 V124" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--sub" x="113" y="128" width="280" height="72" rx="8"/>
-    <text class="fg-t2" x="253" y="152" text-anchor="middle">3 つの独立したパラメータ</text>
-    <text class="fg-mxs" x="253" y="174" text-anchor="middle">?code=… &amp; state=… &amp; iss=…</text>
-    <text class="fg-xs" x="253" y="191" text-anchor="middle">互いを結び付けるものが無い</text>
-    <path class="fg-edge" d="M253,204 V228" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="113" y="232" width="280" height="64" rx="8"/>
-    <text class="fg-t" x="253" y="258" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="253" y="278" text-anchor="middle">各フィールドを個別に検証する</text>
-    <!-- JARM -->
-    <rect class="fg-box fg-box--accent" x="617" y="44" width="180" height="52" rx="8"/>
-    <text class="fg-t fg-accent" x="707" y="68" text-anchor="middle">OP</text>
-    <text class="fg-xs" x="707" y="86" text-anchor="middle">応答全体に署名する</text>
-    <path class="fg-edge fg-edge--accent" d="M707,100 V124" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="567" y="128" width="280" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="707" y="152" text-anchor="middle">署名された JWT 1 通</text>
-    <text class="fg-mxs" x="707" y="172" text-anchor="middle">iss · aud · exp · code または error</text>
-    <text class="fg-mxs" x="707" y="191" text-anchor="middle">?response=&lt;JWT&gt;</text>
-    <path class="fg-edge fg-edge--accent" d="M707,204 V228" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="567" y="232" width="280" height="64" rx="8"/>
-    <text class="fg-t" x="707" y="258" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="707" y="278" text-anchor="middle">署名を 1 回検証してから読む</text>
+    <!-- plain response -->
+    <rect class="fg-group" x="32" y="24" width="432" height="400" rx="8"/>
+    <text class="fg-lbl" x="56" y="52">通常の応答</text>
+    <rect class="fg-box" x="56" y="80" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="72" y="108">OP</text>
+    <text class="fg-xs" x="72" y="132">各フィールドをそのまま返す</text>
+    <path class="fg-edge" d="M248,152 V192" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--sub" x="56" y="192" width="384" height="96" rx="8"/>
+    <text class="fg-t2" x="72" y="220">3 つの独立したパラメータ</text>
+    <text class="fg-mxs" x="72" y="244">?code=… &amp; state=… &amp; iss=…</text>
+    <text class="fg-xs" x="72" y="268">互いを結び付けるものが無い</text>
+    <path class="fg-edge" d="M248,288 V328" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="56" y="328" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="72" y="356">RP</text>
+    <text class="fg-xs" x="72" y="380">各フィールドを個別に検証する</text>
+    <!-- jarm response -->
+    <rect class="fg-group" x="496" y="24" width="432" height="400" rx="8"/>
+    <text class="fg-lbl fg-accent" x="520" y="52">JARM の応答</text>
+    <rect class="fg-box" x="520" y="80" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="536" y="108">OP</text>
+    <text class="fg-xs" x="536" y="132">応答全体に署名する</text>
+    <path class="fg-edge fg-edge--accent" d="M712,152 V192" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="520" y="192" width="384" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="536" y="220">署名された JWT 1 通</text>
+    <text class="fg-mxs" x="536" y="244">?response=&lt;JWT&gt;</text>
+    <text class="fg-mxs" x="536" y="268">iss · aud · exp · code または error</text>
+    <path class="fg-edge fg-edge--accent" d="M712,288 V328" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="520" y="328" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="536" y="356">RP</text>
+    <text class="fg-xs" x="536" y="380">署名を 1 回検証してから読む</text>
   </svg>
   <figcaption class="fig-note">左の形では、query 文字列を書き換えられる攻撃者が 1 つのパラメータだけをすり替え、残りをそのまま残せます。右の形にはすり替える対象がありません。値は OP の鍵でしか作れない文書の内側にあるからです。</figcaption>
 </figure>
 
-JARM は FAPI 2.0 Message Signing が定義する署名付き認可レスポンス方式です。同じ仕様では、署名付き認可リクエストと署名付きイントロスペクションレスポンスを別の方式として扱います。すべてのリソースサーバ API のリクエストとレスポンスを署名で包む仕様ではありません。各方式には個別の適合性テストがあり、配備に必要なメッセージを選べます。
+JARM は FAPI 2.0 Message Signing が定義する署名付き認可レスポンス方式です。同じ仕様では、署名付き認可リクエストと署名付き introspection レスポンスを別の方式として扱います。すべてのリソースサーバ API のリクエストとレスポンスを署名で包む仕様ではありません。各方式には個別の適合性テストがあり、配備に必要なメッセージを選べます。
 
 ::: details このページで触れる仕様
 - [OAuth 2.0 JARM](https://openid.net/specs/oauth-v2-jarm.html) — JWT Secured Authorization Response Mode
@@ -90,6 +91,13 @@ OP が返すパラメータは `response` 1 個だけで、その値が JWT で�
 | `error`、`error_description`、`error_uri` | エラー時 — 非 JARM のエラー応答と同じ 3 点セット |
 
 `code` と `error` は排他で、OP はどちらか片方だけを埋めます。検証ロジックは `internal/jarm/encode.go` の `validatePayload` にあり、すべての `Sign` 呼び出しから強制されます。
+
+リクエストの時点で、どちらも `unsupported_response_mode` になる拒否が 2 つあります。いずれも `/auth` だけでなく `/par` でも判定するので、失敗するリクエストのために RP が `request_uri` を使い切ることはありません。
+
+| 状況 | 結果 |
+|---|---|
+| `feature.JARM` が無効なのに JARM の `response_mode` を指定 | `unsupported_response_mode` |
+| `profile.FAPI2MessageSigning` 下で `response_mode` を省略、または通常の値を指定 | `unsupported_response_mode`。このプロファイルはすべての応答を JARM で包むことを要求するため、RP は 4 値のいずれかを選ぶ必要がある |
 
 ## 署名
 
@@ -140,7 +148,7 @@ OP は discovery で `authorization_encryption_alg_values_supported` と `_enc_v
 
 | プロファイル / 文脈 | JARM の扱い |
 |---|---|
-| **FAPI 2.0 Message Signing** | 署名付き認可レスポンス方式を選ぶ場合に必須（`op.WithProfile(profile.FAPI2MessageSigning)` が `feature.JARM` を自動で有効化） — [FAPI 2.0](/ja/concepts/fapi) 参照 |
+| **FAPI 2.0 Message Signing** | 署名付き認可レスポンス方式を選ぶ場合に必須（`op.WithProfile(profile.FAPI2MessageSigning)` が `feature.JARM` を自動で有効化し、以後すべてのリクエストが JARM の `response_mode` を指定する必要がある） — [FAPI 2.0](/ja/concepts/fapi) 参照 |
 | **FAPI 2.0 Security Profile** | 任意（RFC 9207 の `iss` パラメータで十分） |
 | **FAPI-CIBA** | 該当なし — CIBA にはフロントチャネルの認可応答が存在しない |
 | **素の OIDC / OAuth** | 純粋に選択肢 — 多くの実装は RFC 9207 の `iss` で済ませ、JARM までは入れません |
@@ -188,7 +196,7 @@ JARM signer は `op.New` の段階で OP の現用署名鍵を使って 1 度だ
 | `authorization_encrypted_response_alg` | 指定した JWE `alg` で JWE 包装された JARM 応答を要求する。`op.SupportedEncryptionAlgs` の中の値であること。 |
 | `authorization_encrypted_response_enc` | `authorization_encrypted_response_alg` と対で指定する。`op.SupportedEncryptionEncs` の中の値であること。 |
 
-両フィールドは静的シード時点（`op.ClientSeed` / `store.Client` の形）でも、Dynamic Client Registration（`POST /register`）経由でも与えられます。クライアント単位の `authorization_signed_response_alg` 上書きは実装しておらず、OP 全体の ES256 設定がすべての JARM 利用クライアントに適用されます。
+両フィールドは、自前のクライアントストアの `store.Client` レコードに設定するか、Dynamic Client Registration（`POST /register`）でクライアントに登録させます。登録時には同じ許可リストで検証されます。型付きの静的シード（`op.ConfidentialClient` など）にはこれらのフィールドがありません。クライアント単位の `authorization_signed_response_alg` 上書きは実装しておらず、OP 全体の ES256 設定がすべての JARM 利用クライアントに適用されます。
 
 ## JARM と DPoP / mTLS の関係
 

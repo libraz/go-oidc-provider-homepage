@@ -6,12 +6,12 @@ pageClass: pg-concepts-client-types
 
 # Client types
 
-A **client** is the application that asks the OP for tokens. Clients fall into two structural buckets — **public** (cannot keep a secret) and **confidential** (can) — and FAPI 2.0 deployments raise the bar on top of confidential. The bucket the client lives in determines which authentication method it uses at the token endpoint, and that choice cascades into refresh-token policy, sender-constraint requirements, and what the consent prompt can short-circuit.
+A **client** is the application that asks the OP for tokens. Clients fall into two structural buckets, **public** (cannot keep a secret) and **confidential** (can), and FAPI 2.0 deployments raise the bar further on top of confidential. The bucket decides how the client authenticates at the token endpoint, and that choice in turn affects refresh-token policy, sender-constraint requirements, and whether the consent prompt can be skipped.
 
 ::: tip Mental model in 30 seconds
-- **Public clients** — SPAs, native apps, mobile apps. Code shipped to users; secrets are not safe. Use `none` + PKCE.
-- **Confidential clients** — backends, services, machine-to-machine callers. Can hold a secret or a private key. Use `client_secret_*` or `private_key_jwt`.
-- **FAPI-grade clients** — confidential clients hardened with sender-constrained tokens (DPoP / mTLS), PAR, and asymmetric authentication.
+- **Public clients**: SPAs, native apps, mobile apps. The code ships to users, so a secret in it is not secret. They use `none` + PKCE.
+- **Confidential clients**: backends, services, machine-to-machine callers. They can hold a secret or a private key and use `client_secret_*` or `private_key_jwt`.
+- **FAPI-grade clients**: confidential clients hardened with sender-constrained tokens (DPoP / mTLS), PAR, and asymmetric authentication.
 :::
 
 ::: details Specs referenced on this page
@@ -27,13 +27,13 @@ A **client** is the application that asks the OP for tokens. Clients fall into t
 
 ## Public clients
 
-Public clients are applications whose code runs on a device the user controls. Typical examples are single-page apps, mobile apps, native desktop apps, and CLIs. The defining property is that **anything shipped with the binary or page is in the attacker's hands too**. There is no place to hide a long-lived secret.
+Public clients are applications whose code runs on a device the user controls: single-page apps, mobile apps, native desktop apps, and CLIs. **Anything shipped with the binary or page is in the attacker's hands too**, so there is nowhere to hide a long-lived secret.
 
 ### When to use one
 
 Use a public client for apps that log a human in on the user's device.
 
-- A browser SPA redirects to `/authorize`, then exchanges code + PKCE at `/token` from JavaScript.
+- A browser SPA redirects to `/auth`, then exchanges the code and PKCE verifier at `/token` from JavaScript.
 - A mobile or desktop app receives the authorization code through a custom URI scheme, claimed `https`, or loopback redirect.
 - A CLI opens a local loopback listener, sends the user through browser login, and receives the authorization code locally.
 
@@ -41,74 +41,91 @@ Use a confidential client for server-side RPs and service-to-service callers whe
 
 ### Why the type exists
 
-The category exists so clients are handled according to whether they can keep a credential secret. If an SPA or mobile app is required to use a `client_secret`, the developer has nowhere better to put it than a JavaScript bundle, app binary, or local config file. That value is delivered to every user, including attackers, so the protocol cannot treat it as a secret.
+The split exists because a credential only authenticates a client if the client can keep it secret. If an SPA or mobile app had to use a `client_secret`, the developer could only put it in a JavaScript bundle, an app binary, or a local config file. Every user, attackers included, would receive that value, so the protocol cannot treat it as a secret.
 
-OAuth / OIDC therefore names public clients explicitly. Instead of pretending a long-lived shared secret is still authentication, the protocol protects them with a registered `client_id`, exact redirect-URI matching, per-request PKCE, refresh-token rotation, and DPoP where appropriate. A public client is not an "untrusted client"; it is a client protected by different mechanisms because it cannot keep a secret.
+```jsonc
+// Wrong: the secret has to ship inside the SPA bundle, so it is not a secret
+{
+  "client_id": "browser-spa",
+  "token_endpoint_auth_method": "client_secret_basic",
+  "client_secret": "shipped-in-javascript"
+}
 
-The library treats a client as public when its `TokenEndpointAuthMethod` is `"none"`. The structural protections that compensate for the missing secret are:
+// Right: register a public client and protect it with code + PKCE
+{
+  "client_id": "browser-spa",
+  "token_endpoint_auth_method": "none",
+  "grant_types": ["authorization_code"],
+  "redirect_uris": ["https://app.example.com/callback"]
+}
+```
+
+OAuth / OIDC therefore names public clients explicitly and protects them with other mechanisms: a registered `client_id`, exact redirect-URI matching, per-request PKCE, refresh-token rotation, and DPoP where appropriate. A public client is not an "untrusted client"; it is a client protected differently because it cannot keep a secret.
+
+The library treats a client as public when its `TokenEndpointAuthMethod` is `"none"`. These protections compensate for the missing secret:
 
 - **PKCE is required.** The OP accepts only `S256` PKCE (`plain` is refused regardless of profile; see [Design judgments #14](/security/design-judgments#dj-14)). The `code_verifier` is the per-request secret that proves "the same client that started the flow is the one finishing it"; without it, an authorization code intercepted on the redirect is enough to mint tokens.
 - **Refresh tokens are rotated and DPoP-bound.** Every successful refresh exchange retires the previous refresh token and binds the next one to the DPoP key the client presented. A leaked refresh on a public client cannot be reused without the matching key, and a reuse of an already-rotated token revokes the entire chain. See [Design judgments #15](/security/design-judgments#dj-15).
 - **Loopback redirects are admitted.** RFC 8252 §7.3 lets native clients vary the port on `127.0.0.1` / `[::1]` so a CLI can use an OS-assigned ephemeral port; see [Redirect URI](/concepts/redirect-uri).
 
-Public clients can still receive ID Tokens, refresh tokens, and call `/userinfo` — they are full-featured RPs, just operating in a stricter environment.
+Public clients still receive ID Tokens and refresh tokens and can call `/userinfo`. They are full RPs that work under stricter rules.
 
 ## Confidential clients
 
-Confidential clients are backend services that can keep a secret or a private key out of user-reachable storage. The defining property is that **the credential lives somewhere the attacker cannot trivially read** — a server-side environment variable, a secrets manager, an HSM. They register a `TokenEndpointAuthMethod` other than `"none"`.
+Confidential clients are backend services that keep a secret or a private key out of user-reachable storage: a server-side environment variable, a secrets manager, an HSM. They register a `TokenEndpointAuthMethod` other than `"none"`.
 
 A confidential client gets:
 
 - **Authentication at the token endpoint.** Every `POST /token` carries credentials; the OP verifies them before issuing anything. The verifier is one of the methods listed below.
 - **Looser refresh-token policy.** Refresh tokens are rotated like every other client, but the chain is **not** DPoP-bound by default — the access tokens minted on each refresh are still bound to whatever key was presented, but the refresh chain itself can rotate keys. See [Design judgments #15](/security/design-judgments#dj-15).
-- **Eligibility for first-party auto-consent.** `op.WithFirstPartyClients(...)` lets the consent prompt be skipped for vetted internal clients; only static and admin-provisioned clients are eligible (DCR-registered clients are excluded by design).
+- **Eligibility for first-party auto-consent.** `op.WithFirstPartyClients(...)` lets the consent prompt be skipped for vetted internal clients. Only statically seeded and admin-provisioned clients are eligible (DCR-registered clients are excluded by design), and `op.New` refuses the option together with a FAPI 2.0 profile.
 
 ## FAPI-grade clients
 
-The FAPI 2.0 Security Profile requires confidential clients, PAR, sender-constrained access tokens (DPoP or mTLS), and either mTLS client authentication or `private_key_jwt`. It does not require a signed request object. This library's `profile.FAPI2Baseline` setting additionally requires JAR and uses `private_key_jwt` for token-endpoint client authentication. mTLS is available for sender constraint, but `tls_client_auth` and `self_signed_tls_client_auth` are not dispatched at `/token`. See the [FAPI 2.0 primer](/concepts/fapi).
+The FAPI 2.0 Security Profile requires confidential clients, PAR, sender-constrained access tokens (DPoP or mTLS), and either mTLS client authentication or `private_key_jwt`. It does not require a signed request object. This library's `profile.FAPI2Baseline` additionally requires JAR and admits only `private_key_jwt` for token-endpoint client authentication. mTLS is available as a sender constraint, but the two mTLS client-authentication methods are not selectable (see below). See the [FAPI 2.0 primer](/concepts/fapi).
 
-There is no separate "FAPI client type" in the protocol; a FAPI-grade client is a confidential client that has met the additional requirements. The library enforces that match at construction and at request time.
+The protocol has no separate "FAPI client type": a FAPI-grade client is a confidential client that meets the extra requirements, and the library enforces them at construction and at request time.
 
 ## Authentication methods
 
-The library recognizes six method names from the IANA "OAuth Token Endpoint Authentication Methods" registry as `op.AuthMethod` constants. Four are selectable at `/token`; the two mTLS client-auth methods have internal verifiers but are not dispatched there.
+The library names six methods from the IANA "OAuth Token Endpoint Authentication Methods" registry as `op.AuthMethod` constants. Four can be used; the two mTLS client-authentication methods are named but not selectable.
 
-The decision tree traces each client shape down to the `token_endpoint_auth_method` value it registers — a public client lands on `none`, a confidential client on a `client_secret_*` method, and a FAPI-grade client on an asymmetric method.
+The figure traces each client shape to the `token_endpoint_auth_method` it registers: a public client lands on `none`, a confidential client on a `client_secret_*` method, and a FAPI-grade client on an asymmetric method.
 
 <figure class="fig">
   <div class="fig-head">Client shape decides the authentication method</div>
-  <svg class="fig-svg" role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 960 322" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="authmethod-decision-title" viewBox="0 0 960 392" xmlns="http://www.w3.org/2000/svg">
     <title id="authmethod-decision-title">Three client shapes and the token endpoint authentication method each one ends up with: a public client authenticates with none plus PKCE, a confidential client with a client secret, and a FAPI-grade client with private_key_jwt plus a sender constraint.</title>
-    <text class="fg-lbl" x="40" y="28">client shape</text>
-    <text class="fg-lbl" x="564" y="28">token_endpoint_auth_method</text>
+    <text class="fg-lbl" x="32" y="40">client shape</text>
+    <text class="fg-lbl" x="560" y="40">token_endpoint_auth_method</text>
     <!-- public -->
-    <rect class="fg-box" x="36" y="40" width="344" height="72" rx="8"/>
-    <text class="fg-t" x="56" y="70">Public client</text>
-    <text class="fg-xs" x="56" y="90">SPA · native app · CLI</text>
-    <path class="fg-edge" d="M384,76 H556" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="470" y="69" text-anchor="middle">no secret it can keep</text>
-    <rect class="fg-box" x="560" y="40" width="364" height="72" rx="8"/>
-    <text class="fg-m" x="580" y="70">none</text>
-    <text class="fg-xs" x="580" y="90">with PKCE (S256) — never optional</text>
+    <rect class="fg-box" x="32" y="64" width="336" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="92">Public client</text>
+    <text class="fg-s" x="48" y="116">SPA · native app · CLI</text>
+    <path class="fg-edge" d="M368,100 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="464" y="90" text-anchor="middle">no secret to keep</text>
+    <rect class="fg-box" x="560" y="64" width="368" height="72" rx="8"/>
+    <text class="fg-m" x="576" y="92">none</text>
+    <text class="fg-s" x="576" y="116">with PKCE (S256) — never optional</text>
     <!-- confidential -->
-    <rect class="fg-box" x="36" y="128" width="344" height="72" rx="8"/>
-    <text class="fg-t" x="56" y="158">Confidential client</text>
-    <text class="fg-xs" x="56" y="178">backend web app · service</text>
-    <path class="fg-edge" d="M384,164 H556" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="470" y="157" text-anchor="middle">holds a client secret</text>
-    <rect class="fg-box" x="560" y="128" width="364" height="72" rx="8"/>
-    <text class="fg-m" x="580" y="155">client_secret_basic</text>
-    <text class="fg-m" x="580" y="173">client_secret_post</text>
-    <text class="fg-xs" x="580" y="191">pick one and register it</text>
+    <rect class="fg-box" x="32" y="168" width="336" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="196">Confidential client</text>
+    <text class="fg-s" x="48" y="220">backend web app · service</text>
+    <path class="fg-edge" d="M368,216 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="464" y="206" text-anchor="middle">holds a secret</text>
+    <rect class="fg-box" x="560" y="168" width="368" height="96" rx="8"/>
+    <text class="fg-m" x="576" y="196">client_secret_basic</text>
+    <text class="fg-m" x="576" y="220">client_secret_post</text>
+    <text class="fg-s" x="576" y="244">pick one and register it</text>
     <!-- FAPI -->
-    <rect class="fg-box fg-box--accent" x="36" y="216" width="344" height="72" rx="8"/>
-    <text class="fg-t fg-accent" x="56" y="246">FAPI-grade client</text>
-    <text class="fg-xs" x="56" y="266">sender-constrained · high assurance</text>
-    <path class="fg-edge fg-edge--accent" d="M384,252 H556" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="470" y="245" text-anchor="middle">FAPI 2.0 profile</text>
-    <rect class="fg-box fg-box--accent" x="560" y="216" width="364" height="72" rx="8"/>
-    <text class="fg-m" x="580" y="246">private_key_jwt</text>
-    <text class="fg-xs" x="580" y="266">plus a DPoP or mTLS sender constraint</text>
+    <rect class="fg-box fg-box--accent" x="32" y="296" width="336" height="72" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="324">FAPI-grade client</text>
+    <text class="fg-s" x="48" y="348">sender-constrained · high assurance</text>
+    <path class="fg-edge fg-edge--accent" d="M368,332 H560" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="464" y="322" text-anchor="middle">FAPI 2.0 profile</text>
+    <rect class="fg-box fg-box--accent" x="560" y="296" width="368" height="72" rx="8"/>
+    <text class="fg-m" x="576" y="324">private_key_jwt</text>
+    <text class="fg-s" x="576" y="348">plus a DPoP or mTLS sender constraint</text>
   </svg>
   <figcaption class="fig-note">The shape is not a label you choose — it follows from where the code runs. Anything that ships to a browser or a device cannot keep a secret, so it is a public client whatever the registration says.</figcaption>
 </figure>
@@ -119,12 +136,19 @@ The decision tree traces each client shape down to the `token_endpoint_auth_meth
 | `client_secret_basic` | yes | — | No | Backend services with a shared secret, sent as HTTP Basic. The default for confidential clients. |
 | `client_secret_post` | yes | — | No | Same secret in the form body. Discouraged for new deployments — Basic is the canonical wire format. |
 | `private_key_jwt` | — | yes | Yes | Backend signs a short-lived JWT assertion with its own private key; OP verifies against the registered JWKS. The method this library uses for its FAPI profile. |
-| `tls_client_auth` | — | yes (PKI) | RFC verifier only | RFC 8705 verifier exists internally, but this is not dispatched as a `/token` client-auth method. |
-| `self_signed_tls_client_auth` | — | yes (pinned) | RFC verifier only | RFC 8705 verifier exists internally, but this is not dispatched as a `/token` client-auth method. |
+| `tls_client_auth` | — | yes (PKI) | Not selectable | Named for RFC 8705, but `op.New` rejects a static client using it, dynamic registration rejects it, and discovery never lists it. Use `private_key_jwt`. |
+| `self_signed_tls_client_auth` | — | yes (pinned) | Not selectable | Same as `tls_client_auth`. |
 
-`client_secret_jwt` (HS256-shared-secret JWT) is **not** implemented. A shared-secret JWT broadens the blast radius of a leaked secret without offering anything `private_key_jwt` does not, so the library refuses to grow the surface.
+mTLS-bound access tokens (RFC 8705 §3) are a separate feature and do not need either method: with `feature.MTLS` enabled, tokens issued to a client that presented a certificate carry `cnf.x5t#S256` whatever method the client authenticated with.
 
-For `private_key_jwt` clients registered with `jwks_uri`, an assertion signed with an unknown `kid` triggers one throttled, cache-bypassing JWKS refetch before verification fails. Legitimate RP key rotation recovers immediately; random unknown `kid` values cannot amplify outbound fetches.
+`client_secret_jwt` (HS256-shared-secret JWT) is **not** implemented. A shared-secret JWT widens the damage of a leaked secret and offers nothing `private_key_jwt` does not.
+
+`private_key_jwt` assertions are checked strictly:
+
+- `iss` and `sub` equal the `client_id`, `aud` is an accepted audience (see [Issuer](/concepts/issuer)), and `exp` is at most 5 minutes ahead.
+- `jti` is required, at most 256 characters, and single-use: a replayed assertion is `invalid_client`.
+- For clients registered with `jwks_uri`, an assertion signed with an unknown `kid` triggers one throttled, cache-bypassing JWKS refetch before verification fails. A real key rotation recovers immediately, while random `kid` values cannot amplify outbound fetches.
+- If the client's JWKS cannot be fetched because of overload or a transient fault, `/token` answers `503 server_error`, not `invalid_client`. A client-store outage answers `500 server_error`. The client can retry in both cases.
 
 ::: tip Pick one method per client and stick to it
 The discovery document lists every method the OP is configured to accept, but each client registers exactly one. Mixing methods on a single client is not standardised and has been the source of downgrade-attack research papers — the library matches the registered method exactly and refuses fallbacks.
@@ -132,15 +156,59 @@ The discovery document lists every method the OP is configured to accept, but ea
 
 ## Provisioning options
 
-There are two ways for a client (and its `TokenEndpointAuthMethod`) to reach the OP:
+A client and its `TokenEndpointAuthMethod` reach the OP in one of two ways.
 
-- **Static seeds** via `op.WithStaticClients(seeds ...ClientSeed)`. Each `ClientSeed` lists `client_id`, `redirect_uris`, `grant_types`, `response_types`, `token_endpoint_auth_method`, and the credential material (`Secret` for symmetric methods, JWKS for asymmetric, `Resources` for RFC 8707 audience separation). The library validates everything at boot and refuses to start on malformed seeds. Best for known fleets — internal tools, FAPI deployments, single-tenant SaaS.
-- **Dynamic Client Registration (RFC 7591)** via `op.WithDynamicRegistration(...)`. RPs self-register at runtime by `POST /register` with their metadata; the OP applies the same validation, hashes any returned `client_secret` at rest (the plaintext is returned exactly once on `POST /register`, see [Design judgments #20](/security/design-judgments#dj-20)), and exposes RFC 7592 management endpoints. Best for marketplaces, multi-tenant SaaS, or anywhere the OP operator does not pre-know the client population.
+**Static seeds** go through `op.WithStaticClients(seeds ...ClientSeed)`. A seed is one of three typed builders, each fixing the authentication method for you:
 
-The two paths can coexist on the same OP — a fleet of static FAPI clients alongside dynamic clients for partner integrations is a common shape.
+| Builder | Registers | Credential field |
+|---|---|---|
+| `op.PublicClient` | `none` | none |
+| `op.ConfidentialClient` | `client_secret_basic` (default) or `client_secret_post`, set with `AuthMethod` | `Secret` (hashed with Argon2id) or `SecretHash` |
+| `op.PrivateKeyJWTClient` | `private_key_jwt` | `JWKS`, the public key set, e.g. from `op.LoadPublicJWKS` |
+
+```go
+jwks, err := op.LoadPublicJWKS("keys/fapi-client.jwks.json")
+if err != nil {
+    return err
+}
+
+provider, err := op.New(
+    // ...
+    op.WithStaticClients(
+        op.PublicClient{
+            ID:           "web-spa",
+            RedirectURIs: []string{"https://app.example.com/callback"},
+            Scopes:       []string{"openid", "profile"},
+        },
+        op.ConfidentialClient{
+            ID:           "billing-backend",
+            Secret:       os.Getenv("BILLING_CLIENT_SECRET"),
+            RedirectURIs: []string{"https://billing.example.com/callback"},
+            Scopes:       []string{"openid"},
+        },
+        op.PrivateKeyJWTClient{
+            ID:           "bank-connector",
+            JWKS:         jwks,
+            RedirectURIs: []string{"https://bank.example.com/callback"},
+            Scopes:       []string{"openid"},
+        },
+    ),
+)
+```
+
+Every seed is validated at construction and `op.New` refuses to start on a malformed one. Two rules matter most:
+
+- A `ConfidentialClient` using `client_secret_basic` or `client_secret_post` must have a `Secret` or `SecretHash`. A seed without one is refused, because an empty hash would accept an empty `client_secret`.
+- A client record must not carry both `jwks` and `jwks_uri` (RFC 7591 §2). Dynamic registration rejects the pair, and a record that holds both (possible in a bring-your-own store) is refused on request-object verification, `private_key_jwt` and response encryption alike.
+
+Static seeds suit a known fleet: internal tools, FAPI deployments, single-tenant SaaS.
+
+**Dynamic Client Registration (RFC 7591)** goes through `op.WithDynamicRegistration(...)`. RPs register themselves at runtime with `POST /register`. The OP applies the same validation, hashes the generated `client_secret` at rest, returns the plaintext exactly once (see [Design judgments #20](/security/design-judgments#dj-20)), and exposes the RFC 7592 management endpoints. It suits marketplaces, multi-tenant SaaS, and any deployment whose operator does not know the clients in advance.
+
+The two paths coexist on one OP; a static FAPI fleet next to dynamic partner clients is a common shape.
 
 ::: warning Public clients are still registered
-"Public client" does not mean "anyone can show up". The client_id was issued by some path — static seed or DCR — and the OP refuses requests that name an unknown client_id. The PKCE-only authentication is for the **same** client_id the OP already knows about; it is not a "no registration" mode.
+"Public client" does not mean "anyone can show up". The `client_id` was issued by some path, static seed or DCR, and the OP refuses requests that name an unknown `client_id`. PKCE-only authentication applies to a `client_id` the OP already knows; it is not a "no registration" mode.
 :::
 
 ## Read next

@@ -8,12 +8,12 @@ pageClass: pg-concepts-token-exchange
 
 A modern microservice graph almost always needs to **call other services on behalf of the user**. The frontend gets a token. Service A receives that token, then needs to call Service B. Should Service A reuse the user's token? Mint a new one? Combine the two? RFC 8693 defines the wire shape for that exchange.
 
-The design fundamentally distinguishes two intents:
+The spec distinguishes two intents:
 
-- **Impersonation** — Service A presents the user's token to Service B, **as if it were the user**. Service B sees `sub=alice`. Audit trails downstream see Alice acting alone.
-- **Delegation** — Service A asks the OP for a new token whose `sub` is still Alice but whose **`act` claim** carries `{sub: service-a}`, recording that Alice's authority is being exercised through Service A. Service B sees `sub=alice, act={sub: service-a}` and can apply policy that depends on the chain ("Service A may withdraw Alice's funds, but only if the request originated from Alice").
+- **Impersonation** — Service A obtains a token that names only the user and uses it **as if it were the user**. Service B sees `sub=alice`, and downstream audit trails see Alice acting alone.
+- **Delegation** — Service A obtains a token whose `sub` is still Alice but whose **`act` claim** carries `{sub: service-a}`, recording that Alice's authority is being exercised through Service A. Service B sees `sub=alice, act={sub: service-a}` and can apply policy that depends on the chain ("Service A may withdraw Alice's funds, but only if the request originated from Alice").
 
-Modern threat models prefer delegation — the audit chain is intact, revocation can target the intermediary, and least-privilege tightens around the actor rather than spreading from the subject.
+Modern threat models prefer delegation: the audit chain stays intact, revocation can target the intermediary, and least privilege tightens around the actor instead of spreading from the subject. **This library always records the party that performed the exchange.** The only exchange that produces a token without `act` is a self-exchange, where the calling client is the client the `subject_token` was issued to (for example narrowing its own token to another audience).
 
 ::: details Specs referenced on this page
 - [RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693) — OAuth 2.0 Token Exchange
@@ -22,89 +22,93 @@ Modern threat models prefer delegation — the audit chain is intact, revocation
 :::
 
 ::: details Vocabulary refresher
-- **subject_token** — the token whose holder's identity should populate `sub` on the new token. Usually the user's access token forwarded from upstream.
-- **actor_token** — the token identifying the caller (the service performing the exchange). When present, the new token gains an `act` claim wrapping the actor's `sub` / `client_id`.
-- **`act` claim** (RFC 8693 §4.1) — a nested object recording who is acting on behalf of `sub`. It can chain (`act.act.act…`) so a four-hop call records all four intermediaries.
-- **`cnf` rebinding** — the issued token's `cnf` (RFC 7800 confirmation) is set to the *calling* actor's verified DPoP / mTLS proof, **not** the subject's. The token is sender-bound to the service performing the exchange.
+- **subject_token** — the token whose holder's identity should populate `sub` on the new token. Usually the user's access token forwarded from upstream. Access tokens (JWT or opaque), JWTs and ID tokens are accepted, identified by `subject_token_type`.
+- **actor_token** — an optional second token identifying the actor. When present, the new token's `act.sub` is the `sub` of this verified token. It must not resolve to the same subject as the `subject_token`.
+- **`act` claim** (RFC 8693 §4.1) — a nested object recording who is acting on behalf of `sub`. It nests (`act.act.act…`), so a multi-hop call records every intermediary. The library allows at most five levels.
+- **`cnf` binding** — if the request carries a verified DPoP proof or mTLS certificate, the issued token's `cnf` (RFC 7800 confirmation) is set from it. A `subject_token` that is itself sender-constrained is accepted only when the request presents the same key.
 :::
 
-## Impersonation vs Delegation, side by side
+## Forwarding, exchange, and exchange with an actor
 
 <figure class="fig">
-  <div class="fig-head">Forwarding, impersonation, delegation</div>
-  <svg class="fig-svg" role="img" aria-labelledby="tx-modes-title" viewBox="0 0 960 606" xmlns="http://www.w3.org/2000/svg">
-    <title id="tx-modes-title">Three ways an intermediary service can call a downstream service on the user's behalf. Forwarding the original token fails because the audience is wrong. An impersonation exchange produces a token that names only the user. A delegation exchange produces a token that names the user and records the intermediary in an act claim.</title>
-    <!-- bands -->
-    <rect class="fg-group" x="30" y="70" width="916" height="126" rx="8"/>
-    <rect class="fg-group" x="30" y="206" width="916" height="180" rx="8"/>
-    <rect class="fg-group" x="30" y="396" width="916" height="196" rx="8"/>
-    <text class="fg-lbl fg-danger" x="42" y="88">plain forwarding — no exchange</text>
-    <text class="fg-lbl" x="42" y="224">impersonation exchange</text>
-    <text class="fg-lbl fg-accent" x="42" y="414">delegation exchange</text>
+  <div class="fig-head">Only an exchange changes the audience; forwarding fails</div>
+  <svg class="fig-svg" role="img" aria-labelledby="tx-modes-title" viewBox="0 0 960 984" xmlns="http://www.w3.org/2000/svg">
+    <title id="tx-modes-title">Three ways an intermediary service can call a downstream service on the user's behalf. Forwarding the original token fails because the audience is wrong. An exchange without actor_token produces a token that names the user and records the calling client in an act claim. An exchange with actor_token records the actor_token's subject in the act claim instead.</title>
+    <!-- case bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="182" rx="8"/>
+    <text class="fg-lbl fg-danger fg-halo" x="56" y="132">Forwarding</text>
+    <rect class="fg-group" x="32" y="310" width="896" height="310" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="338">Exchange without actor_token</text>
+    <rect class="fg-group" x="32" y="644" width="896" height="310" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="672">Exchange with actor_token</text>
     <!-- lifelines -->
-    <line class="fg-life" x1="110" y1="62" x2="110" y2="592"/>
-    <line class="fg-life" x1="370" y1="62" x2="370" y2="592"/>
-    <line class="fg-life fg-life--accent" x1="620" y1="62" x2="620" y2="592"/>
-    <line class="fg-life" x1="860" y1="62" x2="860" y2="592"/>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="960"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="960"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="960"/>
     <!-- actors -->
-    <rect class="fg-box" x="35" y="16" width="150" height="42" rx="6"/>
-    <text class="fg-t" x="110" y="35" text-anchor="middle">Frontend</text>
-    <text class="fg-xs" x="110" y="49" text-anchor="middle">browser</text>
-    <rect class="fg-box" x="295" y="16" width="150" height="42" rx="6"/>
-    <text class="fg-t" x="370" y="35" text-anchor="middle">Service A</text>
-    <text class="fg-xs" x="370" y="49" text-anchor="middle">intermediary</text>
-    <rect class="fg-box fg-box--accent" x="540" y="16" width="160" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="620" y="35" text-anchor="middle">OP</text>
-    <text class="fg-xs" x="620" y="49" text-anchor="middle">authorization server</text>
-    <rect class="fg-box" x="785" y="16" width="150" height="42" rx="6"/>
-    <text class="fg-t" x="860" y="35" text-anchor="middle">Service B</text>
-    <text class="fg-xs" x="860" y="49" text-anchor="middle">the resource</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Service A</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">intermediary</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="512" y="72" text-anchor="middle">authorization server</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Service B</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">the resource</text>
     <!-- forwarding -->
-    <path class="fg-edge" d="M110,112 H370" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="240" y="106" text-anchor="middle">Bearer sub=alice · aud=service-a</text>
-    <path class="fg-edge fg-edge--danger" d="M370,152 H860" marker-end="url(#fg-ad)"/>
-    <text class="fg-mxs fg-halo" x="615" y="146" text-anchor="middle">the same token, forwarded unchanged</text>
-    <path class="fg-edge fg-edge--danger" d="M860,172 h-28 v16 h28" marker-end="url(#fg-ad)"/>
-    <text class="fg-xs fg-danger" x="820" y="184" text-anchor="end">aud is service-a, not me → 401</text>
-    <!-- impersonation -->
-    <path class="fg-edge" d="M110,250 H370" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="240" y="244" text-anchor="middle">Bearer sub=alice</text>
-    <path class="fg-edge" d="M370,290 H620" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="495" y="270" text-anchor="middle">grant_type=…:token-exchange</text>
-    <text class="fg-mxs" x="495" y="283" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-    <path class="fg-edge fg-edge--accent" d="M620,320 H370" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="495" y="314" text-anchor="middle">sub=alice · aud=service-b</text>
-    <path class="fg-edge" d="M370,356 H860" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="615" y="350" text-anchor="middle">Bearer sub=alice</text>
-    <text class="fg-xs fg-warn" x="860" y="378" text-anchor="end">as far as B can tell, alice acted alone</text>
-    <!-- delegation -->
-    <path class="fg-edge" d="M110,440 H370" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="240" y="434" text-anchor="middle">Bearer sub=alice</text>
-    <path class="fg-edge" d="M370,482 H620" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="495" y="462" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-    <text class="fg-mxs" x="495" y="475" text-anchor="middle">actor_token=&lt;service-a&gt;</text>
-    <path class="fg-edge fg-edge--accent" d="M620,514 H370" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="495" y="508" text-anchor="middle">sub=alice · act={ sub: service-a }</text>
-    <path class="fg-edge" d="M370,552 H860" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="615" y="546" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
-    <text class="fg-xs fg-ok" x="860" y="576" text-anchor="end">B sees alice via service-a — its policy decides</text>
+    <path class="fg-edge fg-edge--danger" d="M192,206 H824" marker-end="url(#fg-ad)"/>
+    <text class="fg-m fg-halo" x="508" y="172" text-anchor="middle">Authorization: Bearer &lt;token&gt;</text>
+    <text class="fg-mxs fg-halo" x="508" y="194" text-anchor="middle">sub=alice · aud=service-a</text>
+    <path class="fg-edge fg-edge--danger" d="M824,262 H192" marker-end="url(#fg-ad)"/>
+    <text class="fg-edge-lbl fg-danger fg-halo" x="508" y="252" text-anchor="middle">401 · aud is service-a, not service-b</text>
+    <!-- exchange -->
+    <path class="fg-edge" d="M192,412 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="378" text-anchor="middle">grant_type=…:token-exchange</text>
+    <text class="fg-mxs" x="352" y="400" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M512,484 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="450" text-anchor="middle">sub=alice · aud=service-b</text>
+    <text class="fg-mxs" x="352" y="472" text-anchor="middle">act={ sub: service-a }</text>
+    <path class="fg-edge" d="M192,548 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="538" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
+    <rect class="fg-pill fg-pill--ok" x="536" y="564" width="272" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="672" y="585" text-anchor="middle">act.sub = calling client_id</text>
+    <!-- exchange with actor_token -->
+    <path class="fg-edge" d="M192,746 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="712" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <text class="fg-mxs" x="352" y="734" text-anchor="middle">actor_token=&lt;service-a&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M512,818 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="784" text-anchor="middle">sub=alice · aud=service-b</text>
+    <text class="fg-mxs" x="352" y="806" text-anchor="middle">act={ sub: service-a }</text>
+    <path class="fg-edge" d="M192,882 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="872" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
+    <rect class="fg-pill fg-pill--ok" x="536" y="898" width="272" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="672" y="919" text-anchor="middle">act.sub = actor_token's sub</text>
   </svg>
-  <figcaption class="fig-note">The only structural difference between the second and third case is <code>actor_token</code>. It costs one parameter and it is the difference between an audit log that says "alice did this" and one that says "alice did this, through service A".</figcaption>
+  <figcaption class="fig-note">Forwarding fails on the audience. Both exchanges yield a token that says "alice, through service A"; they differ only in where the actor name comes from: the authenticated calling client, or the verified <code>actor_token</code>.</figcaption>
 </figure>
 
-The difference shows up in audit trails (Service B knows who actually originated the call) and in policy (Service B can require an actor when the operation is sensitive).
+Service B can see who originated the call in its audit trail, and can require an `act` entry from a named service when the operation is sensitive.
 
 ## What the OP enforces
 
 The library's RFC 8693 handler is opinionated about a few things the spec leaves to deployment policy:
 
-- **`act` chain is built on the OP side**, not handed in by the caller. Whenever `actor_token` differs from `subject_token`, the OP populates `act` from the actor's verified credentials. A caller cannot fabricate an `act` claim.
-- **Audience is normalised and allow-listed.** RFC 8707 `audience` / `resource` parameters are normalised before policy evaluation; when both are omitted, the subject token's audience supplies the default. The client must be authorised for every resulting audience.
-- **Scope is intersected**, not unioned. The issued token's scope is the intersection of (requested scope, `subject_token`'s scope, calling client's allow-list). RFC 8693 §3.1 permits scope reduction; the OP forbids inflation.
-- **TTL is capped** by the minimum of (handler request, `subject_token` remaining lifetime, OP global ceiling). A long-lived token cannot be laundered into a longer one.
-- **`cnf` is rebound to the calling actor.** If Service A presents a DPoP proof on the exchange request, the issued token's `cnf.jkt` matches Service A's DPoP key — not the user's, not the subject_token's. Service B verifies the DPoP proof against the new token's `cnf`.
+- **The `act` chain is built on the OP side**, never handed in by the caller. The table below shows what goes into it. A caller cannot fabricate an `act` claim, and a policy's `ExtraClaims` cannot overwrite it.
+- **Audience is normalised and allow-listed.** RFC 8707 `audience` / `resource` parameters are normalised before policy evaluation; when both are omitted, the `subject_token`'s audience supplies the default. Every resulting audience must appear in the calling client's registered `Resources`; a client with none cannot be issued any audience (`invalid_target`).
+- **Scope can only shrink.** A request that omits `scope` gets the `subject_token`'s scope; requested scopes the calling client is not registered for are dropped, and anything beyond the `subject_token`'s scope is refused with `invalid_scope`. An empty result is also `invalid_scope`.
+- **TTL is capped** at the smaller of the policy's `GrantedTTL` (or the OP's access-token ceiling when unset) and the `subject_token`'s remaining lifetime. A long-lived token cannot be laundered into a longer one. The expiry check on the `subject_token` honours the OP's clock leeway.
+- **Only access tokens come back.** `requested_token_type` may be absent or the access-token URN. A refresh token is issued only when the policy opts in with `IssueRefreshToken: op.PtrBool(true)`; an ID token only when the `subject_token` was one (or the policy forces it).
+- **`cnf` follows the request's proof.** If Service A presents a DPoP proof on the exchange request, the issued token's `cnf.jkt` is Service A's key. When the `subject_token` is already bound, the same key must be presented, so a stolen bound token cannot be exchanged.
 
-These rules are enforced **before** the embedder-supplied [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) is consulted. The policy can narrow further (deny audiences, deny actor combos) but cannot widen — the OP-computed defaults are a floor.
+These rules are enforced **before** the embedder-supplied [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) is consulted. The policy can narrow further (deny audiences, deny actor combinations) but cannot widen; a decision that grants more scope or audience than was requested is rejected.
+
+| Request | `act` on the issued token |
+|---|---|
+| `actor_token` present | `{ sub: <actor_token's sub>, act: <the subject_token's earlier chain> }` |
+| No `actor_token`, calling client differs from the client the `subject_token` was issued to | `{ sub: <calling client_id>, act: <earlier chain> }` |
+| No `actor_token`, same client (self-exchange) | the earlier chain unchanged, none if there was none |
+
+A chain deeper than five levels is refused with `invalid_grant` before the policy runs. Exchanged tokens join the grant the `subject_token` was issued under, so revoking that grant (`RevokeSubject`, grant management, `/end_session` teardown) also revokes them, and a refresh token obtained through the exchange stops rotating once the subject is deleted or deprovisioned. A `subject_token` with no grant behind it, such as a `client_credentials` token, has no such lineage. An ID token issued to a pairwise client cannot be exchanged.
 
 ### Resource and audience normalisation
 
@@ -127,7 +131,7 @@ You probably **do** need it when:
 
 ## See it run
 
-[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) ships a frontend → service-a → service-b chain. The frontend obtains a user token, service-a exchanges it for a delegated token (with `act={sub: service-a}`), service-b's RS-side verifier walks `act.sub` and accepts only delegated tokens.
+[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) ships a frontend → service-a → service-b chain. The frontend obtains a user token through the authorization code flow, service-a exchanges it without an `actor_token` for a token with `act={sub: service-a}` and `aud=service-b`, and service-b's resource-server-side verifier walks `act.sub` and accepts only tokens that carry it. `service-a` is registered with the token-exchange URN in `GrantTypes` and both audiences in `Resources`, as the exchange requires.
 
 ```sh
 (cd examples/33-token-exchange-delegation && GOWORK=off go run -tags example .)

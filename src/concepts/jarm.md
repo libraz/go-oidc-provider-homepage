@@ -9,38 +9,39 @@ pageClass: pg-concepts-jarm
 By default the OP returns the authorization response (`code`, `state`, `iss`, …) as plain URL query parameters; `form_post` is the alternative non-JARM delivery. Anyone who can rewrite the redirect — a malicious browser extension, a compromised intermediary, a mix-up between two OPs — can substitute fields before the RP sees them. **JARM** (the OpenID Foundation FAPI WG specification "JWT Secured Authorization Response Mode for OAuth 2.0", referenced informationally by RFC 9101 §10.2) wraps that response into a single signed JWT delivered through one `response` parameter, so the response itself becomes tamper-evident and cryptographically attributable to the OP.
 
 <figure class="fig">
-  <div class="fig-head">Loose parameters, or one signed document</div>
-  <svg class="fig-svg" role="img" aria-labelledby="jarm-shape-title" viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">JARM replaces three loose parameters with one signature</div>
+  <svg class="fig-svg" role="img" aria-labelledby="jarm-shape-title" viewBox="0 0 960 448" xmlns="http://www.w3.org/2000/svg">
     <title id="jarm-shape-title">A plain authorization response returns the code, the state and the issuer as separate query parameters, each of which the Relying Party has to check on its own. JARM wraps the same values in a signed JWT returned as a single response parameter.</title>
-    <line class="fg-rule fg-rule--dashed" x1="480" y1="16" x2="480" y2="304"/>
-    <text class="fg-lbl" x="40" y="30">plain response</text>
-    <text class="fg-lbl fg-accent" x="500" y="30">jarm response</text>
-    <!-- plain -->
-    <rect class="fg-box" x="163" y="44" width="180" height="52" rx="8"/>
-    <text class="fg-t" x="253" y="68" text-anchor="middle">OP</text>
-    <text class="fg-xs" x="253" y="86" text-anchor="middle">returns the fields as they are</text>
-    <path class="fg-edge" d="M253,100 V124" marker-end="url(#fg-a)"/>
-    <rect class="fg-box fg-box--sub" x="113" y="128" width="280" height="72" rx="8"/>
-    <text class="fg-t2" x="253" y="152" text-anchor="middle">three separate parameters</text>
-    <text class="fg-mxs" x="253" y="174" text-anchor="middle">?code=… &amp; state=… &amp; iss=…</text>
-    <text class="fg-xs" x="253" y="191" text-anchor="middle">nothing binds them together</text>
-    <path class="fg-edge" d="M253,204 V228" marker-end="url(#fg-a)"/>
-    <rect class="fg-box" x="113" y="232" width="280" height="64" rx="8"/>
-    <text class="fg-t" x="253" y="258" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="253" y="278" text-anchor="middle">checks each field on its own</text>
-    <!-- jarm -->
-    <rect class="fg-box fg-box--accent" x="617" y="44" width="180" height="52" rx="8"/>
-    <text class="fg-t fg-accent" x="707" y="68" text-anchor="middle">OP</text>
-    <text class="fg-xs" x="707" y="86" text-anchor="middle">signs the whole response</text>
-    <path class="fg-edge fg-edge--accent" d="M707,100 V124" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="567" y="128" width="280" height="72" rx="8"/>
-    <text class="fg-t2 fg-accent" x="707" y="152" text-anchor="middle">one signed JWT</text>
-    <text class="fg-mxs" x="707" y="172" text-anchor="middle">iss · aud · exp · code, or error</text>
-    <text class="fg-mxs" x="707" y="191" text-anchor="middle">?response=&lt;JWT&gt;</text>
-    <path class="fg-edge fg-edge--accent" d="M707,204 V228" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box" x="567" y="232" width="280" height="64" rx="8"/>
-    <text class="fg-t" x="707" y="258" text-anchor="middle">RP</text>
-    <text class="fg-xs" x="707" y="278" text-anchor="middle">verifies one signature, then reads</text>
+    <!-- plain response -->
+    <rect class="fg-group" x="32" y="24" width="432" height="400" rx="8"/>
+    <text class="fg-lbl" x="56" y="52">plain response</text>
+    <rect class="fg-box" x="56" y="80" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="72" y="108">OP</text>
+    <text class="fg-xs" x="72" y="132">returns the fields as they are</text>
+    <path class="fg-edge" d="M248,152 V192" marker-end="url(#fg-a)"/>
+    <rect class="fg-box fg-box--sub" x="56" y="192" width="384" height="96" rx="8"/>
+    <text class="fg-t2" x="72" y="220">three separate parameters</text>
+    <text class="fg-mxs" x="72" y="244">?code=… &amp; state=… &amp; iss=…</text>
+    <text class="fg-xs" x="72" y="268">nothing binds them together</text>
+    <path class="fg-edge" d="M248,288 V328" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="56" y="328" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="72" y="356">RP</text>
+    <text class="fg-xs" x="72" y="380">checks each field on its own</text>
+    <!-- jarm response -->
+    <rect class="fg-group" x="496" y="24" width="432" height="400" rx="8"/>
+    <text class="fg-lbl fg-accent" x="520" y="52">jarm response</text>
+    <rect class="fg-box" x="520" y="80" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="536" y="108">OP</text>
+    <text class="fg-xs" x="536" y="132">signs the whole response</text>
+    <path class="fg-edge fg-edge--accent" d="M712,152 V192" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="520" y="192" width="384" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="536" y="220">one signed JWT</text>
+    <text class="fg-mxs" x="536" y="244">?response=&lt;JWT&gt;</text>
+    <text class="fg-mxs" x="536" y="268">iss · aud · exp · code or error</text>
+    <path class="fg-edge fg-edge--accent" d="M712,288 V328" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box" x="520" y="328" width="384" height="72" rx="8"/>
+    <text class="fg-t" x="536" y="356">RP</text>
+    <text class="fg-xs" x="536" y="380">verifies one signature, then reads</text>
   </svg>
   <figcaption class="fig-note">On the left, an attacker who can rewrite the query string can swap one parameter and leave the rest intact. On the right there is nothing to swap — the values are inside a document that only the OP's key can produce.</figcaption>
 </figure>
@@ -91,6 +92,13 @@ The OP returns one parameter — `response` — whose value is the JWT. Nothing 
 
 `code` and `error` are mutually exclusive; the OP populates one or the other. Validation lives in `internal/jarm/encode.go`'s `validatePayload` and is enforced by every `Sign` call.
 
+Two request-time refusals to know about, both `unsupported_response_mode`, and both raised at `/par` as well as `/auth` so the RP does not spend a `request_uri` on a request that would fail:
+
+| Situation | Result |
+|---|---|
+| A JARM `response_mode` while `feature.JARM` is off | `unsupported_response_mode` |
+| `response_mode` omitted or plain under `profile.FAPI2MessageSigning` | `unsupported_response_mode`; the profile requires every response to be JARM-wrapped, so the RP must pick one of the four values |
+
 ## Signing
 
 The OP signs JARM with the same key it uses for ID Tokens and JWT access tokens. The supported signing algorithm is a closed list:
@@ -140,7 +148,7 @@ Once those checks pass, the client extracts `code`, `state`, and the optional `e
 
 | Profile / context | JARM status |
 |---|---|
-| **FAPI 2.0 Message Signing** | required when the signed-authorization-response method is selected (`feature.JARM` is auto-enabled by `op.WithProfile(profile.FAPI2MessageSigning)`) — see [FAPI 2.0](/concepts/fapi) |
+| **FAPI 2.0 Message Signing** | required when the signed-authorization-response method is selected (`feature.JARM` is auto-enabled by `op.WithProfile(profile.FAPI2MessageSigning)`, and every request must then name a JARM `response_mode`) — see [FAPI 2.0](/concepts/fapi) |
 | **FAPI 2.0 Security Profile** | optional (RFC 9207 `iss` parameter is sufficient) |
 | **FAPI-CIBA** | not applicable — CIBA has no front-channel authorization response |
 | **Plain OIDC / OAuth** | pure choice — most deployments rely on RFC 9207 `iss` and skip JARM |
@@ -188,7 +196,7 @@ The signer is constructed once at `op.New` (see `op/op_builders.go` — `buildJA
 | `authorization_encrypted_response_alg` | Request a JWE-wrapped JARM response with the named JWE `alg`. Must be on `op.SupportedEncryptionAlgs`. |
 | `authorization_encrypted_response_enc` | Pair with `authorization_encrypted_response_alg`. Must be on `op.SupportedEncryptionEncs`. |
 
-Both fields can be supplied at static seed time (the `op.ClientSeed` / `store.Client` shape) or through Dynamic Client Registration (`POST /register`). The library does not implement an `authorization_signed_response_alg` per-client override; the OP-wide ES256 setting applies to every JARM-using client.
+Set both on the `store.Client` records of your own client store, or let clients register them through Dynamic Client Registration (`POST /register`), which validates them against the same allow-list. The typed static seeds (`op.ConfidentialClient` and friends) do not carry these fields. The library does not implement an `authorization_signed_response_alg` per-client override; the OP-wide ES256 setting applies to every JARM-using client.
 
 ## JARM and DPoP / mTLS
 

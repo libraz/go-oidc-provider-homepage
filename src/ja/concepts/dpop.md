@@ -43,81 +43,81 @@ DPoP proof はクライアントが保有する秘密鍵で署名した JWT（RF
 
 <figure class="fig">
   <div class="fig-head">リクエストごとに 1 つの proof を、2 か所で検証する</div>
-  <svg class="fig-svg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 960 476" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="dpop-proof-flow-title" viewBox="0 0 960 736" xmlns="http://www.w3.org/2000/svg">
     <title id="dpop-proof-flow-title">DPoP proof の一連の流れ。クライアントはリクエストごとに新しい proof を署名し、OP はそれを検証して鍵の thumbprint を cnf.jkt としてアクセストークンに書き込みます。リソースサーバは後続の proof を同じ結び付きと照合します。</title>
-    <!-- ライフライン -->
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="462"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="462"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="462"/>
-    <!-- 登場人物 -->
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">RP / クライアント</text>
-    <text class="fg-mxs" x="150" y="49" text-anchor="middle">priv_dpop を保有</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">リソースサーバ</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">結び付きを再検証する</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="712"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="712"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="712"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">RP / クライアント</text>
+    <text class="fg-mxs" x="192" y="72" text-anchor="middle">priv_dpop を保有</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">リソースサーバ</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">結び付きを再検証する</text>
     <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="107" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="110" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,98 h30 v18 h-30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="192" y="102">DPoP proof を構築して署名する</text>
-    <text class="fg-mxs" x="192" y="115">jti · htm:POST · htu:/token · iat</text>
-    <text class="fg-mxs" x="192" y="128">typ: dpop+jwt · alg: ES256 · jwk</text>
+    <circle class="fg-badge" cx="32" cy="140" r="12"/>
+    <text class="fg-badge-t" x="32" y="145.5" text-anchor="middle">1</text>
+    <path class="fg-edge" d="M192,128 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="134">proof を構築して署名</text>
+    <text class="fg-mxs" x="248" y="156">jti · htm · htu · iat · jwk</text>
     <!-- 2 -->
-    <circle class="fg-badge" cx="15" cy="162" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="165" text-anchor="middle">2</text>
-    <path class="fg-edge" d="M150,162 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="156" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
+    <circle class="fg-badge" cx="32" cy="216" r="12"/>
+    <text class="fg-badge-t" x="32" y="221.5" text-anchor="middle">2</text>
+    <path class="fg-edge" d="M192,216 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="206" text-anchor="middle">POST /token · DPoP: &lt;proof&gt;</text>
     <!-- 3 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="194" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="197" text-anchor="middle">3</text>
-    <path class="fg-edge fg-edge--accent" d="M500,186 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="542" y="190">proof を検証する</text>
-    <text class="fg-mxs" x="542" y="203">typ/alg/jwk · htm/htu · iat · jti · nonce</text>
+    <circle class="fg-badge fg-badge--accent" cx="32" cy="268" r="12"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="32" y="273.5" text-anchor="middle">3</text>
+    <path class="fg-edge fg-edge--accent" d="M512,256 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="262">proof を検証する</text>
+    <text class="fg-mxs" x="568" y="284">typ/alg/jwk · htm/htu</text>
+    <text class="fg-mxs" x="568" y="306">iat · jti · nonce</text>
     <!-- 4 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="240" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="243" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M500,232 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s fg-accent" x="542" y="236">鍵をトークンに結び付ける</text>
-    <text class="fg-mxs" x="542" y="249">cnf.jkt = JWK の SHA-256 thumbprint</text>
+    <circle class="fg-badge fg-badge--accent" cx="32" cy="364" r="12"/>
+    <text class="fg-badge-t fg-badge-t--accent" x="32" y="369.5" text-anchor="middle">4</text>
+    <path class="fg-edge fg-edge--accent" d="M512,352 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s fg-accent" x="568" y="358">鍵をトークンに結び付ける</text>
+    <text class="fg-mxs" x="568" y="380">cnf.jkt = thumbprint(jwk)</text>
     <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="286" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="289" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--accent" d="M500,286 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="280" text-anchor="middle">200 · access_token · token_type: DPoP</text>
+    <circle class="fg-badge" cx="32" cy="424" r="12"/>
+    <text class="fg-badge-t" x="32" y="429.5" text-anchor="middle">5</text>
+    <path class="fg-edge fg-edge--accent" d="M512,424 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-edge-lbl" x="352" y="414" text-anchor="middle">200 · token_type: DPoP</text>
     <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="320" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="323" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M150,312 h30 v16 h-30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="192" y="316">API 呼び出し用に新しい proof を作る</text>
-    <text class="fg-mxs" x="192" y="329">こちらには ath = SHA-256(access_token) も載る</text>
+    <circle class="fg-badge" cx="32" cy="476" r="12"/>
+    <text class="fg-badge-t" x="32" y="481.5" text-anchor="middle">6</text>
+    <path class="fg-edge" d="M192,464 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="470">新しい proof を作る</text>
+    <text class="fg-mxs" x="248" y="492">+ ath = SHA-256(token)</text>
     <!-- 7 -->
-    <circle class="fg-badge" cx="15" cy="378" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="381" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M150,378 H830" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="490" y="358" text-anchor="middle">GET /api</text>
-    <text class="fg-mxs fg-halo" x="490" y="371" text-anchor="middle">Authorization: DPoP &lt;token&gt; · DPoP: &lt;proof&gt;</text>
+    <circle class="fg-badge" cx="32" cy="568" r="12"/>
+    <text class="fg-badge-t" x="32" y="573.5" text-anchor="middle">7</text>
+    <path class="fg-edge" d="M192,568 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-m fg-halo" x="508" y="534" text-anchor="middle">GET /api</text>
+    <text class="fg-mxs fg-halo" x="508" y="556" text-anchor="middle">Authorization: DPoP &lt;token&gt; · DPoP: &lt;proof&gt;</text>
     <!-- 8 -->
-    <circle class="fg-badge" cx="15" cy="412" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="415" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M830,404 h-30 v16 h30" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="788" y="408" text-anchor="end">proof を検証し、続けて結び付きを検証する</text>
-    <text class="fg-mxs" x="788" y="421" text-anchor="end">cnf.jkt == thumbprint(proof.jwk)</text>
+    <circle class="fg-badge" cx="32" cy="620" r="12"/>
+    <text class="fg-badge-t" x="32" y="625.5" text-anchor="middle">8</text>
+    <path class="fg-edge" d="M824,608 h-40 v24 h40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="768" y="614" text-anchor="end">proof と結び付きを検証</text>
+    <text class="fg-mxs" x="768" y="636" text-anchor="end">cnf.jkt == thumbprint(jwk)</text>
     <!-- 9 -->
-    <circle class="fg-badge" cx="15" cy="456" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="459" text-anchor="middle">9</text>
-    <path class="fg-edge" d="M830,456 H150" marker-end="url(#fg-a)"/>
-    <text class="fg-m fg-halo" x="490" y="450" text-anchor="middle">200 OK</text>
+    <circle class="fg-badge" cx="32" cy="688" r="12"/>
+    <text class="fg-badge-t" x="32" y="693.5" text-anchor="middle">9</text>
+    <path class="fg-edge" d="M824,688 H192" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="678" text-anchor="middle">200 OK</text>
   </svg>
   <figcaption class="fig-note">手順 5 で返るトークンは単体では役に立ちません。<code>cnf.jkt</code> の元になった鍵で署名した proof が無ければ手順 8 で落ちます。リクエストごとに署名が 1 つ増える代わりに、盗まれたトークンが無価値になる — これがこの仕組みの取引です。</figcaption>
 </figure>
 
 OP とリソースサーバは同じチェックリストを通します。リソースサーバは加えて、proof の `jwk` の指紋（thumbprint）がアクセストークンの `cnf.jkt` と一致することも確認します。
 
-DPoP 付きアクセストークンは `Authorization: DPoP <token>` で提示する必要があります。`Authorization: Bearer <token>` ではありません。OP は `/userinfo` でこれを強制します。送信者制約付きトークンを Bearer scheme で提示した場合、トークンのバイト列自体が有効でも拒否されます。RFC 9449 §7.1 では scheme も proof-of-possession 契約の一部だからです。
+DPoP 付きアクセストークンは `Authorization: DPoP <token>` で提示する必要があります。`Authorization: Bearer <token>` ではありません。OP は `/userinfo` でこれを強制します。送信者制約付きトークンを Bearer scheme で提示した場合、トークンのバイト列自体が有効でも拒否されます。RFC 9449 §7.1 では scheme も proof-of-possession 契約の一部だからです。拒否は `401` と `WWW-Authenticate: DPoP error="invalid_token"` で返します。仕様の `invalid_dpop_proof` ではなく `invalid_token` を使うのは、Bearer のエラー分類に従うクライアントがそのまま動くようにするためです。
 
 `DPoP` proof ヘッダは 1 つだけでなければなりません。`DPoP` ヘッダが複数ある場合は、先頭が空で後続に有効な proof がある場合も含め、OP は拒否します。後続の値だけを選んだり、黙って bearer 経路へフォールバックしたりはしません。共有ゲートは `/par`、`/token`、`/device_authorization`、`/bc-authorize`（CIBA）でこの規則を適用し、`/userinfo` の proof 検証も同じ規則に従います。
 
@@ -135,9 +135,9 @@ thumbprint は JSON 再エンコードを跨いでも安定する、短い識別
 
 DPoP は独立した 4 つの検査を重ね、proof 1 通を盗み出した攻撃者に何の利益もないようにします:
 
-- **`jti` 重複排除。** OP は受理した proof の `jti` を `store.ConsumedJTIStore.Mark` に通します（`internal/dpop/verify.go`）。鮮度判定窓の中で同じ `jti` が再提示されると `ErrProofReplayed` を返してリクエストは失敗します。この store は PAR / JAR のリプレイ防御で使う store と共通なので、Redis サブストア 1 つで全部をカバーできます。
+- **`jti` 重複排除。** OP は受理した proof の `jti` を、鍵の thumbprint との組をキーにして `store.ConsumedJTIStore.Mark` に通します（`internal/dpop/verify.go`）。鮮度判定窓の中で同じ組が再提示されると `ErrProofReplayed` を返してリクエストは失敗します。マークを書き込むのはクライアント認証が済んだあとなので、認証前のリクエストが正規の proof を使用済みにしてしまうことはありません。この store は PAR / JAR のリプレイ防御で使う store と共通なので、Redis サブストア 1 つで全部をカバーできます。
 - **`iat` 窓。** 対称 60 秒の鮮度判定窓より古いか未来すぎる proof は `ErrProofIatWindow` で拒否されます。短く取ることに意味があり、`jti` キャッシュが消えても盗まれた proof が使える時間を限定します。
-- **`htm` + `htu` 一致。** あるメソッド・URL 用の proof は別エンドポイントで提示できません。OP は両側を RFC 9449 §4.3 の正準形（scheme / host を小文字化、デフォルトポートを除去、クエリ・fragment を除去）に揃えてから比較します。
+- **`htm` + `htu` 一致。** あるメソッド・URL 用の proof は別エンドポイントで提示できません。OP は両側を RFC 9449 §4.3 の正準形（scheme / host を小文字化、既定ポートを除去、クエリ・fragment を除去）に揃えてから比較します。
 - **`ath` による結び付き。** proof がアクセストークンと組で提示される場合、proof は `ath = SHA-256(access_token)` を持つ必要があります。別のアクセストークン用の proof は `ErrProofATHMismatch` で失敗します。
 
 これら全体で、正規クライアントですら一度使った proof を再利用できなくなります。proof の束を盗み出した攻撃者は `jti` キャッシュに弾かれ、アクセストークンを盗み出した攻撃者は鍵が無いので proof を作れず、あるエンドポイント用に作った proof を別エンドポイントに転用することもできません。
@@ -154,12 +154,14 @@ DPoP は独立した 4 つの検査を重ね、proof 1 通を盗み出した攻�
 
 ## 本ライブラリが何を結び付けるか
 
-アクセストークンは、`feature.DPoP` が有効でクライアントが `/token` で proof を提示した場合（あるいは authorize / PAR 要求で `dpop_jkt` により鍵を事前確約した場合）、常に DPoP に結び付けられます。以下のリフレッシュトークンの扱いはライブラリの方針です。Final の FAPI 2.0 Security Profile は例外的な状況を除く通常のリフレッシュトークンローテーションを禁止するため、適合性を主張する前に本ライブラリの通常動作を確認してください。
+アクセストークンは、`feature.DPoP` が有効でクライアントが `/token` で proof を提示した場合（あるいは authorize / PAR 要求で `dpop_jkt` により鍵を事前確約した場合）、DPoP に結び付けられます。proof がなければ bearer トークンを発行します。ただし `FAPI2Baseline`、`FAPI2MessageSigning`、`FAPICIBA` では `invalid_request` で拒否します。以下のリフレッシュトークンの扱いはライブラリの方針です。Final の FAPI 2.0 Security Profile は例外的な状況を除く通常のリフレッシュトークンローテーションを禁止するため、適合性を主張する前に本ライブラリの通常動作を確認してください。
 
 リフレッシュトークンは[設計判断 #15](/ja/security/design-judgments#dj-15)に従います。公開クライアントには結び付け、confidential クライアントには結び付けません:
 
 - **公開クライアント**（`token_endpoint_auth_method = "none"`、典型的には SPA とネイティブアプリ）では、リフレッシュトークンの連鎖は最初の発行で DPoP に結び付けられ、RFC 9449 §5.4 の規則に従って以降のローテーションでも結び付きが継承されます。鍵が無ければリフレッシュトークン単体は無価値で、これはまさに RFC 9449 §1 が想定する脅威モデルです。
 - **Confidential クライアント**（`private_key_jwt`、`client_secret_*`）では、リフレッシュトークンの連鎖は結び付けません。リクエストごとに DPoP 鍵をローテーションでき（OFCS の plan がこの動作を検証しています）、連鎖が生きている間ずっと 1 つの鍵に縛られることはありません。各リフレッシュで発行されるアクセストークンは、その交換時に提示された鍵に結び付けられ続けるので、漏洩面はアクセストークンに限定されます。
+
+結び付いた連鎖は、リフレッシュのたびにその鍵を強制します。proof がない、または別の鍵の proof であれば `invalid_grant` です。proof を提示したリフレッシュでは、結び付けのない confidential クライアントの連鎖であっても、その鍵に結び付いたアクセストークンが発行されます。
 
 トレードオフは明示的です。confidential クライアントは鍵ローテーションの自由度を得る代わりに、リフレッシュトークンの連鎖を保護のない bearer のまま残します。token endpoint のクレデンシャルは別の制御であり、共有シークレットの場合もあるため、リフレッシュトークンの漏洩には保管、通信、運用面の対策が必要です。
 

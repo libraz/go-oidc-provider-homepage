@@ -11,7 +11,7 @@ pageClass: pg-concepts-fapi
 もともとは Open Banking 向けに作られました。英国、豪州、ブラジルなどの Open Banking / Open Finance では、FAPI または地域向けプロファイルが銀行とフィンテック間のセキュリティ標準に使われています。最近は医療、政府デジタル ID など、「RFC に従っています」だけでは監査が通らない領域にも採用が広がっています。
 
 ::: details Open Banking とは何か
-「Open Banking」は、利用者が銀行のパスワードを渡さずに、サードパーティアプリへ **口座データの参照や支払開始の権限を委任** できるようにする規制枠組みです。代表例は英国の PSD2 由来 Open Banking（2018）、ブラジルの Open Finance（2020）、豪州の Consumer Data Right（2020）です。これらの制度では、FAPI や関連プロファイルが異なる版・組み合わせで採用されています。規制対象でなければ FAPI を準拠目的で使う必要はありません。ただし、CVE 級の脆弱性を避けたい場面では、同じプロファイルを既定の出発点に据える価値があります。
+「Open Banking」は、利用者が銀行のパスワードを渡さずに、サードパーティアプリへ **口座データの参照や支払開始の権限を委譲** できるようにする規制枠組みです。代表例は英国の PSD2 由来 Open Banking（2018）、ブラジルの Open Finance（2020）、豪州の Consumer Data Right（2020）です。これらの制度では、FAPI や関連プロファイルが異なる版・組み合わせで採用されています。規制対象でなければ FAPI を準拠目的で使う必要はありません。ただし、CVE 級の脆弱性を避けたい場面では、同じプロファイルを既定の出発点に据える価値があります。
 :::
 
 ::: details このページで触れる仕様
@@ -52,7 +52,7 @@ FAPI 1.0（"Read-Only" / "Read-Write" の 2 区分）への参照を見かける
 | アルゴリズムリスト | クライアントメタデータで交渉 | 固定の許可リスト |
 
 ::: details FAPI 1.0 の Read-Only と Read-Write の違い
-FAPI 1.0 には区分が 2 つありました。**Read-Only** はデータ取得だけを行う使い方向け（残高参照アプリなど）、**Read-Write** は状態変更を伴う使い方向け（決済を起票するアプリなど）で、要求署名・応答署名・holder-of-key などの追加要件がありました。FAPI 2.0 はこの分割を廃止しています。サードパーティが介在する時点で脅威モデルが同じであることが分かったためです。代わりに **Security Profile と Message Signing** で選び分け、後者はセキュリティ境界を増やすのではなく **後から否認できない証拠** を加える、という整理になりました。
+FAPI 1.0 には区分が 2 つありました。**Read-Only** はデータ取得だけを行う使い方向け（残高参照アプリなど）、**Read-Write** は状態変更を伴う使い方向け（決済を起票するアプリなど）で、要求署名・応答署名・holder-of-key などの追加要件がありました。FAPI 2.0 は汎用のセキュリティ基盤として Security Profile を置き、非否認性が必要な配備向けに Message Signing を別に定義しています。Message Signing は Security Profile を置き換えるものではなく、拡張するものです。
 :::
 
 `go-oidc-provider` は FAPI 2.0 を対象にしており、FAPI 1.0 は対象外です。
@@ -62,35 +62,35 @@ FAPI 1.0 には区分が 2 つありました。**Read-Only** はデータ取得
 FAPI 2.0 には、全体の基盤となる Security Profile と、独立した Message Signing プロファイルがあります。Go ライブラリでは前者を表す識別子に、旧称に由来する `profile.FAPI2Baseline` を使います。
 
 <figure class="fig">
-  <div class="fig-head">FAPI の各層が足すもの</div>
-  <svg class="fig-svg" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 960 336" xmlns="http://www.w3.org/2000/svg">
-    <title id="fapi-layers-title">FAPI 2.0 のプロファイル。基盤仕様は選択肢を広く残しており、Security Profile が高セキュリティの最低ラインを固定し、Message Signing が署名付き認可リクエスト、署名付き認可レスポンス、署名付きイントロスペクションレスポンスを個別に追加します。</title>
-    <!-- Message Signing -->
-    <rect class="fg-box fg-box--accent" x="36" y="24" width="664" height="102" rx="8"/>
-    <text class="fg-t fg-accent" x="56" y="52">FAPI 2.0 Message Signing</text>
-    <text class="fg-xs" x="56" y="74">Security Profile に選択した JAR・JARM・署名付きイントロスペクションを追加</text>
-    <text class="fg-xs" x="56" y="94">各署名方式は個別に実装・適合性テストできる</text>
-    <text class="fg-mxs" x="56" y="116">op.WithProfile(profile.FAPI2MessageSigning)</text>
-    <path class="fg-leader" d="M704,44 H736 M704,80 H736"/>
-    <rect class="fg-box fg-box--muted" x="740" y="32" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="48">監査証跡</text>
-    <rect class="fg-box fg-box--muted" x="740" y="68" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="84">非否認性</text>
-    <!-- Security Profile -->
-    <rect class="fg-box" x="36" y="138" width="664" height="88" rx="8"/>
-    <text class="fg-t" x="56" y="166">FAPI 2.0 Security Profile</text>
-    <text class="fg-xs" x="56" y="188">PAR · PKCE S256 · confidential client · DPoP または mTLS</text>
-    <text class="fg-mxs" x="56" y="212">op.WithProfile(profile.FAPI2Baseline)</text>
-    <path class="fg-leader" d="M704,182 H736"/>
-    <rect class="fg-box fg-box--muted" x="740" y="170" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="186">最低安全要件</text>
-    <!-- 基盤 -->
-    <rect class="fg-box fg-box--muted" x="36" y="238" width="664" height="74" rx="8"/>
-    <text class="fg-t" x="56" y="266">OAuth 2.0 + OpenID Connect</text>
-    <text class="fg-xs" x="56" y="288">基盤仕様。選択肢が多く、組み合わせ次第では危険なものも残る</text>
-    <path class="fg-leader" d="M704,275 H736"/>
-    <rect class="fg-box fg-box--muted" x="740" y="263" width="184" height="24" rx="4"/>
-    <text class="fg-lbl" x="756" y="279">通信路</text>
+  <div class="fig-head">FAPI は層ごとに基盤仕様の選択肢を絞り込む</div>
+  <svg class="fig-svg" role="img" aria-labelledby="fapi-layers-title" viewBox="0 0 960 376" xmlns="http://www.w3.org/2000/svg">
+    <title id="fapi-layers-title">FAPI 2.0 のプロファイル。基盤仕様は選択肢を広く残しており、Security Profile が高セキュリティの最低ラインを固定し、Message Signing が署名付き認可リクエスト、署名付き認可レスポンス、署名付き introspection レスポンスを個別に追加します。</title>
+    <!-- FAPI 2.0 Message Signing -->
+    <rect class="fg-box fg-box--accent" x="32" y="24" width="640" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="52">FAPI 2.0 Message Signing</text>
+    <text class="fg-xs" x="48" y="76">Security Profile に JAR・JARM・署名付き introspection を追加</text>
+    <text class="fg-mxs" x="48" y="100">op.WithProfile(profile.FAPI2MessageSigning)</text>
+    <path class="fg-leader" d="M672,48 H736"/>
+    <rect class="fg-pill" x="736" y="32" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="53" text-anchor="middle">監査証跡</text>
+    <path class="fg-leader" d="M672,96 H736"/>
+    <rect class="fg-pill" x="736" y="80" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="101" text-anchor="middle">非否認性</text>
+    <!-- FAPI 2.0 Security Profile -->
+    <rect class="fg-box" x="32" y="152" width="640" height="96" rx="8"/>
+    <text class="fg-t" x="48" y="180">FAPI 2.0 Security Profile</text>
+    <text class="fg-xs" x="48" y="204">PAR · PKCE S256 · confidential client · DPoP または mTLS</text>
+    <text class="fg-mxs" x="48" y="228">op.WithProfile(profile.FAPI2Baseline)</text>
+    <path class="fg-leader" d="M672,200 H736"/>
+    <rect class="fg-pill" x="736" y="184" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="205" text-anchor="middle">最低安全要件</text>
+    <!-- OAuth 2.0 + OpenID Connect -->
+    <rect class="fg-box fg-box--muted" x="32" y="280" width="640" height="72" rx="8"/>
+    <text class="fg-t" x="48" y="308">OAuth 2.0 + OpenID Connect</text>
+    <text class="fg-xs" x="48" y="332">選択肢が多く、組み合わせ次第で危険なものもある</text>
+    <path class="fg-leader" d="M672,316 H736"/>
+    <rect class="fg-pill" x="736" y="300" width="192" height="32" rx="16"/>
+    <text class="fg-s" x="832" y="321" text-anchor="middle">通信路</text>
   </svg>
   <figcaption class="fig-note">Security Profile は基盤仕様の高セキュリティ要件を固定し、Message Signing は選択した OAuth メッセージに署名を追加します。すべての API リクエストとレスポンスを JWS で包む仕様ではありません。</figcaption>
 </figure>
@@ -102,31 +102,31 @@ FAPI 2.0 Security Profile は、confidential client、DPoP **または** mTLS �
 :::
 
 ::: tip Message Signing — 後から否認できない証拠
-Message Signing は Security Profile を継承し、PAR に送る JAR 署名付きプッシュ認可リクエストオブジェクト、JARM による署名付き認可レスポンス、RFC 9701 による署名付きイントロスペクションレスポンスという 3 つの方式を定義します。これらは個別に適合性テストできます。DPoP nonce や、すべてのリソース API リクエスト / レスポンスへの署名を要求するものではありません。本ライブラリの `profile.FAPI2MessageSigning` は PAR、JAR、JARM を自動有効化します。`feature.Introspect` も有効にして `/introspect` をマウントした場合は、そのエンドポイントの成功レスポンスを署名付きに強制します。DPoP が有効な場合、ライブラリの validator は `WithDPoPNonceSource` も要求します。これはライブラリの制約であり、Message Signing の要件ではありません。プロファイル自体がイントロスペクションエンドポイントをマウントするわけではありません。
+Message Signing は Security Profile を継承し、PAR に送る JAR 署名付きプッシュ認可リクエストオブジェクト、JARM による署名付き認可レスポンス、RFC 9701 による署名付き introspection レスポンスという 3 つの方式を定義します。これらは個別に適合性テストできます。DPoP nonce や、すべてのリソース API リクエスト / レスポンスへの署名を要求するものではありません。本ライブラリの `profile.FAPI2MessageSigning` は PAR、JAR、JARM を自動有効化します。`feature.Introspect` も有効にして `/introspect` をマウントした場合は、そのエンドポイントの成功レスポンスを署名付きに強制します。DPoP が有効な場合、ライブラリの validator は `WithDPoPNonceSource` も要求します。これはライブラリの制約であり、Message Signing の要件ではありません。プロファイル自体が introspection エンドポイントをマウントするわけではありません。
 
 地域の Open Banking / Open Insurance の制度が Message Signing を求める場合もあります。FAPI 仕様とは別に、対象制度の最新のセキュリティ標準を確認してください。
 :::
 
 ::: details message signing は何を得る仕組みか
-FAPI 2.0 の「Message Signing」は、選択した OAuth メッセージ（PAR に送る JAR 署名付きプッシュ認可リクエストオブジェクト、JARM による認可レスポンス、署名付きイントロスペクションレスポンス）に署名して非否認性を補う仕組みです。PAR 利用時のブラウザのフロントチャネル要求は `request_uri` と `client_id` だけを運び、非否認性のために別途署名する認可リクエストではありません。受信者は公開鍵で署名を検証します。Security Profile がすべての API 通信を署名する仕様という意味ではなく、Message Signing もすべてのリソース API リクエスト / レスポンスを JWS で包む仕様ではありません。
+FAPI 2.0 の「Message Signing」は、選択した OAuth メッセージ（PAR に送る JAR 署名付きプッシュ認可リクエストオブジェクト、JARM による認可レスポンス、署名付き introspection レスポンス）に署名して非否認性を補う仕組みです。PAR 利用時のブラウザのフロントチャネル要求は `request_uri` と `client_id` だけを運び、非否認性のために別途署名する認可リクエストではありません。受信者は公開鍵で署名を検証します。Security Profile がすべての API 通信を署名する仕様という意味ではなく、Message Signing もすべてのリソース API リクエスト / レスポンスを JWS で包む仕様ではありません。
 :::
 
 ::: details JWS とは何か
-**JWS** は "JSON Web Signature"（RFC 7515）です。ペイロードに任意のバイト列を持てる署名付き表現です。署名付き JWT は JSON のクレームをペイロードにした JWS で、JWT には暗号化された JWE もあります。FAPI が「署名付き認可リクエスト」「署名付き認可レスポンス」と言うときは、対応するプロトコルオブジェクトを署名付き JWT / JWS で運ぶことを指します。
+**JWS** は "JSON Web Signature"（RFC 7515）です。ペイロードに任意のバイト列を持てる署名付き表現です。署名付き JWT は JSON の claim をペイロードにした JWS で、JWT には暗号化された JWE もあります。FAPI が「署名付き認可リクエスト」「署名付き認可レスポンス」と言うときは、対応するプロトコルオブジェクトを署名付き JWT / JWS で運ぶことを指します。
 :::
 
 ## 各略号が実際に何をしているか
 
 ::: details PAR — Pushed Authorization Request (RFC 9126)
-古典的な OAuth では、RP が `/authorize?...` の URL を組み立て、すべてのパラメータをクエリ文字列に乗せてブラウザにリダイレクトさせます。間に挟まる主体（ブラウザ拡張、中継プロキシ、Referer 漏洩、サーバログなど）はパラメータを見られます。
+古典的な OAuth では、RP が `/auth?...` の URL を組み立て、すべてのパラメータをクエリ文字列に乗せてブラウザにリダイレクトさせます。間に挟まる主体（ブラウザ拡張、中継プロキシ、Referer 漏洩、サーバログなど）はパラメータを見られます。
 
-PAR では、RP がまずパラメータを OP の `/par` エンドポイントへ **サーバ間で直接 POST** します（クライアント認証付き）。OP は短寿命の `request_uri`（例: `urn:ietf:params:oauth:request_uri:abc...`）を返します。ブラウザは `/authorize?request_uri=urn:...&client_id=...` にリダイレクトされ、OP は内部で元のパラメータを引き当てます。
+PAR では、RP がまずパラメータを OP の `/par` エンドポイントへ **サーバ間で直接 POST** します（クライアント認証付き）。OP は短寿命の `request_uri`（例: `urn:ietf:params:oauth:request_uri:abc...`）を返します。ブラウザは `/auth?request_uri=urn:...&client_id=...` にリダイレクトされ、OP は内部で元のパラメータを引き当てます。
 
 結果: 機微なパラメータがブラウザを通らない。
 :::
 
 ::: details `request_uri` とは何か
-authorize パラメータをサーバ側にいったん預けた「預かり票」への参照です。PAR は URN 形式の `request_uri`（OP が約 60 秒間だけ保持する 1 回限りの行を指す）を返します。ブラウザはその URN と `client_id` だけを `/authorize` に渡し、OP が内部で預かり済みのパラメータと結びつけます。`request_uri` という仕組み自体は PAR より先に存在しており、RFC 9101 では HTTPS URL 上の `request` JWT を取りに行く用途にも使われます。PAR はそれを「OP 自身が保持する」「1 回交換したら消える」用途に特化させたものです。
+authorize パラメータをサーバ側にいったん預けた「預かり票」への参照です。PAR は URN 形式の `request_uri`（OP が約 60 秒間だけ保持する 1 回限りの行を指す）を返します。ブラウザはその URN と `client_id` だけを `/auth` に渡し、OP が内部で預かり済みのパラメータと結びつけます。`request_uri` という仕組み自体は PAR より先に存在しており、RFC 9101 では HTTPS URL 上の `request` JWT を取りに行く用途にも使われます。PAR はそれを「OP 自身が保持する」「1 回交換したら消える」用途に特化させたものです。
 :::
 
 ::: details JAR — JWT-Secured Authorization Request (RFC 9101)
@@ -136,7 +136,7 @@ PAR + JAR の組み合わせで、authorize 要求の **サーバ間配送** と
 :::
 
 ::: details JARM — JWT-Secured Authorization Response Mode
-JARM は認可 **レスポンス**（`code`、`state`、`iss`、エラーなど）を OP が署名付き JWT として返す方式です。RP は処理前に署名とクレームを検証します。FAPI 2.0 Message Signing では、署名付き認可レスポンス方式を実装する場合に JARM を使います。本ライブラリの `profile.FAPI2MessageSigning` は JARM を必須にします。
+JARM は認可 **レスポンス**（`code`、`state`、`iss`、エラーなど）を OP が署名付き JWT として返す方式です。RP は処理前に署名と claim を検証します。FAPI 2.0 Message Signing では、署名付き認可レスポンス方式を実装する場合に JARM を使います。本ライブラリの `profile.FAPI2MessageSigning` は JARM を必須にします。
 :::
 
 ::: details DPoP / mTLS — 送信者制約
@@ -179,7 +179,7 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 | **PAR (RFC 9126)** | 必須 | 継承 | 対象外（CIBA は `/bc-authorize` に POST）|
 | **JAR (RFC 9101)** — 署名付き request object | 任意 | 署名付き認可リクエスト方式 | プロファイル依存 |
 | **JARM** — 署名付き認可レスポンス | 任意 | 署名付き認可レスポンス方式 | 対象外（CIBA はフロントチャネルなし）|
-| **署名付きイントロスペクションレスポンス（RFC 9701）** | 任意 | 署名付きイントロスペクションレスポンス方式 | プロファイル依存 |
+| **署名付き introspection レスポンス（RFC 9701）** | 任意 | 署名付き introspection レスポンス方式 | プロファイル依存 |
 | **DPoP (RFC 9449) または mTLS (RFC 8705)** | いずれか必須 | 継承 | プロファイル依存 |
 | **Resource Indicators (RFC 8707)** | 任意 | 継承 | プロファイル依存 |
 | **認可レスポンスの `iss` パラメータ（RFC 9207）** | 必須 | 継承 | 対象外（CIBA はフロントチャネルなし）|
@@ -196,14 +196,14 @@ FAPI は **プロファイル** であり、OAuth や OIDC を作り直してい
 
 **なぜ DPoP か mTLS のどちらかで十分なのか。** どちらも、発行されたアクセストークンを正規クライアントが保有する鍵に結びつける仕組みです。トークンが漏れても鍵がなければ使えません。選択は運用上の判断であり、既存 PKI / プロキシ構成に合う方式を選びます。仕組みの詳細は [送信者制約](/ja/concepts/sender-constraint) を参照してください。Final Security Profile はいずれか 1 つを要求します。本ライブラリでは、どちらも明示しない場合に DPoP を既定として選びます。
 
-**なぜ JAR と JARM は別の方式なのか。** Message Signing は、署名付き認可リクエスト、署名付き認可レスポンス、署名付きイントロスペクションレスポンスを別々の方式として定義します。配備に必要な方式だけを選べます。`profile.FAPI2MessageSigning` はライブラリ設定として PAR、JAR、JARM を自動有効化します。別途 `feature.Introspect` を有効にして `/introspect` をマウントした場合は、成功レスポンスを署名付き RFC 9701 形式に強制します。DPoP が有効な場合、ライブラリのプロファイルは DPoP nonce source も要求しますが、Final Message Signing 仕様の要件ではありません。
+**なぜ JAR と JARM は別の方式なのか。** Message Signing は、署名付き認可リクエスト、署名付き認可レスポンス、署名付き introspection レスポンスを別々の方式として定義します。配備に必要な方式だけを選べます。`profile.FAPI2MessageSigning` はライブラリ設定として PAR、JAR、JARM を自動有効化します。別途 `feature.Introspect` を有効にして `/introspect` をマウントした場合は、成功レスポンスを署名付き RFC 9701 形式に強制します。DPoP が有効な場合、ライブラリのプロファイルは DPoP nonce source も要求しますが、Final Message Signing 仕様の要件ではありません。
 
 **本ライブラリと Final Security Profile の違い。** `profile.FAPI2Baseline` はライブラリ設定として PAR と JAR を自動有効化し、token endpoint のクライアント認証を `private_key_jwt` に限定し、OP 発行 JWT を ES256 に限定し、`redirect_uri` の完全一致を強制します。これらは Final Security Profile の追加要件ではありません。本ライブラリの通常のリフレッシュ処理はリフレッシュトークンをローテーションしますが、Final Security Profile は通常のローテーションを禁止し、例外的な状況だけを許可します。適合性を主張する前に、実行時の設定を確認してください。
 
 ### 続きはこちら
 
 - [RFC 対応一覧](/ja/compliance/rfc-matrix) — FAPI に限定しない、ライブラリ全体の RFC 別実装状況。
-- [使い方: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアントと DPoP を組み合わせた構成例。
+- [ユースケース: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアントと DPoP を組み合わせた構成例。
 - [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — バインディングの仕組みを詳しく。
 - [CIBA](/ja/concepts/ciba) — FAPI-CIBA が制約しているバックチャネル処理。
 
@@ -231,12 +231,25 @@ op.New(
 
 本ライブラリのリフレッシュ処理は通常の利用でもリフレッシュトークンをローテーションします。Final Security Profile は通常のローテーションを禁止するため、この設定だけでは Final への適合を示せません。
 
-プロファイルと矛盾するオプションを後から重ねると、`op.New` は OP を生成する前に検出した矛盾を理由に起動を拒否します。
+プロファイルと矛盾するオプションを後から重ねると、`op.New` は OP を生成する前に検出した矛盾を理由に起動を拒否します。主な制約を、対象ごとにまとめます。
+
+| 設定 | FAPI 2.0 / FAPI-CIBA プロファイル下での扱い |
+|---|---|
+| token endpoint のクライアント認証 | `private_key_jwt` のみ。動的登録でそれ以外の `token_endpoint_auth_method` を指定すると `invalid_client_metadata` で拒否される |
+| クライアントが署名する入力（assertion、request object）のアルゴリズム | `PS256`、`ES256`、`EdDSA`。`RS256` は実行時、discovery、登録のいずれでも拒否される |
+| `op.WithAccessTokenTTL` | 10 分以内 |
+| `op.WithPARLifetime` | 600 秒未満 |
+| `/par` と `/bc-authorize` の request object、および FAPI プロファイル下の `/auth` | 署名なしの query / form パラメータとマージされず、置き換える。認可パラメータはすべて署名済みオブジェクトの中に入れる必要がある |
+| アクセストークンの失効戦略 | `RevocationStrategyNone` は拒否される |
+| `op.WithFirstPartyClients`、`op.WithOpenIDScopeOptional` | FAPI 2.0 プロファイル下では拒否される |
+| DPoP nonce source | `FAPI2MessageSigning` と `FAPICIBA` で DPoP を使う場合は `op.WithDPoPNonceSource` が必須 |
+| `profile.FAPICIBA` | `grant.CIBA` を有効にしておく必要がある（自動では有効化されない）。CIBA の既定・最大有効期間は 10 分以内 |
+| レスポンス | すべてのレスポンスに `x-fapi-interaction-id` が付く。リクエストに値があればそれを、なければ生成した値を返す |
 
 ライブラリの Message Signing プロファイルを選ぶ場合は、`profile.FAPI2Baseline` を `profile.FAPI2MessageSigning` に差し替えます。DPoP を使う場合は `WithDPoPNonceSource` も構成してください。適合性テストは両プランを検査します（[OFCS 適合状況](/ja/compliance/ofcs)）。
 
 ## 続きはこちら
 
 - [送信者制約（DPoP / mTLS）](/ja/concepts/sender-constraint) — バインディングの仕組みを詳しく。
-- [使い方: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアントと DPoP を組み合わせた構成例。
+- [ユースケース: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアントと DPoP を組み合わせた構成例。
 - [認可コード + PKCE](/ja/concepts/authorization-code-pkce) — FAPI 2.0 が前提にしている処理。

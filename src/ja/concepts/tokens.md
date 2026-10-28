@@ -8,7 +8,7 @@ pageClass: pg-concepts-tokens
 
 OIDC は 3 種の ID 関連データを扱います。同じ OP のフローで登場するため一見交換可能に見えますが、それぞれ契約が異なります。これを混同するのはバグの典型例です。
 
-::: tip 30 秒で頭に入れる相関図
+::: tip 30 秒でつかむ要点
 - **ID トークン** — 「このユーザがこの RP にログインした」という署名付きの認証結果。audience は RP。API には送らない。
 - **アクセストークン** — クライアントが API に提示する資格情報。audience はリソースサーバ。**既定形式は RFC 9068 に沿った形の JWT、opaque は明示時のみ。** DPoP バインド時は `Authorization: DPoP` と proof を使います。
 - **UserInfo** — `GET /userinfo` にアクセストークンを載せて最新 claim を取得するエンドポイント。トークンではありません。既定の応答は JSON ですが、OIDC では署名付き、または署名後に暗号化した JWT 応答も使えます。
@@ -47,47 +47,41 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 
 <figure class="fig">
   <div class="fig-head">誰が何を発行し、誰が検証するか</div>
-  <svg class="fig-svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 30 960 240" xmlns="http://www.w3.org/2000/svg">
+  <svg class="fig-svg" role="img" aria-labelledby="tokens-flow-title" viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
     <title id="tokens-flow-title">OP が ID トークンとアクセストークンを RP に発行する図。RP はアクセストークンをリソースサーバと OP の userinfo エンドポイントに提示し、userinfo はログイン中のユーザについての claim を返します。</title>
     <!-- OP -->
-    <rect class="fg-box fg-box--accent" x="40" y="44" width="240" height="100" rx="8"/>
-    <text class="fg-lbl fg-accent" x="54" y="64">OP</text>
-    <text class="fg-t fg-accent" x="160" y="88" text-anchor="middle">OpenID Provider</text>
-    <text class="fg-mxs" x="160" y="102" text-anchor="middle">go-oidc-provider</text>
-    <line class="fg-rule" x1="54" y1="114" x2="266" y2="114"/>
-    <text class="fg-xs" x="160" y="132" text-anchor="middle">トークンを発行し JWT に署名する</text>
+    <rect class="fg-box fg-box--accent" x="32" y="24" width="192" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="48" y="52">OP</text>
+    <text class="fg-s" x="48" y="76">OpenID Provider</text>
+    <text class="fg-mxs" x="48" y="100">go-oidc-provider</text>
     <!-- RP -->
-    <rect class="fg-box" x="400" y="44" width="240" height="100" rx="8"/>
-    <text class="fg-lbl" x="414" y="64">RP</text>
-    <text class="fg-t" x="520" y="88" text-anchor="middle">Relying Party</text>
-    <text class="fg-mxs" x="520" y="102" text-anchor="middle">クライアント</text>
-    <line class="fg-rule" x1="414" y1="114" x2="626" y2="114"/>
-    <text class="fg-xs" x="520" y="132" text-anchor="middle">トークンを保持する</text>
+    <rect class="fg-box" x="384" y="24" width="192" height="96" rx="8"/>
+    <text class="fg-t" x="400" y="52">RP</text>
+    <text class="fg-s" x="400" y="76">Relying Party</text>
+    <text class="fg-s" x="400" y="100">クライアント</text>
     <!-- RS -->
-    <rect class="fg-box" x="760" y="44" width="160" height="100" rx="8"/>
-    <text class="fg-lbl" x="774" y="64">RS</text>
-    <text class="fg-t" x="840" y="88" text-anchor="middle">Resource Server</text>
-    <text class="fg-mxs" x="840" y="102" text-anchor="middle">リソースサーバ</text>
-    <line class="fg-rule" x1="774" y1="114" x2="906" y2="114"/>
-    <text class="fg-xs" x="840" y="132" text-anchor="middle">トークンを検証する</text>
+    <rect class="fg-box" x="736" y="24" width="192" height="96" rx="8"/>
+    <text class="fg-t" x="752" y="52">RS</text>
+    <text class="fg-s" x="752" y="76">Resource Server</text>
+    <text class="fg-s" x="752" y="100">あなたの API</text>
+    <!-- issuance -->
+    <path class="fg-edge fg-edge--accent" d="M224,48 H384" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="304" y="38" text-anchor="middle">id_token</text>
+    <path class="fg-edge fg-edge--accent" d="M224,104 H384" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="304" y="94" text-anchor="middle">access_token</text>
+    <!-- API call -->
+    <path class="fg-edge" d="M576,72 H736" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="656" y="62" text-anchor="middle">access_token</text>
     <!-- userinfo -->
-    <rect class="fg-box fg-box--sub" x="40" y="196" width="240" height="56" rx="8"/>
-    <text class="fg-m" x="160" y="220" text-anchor="middle">/userinfo</text>
-    <text class="fg-xs" x="160" y="236" text-anchor="middle">ログイン中のユーザの claim</text>
-    <!-- 発行 -->
-    <path class="fg-edge fg-edge--accent" d="M284,74 H396" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="340" y="67" text-anchor="middle">id_token</text>
-    <path class="fg-edge fg-edge--accent" d="M284,112 H396" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="340" y="105" text-anchor="middle">access_token</text>
-    <!-- API 呼び出し -->
-    <path class="fg-edge" d="M644,100 H756" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="700" y="74" text-anchor="middle">Authorization:</text>
-    <text class="fg-mxs" x="700" y="88" text-anchor="middle">Bearer &lt;access_token&gt;（制約なしの例）</text>
-    <!-- userinfo の往復 -->
-    <path class="fg-edge" d="M520,148 V218 H288" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="410" y="211" text-anchor="middle">GET /userinfo · Bearer（制約なし）</text>
-    <path class="fg-edge fg-edge--accent" d="M284,240 H560 V152" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="420" y="233" text-anchor="middle">200 { claims }</text>
+    <path class="fg-leader" d="M128,120 V200"/>
+    <rect class="fg-box fg-box--sub" x="32" y="200" width="256" height="96" rx="8"/>
+    <text class="fg-m" x="48" y="228">/userinfo</text>
+    <text class="fg-s" x="48" y="252">ユーザの claim</text>
+    <text class="fg-s" x="48" y="276">OP 側のエンドポイント</text>
+    <path class="fg-edge" d="M512,120 V232 H288" marker-end="url(#fg-a)"/>
+    <text class="fg-mxs" x="400" y="222" text-anchor="middle">GET /userinfo</text>
+    <path class="fg-edge fg-edge--accent" d="M288,288 H544 V120" marker-end="url(#fg-ac)"/>
+    <text class="fg-mxs" x="416" y="278" text-anchor="middle">200 { claims }</text>
   </svg>
   <figcaption class="fig-note">ID トークンは RP のためのもので、そこで止まります。「誰がログインしたか」に答えるためのトークンです。一方アクセストークンは RP が外へ持ち出す資格情報で、あなたの API にも <code>/userinfo</code> にも同じように提示されます。どちらも ID トークンを受け取ることはありません。</figcaption>
 </figure>
@@ -101,12 +95,15 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 | `iss` | Issuer（OP）。RP の期待値と一致すること。 | OIDC Core §2 |
 | `sub` | Subject 識別子 — OP 内で安定なユーザ ID。 | OIDC Core §2 |
 | `aud` | Audience — RP の `client_id` を含むこと。 | OIDC Core §2 |
-| `azp` | Authorized party — トークンを要求した `client_id`（`aud` に複数値があるとき）。 | OIDC Core §2 |
+| `azp` | Authorized party — トークンを要求した `client_id`（`aud` に複数値があるとき）。本ライブラリが発行する ID トークンの audience は単一なので、設定しません。 | OIDC Core §2 |
 | `exp` / `iat` | 有効期限 / 発行時刻。 | RFC 7519 |
 | `nonce` | authorize 要求の `nonce` をエコー。リプレイ防御。 | OIDC Core §3.1.2.1 |
 | `auth_time` | ユーザが認証した時刻（発行時刻ではなく）。 | OIDC Core §2 |
 | `acr` | Authentication Context Class Reference — 認証手段の保証水準。 | OIDC Core §2 / RFC 9470 |
 | `amr` | Authentication Methods References — `pwd`、`otp`、`mfa`、`hwk` 等。 | RFC 8176 |
+| `at_hash` / `c_hash` | 同時に発行したアクセストークンと認可コードのハッシュ。RP が ID トークンをそれらに結び付けて検証できる。 | OIDC Core §3.1.3.6 |
+
+`auth_time`・`acr`・`amr` は、そのトークンを発行した認可の背後にある認証を表します。同じユーザが同じクライアントで後からログインしても、すでに発行されたトークンの値は書き換わりません。リフレッシュでも、chain の元になった認可の値が引き継がれます。
 
 ::: details `acr` とは
 **`acr`**（Authentication Context Class Reference）は認証コンテキストを示す文字列です。語彙は OP 側で決め、`urn:mace:incommon:iap:silver` や `urn:openbanking:psd2:sca` などを使えます。RP が `/auth` で送る `acr_values=...` は優先順位付きの希望値で、OIDC Core では任意の claim 要求です。必須条件にするには `claims.id_token.acr` に `essential: true` と `value` または `values` を指定します。本ライブラリでは、現在のセッションが合わないときにステップアップするか、対話できなければエラーを返します。`amr` は使用した認証手段を列挙します。
@@ -117,7 +114,7 @@ OIDC では **ID トークンは常に JWT** です。本ライブラリのア�
 :::
 
 ::: details `auth_time` とは
-**`auth_time`** は、ユーザが *OP に対して認証した* 時刻の Unix timestamp です。`iat`（*このトークン* が発行された時刻）とは別物です。1 時間前にログインしたユーザがリフレッシュ直後だと、`iat` は新しくても `auth_time` は古いままになります。RP は `max_age` ポリシー（「30 分以上経っていたら再認証」）の判定に使い、OP は RP が `/auth` に `max_age` を載せて来たときにサーバ側でも強制します。
+**`auth_time`** は、ユーザが *OP に対して認証した* 時刻の Unix timestamp です。`iat`（*このトークン* が発行された時刻）とは別物です。1 時間前にログインしたユーザがリフレッシュ直後だと、`iat` は新しくても `auth_time` は古いままになります。RP は `max_age` ポリシー（「30 分以上経っていたら再認証」）の判定に使います。RP が `/auth` に `max_age` を載せると、OP 自身もサーバ側で強制します。
 :::
 
 ::: details `azp` とは
@@ -153,6 +150,20 @@ Authorization: Bearer eyJ...access_token...
 | **Opaque** | RS が毎回 `/introspect`（RFC 7662）を呼ぶ。 | OP がトークンに対応する行を保持。 |
 | **JWT（RFC 9068 に沿った形）** | RS が署名と許可アルゴリズム、`typ=at+jwt`、`iss`、`aud`、`exp`、`iat`、必須 claim を検証する。送信者制約付きなら proof も検証する。 | ローカルで検証できるが、OP は自身のエンドポイントでの失効判定に grant tombstone や JTI 行を持つ場合がある。 |
 
+JWT アクセストークンには次の claim が入ります。
+
+| Claim | 意味 | 読む側 |
+|---|---|---|
+| `iss`、`sub`、`aud`、`exp`、`iat`、`jti`、`client_id` | RFC 9068 の必須セット。`aud` はリソースサーバで、`sub` はクライアントごとの subject のため ID トークンの値と一致する。 | RS |
+| `scope` | 許可された scope（スペース区切り）。 | RS |
+| `cnf` | 送信者制約のバインド。DPoP は `jkt`、mTLS は `x5t#S256`。Bearer では無い。 | RS |
+| `auth_time`、`acr`、`amr` | トークンを発行した認可の背後にある認証。 | RS（step-up のポリシー用） |
+| `authorization_details` | grant が RFC 9396 の detail を持つ場合。 | RS |
+| `gid` | private claim。grant ID で、grant tombstone との突き合わせに使う。 | OP のみ |
+| `userinfo_claims` | private claim。claims request の `userinfo` メンバ。要求が無ければ `{}`。`/userinfo` はここから claim を開示する。 | OP のみ |
+
+リソースサーバは `gid` と `userinfo_claims` を無視してください。この 2 つの名前は予約されており、カスタム grant が追加 claim として設定することはできません。
+
 ### ここが本題: session_end / userinfo / revocation はトークン履歴に依存する
 
 ::: warning JWT のオフライン検証からは OP 側の失効が見えない
@@ -164,7 +175,7 @@ RS は OP に問い合わせず JWT を検証できますが、その経路で�
 | **`/userinfo`**（OIDC Core §5.3） | このトークンは今もユーザを正しく代表しているか | OP が JWT の grant / JTI 状態を確認してから claim を投影する。 |
 | **`/end_session`**（RP-Initiated Logout） | セッションを終了させる | OP は失効を記録するが、オフライン RS は `exp` まで JWT を受け入れ続ける。 |
 | **`/revoke`**（RFC 7009） | 特定トークンを無効化 | 設定した OP 側の戦略が失効を記録する。オフライン RS には伝わらない。 |
-| **`/introspect`**（RFC 7662） | revoke 済みトークンに `active: false` を返す | OP が署名、寿命、issuer、設定された失効状態を確認する。 |
+| **`/introspect`**（RFC 7662） | 失効済みトークンに `active: false` を返す | OP が署名、寿命、issuer、設定された失効状態を確認する。 |
 
 「JWT vs opaque」記事ではしばしば軽く流される論点ですが、本番運用では重く効いてきます。
 
@@ -182,21 +193,33 @@ RS は OP に問い合わせず JWT を検証できますが、その経路で�
 | 設定方法 | （既定） | `op.WithAccessTokenFormat(...)` あるいは RFC 8707 の resource 毎に `op.WithAccessTokenFormatPerAudience(...)` |
 
 ::: warning カスケードの及ぶ範囲は形式に依存する
-`/userinfo`・`/introspect`・`/revoke`・`/end_session`・認可コード再利用検出のカスケードはすべて OP 側の失効状態を使います。revoke 済み / ログアウトでカスケード失効したトークンは、JWT の署名がまだ通っていても `/userinfo` で `WWW-Authenticate: Bearer error="invalid_token"` を返して拒否されます。
+`/userinfo`・`/introspect`・`/revoke`・`/end_session`・認可コード再利用検出のカスケードはすべて OP 側の失効状態を使います。失効済み / ログアウトでカスケード失効したトークンは、JWT の署名がまだ通っていても `/userinfo` で `WWW-Authenticate: Bearer error="invalid_token"` を返して拒否されます。
 
 **ただし、リクエストが OP に到達する場合に限ります。** JWKS でオフライン検証する RS は、同等の拒否リストを受け取るか token が期限切れになるまでカスケードを知りません。opaque 形式は、すべての RS 検証が `/introspect` に到達するため、この隙間を閉じます。
 :::
+
+どこまで失効させるかは、イベントによって異なります。
+
+| イベント | JWT アクセストークン | opaque アクセストークン | リフレッシュトークン |
+|---|---|---|---|
+| アクセストークン 1 つへの `/revoke` | そのトークン（`jti` で拒否リストに登録） | そのトークン | なし |
+| リフレッシュトークンへの `/revoke` | grant のすべてのアクセストークン | grant のすべてのアクセストークン | そのトークンのローテーション chain。grant の別の chain は有効なまま |
+| リフレッシュトークンのローテーション | なし（`exp` で失効） | 同じ chain のもの | 古いトークンが置き換わる |
+| 認可コード / リフレッシュトークンのリプレイ | grant 全体 | grant 全体 | grant 全体 |
+| `/end_session`、Grant Management の失効、`RevokeSubject` | grant 全体 | grant 全体 | grant 全体 |
+
+JWT の列は既定の grant-tombstone 戦略を前提にしています。`RevocationStrategyNone` では、OP は JWT について何も記録しません。「grant 全体」には、同じクライアントでのそのユーザの他のセッションも含まれます。リプレイやログアウトがあらゆる場所に届くのに対し、ローテーションや単一トークンの `/revoke` が狭い範囲に留まるのはこのためです。
 
 ### introspection を呼べるのは confidential client だけ
 
 `/introspect` はトークンを見る前に呼び出し元を認証します。public client と token endpoint 認証方式が `none` の client は、`401` と `invalid_client` を受け取ります。confidential client は自分に発行された access token または refresh token を introspect できます。client をまたぐアクセスは既定で inactive になり、呼び出し元が対応する protected resource の `IntrospectionClients` に登録され、access token の `aud` がその resource を示す場合だけ有効になります。この委譲は refresh token には適用されません。
 
-active な opaque access token の introspection response には、値が存在する場合、通常の `active`、`client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope` に加えて `iss` も含まれます。RS はローカルポリシーの一部として `iss` と `aud` を検証してください。
+active な opaque access token の introspection response には、通常の `active`、`client_id`、`token_type`、`exp`、`iat`、`sub`、`aud`、`scope` に加えて `iss` が含まれ、トークンが持っていれば `auth_time`、`acr`、`amr`、`authorization_details` も含まれます。RS はローカルポリシーの一部として `iss` と `aud` を検証してください。refresh token の応答に `token_type` はありません。RFC 7662 はこのメンバをアクセストークンの型と定義しており、`Bearer` と付けるとリソースサーバがリフレッシュトークンをアクセストークンとして扱ってしまうおそれがあるためです。
 
 ::: details `jti` / `gid` / tombstone とは
 本ライブラリが発行するアクセストークン JWT は `jti`（RFC 7519 §4.1.7、トークンごとの一意 ID）を含みます。grant の系譜があるトークンには `gid` という private claim（OP 側の GrantID）も入り、grant ID がない場合は省略されます。`gid` は OP だけが解釈する claim で、RS は無視します。
 
-**既定 — grant-tombstone 戦略。** OP は grant ごとの小さな tombstone テーブルを保持し、検証時に JWT の `gid` を tombstone と突き合わせます。単一 AT の `/revocation` は `jti` をキーにした拒否リスト行を 1 件書き込みます。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
+**既定 — grant-tombstone 戦略。** OP は grant ごとの小さな tombstone テーブルを保持し、検証時に JWT の `gid` を tombstone と突き合わせます。単一 AT の `/revoke` は `jti` をキーにした拒否リスト行を 1 件書き込みます。定常状態の行数は `O(失効した grant 数 + 失効した jti 数)` であり、`O(発行数)` ではありません。
 
 **明示時のみ — JTI registry 戦略**（`RevocationStrategyJTIRegistry`）。OP は発行ごとに `jti` をキーにした shadow 行を 1 件書き込み、失効時には行の `Revoked` 列を反転させます。発行ごとの監査証跡が必要なときに有効。
 
@@ -239,7 +262,7 @@ active な opaque access token の introspection response には、値が存在�
 
 既定では、`GET /userinfo`（OIDC Core §5.3）にアクセストークンを載せると、アクセストークンの scope の範囲でユーザ claim の JSON が返ります。OIDC では JWT 形式の応答も定義されています。本ライブラリでは `Accept: application/jwt` で署名付き応答を要求でき、クライアントに暗号化応答メタデータを登録すると、署名後に暗号化した nested JWE が返ります。
 
-以下の curl は制約なしの Bearer トークンの例です。DPoP バインドされたトークンでは `Authorization: DPoP` と有効な `DPoP` proof ヘッダーを使います。
+以下の curl は制約なしの Bearer トークンの例です。DPoP バインドされたトークンでは `Authorization: DPoP` と有効な `DPoP` proof ヘッダを使います。
 
 ```sh
 curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/userinfo
@@ -255,7 +278,7 @@ curl -H "Authorization: Bearer <access_token>" https://op.example.com/oidc/useri
 - **ID トークン claim** はログイン時点のスナップショットです。
 - **UserInfo** は最新値の参照経路 — ユーザが変えうる値（表示名など）が必要なら呼びます。
 
-ほとんどのアプリは ID トークン claim で足ります。UserInfo は最新性が必要なときに使ってください。実装上は、ライブラリがアクセストークンを検証して設定された OP 側の失効状態を確認するので、ログインから UserInfo 呼び出しまでの間に revoke されたトークンは、JWT の署名が通っていても拒否されます。
+ほとんどのアプリは ID トークン claim で足ります。UserInfo は最新性が必要なときに使ってください。実装上は、ライブラリがアクセストークンを検証して設定された OP 側の失効状態を確認するので、ログインから UserInfo 呼び出しまでの間に失効したトークンは、JWT の署名が通っていても拒否されます。
 
 UserInfo の claim を使う前に、RP はレスポンスの `sub` が ID トークンの `sub` と完全一致することを確認しなければなりません。OIDC Core §5.3.4 は、不一致なら UserInfo レスポンスを使用しないよう求めています。署名付き UserInfo JWT の場合は、署名と claim も検証します。
 :::
@@ -264,9 +287,10 @@ UserInfo の claim を使う前に、RP はレスポンスの `sub` が ID ト�
 
 | オプション | 制御対象 | 既定 |
 |---|---|---|
-| `op.WithAccessTokenTTL(d)` | アクセストークン寿命 | 5 分 |
+| `op.WithAccessTokenTTL(d)` | アクセストークン寿命。上限は 24 時間、FAPI 2.0 プロファイル下では 10 分 | 5 分 |
 | `op.WithRefreshTokenTTL(d)` | リフレッシュトークン寿命 | 30 日 |
 | `op.WithRefreshTokenOfflineTTL(d)` | `offline_access` リフレッシュトークン寿命 | `WithRefreshTokenTTL` 継承 |
+| `op.WithAccessTokenRevocationStrategy(s)` | OP 側で JWT アクセストークンを失効させる方式（grant tombstone、JTI registry、なし） | grant tombstone |
 | `op.WithClaimsSupported(...)` | OP が返せる claim の列挙。discovery 文書に出る | — |
 | `op.WithClaimsParameterSupported(false)` | OIDC §5.5 の正しい `claims` 要求を広告せず投影しない。malformed JSON は引き続き拒否 | on |
 | `op.WithStrictOfflineAccess()` | 発行とリフレッシュ交換を OIDC Core §11 の厳格解釈に切り替え、`offline_access` が granted scope に含まれているときに限りリフレッシュトークンを発行・受理する（下の callout 参照） | off（緩い設定。`openid` + クライアントの `refresh_token` grant で発行）|
@@ -283,5 +307,5 @@ OIDC Core §11 の既定（緩やかな）解釈では、granted scope に `open
 
 - [アクセストークンの形式 — JWT と opaque](/ja/concepts/access-token-format) — 既定の JWT と明示時のみの opaque、その設計判断。負荷の形、ヘッダサイズ、失効の到達範囲、混在配備向けの per-audience 選択。
 - [送信者制約](/ja/concepts/sender-constraint) — DPoP（RFC 9449）/ mTLS（RFC 8705）でアクセストークンをクライアント保有鍵に結び付ける。
-- [使い方: client_credentials](/ja/use-cases/client-credentials) — エンドユーザの無いアクセストークン。
+- [ユースケース: client_credentials](/ja/use-cases/client-credentials) — エンドユーザの無いアクセストークン。
 - [Back-Channel Logout](/ja/use-cases/back-channel-logout) — OP がどのように他 RP にログアウトを伝播し、shadow 行の失効をカスケードさせるか。

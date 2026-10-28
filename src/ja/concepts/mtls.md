@@ -43,6 +43,10 @@ op.WithMTLSRootCAs(pool),
 
 OP は mTLS 認証されたクライアントにトークンを発行する際、DER エンコードした証明書の SHA-256 ハッシュ値（RFC 8705 §3）を計算し、アクセストークンに `cnf.x5t#S256` として書き込みます。以後このアクセストークンを使うリクエストは **同じ証明書** で TLS 接続を確立する必要があり、リソースサーバは観測した証明書をハッシュして `cnf.x5t#S256` と比較します。
 
+結び付けが行われるのは、token リクエストが証明書を提示したときだけです。提示がなければ通常の bearer トークンになります。ただし `profile.FAPI2Baseline`、`profile.FAPI2MessageSigning`、`profile.FAPICIBA` は `400 invalid_request` で拒否します。リフレッシュトークンも全クライアント種別で同じように結び付きます。連鎖は証明書の thumbprint を覚えていて、リフレッシュのたびに同じ証明書を提示しなければ `invalid_grant` で失敗します。mTLS は連鎖の途中で bearer から結び付きへ切り替わることはなく、結び付きは発行時に固定されます。
+
+`/userinfo` では、証明書に結び付いたトークンに対して証明書がない、または別のものだった場合、`401` と `invalid_token` で拒否します。応答からは理由を区別できません。OP の introspection 応答は結び付きを `cnf` で報告し、`token_type` は `Bearer` のままです。
+
 `cnf` 自体は DPoP と共通の仕組み（RFC 7800）ですが、**メンバ名** が異なります — DPoP は `jkt`、mTLS は `x5t#S256`。1 つのトークンに両方のメンバを持たせることもできます。両方の結び付きがある場合、利用側 endpoint は conjunction（AND）として検証します。つまり DPoP proof は `jkt` に、提示証明書は `x5t#S256` に一致しなければなりません。本ライブラリは `/userinfo` でこの conjunction を適用し、device-code と CIBA の grant binding でも記録されたすべての方式を要求します。
 
 ::: details なぜ証明書全体ではなく thumbprint なのか
@@ -52,61 +56,48 @@ DPoP の JWK thumbprint と同じ理由です。固定長のハッシュ値は�
 ## リバースプロキシ構成
 
 <figure class="fig">
-  <div class="fig-head">証明書が信頼境界を越える場所</div>
-  <svg class="fig-svg" role="img" aria-labelledby="mtls-proxy-title" viewBox="0 0 960 486" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">転送された証明書は、プロキシ経由のときだけ信頼する</div>
+  <svg class="fig-svg" role="img" aria-labelledby="mtls-proxy-title" viewBox="0 0 960 624" xmlns="http://www.w3.org/2000/svg">
     <title id="mtls-proxy-title">TLS 終端プロキシがハンドシェイクからクライアント証明書を取り出し、ヘッダに載せて前送りします。OP がそのヘッダを読むのは、リクエストが信頼済み CIDR に含まれるアドレスから届いた場合だけです。それ以外ではヘッダを無視し、リクエストは fail closed になります。</title>
-    <!-- ゾーン -->
-    <rect class="fg-group" x="30" y="30" width="900" height="110" rx="8"/>
-    <rect class="fg-group" x="30" y="152" width="900" height="130" rx="8"/>
-    <rect class="fg-group" x="30" y="302" width="900" height="172" rx="8"/>
-    <text class="fg-lbl" x="46" y="48">public</text>
-    <text class="fg-lbl" x="46" y="170">edge</text>
-    <text class="fg-lbl fg-accent" x="46" y="320">op trust zone</text>
-    <!-- クライアント -->
-    <rect class="fg-box" x="330" y="56" width="300" height="68" rx="8"/>
-    <text class="fg-t" x="480" y="80" text-anchor="middle">クライアント</text>
-    <text class="fg-xs" x="480" y="98" text-anchor="middle">X.509 クライアント証明書を保持する</text>
-    <text class="fg-mxs" x="480" y="114" text-anchor="middle">TLS ハンドシェイクで提示する</text>
-    <path class="fg-edge" d="M480,128 V178" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="496" y="150">相互 TLS ハンドシェイク</text>
-    <!-- プロキシ -->
-    <rect class="fg-box" x="330" y="182" width="300" height="82" rx="8"/>
-    <text class="fg-t2" x="480" y="206" text-anchor="middle">TLS 終端プロキシ</text>
-    <text class="fg-xs" x="480" y="224" text-anchor="middle">TLS を終端し、証明書を取り出す</text>
-    <text class="fg-mxs" x="480" y="244" text-anchor="middle">X-SSL-Cert: &lt;PEM&gt;</text>
-    <!-- 信頼境界 -->
-    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="30" y1="292" x2="930" y2="292"/>
-    <text class="fg-lbl" x="806" y="287">trust boundary</text>
-    <path class="fg-edge" d="M480,268 V326" marker-end="url(#fg-a)"/>
-    <!-- ゲート -->
-    <rect class="fg-box fg-box--accent" x="360" y="330" width="240" height="60" rx="8"/>
-    <text class="fg-t2 fg-accent" x="480" y="354" text-anchor="middle">trusted-CIDR ゲート</text>
-    <text class="fg-mxs" x="480" y="374" text-anchor="middle">RemoteAddr ∈ trustedCIDRs?</text>
-    <!-- 拒否 -->
-    <path class="fg-edge fg-edge--danger" d="M356,360 H244" marker-end="url(#fg-ad)"/>
-    <text class="fg-xs" x="300" y="353" text-anchor="middle">範囲外</text>
-    <rect class="fg-box fg-box--danger" x="46" y="330" width="194" height="60" rx="8"/>
-    <text class="fg-t2" x="64" y="354">ヘッダを無視する</text>
-    <text class="fg-xs" x="64" y="374">fail closed — 証明書なし扱い</text>
-    <!-- 受理 -->
-    <path class="fg-edge fg-edge--accent" d="M604,360 H716" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="660" y="353" text-anchor="middle">範囲内</text>
-    <rect class="fg-box fg-box--accent" x="720" y="330" width="194" height="60" rx="8"/>
-    <text class="fg-t2 fg-accent" x="738" y="354">ヘッダが正本</text>
-    <text class="fg-xs" x="738" y="374">前送りされた証明書を使う</text>
-    <!-- OP -->
-    <path class="fg-edge fg-edge--accent" d="M817,394 V430 H634" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="330" y="404" width="300" height="54" rx="8"/>
-    <text class="fg-t fg-accent" x="480" y="426" text-anchor="middle">OP — 本ライブラリ</text>
-    <text class="fg-mxs" x="480" y="446" text-anchor="middle">cnf.x5t#S256 が証明書をトークンに結び付ける</text>
-    <text class="fg-xs" x="46" y="424">プロキシを挟まず OP が直接 TLS を</text>
-    <text class="fg-xs" x="46" y="440">終端する構成では、ハンドシェイクの</text>
-    <text class="fg-xs" x="46" y="456">証明書を使い、ヘッダは一切参照しません</text>
+    <!-- client -->
+    <rect class="fg-box" x="312" y="24" width="336" height="72" rx="8"/>
+    <text class="fg-t2" x="328" y="52">クライアント</text>
+    <text class="fg-xs" x="328" y="76">X.509 クライアント証明書を保持する</text>
+    <path class="fg-edge" d="M480,96 V152" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="492" y="129">相互 TLS ハンドシェイク</text>
+    <!-- proxy -->
+    <rect class="fg-box" x="312" y="152" width="336" height="96" rx="8"/>
+    <text class="fg-t2" x="328" y="180">TLS 終端プロキシ</text>
+    <text class="fg-xs" x="328" y="204">TLS を終端し、証明書を取り出す</text>
+    <text class="fg-mxs" x="328" y="228">X-SSL-Cert: &lt;PEM&gt;</text>
+    <path class="fg-edge" d="M480,248 V344" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="492" y="277">転送されたリクエスト</text>
+    <!-- trust boundary -->
+    <rect class="fg-frame" x="32" y="296" width="896" height="304" rx="8"/>
+    <text class="fg-lbl fg-accent" x="56" y="324">op trust zone</text>
+    <rect class="fg-box fg-box--accent" x="312" y="344" width="336" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="328" y="372">trusted-CIDR ゲート</text>
+    <text class="fg-mxs" x="328" y="396">RemoteAddr ∈ trustedCIDRs?</text>
+    <path class="fg-leader" d="M480,416 V440 M256,440 H704"/>
+    <path class="fg-edge fg-edge--thin fg-edge--danger" d="M256,440 V480" marker-end="url(#fg-ad)"/>
+    <text class="fg-s" x="268" y="465">範囲外</text>
+    <path class="fg-edge fg-edge--thin fg-edge--accent" d="M704,440 V480" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="716" y="465">範囲内</text>
+    <!-- out of range -->
+    <rect class="fg-box fg-box--danger" x="56" y="480" width="400" height="96" rx="8"/>
+    <text class="fg-t2" x="72" y="508">ヘッダを無視する</text>
+    <text class="fg-xs" x="72" y="532">証明書なしとして扱う</text>
+    <text class="fg-xs" x="72" y="556">fail closed</text>
+    <!-- in range -->
+    <rect class="fg-box fg-box--accent" x="504" y="480" width="400" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="520" y="508">ヘッダが正本</text>
+    <text class="fg-xs" x="520" y="532">前送りされた証明書を使う</text>
+    <text class="fg-mxs" x="520" y="556">cnf.x5t#S256 でトークンに結び付ける</text>
   </svg>
-  <figcaption class="fig-note">このゲートがセキュリティ上の論拠のすべてです。ヘッダは OP に直接到達できる相手なら誰でも偽造できるため、そのヘッダが載せる証明書は、リクエストが書き込んだプロキシから来たと OP が確認できて初めて意味を持ちます。</figcaption>
+  <figcaption class="fig-note">このゲートがセキュリティ上の論拠のすべてです。ヘッダは OP に直接到達できる相手なら誰でも偽造できるため、載っている証明書は、ヘッダを書き込んだプロキシからのリクエストだと確認できて初めて意味を持ちます。プロキシを挟まない構成では、OP はハンドシェイクの証明書を使い、ヘッダは一切参照しません。</figcaption>
 </figure>
 
-本番では OP が自前で TLS を終端しない構成が多くあります。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが HTTP ヘッダ（`X-SSL-Cert`、`X-Forwarded-Client-Cert` など）で前送りする必要があります。
+本番では OP が自前で TLS を終端しない構成が多くあります。前段の nginx / envoy / AWS ALB / クラウド LB が TLS を復号し、OP には平文 HTTP で渡します。OP に届いた時点でクライアント証明書はすでに接続から失われているため、プロキシが `X-SSL-Cert` のような HTTP ヘッダで前送りする必要があります。
 
 OP は **どのヘッダから読むか** と **どの IP 範囲がそのヘッダを設定してよいか** の両方を知る必要があります。後者を抜くと、インターネット側の任意のクライアントが偽造ヘッダを送って、認証済みクライアントになりすませてしまいます。
 
@@ -119,7 +110,11 @@ op.WithMTLSProxy("X-SSL-Cert", []string{"10.0.0.0/8"})
 - `headerName` が空文字なら設定エラー。ヘッダパスを無効化したい場合はオプション自体を渡さないでください。
 - `trustedCIDRs` が空 slice なら構築時に拒否されます。設定ミスで許可リストが黙って広がる経路を塞ぐためです。
 
-直接経路では `http.Request.TLS.PeerCertificates` を読みます。プロキシ経路はリクエストの `RemoteAddr` が設定済み trusted CIDR 内にある場合だけ参照され、範囲外からのヘッダは無視されて fail closed になります。信頼済みプロキシから来たリクエストでは、前送りされた証明書が正本であり、プロキシから OP までの TLS hop にある証明書より優先されます。プロキシの transport 証明書は OAuth クライアント証明書として扱いません。
+`WithMTLSProxy` と `WithMTLSRootCAs` が効くのは `feature.MTLS` と併用したときだけです。feature がなければ、検証はされても無視されます。前送りされた証明書は読まれず、トークンにも `cnf.x5t#S256` は付きません。`op.New` は失敗にせず、設定が部分的であることを警告ログに出すので、起動ログを確認してください。
+
+ヘッダには、`CERTIFICATE` の PEM ブロックをちょうど 1 つ載せた単一のフィールドが必要です。フィールドの重複、証明書チェーン、末尾の余分なデータは不正な証明書（`invalid_request`）として拒否します。複数の hop が別々の leaf を選ぶことを防ぐためです。信頼済みプロキシからのリクエストにヘッダがなければ、プロキシ自身の transport 証明書が接続上にあっても、証明書の提示なしとして扱います。
+
+直接経路では `http.Request.TLS.PeerCertificates` を読みます。証明書が届くには、Go の HTTP サーバでクライアント証明書を要求する設定（`tls.Config.ClientAuth`）が必要です。プロキシ経路はリクエストの `RemoteAddr` が設定済み trusted CIDR 内にある場合だけ参照され、範囲外からのヘッダは無視されて fail closed になります。信頼済みプロキシから来たリクエストでは、前送りされた証明書が正本であり、プロキシから OP までの TLS hop にある証明書より優先されます。プロキシの transport 証明書は OAuth クライアント証明書として扱いません。
 
 `op.MTLSProxy` は公開設定型です。`op.MTLSProxyConfig(provider)` は記録済みの `HeaderName` と fresh な `TrustedProxies` slice を返し、option が無ければ zero value を返します。組み込み側の edge code はこの公開 projection を使ってヘッダ除去ポリシーを OP と揃えられ、internal verifier の import は必要ありません。
 
@@ -146,8 +141,8 @@ OP が自前で TLS を終端する環境（テスト、シングルテナント
 
 ## 落とし穴
 
-- **TLS 終端が証明書を正しく前送りすること。** プロキシごとにヘッダ名とエンコード（DER / PEM / URL エンコード PEM）が違います。両端で形式と `WithMTLSProxy` のヘッダ名を固定してください。
-- **証明書の更新で binding が変わる。** トークンは発行時の leaf 証明書に結び付いています。証明書を更新したらトークンも再発行してください。新しい証明書では古いトークンの `cnf.x5t#S256` を満たせません。
+- **TLS 終端が証明書を正しく前送りすること。** プロキシごとにヘッダ名とエンコードが違います。OP が受け付けるのは、生のまま、またはパーセントエンコードした単一の PEM 証明書（nginx の `$ssl_client_escaped_cert` など）です。DER や、Envoy の `x-forwarded-client-cert` のような複数フィールドの構造化された値は受け付けません。`WithMTLSProxy` のヘッダ名を固定し、プロキシ側で外部から届いた同名ヘッダを取り除いてください。
+- **証明書の更新で binding が変わる。** トークンは発行時の leaf 証明書に結び付き、リフレッシュトークンの連鎖も同じです。クライアントの証明書がローテーションすると、古いアクセストークンはリソースサーバで通らなくなり、新しい証明書でのリフレッシュも `invalid_grant` で失敗します。クライアントは認可からやり直す必要があるので、証明書の有効期間はリフレッシュトークンの寿命と合わせて決めてください。
 - **未対応の mTLS クライアント認証方式を token endpoint に設定しない。** Final Security Profile は token endpoint の mTLS を許可しますが、本ライブラリの token endpoint が振り分けるのは `private_key_jwt` です。mTLS は送信者制約レイヤとして利用できます。
 - **多段プロキシでの `RemoteAddr` の意味。** OP の前にプロキシが 2 段ある場合、`RemoteAddr` に乗るのは **直前の** プロキシの IP のみです。その IP が `trustedCIDRs` に入っている必要があります。さらに外側のプロキシはヘッダ許可リストの対象外です（OP が直接見ないため）。
 
@@ -169,5 +164,5 @@ OP が自前で TLS を終端する環境（テスト、シングルテナント
 
 - [DPoP (RFC 9449)](/ja/concepts/dpop) — もう一方の送信者制約方式。クライアント保有鍵に結び付けます。
 - [送信者制約 — 選定ガイド](/ja/concepts/sender-constraint) — 比較表と使い分けの指針。
-- [使い方: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアント認証と送信者制約を含む完全な組み込み例。
+- [ユースケース: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — `private_key_jwt` クライアント認証と送信者制約を含む完全な組み込み例。
 - [設計判断](/ja/security/design-judgments) — 仕様間トレードオフの整理。

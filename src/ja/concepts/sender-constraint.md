@@ -49,7 +49,7 @@ TLS は通信路上のトークンを保護します。一度アプリ層（OP�
 | リクエスト毎の追加成果物 | アプリ側で署名する新しい JWS proof | なし（TLS 層で結び付け） |
 | プロキシ / TLS 終端への依存 | なし — 通常の HTTPS で動く | 終端側が証明書をヘッダで前送りする必要あり |
 | `cnf` メンバ | `cnf.jkt`(JWK thumbprint) | `cnf.x5t#S256`(X.509 thumbprint) |
-| リフレッシュトークン結び付けの既定 | 公開クライアントは結び付ける、confidential クライアントは結び付けない（[設計判断 #15](/ja/security/design-judgments#dj-15)） | アクセストークンは証明書に結び付け可能。mTLS は token endpoint のクライアント認証方式としては使いません |
+| リフレッシュトークン結び付けの既定 | 公開クライアントは結び付ける、confidential クライアントは結び付けない（[設計判断 #15](/ja/security/design-judgments#dj-15)） | 全クライアント種別で証明書に結び付ける。リフレッシュでは同じ証明書の提示が必要 |
 | 結び付けを越えた replay 防御 | `jti` キャッシュ、`iat` 窓、任意のサーバ nonce | TLS セッション再利用 + 証明書 thumbprint 照合 |
 | FAPI 2.0 Security Profile（confidential client）で利用可能 | 可 | 可 |
 | FAPI 2.0 Message Signing | Security Profile を継承。DPoP nonce は任意 | Security Profile を継承 |
@@ -58,60 +58,75 @@ Final の FAPI 2.0 Security Profile は confidential client を対象とし、**
 
 以下の選定ガイドは、本ライブラリが対応する公開クライアントの配備も扱います。公開クライアントは Final Security Profile の対象クライアント要件には含まれません。
 
+## 結び付けが適用される条件
+
+`feature.DPoP` や `feature.MTLS` を有効にしただけでは、すべてのトークンが結び付くわけではありません。token endpoint は、リクエストが DPoP proof またはクライアント証明書を伴っていれば結び付け、伴っていなければ通常の bearer トークンを発行します。`profile.FAPI2Baseline`、`profile.FAPI2MessageSigning`、`profile.FAPICIBA` はこの抜け道を塞ぎ、結び付いていないリクエストを `/token` で `invalid_request` として拒否します。1 つのトークンが `cnf.jkt` と `cnf.x5t#S256` の両方を持つこともあり、その場合リソースサーバは両方を検証する必要があります。
+
+| 状況 | 応答 |
+|---|---|
+| FAPI プロファイル下で、proof も証明書もない token リクエスト | `400 invalid_request` |
+| DPoP に結び付いた連鎖のリフレッシュで、proof がない、または別の鍵で署名されている | `400 invalid_grant` |
+| mTLS に結び付いた連鎖のリフレッシュで、証明書がない、または別の証明書 | `400 invalid_grant` |
+| `/userinfo` に DPoP バインドのトークンを `Bearer` scheme で、または proof なしで提示 | `401`、`WWW-Authenticate` は `invalid_token` |
+| `/userinfo` に mTLS バインドのトークンを、別の証明書または証明書なしで提示 | `401`、`WWW-Authenticate` は `invalid_token` |
+| バインド済みトークンの introspection | `cnf` つきの active 応答。OP は proof を検査せず、リソースサーバが検査する |
+
+introspection は、バインド済みのトークンでも `token_type: "Bearer"` を返します。バインドは `cnf` でだけ確認できます。
+
 ## 使い分けの指針
 
 <figure class="fig">
-  <div class="fig-head">送信者制約の選び方</div>
-  <svg class="fig-svg" role="img" aria-labelledby="sc-choice-title" viewBox="0 0 960 466" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">既定は DPoP、証明書があるなら mTLS</div>
+  <svg class="fig-svg" role="img" aria-labelledby="sc-choice-title" viewBox="0 0 960 568" xmlns="http://www.w3.org/2000/svg">
     <title id="sc-choice-title">送信者制約を選ぶための判定木。ブラウザ中心のクライアントは通常 DPoP、すでに PKI 証明書を持つバックエンドは mTLS を選べます。B2B や規制環境は制度やパートナー要件を確認し、混在環境は両方を有効化します。どれにも当てはまらない場合の既定は DPoP です。</title>
     <!-- 1 -->
-    <rect class="fg-box" x="36" y="24" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="50">ブラウザ中心のクライアントか?</text>
-    <text class="fg-xs" x="56" y="70">SPA · モバイルアプリ · public クライアント全般</text>
-    <path class="fg-edge" d="M434,55 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="48" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="24" width="394" height="62" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="50">DPoP</text>
-    <text class="fg-mxs" x="550" y="70">cnf.jkt — クライアントが自分で生成して保持する鍵</text>
-    <path class="fg-edge" d="M233,90 V112" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="106">いいえ</text>
+    <rect class="fg-box" x="32" y="24" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="52">ブラウザ中心のクライアントか?</text>
+    <text class="fg-xs" x="48" y="76">SPA · モバイルアプリ · public クライアント全般</text>
+    <path class="fg-edge" d="M464,60 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="50" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="560" y="24" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="52">DPoP</text>
+    <text class="fg-mxs" x="576" y="76">cnf.jkt · クライアントが生成する鍵</text>
+    <path class="fg-edge" d="M248,96 V136" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="121">いいえ</text>
     <!-- 2 -->
-    <rect class="fg-box" x="36" y="116" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="142">バックエンドがすでに PKI 証明書を持っているか?</text>
-    <text class="fg-xs" x="56" y="162">内部 CA を運用し、各サービスに発行している</text>
-    <path class="fg-edge" d="M434,147 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="140" text-anchor="middle">はい</text>
-    <rect class="fg-box fg-box--accent" x="530" y="116" width="394" height="62" rx="8"/>
-    <text class="fg-t2 fg-accent" x="550" y="142">mTLS</text>
-    <text class="fg-mxs" x="550" y="162">cnf.x5t#S256 — 既に発行している証明書をそのまま使う</text>
-    <path class="fg-edge" d="M233,182 V204" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="198">いいえ</text>
+    <rect class="fg-box" x="32" y="136" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="164">バックエンドは PKI 証明書を持っているか?</text>
+    <text class="fg-xs" x="48" y="188">内部 CA を運用し、各サービスに発行している</text>
+    <path class="fg-edge" d="M464,172 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="162" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="560" y="136" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="164">mTLS</text>
+    <text class="fg-mxs" x="576" y="188">cnf.x5t#S256 · 発行済みの証明書</text>
+    <path class="fg-edge" d="M248,208 V248" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="233">いいえ</text>
     <!-- 3 -->
-    <rect class="fg-box" x="36" y="208" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="234">B2B・オープンバンキング・規制対象か?</text>
-    <text class="fg-xs" x="56" y="254">制度やパートナーが証明書を求める場合がある</text>
-    <path class="fg-edge" d="M434,239 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="232" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="208" width="394" height="62" rx="8"/>
-    <text class="fg-t2" x="550" y="234">mTLS、または両方</text>
-    <text class="fg-xs" x="550" y="254">制度やパートナー標準を確認する</text>
-    <path class="fg-edge" d="M233,274 V296" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="290">いいえ</text>
+    <rect class="fg-box" x="32" y="248" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="276">B2B・オープンバンキング・規制対象か?</text>
+    <text class="fg-xs" x="48" y="300">制度やパートナーが証明書を求める場合がある</text>
+    <path class="fg-edge" d="M464,284 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="274" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="560" y="248" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="276">mTLS、または両方</text>
+    <text class="fg-xs" x="576" y="300">制度やパートナー標準を確認する</text>
+    <path class="fg-edge" d="M248,320 V360" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="345">いいえ</text>
     <!-- 4 -->
-    <rect class="fg-box" x="36" y="300" width="394" height="62" rx="8"/>
-    <text class="fg-s" x="56" y="326">混在環境か?</text>
-    <text class="fg-xs" x="56" y="346">SPA とバックエンドサービスが両方ある</text>
-    <path class="fg-edge" d="M434,331 H526" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="480" y="324" text-anchor="middle">はい</text>
-    <rect class="fg-box" x="530" y="300" width="394" height="62" rx="8"/>
-    <text class="fg-t2" x="550" y="326">両方を有効化する</text>
-    <text class="fg-xs" x="550" y="346">登録時に各クライアントがどちらかを選ぶ</text>
-    <path class="fg-edge" d="M233,366 V388" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="243" y="382">いいえ</text>
-    <!-- 既定 -->
-    <rect class="fg-box fg-box--accent" x="36" y="392" width="888" height="58" rx="8"/>
-    <text class="fg-t2 fg-accent" x="56" y="416">迷ったら DPoP から始める</text>
-    <text class="fg-xs" x="56" y="436">ネットワークにも PKI にも何も要求せず、あとから mTLS へ移すこともできます</text>
+    <rect class="fg-box" x="32" y="360" width="432" height="72" rx="8"/>
+    <text class="fg-s" x="48" y="388">混在環境か?</text>
+    <text class="fg-xs" x="48" y="412">SPA とバックエンドサービスが両方ある</text>
+    <path class="fg-edge" d="M464,396 H560" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="512" y="386" text-anchor="middle">はい</text>
+    <rect class="fg-box" x="560" y="360" width="368" height="72" rx="8"/>
+    <text class="fg-t2" x="576" y="388">両方を有効化する</text>
+    <text class="fg-xs" x="576" y="412">登録時に各クライアントがどちらかを選ぶ</text>
+    <path class="fg-edge" d="M248,432 V472" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="260" y="457">いいえ</text>
+    <!-- default -->
+    <rect class="fg-box fg-box--accent" x="32" y="472" width="896" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="48" y="500">迷ったら DPoP から始める</text>
+    <text class="fg-xs" x="48" y="524">ネットワークにも PKI にも何も要求せず、あとから mTLS へ移すこともできます</text>
   </svg>
   <figcaption class="fig-note">どちらの方式も行き着く先は同じで、リソースサーバが照合する <code>cnf</code> claim です。問題は、全クライアントに現実的に配れる資格情報がどちらかという点だけです。自前で生成できる鍵か、誰かが発行して更新し続ける証明書か。</figcaption>
 </figure>
@@ -133,6 +148,6 @@ Final の FAPI 2.0 Security Profile は confidential client を対象とし、**
 
 ## 次に読む
 
-- [使い方: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — 送信者制約を有効化した完全な組み込み例。
+- [ユースケース: FAPI 2.0 Security Profile](/ja/use-cases/fapi2-baseline) — 送信者制約を有効化した完全な組み込み例。
 - [DPoP nonce フロー](/ja/use-cases/dpop-nonce) — RFC 9449 §8 / §9 のサーバ供給 nonce パイプライン。
 - [設計判断](/ja/security/design-judgments) — 公開 / confidential クライアントでのリフレッシュトークン結び付けの差を含む、解決済みの仕様間トレードオフ。

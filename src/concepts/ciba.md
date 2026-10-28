@@ -33,83 +33,64 @@ The consumption device never asks the user for credentials — it just asks the 
 ## How the flow runs (poll mode)
 
 <figure class="fig">
-  <div class="fig-head">CIBA in poll mode</div>
-  <svg class="fig-svg" role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">The OP reaches the user's phone; the terminal only polls</div>
+  <svg class="fig-svg" role="img" aria-labelledby="ciba-poll-title" viewBox="0 0 960 872" xmlns="http://www.w3.org/2000/svg">
     <title id="ciba-poll-title">CIBA in poll mode. The point-of-sale terminal calls the backchannel authentication endpoint, the OP resolves the login hint to a subject, the embedder's notification service reaches the staff phone, and the terminal polls the token endpoint until the user approves.</title>
+    <!-- phase bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="336" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">Start the request</text>
+    <rect class="fg-group" x="32" y="464" width="896" height="382" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="492">Wait for approval</text>
     <!-- lifelines -->
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="524"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="524"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="524"/>
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="848"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="848"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="848"/>
     <!-- actors -->
-    <rect class="fg-box" x="50" y="16" width="200" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">Consumption device</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">POS terminal</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="730" y="16" width="200" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">Authentication device</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">staff phone</text>
-    <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="96" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="99" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,96 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="325" y="76" text-anchor="middle">POST /bc-authorize</text>
-    <text class="fg-mxs" x="325" y="89" text-anchor="middle">login_hint=alice · scope=openid · binding_message</text>
-    <!-- 2 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="126" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="129" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,118 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="542" y="122">resolve the hint to a subject</text>
-    <text class="fg-mxs" x="542" y="135">HintResolver → sub=alice123</text>
-    <!-- 3 -->
-    <circle class="fg-badge" cx="15" cy="184" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="187" text-anchor="middle">3</text>
-    <path class="fg-edge" d="M500,184 H830" marker-end="url(#fg-a)"/>
-    <text class="fg-s" x="665" y="164" text-anchor="middle">the embedder's notification service</text>
-    <text class="fg-mxs" x="665" y="177" text-anchor="middle">"Approve $80 at Acme Coffee?"</text>
-    <!-- 4 -->
-    <circle class="fg-badge" cx="15" cy="216" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="219" text-anchor="middle">4</text>
-    <path class="fg-edge fg-edge--accent" d="M500,216 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="210" text-anchor="middle">200 · { auth_req_id, expires_in: 600, interval: 5 }</text>
-    <!-- par fragment -->
-    <rect class="fg-frame" x="44" y="242" width="896" height="196" rx="8"/>
-    <rect class="fg-box fg-box--muted" x="44" y="242" width="52" height="18" rx="4"/>
-    <text class="fg-tab" x="56" y="255">par</text>
-    <line class="fg-rule fg-rule--dashed" x1="44" y1="362" x2="940" y2="362"/>
-    <!-- loop fragment -->
-    <rect class="fg-frame" x="64" y="272" width="600" height="80" rx="6"/>
-    <rect class="fg-box fg-box--muted" x="64" y="272" width="176" height="18" rx="4"/>
-    <text class="fg-tab" x="76" y="285">loop · every interval s</text>
-    <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="308" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="311" text-anchor="middle">5</text>
-    <path class="fg-edge" d="M150,308 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="325" y="302" text-anchor="middle">POST /token · grant_type=…:ciba · auth_req_id</text>
-    <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="338" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="341" text-anchor="middle">6</text>
-    <path class="fg-edge fg-edge--muted" d="M500,338 H150" marker-end="url(#fg-am)"/>
-    <text class="fg-mxs fg-halo" x="325" y="332" text-anchor="middle">400 · { error: authorization_pending }</text>
-    <!-- 7 -->
-    <text class="fg-xs" x="76" y="386">meanwhile, out of band: the user approves on the phone</text>
-    <circle class="fg-badge" cx="15" cy="416" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="419" text-anchor="middle">7</text>
-    <path class="fg-edge" d="M830,416 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="410" text-anchor="middle">approve(auth_req_id, sub=alice123)</text>
-    <!-- 8 -->
-    <circle class="fg-badge" cx="15" cy="472" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="475" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M150,472 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="466" text-anchor="middle">POST /token — the next poll</text>
-    <!-- 9 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="510" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="513" text-anchor="middle">9</text>
-    <path class="fg-edge fg-edge--accent" d="M500,510 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="504" text-anchor="middle">200 · { access_token, id_token, refresh_token? }</text>
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">POS terminal</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">consumption device</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Staff phone</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">authentication device</text>
+    <!-- backchannel request -->
+    <path class="fg-edge" d="M192,206 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="172" text-anchor="middle">POST /bc-authorize</text>
+    <text class="fg-mxs" x="352" y="194" text-anchor="middle">login_hint · binding_message</text>
+    <!-- hint resolution -->
+    <path class="fg-edge fg-edge--accent" d="M512,246 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="252">map the hint to a subject</text>
+    <text class="fg-mxs" x="568" y="274">HintResolver → subject</text>
+    <!-- notification -->
+    <path class="fg-edge" d="M512,344 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="310" text-anchor="middle">notification service</text>
+    <text class="fg-mxs" x="668" y="332" text-anchor="middle">Acme Coffee: approve $80?</text>
+    <!-- auth_req_id -->
+    <path class="fg-edge fg-edge--accent" d="M512,416 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="382" text-anchor="middle">200 · auth_req_id</text>
+    <text class="fg-mxs" x="352" y="404" text-anchor="middle">expires_in: 600 · interval: 5</text>
+    <!-- poll -->
+    <path class="fg-edge" d="M192,566 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="532" text-anchor="middle">POST /token · poll</text>
+    <text class="fg-mxs" x="352" y="554" text-anchor="middle">grant_type=…:ciba</text>
+    <!-- pending -->
+    <path class="fg-edge fg-edge--muted" d="M512,622 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl" x="352" y="612" text-anchor="middle">400 · authorization_pending</text>
+    <!-- approval -->
+    <path class="fg-edge" d="M824,694 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="668" y="660" text-anchor="middle">user approves on the phone</text>
+    <text class="fg-mxs" x="668" y="682" text-anchor="middle">approve(auth_req_id)</text>
+    <!-- next poll -->
+    <path class="fg-edge" d="M192,750 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="740" text-anchor="middle">POST /token · next poll</text>
+    <!-- tokens -->
+    <path class="fg-edge fg-edge--accent" d="M512,822 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="788" text-anchor="middle">200 · access_token</text>
+    <text class="fg-mxs" x="352" y="810" text-anchor="middle">id_token · refresh_token?</text>
   </svg>
-  <figcaption class="fig-note">The terminal and the phone never talk to each other — the OP is the only thing both sides touch. That is why <code>binding_message</code> matters: it is the one string the person at the terminal and the person holding the phone can compare.</figcaption>
+  <figcaption class="fig-note">The terminal and the phone never talk to each other; the OP is the only thing both touch. That is why <code>binding_message</code> matters: it is the one string the person at the terminal and the person holding the phone can compare.</figcaption>
 </figure>
 
 The consumption device never holds a credential for the user. The user never types into the consumption device. The authentication device — which already authenticated Alice when she signed into her banking app — is the only place where consent is exercised.
@@ -158,7 +139,7 @@ op.WithCIBA(
 
 Returning `op.ErrUnknownCIBAUser` collapses the wire response to `unknown_user_id`. Any other error becomes `login_required`. The handler is required — `op.WithCIBA` without a resolver fails at `op.New`.
 
-For `HintIDTokenHint`, the OP verifies the JWT against its own keys, requires its issuer and the authenticated client's audience, and passes only the verified `sub` to `Resolve`. It intentionally does not check `exp`. A client registered with pairwise subjects is rejected before `Resolve`, because the per-sector `sub` is not reversible; that client must use `login_hint` or `login_hint_token` instead. Never parse the raw JWT in the resolver.
+For `HintIDTokenHint`, the OP verifies the JWT against its own keys, requires its issuer and the authenticated client's audience, and passes only the verified `sub` to `Resolve`. It intentionally does not check `exp`, and it refuses a token whose `typ` header is anything other than absent or `JWT`, so a logout token or access token cannot pass as a hint. A client registered with pairwise subjects is rejected before `Resolve`, because the per-sector `sub` is not reversible; that client must use `login_hint` or `login_hint_token` instead. Never parse the raw JWT in the resolver.
 
 ## binding_message — the anti-confusion field
 
@@ -169,6 +150,28 @@ CIBA `binding_message` is a short string the consumption device sends with `/bc-
 > [ Approve ] [ Deny ]
 
 Without `binding_message` the user has only the OP's generic prompt to go on, and a phishing flow ("we noticed unusual activity, please approve this notification") becomes much more plausible. Treat `binding_message` as mandatory in the embedder's UX even though the spec marks it optional.
+
+The OP accepts at most 50 characters and refuses control characters (`400 invalid_binding_message`). It forwards the string exactly as received and does not HTML-escape it, so both devices can show identical text; escape it for the rendering context yourself.
+
+## What the endpoints answer
+
+`/bc-authorize` rejects at the request:
+
+| Condition | Response |
+|---|---|
+| The hint does not resolve (`op.ErrUnknownCIBAUser`) | `400 unknown_user_id` |
+| The resolver returns any other error | `login_required` |
+| `id_token_hint` from a pairwise client | `400 invalid_request` |
+| `binding_message` too long or containing control characters | `400 invalid_binding_message` |
+| `user_code` or `client_notification_token` present | `400 invalid_request` (neither is supported) |
+| `requested_expiry` not a positive integer, or above 10 minutes under `profile.FAPICIBA` | `400 invalid_request` (outside FAPI-CIBA a value above `WithCIBAMaxExpiresIn` is clamped) |
+| Request object whose client JWKS cannot be fetched | `503` |
+
+`/token` with `grant_type=urn:openid:params:grant-type:ciba` answers with the same four polling codes as the [device flow](./device-code): `authorization_pending`, `slow_down`, `access_denied` (denied on the authentication device, or five `slow_down` offences) and `expired_token`.
+
+The lifetime of an `auth_req_id` is 600 s by default (`requested_expiry` can shorten it), and `interval` is 5 s. Tune them with `op.WithCIBADefaultExpiresIn`, `op.WithCIBAMaxExpiresIn` and `op.WithCIBAPollInterval`; negative values and, under `profile.FAPICIBA`, an expiry above 10 minutes make `op.New` fail.
+
+When the approved request is redeemed, the OP records a consent grant for that client, as the device flow does. Introspection and `/userinfo` report the public (pairwise) subject, revoking the subject reaches the tokens, and a later `/auth` for the same scopes skips the consent screen.
 
 ## See it run
 
@@ -183,4 +186,5 @@ The example is split into role-tagged files (`op.go` for the OP wiring + `HintRe
 ## Read next
 
 - [Use case: CIBA wiring](/use-cases/ciba) — `op.WithCIBA`, the `HintResolver` contract, FAPI-CIBA profile constraints, and how the embedder's authentication-device callback talks back to `CIBARequestStore.Approve`.
+- [Authorization code + PKCE](/concepts/authorization-code-pkce) — the flow to use when the user is at the client.
 - [Device Code primer](/concepts/device-code) — the conceptual sibling for "user is on a different surface" but with a code-on-screen ceremony.

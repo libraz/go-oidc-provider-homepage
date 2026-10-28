@@ -13,7 +13,7 @@ pageClass: pg-concepts-scopes-and-claims
 
 scope は要求、claim は応答です。scope を grant すると、claim ソースが値を返せる範囲で、対応する claim を OP が開示できるようになります。
 
-::: tip 30 秒で頭に入れる相関図
+::: tip 30 秒でつかむ要点
 - scope = 「あなたの email が見たい」 — `scope=openid email`
 - claim = `"email": "alice@example.com"` — 返ってきた値。
 - 1 つの scope が複数の claim を開示することがあります。下表の OIDC 標準対応がそのマッピングです。
@@ -29,7 +29,7 @@ scope は要求、claim は応答です。scope を grant すると、claim ソ�
 
 ## scope: クライアントが要求するもの
 
-`/auth` の `scope` パラメータは、半角スペース区切りの不透明な識別子のリストです。ユーザはその集合に同意し、OP は grant された集合を認可コードに記録し、アクセストークンとリフレッシュトークンの状態へ引き継ぎます。ID トークンには標準の `scope` claim は入りません。OP を `/oidc` に mount した場合の既定 endpoint は `/oidc/auth` です。
+`/auth` の `scope` パラメータは、半角スペース区切りの不透明な識別子のリストです。ユーザはその集合に同意し、OP は grant された集合を認可コードに記録し、アクセストークンとリフレッシュトークンの状態へ引き継ぎます。ID トークンには標準の `scope` claim は入りません。OP は既定で `/oidc` 配下にマウントされるため、認可エンドポイントは `/oidc/auth` になります。
 
 ```
 GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
@@ -39,16 +39,16 @@ GET /auth?response_type=code&client_id=...&scope=openid%20profile%20email&...
 
 - **scope 識別子は OAuth 2.0 にとって不透明**。`openid` に特別な意味を与えるのは OIDC Core §3.1.2.1 です。それ以外の scope 名は OP とクライアントの合意や拡張仕様で定まります。
 - **scope は case-sensitive**。`openid` は scope ですが、`OpenID` は別物（かつ未認識の）scope です。
-- **`openid` が OAuth を OIDC に変える魔法**。`openid` が要求になければ ID トークンは発行されません。本ライブラリのデフォルトは OIDC（`openid` scope 必須）で、`op.WithOpenIDScopeOptional()` で純 OAuth 2.0 に切り替えられます。
+- **`openid` が OAuth を OIDC に変える魔法**。`openid` が要求になければ ID トークンは発行されません。本ライブラリの既定は OIDC（`openid` scope 必須）で、`op.WithOpenIDScopeOptional()` で純 OAuth 2.0 に切り替えられます。
 - **ユーザは一部の scope を辞退できる**。grant された集合は要求された集合の部分集合になり得ます。OP は実際に grant された scope を token 応答とアクセストークンの状態に反映します。
-- **未知の scope は失敗**。`WithScope` で登録されていない（あるいは組み込み OIDC 標準でない）scope が要求されると、OP は RFC 6749 §5.2 の `invalid_scope` を返します。
+- **クライアントは登録された scope しか要求できない**。クライアントの登録 `Scopes` に無い scope や、`AllowedClients` がそのクライアントを除外している scope は、`invalid_scope`（RFC 6749 §5.2）で拒否されます。
 
 ## claim: トークンや userinfo 応答の中の key-value
 
 **claim** は JSON object 内の 1 フィールドです。トークンでは OP が署名し、`/userinfo` では既定で JSON として返ります。要求に応じて署名付きまたは暗号化された JWT になることもあります。OIDC Core §5.1 が長いカタログを提供しています。トークンの metadata claim とユーザ claim は分けて考える必要があります。
 
-- **ID トークンの claim** — `iss`、`sub`、`aud`、`iat`、`exp` は必須です。`nonce`、`auth_time`、`acr`、`amr`、`azp`、`at_hash`、`c_hash`、`sid` はフローや要求に応じて入ります。
-- **JWT アクセストークンの claim** — RFC 9068 で `iss`、`sub`、`aud`、`client_id`、`iat`、`exp`、`jti` が必須です。`scope`、`cnf`、`auth_time`、`acr`、`amr` などは条件に応じて入ります。本ライブラリでは opaque アクセストークン、リフレッシュトークン、認可コードは通信路上に claim を持ちません。
+- **ID トークンの claim** — `iss`、`sub`、`aud`、`iat`、`exp` は常に入ります。`nonce`、`auth_time`、`acr`、`amr`、`at_hash`、`c_hash` は、フローや要求に応じて入ります。
+- **JWT アクセストークンの claim** — RFC 9068 で `iss`、`sub`、`aud`、`client_id`、`iat`、`exp`、`jti` が必須です。`scope`、`cnf`、`auth_time`、`acr`、`amr`、`authorization_details` は条件に応じて入ります。OP 専用の private claim が 2 つあり、リソースサーバは無視してください。`gid`（失効に使う grant ID）と、`/userinfo` が読み戻す claims request の `userinfo` メンバである `userinfo_claims` です。opaque アクセストークン、リフレッシュトークン、認可コードは通信路上に claim を持ちません。
 - **ユーザ claim** — `name`、`family_name`、`email`、`email_verified`、`phone_number`、`address`、`picture` など。エンドユーザを説明する値です。grant された scope または明示的な claims request が許可し、claim ソースが値を返せる場合にだけ OP が開示します。
 
 ユーザ claim は scope が制御し、トークンの metadata claim はトークンの種類とフローによって決まります。
@@ -71,65 +71,57 @@ OIDC Core §5.4 は `profile`、`email`、`address`、`phone` に対応するユ
 この対応表だけでは、開示された claim が **どこに載るか** までは分かりません。通常の scope フローでは、`sub` と ID トークンの metadata claim は ID トークンに載り、`profile`・`email`・`address`・`phone` が開示するユーザ claim は `/userinfo` から返ります。アクセストークンには grant された `scope` が入り、ID トークンには標準の `scope` claim は入りません。
 
 <figure class="fig">
-  <div class="fig-head">要求した scope → 開示される claim → 届き先</div>
-  <svg class="fig-svg" role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 960 360" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">scope が claim を開示し、ID トークンと userinfo が運ぶ</div>
+  <svg class="fig-svg" role="img" aria-labelledby="scope-claim-map-title" viewBox="0 0 960 376" xmlns="http://www.w3.org/2000/svg">
     <title id="scope-claim-map-title">各標準 scope が開示する claim 群と、その届き先を示した図。openid が開示する sub は ID トークンに載り、profile・email・address・phone の claim は userinfo エンドポイントから返ります。offline_access は claim を開示しません。</title>
-    <text class="fg-lbl" x="40" y="26">要求した scope</text>
-    <text class="fg-lbl" x="228" y="26">開示される claim</text>
-    <text class="fg-lbl" x="664" y="26">届き先</text>
-    <line class="fg-rule fg-rule--strong" x1="36" y1="36" x2="924" y2="36"/>
+    <text class="fg-lbl" x="32" y="44">要求した scope</text>
+    <text class="fg-lbl" x="224" y="44">開示される claim</text>
+    <text class="fg-lbl" x="616" y="44">届き先</text>
+    <path class="fg-rule fg-rule--strong" d="M32,56 H928"/>
     <!-- openid -->
-    <rect class="fg-box fg-box--accent" x="36" y="52" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="71">openid</text>
-    <text class="fg-m" x="232" y="71">sub</text>
-    <line class="fg-rule" x1="36" y1="96" x2="620" y2="96"/>
+    <text class="fg-m fg-accent" x="32" y="93">openid</text>
+    <text class="fg-m" x="224" y="93">sub</text>
+    <path class="fg-rule" d="M32,112 H576"/>
     <!-- profile -->
-    <rect class="fg-box" x="36" y="106" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="125">profile</text>
-    <text class="fg-m" x="232" y="125">name · family_name · given_name · …（14 claim）</text>
-    <line class="fg-rule" x1="36" y1="150" x2="620" y2="150"/>
+    <text class="fg-m" x="32" y="141">profile</text>
+    <text class="fg-m" x="224" y="141">name · family_name · …（14 claim）</text>
+    <path class="fg-rule" d="M32,160 H576"/>
     <!-- email -->
-    <rect class="fg-box" x="36" y="160" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="179">email</text>
-    <text class="fg-m" x="232" y="179">email · email_verified</text>
-    <line class="fg-rule" x1="36" y1="204" x2="620" y2="204"/>
+    <text class="fg-m" x="32" y="189">email</text>
+    <text class="fg-m" x="224" y="189">email · email_verified</text>
+    <path class="fg-rule" d="M32,208 H576"/>
     <!-- address -->
-    <rect class="fg-box" x="36" y="214" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="233">address</text>
-    <text class="fg-m" x="232" y="233">address</text>
-    <line class="fg-rule" x1="36" y1="258" x2="620" y2="258"/>
+    <text class="fg-m" x="32" y="237">address</text>
+    <text class="fg-m" x="224" y="237">address</text>
+    <path class="fg-rule" d="M32,256 H576"/>
     <!-- phone -->
-    <rect class="fg-box" x="36" y="268" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="287">phone</text>
-    <text class="fg-m" x="232" y="287">phone_number · phone_number_verified</text>
-    <line class="fg-rule" x1="36" y1="312" x2="924" y2="312"/>
+    <text class="fg-m" x="32" y="285">phone</text>
+    <text class="fg-m" x="224" y="285">phone_number · phone_number_verified</text>
+    <path class="fg-rule" d="M32,304 H576"/>
     <!-- offline_access -->
-    <rect class="fg-box fg-box--muted" x="36" y="322" width="164" height="28" rx="6"/>
-    <text class="fg-m" x="52" y="341">offline_access</text>
-    <text class="fg-xs" x="232" y="341">claim は開示しない — 同意画面とリフレッシュトークンの TTL バケットを決める</text>
-    <!-- ID トークン -->
-    <rect class="fg-box fg-box--accent" x="660" y="44" width="264" height="98" rx="8"/>
-    <text class="fg-t fg-accent" x="678" y="68">ID トークン</text>
-    <text class="fg-mxs" x="678" y="88">iss · aud · exp · iat · sub</text>
-    <text class="fg-mxs" x="678" y="102">任意: nonce · auth_time · azp</text>
-    <text class="fg-mxs" x="678" y="116">任意: acr · amr · at_hash · sid</text>
-    <text class="fg-xs" x="678" y="134">OP 自身が埋める</text>
-    <path class="fg-edge fg-edge--accent" d="M624,68 H656" marker-end="url(#fg-ac)"/>
+    <text class="fg-m fg-dim" x="32" y="333">offline_access</text>
+    <text class="fg-xs" x="224" y="333">claim なし · 同意と refresh TTL を決める</text>
+    <path class="fg-rule" d="M32,352 H576"/>
+    <!-- ID token -->
+    <path class="fg-edge fg-edge--accent" d="M576,88 H616" marker-end="url(#fg-ac)"/>
+    <rect class="fg-box fg-box--accent" x="616" y="64" width="312" height="96" rx="8"/>
+    <text class="fg-t fg-accent" x="632" y="92">ID トークン</text>
+    <text class="fg-mxs" x="632" y="116">iss · aud · exp · iat · sub</text>
+    <text class="fg-xs" x="632" y="140">OP 自身が埋める</text>
     <!-- userinfo -->
-    <rect class="fg-box" x="660" y="158" width="264" height="130" rx="8"/>
-    <text class="fg-m" x="678" y="182">/userinfo</text>
-    <text class="fg-xs" x="678" y="202">RP がアクセストークンを付けて</text>
-    <text class="fg-xs" x="678" y="216">呼び出すと claim が返る（既定は JSON）</text>
-    <line class="fg-rule" x1="678" y1="232" x2="906" y2="232"/>
-    <text class="fg-xs" x="678" y="252">許可された scope が認めた</text>
-    <text class="fg-xs" x="678" y="266">claim だけが載る</text>
-    <path class="fg-leader" d="M628,120 H640 V240 H628"/>
-    <path class="fg-edge" d="M640,196 H656" marker-end="url(#fg-a)"/>
+    <path class="fg-leader" d="M576,136 H592 V280 H576"/>
+    <path class="fg-edge fg-edge--thin" d="M592,240 H616" marker-end="url(#fg-a)"/>
+    <rect class="fg-box" x="616" y="192" width="312" height="96" rx="8"/>
+    <text class="fg-m" x="632" y="220">/userinfo</text>
+    <text class="fg-xs" x="632" y="244">RP がアクセストークン付きで呼ぶ</text>
+    <text class="fg-xs" x="632" y="268">許可された scope の claim だけ返す</text>
   </svg>
   <figcaption class="fig-note">scope は要求であって保証ではありません。OP が許可するのは、クライアントが登録した範囲・ユーザが同意した範囲・claim ソースが実際に返せる値の重なりです。この表に載っている claim でも応答に含まれないことがあります。</figcaption>
 </figure>
 
 ユーザ claim を ID トークンに載せたい RP は、OIDC Core §5.5 の `claims` パラメータで明示的に要求する必要があります。scope を許可しただけでは `/userinfo` 側に載ります。
+
+`/userinfo` が開示するのは、提示されたアクセストークンに許可された scope の claim と、そのトークンを発行した認可で claims request の `userinfo` メンバが求めた claim です。claims request はアクセストークンごとに持たれる（JWT なら `userinfo_claims`、opaque なら保存された行）ため、同じユーザとクライアントによる後の認可があっても、先に発行されたトークンが読める範囲は変わりません。
 
 ::: details `offline_access` は claim を開示しない
 `offline_access` は OIDC 標準 scope で、「ユーザが不在のときも動き続けたい」というクライアントの意思表明 — つまりリフレッシュトークン発行に対するユーザ向けの consent prompt です。ユーザ claim は何も開示しません。本ライブラリでは、結果として発行されるリフレッシュトークンを別の TTL バケット（`op.WithRefreshTokenOfflineTTL`）にルーティングするので、ログイン状態維持の chain は通常の短セッションのリフレッシュより長く保てます。詳細は[リフレッシュトークン](/ja/concepts/refresh-tokens)。
@@ -137,7 +129,7 @@ OIDC Core §5.4 は `profile`、`email`、`address`、`phone` に対応するユ
 
 ## カスタム scope
 
-本ライブラリは `op.WithScope` で scope を追加登録できます。各カスタム scope は `op.Scope` 構造体で、通信路上の識別子・consent prompt の表示テキスト・開示する claim のリスト・（任意で）どのクライアントが要求できるかを記述します。
+組み込み側は `op.WithScope` で scope を追加登録できます。各 scope は `op.Scope` 構造体で、通信路上の識別子（`Name`）、同意画面に出すテキスト（`Description`。ユーザが拒否できない scope なら `Required`）、`/userinfo` から開示する claim 名（`Claims`）、discovery に公開するか（`Public`）、そして任意でどのクライアントが要求できるか（`AllowedClients`）を記述します。
 
 ```go
 op.WithScope(op.PublicScope("read:projects", "プロジェクトの読み取り")),
@@ -156,11 +148,11 @@ op.WithScope(op.Scope{
 - `op.PublicScope(name, label)` — discovery 文書の `scopes_supported` に公開する scope を登録します。審査済みのクライアントなら誰でも要求できる scope に使います。
 - `op.InternalScope(name)` — `scopes_supported` から **省略** する scope を登録します（RFC 8414 §2 / OIDC Discovery §3 が省略を明示的に許容）。受理判定は scope の `AllowedClients` リストで制御されます。discoverable にしたくないが特定クライアントには許す scope に使います。
 
-OIDC 標準 scope は組み込みのデフォルトで自動認識されます。標準名（例: `email`）に対して `WithScope` を呼ぶと組み込みエントリが上書きされます — 翻訳や追加の claim mapping を付与する目的で使うのが典型です — が、`Public: false` で標準 scope を登録すると `op.New` が失敗します。discovery 文書が「標準 scope を欠落」と公告するのを防ぐためです。
+OIDC 標準 scope は組み込みの既定で自動認識されます。標準名（例: `email`）に対して `WithScope` を呼ぶと組み込みエントリが上書きされます — 翻訳や追加の claim mapping を付与する目的で使うのが典型です — が、`Public: false` で標準 scope を登録すると `op.New` が失敗します。discovery 文書が「標準 scope を欠落」と公告するのを防ぐためです。
 
-`op.Scope.Parse` は組み込み側の文字列処理用ヘルパで、Unicode whitespace の連続で分割します。一方、通信路上の scope parsing は RFC 6749 の ASCII space grammar を使うため、`/auth` / `/par` 入力に tab や改行を混ぜることを互換性前提にしないでください。
+`op.ParseScopeSet(raw)` は組み込み側の文字列処理用ヘルパで、Unicode の空白文字の連続で分割します。通信路上の scope パースは RFC 6749 の ASCII スペース文法でより厳格なため、`/auth` や `/par` の入力で tab や改行に頼らないでください。
 
-i18n ラベル、claim mapping、consent prompt のレンダリングを含む詳細は[使い方: scope](/ja/use-cases/scopes)を参照してください。
+公開 / 内部の違い、claim mapping、同意プロンプトに scope がどう表示されるかを含む詳細は[ユースケース: scope](/ja/use-cases/scopes)を参照してください。
 
 ## scope と RFC 8707 resource indicator
 
@@ -180,17 +172,17 @@ scope は **権限の幅** を、resource indicator は **対象 audience** を�
 |---|---|
 | 絶対 URI が必須 | scheme と host を欠く値は拒否します。 |
 | scheme と host を小文字化 | `HTTPS://API.example.com` と `https://api.example.com` は同じ resource になります。 |
-| デフォルトポートを除去 | HTTP の `:80` と HTTPS の `:443` は落とし、それ以外のポートは維持します。 |
-| 末尾の `/` を 1 個除去 | `https://api.example.com/` は `https://api.example.com` になります。 |
+| 既定ポートを除去 | HTTP の `:80` と HTTPS の `:443` は落とし、それ以外のポートは維持します。 |
+| 末尾の `/` を除去 | `https://api.example.com/` は `https://api.example.com` になります。 |
 | query は維持 | query 文字列も resource の同一性の一部です。 |
 | fragment と userinfo は拒否 | `invalid_target` でリクエストを失敗させます。 |
 
 許可リストとの比較や `WithAccessTokenFormatPerAudience` も同じ正規化を通ります。そのため、authorize、PAR、token、device authorization、CIBA、token exchange の間で同じ resource の比較結果が変わることはありません。
 
-OIDC §5.5 の `claims` パラメータ（scope 単位ではなく特定の claim を細かく要求する）は[使い方: claims request](/ja/use-cases/claims-request)に、per-audience format のトレードオフは[アクセストークン形式](/ja/concepts/access-token-format)にあります。
+OIDC §5.5 の `claims` パラメータ（scope 単位ではなく特定の claim を細かく要求する）は[ユースケース: claims request](/ja/use-cases/claims-request)に、per-audience format のトレードオフは[アクセストークン形式](/ja/concepts/access-token-format)にあります。
 
 ## 次に読む
 
 - [ID トークン / アクセストークン / userinfo](/ja/concepts/tokens) — 各アーティファクトに何が入るか、scope がどう形を決めるか。
-- [使い方: scope](/ja/use-cases/scopes) — i18n ラベル、claim mapping、allowed-clients、consent prompt の公開面。
-- [使い方: claims request](/ja/use-cases/claims-request) — 細かい claim 選択のための OIDC §5.5 `claims` パラメータ。
+- [ユースケース: scope](/ja/use-cases/scopes) — 公開 / 内部の違い、claim mapping、allowed-clients、同意プロンプトの表示内容。
+- [ユースケース: claims request](/ja/use-cases/claims-request) — 細かい claim 選択のための OIDC §5.5 `claims` パラメータ。

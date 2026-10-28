@@ -26,85 +26,64 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 ## フローの動き方
 
 <figure class="fig">
-  <div class="fig-head">デバイス認可グラント</div>
-  <svg class="fig-svg" role="img" aria-labelledby="device-flow-title" viewBox="0 0 960 556" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">ユーザは別画面で承認し、その間デバイスは poll する</div>
+  <svg class="fig-svg" role="img" aria-labelledby="device-flow-title" viewBox="0 0 960 888" xmlns="http://www.w3.org/2000/svg">
     <title id="device-flow-title">デバイス認可グラントを示した図。デバイスが device_code と短い user_code を要求し、ユーザに移動先を表示し、ユーザが別画面で承認する間トークンエンドポイントを poll します。承認が届くと次の poll でトークンが返ります。</title>
-    <!-- ライフライン -->
-    <line class="fg-life" x1="150" y1="62" x2="150" y2="540"/>
-    <line class="fg-life fg-life--accent" x1="500" y1="62" x2="500" y2="540"/>
-    <line class="fg-life" x1="830" y1="62" x2="830" y2="540"/>
-    <!-- 登場人物 -->
-    <rect class="fg-box" x="60" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="150" y="35" text-anchor="middle">デバイス</text>
-    <text class="fg-xs" x="150" y="49" text-anchor="middle">TV · CLI · コンソール</text>
-    <rect class="fg-box fg-box--accent" x="410" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="500" y="35" text-anchor="middle">OP</text>
-    <text class="fg-mxs" x="500" y="49" text-anchor="middle">go-oidc-provider</text>
-    <rect class="fg-box" x="740" y="16" width="180" height="42" rx="6"/>
-    <text class="fg-t" x="830" y="35" text-anchor="middle">ユーザ</text>
-    <text class="fg-xs" x="830" y="49" text-anchor="middle">スマホ · 別画面</text>
-    <!-- 1 -->
-    <circle class="fg-badge" cx="15" cy="102" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="105" text-anchor="middle">1</text>
-    <path class="fg-edge" d="M150,102 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-m" x="325" y="82" text-anchor="middle">POST /device_authorization</text>
-    <text class="fg-mxs" x="325" y="95" text-anchor="middle">client_id · scope=openid profile</text>
-    <!-- 2 -->
-    <circle class="fg-badge" cx="15" cy="146" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="149" text-anchor="middle">2</text>
-    <path class="fg-edge fg-edge--accent" d="M500,146 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="126" text-anchor="middle">200 · device_code · user_code=ABCD-EFGH</text>
-    <text class="fg-mxs" x="325" y="139" text-anchor="middle">verification_uri(_complete) · interval · expires_in</text>
-    <!-- 3 -->
-    <circle class="fg-badge" cx="15" cy="192" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="195" text-anchor="middle">3</text>
-    <rect class="fg-box fg-box--sub" x="60" y="170" width="360" height="44" rx="6"/>
-    <text class="fg-xs" x="76" y="188">デバイスの画面に表示: <tspan class="fg-accent">op.example.com/device</tspan> を開き</text>
-    <text class="fg-xs" x="76" y="204"><tspan class="fg-accent">ABCD-EFGH</tspan> を入力する</text>
-    <!-- par フラグメント -->
-    <rect class="fg-frame" x="44" y="234" width="896" height="240" rx="8"/>
-    <rect class="fg-box fg-box--muted" x="44" y="234" width="52" height="18" rx="4"/>
-    <text class="fg-tab" x="56" y="247">par</text>
-    <line class="fg-rule fg-rule--dashed" x1="44" y1="360" x2="940" y2="360"/>
-    <!-- loop -->
-    <rect class="fg-frame" x="64" y="266" width="600" height="80" rx="6"/>
-    <rect class="fg-box fg-box--muted" x="64" y="266" width="168" height="18" rx="4"/>
-    <text class="fg-tab" x="76" y="279">loop · interval 秒ごとに再送</text>
-    <!-- 4 -->
-    <circle class="fg-badge" cx="15" cy="302" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="305" text-anchor="middle">4</text>
-    <path class="fg-edge" d="M150,302 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="325" y="296" text-anchor="middle">POST /token · grant_type=…:device_code · device_code</text>
-    <!-- 5 -->
-    <circle class="fg-badge" cx="15" cy="332" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="335" text-anchor="middle">5</text>
-    <path class="fg-edge fg-edge--muted" d="M500,332 H150" marker-end="url(#fg-am)"/>
-    <text class="fg-mxs fg-halo" x="325" y="326" text-anchor="middle">400 · authorization_pending</text>
-    <!-- 別画面 -->
-    <text class="fg-xs" x="76" y="384">その間、別画面では</text>
-    <!-- 6 -->
-    <circle class="fg-badge" cx="15" cy="412" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="415" text-anchor="middle">6</text>
-    <path class="fg-edge" d="M830,412 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="665" y="406" text-anchor="middle">GET /device — ABCD-EFGH を入力</text>
-    <!-- 7 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="450" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="453" text-anchor="middle">7</text>
-    <path class="fg-edge fg-edge--accent" d="M500,442 h30 v16 h-30" marker-end="url(#fg-ac)"/>
-    <text class="fg-s" x="542" y="446">ログイン、同意、承認</text>
-    <text class="fg-xs" x="542" y="459">この時点で device_code が subject に結び付く</text>
-    <!-- 8 -->
-    <circle class="fg-badge" cx="15" cy="504" r="8.5"/>
-    <text class="fg-badge-t" x="15" y="507" text-anchor="middle">8</text>
-    <path class="fg-edge" d="M150,504 H500" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="325" y="498" text-anchor="middle">POST /token — 次の poll</text>
-    <!-- 9 -->
-    <circle class="fg-badge fg-badge--accent" cx="15" cy="536" r="8.5"/>
-    <text class="fg-badge-t fg-badge-t--accent" x="15" y="539" text-anchor="middle">9</text>
-    <path class="fg-edge fg-edge--accent" d="M500,536 H150" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="325" y="530" text-anchor="middle">200 · access_token · id_token? · refresh_token?</text>
+    <!-- phase bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="296" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="132">コードを発行する</text>
+    <rect class="fg-group" x="32" y="424" width="896" height="440" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="452">承認を待つ</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="864"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="864"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="864"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Device</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">TV · CLI · コンソール</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-mxs" x="512" y="72" text-anchor="middle">go-oidc-provider</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">User</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">スマホ · 別画面</text>
+    <!-- device authorization -->
+    <path class="fg-edge" d="M192,206 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="172" text-anchor="middle">POST /device_authorization</text>
+    <text class="fg-mxs" x="352" y="194" text-anchor="middle">client_id · scope</text>
+    <!-- codes -->
+    <path class="fg-edge fg-edge--accent" d="M512,278 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="244" text-anchor="middle">200 · device_code, user_code</text>
+    <text class="fg-mxs" x="352" y="266" text-anchor="middle">verification_uri · interval</text>
+    <!-- device shows the code -->
+    <path class="fg-edge" d="M192,318 h40 v24 h-40" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="248" y="324">URL とコードを画面に表示</text>
+    <text class="fg-mxs" x="248" y="346">op.example.com/device</text>
+    <text class="fg-mxs fg-accent" x="248" y="368">user_code=ABCD-EFGH</text>
+    <!-- poll -->
+    <path class="fg-edge" d="M192,526 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="492" text-anchor="middle">POST /token · poll</text>
+    <text class="fg-mxs" x="352" y="514" text-anchor="middle">grant_type=…:device_code</text>
+    <!-- pending -->
+    <path class="fg-edge fg-edge--muted" d="M512,582 H192" marker-end="url(#fg-am)"/>
+    <text class="fg-edge-lbl" x="352" y="572" text-anchor="middle">400 · authorization_pending</text>
+    <!-- user opens the verification page -->
+    <path class="fg-edge" d="M824,638 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="668" y="628" text-anchor="middle">GET /device · user_code</text>
+    <!-- approval -->
+    <path class="fg-edge fg-edge--accent" d="M512,678 h40 v24 h-40" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="568" y="684">ログイン · 同意 · 承認</text>
+    <text class="fg-mxs" x="568" y="706">device_code → subject</text>
+    <!-- next poll -->
+    <path class="fg-edge" d="M192,768 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl" x="352" y="758" text-anchor="middle">POST /token · 次の poll</text>
+    <!-- tokens -->
+    <path class="fg-edge fg-edge--accent" d="M512,840 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="806" text-anchor="middle">200 · access_token</text>
+    <text class="fg-mxs" x="352" y="828" text-anchor="middle">id_token? · refresh_token?</text>
   </svg>
-  <figcaption class="fig-note">デバイスはパスワードを一度も見ませんし、ログイン画面も描画しません。保持するのは <code>device_code</code> だけです。短い <code>user_code</code> があるのは、文字を打てるキーボードのある端末で人間が入力し直せるようにするためです。</figcaption>
+  <figcaption class="fig-note">デバイスが保持するのは <code>device_code</code> だけで、パスワードは一度も見ません。短い <code>user_code</code> は、人間が文字を打てるキーボードで入力し直すためにあります。poll は承認が届くまで <code>interval</code> 秒ごとに繰り返されます。</figcaption>
 </figure>
 
 デバイス側はパスワードを一切持ちません。ユーザもデバイスには何も打ちません。2 つの面が短い `user_code` を介して OP で合流します。
@@ -117,13 +96,43 @@ device-authorization grant — 通称「device code」「device flow」 — は�
 |---|---|---|
 | `400 authorization_pending` | ユーザがまだ承認（または拒否）していない | `interval` 秒待って再 poll |
 | `400 slow_down` | poll が速すぎた | その後のすべての要求で interval を 5 秒延ばす（RFC 8628 §3.5）。OP は新しい interval を `LastPolledAt` と一緒に原子的に永続化するので、マルチレプリカ構成でも元に戻らない |
-| `400 access_denied` | ユーザが verification ページで **拒否** をクリック（または組み込み側の revocation hook が発火） | poll を停止し「サインインがキャンセルされました」と表示 |
-| `400 expired_token` | `device_code` が `expires_in`（既定 600 秒）を超えた | poll を停止。再試行はフローからやり直す |
+| `400 access_denied` | ユーザが verification ページで **拒否** した、組み込み側が失効させた、またはデバイスが `slow_down` を 5 回無視した（`poll_abuse`） | poll を停止し「サインインがキャンセルされました」と表示 |
+| `400 expired_token` | `device_code` が `expires_in`（既定 600 秒）を超えた、または以前の poll がすでに引き換えた | poll を停止。再試行はフローからやり直す |
 | `200 { access_token, ... }` | ユーザが承認 | 通常の token 応答として処理 |
+
+デバイスは `interval`（既定 5 秒。1 秒の揺らぎは許容）より速く poll できません。それより早い poll には `slow_down` が返り、5 回目の違反でレコードは `access_denied` で終了します。
+
+`device_code` レコードは閉じた状態遷移をたどり、トークンエンドポイントの応答は状態で決まります。
+
+| レコードの状態 | その状態になる契機 | 次の poll への応答 |
+|---|---|---|
+| Pending | `POST /device_authorization` で作成された | `authorization_pending` |
+| Approved | verification ページが `ApproveUserCode` を呼んだ | トークン発行。レコードは Consumed になる |
+| Denied | ユーザが拒否した、組み込み側が失効させた、またはロックが発動した（`poll_abuse`、またはレコード指定の verify ヘルパによる `user_code_lockout`） | `access_denied` |
+| Consumed | poll が承認を引き換えた | `expired_token` |
+
+引き換えは Approved から Consumed への原子的な遷移 1 回で行われるため、同時に届いた 2 つの poll の両方にトークンが渡ることはありません。負けた側は `expired_token` になります。
 
 ::: warning user_code は構造的に brute-force 可能
 `user_code` は短いから使い物になります。長くしたら誰も入力しません。これは原理的に brute-force され得るということでもあり、ユーザが打つより速く `/device` を呼び出せる攻撃者が勝ってしまいます。本ライブラリは [`op/devicecodekit`](https://github.com/libraz/go-oidc-provider/tree/main/op/devicecodekit) を同梱しています。最初の手入力では、opaque なサーバ側 ceremony key を渡して `VerifyUserCodeByAttemptKey` を呼び、ユーザの認証と同意の後に `ApproveUserCode` を呼んでください。raw `user_code` を attempt key に使ってはなりません。`Deps` は mutex を含むため保持し、必ず pointer で渡してください。既定 limiter はプロセスローカルなので、マルチインスタンス構成では共有 atomic `AttemptLimiter` が必要です。
 :::
+
+## OP が提供するものと自前で作るもの
+
+`op.WithDeviceCodeGrant()` は `/device_authorization` をマウントし、discovery に `device_authorization_endpoint` を載せ、device grant を有効な集合に加えます。verification ページは**提供しません**。このページは自前でホストし（既定の URL は `<issuer>/device`、変更は `op.WithDeviceVerificationURI`）、ユーザを認証したうえで `devicecodekit` のヘルパを呼びます。
+
+```go
+deps := &devicecodekit.Deps{DeviceCodes: st.DeviceCodes(), Grants: st.Grants()} // 1 つ保持し、pointer で渡す
+
+ok, err := devicecodekit.VerifyUserCodeByAttemptKey(ctx, deps, ceremonyKey, typedCode)
+// ok && err == nil なら同意画面を出し、その後
+err = devicecodekit.ApproveUserCode(ctx, deps, typedCode, subject, authTime)
+// 拒否なら devicecodekit.DenyUserCode(ctx, deps, typedCode, devicecodekit.DenyReasonUserDenied)
+```
+
+デバイスに伝える `expires_in` と `interval` は `op.WithDeviceCodeExpiry` と `op.WithDeviceCodePollInterval` で設定します。どちらも正の値が必要です。
+
+承認の引き換え時に、そのクライアントに対する同意の grant が記録されます。このため device flow のトークンは `RevokeSubject` や grant management の対象になり、introspection と `/userinfo` では公開（pairwise）subject を返します。同じクライアントが同じ scope で後から `/auth` を呼ぶと、同意画面は省略されます。`devicecodekit.Revoke(ctx, deps, deviceCode, reason)` は、その grant の下に発行されたアクセストークンとリフレッシュトークンへ、`Deps` に設定したトークンストア（`AccessTokens` または `GrantRevocations`、`OpaqueAccessTokens`、`RefreshTokens`）を通じて連鎖して失効させます。`Deps.Grants` も設定しないと、grant レコード自体が残ります。
 
 ## 使うべきとき
 
@@ -148,5 +157,6 @@ example は役割別ファイルに分割されています（`op.go` で OP の
 
 ## 続きはこちら
 
-- [使い方: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCodeByAttemptKey`、検証ページの契約、デバイス登録解除（unenroll）時に発行済みトークンを連鎖失効させる手順。
+- [ユースケース: device code の組み込み](/ja/use-cases/device-code) — `op.WithDeviceCodeGrant`、`devicecodekit.VerifyUserCodeByAttemptKey`、検証ページの契約、デバイス登録解除（unenroll）時に発行済みトークンを連鎖失効させる手順。
+- [認可コード + PKCE](/ja/concepts/authorization-code-pkce) — クライアントがブラウザを開けるなら、まずこちら。
 - [CIBA 入門](/ja/concepts/ciba) — 「ユーザが別チャネルにいる」の概念的な兄弟。コード表示を使わない方式。

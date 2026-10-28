@@ -8,12 +8,12 @@ pageClass: pg-concepts-token-exchange
 
 現代のマイクロサービス構成では、**ユーザの代理として他のサービスを呼ぶ** 場面がほぼ必ずあります。frontend がトークンを取り、service A がそれを受け取り、service A が service B を呼ぶ。service A はユーザのトークンをそのまま使うべきか、新しく取り直すべきか、両方を組み合わせるべきか? RFC 8693 はこのトークン交換の通信路上の形式を定義します。
 
-設計上、2 つの意図を本質的に区別します:
+仕様は 2 つの意図を区別します。
 
-- **Impersonation(なりすまし)** — service A はユーザのトークンをそのまま service B に提示する。**ユーザ本人として** ふるまう。service B からは `sub=alice` に見え、下流の監査ログには Alice 単独の操作として記録される。
-- **Delegation(委譲)** — service A は OP に対し新しいトークンの発行を依頼する。`sub` はやはり Alice だが、**`act` claim** に `{sub: service-a}` が入り、Alice の権限が service A 経由で行使されていることを記録する。service B からは `sub=alice, act={sub: service-a}` に見えて、chain に依存するポリシー判定（「service A は Alice の振込を実行してよいが、リクエスト元が Alice 自身からの場合に限る」）が可能になる。
+- **Impersonation(なりすまし)** — service A はユーザだけを名乗るトークンを得て、**ユーザ本人として** 使う。service B からは `sub=alice` に見え、下流の監査ログには Alice 単独の操作として記録される。
+- **Delegation(委譲)** — service A は `sub` が Alice のままで、**`act` claim** に `{sub: service-a}` が入ったトークンを得る。Alice の権限が service A 経由で行使されていることが記録される。service B からは `sub=alice, act={sub: service-a}` に見えて、chain に依存するポリシー判定（「service A は Alice の振込を実行してよいが、リクエスト元が Alice 自身からの場合に限る」）が可能になる。
 
-近年の脅威モデルでは委譲（delegation）のほうが望ましいとされています。監査の連鎖が途切れず、失効を中継 service 単位で当てられ、最小権限の境界が subject 全体に広がるのではなく actor 単位で絞り込めるためです。
+近年の脅威モデルでは委譲のほうが望ましいとされています。監査の連鎖が途切れず、失効を中継 service 単位で当てられ、最小権限の境界が subject 全体に広がらず actor 単位で絞り込めるためです。**本ライブラリは、交換を実行した主体を必ず記録します。** `act` の付かないトークンができるのは自己交換だけです。自己交換とは、呼び出し元の client が `subject_token` の発行先 client と同じ場合です（自分のトークンを別の audience 向けに絞る場合など）。
 
 ::: details このページで触れる仕様
 - [RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693) — OAuth 2.0 Token Exchange
@@ -22,89 +22,93 @@ pageClass: pg-concepts-token-exchange
 :::
 
 ::: details 用語の補足
-- **subject_token** — 新トークンの `sub` を構成する identity の保持者となるトークン。通常は上流から転送されてきたユーザのアクセストークン。
-- **actor_token** — 交換を実行する呼び出し元（service）を識別するトークン。存在すると新トークンには `act` claim が付与され、actor の `sub` / `client_id` がそこに包まれる。
-- **`act` claim**(RFC 8693 §4.1) — `sub` の代わりに行動している主体を記録する入れ子オブジェクト。連鎖でき（`act.act.act…`）、4 ホップの呼び出しなら 4 つの中継 service をすべて記録できる。
-- **`cnf` の再バインド** — 発行トークンの `cnf`(RFC 7800 confirmation)は、subject ではなく **呼び出し actor** の DPoP / mTLS proof に設定される。トークンは交換を実行する service に対して送信者制約が掛かる（sender-bound）。
+- **subject_token** — 新トークンの `sub` を決めるトークン。通常は上流から転送されてきたユーザのアクセストークン。アクセストークン（JWT / opaque）、JWT、ID トークンを受け付け、種別は `subject_token_type` で示す。
+- **actor_token** — actor を示す任意の 2 つ目のトークン。付いていれば、新トークンの `act.sub` はこの検証済みトークンの `sub` になる。`subject_token` と同じ subject に解決されるものは使えない。
+- **`act` claim**(RFC 8693 §4.1) — `sub` の代わりに行動している主体を記録する入れ子オブジェクト。入れ子にでき（`act.act.act…`）、複数ホップの呼び出しなら中継 service をすべて記録できる。本ライブラリでは最大 5 段まで。
+- **`cnf` の結び付け** — リクエストが検証済みの DPoP proof または mTLS 証明書を持っていれば、発行トークンの `cnf`(RFC 7800 confirmation)はそこから設定される。`subject_token` 自身が送信者制約付きなら、同じ鍵を提示したリクエストだけが受理される。
 :::
 
-## なりすまし（Impersonation）と委譲（Delegation）を並べて見る
+## 転送、交換、actor 付きの交換を並べて見る
 
 <figure class="fig">
-  <div class="fig-head">転送・なりすまし・委譲</div>
-  <svg class="fig-svg" role="img" aria-labelledby="tx-modes-title" viewBox="0 0 960 606" xmlns="http://www.w3.org/2000/svg">
-    <title id="tx-modes-title">中継サービスがユーザの代理で下流サービスを呼ぶ 3 通りの方法。元のトークンをそのまま転送すると audience が合わず失敗します。なりすましの交換ではユーザだけを名乗るトークンが得られます。委譲の交換ではユーザを名乗りつつ、中継サービスを act claim に記録したトークンが得られます。</title>
-    <!-- 帯 -->
-    <rect class="fg-group" x="30" y="70" width="916" height="126" rx="8"/>
-    <rect class="fg-group" x="30" y="206" width="916" height="180" rx="8"/>
-    <rect class="fg-group" x="30" y="396" width="916" height="196" rx="8"/>
-    <text class="fg-lbl fg-danger" x="42" y="88">単純な転送 — 交換なし</text>
-    <text class="fg-lbl" x="42" y="224">なりすまし（impersonation）の交換</text>
-    <text class="fg-lbl fg-accent" x="42" y="414">委譲（delegation）の交換</text>
-    <!-- ライフライン -->
-    <line class="fg-life" x1="110" y1="62" x2="110" y2="592"/>
-    <line class="fg-life" x1="370" y1="62" x2="370" y2="592"/>
-    <line class="fg-life fg-life--accent" x1="620" y1="62" x2="620" y2="592"/>
-    <line class="fg-life" x1="860" y1="62" x2="860" y2="592"/>
-    <!-- 登場人物 -->
-    <rect class="fg-box" x="35" y="16" width="150" height="42" rx="6"/>
-    <text class="fg-t" x="110" y="35" text-anchor="middle">Frontend</text>
-    <text class="fg-xs" x="110" y="49" text-anchor="middle">ブラウザ</text>
-    <rect class="fg-box" x="295" y="16" width="150" height="42" rx="6"/>
-    <text class="fg-t" x="370" y="35" text-anchor="middle">Service A</text>
-    <text class="fg-xs" x="370" y="49" text-anchor="middle">中継</text>
-    <rect class="fg-box fg-box--accent" x="540" y="16" width="160" height="42" rx="6"/>
-    <text class="fg-t fg-accent" x="620" y="35" text-anchor="middle">OP</text>
-    <text class="fg-xs" x="620" y="49" text-anchor="middle">認可サーバー</text>
-    <rect class="fg-box" x="785" y="16" width="150" height="42" rx="6"/>
-    <text class="fg-t" x="860" y="35" text-anchor="middle">Service B</text>
-    <text class="fg-xs" x="860" y="49" text-anchor="middle">リソース</text>
-    <!-- 転送 -->
-    <path class="fg-edge" d="M110,112 H370" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="240" y="106" text-anchor="middle">Bearer sub=alice · aud=service-a</text>
-    <path class="fg-edge fg-edge--danger" d="M370,152 H860" marker-end="url(#fg-ad)"/>
-    <text class="fg-mxs fg-halo" x="615" y="146" text-anchor="middle">同じトークンをそのまま転送する</text>
-    <path class="fg-edge fg-edge--danger" d="M860,172 h-28 v16 h28" marker-end="url(#fg-ad)"/>
-    <text class="fg-xs fg-danger" x="820" y="184" text-anchor="end">aud が service-a で自分宛てではない → 401</text>
-    <!-- なりすまし -->
-    <path class="fg-edge" d="M110,250 H370" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="240" y="244" text-anchor="middle">Bearer sub=alice</text>
-    <path class="fg-edge" d="M370,290 H620" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="495" y="270" text-anchor="middle">grant_type=…:token-exchange</text>
-    <text class="fg-mxs" x="495" y="283" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-    <path class="fg-edge fg-edge--accent" d="M620,320 H370" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="495" y="314" text-anchor="middle">sub=alice · aud=service-b</text>
-    <path class="fg-edge" d="M370,356 H860" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="615" y="350" text-anchor="middle">Bearer sub=alice</text>
-    <text class="fg-xs fg-warn" x="860" y="378" text-anchor="end">B から見れば alice が単独で行ったことになる</text>
-    <!-- 委譲 -->
-    <path class="fg-edge" d="M110,440 H370" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="240" y="434" text-anchor="middle">Bearer sub=alice</text>
-    <path class="fg-edge" d="M370,482 H620" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs" x="495" y="462" text-anchor="middle">subject_token=&lt;alice&gt;</text>
-    <text class="fg-mxs" x="495" y="475" text-anchor="middle">actor_token=&lt;service-a&gt;</text>
-    <path class="fg-edge fg-edge--accent" d="M620,514 H370" marker-end="url(#fg-ac)"/>
-    <text class="fg-mxs" x="495" y="508" text-anchor="middle">sub=alice · act={ sub: service-a }</text>
-    <path class="fg-edge" d="M370,552 H860" marker-end="url(#fg-a)"/>
-    <text class="fg-mxs fg-halo" x="615" y="546" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
-    <text class="fg-xs fg-ok" x="860" y="576" text-anchor="end">B は「service-a 経由の alice」を見て、自分のポリシーで判断する</text>
+  <div class="fig-head">audience を変えられるのは交換だけで、転送は失敗する</div>
+  <svg class="fig-svg" role="img" aria-labelledby="tx-modes-title" viewBox="0 0 960 984" xmlns="http://www.w3.org/2000/svg">
+    <title id="tx-modes-title">中継サービスがユーザの代理で下流サービスを呼ぶ 3 通りの方法。元のトークンをそのまま転送すると audience が合わず失敗します。actor_token なしの交換では、ユーザを名乗りつつ呼び出し元の client を act claim に記録したトークンが得られます。actor_token ありの交換では、act claim に actor_token の subject が記録されます。</title>
+    <!-- case bands -->
+    <rect class="fg-group" x="32" y="104" width="896" height="182" rx="8"/>
+    <text class="fg-lbl fg-danger fg-halo" x="56" y="132">転送</text>
+    <rect class="fg-group" x="32" y="310" width="896" height="310" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="338">actor_token なしの交換</text>
+    <rect class="fg-group" x="32" y="644" width="896" height="310" rx="8"/>
+    <text class="fg-lbl fg-halo" x="56" y="672">actor_token ありの交換</text>
+    <!-- lifelines -->
+    <line class="fg-life" x1="192" y1="88" x2="192" y2="960"/>
+    <line class="fg-life fg-life--accent" x1="512" y1="88" x2="512" y2="960"/>
+    <line class="fg-life" x1="824" y1="88" x2="824" y2="960"/>
+    <!-- actors -->
+    <rect class="fg-box" x="88" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="192" y="50" text-anchor="middle">Service A</text>
+    <text class="fg-xs" x="192" y="72" text-anchor="middle">中継</text>
+    <rect class="fg-box fg-box--accent" x="408" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t fg-accent" x="512" y="50" text-anchor="middle">OP</text>
+    <text class="fg-xs" x="512" y="72" text-anchor="middle">認可サーバ</text>
+    <rect class="fg-box" x="720" y="24" width="208" height="64" rx="8"/>
+    <text class="fg-t" x="824" y="50" text-anchor="middle">Service B</text>
+    <text class="fg-xs" x="824" y="72" text-anchor="middle">リソース</text>
+    <!-- forwarding -->
+    <path class="fg-edge fg-edge--danger" d="M192,206 H824" marker-end="url(#fg-ad)"/>
+    <text class="fg-m fg-halo" x="508" y="172" text-anchor="middle">Authorization: Bearer &lt;token&gt;</text>
+    <text class="fg-mxs fg-halo" x="508" y="194" text-anchor="middle">sub=alice · aud=service-a</text>
+    <path class="fg-edge fg-edge--danger" d="M824,262 H192" marker-end="url(#fg-ad)"/>
+    <text class="fg-edge-lbl fg-danger fg-halo" x="508" y="252" text-anchor="middle">401 · aud が service-a で service-b ではない</text>
+    <!-- exchange -->
+    <path class="fg-edge" d="M192,412 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="378" text-anchor="middle">grant_type=…:token-exchange</text>
+    <text class="fg-mxs" x="352" y="400" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M512,484 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="450" text-anchor="middle">sub=alice · aud=service-b</text>
+    <text class="fg-mxs" x="352" y="472" text-anchor="middle">act={ sub: service-a }</text>
+    <path class="fg-edge" d="M192,548 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="538" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
+    <rect class="fg-pill fg-pill--ok" x="536" y="564" width="272" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="672" y="585" text-anchor="middle">act.sub は呼び出し元の client_id</text>
+    <!-- exchange with actor_token -->
+    <path class="fg-edge" d="M192,746 H512" marker-end="url(#fg-a)"/>
+    <text class="fg-m" x="352" y="712" text-anchor="middle">subject_token=&lt;alice&gt;</text>
+    <text class="fg-mxs" x="352" y="734" text-anchor="middle">actor_token=&lt;service-a&gt;</text>
+    <path class="fg-edge fg-edge--accent" d="M512,818 H192" marker-end="url(#fg-ac)"/>
+    <text class="fg-m" x="352" y="784" text-anchor="middle">sub=alice · aud=service-b</text>
+    <text class="fg-mxs" x="352" y="806" text-anchor="middle">act={ sub: service-a }</text>
+    <path class="fg-edge" d="M192,882 H824" marker-end="url(#fg-a)"/>
+    <text class="fg-edge-lbl fg-halo" x="508" y="872" text-anchor="middle">Bearer sub=alice · act={ sub: service-a }</text>
+    <rect class="fg-pill fg-pill--ok" x="536" y="898" width="272" height="32" rx="16"/>
+    <text class="fg-s fg-ok" x="672" y="919" text-anchor="middle">act.sub は actor_token の sub</text>
   </svg>
-  <figcaption class="fig-note">2 番目と 3 番目の構造上の違いは <code>actor_token</code> だけです。パラメータ 1 つの差で、監査ログが「alice が行った」と記録するか「alice が service A を経由して行った」と記録するかが変わります。</figcaption>
+  <figcaption class="fig-note">転送は audience が合わず失敗します。どちらの交換でも「service A を経由した alice」を表すトークンが得られ、違いは actor の名前の出どころだけです。認証された呼び出し元の client か、検証済みの <code>actor_token</code> かです。</figcaption>
 </figure>
 
-差は監査ログ（service B が呼び出しの起点を知れる）と認可ポリシー（センシティブな操作で actor を要求できる）に現れます。
+service B は監査ログで呼び出しの起点を把握でき、センシティブな操作では特定の service からの `act` を要求できます。
 
 ## OP が強制すること
 
-仕様がデプロイ側のポリシーに委ねている項目のうち、本ライブラリの RFC 8693 ハンドラはいくつかについて独自の方針を採っています:
+仕様がデプロイ側のポリシーに委ねている項目のうち、本ライブラリの RFC 8693 ハンドラはいくつかについて独自の方針を採っています。
 
-- **`act` chain は OP 側で構築する**。呼び出し側が手で渡すのではない。`actor_token` が `subject_token` と異なる場合、OP は actor の検証済み credential から `act` を構成する。呼び出し側に `act` を捏造させない。
-- **audience は正規化して許可リストで制限する**。RFC 8707 の `audience` / `resource` パラメータは policy の評価前に正規化します。両方を省略した場合は subject token の audience を既定値として使います。得られた audience はすべて client が認可されていなければなりません。
-- **scope は積集合（intersection）**。和集合（union）ではない。発行トークンの scope は（要求 scope、`subject_token` の scope、呼び出し client の許可リスト）の積集合。RFC 8693 §3.1 は scope の縮小は許すが、OP は scope の膨張（inflation）を禁止する。
-- **TTL は上限で頭打ちにする**。（handler 希望、`subject_token` の残り寿命、OP のグローバル上限）の最小値まで切り詰められる。長寿命トークンをさらに長いトークンへ伸ばすロンダリングはできない。
-- **`cnf` は呼び出し actor に再バインドする**。service A が交換リクエストに DPoP proof を提示すれば、発行トークンの `cnf.jkt` は service A の DPoP 鍵に一致する — ユーザのものでも `subject_token` のものでもない。service B は新トークンの `cnf` に対して DPoP proof を検証する。
+- **`act` chain は OP 側で構築する**。呼び出し側が手で渡すのではない。何が入るかは下の表のとおり。呼び出し側に `act` を捏造させず、ポリシーの `ExtraClaims` でも上書きできない。
+- **audience は正規化して許可リストで制限する**。RFC 8707 の `audience` / `resource` パラメータは policy の評価前に正規化します。両方を省略した場合は `subject_token` の audience を既定値として使います。得られた audience はすべて、呼び出し client に登録された `Resources` に含まれていなければなりません。`Resources` が空の client にはどの audience も発行できません（`invalid_target`）。
+- **scope は縮める方向にしか動かない**。`scope` を省略すると `subject_token` の scope になります。呼び出し client に登録されていない scope は落とされ、`subject_token` の scope を超える要求は `invalid_scope` で拒否されます。結果が空の場合も `invalid_scope` です。
+- **TTL は上限で頭打ちにする**。ポリシーの `GrantedTTL`（未指定なら OP のアクセストークン上限）と、`subject_token` の残り寿命のうち小さいほうまで切り詰められる。長寿命トークンをさらに長いトークンへ伸ばすロンダリングはできない。`subject_token` の期限判定には OP の時計ずれ許容（leeway）が適用される。
+- **返るのはアクセストークンだけ**。`requested_token_type` は省略するかアクセストークンの URN のみ。リフレッシュトークンは、ポリシーが `IssueRefreshToken: op.PtrBool(true)` でオプトインしたときだけ発行される。ID トークンは、`subject_token` が ID トークンだった場合（またはポリシーが強制した場合）に限る。
+- **`cnf` はリクエストの proof に従う**。service A が交換リクエストに DPoP proof を提示すれば、発行トークンの `cnf.jkt` は service A の鍵になる。`subject_token` がすでに結び付けられている場合は同じ鍵の提示が必要なので、盗まれた結び付き済みトークンは交換できない。
 
-これらは組み込み側が提供する [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) が呼ばれる **前** に強制されます。ポリシー側はさらに絞り込むこと（特定 audience を拒否、特定の actor 組み合わせを拒否など）はできますが、広げることはできません — OP が計算したデフォルトが下限です。
+これらは組み込み側が提供する [`TokenExchangePolicy`](https://github.com/libraz/go-oidc-provider/blob/main/op/tokenexchange.go) が呼ばれる **前** に強制されます。ポリシー側はさらに絞り込むこと（特定 audience を拒否、特定の actor 組み合わせを拒否など）はできますが、広げることはできません。要求を超える scope や audience を許可する decision は拒否されます。
+
+| リクエスト | 発行トークンの `act` |
+|---|---|
+| `actor_token` あり | `{ sub: <actor_token の sub>, act: <subject_token にあった以前の chain> }` |
+| `actor_token` なし、呼び出し client が `subject_token` の発行先 client と異なる | `{ sub: <呼び出し client の client_id>, act: <以前の chain> }` |
+| `actor_token` なし、同じ client（自己交換） | 以前の chain をそのまま引き継ぐ（無ければ `act` なし） |
+
+5 段を超える chain は、ポリシーの実行前に `invalid_grant` で拒否されます。交換で発行されたトークンは `subject_token` の発行元 grant に属するため、その grant を失効させると（`RevokeSubject`、grant management、`/end_session` の後始末）交換トークンも失効します。交換で得たリフレッシュトークンも、subject が削除または停止された時点でローテーションできなくなります。`client_credentials` のトークンのように grant を持たない `subject_token` には、この系譜はありません。pairwise client に発行された ID トークンは交換できません。
 
 ### resource と audience の正規化
 
@@ -127,7 +131,7 @@ Token exchange が **必要** な場合:
 
 ## 動かしてみる
 
-[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) は frontend → service-a → service-b の chain を実演します。frontend がユーザトークンを取得、service-a がそれを委譲付きトークン（`act={sub: service-a}` を伴う）に交換、service-b の RS 側 verifier が `act.sub` をたどって委譲付きトークンのみを受理します。
+[`examples/33-token-exchange-delegation`](https://github.com/libraz/go-oidc-provider/tree/main/examples/33-token-exchange-delegation) は frontend → service-a → service-b の chain を実演します。frontend が認可コードフローでユーザトークンを取得し、service-a が `actor_token` なしでそれを `act={sub: service-a}`・`aud=service-b` のトークンに交換し、service-b のリソースサーバ側 verifier が `act.sub` をたどって、`act` を持つトークンのみを受理します。`service-a` には `GrantTypes` に token-exchange の URN、`Resources` に両方の audience が登録されています。交換にはこの登録が必要です。
 
 ```sh
 (cd examples/33-token-exchange-delegation && GOWORK=off go run -tags example .)
@@ -137,5 +141,5 @@ example はロール別ファイルに分割されています（`op.go` で OP 
 
 ## 続きはこちら
 
-- [使い方: token-exchange の組み込み](/ja/use-cases/token-exchange) — `op.RegisterTokenExchange`、`TokenExchangePolicy` の契約、audience の構成、`op.PtrBool(true)` による refresh 発行のオプトイン。
+- [ユースケース: token-exchange の組み込み](/ja/use-cases/token-exchange) — `op.RegisterTokenExchange`、`TokenExchangePolicy` の契約、audience の構成、`op.PtrBool(true)` による refresh 発行のオプトイン。
 - [Custom Grant の組み込み](/ja/use-cases/custom-grant) — token exchange は OP がルーティングする「カスタム grant_type」の同梱例。独自 URN を書く組み込み側は `op.WithCustomGrant` 経由で同じ形をたどる。

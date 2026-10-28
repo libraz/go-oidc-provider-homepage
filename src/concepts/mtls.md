@@ -43,6 +43,10 @@ op.WithMTLSRootCAs(pool),
 
 When the OP issues a token to an mTLS-authenticated client, it computes a SHA-256 digest of the DER-encoded certificate (RFC 8705 §3) and writes it into the access token as `cnf.x5t#S256`. Every subsequent request that uses this access token must arrive over a TLS connection presenting the **same** certificate; the resource server hashes the cert it observes and compares against `cnf.x5t#S256`.
 
+The binding happens only when the token request presents a certificate. A request without one gets a plain bearer token, except under `profile.FAPI2Baseline`, `profile.FAPI2MessageSigning`, or `profile.FAPICIBA`, which refuse it with `400 invalid_request`. The refresh token is bound the same way, for every client type: the chain remembers the certificate thumbprint, and each refresh must present the same certificate or it fails with `invalid_grant`. mTLS never upgrades a bearer chain mid-way; the binding is fixed at issuance.
+
+At `/userinfo`, a token bound to a certificate is rejected with `401` and `invalid_token` when the certificate is missing or different; the response does not say which. The OP's introspection response reports the binding as `cnf` and still says `token_type: "Bearer"`.
+
 `cnf` is shared with DPoP (RFC 7800), but the *member name* differs: DPoP uses `jkt`, mTLS uses `x5t#S256`. A token can carry both members. Where both bindings are present, the consuming endpoint must enforce the conjunction: the DPoP proof must match `jkt` and the presented certificate must match `x5t#S256`. The library applies this conjunction at `/userinfo`; device-code and CIBA grant binding checks likewise require every recorded method.
 
 ::: details Why a thumbprint and not the full certificate?
@@ -52,61 +56,48 @@ The same reason DPoP records the JWK thumbprint: a fixed-length digest is stable
 ## Reverse-proxy deployments
 
 <figure class="fig">
-  <div class="fig-head">Where the certificate crosses the trust boundary</div>
-  <svg class="fig-svg" role="img" aria-labelledby="mtls-proxy-title" viewBox="0 0 960 486" xmlns="http://www.w3.org/2000/svg">
+  <div class="fig-head">The OP trusts a forwarded certificate only from the proxy</div>
+  <svg class="fig-svg" role="img" aria-labelledby="mtls-proxy-title" viewBox="0 0 960 624" xmlns="http://www.w3.org/2000/svg">
     <title id="mtls-proxy-title">A TLS-terminating proxy takes the client certificate off the handshake and forwards it in a header. The OP only reads that header when the request arrives from an address inside the trusted CIDR list; from anywhere else the header is ignored and the request fails closed.</title>
-    <!-- zones -->
-    <rect class="fg-group" x="30" y="30" width="900" height="110" rx="8"/>
-    <rect class="fg-group" x="30" y="152" width="900" height="130" rx="8"/>
-    <rect class="fg-group" x="30" y="302" width="900" height="172" rx="8"/>
-    <text class="fg-lbl" x="46" y="48">public</text>
-    <text class="fg-lbl" x="46" y="170">edge</text>
-    <text class="fg-lbl fg-accent" x="46" y="320">op trust zone</text>
     <!-- client -->
-    <rect class="fg-box" x="330" y="56" width="300" height="68" rx="8"/>
-    <text class="fg-t" x="480" y="80" text-anchor="middle">Client</text>
-    <text class="fg-xs" x="480" y="98" text-anchor="middle">holds an X.509 client certificate</text>
-    <text class="fg-mxs" x="480" y="114" text-anchor="middle">presents it in the TLS handshake</text>
-    <path class="fg-edge" d="M480,128 V178" marker-end="url(#fg-a)"/>
-    <text class="fg-xs" x="496" y="150">mutual TLS handshake</text>
+    <rect class="fg-box" x="312" y="24" width="336" height="72" rx="8"/>
+    <text class="fg-t2" x="328" y="52">Client</text>
+    <text class="fg-xs" x="328" y="76">holds an X.509 client certificate</text>
+    <path class="fg-edge" d="M480,96 V152" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="492" y="129">mutual TLS handshake</text>
     <!-- proxy -->
-    <rect class="fg-box" x="330" y="182" width="300" height="82" rx="8"/>
-    <text class="fg-t2" x="480" y="206" text-anchor="middle">TLS-terminating proxy</text>
-    <text class="fg-xs" x="480" y="224" text-anchor="middle">terminates TLS, copies the certificate out</text>
-    <text class="fg-mxs" x="480" y="244" text-anchor="middle">X-SSL-Cert: &lt;PEM&gt;</text>
+    <rect class="fg-box" x="312" y="152" width="336" height="96" rx="8"/>
+    <text class="fg-t2" x="328" y="180">TLS-terminating proxy</text>
+    <text class="fg-xs" x="328" y="204">terminates TLS, copies the cert out</text>
+    <text class="fg-mxs" x="328" y="228">X-SSL-Cert: &lt;PEM&gt;</text>
+    <path class="fg-edge" d="M480,248 V344" marker-end="url(#fg-a)"/>
+    <text class="fg-s" x="492" y="277">forwarded request</text>
     <!-- trust boundary -->
-    <line class="fg-rule fg-rule--dashed fg-rule--strong" x1="30" y1="292" x2="930" y2="292"/>
-    <text class="fg-lbl" x="806" y="287">trust boundary</text>
-    <path class="fg-edge" d="M480,268 V326" marker-end="url(#fg-a)"/>
-    <!-- gate -->
-    <rect class="fg-box fg-box--accent" x="360" y="330" width="240" height="60" rx="8"/>
-    <text class="fg-t2 fg-accent" x="480" y="354" text-anchor="middle">trusted-CIDR gate</text>
-    <text class="fg-mxs" x="480" y="374" text-anchor="middle">RemoteAddr ∈ trustedCIDRs?</text>
-    <!-- rejected -->
-    <path class="fg-edge fg-edge--danger" d="M356,360 H244" marker-end="url(#fg-ad)"/>
-    <text class="fg-xs" x="300" y="353" text-anchor="middle">out of range</text>
-    <rect class="fg-box fg-box--danger" x="46" y="330" width="194" height="60" rx="8"/>
-    <text class="fg-t2" x="64" y="354">Header ignored</text>
-    <text class="fg-xs" x="64" y="374">fail closed — no certificate</text>
-    <!-- accepted -->
-    <path class="fg-edge fg-edge--accent" d="M604,360 H716" marker-end="url(#fg-ac)"/>
-    <text class="fg-xs" x="660" y="353" text-anchor="middle">in range</text>
-    <rect class="fg-box fg-box--accent" x="720" y="330" width="194" height="60" rx="8"/>
-    <text class="fg-t2 fg-accent" x="738" y="354">Header authoritative</text>
-    <text class="fg-xs" x="738" y="374">the forwarded cert is used</text>
-    <!-- OP -->
-    <path class="fg-edge fg-edge--accent" d="M817,394 V430 H634" marker-end="url(#fg-ac)"/>
-    <rect class="fg-box fg-box--accent" x="330" y="404" width="300" height="54" rx="8"/>
-    <text class="fg-t fg-accent" x="480" y="426" text-anchor="middle">OP — this library</text>
-    <text class="fg-mxs" x="480" y="446" text-anchor="middle">cnf.x5t#S256 binds the cert to the token</text>
-    <text class="fg-xs" x="46" y="424">on direct TLS, with no proxy in front,</text>
-    <text class="fg-xs" x="46" y="440">the OP uses the handshake certificate</text>
-    <text class="fg-xs" x="46" y="456">and never consults a header at all</text>
+    <rect class="fg-frame" x="32" y="296" width="896" height="304" rx="8"/>
+    <text class="fg-lbl fg-accent" x="56" y="324">op trust zone</text>
+    <rect class="fg-box fg-box--accent" x="312" y="344" width="336" height="72" rx="8"/>
+    <text class="fg-t2 fg-accent" x="328" y="372">trusted-CIDR gate</text>
+    <text class="fg-mxs" x="328" y="396">RemoteAddr ∈ trustedCIDRs?</text>
+    <path class="fg-leader" d="M480,416 V440 M256,440 H704"/>
+    <path class="fg-edge fg-edge--thin fg-edge--danger" d="M256,440 V480" marker-end="url(#fg-ad)"/>
+    <text class="fg-s" x="268" y="465">out of range</text>
+    <path class="fg-edge fg-edge--thin fg-edge--accent" d="M704,440 V480" marker-end="url(#fg-ac)"/>
+    <text class="fg-s" x="716" y="465">in range</text>
+    <!-- out of range -->
+    <rect class="fg-box fg-box--danger" x="56" y="480" width="400" height="96" rx="8"/>
+    <text class="fg-t2" x="72" y="508">Header ignored</text>
+    <text class="fg-xs" x="72" y="532">treated as no certificate</text>
+    <text class="fg-xs" x="72" y="556">fails closed</text>
+    <!-- in range -->
+    <rect class="fg-box fg-box--accent" x="504" y="480" width="400" height="96" rx="8"/>
+    <text class="fg-t2 fg-accent" x="520" y="508">Header is authoritative</text>
+    <text class="fg-xs" x="520" y="532">the forwarded cert is used</text>
+    <text class="fg-mxs" x="520" y="556">cnf.x5t#S256 binds it to the token</text>
   </svg>
-  <figcaption class="fig-note">The gate is the whole security argument. A header is trivially forgeable by anyone who can reach the OP directly, so the certificate it carries is only meaningful once the OP knows the request came from the proxy that wrote it.</figcaption>
+  <figcaption class="fig-note">The gate is the whole security argument: a header is forgeable by anyone who can reach the OP directly, so the certificate it carries counts only when the request came from the proxy that wrote it. With no proxy in front, the OP uses the handshake certificate and never reads a header.</figcaption>
 </figure>
 
-In many production deployments the OP does not terminate TLS itself. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header (`X-SSL-Cert`, `X-Forwarded-Client-Cert`, …).
+In many production deployments the OP does not terminate TLS itself. An nginx, envoy, AWS ALB, or cloud LB sits in front, decrypts the TLS connection, and forwards the request to the OP as plain HTTP. By that time the client certificate is no longer on the connection — the proxy must forward it as an HTTP header such as `X-SSL-Cert`.
 
 The OP needs to know **which header** carries the cert and **which IP ranges** are allowed to set it. Without the second guard, any internet client could send a forged header and impersonate a properly-authenticated client.
 
@@ -119,7 +110,11 @@ The two arguments are both required (see `op/options_fapi_proxy.go`):
 - An empty `headerName` returns a configuration error. To disable the header path, omit the option entirely.
 - An empty `trustedCIDRs` slice is rejected at construction time so a misconfiguration cannot silently widen the allow-list.
 
-The direct path reads `http.Request.TLS.PeerCertificates`. The proxy path is consulted only when the request's `RemoteAddr` is inside one of the configured trusted CIDRs; a request from elsewhere ignores the header and fails closed. When the request comes from a trusted proxy, the forwarded certificate is authoritative and takes precedence over any certificate on the proxy-to-OP TLS hop. The proxy's transport certificate is not treated as the OAuth client certificate.
+`WithMTLSProxy` and `WithMTLSRootCAs` take effect only together with `feature.MTLS`. Without the feature they are validated and then ignored: forwarded certificates are not read and tokens carry no `cnf.x5t#S256`. `op.New` logs a partial-wiring warning rather than failing, so check the startup log.
+
+The header must hold exactly one field with exactly one `CERTIFICATE` PEM block. Duplicate fields, a certificate chain, or trailing data are rejected as a malformed certificate (`invalid_request`) so two hops cannot pick different leaves. A request from a trusted proxy that carries no header is treated as presenting no certificate, even if the proxy's own transport certificate is on the connection.
+
+The direct path reads `http.Request.TLS.PeerCertificates`; the Go HTTP server has to be configured to request client certificates (`tls.Config.ClientAuth`) for any to arrive. The proxy path is consulted only when the request's `RemoteAddr` is inside one of the configured trusted CIDRs; a request from elsewhere ignores the header and fails closed. When the request comes from a trusted proxy, the forwarded certificate is authoritative and takes precedence over any certificate on the proxy-to-OP TLS hop. The proxy's transport certificate is not treated as the OAuth client certificate.
 
 `op.MTLSProxy` is the public configuration type. `op.MTLSProxyConfig(provider)` returns the recorded `HeaderName` and a fresh `TrustedProxies` slice, or the zero value when the option was not configured. Embedder-side edge code can use that public projection to keep its header-stripping policy aligned with the OP; it does not require importing an internal verifier.
 
@@ -146,8 +141,8 @@ When the OP terminates TLS itself (test environments, single-tenant on-prem depl
 
 ## Pitfalls
 
-- **TLS terminator must export the cert correctly.** Different proxies use different header names and encodings (DER, PEM, URL-encoded PEM). Lock the format on both ends and pin the header name in `WithMTLSProxy`.
-- **Certificate renewal changes the binding.** A token is bound to the leaf certificate it was issued with. Reissue tokens after certificate rotation; a new certificate cannot satisfy an old token's `cnf.x5t#S256`.
+- **TLS terminator must export the cert correctly.** Proxies differ in header name and encoding. The OP accepts a single PEM certificate, raw or percent-encoded (nginx `$ssl_client_escaped_cert`), and not DER or a structured multi-field value such as Envoy's `x-forwarded-client-cert`. Pin the header name in `WithMTLSProxy` and have the proxy strip any inbound copy of the header.
+- **Certificate renewal changes the binding.** A token is bound to the leaf certificate it was issued with, and so is its refresh chain. After the client's certificate rotates, an old access token no longer satisfies the resource server, and a refresh with the new certificate fails with `invalid_grant`. The client has to run the authorization again, so size certificate lifetimes against the refresh-token lifetime.
 - **Do not configure an unsupported mTLS client-authentication method.** The Final Security Profile permits mTLS at the token endpoint, but this library's token endpoint dispatches `private_key_jwt`; mTLS remains available as the sender-constraint layer.
 - **`RemoteAddr` semantics behind multiple proxies.** When the OP sits behind two layers of proxy, only the **innermost** proxy's IP appears in `RemoteAddr` — that is the one that must be in `trustedCIDRs`. Outer proxies are irrelevant to the header allow-list because the OP never sees them directly.
 
